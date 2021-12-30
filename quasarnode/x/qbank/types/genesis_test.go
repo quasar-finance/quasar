@@ -19,12 +19,47 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid:    true,
 		},
 		{
-			desc:     "valid genesis state",
+			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
+				DepositList: []types.Deposit{
+					{
+						Id: 0,
+					},
+					{
+						Id: 1,
+					},
+				},
+				DepositCount: 2,
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
+		},
+		{
+			desc: "duplicated deposit",
+			genState: &types.GenesisState{
+				DepositList: []types.Deposit{
+					{
+						Id: 0,
+					},
+					{
+						Id: 0,
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "invalid deposit count",
+			genState: &types.GenesisState{
+				DepositList: []types.Deposit{
+					{
+						Id: 1,
+					},
+				},
+				DepositCount: 0,
+			},
+			valid: false,
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {
