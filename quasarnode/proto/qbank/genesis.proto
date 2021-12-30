@@ -3,6 +3,7 @@ package abag.quasarnode.qbank;
 
 import "gogoproto/gogo.proto";
 import "qbank/params.proto";
+import "qbank/deposit.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
@@ -10,5 +11,7 @@ option go_package = "github.com/abag/quasarnode/x/qbank/types";
 // GenesisState defines the qbank module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
+  repeated Deposit depositList = 2 [(gogoproto.nullable) = false];
+  uint64 depositCount = 3;
   // this line is used by starport scaffolding # genesis/proto/state
 }
