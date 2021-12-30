@@ -20,6 +20,7 @@ export interface QbankDeposit {
   vaultID?: string;
   depositorAccAddress?: string;
   amount?: string;
+  denom?: string;
 }
 
 export type QbankMsgRequestDepositResponse = object;

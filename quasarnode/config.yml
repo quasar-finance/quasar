@@ -1,8 +1,8 @@
 accounts:
   - name: alice
-    coins: ["20000token", "200000000stake"]
+    coins: ["20000token", "200000000stake", "1000000000uqsar"]
   - name: bob
-    coins: ["10000token", "100000000stake"]
+    coins: ["10000token", "100000000stake", "1000000000uqsar"]
 validator:
   name: alice
   staked: "100000000stake"
@@ -13,4 +13,4 @@ client:
     path: "vue/src/store"
 faucet:
   name: bob
-  coins: ["5token", "100000stake"]
+  coins: ["5token", "100000stake", "10000uqsar"]

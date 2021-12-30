@@ -30,6 +30,8 @@ paths:
                       type: string
                     amount:
                       type: string
+                    denom:
+                      type: string
               pagination:
                 type: object
                 properties:
@@ -157,6 +159,8 @@ paths:
                   depositorAccAddress:
                     type: string
                   amount:
+                    type: string
+                  denom:
                     type: string
         default:
           description: An unexpected error response.
@@ -12805,6 +12809,8 @@ definitions:
         type: string
       amount:
         type: string
+      denom:
+        type: string
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
   abag.quasarnode.qbank.Params:
@@ -12828,6 +12834,8 @@ definitions:
             depositorAccAddress:
               type: string
             amount:
+              type: string
+            denom:
               type: string
       pagination:
         type: object
@@ -12870,6 +12878,8 @@ definitions:
           depositorAccAddress:
             type: string
           amount:
+            type: string
+          denom:
             type: string
   abag.quasarnode.qbank.QueryParamsResponse:
     type: object

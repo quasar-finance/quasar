@@ -6,6 +6,7 @@ export interface Deposit {
     vaultID: string;
     depositorAccAddress: string;
     amount: string;
+    denom: string;
 }
 export declare const Deposit: {
     encode(message: Deposit, writer?: Writer): Writer;

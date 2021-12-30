@@ -10,6 +10,7 @@ export interface Deposit {
   vaultID: string;
   depositorAccAddress: string;
   amount: string;
+  denom: string;
 }
 
 const baseDeposit: object = {
@@ -18,6 +19,7 @@ const baseDeposit: object = {
   vaultID: "",
   depositorAccAddress: "",
   amount: "",
+  denom: "",
 };
 
 export const Deposit = {
@@ -36,6 +38,9 @@ export const Deposit = {
     }
     if (message.amount !== "") {
       writer.uint32(42).string(message.amount);
+    }
+    if (message.denom !== "") {
+      writer.uint32(50).string(message.denom);
     }
     return writer;
   },
@@ -61,6 +66,9 @@ export const Deposit = {
           break;
         case 5:
           message.amount = reader.string();
+          break;
+        case 6:
+          message.denom = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -100,6 +108,11 @@ export const Deposit = {
     } else {
       message.amount = "";
     }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = String(object.denom);
+    } else {
+      message.denom = "";
+    }
     return message;
   },
 
@@ -112,6 +125,7 @@ export const Deposit = {
     message.depositorAccAddress !== undefined &&
       (obj.depositorAccAddress = message.depositorAccAddress);
     message.amount !== undefined && (obj.amount = message.amount);
+    message.denom !== undefined && (obj.denom = message.denom);
     return obj;
   },
 
@@ -144,6 +158,11 @@ export const Deposit = {
       message.amount = object.amount;
     } else {
       message.amount = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = object.denom;
+    } else {
+      message.denom = "";
     }
     return message;
   },

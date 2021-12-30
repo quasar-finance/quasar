@@ -8,6 +8,7 @@ export interface QbankDeposit {
     vaultID?: string;
     depositorAccAddress?: string;
     amount?: string;
+    denom?: string;
 }
 export declare type QbankMsgRequestDepositResponse = object;
 /**
