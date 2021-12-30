@@ -8,6 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO - Add NewDeposit Method to easy the object construction.
+
 // GetDepositCount get the total number of deposit
 func (k Keeper) GetDepositCount(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})

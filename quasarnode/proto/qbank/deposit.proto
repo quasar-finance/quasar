@@ -9,5 +9,5 @@ message Deposit {
   string vaultID = 3; 
   string depositorAccAddress = 4; 
   string amount = 5; 
-  
+  string denom = 6;
 }
