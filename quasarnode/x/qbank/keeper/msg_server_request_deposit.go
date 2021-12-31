@@ -11,7 +11,6 @@ import (
 func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDeposit) (*types.MsgRequestDepositResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Handling the message
 	// _ = ctx
 	// TODO - sdk.coin to be used in place of amount and denom string.
 
@@ -25,8 +24,8 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	deposit := types.Deposit{0, msg.GetRiskProfile(),
 		msg.GetVaultID(), msg.GetCreator(),
 		msg.GetAmount(), msg.GetDenom()}
-
 	k.Keeper.AppendDeposit(ctx, deposit)
+
 	amount, _ := sdk.NewIntFromString(msg.GetAmount())
 
 	// Transfer amount to vault from depositor
@@ -37,9 +36,13 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		return nil, err
 	}
 
-	// Mint receipt tokens and keep track
+	// TODO - Mint receipt tokens. Ask vault to do so.
 
-	k.Logger(ctx).Info(
+	// TODO - Position Management -
+
+	k.Keeper.SetUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
+
+	k.Logger(ctx).Info(msg.GetCreator(),
 		"RequestDeposit|Deposited|",
 		"Depositor=", msg.GetCreator(),
 		"Amount=", msg.GetAmount(),

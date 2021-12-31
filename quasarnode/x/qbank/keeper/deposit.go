@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"encoding/binary"
 
 	"github.com/abag/quasarnode/x/qbank/types"
@@ -105,4 +106,36 @@ func GetDepositIDBytes(id uint64) []byte {
 // GetDepositIDFromBytes returns ID in uint64 format from a byte array
 func GetDepositIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
+}
+
+// Get key used for user denom deposit in the KV store.
+func GetUserDenomDepositKey(uid, sep, denom string) []byte {
+	var b bytes.Buffer
+	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(denom)
+	return b.Bytes()
+}
+
+// User Position Management
+
+// Set user's denom deposit amount which is sdk.coin specifc to a given coin denom.
+// Input denom examples - ATOM, OSMO, QSAR
+func (k Keeper) SetUserDenomDeposit(ctx sdk.Context, uid string, amount sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
+	key := GetUserDenomDepositKey(uid, "/", amount.GetDenom())
+	value := k.cdc.MustMarshal(&amount)
+	store.Set(key, value)
+}
+
+// Get user's denom deposit amount which is sdk.coin specifc to a given coin denom.
+func (k Keeper) GetUserDenomDepositAmount(ctx sdk.Context,
+	uid, denom string) (val sdk.Coin, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
+	b := store.Get(GetUserDenomDepositKey(uid, "/", denom))
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
 }
