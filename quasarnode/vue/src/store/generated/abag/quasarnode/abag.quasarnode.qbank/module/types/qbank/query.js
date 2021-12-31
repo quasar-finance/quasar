@@ -339,6 +339,139 @@ export const QueryAllDepositResponse = {
         return message;
     },
 };
+const baseQueryUserDenomDepositRequest = { userAcc: "", denom: "" };
+export const QueryUserDenomDepositRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.userAcc !== "") {
+            writer.uint32(10).string(message.userAcc);
+        }
+        if (message.denom !== "") {
+            writer.uint32(18).string(message.denom);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomDepositRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.userAcc = reader.string();
+                    break;
+                case 2:
+                    message.denom = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = String(object.userAcc);
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = String(object.denom);
+        }
+        else {
+            message.denom = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+        message.denom !== undefined && (obj.denom = message.denom);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = object.userAcc;
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = object.denom;
+        }
+        else {
+            message.denom = "";
+        }
+        return message;
+    },
+};
+const baseQueryUserDenomDepositResponse = { amount: 0 };
+export const QueryUserDenomDepositResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.amount !== 0) {
+            writer.uint32(8).uint64(message.amount);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomDepositResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.amount = longToNumber(reader.uint64());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = Number(object.amount);
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.amount !== undefined && (obj.amount = message.amount);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = object.amount;
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -357,6 +490,11 @@ export class QueryClientImpl {
         const data = QueryAllDepositRequest.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qbank.Query", "DepositAll", data);
         return promise.then((data) => QueryAllDepositResponse.decode(new Reader(data)));
+    }
+    UserDenomDeposit(request) {
+        const data = QueryUserDenomDepositRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserDenomDeposit", data);
+        return promise.then((data) => QueryUserDenomDepositResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

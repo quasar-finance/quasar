@@ -26,6 +26,11 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/qbank/deposit";
 	}
 
+// Queries a list of UserDenomDeposit items.
+	rpc UserDenomDeposit(QueryUserDenomDepositRequest) returns (QueryUserDenomDepositResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_deposit/{userAcc}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -53,6 +58,15 @@ message QueryAllDepositRequest {
 message QueryAllDepositResponse {
 	repeated Deposit Deposit = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryUserDenomDepositRequest {
+  string userAcc = 1;
+  string denom = 2;
+}
+
+message QueryUserDenomDepositResponse {
+	uint64 amount = 1;
 }
 
 // this line is used by starport scaffolding # 3

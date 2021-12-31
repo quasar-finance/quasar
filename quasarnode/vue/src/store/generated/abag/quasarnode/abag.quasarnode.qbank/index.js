@@ -40,6 +40,7 @@ const getDefaultState = () => {
         Params: {},
         Deposit: {},
         DepositAll: {},
+        UserDenomDeposit: {},
         _Structure: {
             Deposit: getStructure(Deposit.fromPartial({})),
             Params: getStructure(Params.fromPartial({})),
@@ -85,6 +86,12 @@ export default {
                 params.query = null;
             }
             return state.DepositAll[JSON.stringify(params)] ?? {};
+        },
+        getUserDenomDeposit: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.UserDenomDeposit[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -163,6 +170,24 @@ export default {
             }
             catch (e) {
                 throw new SpVuexError('QueryClient:QueryDepositAll', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryUserDenomDeposit({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryUserDenomDeposit(key.userAcc, query)).data;
+                while (all && value.pagination && value.pagination.next_key != null) {
+                    let next_values = (await queryClient.queryUserDenomDeposit(key.userAcc, { ...query, 'pagination.key': value.pagination.next_key })).data;
+                    value = mergeResults(value, next_values);
+                }
+                commit('QUERY', { query: 'UserDenomDeposit', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryUserDenomDeposit', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getUserDenomDeposit']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryUserDenomDeposit', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
         async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {

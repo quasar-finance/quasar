@@ -40,9 +40,9 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	// TODO - Position Management -
 
-	k.Keeper.SetUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
+	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
 
-	k.Logger(ctx).Info(msg.GetCreator(),
+	k.Logger(ctx).Info( //msg.GetCreator(),
 		"RequestDeposit|Deposited|",
 		"Depositor=", msg.GetCreator(),
 		"Amount=", msg.GetAmount(),

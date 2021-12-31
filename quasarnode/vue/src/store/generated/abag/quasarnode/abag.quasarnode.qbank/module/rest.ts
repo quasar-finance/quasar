@@ -57,6 +57,11 @@ export interface QbankQueryParamsResponse {
   params?: QbankParams;
 }
 
+export interface QbankQueryUserDenomDepositResponse {
+  /** @format uint64 */
+  amount?: string;
+}
+
 export interface RpcStatus {
   /** @format int32 */
   code?: number;
@@ -377,6 +382,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     this.request<QbankQueryParamsResponse, RpcStatus>({
       path: `/abag/quasarnode/qbank/params`,
       method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUserDenomDeposit
+   * @summary Queries a list of UserDenomDeposit items.
+   * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
+   */
+  queryUserDenomDeposit = (userAcc: string, query?: { denom?: string }, params: RequestParams = {}) =>
+    this.request<QbankQueryUserDenomDepositResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/user_denom_deposit/${userAcc}`,
+      method: "GET",
+      query: query,
       format: "json",
       ...params,
     });

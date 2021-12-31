@@ -24,6 +24,13 @@ export interface QueryAllDepositResponse {
     Deposit: Deposit[];
     pagination: PageResponse | undefined;
 }
+export interface QueryUserDenomDepositRequest {
+    userAcc: string;
+    denom: string;
+}
+export interface QueryUserDenomDepositResponse {
+    amount: number;
+}
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): QueryParamsRequest;
@@ -66,6 +73,20 @@ export declare const QueryAllDepositResponse: {
     toJSON(message: QueryAllDepositResponse): unknown;
     fromPartial(object: DeepPartial<QueryAllDepositResponse>): QueryAllDepositResponse;
 };
+export declare const QueryUserDenomDepositRequest: {
+    encode(message: QueryUserDenomDepositRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomDepositRequest;
+    fromJSON(object: any): QueryUserDenomDepositRequest;
+    toJSON(message: QueryUserDenomDepositRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomDepositRequest>): QueryUserDenomDepositRequest;
+};
+export declare const QueryUserDenomDepositResponse: {
+    encode(message: QueryUserDenomDepositResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomDepositResponse;
+    fromJSON(object: any): QueryUserDenomDepositResponse;
+    toJSON(message: QueryUserDenomDepositResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomDepositResponse>): QueryUserDenomDepositResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -74,6 +95,8 @@ export interface Query {
     Deposit(request: QueryGetDepositRequest): Promise<QueryGetDepositResponse>;
     /** Queries a list of Deposit items. */
     DepositAll(request: QueryAllDepositRequest): Promise<QueryAllDepositResponse>;
+    /** Queries a list of UserDenomDeposit items. */
+    UserDenomDeposit(request: QueryUserDenomDepositRequest): Promise<QueryUserDenomDepositResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -81,6 +104,7 @@ export declare class QueryClientImpl implements Query {
     Params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
     Deposit(request: QueryGetDepositRequest): Promise<QueryGetDepositResponse>;
     DepositAll(request: QueryAllDepositRequest): Promise<QueryAllDepositResponse>;
+    UserDenomDeposit(request: QueryUserDenomDepositRequest): Promise<QueryUserDenomDepositResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

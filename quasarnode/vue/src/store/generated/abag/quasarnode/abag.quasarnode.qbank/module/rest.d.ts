@@ -38,6 +38,10 @@ export interface QbankQueryParamsResponse {
     /** params holds all the parameters of this module. */
     params?: QbankParams;
 }
+export interface QbankQueryUserDenomDepositResponse {
+    /** @format uint64 */
+    amount?: string;
+}
 export interface RpcStatus {
     /** @format int32 */
     code?: number;
@@ -191,5 +195,16 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/abag/quasarnode/qbank/params
      */
     queryParams: (params?: RequestParams) => Promise<HttpResponse<QbankQueryParamsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserDenomDeposit
+     * @summary Queries a list of UserDenomDeposit items.
+     * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
+     */
+    queryUserDenomDeposit: (userAcc: string, query?: {
+        denom?: string;
+    }, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomDepositResponse, RpcStatus>>;
 }
 export {};

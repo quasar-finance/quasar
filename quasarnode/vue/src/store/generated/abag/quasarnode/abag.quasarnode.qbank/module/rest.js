@@ -179,5 +179,20 @@ export class Api extends HttpClient {
             format: "json",
             ...params,
         });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUserDenomDeposit
+         * @summary Queries a list of UserDenomDeposit items.
+         * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
+         */
+        this.queryUserDenomDeposit = (userAcc, query, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_denom_deposit/${userAcc}`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
     }
 }

@@ -36,6 +36,15 @@ export interface QueryAllDepositResponse {
   pagination: PageResponse | undefined;
 }
 
+export interface QueryUserDenomDepositRequest {
+  userAcc: string;
+  denom: string;
+}
+
+export interface QueryUserDenomDepositResponse {
+  amount: number;
+}
+
 const baseQueryParamsRequest: object = {};
 
 export const QueryParamsRequest = {
@@ -423,6 +432,161 @@ export const QueryAllDepositResponse = {
   },
 };
 
+const baseQueryUserDenomDepositRequest: object = { userAcc: "", denom: "" };
+
+export const QueryUserDenomDepositRequest = {
+  encode(
+    message: QueryUserDenomDepositRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.userAcc !== "") {
+      writer.uint32(10).string(message.userAcc);
+    }
+    if (message.denom !== "") {
+      writer.uint32(18).string(message.denom);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomDepositRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomDepositRequest,
+    } as QueryUserDenomDepositRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userAcc = reader.string();
+          break;
+        case 2:
+          message.denom = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomDepositRequest {
+    const message = {
+      ...baseQueryUserDenomDepositRequest,
+    } as QueryUserDenomDepositRequest;
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = String(object.userAcc);
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = String(object.denom);
+    } else {
+      message.denom = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomDepositRequest): unknown {
+    const obj: any = {};
+    message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+    message.denom !== undefined && (obj.denom = message.denom);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomDepositRequest>
+  ): QueryUserDenomDepositRequest {
+    const message = {
+      ...baseQueryUserDenomDepositRequest,
+    } as QueryUserDenomDepositRequest;
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = object.userAcc;
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = object.denom;
+    } else {
+      message.denom = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryUserDenomDepositResponse: object = { amount: 0 };
+
+export const QueryUserDenomDepositResponse = {
+  encode(
+    message: QueryUserDenomDepositResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.amount !== 0) {
+      writer.uint32(8).uint64(message.amount);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomDepositResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomDepositResponse,
+    } as QueryUserDenomDepositResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.amount = longToNumber(reader.uint64() as Long);
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomDepositResponse {
+    const message = {
+      ...baseQueryUserDenomDepositResponse,
+    } as QueryUserDenomDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = Number(object.amount);
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomDepositResponse): unknown {
+    const obj: any = {};
+    message.amount !== undefined && (obj.amount = message.amount);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomDepositResponse>
+  ): QueryUserDenomDepositResponse {
+    const message = {
+      ...baseQueryUserDenomDepositResponse,
+    } as QueryUserDenomDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = object.amount;
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -431,6 +595,10 @@ export interface Query {
   Deposit(request: QueryGetDepositRequest): Promise<QueryGetDepositResponse>;
   /** Queries a list of Deposit items. */
   DepositAll(request: QueryAllDepositRequest): Promise<QueryAllDepositResponse>;
+  /** Queries a list of UserDenomDeposit items. */
+  UserDenomDeposit(
+    request: QueryUserDenomDepositRequest
+  ): Promise<QueryUserDenomDepositResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -471,6 +639,20 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryAllDepositResponse.decode(new Reader(data))
+    );
+  }
+
+  UserDenomDeposit(
+    request: QueryUserDenomDepositRequest
+  ): Promise<QueryUserDenomDepositResponse> {
+    const data = QueryUserDenomDepositRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Query",
+      "UserDenomDeposit",
+      data
+    );
+    return promise.then((data) =>
+      QueryUserDenomDepositResponse.decode(new Reader(data))
     );
   }
 }
