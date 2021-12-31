@@ -22,6 +22,10 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	DepositKey      = "Deposit-value-"
-	DepositCountKey = "Deposit-count-"
+
+	// TODO - Use Prefix byte as 0x01, 0x02
+
+	DepositKey                = "Deposit-value-"
+	DepositCountKey           = "Deposit-count-"
+	UserDenomDepositKeyPrefix = "User-denom-deposit-"
 )
