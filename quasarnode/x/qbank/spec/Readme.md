@@ -9,3 +9,8 @@ Store Key, Getter, Setters Naming -
 
 GetUserDenomDepositAmount
 
+Naming convention used in the KV store - 
+variable name key is used as byte repr of actual key string object.
+variable name value is used as byte repr of actual value object.
+stored[XYZ] is used to store object value fetched from KV store after unmarshelling.
+
