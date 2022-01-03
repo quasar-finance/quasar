@@ -6,6 +6,7 @@ export interface Withdraw {
     vaultID: string;
     depositorAccAddress: string;
     amount: string;
+    denom: string;
 }
 export declare const Withdraw: {
     encode(message: Withdraw, writer?: Writer): Writer;

@@ -292,6 +292,8 @@ paths:
                       type: string
                     amount:
                       type: string
+                    denom:
+                      type: string
               pagination:
                 type: object
                 properties:
@@ -419,6 +421,8 @@ paths:
                   depositorAccAddress:
                     type: string
                   amount:
+                    type: string
+                  denom:
                     type: string
         default:
           description: An unexpected error response.
@@ -13105,6 +13109,8 @@ definitions:
               type: string
             amount:
               type: string
+            denom:
+              type: string
       pagination:
         type: object
         properties:
@@ -13166,6 +13172,8 @@ definitions:
             type: string
           amount:
             type: string
+          denom:
+            type: string
   abag.quasarnode.qbank.QueryParamsResponse:
     type: object
     properties:
@@ -13192,6 +13200,8 @@ definitions:
       depositorAccAddress:
         type: string
       amount:
+        type: string
+      denom:
         type: string
   cosmos.base.query.v1beta1.PageRequest:
     type: object

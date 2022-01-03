@@ -8,6 +8,7 @@ const baseWithdraw = {
     vaultID: "",
     depositorAccAddress: "",
     amount: "",
+    denom: "",
 };
 export const Withdraw = {
     encode(message, writer = Writer.create()) {
@@ -25,6 +26,9 @@ export const Withdraw = {
         }
         if (message.amount !== "") {
             writer.uint32(42).string(message.amount);
+        }
+        if (message.denom !== "") {
+            writer.uint32(50).string(message.denom);
         }
         return writer;
     },
@@ -49,6 +53,9 @@ export const Withdraw = {
                     break;
                 case 5:
                     message.amount = reader.string();
+                    break;
+                case 6:
+                    message.denom = reader.string();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -90,6 +97,12 @@ export const Withdraw = {
         else {
             message.amount = "";
         }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = String(object.denom);
+        }
+        else {
+            message.denom = "";
+        }
         return message;
     },
     toJSON(message) {
@@ -101,6 +114,7 @@ export const Withdraw = {
         message.depositorAccAddress !== undefined &&
             (obj.depositorAccAddress = message.depositorAccAddress);
         message.amount !== undefined && (obj.amount = message.amount);
+        message.denom !== undefined && (obj.denom = message.denom);
         return obj;
     },
     fromPartial(object) {
@@ -135,6 +149,12 @@ export const Withdraw = {
         }
         else {
             message.amount = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = object.denom;
+        }
+        else {
+            message.denom = "";
         }
         return message;
     },

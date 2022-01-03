@@ -66,6 +66,7 @@ export interface QbankWithdraw {
     vaultID?: string;
     depositorAccAddress?: string;
     amount?: string;
+    denom?: string;
 }
 export interface RpcStatus {
     /** @format int32 */
