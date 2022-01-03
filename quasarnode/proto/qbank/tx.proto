@@ -8,6 +8,7 @@ option go_package = "github.com/abag/quasarnode/x/qbank/types";
 // Msg defines the Msg service.
 service Msg {
       rpc RequestDeposit(MsgRequestDeposit) returns (MsgRequestDepositResponse);
+  rpc RequestWithdraw(MsgRequestWithdraw) returns (MsgRequestWithdrawResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -20,6 +21,17 @@ message MsgRequestDeposit {
 }
 
 message MsgRequestDepositResponse {
+}
+
+message MsgRequestWithdraw {
+  string creator = 1;
+  string riskProfile = 2;
+  string vaultID = 3;
+  string amount = 4;
+  string denom = 5;
+}
+
+message MsgRequestWithdrawResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

@@ -13,6 +13,16 @@ export interface MsgRequestDeposit {
 
 export interface MsgRequestDepositResponse {}
 
+export interface MsgRequestWithdraw {
+  creator: string;
+  riskProfile: string;
+  vaultID: string;
+  amount: string;
+  denom: string;
+}
+
+export interface MsgRequestWithdrawResponse {}
+
 const baseMsgRequestDeposit: object = {
   creator: "",
   riskProfile: "",
@@ -195,12 +205,200 @@ export const MsgRequestDepositResponse = {
   },
 };
 
+const baseMsgRequestWithdraw: object = {
+  creator: "",
+  riskProfile: "",
+  vaultID: "",
+  amount: "",
+  denom: "",
+};
+
+export const MsgRequestWithdraw = {
+  encode(
+    message: MsgRequestWithdraw,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.riskProfile !== "") {
+      writer.uint32(18).string(message.riskProfile);
+    }
+    if (message.vaultID !== "") {
+      writer.uint32(26).string(message.vaultID);
+    }
+    if (message.amount !== "") {
+      writer.uint32(34).string(message.amount);
+    }
+    if (message.denom !== "") {
+      writer.uint32(42).string(message.denom);
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdraw {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseMsgRequestWithdraw } as MsgRequestWithdraw;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.creator = reader.string();
+          break;
+        case 2:
+          message.riskProfile = reader.string();
+          break;
+        case 3:
+          message.vaultID = reader.string();
+          break;
+        case 4:
+          message.amount = reader.string();
+          break;
+        case 5:
+          message.denom = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgRequestWithdraw {
+    const message = { ...baseMsgRequestWithdraw } as MsgRequestWithdraw;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = String(object.creator);
+    } else {
+      message.creator = "";
+    }
+    if (object.riskProfile !== undefined && object.riskProfile !== null) {
+      message.riskProfile = String(object.riskProfile);
+    } else {
+      message.riskProfile = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = String(object.vaultID);
+    } else {
+      message.vaultID = "";
+    }
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = String(object.amount);
+    } else {
+      message.amount = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = String(object.denom);
+    } else {
+      message.denom = "";
+    }
+    return message;
+  },
+
+  toJSON(message: MsgRequestWithdraw): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.riskProfile !== undefined &&
+      (obj.riskProfile = message.riskProfile);
+    message.vaultID !== undefined && (obj.vaultID = message.vaultID);
+    message.amount !== undefined && (obj.amount = message.amount);
+    message.denom !== undefined && (obj.denom = message.denom);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<MsgRequestWithdraw>): MsgRequestWithdraw {
+    const message = { ...baseMsgRequestWithdraw } as MsgRequestWithdraw;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = object.creator;
+    } else {
+      message.creator = "";
+    }
+    if (object.riskProfile !== undefined && object.riskProfile !== null) {
+      message.riskProfile = object.riskProfile;
+    } else {
+      message.riskProfile = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = object.vaultID;
+    } else {
+      message.vaultID = "";
+    }
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = object.amount;
+    } else {
+      message.amount = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = object.denom;
+    } else {
+      message.denom = "";
+    }
+    return message;
+  },
+};
+
+const baseMsgRequestWithdrawResponse: object = {};
+
+export const MsgRequestWithdrawResponse = {
+  encode(
+    _: MsgRequestWithdrawResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): MsgRequestWithdrawResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseMsgRequestWithdrawResponse,
+    } as MsgRequestWithdrawResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgRequestWithdrawResponse {
+    const message = {
+      ...baseMsgRequestWithdrawResponse,
+    } as MsgRequestWithdrawResponse;
+    return message;
+  },
+
+  toJSON(_: MsgRequestWithdrawResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<MsgRequestWithdrawResponse>
+  ): MsgRequestWithdrawResponse {
+    const message = {
+      ...baseMsgRequestWithdrawResponse,
+    } as MsgRequestWithdrawResponse;
+    return message;
+  },
+};
+
 /** Msg defines the Msg service. */
 export interface Msg {
-  /** this line is used by starport scaffolding # proto/tx/rpc */
   RequestDeposit(
     request: MsgRequestDeposit
   ): Promise<MsgRequestDepositResponse>;
+  /** this line is used by starport scaffolding # proto/tx/rpc */
+  RequestWithdraw(
+    request: MsgRequestWithdraw
+  ): Promise<MsgRequestWithdrawResponse>;
 }
 
 export class MsgClientImpl implements Msg {
@@ -219,6 +417,20 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then((data) =>
       MsgRequestDepositResponse.decode(new Reader(data))
+    );
+  }
+
+  RequestWithdraw(
+    request: MsgRequestWithdraw
+  ): Promise<MsgRequestWithdrawResponse> {
+    const data = MsgRequestWithdraw.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Msg",
+      "RequestWithdraw",
+      data
+    );
+    return promise.then((data) =>
+      MsgRequestWithdrawResponse.decode(new Reader(data))
     );
   }
 }

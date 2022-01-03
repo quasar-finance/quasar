@@ -12855,6 +12855,8 @@ definitions:
         type: string
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
+  abag.quasarnode.qbank.MsgRequestWithdrawResponse:
+    type: object
   abag.quasarnode.qbank.Params:
     type: object
     description: Params defines the parameters for the module.

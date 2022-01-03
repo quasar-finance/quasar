@@ -11,6 +11,7 @@ export interface QbankDeposit {
     denom?: string;
 }
 export declare type QbankMsgRequestDepositResponse = object;
+export declare type QbankMsgRequestWithdrawResponse = object;
 /**
  * Params defines the parameters for the module.
  */

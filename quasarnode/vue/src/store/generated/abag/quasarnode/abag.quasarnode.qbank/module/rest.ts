@@ -25,6 +25,8 @@ export interface QbankDeposit {
 
 export type QbankMsgRequestDepositResponse = object;
 
+export type QbankMsgRequestWithdrawResponse = object;
+
 /**
  * Params defines the parameters for the module.
  */

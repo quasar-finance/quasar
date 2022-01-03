@@ -9,6 +9,15 @@ export interface MsgRequestDeposit {
 }
 export interface MsgRequestDepositResponse {
 }
+export interface MsgRequestWithdraw {
+    creator: string;
+    riskProfile: string;
+    vaultID: string;
+    amount: string;
+    denom: string;
+}
+export interface MsgRequestWithdrawResponse {
+}
 export declare const MsgRequestDeposit: {
     encode(message: MsgRequestDeposit, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): MsgRequestDeposit;
@@ -23,15 +32,31 @@ export declare const MsgRequestDepositResponse: {
     toJSON(_: MsgRequestDepositResponse): unknown;
     fromPartial(_: DeepPartial<MsgRequestDepositResponse>): MsgRequestDepositResponse;
 };
+export declare const MsgRequestWithdraw: {
+    encode(message: MsgRequestWithdraw, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdraw;
+    fromJSON(object: any): MsgRequestWithdraw;
+    toJSON(message: MsgRequestWithdraw): unknown;
+    fromPartial(object: DeepPartial<MsgRequestWithdraw>): MsgRequestWithdraw;
+};
+export declare const MsgRequestWithdrawResponse: {
+    encode(_: MsgRequestWithdrawResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawResponse;
+    fromJSON(_: any): MsgRequestWithdrawResponse;
+    toJSON(_: MsgRequestWithdrawResponse): unknown;
+    fromPartial(_: DeepPartial<MsgRequestWithdrawResponse>): MsgRequestWithdrawResponse;
+};
 /** Msg defines the Msg service. */
 export interface Msg {
-    /** this line is used by starport scaffolding # proto/tx/rpc */
     RequestDeposit(request: MsgRequestDeposit): Promise<MsgRequestDepositResponse>;
+    /** this line is used by starport scaffolding # proto/tx/rpc */
+    RequestWithdraw(request: MsgRequestWithdraw): Promise<MsgRequestWithdrawResponse>;
 }
 export declare class MsgClientImpl implements Msg {
     private readonly rpc;
     constructor(rpc: Rpc);
     RequestDeposit(request: MsgRequestDeposit): Promise<MsgRequestDepositResponse>;
+    RequestWithdraw(request: MsgRequestWithdraw): Promise<MsgRequestWithdrawResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
