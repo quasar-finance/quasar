@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qbank/params.proto";
 import "qbank/deposit.proto";
+import "qbank/withdraw.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
@@ -29,6 +30,16 @@ service Query {
 // Queries a list of UserDenomDeposit items.
 	rpc UserDenomDeposit(QueryUserDenomDepositRequest) returns (QueryUserDenomDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_deposit/{userAcc}";
+	}
+
+// Queries a Withdraw by id.
+	rpc Withdraw(QueryGetWithdrawRequest) returns (QueryGetWithdrawResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/withdraw/{id}";
+	}
+
+	// Queries a list of Withdraw items.
+	rpc WithdrawAll(QueryAllWithdrawRequest) returns (QueryAllWithdrawResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/withdraw";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -67,6 +78,23 @@ message QueryUserDenomDepositRequest {
 
 message QueryUserDenomDepositResponse {
 	uint64 amount = 1;
+}
+
+message QueryGetWithdrawRequest {
+	uint64 id = 1;
+}
+
+message QueryGetWithdrawResponse {
+	Withdraw Withdraw = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllWithdrawRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllWithdrawResponse {
+	repeated Withdraw Withdraw = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3

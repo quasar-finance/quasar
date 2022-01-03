@@ -1,0 +1,13 @@
+syntax = "proto3";
+package abag.quasarnode.qbank;
+
+option go_package = "github.com/abag/quasarnode/x/qbank/types";
+
+message Withdraw {
+  uint64 id = 1;
+  string riskProfile = 2; 
+  string vaultID = 3; 
+  string depositorAccAddress = 4; 
+  string amount = 5; 
+  
+}
