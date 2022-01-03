@@ -29,3 +29,8 @@ const (
 	DepositCountKey           = "Deposit-count-"
 	UserDenomDepositKeyPrefix = "User-denom-deposit-"
 )
+
+const (
+	WithdrawKey      = "Withdraw-value-"
+	WithdrawCountKey = "Withdraw-count-"
+)

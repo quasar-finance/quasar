@@ -29,8 +29,24 @@ export interface QbankQueryAllDepositResponse {
      */
     pagination?: V1Beta1PageResponse;
 }
+export interface QbankQueryAllWithdrawResponse {
+    Withdraw?: QbankWithdraw[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
 export interface QbankQueryGetDepositResponse {
     Deposit?: QbankDeposit;
+}
+export interface QbankQueryGetWithdrawResponse {
+    Withdraw?: QbankWithdraw;
 }
 /**
  * QueryParamsResponse is response type for the Query/Params RPC method.
@@ -41,6 +57,14 @@ export interface QbankQueryParamsResponse {
 }
 export interface QbankQueryUserDenomDepositResponse {
     /** @format uint64 */
+    amount?: string;
+}
+export interface QbankWithdraw {
+    /** @format uint64 */
+    id?: string;
+    riskProfile?: string;
+    vaultID?: string;
+    depositorAccAddress?: string;
     amount?: string;
 }
 export interface RpcStatus {
@@ -207,5 +231,29 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
     queryUserDenomDeposit: (userAcc: string, query?: {
         denom?: string;
     }, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomDepositResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryWithdrawAll
+     * @summary Queries a list of Withdraw items.
+     * @request GET:/abag/quasarnode/qbank/withdraw
+     */
+    queryWithdrawAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<QbankQueryAllWithdrawResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryWithdraw
+     * @summary Queries a Withdraw by id.
+     * @request GET:/abag/quasarnode/qbank/withdraw/{id}
+     */
+    queryWithdraw: (id: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryGetWithdrawResponse, RpcStatus>>;
 }
 export {};

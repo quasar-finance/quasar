@@ -3,6 +3,7 @@ import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
 import { Params } from "../qbank/params";
 import { Deposit } from "../qbank/deposit";
+import { Withdraw } from "../qbank/withdraw";
 
 export const protobufPackage = "abag.quasarnode.qbank";
 
@@ -10,11 +11,13 @@ export const protobufPackage = "abag.quasarnode.qbank";
 export interface GenesisState {
   params: Params | undefined;
   depositList: Deposit[];
-  /** this line is used by starport scaffolding # genesis/proto/state */
   depositCount: number;
+  withdrawList: Withdraw[];
+  /** this line is used by starport scaffolding # genesis/proto/state */
+  withdrawCount: number;
 }
 
-const baseGenesisState: object = { depositCount: 0 };
+const baseGenesisState: object = { depositCount: 0, withdrawCount: 0 };
 
 export const GenesisState = {
   encode(message: GenesisState, writer: Writer = Writer.create()): Writer {
@@ -27,6 +30,12 @@ export const GenesisState = {
     if (message.depositCount !== 0) {
       writer.uint32(24).uint64(message.depositCount);
     }
+    for (const v of message.withdrawList) {
+      Withdraw.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.withdrawCount !== 0) {
+      writer.uint32(40).uint64(message.withdrawCount);
+    }
     return writer;
   },
 
@@ -35,6 +44,7 @@ export const GenesisState = {
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseGenesisState } as GenesisState;
     message.depositList = [];
+    message.withdrawList = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -47,6 +57,12 @@ export const GenesisState = {
         case 3:
           message.depositCount = longToNumber(reader.uint64() as Long);
           break;
+        case 4:
+          message.withdrawList.push(Withdraw.decode(reader, reader.uint32()));
+          break;
+        case 5:
+          message.withdrawCount = longToNumber(reader.uint64() as Long);
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -58,6 +74,7 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     const message = { ...baseGenesisState } as GenesisState;
     message.depositList = [];
+    message.withdrawList = [];
     if (object.params !== undefined && object.params !== null) {
       message.params = Params.fromJSON(object.params);
     } else {
@@ -72,6 +89,16 @@ export const GenesisState = {
       message.depositCount = Number(object.depositCount);
     } else {
       message.depositCount = 0;
+    }
+    if (object.withdrawList !== undefined && object.withdrawList !== null) {
+      for (const e of object.withdrawList) {
+        message.withdrawList.push(Withdraw.fromJSON(e));
+      }
+    }
+    if (object.withdrawCount !== undefined && object.withdrawCount !== null) {
+      message.withdrawCount = Number(object.withdrawCount);
+    } else {
+      message.withdrawCount = 0;
     }
     return message;
   },
@@ -89,12 +116,22 @@ export const GenesisState = {
     }
     message.depositCount !== undefined &&
       (obj.depositCount = message.depositCount);
+    if (message.withdrawList) {
+      obj.withdrawList = message.withdrawList.map((e) =>
+        e ? Withdraw.toJSON(e) : undefined
+      );
+    } else {
+      obj.withdrawList = [];
+    }
+    message.withdrawCount !== undefined &&
+      (obj.withdrawCount = message.withdrawCount);
     return obj;
   },
 
   fromPartial(object: DeepPartial<GenesisState>): GenesisState {
     const message = { ...baseGenesisState } as GenesisState;
     message.depositList = [];
+    message.withdrawList = [];
     if (object.params !== undefined && object.params !== null) {
       message.params = Params.fromPartial(object.params);
     } else {
@@ -109,6 +146,16 @@ export const GenesisState = {
       message.depositCount = object.depositCount;
     } else {
       message.depositCount = 0;
+    }
+    if (object.withdrawList !== undefined && object.withdrawList !== null) {
+      for (const e of object.withdrawList) {
+        message.withdrawList.push(Withdraw.fromPartial(e));
+      }
+    }
+    if (object.withdrawCount !== undefined && object.withdrawCount !== null) {
+      message.withdrawCount = object.withdrawCount;
+    } else {
+      message.withdrawCount = 0;
     }
     return message;
   },

@@ -47,8 +47,27 @@ export interface QbankQueryAllDepositResponse {
   pagination?: V1Beta1PageResponse;
 }
 
+export interface QbankQueryAllWithdrawResponse {
+  Withdraw?: QbankWithdraw[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
 export interface QbankQueryGetDepositResponse {
   Deposit?: QbankDeposit;
+}
+
+export interface QbankQueryGetWithdrawResponse {
+  Withdraw?: QbankWithdraw;
 }
 
 /**
@@ -61,6 +80,15 @@ export interface QbankQueryParamsResponse {
 
 export interface QbankQueryUserDenomDepositResponse {
   /** @format uint64 */
+  amount?: string;
+}
+
+export interface QbankWithdraw {
+  /** @format uint64 */
+  id?: string;
+  riskProfile?: string;
+  vaultID?: string;
+  depositorAccAddress?: string;
   amount?: string;
 }
 
@@ -401,6 +429,48 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       path: `/abag/quasarnode/qbank/user_denom_deposit/${userAcc}`,
       method: "GET",
       query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryWithdrawAll
+   * @summary Queries a list of Withdraw items.
+   * @request GET:/abag/quasarnode/qbank/withdraw
+   */
+  queryWithdrawAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<QbankQueryAllWithdrawResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/withdraw`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryWithdraw
+   * @summary Queries a Withdraw by id.
+   * @request GET:/abag/quasarnode/qbank/withdraw/{id}
+   */
+  queryWithdraw = (id: string, params: RequestParams = {}) =>
+    this.request<QbankQueryGetWithdrawResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/withdraw/${id}`,
+      method: "GET",
       format: "json",
       ...params,
     });

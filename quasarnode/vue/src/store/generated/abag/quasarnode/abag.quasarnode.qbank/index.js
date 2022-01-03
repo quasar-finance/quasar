@@ -3,7 +3,8 @@ import { txClient, queryClient, MissingWalletError, registry } from './module';
 import { SpVuexError } from '@starport/vuex';
 import { Deposit } from "./module/types/qbank/deposit";
 import { Params } from "./module/types/qbank/params";
-export { Deposit, Params };
+import { Withdraw } from "./module/types/qbank/withdraw";
+export { Deposit, Params, Withdraw };
 async function initTxClient(vuexGetters) {
     return await txClient(vuexGetters['common/wallet/signer'], {
         addr: vuexGetters['common/env/apiTendermint']
@@ -41,9 +42,12 @@ const getDefaultState = () => {
         Deposit: {},
         DepositAll: {},
         UserDenomDeposit: {},
+        Withdraw: {},
+        WithdrawAll: {},
         _Structure: {
             Deposit: getStructure(Deposit.fromPartial({})),
             Params: getStructure(Params.fromPartial({})),
+            Withdraw: getStructure(Withdraw.fromPartial({})),
         },
         _Registry: registry,
         _Subscriptions: new Set(),
@@ -92,6 +96,18 @@ export default {
                 params.query = null;
             }
             return state.UserDenomDeposit[JSON.stringify(params)] ?? {};
+        },
+        getWithdraw: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.Withdraw[JSON.stringify(params)] ?? {};
+        },
+        getWithdrawAll: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.WithdrawAll[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -190,21 +206,36 @@ export default {
                 throw new SpVuexError('QueryClient:QueryUserDenomDeposit', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
-        async sendMsgRequestWithdraw({ rootGetters }, { value, fee = [], memo = '' }) {
+        async QueryWithdraw({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
             try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestWithdraw(value);
-                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
-                        gas: "200000" }, memo });
-                return result;
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryWithdraw(key.id)).data;
+                commit('QUERY', { query: 'Withdraw', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryWithdraw', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getWithdraw']({ params: { ...key }, query }) ?? {};
             }
             catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Init', 'Could not initialize signing client. Wallet is required.');
+                throw new SpVuexError('QueryClient:QueryWithdraw', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryWithdrawAll({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryWithdrawAll(query)).data;
+                while (all && value.pagination && value.pagination.next_key != null) {
+                    let next_values = (await queryClient.queryWithdrawAll({ ...query, 'pagination.key': value.pagination.next_key })).data;
+                    value = mergeResults(value, next_values);
                 }
-                else {
-                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Send', 'Could not broadcast Tx: ' + e.message);
-                }
+                commit('QUERY', { query: 'WithdrawAll', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryWithdrawAll', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getWithdrawAll']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryWithdrawAll', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
         async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
@@ -224,18 +255,20 @@ export default {
                 }
             }
         },
-        async MsgRequestWithdraw({ rootGetters }, { value }) {
+        async sendMsgRequestWithdraw({ rootGetters }, { value, fee = [], memo = '' }) {
             try {
                 const txClient = await initTxClient(rootGetters);
                 const msg = await txClient.msgRequestWithdraw(value);
-                return msg;
+                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
+                        gas: "200000" }, memo });
+                return result;
             }
             catch (e) {
                 if (e == MissingWalletError) {
                     throw new SpVuexError('TxClient:MsgRequestWithdraw:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Create', 'Could not create message: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Send', 'Could not broadcast Tx: ' + e.message);
                 }
             }
         },
@@ -251,6 +284,21 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message);
+                }
+            }
+        },
+        async MsgRequestWithdraw({ rootGetters }, { value }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgRequestWithdraw(value);
+                return msg;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgRequestWithdraw:Create', 'Could not create message: ' + e.message);
                 }
             }
         },
