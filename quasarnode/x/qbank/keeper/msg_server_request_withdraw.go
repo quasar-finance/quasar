@@ -29,7 +29,12 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 
 	amount, _ := sdk.NewIntFromString(msg.GetAmount())
 
-	// Transfer amount to vault from depositor
+	// TODO - Request Vault to do Vault Logic.
+	// As the vault is in design phase. Assuming vault has
+	// successfully done its logic. and code is ready to do
+	// do bank module and qbank module state transition.
+
+	// Transfer amount to depositor from vault module acc.
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,
 		types.ModuleName, // TODO - msg.VaultID module
 		depositorAddr,
@@ -39,9 +44,9 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 
 	// TODO - Burn receipt tokens. Ask vault to do so.
 
-	// TODO - Position Management -
-
-	// Subtracts the withdraw request amount.
+	// Subtracts the withdraw request amount to state transition the
+	// user denom deposit kv store to reflect the current total deposit
+	// after successful withdraw.
 	k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
 
 	k.Logger(ctx).Info( //msg.GetCreator(),
