@@ -43,6 +43,14 @@ curl https://get.starport.com/abag/quasarnode@latest! | sudo bash
 ```
 `abag/quasarnode` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
 
+QUASARNODE IMPORTANT COMMANDS - 
+quasarnoded keys list --home ~/.quasarnode/
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar 
+quasarnoded tx qbank request-deposit "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar 
+quasarnoded tx qbank request-withdraw "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+
 ## Learn more
 
 - [Starport](https://starport.com)
