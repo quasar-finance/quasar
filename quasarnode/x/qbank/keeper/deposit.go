@@ -158,3 +158,24 @@ func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 	}
 
 }
+
+// Substract user's denom deposit amount which is sdk.coin specifc to a given coin denom.
+// Input denom examples - ATOM, OSMO, QSAR
+func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
+	key := GetUserDenomDepositKey(uid, "/", coin.GetDenom())
+	b := store.Get(key)
+	if b == nil {
+		// Do nothing - Called by mistake.
+		// TODO - panic.
+		//value := k.cdc.MustMarshal(&coin)
+		//store.Set(key, value)
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Sub(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+
+}
