@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	osmolptypes "github.com/abag/quasarnode/x/osmolpv/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -31,7 +32,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	// Transfer amount to vault from depositor
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
 		depositorAddr,
-		types.ModuleName, // TODO - msg.VaultID module
+		osmolptypes.ModuleName, // TODO - msg.VaultID module
 		sdk.NewCoins(sdk.Coin{msg.GetDenom(), amount})); err != nil {
 		return nil, err
 	}
