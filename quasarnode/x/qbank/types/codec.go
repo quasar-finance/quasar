@@ -9,12 +9,16 @@ import (
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgRequestDeposit{}, "qbank/RequestDeposit", nil)
+	cdc.RegisterConcrete(&MsgRequestWithdraw{}, "qbank/RequestWithdraw", nil)
 	// this line is used by starport scaffolding # 2
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgRequestDeposit{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgRequestWithdraw{},
 	)
 	// this line is used by starport scaffolding # 3
 

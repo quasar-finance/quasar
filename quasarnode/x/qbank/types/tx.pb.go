@@ -139,32 +139,149 @@ func (m *MsgRequestDepositResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgRequestDepositResponse proto.InternalMessageInfo
 
+type MsgRequestWithdraw struct {
+	Creator     string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	RiskProfile string `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`
+	VaultID     string `protobuf:"bytes,3,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
+	Amount      string `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Denom       string `protobuf:"bytes,5,opt,name=denom,proto3" json:"denom,omitempty"`
+}
+
+func (m *MsgRequestWithdraw) Reset()         { *m = MsgRequestWithdraw{} }
+func (m *MsgRequestWithdraw) String() string { return proto.CompactTextString(m) }
+func (*MsgRequestWithdraw) ProtoMessage()    {}
+func (*MsgRequestWithdraw) Descriptor() ([]byte, []int) {
+	return fileDescriptor_942456077037f563, []int{2}
+}
+func (m *MsgRequestWithdraw) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRequestWithdraw) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRequestWithdraw.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRequestWithdraw) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRequestWithdraw.Merge(m, src)
+}
+func (m *MsgRequestWithdraw) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRequestWithdraw) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRequestWithdraw.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRequestWithdraw proto.InternalMessageInfo
+
+func (m *MsgRequestWithdraw) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgRequestWithdraw) GetRiskProfile() string {
+	if m != nil {
+		return m.RiskProfile
+	}
+	return ""
+}
+
+func (m *MsgRequestWithdraw) GetVaultID() string {
+	if m != nil {
+		return m.VaultID
+	}
+	return ""
+}
+
+func (m *MsgRequestWithdraw) GetAmount() string {
+	if m != nil {
+		return m.Amount
+	}
+	return ""
+}
+
+func (m *MsgRequestWithdraw) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+type MsgRequestWithdrawResponse struct {
+}
+
+func (m *MsgRequestWithdrawResponse) Reset()         { *m = MsgRequestWithdrawResponse{} }
+func (m *MsgRequestWithdrawResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRequestWithdrawResponse) ProtoMessage()    {}
+func (*MsgRequestWithdrawResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_942456077037f563, []int{3}
+}
+func (m *MsgRequestWithdrawResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRequestWithdrawResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRequestWithdrawResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRequestWithdrawResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRequestWithdrawResponse.Merge(m, src)
+}
+func (m *MsgRequestWithdrawResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRequestWithdrawResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRequestWithdrawResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRequestWithdrawResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgRequestDeposit)(nil), "abag.quasarnode.qbank.MsgRequestDeposit")
 	proto.RegisterType((*MsgRequestDepositResponse)(nil), "abag.quasarnode.qbank.MsgRequestDepositResponse")
+	proto.RegisterType((*MsgRequestWithdraw)(nil), "abag.quasarnode.qbank.MsgRequestWithdraw")
+	proto.RegisterType((*MsgRequestWithdrawResponse)(nil), "abag.quasarnode.qbank.MsgRequestWithdrawResponse")
 }
 
 func init() { proto.RegisterFile("qbank/tx.proto", fileDescriptor_942456077037f563) }
 
 var fileDescriptor_942456077037f563 = []byte{
-	// 270 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x4c, 0x4a, 0xcc,
-	0xcb, 0xd6, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x4d, 0x4c, 0x4a, 0x4c,
-	0xd7, 0x2b, 0x2c, 0x4d, 0x2c, 0x4e, 0x2c, 0xca, 0xcb, 0x4f, 0x49, 0xd5, 0x03, 0xcb, 0x2b, 0x4d,
-	0x67, 0xe4, 0x12, 0xf4, 0x2d, 0x4e, 0x0f, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x71, 0x49, 0x2d,
-	0xc8, 0x2f, 0xce, 0x2c, 0x11, 0x92, 0xe0, 0x62, 0x4f, 0x2e, 0x4a, 0x4d, 0x2c, 0xc9, 0x2f, 0x92,
-	0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x82, 0x71, 0x85, 0x14, 0xb8, 0xb8, 0x8b, 0x32, 0x8b, 0xb3,
-	0x03, 0x8a, 0xf2, 0xd3, 0x32, 0x73, 0x52, 0x25, 0x98, 0xc0, 0xb2, 0xc8, 0x42, 0x20, 0xbd, 0x65,
-	0x89, 0xa5, 0x39, 0x25, 0x9e, 0x2e, 0x12, 0xcc, 0x10, 0xbd, 0x50, 0xae, 0x90, 0x18, 0x17, 0x5b,
-	0x62, 0x6e, 0x7e, 0x69, 0x5e, 0x89, 0x04, 0x0b, 0x58, 0x02, 0xca, 0x13, 0x12, 0xe1, 0x62, 0x4d,
-	0x49, 0xcd, 0xcb, 0xcf, 0x95, 0x60, 0x05, 0x0b, 0x43, 0x38, 0x4a, 0xd2, 0x5c, 0x92, 0x18, 0x0e,
-	0x0b, 0x4a, 0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0x35, 0x2a, 0xe6, 0x62, 0xf6, 0x2d, 0x4e, 0x17,
-	0xca, 0xe1, 0xe2, 0x43, 0x73, 0xb9, 0x86, 0x1e, 0x56, 0x7f, 0xea, 0x61, 0x18, 0x25, 0x65, 0x40,
-	0xac, 0x4a, 0x98, 0xa5, 0x4e, 0x4e, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0,
-	0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10,
-	0xa5, 0x91, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x0f, 0x32, 0x55, 0x1f,
-	0x61, 0xaa, 0x7e, 0x85, 0x3e, 0x34, 0x26, 0x2a, 0x0b, 0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xb1, 0x61,
-	0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x65, 0xf2, 0x9a, 0x9c, 0x9f, 0x01, 0x00, 0x00,
+	// 316 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x52, 0xbd, 0x4e, 0xc3, 0x30,
+	0x18, 0xac, 0x29, 0x2d, 0xe2, 0x43, 0x2a, 0xc2, 0x02, 0x64, 0x0a, 0xb2, 0xaa, 0x4e, 0x65, 0x71,
+	0xf8, 0x79, 0x83, 0xaa, 0x0b, 0x43, 0x25, 0xd4, 0x05, 0x89, 0xcd, 0x69, 0x4c, 0x1a, 0x35, 0x89,
+	0x13, 0xdb, 0x81, 0xf2, 0x16, 0x6c, 0xf0, 0x48, 0x8c, 0x1d, 0x19, 0x51, 0xc2, 0x83, 0xa0, 0xa6,
+	0x89, 0x8a, 0x1a, 0x24, 0x3a, 0x32, 0x9e, 0xef, 0xbe, 0xfb, 0x4e, 0xe7, 0x0f, 0x5a, 0xb1, 0xcd,
+	0xc3, 0xa9, 0x65, 0x66, 0x2c, 0x52, 0xd2, 0x48, 0x7c, 0xc4, 0x6d, 0xee, 0xb2, 0x38, 0xe1, 0x9a,
+	0xab, 0x50, 0x3a, 0x82, 0xe5, 0x7c, 0xf7, 0x15, 0xc1, 0xc1, 0x50, 0xbb, 0x23, 0x11, 0x27, 0x42,
+	0x9b, 0x81, 0x88, 0xa4, 0xf6, 0x0c, 0x26, 0xb0, 0x33, 0x56, 0x82, 0x1b, 0xa9, 0x08, 0xea, 0xa0,
+	0xde, 0xee, 0xa8, 0x84, 0xb8, 0x03, 0x7b, 0xca, 0xd3, 0xd3, 0x5b, 0x25, 0x1f, 0x3c, 0x5f, 0x90,
+	0xad, 0x9c, 0xfd, 0xf9, 0xb4, 0x98, 0x7d, 0xe4, 0x89, 0x6f, 0x6e, 0x06, 0xa4, 0xbe, 0x9c, 0x2d,
+	0x20, 0x3e, 0x86, 0x26, 0x0f, 0x64, 0x12, 0x1a, 0xb2, 0x9d, 0x13, 0x05, 0xc2, 0x87, 0xd0, 0x70,
+	0x44, 0x28, 0x03, 0xd2, 0xc8, 0x9f, 0x97, 0xa0, 0x7b, 0x0a, 0x27, 0x95, 0x60, 0x23, 0xa1, 0x23,
+	0x19, 0x6a, 0xd1, 0x7d, 0x43, 0x80, 0x57, 0xec, 0x9d, 0x67, 0x26, 0x8e, 0xe2, 0x4f, 0xff, 0x22,
+	0xf7, 0x19, 0xb4, 0xab, 0xc9, 0xca, 0xe0, 0x57, 0x5f, 0x08, 0xea, 0x43, 0xed, 0x62, 0x1f, 0x5a,
+	0x6b, 0x9d, 0xf7, 0xd8, 0xaf, 0x3f, 0xc4, 0x2a, 0x25, 0xb4, 0x2f, 0x36, 0x55, 0x96, 0x5b, 0xb1,
+	0x84, 0xfd, 0xf5, 0xaa, 0xce, 0xff, 0x34, 0x29, 0xa5, 0xed, 0xcb, 0x8d, 0xa5, 0xe5, 0xc2, 0x7e,
+	0xff, 0x3d, 0xa5, 0x68, 0x9e, 0x52, 0xf4, 0x99, 0x52, 0xf4, 0x92, 0xd1, 0xda, 0x3c, 0xa3, 0xb5,
+	0x8f, 0x8c, 0xd6, 0xee, 0x7b, 0xae, 0x67, 0x26, 0x89, 0xcd, 0xc6, 0x32, 0xb0, 0x16, 0xb6, 0xd6,
+	0xca, 0xd6, 0x9a, 0x59, 0xc5, 0xd1, 0x3e, 0x47, 0x42, 0xdb, 0xcd, 0xfc, 0x70, 0xaf, 0xbf, 0x03,
+	0x00, 0x00, 0xff, 0xff, 0x9b, 0x1d, 0x00, 0x92, 0xca, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -180,6 +297,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	RequestDeposit(ctx context.Context, in *MsgRequestDeposit, opts ...grpc.CallOption) (*MsgRequestDepositResponse, error)
+	RequestWithdraw(ctx context.Context, in *MsgRequestWithdraw, opts ...grpc.CallOption) (*MsgRequestWithdrawResponse, error)
 }
 
 type msgClient struct {
@@ -199,9 +317,19 @@ func (c *msgClient) RequestDeposit(ctx context.Context, in *MsgRequestDeposit, o
 	return out, nil
 }
 
+func (c *msgClient) RequestWithdraw(ctx context.Context, in *MsgRequestWithdraw, opts ...grpc.CallOption) (*MsgRequestWithdrawResponse, error) {
+	out := new(MsgRequestWithdrawResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qbank.Msg/RequestWithdraw", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	RequestDeposit(context.Context, *MsgRequestDeposit) (*MsgRequestDepositResponse, error)
+	RequestWithdraw(context.Context, *MsgRequestWithdraw) (*MsgRequestWithdrawResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -210,6 +338,9 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) RequestDeposit(ctx context.Context, req *MsgRequestDeposit) (*MsgRequestDepositResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestDeposit not implemented")
+}
+func (*UnimplementedMsgServer) RequestWithdraw(ctx context.Context, req *MsgRequestWithdraw) (*MsgRequestWithdrawResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestWithdraw not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -234,6 +365,24 @@ func _Msg_RequestDeposit_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_RequestWithdraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRequestWithdraw)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RequestWithdraw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qbank.Msg/RequestWithdraw",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RequestWithdraw(ctx, req.(*MsgRequestWithdraw))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "abag.quasarnode.qbank.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -241,6 +390,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestDeposit",
 			Handler:    _Msg_RequestDeposit_Handler,
+		},
+		{
+			MethodName: "RequestWithdraw",
+			Handler:    _Msg_RequestWithdraw_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -328,6 +481,87 @@ func (m *MsgRequestDepositResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgRequestWithdraw) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRequestWithdraw) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRequestWithdraw) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Amount) > 0 {
+		i -= len(m.Amount)
+		copy(dAtA[i:], m.Amount)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Amount)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.VaultID) > 0 {
+		i -= len(m.VaultID)
+		copy(dAtA[i:], m.VaultID)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.VaultID)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.RiskProfile) > 0 {
+		i -= len(m.RiskProfile)
+		copy(dAtA[i:], m.RiskProfile)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.RiskProfile)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRequestWithdrawResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRequestWithdrawResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRequestWithdrawResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -369,6 +603,44 @@ func (m *MsgRequestDeposit) Size() (n int) {
 }
 
 func (m *MsgRequestDepositResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgRequestWithdraw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.RiskProfile)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.VaultID)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Amount)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRequestWithdrawResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -620,6 +892,266 @@ func (m *MsgRequestDepositResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgRequestDepositResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRequestWithdraw) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRequestWithdraw: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRequestWithdraw: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RiskProfile", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RiskProfile = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VaultID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VaultID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Amount = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRequestWithdrawResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRequestWithdrawResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRequestWithdrawResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
