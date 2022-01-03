@@ -89,6 +89,9 @@ import (
 	"github.com/tendermint/spm/openapiconsole"
 
 	"github.com/abag/quasarnode/docs"
+	osmolpvmodule "github.com/abag/quasarnode/x/osmolpv"
+	osmolpvmodulekeeper "github.com/abag/quasarnode/x/osmolpv/keeper"
+	osmolpvmoduletypes "github.com/abag/quasarnode/x/osmolpv/types"
 	qbankmodule "github.com/abag/quasarnode/x/qbank"
 	qbankmodulekeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
@@ -143,6 +146,7 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		qbankmodule.AppModuleBasic{},
+		osmolpvmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -156,6 +160,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		qbankmoduletypes.ModuleName:    {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		osmolpvmoduletypes.ModuleName:  {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -214,6 +219,8 @@ type App struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	QbankKeeper qbankmodulekeeper.Keeper
+
+	OsmolpvKeeper osmolpvmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -251,6 +258,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		qbankmoduletypes.StoreKey,
+		osmolpvmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -359,6 +367,16 @@ func New(
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
+		appCodec,
+		keys[osmolpvmoduletypes.StoreKey],
+		keys[osmolpvmoduletypes.MemStoreKey],
+		app.GetSubspace(osmolpvmoduletypes.ModuleName),
+
+		app.BankKeeper,
+	)
+	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -398,6 +416,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		qbankModule,
+		osmolpvModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -433,6 +452,7 @@ func New(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		qbankmoduletypes.ModuleName,
+		osmolpvmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -456,6 +476,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		qbankModule,
+		osmolpvModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -644,6 +665,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
+	paramsKeeper.Subspace(osmolpvmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
