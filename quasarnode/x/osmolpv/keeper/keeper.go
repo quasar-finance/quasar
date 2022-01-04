@@ -18,7 +18,8 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper types.BankKeeper
+		bankKeeper    types.BankKeeper
+		accountKeeper types.AccountKeeper
 	}
 )
 

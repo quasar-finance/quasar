@@ -15,6 +15,9 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_osmolpv"
+
+	//OsmoLPV vault reserve module account name
+	OsmoLPVReserveMaccName = "osmolpv_rsv"
 )
 
 func KeyPrefix(p string) []byte {
