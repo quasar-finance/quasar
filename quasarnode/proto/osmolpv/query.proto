@@ -15,7 +15,12 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/osmolpv/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a list of ReserveBalance items.
+	rpc ReserveBalance(QueryReserveBalanceRequest) returns (QueryReserveBalanceResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/reserve_balance/{denom}";
+	}
+
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -25,6 +30,14 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryReserveBalanceRequest {
+  string denom = 1;
+}
+
+message QueryReserveBalanceResponse {
+  uint64 amount = 1;
 }
 
 // this line is used by starport scaffolding # 3
