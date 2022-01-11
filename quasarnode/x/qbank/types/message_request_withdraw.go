@@ -9,13 +9,12 @@ const TypeMsgRequestWithdraw = "request_withdraw"
 
 var _ sdk.Msg = &MsgRequestWithdraw{}
 
-func NewMsgRequestWithdraw(creator string, riskProfile string, vaultID string, amount string, denom string) *MsgRequestWithdraw {
+func NewMsgRequestWithdraw(creator string, riskProfile string, vaultID string, coin sdk.Coin) *MsgRequestWithdraw {
 	return &MsgRequestWithdraw{
 		Creator:     creator,
 		RiskProfile: riskProfile,
 		VaultID:     vaultID,
-		Amount:      amount,
-		Denom:       denom,
+		Coin:        coin,
 	}
 }
 

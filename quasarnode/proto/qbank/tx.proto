@@ -4,6 +4,8 @@ package abag.quasarnode.qbank;
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 // Msg defines the Msg service.
 service Msg {
@@ -16,8 +18,7 @@ message MsgRequestDeposit {
   string creator = 1;
   string riskProfile = 2;
   string vaultID = 3;
-  string amount = 4;
-  string denom = 5;
+  cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
 }
 
 message MsgRequestDepositResponse {
@@ -27,8 +28,7 @@ message MsgRequestWithdraw {
   string creator = 1;
   string riskProfile = 2;
   string vaultID = 3;
-  string amount = 4;
-  string denom = 5;
+  cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
 }
 
 message MsgRequestWithdrawResponse {
