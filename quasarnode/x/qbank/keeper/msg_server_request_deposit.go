@@ -23,17 +23,14 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	}
 
 	deposit := types.Deposit{0, msg.GetRiskProfile(),
-		msg.GetVaultID(), msg.GetCreator(),
-		msg.GetAmount(), msg.GetDenom()}
+		msg.GetVaultID(), msg.GetCreator(), msg.GetCoin()}
 	k.Keeper.AppendDeposit(ctx, deposit)
-
-	amount, _ := sdk.NewIntFromString(msg.GetAmount())
 
 	// Transfer amount to vault from depositor
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
 		depositorAddr,
 		osmolptypes.ModuleName, // TODO - msg.VaultID module
-		sdk.NewCoins(sdk.Coin{msg.GetDenom(), amount})); err != nil {
+		sdk.NewCoins(deposit.GetCoin())); err != nil {
 		return nil, err
 	}
 
@@ -41,13 +38,12 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	// TODO - Position Management -
 
-	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
+	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 
 	k.Logger(ctx).Info( //msg.GetCreator(),
 		"RequestDeposit|Deposited|",
 		"Depositor=", msg.GetCreator(),
-		"Amount=", msg.GetAmount(),
-		"Denom=", msg.GetDenom())
+		"Coin=", msg.GetCoin().String())
 
 	// TODO - Events And Telementry
 

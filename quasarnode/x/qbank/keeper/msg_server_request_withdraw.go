@@ -23,12 +23,12 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	}
 
 	withdraw := types.Withdraw{0, msg.GetRiskProfile(),
-		msg.GetVaultID(), msg.GetCreator(),
-		msg.GetAmount(), msg.GetDenom()}
+		msg.GetVaultID(), msg.GetCreator(), msg.GetCoin()}
+	//msg.GetAmount(), msg.GetDenom()}
 
 	k.Keeper.AppendWithdraw(ctx, withdraw)
 
-	amount, _ := sdk.NewIntFromString(msg.GetAmount())
+	// amount, _ := sdk.NewIntFromString(msg.GetAmount())
 
 	// TODO - Request Vault to do Vault Logic.
 	// As the vault is in design phase. Assuming vault has
@@ -39,7 +39,8 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,
 		osmolptypes.ModuleName, // TODO - msg.VaultID module
 		depositorAddr,
-		sdk.NewCoins(sdk.Coin{msg.GetDenom(), amount})); err != nil {
+		sdk.NewCoins(withdraw.GetCoin())); err != nil {
+		//sdk.NewCoins(sdk.Coin{msg.GetDenom(), amount})); err != nil {
 		return nil, err
 	}
 
@@ -48,13 +49,15 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	// Subtracts the withdraw request amount to state transition the
 	// user denom deposit kv store to reflect the current total deposit
 	// after successful withdraw.
-	k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
+	// k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
+	k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), withdraw.GetCoin())
 
 	k.Logger(ctx).Info( //msg.GetCreator(),
 		"RequestWithdraw|Withdraw|",
 		"Depositor=", msg.GetCreator(),
-		"Amount=", msg.GetAmount(),
-		"Denom=", msg.GetDenom())
+		"Coin=", msg.GetCoin().String())
+	//"Amount=", msg.GetAmount(),
+	//"Denom=", msg.GetDenom())
 
 	return &types.MsgRequestWithdrawResponse{}, nil
 }

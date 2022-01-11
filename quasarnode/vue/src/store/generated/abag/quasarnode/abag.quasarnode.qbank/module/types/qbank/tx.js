@@ -1,12 +1,11 @@
 /* eslint-disable */
 import { Reader, Writer } from "protobufjs/minimal";
+import { Coin } from "../cosmos/base/v1beta1/coin";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseMsgRequestDeposit = {
     creator: "",
     riskProfile: "",
     vaultID: "",
-    amount: "",
-    denom: "",
 };
 export const MsgRequestDeposit = {
     encode(message, writer = Writer.create()) {
@@ -19,11 +18,8 @@ export const MsgRequestDeposit = {
         if (message.vaultID !== "") {
             writer.uint32(26).string(message.vaultID);
         }
-        if (message.amount !== "") {
-            writer.uint32(34).string(message.amount);
-        }
-        if (message.denom !== "") {
-            writer.uint32(42).string(message.denom);
+        if (message.coin !== undefined) {
+            Coin.encode(message.coin, writer.uint32(34).fork()).ldelim();
         }
         return writer;
     },
@@ -44,10 +40,7 @@ export const MsgRequestDeposit = {
                     message.vaultID = reader.string();
                     break;
                 case 4:
-                    message.amount = reader.string();
-                    break;
-                case 5:
-                    message.denom = reader.string();
+                    message.coin = Coin.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -76,17 +69,11 @@ export const MsgRequestDeposit = {
         else {
             message.vaultID = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = String(object.amount);
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromJSON(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = String(object.denom);
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },
@@ -96,8 +83,8 @@ export const MsgRequestDeposit = {
         message.riskProfile !== undefined &&
             (obj.riskProfile = message.riskProfile);
         message.vaultID !== undefined && (obj.vaultID = message.vaultID);
-        message.amount !== undefined && (obj.amount = message.amount);
-        message.denom !== undefined && (obj.denom = message.denom);
+        message.coin !== undefined &&
+            (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
         return obj;
     },
     fromPartial(object) {
@@ -120,17 +107,11 @@ export const MsgRequestDeposit = {
         else {
             message.vaultID = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = object.amount;
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromPartial(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = object.denom;
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },
@@ -177,8 +158,6 @@ const baseMsgRequestWithdraw = {
     creator: "",
     riskProfile: "",
     vaultID: "",
-    amount: "",
-    denom: "",
 };
 export const MsgRequestWithdraw = {
     encode(message, writer = Writer.create()) {
@@ -191,11 +170,8 @@ export const MsgRequestWithdraw = {
         if (message.vaultID !== "") {
             writer.uint32(26).string(message.vaultID);
         }
-        if (message.amount !== "") {
-            writer.uint32(34).string(message.amount);
-        }
-        if (message.denom !== "") {
-            writer.uint32(42).string(message.denom);
+        if (message.coin !== undefined) {
+            Coin.encode(message.coin, writer.uint32(34).fork()).ldelim();
         }
         return writer;
     },
@@ -216,10 +192,7 @@ export const MsgRequestWithdraw = {
                     message.vaultID = reader.string();
                     break;
                 case 4:
-                    message.amount = reader.string();
-                    break;
-                case 5:
-                    message.denom = reader.string();
+                    message.coin = Coin.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -248,17 +221,11 @@ export const MsgRequestWithdraw = {
         else {
             message.vaultID = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = String(object.amount);
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromJSON(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = String(object.denom);
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },
@@ -268,8 +235,8 @@ export const MsgRequestWithdraw = {
         message.riskProfile !== undefined &&
             (obj.riskProfile = message.riskProfile);
         message.vaultID !== undefined && (obj.vaultID = message.vaultID);
-        message.amount !== undefined && (obj.amount = message.amount);
-        message.denom !== undefined && (obj.denom = message.denom);
+        message.coin !== undefined &&
+            (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
         return obj;
     },
     fromPartial(object) {
@@ -292,17 +259,11 @@ export const MsgRequestWithdraw = {
         else {
             message.vaultID = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = object.amount;
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromPartial(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = object.denom;
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },

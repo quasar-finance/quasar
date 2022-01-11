@@ -19,8 +19,14 @@ export interface QbankDeposit {
   riskProfile?: string;
   vaultID?: string;
   depositorAccAddress?: string;
-  amount?: string;
-  denom?: string;
+
+  /**
+   * Coin defines a token with a denomination and an amount.
+   *
+   * NOTE: The amount field is an Int which implements the custom method
+   * signatures required by gogoproto.
+   */
+  coin?: V1Beta1Coin;
 }
 
 export type QbankMsgRequestDepositResponse = object;
@@ -89,8 +95,14 @@ export interface QbankWithdraw {
   riskProfile?: string;
   vaultID?: string;
   depositorAccAddress?: string;
-  amount?: string;
-  denom?: string;
+
+  /**
+   * Coin defines a token with a denomination and an amount.
+   *
+   * NOTE: The amount field is an Int which implements the custom method
+   * signatures required by gogoproto.
+   */
+  coin?: V1Beta1Coin;
 }
 
 export interface RpcStatus {
@@ -98,6 +110,17 @@ export interface RpcStatus {
   code?: number;
   message?: string;
   details?: ProtobufAny[];
+}
+
+/**
+* Coin defines a token with a denomination and an amount.
+
+NOTE: The amount field is an Int which implements the custom method
+signatures required by gogoproto.
+*/
+export interface V1Beta1Coin {
+  denom?: string;
+  amount?: string;
 }
 
 /**

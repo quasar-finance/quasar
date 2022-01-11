@@ -1,14 +1,13 @@
 /* eslint-disable */
 import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
+import { Coin } from "../cosmos/base/v1beta1/coin";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseDeposit = {
     id: 0,
     riskProfile: "",
     vaultID: "",
     depositorAccAddress: "",
-    amount: "",
-    denom: "",
 };
 export const Deposit = {
     encode(message, writer = Writer.create()) {
@@ -24,11 +23,8 @@ export const Deposit = {
         if (message.depositorAccAddress !== "") {
             writer.uint32(34).string(message.depositorAccAddress);
         }
-        if (message.amount !== "") {
-            writer.uint32(42).string(message.amount);
-        }
-        if (message.denom !== "") {
-            writer.uint32(50).string(message.denom);
+        if (message.coin !== undefined) {
+            Coin.encode(message.coin, writer.uint32(42).fork()).ldelim();
         }
         return writer;
     },
@@ -52,10 +48,7 @@ export const Deposit = {
                     message.depositorAccAddress = reader.string();
                     break;
                 case 5:
-                    message.amount = reader.string();
-                    break;
-                case 6:
-                    message.denom = reader.string();
+                    message.coin = Coin.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -91,17 +84,11 @@ export const Deposit = {
         else {
             message.depositorAccAddress = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = String(object.amount);
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromJSON(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = String(object.denom);
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },
@@ -113,8 +100,8 @@ export const Deposit = {
         message.vaultID !== undefined && (obj.vaultID = message.vaultID);
         message.depositorAccAddress !== undefined &&
             (obj.depositorAccAddress = message.depositorAccAddress);
-        message.amount !== undefined && (obj.amount = message.amount);
-        message.denom !== undefined && (obj.denom = message.denom);
+        message.coin !== undefined &&
+            (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
         return obj;
     },
     fromPartial(object) {
@@ -144,17 +131,11 @@ export const Deposit = {
         else {
             message.depositorAccAddress = "";
         }
-        if (object.amount !== undefined && object.amount !== null) {
-            message.amount = object.amount;
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromPartial(object.coin);
         }
         else {
-            message.amount = "";
-        }
-        if (object.denom !== undefined && object.denom !== null) {
-            message.denom = object.denom;
-        }
-        else {
-            message.denom = "";
+            message.coin = undefined;
         }
         return message;
     },

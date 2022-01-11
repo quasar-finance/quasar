@@ -1,12 +1,12 @@
 import { Writer, Reader } from "protobufjs/minimal";
+import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
 export interface Deposit {
     id: number;
     riskProfile: string;
     vaultID: string;
     depositorAccAddress: string;
-    amount: string;
-    denom: string;
+    coin: Coin | undefined;
 }
 export declare const Deposit: {
     encode(message: Deposit, writer?: Writer): Writer;

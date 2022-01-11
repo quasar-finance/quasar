@@ -28,10 +28,21 @@ paths:
                       type: string
                     depositorAccAddress:
                       type: string
-                    amount:
-                      type: string
-                    denom:
-                      type: string
+                    coin:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
               pagination:
                 type: object
                 properties:
@@ -158,10 +169,21 @@ paths:
                     type: string
                   depositorAccAddress:
                     type: string
-                  amount:
-                    type: string
-                  denom:
-                    type: string
+                  coin:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
         default:
           description: An unexpected error response.
           schema:
@@ -290,10 +312,24 @@ paths:
                       type: string
                     depositorAccAddress:
                       type: string
-                    amount:
-                      type: string
-                    denom:
-                      type: string
+                    coin:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                      title: |-
+                        string amount = 5; 
+                        string denom = 6;
               pagination:
                 type: object
                 properties:
@@ -420,10 +456,24 @@ paths:
                     type: string
                   depositorAccAddress:
                     type: string
-                  amount:
-                    type: string
-                  denom:
-                    type: string
+                  coin:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    title: |-
+                      string amount = 5; 
+                      string denom = 6;
         default:
           description: An unexpected error response.
           schema:
@@ -13033,10 +13083,18 @@ definitions:
         type: string
       depositorAccAddress:
         type: string
-      amount:
-        type: string
-      denom:
-        type: string
+      coin:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
   abag.quasarnode.qbank.MsgRequestWithdrawResponse:
@@ -13061,10 +13119,21 @@ definitions:
               type: string
             depositorAccAddress:
               type: string
-            amount:
-              type: string
-            denom:
-              type: string
+            coin:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
       pagination:
         type: object
         properties:
@@ -13107,10 +13176,24 @@ definitions:
               type: string
             depositorAccAddress:
               type: string
-            amount:
-              type: string
-            denom:
-              type: string
+            coin:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+              title: |-
+                string amount = 5; 
+                string denom = 6;
       pagination:
         type: object
         properties:
@@ -13151,10 +13234,21 @@ definitions:
             type: string
           depositorAccAddress:
             type: string
-          amount:
-            type: string
-          denom:
-            type: string
+          coin:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
   abag.quasarnode.qbank.QueryGetWithdrawResponse:
     type: object
     properties:
@@ -13170,10 +13264,24 @@ definitions:
             type: string
           depositorAccAddress:
             type: string
-          amount:
-            type: string
-          denom:
-            type: string
+          coin:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+            title: |-
+              string amount = 5; 
+              string denom = 6;
   abag.quasarnode.qbank.QueryParamsResponse:
     type: object
     properties:
@@ -13199,10 +13307,21 @@ definitions:
         type: string
       depositorAccAddress:
         type: string
-      amount:
-        type: string
-      denom:
-        type: string
+      coin:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+        title: |-
+          string amount = 5; 
+          string denom = 6;
   cosmos.base.query.v1beta1.PageRequest:
     type: object
     properties:
@@ -13279,6 +13398,18 @@ definitions:
                repeated Bar results = 1;
                PageResponse page = 2;
        }
+  cosmos.base.v1beta1.Coin:
+    type: object
+    properties:
+      denom:
+        type: string
+      amount:
+        type: string
+    description: |-
+      Coin defines a token with a denomination and an amount.
+
+      NOTE: The amount field is an Int which implements the custom method
+      signatures required by gogoproto.
   google.protobuf.Any:
     type: object
     properties:
@@ -14474,18 +14605,6 @@ definitions:
     description: |-
       SendEnabled maps coin denom to a send_enabled status (whether a denom is
       sendable).
-  cosmos.base.v1beta1.Coin:
-    type: object
-    properties:
-      denom:
-        type: string
-      amount:
-        type: string
-    description: |-
-      Coin defines a token with a denomination and an amount.
-
-      NOTE: The amount field is an Int which implements the custom method
-      signatures required by gogoproto.
   cosmos.crisis.v1beta1.MsgVerifyInvariantResponse:
     type: object
     description: MsgVerifyInvariantResponse defines the Msg/VerifyInvariant response type.
