@@ -21,7 +21,8 @@ func (k Keeper) DepositAll(c context.Context, req *types.QueryAllDepositRequest)
 	ctx := sdk.UnwrapSDKContext(c)
 
 	store := ctx.KVStore(k.storeKey)
-	depositStore := prefix.NewStore(store, types.KeyPrefix(types.DepositKey))
+	//depositStore := prefix.NewStore(store, types.KeyPrefix(types.DepositKey))
+	depositStore := prefix.NewStore(store, types.DepositKBP)
 
 	pageRes, err := query.Paginate(depositStore, req.Pagination, func(key []byte, value []byte) error {
 		var deposit types.Deposit
