@@ -10,8 +10,8 @@ import (
 
 // GetWithdrawCount get the total number of withdraw
 func (k Keeper) GetWithdrawCount(ctx sdk.Context) uint64 {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.WithdrawCountKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.QbankGlobalKBP)
+	byteKey := types.CreateWithdrawCountKey()
 	bz := store.Get(byteKey)
 
 	// Count doesn't exist: no element
@@ -25,8 +25,8 @@ func (k Keeper) GetWithdrawCount(ctx sdk.Context) uint64 {
 
 // SetWithdrawCount set the total number of withdraw
 func (k Keeper) SetWithdrawCount(ctx sdk.Context, count uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.WithdrawCountKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.QbankGlobalKBP)
+	byteKey := types.CreateWithdrawCountKey()
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, count)
 	store.Set(byteKey, bz)
@@ -43,9 +43,9 @@ func (k Keeper) AppendWithdraw(
 	// Set the ID of the appended value
 	withdraw.Id = count
 
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.WithdrawKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawKeyKBP)
 	appendedValue := k.cdc.MustMarshal(&withdraw)
-	store.Set(GetWithdrawIDBytes(withdraw.Id), appendedValue)
+	store.Set(types.CreateIDKey(withdraw.Id), appendedValue)
 
 	// Update withdraw count
 	k.SetWithdrawCount(ctx, count+1)
@@ -55,15 +55,15 @@ func (k Keeper) AppendWithdraw(
 
 // SetWithdraw set a specific withdraw in the store
 func (k Keeper) SetWithdraw(ctx sdk.Context, withdraw types.Withdraw) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.WithdrawKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawKeyKBP)
 	b := k.cdc.MustMarshal(&withdraw)
-	store.Set(GetWithdrawIDBytes(withdraw.Id), b)
+	store.Set(types.CreateIDKey(withdraw.Id), b)
 }
 
 // GetWithdraw returns a withdraw from its id
 func (k Keeper) GetWithdraw(ctx sdk.Context, id uint64) (val types.Withdraw, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.WithdrawKey))
-	b := store.Get(GetWithdrawIDBytes(id))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawKeyKBP)
+	b := store.Get(types.CreateIDKey(id))
 	if b == nil {
 		return val, false
 	}
@@ -73,13 +73,13 @@ func (k Keeper) GetWithdraw(ctx sdk.Context, id uint64) (val types.Withdraw, fou
 
 // RemoveWithdraw removes a withdraw from the store
 func (k Keeper) RemoveWithdraw(ctx sdk.Context, id uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.WithdrawKey))
-	store.Delete(GetWithdrawIDBytes(id))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawKeyKBP)
+	store.Delete(types.CreateIDKey(id))
 }
 
 // GetAllWithdraw returns all withdraw
 func (k Keeper) GetAllWithdraw(ctx sdk.Context) (list []types.Withdraw) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.WithdrawKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawKeyKBP)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()

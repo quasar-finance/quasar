@@ -13,8 +13,9 @@ import (
 
 // GetDepositCount get the total number of deposit
 func (k Keeper) GetDepositCount(ctx sdk.Context) uint64 {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.DepositCountKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.QbankGlobalKBP)
+	byteKey := types.CreateDepositCountKey()
+
 	bz := store.Get(byteKey)
 
 	// Count doesn't exist: no element
@@ -28,11 +29,10 @@ func (k Keeper) GetDepositCount(ctx sdk.Context) uint64 {
 
 // SetDepositCount set the total number of deposit
 func (k Keeper) SetDepositCount(ctx sdk.Context, count uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.DepositCountKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.QbankGlobalKBP)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, count)
-	store.Set(byteKey, bz)
+	store.Set(types.CreateDepositCountKey(), bz)
 }
 
 // AppendDeposit appends a deposit in the store with a new id and update the count
@@ -46,7 +46,8 @@ func (k Keeper) AppendDeposit(
 	// Set the ID of the appended value
 	deposit.Id = count
 
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DepositKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
+
 	appendedValue := k.cdc.MustMarshal(&deposit)
 	store.Set(GetDepositIDBytes(deposit.Id), appendedValue)
 
@@ -58,15 +59,15 @@ func (k Keeper) AppendDeposit(
 
 // SetDeposit set a specific deposit in the store
 func (k Keeper) SetDeposit(ctx sdk.Context, deposit types.Deposit) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DepositKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
 	b := k.cdc.MustMarshal(&deposit)
 	store.Set(GetDepositIDBytes(deposit.Id), b)
 }
 
 // GetDeposit returns a deposit from its id
 func (k Keeper) GetDeposit(ctx sdk.Context, id uint64) (val types.Deposit, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DepositKey))
-	b := store.Get(GetDepositIDBytes(id))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
+	b := store.Get(types.CreateIDKey(id))
 	if b == nil {
 		return val, false
 	}
@@ -76,15 +77,14 @@ func (k Keeper) GetDeposit(ctx sdk.Context, id uint64) (val types.Deposit, found
 
 // RemoveDeposit removes a deposit from the store
 func (k Keeper) RemoveDeposit(ctx sdk.Context, id uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DepositKey))
-	store.Delete(GetDepositIDBytes(id))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
+	store.Delete(types.CreateIDKey(id))
 }
 
 // GetAllDeposit returns all deposit
 func (k Keeper) GetAllDeposit(ctx sdk.Context) (list []types.Deposit) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DepositKey))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // TODO TESTING
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -122,8 +122,8 @@ func GetUserDenomDepositKey(uid, sep, denom string) []byte {
 // Set user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) SetUserDenomDeposit(ctx sdk.Context, uid string, amount sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
-	key := GetUserDenomDepositKey(uid, "/", amount.GetDenom())
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateUserDenomDepositKey(uid, "/", amount.GetDenom())
 	value := k.cdc.MustMarshal(&amount)
 	store.Set(key, value)
 }
@@ -131,8 +131,9 @@ func (k Keeper) SetUserDenomDeposit(ctx sdk.Context, uid string, amount sdk.Coin
 // Get user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 func (k Keeper) GetUserDenomDepositAmount(ctx sdk.Context,
 	uid, denom string) (val sdk.Coin, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
-	b := store.Get(GetUserDenomDepositKey(uid, "/", denom))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	b := store.Get(types.CreateUserDenomDepositKey(uid, "/", denom))
+
 	if b == nil {
 		return val, false
 	}
@@ -143,8 +144,8 @@ func (k Keeper) GetUserDenomDepositAmount(ctx sdk.Context,
 // Add user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
-	key := GetUserDenomDepositKey(uid, "/", coin.GetDenom())
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateUserDenomDepositKey(uid, "/", coin.GetDenom())
 	b := store.Get(key)
 	if b == nil {
 		value := k.cdc.MustMarshal(&coin)
@@ -162,8 +163,8 @@ func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 // Substract user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UserDenomDepositKeyPrefix))
-	key := GetUserDenomDepositKey(uid, "/", coin.GetDenom())
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateUserDenomDepositKey(uid, "/", coin.GetDenom())
 	b := store.Get(key)
 	if b == nil {
 		// Do nothing - Called by mistake.
