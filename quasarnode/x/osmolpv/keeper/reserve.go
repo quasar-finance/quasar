@@ -17,7 +17,7 @@ func (k Keeper) GetAllReserveBalances(ctx sdk.Context, denom string) sdk.Coins {
 	return balances
 }
 
-// Retrive the amount of reserve per denomication help by osmoLPV vault.
+// Retrive the amount of reserve per denomication held by osmoLPV vault.
 func (k Keeper) GetReserveBalance(ctx sdk.Context, denom string) sdk.Coin {
 	balance := k.bankKeeper.GetBalance(ctx, k.GetReserveAccAddress(), denom)
 	return balance
