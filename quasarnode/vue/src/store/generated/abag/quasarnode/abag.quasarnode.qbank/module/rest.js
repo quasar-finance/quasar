@@ -130,7 +130,7 @@ export class HttpClient {
     }
 }
 /**
- * @title qbank/deposit.proto
+ * @title qbank/common.proto
  * @version version not set
  */
 export class Api extends HttpClient {

@@ -378,7 +378,7 @@ export class HttpClient<SecurityDataType = unknown> {
 }
 
 /**
- * @title qbank/deposit.proto
+ * @title qbank/common.proto
  * @version version not set
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {

@@ -1,5 +1,9 @@
 package types
 
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "osmolpv"
@@ -22,4 +26,12 @@ const (
 
 func KeyPrefix(p string) []byte {
 	return []byte(p)
+}
+
+var (
+	UserReceiptCoinsKBP = []byte{0x01}
+)
+
+func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
+	return addr.Bytes()
 }
