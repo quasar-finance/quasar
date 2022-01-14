@@ -4,8 +4,19 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/x/qbank/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_AddressPrefix(t *testing.T) {
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount("quasar", "quasarpub")
+
+	addr1, err1 := sdk.AccAddressFromBech32("quasar1yl6hdjhmkf37639730gffanpzndzdpmhquv56x")
+	require.NoError(t, err1)
+	require.Equal(t, "quasar1yl6hdjhmkf37639730gffanpzndzdpmhquv56x", sdk.MustBech32ifyAddressBytes("quasar", addr1))
+
+}
 
 func TestGenesisState_Validate(t *testing.T) {
 	for _, tc := range []struct {
