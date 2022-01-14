@@ -3,6 +3,7 @@ package abag.quasarnode.osmolpv;
 
 import "gogoproto/gogo.proto";
 import "osmolpv/params.proto";
+import "osmolpv/fee_data.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -10,5 +11,6 @@ option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 // GenesisState defines the osmolpv module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
+  FeeData feeData = 2;
   // this line is used by starport scaffolding # genesis/proto/state
 }

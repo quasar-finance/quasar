@@ -29,6 +29,26 @@ export interface QbankDeposit {
   coin?: V1Beta1Coin;
 }
 
+export interface QbankFeeData {
+  feeCollector?: string;
+  fromAddress?: string;
+
+  /**
+   * Coin defines a token with a denomination and an amount.
+   *
+   * NOTE: The amount field is an Int which implements the custom method
+   * signatures required by gogoproto.
+   */
+  fee?: V1Beta1Coin;
+
+  /** @format uint64 */
+  feeType?: string;
+
+  /** @format uint64 */
+  blockHeight?: string;
+  memo?: string;
+}
+
 export type QbankMsgRequestDepositResponse = object;
 
 export type QbankMsgRequestWithdrawResponse = object;
@@ -70,6 +90,10 @@ export interface QbankQueryAllWithdrawResponse {
 
 export interface QbankQueryGetDepositResponse {
   Deposit?: QbankDeposit;
+}
+
+export interface QbankQueryGetFeeDataResponse {
+  FeeData?: QbankFeeData;
 }
 
 export interface QbankQueryGetWithdrawResponse {
@@ -419,6 +443,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryDeposit = (id: string, params: RequestParams = {}) =>
     this.request<QbankQueryGetDepositResponse, RpcStatus>({
       path: `/abag/quasarnode/qbank/deposit/${id}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryFeeData
+   * @summary Queries a FeeData by index.
+   * @request GET:/abag/quasarnode/qbank/fee_data
+   */
+  queryFeeData = (params: RequestParams = {}) =>
+    this.request<QbankQueryGetFeeDataResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/fee_data`,
       method: "GET",
       format: "json",
       ...params,

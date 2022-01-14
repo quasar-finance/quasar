@@ -210,6 +210,66 @@ paths:
           format: uint64
       tags:
         - Query
+  /abag/quasarnode/qbank/fee_data:
+    get:
+      summary: Queries a FeeData by index.
+      operationId: AbagQuasarnodeQbankFeeData
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              FeeData:
+                type: object
+                properties:
+                  feeCollector:
+                    type: string
+                  fromAddress:
+                    type: string
+                  fee:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  feeType:
+                    type: string
+                    format: uint64
+                  blockHeight:
+                    type: string
+                    format: uint64
+                  memo:
+                    type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
   /abag/quasarnode/qbank/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -13095,6 +13155,33 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
+  abag.quasarnode.qbank.FeeData:
+    type: object
+    properties:
+      feeCollector:
+        type: string
+      fromAddress:
+        type: string
+      fee:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+      feeType:
+        type: string
+        format: uint64
+      blockHeight:
+        type: string
+        format: uint64
+      memo:
+        type: string
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
   abag.quasarnode.qbank.MsgRequestWithdrawResponse:
@@ -13249,6 +13336,39 @@ definitions:
               method
 
               signatures required by gogoproto.
+  abag.quasarnode.qbank.QueryGetFeeDataResponse:
+    type: object
+    properties:
+      FeeData:
+        type: object
+        properties:
+          feeCollector:
+            type: string
+          fromAddress:
+            type: string
+          fee:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          feeType:
+            type: string
+            format: uint64
+          blockHeight:
+            type: string
+            format: uint64
+          memo:
+            type: string
   abag.quasarnode.qbank.QueryGetWithdrawResponse:
     type: object
     properties:

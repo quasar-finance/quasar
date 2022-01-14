@@ -87,3 +87,7 @@ func CreateUserDenomDepositKey(uid, sep, denom string) []byte {
 func CreateWithdrawCountKey() []byte {
 	return createStoreKey(WithdrawCountKey)
 }
+
+const (
+	FeeDataKey = "FeeData-value-"
+)

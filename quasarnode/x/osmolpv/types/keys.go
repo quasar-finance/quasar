@@ -47,3 +47,7 @@ var (
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
 	return addr.Bytes()
 }
+
+const (
+	FeeDataKey = "FeeData-value-"
+)

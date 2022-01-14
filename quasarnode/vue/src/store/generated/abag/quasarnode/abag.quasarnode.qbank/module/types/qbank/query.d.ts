@@ -3,6 +3,7 @@ import { Params } from "../qbank/params";
 import { Deposit } from "../qbank/deposit";
 import { PageRequest, PageResponse } from "../cosmos/base/query/v1beta1/pagination";
 import { Withdraw } from "../qbank/withdraw";
+import { FeeData } from "../qbank/fee_data";
 export declare const protobufPackage = "abag.quasarnode.qbank";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -44,6 +45,11 @@ export interface QueryAllWithdrawRequest {
 export interface QueryAllWithdrawResponse {
     Withdraw: Withdraw[];
     pagination: PageResponse | undefined;
+}
+export interface QueryGetFeeDataRequest {
+}
+export interface QueryGetFeeDataResponse {
+    FeeData: FeeData | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -129,6 +135,20 @@ export declare const QueryAllWithdrawResponse: {
     toJSON(message: QueryAllWithdrawResponse): unknown;
     fromPartial(object: DeepPartial<QueryAllWithdrawResponse>): QueryAllWithdrawResponse;
 };
+export declare const QueryGetFeeDataRequest: {
+    encode(_: QueryGetFeeDataRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetFeeDataRequest;
+    fromJSON(_: any): QueryGetFeeDataRequest;
+    toJSON(_: QueryGetFeeDataRequest): unknown;
+    fromPartial(_: DeepPartial<QueryGetFeeDataRequest>): QueryGetFeeDataRequest;
+};
+export declare const QueryGetFeeDataResponse: {
+    encode(message: QueryGetFeeDataResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetFeeDataResponse;
+    fromJSON(object: any): QueryGetFeeDataResponse;
+    toJSON(message: QueryGetFeeDataResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetFeeDataResponse>): QueryGetFeeDataResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -143,6 +163,8 @@ export interface Query {
     Withdraw(request: QueryGetWithdrawRequest): Promise<QueryGetWithdrawResponse>;
     /** Queries a list of Withdraw items. */
     WithdrawAll(request: QueryAllWithdrawRequest): Promise<QueryAllWithdrawResponse>;
+    /** Queries a FeeData by index. */
+    FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -153,6 +175,7 @@ export declare class QueryClientImpl implements Query {
     UserDenomDeposit(request: QueryUserDenomDepositRequest): Promise<QueryUserDenomDepositResponse>;
     Withdraw(request: QueryGetWithdrawRequest): Promise<QueryGetWithdrawResponse>;
     WithdrawAll(request: QueryAllWithdrawRequest): Promise<QueryAllWithdrawResponse>;
+    FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

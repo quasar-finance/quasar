@@ -8,6 +8,7 @@ import {
   PageResponse,
 } from "../cosmos/base/query/v1beta1/pagination";
 import { Withdraw } from "../qbank/withdraw";
+import { FeeData } from "../qbank/fee_data";
 
 export const protobufPackage = "abag.quasarnode.qbank";
 
@@ -61,6 +62,12 @@ export interface QueryAllWithdrawRequest {
 export interface QueryAllWithdrawResponse {
   Withdraw: Withdraw[];
   pagination: PageResponse | undefined;
+}
+
+export interface QueryGetFeeDataRequest {}
+
+export interface QueryGetFeeDataResponse {
+  FeeData: FeeData | undefined;
 }
 
 const baseQueryParamsRequest: object = {};
@@ -913,6 +920,113 @@ export const QueryAllWithdrawResponse = {
   },
 };
 
+const baseQueryGetFeeDataRequest: object = {};
+
+export const QueryGetFeeDataRequest = {
+  encode(_: QueryGetFeeDataRequest, writer: Writer = Writer.create()): Writer {
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): QueryGetFeeDataRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseQueryGetFeeDataRequest } as QueryGetFeeDataRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): QueryGetFeeDataRequest {
+    const message = { ...baseQueryGetFeeDataRequest } as QueryGetFeeDataRequest;
+    return message;
+  },
+
+  toJSON(_: QueryGetFeeDataRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(_: DeepPartial<QueryGetFeeDataRequest>): QueryGetFeeDataRequest {
+    const message = { ...baseQueryGetFeeDataRequest } as QueryGetFeeDataRequest;
+    return message;
+  },
+};
+
+const baseQueryGetFeeDataResponse: object = {};
+
+export const QueryGetFeeDataResponse = {
+  encode(
+    message: QueryGetFeeDataResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.FeeData !== undefined) {
+      FeeData.encode(message.FeeData, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): QueryGetFeeDataResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetFeeDataResponse,
+    } as QueryGetFeeDataResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.FeeData = FeeData.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetFeeDataResponse {
+    const message = {
+      ...baseQueryGetFeeDataResponse,
+    } as QueryGetFeeDataResponse;
+    if (object.FeeData !== undefined && object.FeeData !== null) {
+      message.FeeData = FeeData.fromJSON(object.FeeData);
+    } else {
+      message.FeeData = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetFeeDataResponse): unknown {
+    const obj: any = {};
+    message.FeeData !== undefined &&
+      (obj.FeeData = message.FeeData
+        ? FeeData.toJSON(message.FeeData)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetFeeDataResponse>
+  ): QueryGetFeeDataResponse {
+    const message = {
+      ...baseQueryGetFeeDataResponse,
+    } as QueryGetFeeDataResponse;
+    if (object.FeeData !== undefined && object.FeeData !== null) {
+      message.FeeData = FeeData.fromPartial(object.FeeData);
+    } else {
+      message.FeeData = undefined;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -931,6 +1045,8 @@ export interface Query {
   WithdrawAll(
     request: QueryAllWithdrawRequest
   ): Promise<QueryAllWithdrawResponse>;
+  /** Queries a FeeData by index. */
+  FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -1013,6 +1129,18 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryAllWithdrawResponse.decode(new Reader(data))
+    );
+  }
+
+  FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse> {
+    const data = QueryGetFeeDataRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Query",
+      "FeeData",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetFeeDataResponse.decode(new Reader(data))
     );
   }
 }

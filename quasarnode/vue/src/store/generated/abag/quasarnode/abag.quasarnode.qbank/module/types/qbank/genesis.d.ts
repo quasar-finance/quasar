@@ -2,6 +2,7 @@ import { Writer, Reader } from "protobufjs/minimal";
 import { Params } from "../qbank/params";
 import { Deposit } from "../qbank/deposit";
 import { Withdraw } from "../qbank/withdraw";
+import { FeeData } from "../qbank/fee_data";
 export declare const protobufPackage = "abag.quasarnode.qbank";
 /** GenesisState defines the qbank module's genesis state. */
 export interface GenesisState {
@@ -9,8 +10,9 @@ export interface GenesisState {
     depositList: Deposit[];
     depositCount: number;
     withdrawList: Withdraw[];
-    /** this line is used by starport scaffolding # genesis/proto/state */
     withdrawCount: number;
+    /** this line is used by starport scaffolding # genesis/proto/state */
+    feeData: FeeData | undefined;
 }
 export declare const GenesisState: {
     encode(message: GenesisState, writer?: Writer): Writer;

@@ -169,6 +169,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryFeeData
+         * @summary Queries a FeeData by index.
+         * @request GET:/abag/quasarnode/qbank/fee_data
+         */
+        this.queryFeeData = (params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/fee_data`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryParams
          * @summary Parameters queries the parameters of the module.
          * @request GET:/abag/quasarnode/qbank/params

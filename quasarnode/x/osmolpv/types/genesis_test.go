@@ -19,9 +19,15 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid:    true,
 		},
 		{
-			desc:     "valid genesis state",
+			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
+				FeeData: &types.FeeData{
+					FeeCollector: "37",
+					FeeType:      17,
+					BlockHeight:  95,
+					Memo:         "96",
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

@@ -4,6 +4,7 @@ import { util, configure, Writer, Reader } from "protobufjs/minimal";
 import { Params } from "../qbank/params";
 import { Deposit } from "../qbank/deposit";
 import { Withdraw } from "../qbank/withdraw";
+import { FeeData } from "../qbank/fee_data";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseGenesisState = { depositCount: 0, withdrawCount: 0 };
 export const GenesisState = {
@@ -22,6 +23,9 @@ export const GenesisState = {
         }
         if (message.withdrawCount !== 0) {
             writer.uint32(40).uint64(message.withdrawCount);
+        }
+        if (message.feeData !== undefined) {
+            FeeData.encode(message.feeData, writer.uint32(50).fork()).ldelim();
         }
         return writer;
     },
@@ -48,6 +52,9 @@ export const GenesisState = {
                     break;
                 case 5:
                     message.withdrawCount = longToNumber(reader.uint64());
+                    break;
+                case 6:
+                    message.feeData = FeeData.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -88,6 +95,12 @@ export const GenesisState = {
         else {
             message.withdrawCount = 0;
         }
+        if (object.feeData !== undefined && object.feeData !== null) {
+            message.feeData = FeeData.fromJSON(object.feeData);
+        }
+        else {
+            message.feeData = undefined;
+        }
         return message;
     },
     toJSON(message) {
@@ -110,6 +123,10 @@ export const GenesisState = {
         }
         message.withdrawCount !== undefined &&
             (obj.withdrawCount = message.withdrawCount);
+        message.feeData !== undefined &&
+            (obj.feeData = message.feeData
+                ? FeeData.toJSON(message.feeData)
+                : undefined);
         return obj;
     },
     fromPartial(object) {
@@ -143,6 +160,12 @@ export const GenesisState = {
         }
         else {
             message.withdrawCount = 0;
+        }
+        if (object.feeData !== undefined && object.feeData !== null) {
+            message.feeData = FeeData.fromPartial(object.feeData);
+        }
+        else {
+            message.feeData = undefined;
         }
         return message;
     },

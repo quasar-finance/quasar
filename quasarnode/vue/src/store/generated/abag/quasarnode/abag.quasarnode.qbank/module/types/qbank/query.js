@@ -5,6 +5,7 @@ import { Params } from "../qbank/params";
 import { Deposit } from "../qbank/deposit";
 import { PageRequest, PageResponse, } from "../cosmos/base/query/v1beta1/pagination";
 import { Withdraw } from "../qbank/withdraw";
+import { FeeData } from "../qbank/fee_data";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseQueryParamsRequest = {};
 export const QueryParamsRequest = {
@@ -735,6 +736,98 @@ export const QueryAllWithdrawResponse = {
         return message;
     },
 };
+const baseQueryGetFeeDataRequest = {};
+export const QueryGetFeeDataRequest = {
+    encode(_, writer = Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = { ...baseQueryGetFeeDataRequest };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(_) {
+        const message = { ...baseQueryGetFeeDataRequest };
+        return message;
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    fromPartial(_) {
+        const message = { ...baseQueryGetFeeDataRequest };
+        return message;
+    },
+};
+const baseQueryGetFeeDataResponse = {};
+export const QueryGetFeeDataResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.FeeData !== undefined) {
+            FeeData.encode(message.FeeData, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryGetFeeDataResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.FeeData = FeeData.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryGetFeeDataResponse,
+        };
+        if (object.FeeData !== undefined && object.FeeData !== null) {
+            message.FeeData = FeeData.fromJSON(object.FeeData);
+        }
+        else {
+            message.FeeData = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.FeeData !== undefined &&
+            (obj.FeeData = message.FeeData
+                ? FeeData.toJSON(message.FeeData)
+                : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryGetFeeDataResponse,
+        };
+        if (object.FeeData !== undefined && object.FeeData !== null) {
+            message.FeeData = FeeData.fromPartial(object.FeeData);
+        }
+        else {
+            message.FeeData = undefined;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -768,6 +861,11 @@ export class QueryClientImpl {
         const data = QueryAllWithdrawRequest.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qbank.Query", "WithdrawAll", data);
         return promise.then((data) => QueryAllWithdrawResponse.decode(new Reader(data)));
+    }
+    FeeData(request) {
+        const data = QueryGetFeeDataRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "FeeData", data);
+        return promise.then((data) => QueryGetFeeDataResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {
