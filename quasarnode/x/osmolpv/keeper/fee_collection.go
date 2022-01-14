@@ -5,7 +5,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// There are four types of fee collector to collect fees for each type of fees
+// There are four types of fee collectors to collect fees for each type of fee
 // aka, vault management fee, vault performance fee, entry fee and exit fee.
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
 
@@ -37,6 +37,45 @@ func (k Keeper) DeductFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	}
 
 	return nil
+}
+
+///////////////////// Calculation of Fees /////////////////////
+// Calculate the management fee
+func (k Keeper) CalcMgmtFee() sdk.Coin {
+	// TODO -
+	// To be calculated on pro rata basis at every epoch
+	return sdk.NewCoin("test", sdk.ZeroInt())
+}
+
+// Calculate vault performance fee.
+// This function is called by vault at the end of every profit collection
+// round. This could be the end of 1-Week Gauge, 3-Week Gauge etc.
+// return value will be deduced from the profit and allocated to the
+// vault reserve.
+func (k Keeper) CalcPerFee(profit sdk.Coin) sdk.Coin {
+	// TODO - To be added in vault parameter
+	var factor sdk.Dec = sdk.MustNewDecFromStr("0.2")
+	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
+	return sdk.NewCoin(profit.GetDenom(), feeAmt)
+}
+
+// Calculate the entry fee every time when a user deposit coins
+// into vault. Return value will be deduced from the depositor account.
+func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
+	// TODO - Factor value to be added in parameter.
+	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
+	feeAmt := depositAmt.Amount.ToDec().Mul(factor).RoundInt()
+	return sdk.NewCoin(depositAmt.GetDenom(), feeAmt)
+}
+
+// Calculate the exit fee every time when a user withdwar coins
+// into vault. Return value will be deduced from the depositor
+// account, who is exiting his positions.
+func (k Keeper) CalcExitFee(exitAmt sdk.Coin) sdk.Coin {
+	// TODO - Factor value to be added in parameter.
+	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
+	feeAmt := exitAmt.Amount.ToDec().Mul(factor).RoundInt()
+	return sdk.NewCoin(exitAmt.GetDenom(), feeAmt)
 }
 
 /*
