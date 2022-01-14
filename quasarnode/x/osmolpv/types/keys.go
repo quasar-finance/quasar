@@ -22,6 +22,18 @@ const (
 
 	//OsmoLPV vault reserve module account name
 	OsmoLPVReserveMaccName = "osmolpv_rsv"
+
+	// Management fee collector module account name
+	MgmtFeeCollectorMaccName = "orion_mgmtfee_cltr"
+
+	// Performance fee collector module account name
+	PerfFeeCollectorMaccName = "orion_perffee_cltr"
+
+	// Entry fee collector module account name
+	EntryFeeCollectorMaccName = "orion_entryfee_cltr"
+
+	// Exit fee collector module account name
+	ExitFeeCollectorMaccName = "orion_exitfee_cltr"
 )
 
 func KeyPrefix(p string) []byte {
