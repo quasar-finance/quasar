@@ -51,6 +51,12 @@ func TestGenesisState_Validate(t *testing.T) {
 					},
 				},
 				WithdrawCount: 2,
+				FeeData: &types.FeeData{
+					FeeCollector: "29",
+					FeeType:      22,
+					BlockHeight:  51,
+					Memo:         "37",
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

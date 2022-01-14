@@ -1,0 +1,16 @@
+syntax = "proto3";
+package abag.quasarnode.qbank;
+
+option go_package = "github.com/abag/quasarnode/x/qbank/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message FeeData {
+  string feeCollector = 1; 
+  string fromAddress = 2;
+  cosmos.base.v1beta1.Coin fee = 3 [(gogoproto.nullable) = false]; 
+  uint64 feeType = 4; 
+  uint64 blockHeight = 5; 
+  string memo = 6; 
+  
+}

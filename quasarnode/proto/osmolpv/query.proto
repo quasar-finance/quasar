@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "osmolpv/params.proto";
+import "osmolpv/fee_data.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -20,6 +21,10 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/osmolpv/reserve_balance/{denom}";
 	}
 
+// Queries a FeeData by index.
+	rpc FeeData(QueryGetFeeDataRequest) returns (QueryGetFeeDataResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/fee_data";
+	}
 // this line is used by starport scaffolding # 2
 }
 
@@ -40,4 +45,9 @@ message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
 
+message QueryGetFeeDataRequest {}
+
+message QueryGetFeeDataResponse {
+	FeeData FeeData = 1 [(gogoproto.nullable) = false];
+}
 // this line is used by starport scaffolding # 3

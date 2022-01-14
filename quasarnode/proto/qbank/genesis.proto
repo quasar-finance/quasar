@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "qbank/params.proto";
 import "qbank/deposit.proto";
 import "qbank/withdraw.proto";
+import "qbank/fee_data.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
@@ -16,5 +17,6 @@ message GenesisState {
   uint64 depositCount = 3;
   repeated Withdraw withdrawList = 4 [(gogoproto.nullable) = false];
   uint64 withdrawCount = 5;
+  FeeData feeData = 6;
   // this line is used by starport scaffolding # genesis/proto/state
 }
