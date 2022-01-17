@@ -212,6 +212,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryUserDeposit
+         * @summary Queries a list of UserDeposit items.
+         * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
+         */
+        this.queryUserDeposit = (userAcc, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_deposit/${userAcc}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryWithdrawAll
          * @summary Queries a list of Withdraw items.
          * @request GET:/abag/quasarnode/qbank/withdraw

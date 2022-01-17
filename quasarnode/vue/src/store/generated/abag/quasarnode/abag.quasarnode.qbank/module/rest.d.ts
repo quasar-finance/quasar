@@ -37,6 +37,9 @@ export declare type QbankMsgRequestWithdrawResponse = object;
  * Params defines the parameters for the module.
  */
 export declare type QbankParams = object;
+export interface QbankQCoins {
+    coins?: V1Beta1Coin[];
+}
 export interface QbankQueryAllDepositResponse {
     Deposit?: QbankDeposit[];
     /**
@@ -82,6 +85,9 @@ export interface QbankQueryParamsResponse {
 export interface QbankQueryUserDenomDepositResponse {
     /** @format uint64 */
     amount?: string;
+}
+export interface QbankQueryUserDepositResponse {
+    coins?: QbankQCoins;
 }
 export interface QbankWithdraw {
     /** @format uint64 */
@@ -280,6 +286,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
     queryUserDenomDeposit: (userAcc: string, query?: {
         denom?: string;
     }, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomDepositResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserDeposit
+     * @summary Queries a list of UserDeposit items.
+     * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
+     */
+    queryUserDeposit: (userAcc: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDepositResponse, RpcStatus>>;
     /**
      * No description
      *

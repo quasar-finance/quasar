@@ -58,6 +58,10 @@ export type QbankMsgRequestWithdrawResponse = object;
  */
 export type QbankParams = object;
 
+export interface QbankQCoins {
+  coins?: V1Beta1Coin[];
+}
+
 export interface QbankQueryAllDepositResponse {
   Deposit?: QbankDeposit[];
 
@@ -111,6 +115,10 @@ export interface QbankQueryParamsResponse {
 export interface QbankQueryUserDenomDepositResponse {
   /** @format uint64 */
   amount?: string;
+}
+
+export interface QbankQueryUserDepositResponse {
+  coins?: QbankQCoins;
 }
 
 export interface QbankWithdraw {
@@ -493,6 +501,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       path: `/abag/quasarnode/qbank/user_denom_deposit/${userAcc}`,
       method: "GET",
       query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUserDeposit
+   * @summary Queries a list of UserDeposit items.
+   * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
+   */
+  queryUserDeposit = (userAcc: string, params: RequestParams = {}) =>
+    this.request<QbankQueryUserDepositResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/user_deposit/${userAcc}`,
+      method: "GET",
       format: "json",
       ...params,
     });

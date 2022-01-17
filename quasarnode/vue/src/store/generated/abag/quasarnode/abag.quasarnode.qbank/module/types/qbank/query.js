@@ -6,6 +6,7 @@ import { Deposit } from "../qbank/deposit";
 import { PageRequest, PageResponse, } from "../cosmos/base/query/v1beta1/pagination";
 import { Withdraw } from "../qbank/withdraw";
 import { FeeData } from "../qbank/fee_data";
+import { QCoins } from "../qbank/common";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseQueryParamsRequest = {};
 export const QueryParamsRequest = {
@@ -828,6 +829,121 @@ export const QueryGetFeeDataResponse = {
         return message;
     },
 };
+const baseQueryUserDepositRequest = { userAcc: "" };
+export const QueryUserDepositRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.userAcc !== "") {
+            writer.uint32(10).string(message.userAcc);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDepositRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.userAcc = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = String(object.userAcc);
+        }
+        else {
+            message.userAcc = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = object.userAcc;
+        }
+        else {
+            message.userAcc = "";
+        }
+        return message;
+    },
+};
+const baseQueryUserDepositResponse = {};
+export const QueryUserDepositResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.coins !== undefined) {
+            QCoins.encode(message.coins, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDepositResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.coins = QCoins.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDepositResponse,
+        };
+        if (object.coins !== undefined && object.coins !== null) {
+            message.coins = QCoins.fromJSON(object.coins);
+        }
+        else {
+            message.coins = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.coins !== undefined &&
+            (obj.coins = message.coins ? QCoins.toJSON(message.coins) : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDepositResponse,
+        };
+        if (object.coins !== undefined && object.coins !== null) {
+            message.coins = QCoins.fromPartial(object.coins);
+        }
+        else {
+            message.coins = undefined;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -866,6 +982,11 @@ export class QueryClientImpl {
         const data = QueryGetFeeDataRequest.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qbank.Query", "FeeData", data);
         return promise.then((data) => QueryGetFeeDataResponse.decode(new Reader(data)));
+    }
+    UserDeposit(request) {
+        const data = QueryUserDepositRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserDeposit", data);
+        return promise.then((data) => QueryUserDepositResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {
