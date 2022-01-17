@@ -38,11 +38,12 @@ const (
 )
 
 var (
-	// KBP - short of KeyBytePrefix
+	// KBP - short of KeyBytePrefix, Byte prfix for the key used in KV store
 	QbankGlobalKBP      = []byte{0x00} // Used for counts of deposit and withdraw
 	DepositKBP          = []byte{0x01}
 	UserDenomDepositKBP = []byte{0x02}
 	WithdrawKeyKBP      = []byte{0x03}
+	UserDepositKBP      = []byte{0x04}
 )
 
 // Common functions for deposit and withdraw
@@ -79,6 +80,16 @@ func CreateUserDenomDepositKey(uid, sep, denom string) []byte {
 	b.WriteString(sep)
 	b.WriteString(denom)
 	return b.Bytes()
+}
+
+// create the prefix store key for the user denom wise deposit storage
+func CreateUserDepositKey(uid string) []byte {
+	// var b bytes.Buffer
+	// b.WriteString(uid)
+	// b.WriteString(sep)
+	// b.WriteString(denom)
+	// return b.Bytes()
+	return createStoreKey(uid)
 }
 
 // Withdraw specific functions
