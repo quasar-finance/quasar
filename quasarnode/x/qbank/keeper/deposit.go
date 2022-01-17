@@ -141,6 +141,18 @@ func (k Keeper) GetUserDenomDepositAmount(ctx sdk.Context,
 	return val, true
 }
 
+// Get user's deposit amount in qbank module types.QCoins
+func (k Keeper) GetUserDepositAmount(ctx sdk.Context, uid string) (val types.QCoins, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
+	b := store.Get(types.CreateUserDepositKey(uid))
+
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
 // Add user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
@@ -168,14 +180,14 @@ func (k Keeper) AddUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
 	b := store.Get(key)
 	var qcoins types.QCoins
 	if b == nil {
-		qcoins.Coins.Add(coin)
+		qcoins.Coins = qcoins.Coins.Add(coin)
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	} else {
 		k.cdc.MustUnmarshal(b, &qcoins)
 		// Make sure that the stored coin set is in sorted order.
 		// As the single coin element is always sorted, so the Add will never panic
-		qcoins.Coins.Add(coin)
+		qcoins.Coins = qcoins.Coins.Add(coin)
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	}

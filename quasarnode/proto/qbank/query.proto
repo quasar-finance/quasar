@@ -8,6 +8,7 @@ import "qbank/params.proto";
 import "qbank/deposit.proto";
 import "qbank/withdraw.proto";
 import "qbank/fee_data.proto";
+import "qbank/common.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
@@ -47,6 +48,11 @@ service Query {
 	rpc FeeData(QueryGetFeeDataRequest) returns (QueryGetFeeDataResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/fee_data";
 	}
+// Queries a list of UserDeposit items.
+	rpc UserDeposit(QueryUserDepositRequest) returns (QueryUserDepositResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/user_deposit/{userAcc}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -107,4 +113,13 @@ message QueryGetFeeDataRequest {}
 message QueryGetFeeDataResponse {
 	FeeData FeeData = 1 [(gogoproto.nullable) = false];
 }
+message QueryUserDepositRequest {
+  string userAcc = 1;
+}
+
+message QueryUserDepositResponse {
+	QCoins coins  = 1 
+	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
+}
+
 // this line is used by starport scaffolding # 3
