@@ -160,6 +160,27 @@ func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 
 }
 
+// Add users deposit amount which is sdk.coin specific to a given denom into the
+// total depsopit amounts so far as qbank types.QCoins value)
+func (k Keeper) AddUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
+	key := types.CreateUserDepositKey(uid)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		qcoins.Coins.Add(coin)
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	} else {
+		k.cdc.MustUnmarshal(b, &qcoins)
+		// Make sure that the stored coin set is in sorted order.
+		// As the single coin element is always sorted, so the Add will never panic
+		qcoins.Coins.Add(coin)
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	}
+}
+
 // Substract user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
@@ -179,4 +200,26 @@ func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 		store.Set(key, value)
 	}
 
+}
+
+// substract users deposit amount which is sdk.coin specific to a given denom from the
+// total depsopit amounts so far as qbank types.QCoins value)
+func (k Keeper) SubUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
+	key := types.CreateUserDepositKey(uid)
+	b := store.Get(key)
+
+	if b == nil {
+		// Do nothing - Called by mistake.
+		// TODO - panic.
+
+	} else {
+		var qcoins types.QCoins
+		k.cdc.MustUnmarshal(b, &qcoins)
+		// Make sure that the stored coin set is in sorted order.
+		// As the single coin element is always sorted, so the Add will never panic
+		qcoins.Coins.Sub(sdk.NewCoins(coin))
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	}
 }
