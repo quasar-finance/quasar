@@ -51,6 +51,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	// after successful withdraw.
 	// k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), sdk.Coin{msg.GetDenom(), amount})
 	k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), withdraw.GetCoin())
+	k.Keeper.SubUserDeposit(ctx, msg.GetCreator(), withdraw.GetCoin())
 
 	k.Logger(ctx).Info( //msg.GetCreator(),
 		"RequestWithdraw|Withdraw|",
