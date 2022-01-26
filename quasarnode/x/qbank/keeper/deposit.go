@@ -153,6 +153,27 @@ func (k Keeper) GetUserDepositAmount(ctx sdk.Context, uid string) (val types.QCo
 	return val, true
 }
 
+/*
+// Add user's lockup period wise denom deposit amount which is sdk.coin specifc to a given coin denom.
+// Input denom examples - ATOM, OSMO, QSAR
+func (k Keeper) AddUserDenomLockupDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateUserDenomDepositKey(uid, "/", coin.GetDenom())
+	b := store.Get(key)
+	if b == nil {
+		value := k.cdc.MustMarshal(&coin)
+		store.Set(key, value)
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Add(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+
+}
+*/
+
 // Add user's denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {

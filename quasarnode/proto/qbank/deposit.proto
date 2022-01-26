@@ -4,11 +4,16 @@ package abag.quasarnode.qbank;
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
+import "qbank/common.proto";
 
+
+// Depsoit message object to be stored in the KV store. 
 message Deposit {
-  uint64 id = 1;
-  string riskProfile = 2; 
+  uint64 id = 1; 
+  string riskProfile = 2; // Supported values are "LOW", "MID", "HIGH"
   string vaultID = 3; 
   string depositorAccAddress = 4; 
   cosmos.base.v1beta1.Coin coin = 5 [ (gogoproto.nullable) = false ];
+  // string lockupPeriod = 6; //  
+  LockupTypes lockupPeriod  = 6;
 }

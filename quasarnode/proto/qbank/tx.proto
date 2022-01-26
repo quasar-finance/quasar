@@ -6,6 +6,7 @@ package abag.quasarnode.qbank;
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
+import "qbank/common.proto";
 
 // Msg defines the Msg service.
 service Msg {
@@ -19,6 +20,8 @@ message MsgRequestDeposit {
   string riskProfile = 2;
   string vaultID = 3;
   cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
+  // string lockupPeriod = 5;
+  LockupTypes lockupPeriod  = 5;
 }
 
 message MsgRequestDepositResponse {

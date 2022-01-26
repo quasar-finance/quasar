@@ -23,13 +23,13 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	}
 
 	deposit := types.Deposit{0, msg.GetRiskProfile(),
-		msg.GetVaultID(), msg.GetCreator(), msg.GetCoin()}
+		msg.GetVaultID(), msg.GetCreator(), msg.GetCoin(), msg.GetLockupPeriod()}
 	k.Keeper.AppendDeposit(ctx, deposit)
 
 	// Transfer amount to vault from depositor
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
 		depositorAddr,
-		osmolptypes.ModuleName, // TODO - msg.VaultID module
+		osmolptypes.ModuleName, // TODO - msg.VaultID module. Lockupperiod based module account
 		sdk.NewCoins(deposit.GetCoin())); err != nil {
 		return nil, err
 	}

@@ -13,3 +13,11 @@ message QCoins {
 message QDenoms {
     repeated string denoms = 1  [(gogoproto.nullable) = false];
 }
+
+enum LockupTypes {
+    Invalid = 0;
+    Days_7 = 1; // 7 Days
+    Days_21 = 2; // 21 Days of lockup
+    Months_1 = 3; // 1 Month of lockup
+    Months_3 = 4; // 3 Months of lockup
+  }
