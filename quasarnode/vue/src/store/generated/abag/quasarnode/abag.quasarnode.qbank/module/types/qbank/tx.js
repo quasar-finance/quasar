@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { lockupTypesFromJSON, lockupTypesToJSON, } from "../qbank/common";
 import { Reader, Writer } from "protobufjs/minimal";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 export const protobufPackage = "abag.quasarnode.qbank";
@@ -6,6 +7,7 @@ const baseMsgRequestDeposit = {
     creator: "",
     riskProfile: "",
     vaultID: "",
+    lockupPeriod: 0,
 };
 export const MsgRequestDeposit = {
     encode(message, writer = Writer.create()) {
@@ -20,6 +22,9 @@ export const MsgRequestDeposit = {
         }
         if (message.coin !== undefined) {
             Coin.encode(message.coin, writer.uint32(34).fork()).ldelim();
+        }
+        if (message.lockupPeriod !== 0) {
+            writer.uint32(40).int32(message.lockupPeriod);
         }
         return writer;
     },
@@ -41,6 +46,9 @@ export const MsgRequestDeposit = {
                     break;
                 case 4:
                     message.coin = Coin.decode(reader, reader.uint32());
+                    break;
+                case 5:
+                    message.lockupPeriod = reader.int32();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -75,6 +83,12 @@ export const MsgRequestDeposit = {
         else {
             message.coin = undefined;
         }
+        if (object.lockupPeriod !== undefined && object.lockupPeriod !== null) {
+            message.lockupPeriod = lockupTypesFromJSON(object.lockupPeriod);
+        }
+        else {
+            message.lockupPeriod = 0;
+        }
         return message;
     },
     toJSON(message) {
@@ -85,6 +99,8 @@ export const MsgRequestDeposit = {
         message.vaultID !== undefined && (obj.vaultID = message.vaultID);
         message.coin !== undefined &&
             (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
+        message.lockupPeriod !== undefined &&
+            (obj.lockupPeriod = lockupTypesToJSON(message.lockupPeriod));
         return obj;
     },
     fromPartial(object) {
@@ -112,6 +128,12 @@ export const MsgRequestDeposit = {
         }
         else {
             message.coin = undefined;
+        }
+        if (object.lockupPeriod !== undefined && object.lockupPeriod !== null) {
+            message.lockupPeriod = object.lockupPeriod;
+        }
+        else {
+            message.lockupPeriod = 0;
         }
         return message;
     },

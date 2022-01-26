@@ -4,6 +4,60 @@ import { Writer, Reader } from "protobufjs/minimal";
 
 export const protobufPackage = "abag.quasarnode.qbank";
 
+export enum LockupTypes {
+  Invalid = 0,
+  /** Days_7 - 7 Days */
+  Days_7 = 1,
+  /** Days_21 - 21 Days of lockup */
+  Days_21 = 2,
+  /** Months_1 - 1 Month of lockup */
+  Months_1 = 3,
+  /** Months_3 - 3 Months of lockup */
+  Months_3 = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function lockupTypesFromJSON(object: any): LockupTypes {
+  switch (object) {
+    case 0:
+    case "Invalid":
+      return LockupTypes.Invalid;
+    case 1:
+    case "Days_7":
+      return LockupTypes.Days_7;
+    case 2:
+    case "Days_21":
+      return LockupTypes.Days_21;
+    case 3:
+    case "Months_1":
+      return LockupTypes.Months_1;
+    case 4:
+    case "Months_3":
+      return LockupTypes.Months_3;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return LockupTypes.UNRECOGNIZED;
+  }
+}
+
+export function lockupTypesToJSON(object: LockupTypes): string {
+  switch (object) {
+    case LockupTypes.Invalid:
+      return "Invalid";
+    case LockupTypes.Days_7:
+      return "Days_7";
+    case LockupTypes.Days_21:
+      return "Days_21";
+    case LockupTypes.Months_1:
+      return "Months_1";
+    case LockupTypes.Months_3:
+      return "Months_3";
+    default:
+      return "UNKNOWN";
+  }
+}
+
 export interface QCoins {
   coins: Coin[];
 }

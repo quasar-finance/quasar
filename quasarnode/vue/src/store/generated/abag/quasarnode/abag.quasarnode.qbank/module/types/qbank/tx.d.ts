@@ -1,3 +1,4 @@
+import { LockupTypes } from "../qbank/common";
 import { Reader, Writer } from "protobufjs/minimal";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
@@ -6,6 +7,8 @@ export interface MsgRequestDeposit {
     riskProfile: string;
     vaultID: string;
     coin: Coin | undefined;
+    /** string lockupPeriod = 5; */
+    lockupPeriod: LockupTypes;
 }
 export interface MsgRequestDepositResponse {
 }

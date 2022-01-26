@@ -8,6 +8,14 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+export var QbankLockupTypes;
+(function (QbankLockupTypes) {
+    QbankLockupTypes["Invalid"] = "Invalid";
+    QbankLockupTypes["Days7"] = "Days_7";
+    QbankLockupTypes["Days21"] = "Days_21";
+    QbankLockupTypes["Months1"] = "Months_1";
+    QbankLockupTypes["Months3"] = "Months_3";
+})(QbankLockupTypes || (QbankLockupTypes = {}));
 export var ContentType;
 (function (ContentType) {
     ContentType["Json"] = "application/json";

@@ -43,6 +43,17 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                    lockupPeriod:
+                      title: string lockupPeriod = 6; //
+                      type: string
+                      enum:
+                        - Invalid
+                        - Days_7
+                        - Days_21
+                        - Months_1
+                        - Months_3
+                      default: Invalid
+                  description: Depsoit message object to be stored in the KV store.
               pagination:
                 type: object
                 properties:
@@ -184,6 +195,17 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
+                  lockupPeriod:
+                    title: string lockupPeriod = 6; //
+                    type: string
+                    enum:
+                      - Invalid
+                      - Days_7
+                      - Days_21
+                      - Months_1
+                      - Months_3
+                    default: Invalid
+                description: Depsoit message object to be stored in the KV store.
         default:
           description: An unexpected error response.
           schema:
@@ -13210,6 +13232,17 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
+      lockupPeriod:
+        title: string lockupPeriod = 6; //
+        type: string
+        enum:
+          - Invalid
+          - Days_7
+          - Days_21
+          - Months_1
+          - Months_3
+        default: Invalid
+    description: Depsoit message object to be stored in the KV store.
   abag.quasarnode.qbank.FeeData:
     type: object
     properties:
@@ -13237,6 +13270,15 @@ definitions:
         format: uint64
       memo:
         type: string
+  abag.quasarnode.qbank.LockupTypes:
+    type: string
+    enum:
+      - Invalid
+      - Days_7
+      - Days_21
+      - Months_1
+      - Months_3
+    default: Invalid
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
   abag.quasarnode.qbank.MsgRequestWithdrawResponse:
@@ -13293,6 +13335,17 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+            lockupPeriod:
+              title: string lockupPeriod = 6; //
+              type: string
+              enum:
+                - Invalid
+                - Days_7
+                - Days_21
+                - Months_1
+                - Months_3
+              default: Invalid
+          description: Depsoit message object to be stored in the KV store.
       pagination:
         type: object
         properties:
@@ -13408,6 +13461,17 @@ definitions:
               method
 
               signatures required by gogoproto.
+          lockupPeriod:
+            title: string lockupPeriod = 6; //
+            type: string
+            enum:
+              - Invalid
+              - Days_7
+              - Days_21
+              - Months_1
+              - Months_3
+            default: Invalid
+        description: Depsoit message object to be stored in the KV store.
   abag.quasarnode.qbank.QueryGetFeeDataResponse:
     type: object
     properties:

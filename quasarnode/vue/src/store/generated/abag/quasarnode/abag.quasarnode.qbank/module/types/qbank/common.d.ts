@@ -1,6 +1,20 @@
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "abag.quasarnode.qbank";
+export declare enum LockupTypes {
+    Invalid = 0,
+    /** Days_7 - 7 Days */
+    Days_7 = 1,
+    /** Days_21 - 21 Days of lockup */
+    Days_21 = 2,
+    /** Months_1 - 1 Month of lockup */
+    Months_1 = 3,
+    /** Months_3 - 3 Months of lockup */
+    Months_3 = 4,
+    UNRECOGNIZED = -1
+}
+export declare function lockupTypesFromJSON(object: any): LockupTypes;
+export declare function lockupTypesToJSON(object: LockupTypes): string;
 export interface QCoins {
     coins: Coin[];
 }

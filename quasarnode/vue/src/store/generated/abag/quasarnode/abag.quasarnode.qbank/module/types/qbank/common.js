@@ -2,6 +2,58 @@
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "abag.quasarnode.qbank";
+export var LockupTypes;
+(function (LockupTypes) {
+    LockupTypes[LockupTypes["Invalid"] = 0] = "Invalid";
+    /** Days_7 - 7 Days */
+    LockupTypes[LockupTypes["Days_7"] = 1] = "Days_7";
+    /** Days_21 - 21 Days of lockup */
+    LockupTypes[LockupTypes["Days_21"] = 2] = "Days_21";
+    /** Months_1 - 1 Month of lockup */
+    LockupTypes[LockupTypes["Months_1"] = 3] = "Months_1";
+    /** Months_3 - 3 Months of lockup */
+    LockupTypes[LockupTypes["Months_3"] = 4] = "Months_3";
+    LockupTypes[LockupTypes["UNRECOGNIZED"] = -1] = "UNRECOGNIZED";
+})(LockupTypes || (LockupTypes = {}));
+export function lockupTypesFromJSON(object) {
+    switch (object) {
+        case 0:
+        case "Invalid":
+            return LockupTypes.Invalid;
+        case 1:
+        case "Days_7":
+            return LockupTypes.Days_7;
+        case 2:
+        case "Days_21":
+            return LockupTypes.Days_21;
+        case 3:
+        case "Months_1":
+            return LockupTypes.Months_1;
+        case 4:
+        case "Months_3":
+            return LockupTypes.Months_3;
+        case -1:
+        case "UNRECOGNIZED":
+        default:
+            return LockupTypes.UNRECOGNIZED;
+    }
+}
+export function lockupTypesToJSON(object) {
+    switch (object) {
+        case LockupTypes.Invalid:
+            return "Invalid";
+        case LockupTypes.Days_7:
+            return "Days_7";
+        case LockupTypes.Days_21:
+            return "Days_21";
+        case LockupTypes.Months_1:
+            return "Months_1";
+        case LockupTypes.Months_3:
+            return "Months_3";
+        default:
+            return "UNKNOWN";
+    }
+}
 const baseQCoins = {};
 export const QCoins = {
     encode(message, writer = Writer.create()) {

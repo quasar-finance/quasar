@@ -1,4 +1,9 @@
 /* eslint-disable */
+import {
+  LockupTypes,
+  lockupTypesFromJSON,
+  lockupTypesToJSON,
+} from "../qbank/common";
 import { Reader, Writer } from "protobufjs/minimal";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 
@@ -9,6 +14,8 @@ export interface MsgRequestDeposit {
   riskProfile: string;
   vaultID: string;
   coin: Coin | undefined;
+  /** string lockupPeriod = 5; */
+  lockupPeriod: LockupTypes;
 }
 
 export interface MsgRequestDepositResponse {}
@@ -26,6 +33,7 @@ const baseMsgRequestDeposit: object = {
   creator: "",
   riskProfile: "",
   vaultID: "",
+  lockupPeriod: 0,
 };
 
 export const MsgRequestDeposit = {
@@ -41,6 +49,9 @@ export const MsgRequestDeposit = {
     }
     if (message.coin !== undefined) {
       Coin.encode(message.coin, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.lockupPeriod !== 0) {
+      writer.uint32(40).int32(message.lockupPeriod);
     }
     return writer;
   },
@@ -63,6 +74,9 @@ export const MsgRequestDeposit = {
           break;
         case 4:
           message.coin = Coin.decode(reader, reader.uint32());
+          break;
+        case 5:
+          message.lockupPeriod = reader.int32() as any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -94,6 +108,11 @@ export const MsgRequestDeposit = {
     } else {
       message.coin = undefined;
     }
+    if (object.lockupPeriod !== undefined && object.lockupPeriod !== null) {
+      message.lockupPeriod = lockupTypesFromJSON(object.lockupPeriod);
+    } else {
+      message.lockupPeriod = 0;
+    }
     return message;
   },
 
@@ -105,6 +124,8 @@ export const MsgRequestDeposit = {
     message.vaultID !== undefined && (obj.vaultID = message.vaultID);
     message.coin !== undefined &&
       (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
+    message.lockupPeriod !== undefined &&
+      (obj.lockupPeriod = lockupTypesToJSON(message.lockupPeriod));
     return obj;
   },
 
@@ -129,6 +150,11 @@ export const MsgRequestDeposit = {
       message.coin = Coin.fromPartial(object.coin);
     } else {
       message.coin = undefined;
+    }
+    if (object.lockupPeriod !== undefined && object.lockupPeriod !== null) {
+      message.lockupPeriod = object.lockupPeriod;
+    } else {
+      message.lockupPeriod = 0;
     }
     return message;
   },

@@ -1,12 +1,17 @@
+import { LockupTypes } from "../qbank/common";
 import { Writer, Reader } from "protobufjs/minimal";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
+/** Depsoit message object to be stored in the KV store. */
 export interface Deposit {
     id: number;
+    /** Supported values are "LOW", "MID", "HIGH" */
     riskProfile: string;
     vaultID: string;
     depositorAccAddress: string;
     coin: Coin | undefined;
+    /** string lockupPeriod = 6; // */
+    lockupPeriod: LockupTypes;
 }
 export declare const Deposit: {
     encode(message: Deposit, writer?: Writer): Writer;

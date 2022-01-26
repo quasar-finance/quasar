@@ -13,6 +13,9 @@ export interface ProtobufAny {
   "@type"?: string;
 }
 
+/**
+ * Depsoit message object to be stored in the KV store.
+ */
 export interface QbankDeposit {
   /** @format uint64 */
   id?: string;
@@ -27,6 +30,7 @@ export interface QbankDeposit {
    * signatures required by gogoproto.
    */
   coin?: V1Beta1Coin;
+  lockupPeriod?: QbankLockupTypes;
 }
 
 export interface QbankFeeData {
@@ -47,6 +51,14 @@ export interface QbankFeeData {
   /** @format uint64 */
   blockHeight?: string;
   memo?: string;
+}
+
+export enum QbankLockupTypes {
+  Invalid = "Invalid",
+  Days7 = "Days_7",
+  Days21 = "Days_21",
+  Months1 = "Months_1",
+  Months3 = "Months_3",
 }
 
 export type QbankMsgRequestDepositResponse = object;
@@ -93,6 +105,7 @@ export interface QbankQueryAllWithdrawResponse {
 }
 
 export interface QbankQueryGetDepositResponse {
+  /** Depsoit message object to be stored in the KV store. */
   Deposit?: QbankDeposit;
 }
 

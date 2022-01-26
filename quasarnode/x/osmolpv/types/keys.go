@@ -1,6 +1,10 @@
 package types
 
 import (
+	"bytes"
+
+	"github.com/abag/quasarnode/x/qbank/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -34,6 +38,9 @@ const (
 
 	// Exit fee collector module account name
 	ExitFeeCollectorMaccName = "orion_exitfee_cltr"
+
+	// Meissa strategy name
+	MeissaStrategyName = "meissa"
 )
 
 func KeyPrefix(p string) []byte {
@@ -51,3 +58,47 @@ func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
 const (
 	FeeDataKey = "FeeData-value-"
 )
+
+// @desc Function will create account name string for the staking.
+// Calling function should take care of providing a valid input param.
+// @return "Orion.stake.[LockupTypes string]"
+func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
+	var b bytes.Buffer
+	b.WriteString(types.ModuleName)
+	b.WriteString(".stake.")
+	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	return b.String()
+}
+
+// @desc Function will create account name string for the reward collector.
+// Calling function should take care of providing a valid input param.
+// @return "Orion.reward.[LockupTypes string]"
+func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
+	var b bytes.Buffer
+	b.WriteString(types.ModuleName)
+	b.WriteString(".reward.")
+	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	return b.String()
+}
+
+// @desc Function will create account name string for meissa strategy staking.
+// Calling function should take care of providing a valid input param.
+// @return "Orion.Meissa.stake.[LockupTypes string]"
+func CreateMeissaStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
+	var b bytes.Buffer
+	b.WriteString(types.ModuleName)
+	b.WriteString(".meissa.stake.")
+	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	return b.String()
+}
+
+// @desc Function will create account name string for the reward collector.
+// Calling function should take care of providing a valid input param.
+// @return "Orion.meissa.reward.[LockupTypes string]"
+func CreateMeissaRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
+	var b bytes.Buffer
+	b.WriteString(types.ModuleName)
+	b.WriteString(".meissa.reward.")
+	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	return b.String()
+}
