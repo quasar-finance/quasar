@@ -39,9 +39,19 @@ const (
 	// Exit fee collector module account name
 	ExitFeeCollectorMaccName = "orion_exitfee_cltr"
 
+	// Strategy Key
+	StrategyKey = "orion_strategies"
 	// Meissa strategy name
 	MeissaStrategyName = "meissa"
+
+	// Rigel strategy name
+	RigelStrategyName = "rigel"
 )
+
+// store key use the byte as key
+func createStoreKey(k string) []byte {
+	return []byte(k)
+}
 
 func KeyPrefix(p string) []byte {
 	return []byte(p)
@@ -49,6 +59,7 @@ func KeyPrefix(p string) []byte {
 
 var (
 	UserReceiptCoinsKBP = []byte{0x01}
+	StrategyKBP         = []byte{0x02}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -58,6 +69,21 @@ func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
 const (
 	FeeDataKey = "FeeData-value-"
 )
+
+// @desc Function will create store key for the storage of list of base
+// strategies in orion vault
+// @return Key for prefix key store.
+func CreateStrategyKey() []byte {
+	return []byte(StrategyKey)
+}
+
+func CreateMeissaStrategyKey() []byte {
+	return []byte(MeissaStrategyName)
+}
+
+func CreateRigelStrategyKey() []byte {
+	return []byte(RigelStrategyName)
+}
 
 // @desc Function will create account name string for the staking.
 // Calling function should take care of providing a valid input param.

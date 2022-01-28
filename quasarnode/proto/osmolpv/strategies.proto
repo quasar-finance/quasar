@@ -1,0 +1,18 @@
+syntax = "proto3";
+package abag.quasarnode.osmolpv;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
+
+// Strategies defines the list of strategy names
+message Strategies {
+   repeated string names  = 1  [(gogoproto.nullable) = false];
+}
+
+message StrategyInfo {
+   string name = 1;   
+   bool isActive = 2;   
+   string stakingAcc = 3; 
+   string rewardAcc = 4;
+}
