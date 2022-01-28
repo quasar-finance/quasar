@@ -15,6 +15,14 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
+
+	// Prepare list of strategies.
+	// As of now they are not added in the genesis State variable but can be added if
+	// required.
+	// The Procedure of adding new names in future should be done via a software upgrade
+	// procedure. New names should be added here whenever a new strategy is launched.
+	strategyNames := []string{types.MeissaStrategyName, types.RigelStrategyName}
+	k.SetStrategyNames(ctx, strategyNames)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
