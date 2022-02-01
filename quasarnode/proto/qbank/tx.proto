@@ -12,6 +12,7 @@ import "qbank/common.proto";
 service Msg {
       rpc RequestDeposit(MsgRequestDeposit) returns (MsgRequestDepositResponse);
   rpc RequestWithdraw(MsgRequestWithdraw) returns (MsgRequestWithdrawResponse);
+  rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -35,6 +36,14 @@ message MsgRequestWithdraw {
 }
 
 message MsgRequestWithdrawResponse {
+}
+
+message MsgClaimRewards {
+  string creator = 1;
+  string vaultID = 2;
+}
+
+message MsgClaimRewardsResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

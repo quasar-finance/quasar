@@ -61,6 +61,8 @@ export enum QbankLockupTypes {
   Months3 = "Months_3",
 }
 
+export type QbankMsgClaimRewardsResponse = object;
+
 export type QbankMsgRequestDepositResponse = object;
 
 export type QbankMsgRequestWithdrawResponse = object;

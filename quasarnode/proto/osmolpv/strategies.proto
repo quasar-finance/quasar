@@ -2,6 +2,9 @@ syntax = "proto3";
 package abag.quasarnode.osmolpv;
 
 import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "qbank/common.proto";
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 
@@ -16,3 +19,32 @@ message StrategyInfo {
    string stakingAcc = 3; 
    string rewardAcc = 4;
 }
+
+message MeissaStrategyInfo {
+   StrategyInfo base = 1;
+   qbank.LockupTypes lockupType = 2;
+   google.protobuf.Timestamp start_time = 3 [
+      (gogoproto.stdtime) = true,
+      (gogoproto.nullable) = false,
+      (gogoproto.moretags) = "yaml:\"start_time\""
+    ];
+    google.protobuf.Duration duration = 4 [
+      (gogoproto.nullable) = false,
+      (gogoproto.stdduration) = true,
+      (gogoproto.jsontag) = "duration,omitempty",
+      (gogoproto.moretags) = "yaml:\"duration\""
+    ];
+
+
+}
+message CurrentPosition {
+  qbank.QCoins totalDeployedTokens = 1;
+  qbank.QCoins totalStakedTokens = 2;
+  qbank.QCoins totalUnClaimedReward = 3;
+}
+
+message TotalHistPosition {
+   qbank.QCoins totalDeployedTokens = 1;
+   qbank.QCoins totalStakedTokens = 2;
+   qbank.QCoins totalClaimedReward = 3;
+  }

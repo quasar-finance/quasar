@@ -29,6 +29,13 @@ export interface MsgRequestWithdraw {
 
 export interface MsgRequestWithdrawResponse {}
 
+export interface MsgClaimRewards {
+  creator: string;
+  vaultID: string;
+}
+
+export interface MsgClaimRewardsResponse {}
+
 const baseMsgRequestDeposit: object = {
   creator: "",
   riskProfile: "",
@@ -379,15 +386,134 @@ export const MsgRequestWithdrawResponse = {
   },
 };
 
+const baseMsgClaimRewards: object = { creator: "", vaultID: "" };
+
+export const MsgClaimRewards = {
+  encode(message: MsgClaimRewards, writer: Writer = Writer.create()): Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.vaultID !== "") {
+      writer.uint32(18).string(message.vaultID);
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgClaimRewards {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseMsgClaimRewards } as MsgClaimRewards;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.creator = reader.string();
+          break;
+        case 2:
+          message.vaultID = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgClaimRewards {
+    const message = { ...baseMsgClaimRewards } as MsgClaimRewards;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = String(object.creator);
+    } else {
+      message.creator = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = String(object.vaultID);
+    } else {
+      message.vaultID = "";
+    }
+    return message;
+  },
+
+  toJSON(message: MsgClaimRewards): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.vaultID !== undefined && (obj.vaultID = message.vaultID);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<MsgClaimRewards>): MsgClaimRewards {
+    const message = { ...baseMsgClaimRewards } as MsgClaimRewards;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = object.creator;
+    } else {
+      message.creator = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = object.vaultID;
+    } else {
+      message.vaultID = "";
+    }
+    return message;
+  },
+};
+
+const baseMsgClaimRewardsResponse: object = {};
+
+export const MsgClaimRewardsResponse = {
+  encode(_: MsgClaimRewardsResponse, writer: Writer = Writer.create()): Writer {
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgClaimRewardsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseMsgClaimRewardsResponse,
+    } as MsgClaimRewardsResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgClaimRewardsResponse {
+    const message = {
+      ...baseMsgClaimRewardsResponse,
+    } as MsgClaimRewardsResponse;
+    return message;
+  },
+
+  toJSON(_: MsgClaimRewardsResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<MsgClaimRewardsResponse>
+  ): MsgClaimRewardsResponse {
+    const message = {
+      ...baseMsgClaimRewardsResponse,
+    } as MsgClaimRewardsResponse;
+    return message;
+  },
+};
+
 /** Msg defines the Msg service. */
 export interface Msg {
   RequestDeposit(
     request: MsgRequestDeposit
   ): Promise<MsgRequestDepositResponse>;
-  /** this line is used by starport scaffolding # proto/tx/rpc */
   RequestWithdraw(
     request: MsgRequestWithdraw
   ): Promise<MsgRequestWithdrawResponse>;
+  /** this line is used by starport scaffolding # proto/tx/rpc */
+  ClaimRewards(request: MsgClaimRewards): Promise<MsgClaimRewardsResponse>;
 }
 
 export class MsgClientImpl implements Msg {
@@ -420,6 +546,18 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then((data) =>
       MsgRequestWithdrawResponse.decode(new Reader(data))
+    );
+  }
+
+  ClaimRewards(request: MsgClaimRewards): Promise<MsgClaimRewardsResponse> {
+    const data = MsgClaimRewards.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Msg",
+      "ClaimRewards",
+      data
+    );
+    return promise.then((data) =>
+      MsgClaimRewardsResponse.decode(new Reader(data))
     );
   }
 }

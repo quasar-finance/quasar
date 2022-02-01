@@ -13279,6 +13279,8 @@ definitions:
       - Months_1
       - Months_3
     default: Invalid
+  abag.quasarnode.qbank.MsgClaimRewardsResponse:
+    type: object
   abag.quasarnode.qbank.MsgRequestDepositResponse:
     type: object
   abag.quasarnode.qbank.MsgRequestWithdrawResponse:

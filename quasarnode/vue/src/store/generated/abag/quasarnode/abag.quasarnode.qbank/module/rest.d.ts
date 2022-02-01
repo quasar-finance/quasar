@@ -42,6 +42,7 @@ export declare enum QbankLockupTypes {
     Months1 = "Months_1",
     Months3 = "Months_3"
 }
+export declare type QbankMsgClaimRewardsResponse = object;
 export declare type QbankMsgRequestDepositResponse = object;
 export declare type QbankMsgRequestWithdrawResponse = object;
 /**
