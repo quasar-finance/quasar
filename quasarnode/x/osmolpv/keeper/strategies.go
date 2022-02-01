@@ -90,6 +90,89 @@ func (k Keeper) GetSubStrategyNames(ctx sdk.Context, sub string) (strategies typ
 	return strategies, true
 }
 
+// @desc Set the strategy current position
+func (k Keeper) SetMeissaStrategyCurrPos(ctx sdk.Context, currPos types.CurrentPosition) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaPositionKey()
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields
+	b := k.cdc.MustMarshal(&currPos)
+	store.Set(key, b)
+}
+
+// @desc Get the strategy current position
+func (k Keeper) GetMeissaStrategyCurrPos(ctx sdk.Context) (currPos types.CurrentPosition, found bool) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaPositionKey()
+	b := store.Get(key)
+	if b == nil {
+		return currPos, false
+	}
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields. In the unit test cases.
+
+	k.cdc.MustUnmarshal(b, &currPos)
+	return currPos, true
+}
+
+// @desc Set the strategy position at a given epochday
+func (k Keeper) SetMeissaStrategyHistPos(ctx sdk.Context, currPos types.CurrentPosition, epochday uint64) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaEpochPositionKey(epochday)
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields. In the unit test cases.
+	b := k.cdc.MustMarshal(&currPos)
+	store.Set(key, b)
+}
+
+// @desc Get the strategy current position
+func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (currPos types.CurrentPosition, found bool) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaEpochPositionKey(epochday)
+
+	b := store.Get(key)
+	if b == nil {
+		return currPos, false
+	}
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields
+
+	k.cdc.MustUnmarshal(b, &currPos)
+	return currPos, true
+}
+
+// @desc Set the strategy current position
+func (k Keeper) SetMeissaStrategyTotalHistPos(ctx sdk.Context, histPos types.TotalHistPosition, epochday uint64) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaEpochPositionKey(epochday)
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields. In the unit test cases.
+	b := k.cdc.MustMarshal(&histPos)
+	store.Set(key, b)
+}
+
+// @desc Get the strategy current position
+func (k Keeper) GetMeissaStrategyTotalHisPos(ctx sdk.Context, epochday uint64) (histPos types.TotalHistPosition, found bool) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
+	key := types.CreateMeissaEpochPositionKey(epochday)
+
+	b := store.Get(key)
+	if b == nil {
+		return histPos, false
+	}
+	// TODO - Validate this because types.CurrentPosition has pointer elements
+	// inside as fields
+
+	k.cdc.MustUnmarshal(b, &histPos)
+	return histPos, true
+}
+
 func getUniqueNames(names, existingNames []string) []string {
 	var uniqueNames []string
 	uniqueNames = existingNames
