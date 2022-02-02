@@ -20,18 +20,17 @@ export interface MsgRequestWithdraw {
 }
 export interface MsgRequestWithdrawResponse {
 }
-export interface MsgRequestWithdrawAll {
-    creator: string;
-    /** string riskProfile = 2; */
-    vaultID: string;
-}
-export interface MsgRequestWithdrawAllResponse {
-}
 export interface MsgClaimRewards {
     creator: string;
     vaultID: string;
 }
 export interface MsgClaimRewardsResponse {
+}
+export interface MsgRequestWithdrawAll {
+    creator: string;
+    vaultID: string;
+}
+export interface MsgRequestWithdrawAllResponse {
 }
 export declare const MsgRequestDeposit: {
     encode(message: MsgRequestDeposit, writer?: Writer): Writer;
@@ -61,20 +60,6 @@ export declare const MsgRequestWithdrawResponse: {
     toJSON(_: MsgRequestWithdrawResponse): unknown;
     fromPartial(_: DeepPartial<MsgRequestWithdrawResponse>): MsgRequestWithdrawResponse;
 };
-export declare const MsgRequestWithdrawAll: {
-    encode(message: MsgRequestWithdrawAll, writer?: Writer): Writer;
-    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawAll;
-    fromJSON(object: any): MsgRequestWithdrawAll;
-    toJSON(message: MsgRequestWithdrawAll): unknown;
-    fromPartial(object: DeepPartial<MsgRequestWithdrawAll>): MsgRequestWithdrawAll;
-};
-export declare const MsgRequestWithdrawAllResponse: {
-    encode(_: MsgRequestWithdrawAllResponse, writer?: Writer): Writer;
-    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawAllResponse;
-    fromJSON(_: any): MsgRequestWithdrawAllResponse;
-    toJSON(_: MsgRequestWithdrawAllResponse): unknown;
-    fromPartial(_: DeepPartial<MsgRequestWithdrawAllResponse>): MsgRequestWithdrawAllResponse;
-};
 export declare const MsgClaimRewards: {
     encode(message: MsgClaimRewards, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): MsgClaimRewards;
@@ -89,12 +74,27 @@ export declare const MsgClaimRewardsResponse: {
     toJSON(_: MsgClaimRewardsResponse): unknown;
     fromPartial(_: DeepPartial<MsgClaimRewardsResponse>): MsgClaimRewardsResponse;
 };
+export declare const MsgRequestWithdrawAll: {
+    encode(message: MsgRequestWithdrawAll, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawAll;
+    fromJSON(object: any): MsgRequestWithdrawAll;
+    toJSON(message: MsgRequestWithdrawAll): unknown;
+    fromPartial(object: DeepPartial<MsgRequestWithdrawAll>): MsgRequestWithdrawAll;
+};
+export declare const MsgRequestWithdrawAllResponse: {
+    encode(_: MsgRequestWithdrawAllResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawAllResponse;
+    fromJSON(_: any): MsgRequestWithdrawAllResponse;
+    toJSON(_: MsgRequestWithdrawAllResponse): unknown;
+    fromPartial(_: DeepPartial<MsgRequestWithdrawAllResponse>): MsgRequestWithdrawAllResponse;
+};
 /** Msg defines the Msg service. */
 export interface Msg {
     RequestDeposit(request: MsgRequestDeposit): Promise<MsgRequestDepositResponse>;
     RequestWithdraw(request: MsgRequestWithdraw): Promise<MsgRequestWithdrawResponse>;
-    /** this line is used by starport scaffolding # proto/tx/rpc */
     ClaimRewards(request: MsgClaimRewards): Promise<MsgClaimRewardsResponse>;
+    /** this line is used by starport scaffolding # proto/tx/rpc */
+    RequestWithdrawAll(request: MsgRequestWithdrawAll): Promise<MsgRequestWithdrawAllResponse>;
 }
 export declare class MsgClientImpl implements Msg {
     private readonly rpc;
@@ -102,6 +102,7 @@ export declare class MsgClientImpl implements Msg {
     RequestDeposit(request: MsgRequestDeposit): Promise<MsgRequestDepositResponse>;
     RequestWithdraw(request: MsgRequestWithdraw): Promise<MsgRequestWithdrawResponse>;
     ClaimRewards(request: MsgClaimRewards): Promise<MsgClaimRewardsResponse>;
+    RequestWithdrawAll(request: MsgRequestWithdrawAll): Promise<MsgRequestWithdrawAllResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

@@ -65,6 +65,8 @@ export type QbankMsgClaimRewardsResponse = object;
 
 export type QbankMsgRequestDepositResponse = object;
 
+export type QbankMsgRequestWithdrawAllResponse = object;
+
 export type QbankMsgRequestWithdrawResponse = object;
 
 /**

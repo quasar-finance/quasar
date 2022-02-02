@@ -4,15 +4,17 @@ import { StdFee } from "@cosmjs/launchpad";
 import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
+import { MsgClaimRewards } from "./types/qbank/tx";
 import { MsgRequestDeposit } from "./types/qbank/tx";
 import { MsgRequestWithdraw } from "./types/qbank/tx";
-import { MsgClaimRewards } from "./types/qbank/tx";
+import { MsgRequestWithdrawAll } from "./types/qbank/tx";
 
 
 const types = [
+  ["/abag.quasarnode.qbank.MsgClaimRewards", MsgClaimRewards],
   ["/abag.quasarnode.qbank.MsgRequestDeposit", MsgRequestDeposit],
   ["/abag.quasarnode.qbank.MsgRequestWithdraw", MsgRequestWithdraw],
-  ["/abag.quasarnode.qbank.MsgClaimRewards", MsgClaimRewards],
+  ["/abag.quasarnode.qbank.MsgRequestWithdrawAll", MsgRequestWithdrawAll],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -45,9 +47,10 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
 
   return {
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
+    msgClaimRewards: (data: MsgClaimRewards): EncodeObject => ({ typeUrl: "/abag.quasarnode.qbank.MsgClaimRewards", value: MsgClaimRewards.fromPartial( data ) }),
     msgRequestDeposit: (data: MsgRequestDeposit): EncodeObject => ({ typeUrl: "/abag.quasarnode.qbank.MsgRequestDeposit", value: MsgRequestDeposit.fromPartial( data ) }),
     msgRequestWithdraw: (data: MsgRequestWithdraw): EncodeObject => ({ typeUrl: "/abag.quasarnode.qbank.MsgRequestWithdraw", value: MsgRequestWithdraw.fromPartial( data ) }),
-    msgClaimRewards: (data: MsgClaimRewards): EncodeObject => ({ typeUrl: "/abag.quasarnode.qbank.MsgClaimRewards", value: MsgClaimRewards.fromPartial( data ) }),
+    msgRequestWithdrawAll: (data: MsgRequestWithdrawAll): EncodeObject => ({ typeUrl: "/abag.quasarnode.qbank.MsgRequestWithdrawAll", value: MsgRequestWithdrawAll.fromPartial( data ) }),
     
   };
 };

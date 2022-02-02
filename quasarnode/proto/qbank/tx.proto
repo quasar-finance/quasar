@@ -13,6 +13,7 @@ service Msg {
       rpc RequestDeposit(MsgRequestDeposit) returns (MsgRequestDepositResponse);
   rpc RequestWithdraw(MsgRequestWithdraw) returns (MsgRequestWithdrawResponse);
   rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
+  rpc RequestWithdrawAll(MsgRequestWithdrawAll) returns (MsgRequestWithdrawAllResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -37,17 +38,7 @@ message MsgRequestWithdraw {
 
 message MsgRequestWithdrawResponse {
 }
-/*
-message MsgRequestWithdrawAll {
-  string creator = 1;
-  // string riskProfile = 2;
-  string vaultID = 2;
-  // cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
-}
-
-message MsgRequestWithdrawAllResponse {
-}
-*/
+ 
 
 message MsgClaimRewards {
   string creator = 1;
@@ -55,6 +46,14 @@ message MsgClaimRewards {
 }
 
 message MsgClaimRewardsResponse {
+}
+
+message MsgRequestWithdrawAll {
+  string creator = 1;
+  string vaultID = 2;
+}
+
+message MsgRequestWithdrawAllResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
