@@ -29,7 +29,8 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	// Transfer amount to vault from depositor
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
 		depositorAddr,
-		osmolptypes.ModuleName, // TODO - msg.VaultID module. Lockupperiod based module account
+		osmolptypes.CreateOrionStakingMaccName(msg.GetLockupPeriod()),
+		// osmolptypes.ModuleName, // TODO - msg.VaultID module. Lockupperiod based module account
 		sdk.NewCoins(deposit.GetCoin())); err != nil {
 		return nil, err
 	}
@@ -41,8 +42,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 
-	// k.Keeper.AppendDeposit(ctx, deposit)
-	k.Logger(ctx).Info( //msg.GetCreator(),
+	k.Logger(ctx).Info(
 		"RequestDeposit|Deposited|",
 		"Depositor=", msg.GetCreator(),
 		"Coin=", msg.GetCoin().String())

@@ -23,3 +23,8 @@ type BankKeeper interface {
 		ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins,
 	) error
 }
+
+type OrionKeeper interface {
+	// RequestWithdraw(ctx sdk.Context, withdraw oriontypes.Withdraw) error
+	RequestWithdraw(ctx sdk.Context, depositorAddr string, coin sdk.Coin) error
+}

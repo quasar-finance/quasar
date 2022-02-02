@@ -361,25 +361,25 @@ func New(
 		&stakingKeeper, govRouter,
 	)
 
-	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
-		appCodec,
-		keys[qbankmoduletypes.StoreKey],
-		keys[qbankmoduletypes.MemStoreKey],
-		app.GetSubspace(qbankmoduletypes.ModuleName),
-
-		app.BankKeeper,
-	)
-	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
 		appCodec,
 		keys[osmolpvmoduletypes.StoreKey],
 		keys[osmolpvmoduletypes.MemStoreKey],
 		app.GetSubspace(osmolpvmoduletypes.ModuleName),
-
 		app.BankKeeper,
 	)
+
 	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
+		appCodec,
+		keys[qbankmoduletypes.StoreKey],
+		keys[qbankmoduletypes.MemStoreKey],
+		app.GetSubspace(qbankmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.OsmolpvKeeper,
+	)
+	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

@@ -18,8 +18,7 @@ func (k Keeper) UserDeposit(goCtx context.Context, req *types.QueryUserDepositRe
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Process the query
-	_ = ctx
+	// _ = ctx
 
 	k.Logger(ctx).Info(fmt.Sprintf("UserDeposit|%s\n", req.GetUserAcc()))
 
