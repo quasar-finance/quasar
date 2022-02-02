@@ -82,19 +82,33 @@ func CreateUserDenomDepositKey(uid, sep, denom string) []byte {
 	return b.Bytes()
 }
 
-/*
 // create the prefix store key for the user denom wise deposit storage
-func CreateUserDenomLockupDepositKey(uid, sep,  denom string, lockupPeriod LockupTypes,) []byte {
+// Ex. {uid} + "/" + {denom} + "/" + "lockupString"
+func CreateUserDenomLockupDepositKey(uid, sep, denom string, lockupPeriod LockupTypes) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)
 	b.WriteString(sep)
 	b.WriteString(denom)
 	b.WriteString(sep)
 	lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
-	b.WriteString(denom)
+	b.WriteString(lockupPeriodStr)
 	return b.Bytes()
 }
-*/
+
+// create the prefix store key for the user denom wise deposit storage
+// Ex. {uid} + "/" + {denom} + "/" + {epochday} / "lockupString"
+func CreateUserDenomEpochLockupDepositKey(uid, sep, denom string, epochday uint64, lockupPeriod LockupTypes) []byte {
+	var b bytes.Buffer
+	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(denom)
+	b.WriteString(sep)
+	b.Write(CreateIDKey(epochday))
+	b.WriteString(sep)
+	lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
+	b.WriteString(lockupPeriodStr)
+	return b.Bytes()
+}
 
 // create the prefix store key for the user denom wise deposit storage
 func CreateUserDepositKey(uid string) []byte {

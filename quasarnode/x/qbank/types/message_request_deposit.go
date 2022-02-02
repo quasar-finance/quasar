@@ -11,12 +11,14 @@ const TypeMsgRequestDeposit = "request_deposit"
 
 var _ sdk.Msg = &MsgRequestDeposit{}
 
-func NewMsgRequestDeposit(creator string, riskProfile string, vaultID string, coin sdk.Coin) /*amount string, denom string) */ *MsgRequestDeposit {
+func NewMsgRequestDeposit(creator string, riskProfile string, vaultID string,
+	coin sdk.Coin, lockupPeriod LockupTypes) /*amount string, denom string) */ *MsgRequestDeposit {
 	return &MsgRequestDeposit{
-		Creator:     creator,
-		RiskProfile: riskProfile,
-		VaultID:     vaultID,
-		Coin:        coin,
+		Creator:      creator,
+		RiskProfile:  riskProfile,
+		VaultID:      vaultID,
+		Coin:         coin,
+		LockupPeriod: lockupPeriod,
 	}
 }
 
