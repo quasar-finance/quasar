@@ -6,8 +6,10 @@ import { QDenoms } from "./module/types/qbank/common";
 import { Deposit } from "./module/types/qbank/deposit";
 import { FeeData } from "./module/types/qbank/fee_data";
 import { Params } from "./module/types/qbank/params";
+import { MsgRequestWithdrawAll } from "./module/types/qbank/tx";
+import { MsgRequestWithdrawAllResponse } from "./module/types/qbank/tx";
 import { Withdraw } from "./module/types/qbank/withdraw";
-export { QCoins, QDenoms, Deposit, FeeData, Params, Withdraw };
+export { QCoins, QDenoms, Deposit, FeeData, Params, MsgRequestWithdrawAll, MsgRequestWithdrawAllResponse, Withdraw };
 async function initTxClient(vuexGetters) {
     return await txClient(vuexGetters['common/wallet/signer'], {
         addr: vuexGetters['common/env/apiTendermint']
@@ -51,12 +53,17 @@ const getDefaultState = () => {
         UserDeposit: {},
         UserDenomLockupDeposit: {},
         UserDenomEpochLockupDeposit: {},
+        UserWithdraw: {},
+        UserDenomWithdraw: {},
+        UserClaimRewards: {},
         _Structure: {
             QCoins: getStructure(QCoins.fromPartial({})),
             QDenoms: getStructure(QDenoms.fromPartial({})),
             Deposit: getStructure(Deposit.fromPartial({})),
             FeeData: getStructure(FeeData.fromPartial({})),
             Params: getStructure(Params.fromPartial({})),
+            MsgRequestWithdrawAll: getStructure(MsgRequestWithdrawAll.fromPartial({})),
+            MsgRequestWithdrawAllResponse: getStructure(MsgRequestWithdrawAllResponse.fromPartial({})),
             Withdraw: getStructure(Withdraw.fromPartial({})),
         },
         _Registry: registry,
@@ -142,6 +149,24 @@ export default {
                 params.query = null;
             }
             return state.UserDenomEpochLockupDeposit[JSON.stringify(params)] ?? {};
+        },
+        getUserWithdraw: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.UserWithdraw[JSON.stringify(params)] ?? {};
+        },
+        getUserDenomWithdraw: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.UserDenomWithdraw[JSON.stringify(params)] ?? {};
+        },
+        getUserClaimRewards: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.UserClaimRewards[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -328,6 +353,65 @@ export default {
                 throw new SpVuexError('QueryClient:QueryUserDenomEpochLockupDeposit', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
+        async QueryUserWithdraw({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryUserWithdraw(key.userAcc)).data;
+                commit('QUERY', { query: 'UserWithdraw', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryUserWithdraw', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getUserWithdraw']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryUserWithdraw', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryUserDenomWithdraw({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryUserDenomWithdraw(key.userAcc, key.denom)).data;
+                commit('QUERY', { query: 'UserDenomWithdraw', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryUserDenomWithdraw', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getUserDenomWithdraw']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryUserDenomWithdraw', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryUserClaimRewards({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryUserClaimRewards(key.userAcc)).data;
+                commit('QUERY', { query: 'UserClaimRewards', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryUserClaimRewards', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getUserClaimRewards']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryUserClaimRewards', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgRequestDeposit(value);
+                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
+                        gas: "200000" }, memo });
+                return result;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: ' + e.message);
+                }
+            }
+        },
         async sendMsgRequestWithdraw({ rootGetters }, { value, fee = [], memo = '' }) {
             try {
                 const txClient = await initTxClient(rootGetters);
@@ -362,20 +446,18 @@ export default {
                 }
             }
         },
-        async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
+        async MsgRequestDeposit({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
                 const msg = await txClient.msgRequestDeposit(value);
-                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
-                        gas: "200000" }, memo });
-                return result;
+                return msg;
             }
             catch (e) {
                 if (e == MissingWalletError) {
                     throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message);
                 }
             }
         },
@@ -406,21 +488,6 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgClaimRewards:Create', 'Could not create message: ' + e.message);
-                }
-            }
-        },
-        async MsgRequestDeposit({ rootGetters }, { value }) {
-            try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestDeposit(value);
-                return msg;
-            }
-            catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
-                }
-                else {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message);
                 }
             }
         },

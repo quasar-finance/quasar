@@ -29,6 +29,14 @@ export interface MsgRequestWithdraw {
 
 export interface MsgRequestWithdrawResponse {}
 
+export interface MsgRequestWithdrawAll {
+  creator: string;
+  /** string riskProfile = 2; */
+  vaultID: string;
+}
+
+export interface MsgRequestWithdrawAllResponse {}
+
 export interface MsgClaimRewards {
   creator: string;
   vaultID: string;
@@ -382,6 +390,135 @@ export const MsgRequestWithdrawResponse = {
     const message = {
       ...baseMsgRequestWithdrawResponse,
     } as MsgRequestWithdrawResponse;
+    return message;
+  },
+};
+
+const baseMsgRequestWithdrawAll: object = { creator: "", vaultID: "" };
+
+export const MsgRequestWithdrawAll = {
+  encode(
+    message: MsgRequestWithdrawAll,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.vaultID !== "") {
+      writer.uint32(18).string(message.vaultID);
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgRequestWithdrawAll {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseMsgRequestWithdrawAll } as MsgRequestWithdrawAll;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.creator = reader.string();
+          break;
+        case 2:
+          message.vaultID = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgRequestWithdrawAll {
+    const message = { ...baseMsgRequestWithdrawAll } as MsgRequestWithdrawAll;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = String(object.creator);
+    } else {
+      message.creator = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = String(object.vaultID);
+    } else {
+      message.vaultID = "";
+    }
+    return message;
+  },
+
+  toJSON(message: MsgRequestWithdrawAll): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.vaultID !== undefined && (obj.vaultID = message.vaultID);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<MsgRequestWithdrawAll>
+  ): MsgRequestWithdrawAll {
+    const message = { ...baseMsgRequestWithdrawAll } as MsgRequestWithdrawAll;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = object.creator;
+    } else {
+      message.creator = "";
+    }
+    if (object.vaultID !== undefined && object.vaultID !== null) {
+      message.vaultID = object.vaultID;
+    } else {
+      message.vaultID = "";
+    }
+    return message;
+  },
+};
+
+const baseMsgRequestWithdrawAllResponse: object = {};
+
+export const MsgRequestWithdrawAllResponse = {
+  encode(
+    _: MsgRequestWithdrawAllResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): MsgRequestWithdrawAllResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseMsgRequestWithdrawAllResponse,
+    } as MsgRequestWithdrawAllResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgRequestWithdrawAllResponse {
+    const message = {
+      ...baseMsgRequestWithdrawAllResponse,
+    } as MsgRequestWithdrawAllResponse;
+    return message;
+  },
+
+  toJSON(_: MsgRequestWithdrawAllResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<MsgRequestWithdrawAllResponse>
+  ): MsgRequestWithdrawAllResponse {
+    const message = {
+      ...baseMsgRequestWithdrawAllResponse,
+    } as MsgRequestWithdrawAllResponse;
     return message;
   },
 };

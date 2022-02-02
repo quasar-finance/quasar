@@ -205,6 +205,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryUserClaimRewards
+         * @summary Queries a list of UserClaimRewards items.
+         * @request GET:/abag/quasarnode/qbank/user_claim_rewards/{userAcc}
+         */
+        this.queryUserClaimRewards = (userAcc, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_claim_rewards/${userAcc}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryUserDenomDeposit
          * @summary Queries a list of UserDenomDeposit items.
          * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
@@ -248,12 +262,40 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryUserDenomWithdraw
+         * @summary Queries a list of UserDenomWithdraw items.
+         * @request GET:/abag/quasarnode/qbank/user_denom_withdraw/{userAcc}/{denom}
+         */
+        this.queryUserDenomWithdraw = (userAcc, denom, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_denom_withdraw/${userAcc}/${denom}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryUserDeposit
          * @summary Queries a list of UserDeposit items.
          * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
          */
         this.queryUserDeposit = (userAcc, params = {}) => this.request({
             path: `/abag/quasarnode/qbank/user_deposit/${userAcc}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUserWithdraw
+         * @summary Queries a list of UserWithdraw items.
+         * @request GET:/abag/quasarnode/qbank/user_withdraw/{userAcc}
+         */
+        this.queryUserWithdraw = (userAcc, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_withdraw/${userAcc}`,
             method: "GET",
             format: "json",
             ...params,

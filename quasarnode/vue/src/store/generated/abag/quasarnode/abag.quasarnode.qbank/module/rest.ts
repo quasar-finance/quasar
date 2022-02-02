@@ -127,6 +127,10 @@ export interface QbankQueryParamsResponse {
   params?: QbankParams;
 }
 
+export interface QbankQueryUserClaimRewardsResponse {
+  coins?: QbankQCoins;
+}
+
 export interface QbankQueryUserDenomDepositResponse {
   /** @format uint64 */
   amount?: string;
@@ -142,7 +146,16 @@ export interface QbankQueryUserDenomLockupDepositResponse {
   amount?: string;
 }
 
+export interface QbankQueryUserDenomWithdrawResponse {
+  /** @format uint64 */
+  amount?: string;
+}
+
 export interface QbankQueryUserDepositResponse {
+  coins?: QbankQCoins;
+}
+
+export interface QbankQueryUserWithdrawResponse {
   coins?: QbankQCoins;
 }
 
@@ -517,6 +530,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QueryUserClaimRewards
+   * @summary Queries a list of UserClaimRewards items.
+   * @request GET:/abag/quasarnode/qbank/user_claim_rewards/{userAcc}
+   */
+  queryUserClaimRewards = (userAcc: string, params: RequestParams = {}) =>
+    this.request<QbankQueryUserClaimRewardsResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/user_claim_rewards/${userAcc}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QueryUserDenomDeposit
    * @summary Queries a list of UserDenomDeposit items.
    * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
@@ -572,6 +601,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QueryUserDenomWithdraw
+   * @summary Queries a list of UserDenomWithdraw items.
+   * @request GET:/abag/quasarnode/qbank/user_denom_withdraw/{userAcc}/{denom}
+   */
+  queryUserDenomWithdraw = (userAcc: string, denom: string, params: RequestParams = {}) =>
+    this.request<QbankQueryUserDenomWithdrawResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/user_denom_withdraw/${userAcc}/${denom}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QueryUserDeposit
    * @summary Queries a list of UserDeposit items.
    * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
@@ -579,6 +624,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryUserDeposit = (userAcc: string, params: RequestParams = {}) =>
     this.request<QbankQueryUserDepositResponse, RpcStatus>({
       path: `/abag/quasarnode/qbank/user_deposit/${userAcc}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUserWithdraw
+   * @summary Queries a list of UserWithdraw items.
+   * @request GET:/abag/quasarnode/qbank/user_withdraw/{userAcc}
+   */
+  queryUserWithdraw = (userAcc: string, params: RequestParams = {}) =>
+    this.request<QbankQueryUserWithdrawResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/user_withdraw/${userAcc}`,
       method: "GET",
       format: "json",
       ...params,

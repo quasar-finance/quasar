@@ -75,6 +75,25 @@ export interface QueryUserDenomEpochLockupDepositRequest {
 export interface QueryUserDenomEpochLockupDepositResponse {
     amount: number;
 }
+export interface QueryUserWithdrawRequest {
+    userAcc: string;
+}
+export interface QueryUserWithdrawResponse {
+    coins: QCoins | undefined;
+}
+export interface QueryUserDenomWithdrawRequest {
+    userAcc: string;
+    denom: string;
+}
+export interface QueryUserDenomWithdrawResponse {
+    amount: number;
+}
+export interface QueryUserClaimRewardsRequest {
+    userAcc: string;
+}
+export interface QueryUserClaimRewardsResponse {
+    coins: QCoins | undefined;
+}
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): QueryParamsRequest;
@@ -215,6 +234,48 @@ export declare const QueryUserDenomEpochLockupDepositResponse: {
     toJSON(message: QueryUserDenomEpochLockupDepositResponse): unknown;
     fromPartial(object: DeepPartial<QueryUserDenomEpochLockupDepositResponse>): QueryUserDenomEpochLockupDepositResponse;
 };
+export declare const QueryUserWithdrawRequest: {
+    encode(message: QueryUserWithdrawRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserWithdrawRequest;
+    fromJSON(object: any): QueryUserWithdrawRequest;
+    toJSON(message: QueryUserWithdrawRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserWithdrawRequest>): QueryUserWithdrawRequest;
+};
+export declare const QueryUserWithdrawResponse: {
+    encode(message: QueryUserWithdrawResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserWithdrawResponse;
+    fromJSON(object: any): QueryUserWithdrawResponse;
+    toJSON(message: QueryUserWithdrawResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserWithdrawResponse>): QueryUserWithdrawResponse;
+};
+export declare const QueryUserDenomWithdrawRequest: {
+    encode(message: QueryUserDenomWithdrawRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomWithdrawRequest;
+    fromJSON(object: any): QueryUserDenomWithdrawRequest;
+    toJSON(message: QueryUserDenomWithdrawRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomWithdrawRequest>): QueryUserDenomWithdrawRequest;
+};
+export declare const QueryUserDenomWithdrawResponse: {
+    encode(message: QueryUserDenomWithdrawResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomWithdrawResponse;
+    fromJSON(object: any): QueryUserDenomWithdrawResponse;
+    toJSON(message: QueryUserDenomWithdrawResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomWithdrawResponse>): QueryUserDenomWithdrawResponse;
+};
+export declare const QueryUserClaimRewardsRequest: {
+    encode(message: QueryUserClaimRewardsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserClaimRewardsRequest;
+    fromJSON(object: any): QueryUserClaimRewardsRequest;
+    toJSON(message: QueryUserClaimRewardsRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserClaimRewardsRequest>): QueryUserClaimRewardsRequest;
+};
+export declare const QueryUserClaimRewardsResponse: {
+    encode(message: QueryUserClaimRewardsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserClaimRewardsResponse;
+    fromJSON(object: any): QueryUserClaimRewardsResponse;
+    toJSON(message: QueryUserClaimRewardsResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserClaimRewardsResponse>): QueryUserClaimRewardsResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -237,6 +298,12 @@ export interface Query {
     UserDenomLockupDeposit(request: QueryUserDenomLockupDepositRequest): Promise<QueryUserDenomLockupDepositResponse>;
     /** Queries a list of UserDenomEpochLockupDeposit items. */
     UserDenomEpochLockupDeposit(request: QueryUserDenomEpochLockupDepositRequest): Promise<QueryUserDenomEpochLockupDepositResponse>;
+    /** Queries a list of UserWithdraw items. */
+    UserWithdraw(request: QueryUserWithdrawRequest): Promise<QueryUserWithdrawResponse>;
+    /** Queries a list of UserDenomWithdraw items. */
+    UserDenomWithdraw(request: QueryUserDenomWithdrawRequest): Promise<QueryUserDenomWithdrawResponse>;
+    /** Queries a list of UserClaimRewards items. */
+    UserClaimRewards(request: QueryUserClaimRewardsRequest): Promise<QueryUserClaimRewardsResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -251,6 +318,9 @@ export declare class QueryClientImpl implements Query {
     UserDeposit(request: QueryUserDepositRequest): Promise<QueryUserDepositResponse>;
     UserDenomLockupDeposit(request: QueryUserDenomLockupDepositRequest): Promise<QueryUserDenomLockupDepositResponse>;
     UserDenomEpochLockupDeposit(request: QueryUserDenomEpochLockupDepositRequest): Promise<QueryUserDenomEpochLockupDepositResponse>;
+    UserWithdraw(request: QueryUserWithdrawRequest): Promise<QueryUserWithdrawResponse>;
+    UserDenomWithdraw(request: QueryUserDenomWithdrawRequest): Promise<QueryUserDenomWithdrawResponse>;
+    UserClaimRewards(request: QueryUserClaimRewardsRequest): Promise<QueryUserClaimRewardsResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

@@ -95,6 +95,9 @@ export interface QbankQueryParamsResponse {
     /** params holds all the parameters of this module. */
     params?: QbankParams;
 }
+export interface QbankQueryUserClaimRewardsResponse {
+    coins?: QbankQCoins;
+}
 export interface QbankQueryUserDenomDepositResponse {
     /** @format uint64 */
     amount?: string;
@@ -107,7 +110,14 @@ export interface QbankQueryUserDenomLockupDepositResponse {
     /** @format uint64 */
     amount?: string;
 }
+export interface QbankQueryUserDenomWithdrawResponse {
+    /** @format uint64 */
+    amount?: string;
+}
 export interface QbankQueryUserDepositResponse {
+    coins?: QbankQCoins;
+}
+export interface QbankQueryUserWithdrawResponse {
     coins?: QbankQCoins;
 }
 export interface QbankWithdraw {
@@ -300,6 +310,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryUserClaimRewards
+     * @summary Queries a list of UserClaimRewards items.
+     * @request GET:/abag/quasarnode/qbank/user_claim_rewards/{userAcc}
+     */
+    queryUserClaimRewards: (userAcc: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserClaimRewardsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryUserDenomDeposit
      * @summary Queries a list of UserDenomDeposit items.
      * @request GET:/abag/quasarnode/qbank/user_denom_deposit/{userAcc}
@@ -329,11 +348,29 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryUserDenomWithdraw
+     * @summary Queries a list of UserDenomWithdraw items.
+     * @request GET:/abag/quasarnode/qbank/user_denom_withdraw/{userAcc}/{denom}
+     */
+    queryUserDenomWithdraw: (userAcc: string, denom: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomWithdrawResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryUserDeposit
      * @summary Queries a list of UserDeposit items.
      * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}
      */
     queryUserDeposit: (userAcc: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDepositResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserWithdraw
+     * @summary Queries a list of UserWithdraw items.
+     * @request GET:/abag/quasarnode/qbank/user_withdraw/{userAcc}
+     */
+    queryUserWithdraw: (userAcc: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserWithdrawResponse, RpcStatus>>;
     /**
      * No description
      *
