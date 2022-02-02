@@ -6,9 +6,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// @desc Set the list of strategy names in store with prefix key string equals orion_strategies
+// SetStrategyNames Set the list of strategy names in store with prefix key string equals orion_strategies
 // Should be called only once. If even if called it should hold unique valued list
 // Called from init genesis.
+
 func (k Keeper) SetStrategyNames(ctx sdk.Context, names []string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.StrategyKBP)))
 	key := types.CreateStrategyKey()
@@ -28,7 +29,7 @@ func (k Keeper) SetStrategyNames(ctx sdk.Context, names []string) {
 	}
 }
 
-// @desc Get the list of strategy names from store with prefix key string equals orion_strategies
+// GetStrategyNames Get the list of strategy names from store with prefix key string equals orion_strategies
 func (k Keeper) GetStrategyNames(ctx sdk.Context) (strategies types.Strategies, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.StrategyKBP)))
 	key := types.CreateStrategyKey()
@@ -41,7 +42,7 @@ func (k Keeper) GetStrategyNames(ctx sdk.Context) (strategies types.Strategies, 
 	return strategies, true
 }
 
-// @desc Set the list of sub strategy names in store with prefix key string equals "meissa", rigel" etc.
+// SetSubStrategyNames Set the list of sub strategy names in store with prefix key string equals "meissa", rigel" etc.
 // Example list : meissa - meissa.7d, meissa.21d, meissa.1m
 // Should be called only once. If even if called it should hold unique valued list
 // Called from init genesis.
@@ -70,7 +71,7 @@ func (k Keeper) SetSubStrategyNames(ctx sdk.Context, sub string, names []string)
 	}
 }
 
-// @desc Get the list of sub strategy names from store with prefix key string equals "meissa", rigel" etc.
+// GetSubStrategyNames Get the list of sub strategy names from store with prefix key string equals "meissa", rigel" etc.
 // Example list : meissa - meissa.7d, meissa.21d, meissa.1m
 func (k Keeper) GetSubStrategyNames(ctx sdk.Context, sub string) (strategies types.Strategies, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.StrategyKBP)))
@@ -90,7 +91,7 @@ func (k Keeper) GetSubStrategyNames(ctx sdk.Context, sub string) (strategies typ
 	return strategies, true
 }
 
-// @desc Set the strategy current position
+// SetMeissaStrategyCurrPos Set the strategy current position
 func (k Keeper) SetMeissaStrategyCurrPos(ctx sdk.Context, currPos types.CurrentPosition) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
@@ -101,7 +102,7 @@ func (k Keeper) SetMeissaStrategyCurrPos(ctx sdk.Context, currPos types.CurrentP
 	store.Set(key, b)
 }
 
-// @desc Get the strategy current position
+// GetMeissaStrategyCurrPos Get the strategy current position
 func (k Keeper) GetMeissaStrategyCurrPos(ctx sdk.Context) (currPos types.CurrentPosition, found bool) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
@@ -117,7 +118,7 @@ func (k Keeper) GetMeissaStrategyCurrPos(ctx sdk.Context) (currPos types.Current
 	return currPos, true
 }
 
-// @desc Set the strategy position at a given epochday
+// SetMeissaStrategyHistPos Set the strategy position at a given epochday
 func (k Keeper) SetMeissaStrategyHistPos(ctx sdk.Context, currPos types.CurrentPosition, epochday uint64) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
@@ -128,7 +129,7 @@ func (k Keeper) SetMeissaStrategyHistPos(ctx sdk.Context, currPos types.CurrentP
 	store.Set(key, b)
 }
 
-// @desc Get the strategy current position
+// GetMeissaStrategyHistPos Get the strategy current position
 func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (currPos types.CurrentPosition, found bool) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
@@ -145,7 +146,7 @@ func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (curr
 	return currPos, true
 }
 
-// @desc Set the strategy current position
+// SetMeissaStrategyTotalHistPos Set the strategy current position
 func (k Keeper) SetMeissaStrategyTotalHistPos(ctx sdk.Context, histPos types.TotalHistPosition, epochday uint64) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
@@ -156,7 +157,7 @@ func (k Keeper) SetMeissaStrategyTotalHistPos(ctx sdk.Context, histPos types.Tot
 	store.Set(key, b)
 }
 
-// @desc Get the strategy current position
+// GetMeissaStrategyTotalHisPos Get the strategy current position
 func (k Keeper) GetMeissaStrategyTotalHisPos(ctx sdk.Context, epochday uint64) (histPos types.TotalHistPosition, found bool) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))

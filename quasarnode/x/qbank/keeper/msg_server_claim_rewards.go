@@ -15,6 +15,6 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 
 	// TODO: Handling the message
 	_ = ctx
-
+	// Call Orion vault module for claim reward.
 	return &types.MsgClaimRewardsResponse{}, nil
 }
