@@ -745,6 +745,226 @@ func (m *QueryUserDepositResponse) GetCoins() QCoins {
 	return QCoins{}
 }
 
+type QueryUserDenomLockupDepositRequest struct {
+	UserAcc    string `protobuf:"bytes,1,opt,name=userAcc,proto3" json:"userAcc,omitempty"`
+	Denom      string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
+	LockupType string `protobuf:"bytes,3,opt,name=lockupType,proto3" json:"lockupType,omitempty"`
+}
+
+func (m *QueryUserDenomLockupDepositRequest) Reset()         { *m = QueryUserDenomLockupDepositRequest{} }
+func (m *QueryUserDenomLockupDepositRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryUserDenomLockupDepositRequest) ProtoMessage()    {}
+func (*QueryUserDenomLockupDepositRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_99a391b5aa6457bf, []int{16}
+}
+func (m *QueryUserDenomLockupDepositRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryUserDenomLockupDepositRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryUserDenomLockupDepositRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryUserDenomLockupDepositRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserDenomLockupDepositRequest.Merge(m, src)
+}
+func (m *QueryUserDenomLockupDepositRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryUserDenomLockupDepositRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserDenomLockupDepositRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryUserDenomLockupDepositRequest proto.InternalMessageInfo
+
+func (m *QueryUserDenomLockupDepositRequest) GetUserAcc() string {
+	if m != nil {
+		return m.UserAcc
+	}
+	return ""
+}
+
+func (m *QueryUserDenomLockupDepositRequest) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+func (m *QueryUserDenomLockupDepositRequest) GetLockupType() string {
+	if m != nil {
+		return m.LockupType
+	}
+	return ""
+}
+
+type QueryUserDenomLockupDepositResponse struct {
+	Amount uint64 `protobuf:"varint,1,opt,name=amount,proto3" json:"amount,omitempty"`
+}
+
+func (m *QueryUserDenomLockupDepositResponse) Reset()         { *m = QueryUserDenomLockupDepositResponse{} }
+func (m *QueryUserDenomLockupDepositResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryUserDenomLockupDepositResponse) ProtoMessage()    {}
+func (*QueryUserDenomLockupDepositResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_99a391b5aa6457bf, []int{17}
+}
+func (m *QueryUserDenomLockupDepositResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryUserDenomLockupDepositResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryUserDenomLockupDepositResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryUserDenomLockupDepositResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserDenomLockupDepositResponse.Merge(m, src)
+}
+func (m *QueryUserDenomLockupDepositResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryUserDenomLockupDepositResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserDenomLockupDepositResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryUserDenomLockupDepositResponse proto.InternalMessageInfo
+
+func (m *QueryUserDenomLockupDepositResponse) GetAmount() uint64 {
+	if m != nil {
+		return m.Amount
+	}
+	return 0
+}
+
+type QueryUserDenomEpochLockupDepositRequest struct {
+	UserAcc    string   `protobuf:"bytes,1,opt,name=userAcc,proto3" json:"userAcc,omitempty"`
+	Denom      string   `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
+	EpochDay   []uint64 `protobuf:"varint,3,rep,packed,name=epochDay,proto3" json:"epochDay,omitempty"`
+	LockupType string   `protobuf:"bytes,4,opt,name=lockupType,proto3" json:"lockupType,omitempty"`
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) Reset() {
+	*m = QueryUserDenomEpochLockupDepositRequest{}
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryUserDenomEpochLockupDepositRequest) ProtoMessage()    {}
+func (*QueryUserDenomEpochLockupDepositRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_99a391b5aa6457bf, []int{18}
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryUserDenomEpochLockupDepositRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserDenomEpochLockupDepositRequest.Merge(m, src)
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserDenomEpochLockupDepositRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryUserDenomEpochLockupDepositRequest proto.InternalMessageInfo
+
+func (m *QueryUserDenomEpochLockupDepositRequest) GetUserAcc() string {
+	if m != nil {
+		return m.UserAcc
+	}
+	return ""
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) GetEpochDay() []uint64 {
+	if m != nil {
+		return m.EpochDay
+	}
+	return nil
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) GetLockupType() string {
+	if m != nil {
+		return m.LockupType
+	}
+	return ""
+}
+
+type QueryUserDenomEpochLockupDepositResponse struct {
+	Amount uint64 `protobuf:"varint,1,opt,name=amount,proto3" json:"amount,omitempty"`
+}
+
+func (m *QueryUserDenomEpochLockupDepositResponse) Reset() {
+	*m = QueryUserDenomEpochLockupDepositResponse{}
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryUserDenomEpochLockupDepositResponse) ProtoMessage()    {}
+func (*QueryUserDenomEpochLockupDepositResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_99a391b5aa6457bf, []int{19}
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryUserDenomEpochLockupDepositResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserDenomEpochLockupDepositResponse.Merge(m, src)
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserDenomEpochLockupDepositResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryUserDenomEpochLockupDepositResponse proto.InternalMessageInfo
+
+func (m *QueryUserDenomEpochLockupDepositResponse) GetAmount() uint64 {
+	if m != nil {
+		return m.Amount
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "abag.quasarnode.qbank.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "abag.quasarnode.qbank.QueryParamsResponse")
@@ -762,66 +982,80 @@ func init() {
 	proto.RegisterType((*QueryGetFeeDataResponse)(nil), "abag.quasarnode.qbank.QueryGetFeeDataResponse")
 	proto.RegisterType((*QueryUserDepositRequest)(nil), "abag.quasarnode.qbank.QueryUserDepositRequest")
 	proto.RegisterType((*QueryUserDepositResponse)(nil), "abag.quasarnode.qbank.QueryUserDepositResponse")
+	proto.RegisterType((*QueryUserDenomLockupDepositRequest)(nil), "abag.quasarnode.qbank.QueryUserDenomLockupDepositRequest")
+	proto.RegisterType((*QueryUserDenomLockupDepositResponse)(nil), "abag.quasarnode.qbank.QueryUserDenomLockupDepositResponse")
+	proto.RegisterType((*QueryUserDenomEpochLockupDepositRequest)(nil), "abag.quasarnode.qbank.QueryUserDenomEpochLockupDepositRequest")
+	proto.RegisterType((*QueryUserDenomEpochLockupDepositResponse)(nil), "abag.quasarnode.qbank.QueryUserDenomEpochLockupDepositResponse")
 }
 
 func init() { proto.RegisterFile("qbank/query.proto", fileDescriptor_99a391b5aa6457bf) }
 
 var fileDescriptor_99a391b5aa6457bf = []byte{
-	// 860 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x96, 0xcf, 0x4f, 0xdb, 0x48,
-	0x14, 0xc7, 0xe3, 0x00, 0x61, 0x19, 0xa4, 0xd5, 0xee, 0x90, 0x65, 0xa3, 0x08, 0x1c, 0xd6, 0xbb,
-	0xfc, 0xdc, 0xc5, 0x16, 0x64, 0x11, 0x07, 0xa4, 0x95, 0x92, 0x45, 0x70, 0x5b, 0x81, 0xa5, 0x55,
-	0xd5, 0x4a, 0x15, 0x9d, 0xc4, 0x53, 0x63, 0x35, 0xf1, 0x24, 0xb1, 0x53, 0x8a, 0x2a, 0x2e, 0x3d,
-	0x54, 0x3d, 0xb6, 0x42, 0x55, 0xd5, 0x6b, 0xa5, 0xf6, 0xd0, 0x3f, 0xa1, 0x7f, 0x01, 0x47, 0xa4,
-	0x5e, 0x7a, 0x6a, 0x2b, 0xe8, 0xb5, 0xff, 0x43, 0xe5, 0x99, 0xe7, 0x24, 0x8e, 0x63, 0x3b, 0x54,
-	0xdc, 0xe2, 0x97, 0xf7, 0xe3, 0x33, 0xef, 0xbd, 0xf9, 0xda, 0xe8, 0xe7, 0x66, 0x85, 0xd8, 0xf7,
-	0xb4, 0x66, 0x9b, 0xb6, 0x8e, 0xd5, 0x46, 0x8b, 0xb9, 0x0c, 0xff, 0x42, 0x2a, 0xc4, 0x54, 0x9b,
-	0x6d, 0xe2, 0x90, 0x96, 0xcd, 0x0c, 0xaa, 0x72, 0x97, 0x7c, 0xd6, 0x64, 0x26, 0xe3, 0x1e, 0x9a,
-	0xf7, 0x4b, 0x38, 0xe7, 0x67, 0x4c, 0xc6, 0xcc, 0x1a, 0xd5, 0x48, 0xc3, 0xd2, 0x88, 0x6d, 0x33,
-	0x97, 0xb8, 0x16, 0xb3, 0x1d, 0xf8, 0x77, 0xa5, 0xca, 0x9c, 0x3a, 0x73, 0xb4, 0x0a, 0x71, 0xa8,
-	0xa8, 0xa1, 0xdd, 0x5f, 0xab, 0x50, 0x97, 0xac, 0x69, 0x0d, 0x62, 0x5a, 0x36, 0x77, 0x06, 0x5f,
-	0x2c, 0x48, 0x1a, 0xa4, 0x45, 0xea, 0x7e, 0xfc, 0x94, 0xb0, 0x19, 0xb4, 0xc1, 0x1c, 0xcb, 0x05,
-	0x63, 0x56, 0x18, 0x8f, 0x2c, 0xf7, 0xd0, 0x68, 0x91, 0xa3, 0xa0, 0xf5, 0x2e, 0xa5, 0x07, 0x06,
-	0x71, 0x49, 0x30, 0x69, 0x95, 0xd5, 0xeb, 0x7e, 0x21, 0x25, 0x8b, 0xf0, 0xbe, 0x87, 0xb2, 0xc7,
-	0x2b, 0xe9, 0xb4, 0xd9, 0xa6, 0x8e, 0xab, 0xe8, 0x68, 0x2a, 0x60, 0x75, 0x1a, 0xcc, 0x76, 0x28,
-	0xde, 0x42, 0x19, 0x41, 0x94, 0x93, 0xe6, 0xa4, 0xa5, 0xc9, 0xf5, 0x59, 0x75, 0x60, 0x77, 0x54,
-	0x11, 0x56, 0x1e, 0x3d, 0xfb, 0x58, 0x48, 0xe9, 0x10, 0xa2, 0x2c, 0xa1, 0x69, 0x9e, 0x73, 0x97,
-	0xba, 0xdb, 0xe2, 0x08, 0x50, 0x0d, 0xff, 0x88, 0xd2, 0x96, 0xc1, 0x53, 0x8e, 0xea, 0x69, 0xcb,
-	0x50, 0x6e, 0xa2, 0x5f, 0x43, 0x9e, 0x40, 0xf0, 0x0f, 0x1a, 0x07, 0x13, 0x20, 0xc8, 0x11, 0x08,
-	0xe0, 0x05, 0x0c, 0x7e, 0x90, 0x72, 0x07, 0x20, 0x4a, 0xb5, 0x5a, 0x1f, 0xc4, 0x0e, 0x42, 0xdd,
-	0x29, 0x40, 0xf2, 0x05, 0x55, 0x8c, 0x4c, 0xf5, 0x46, 0xa6, 0x8a, 0xb5, 0x80, 0x91, 0xa9, 0x7b,
-	0xc4, 0xa4, 0x10, 0xab, 0xf7, 0x44, 0x2a, 0xaf, 0x24, 0xa0, 0xef, 0x2d, 0x31, 0x88, 0x7e, 0xe4,
-	0xca, 0xf4, 0x78, 0x37, 0xc0, 0x98, 0xe6, 0x8c, 0x8b, 0x89, 0x8c, 0xa2, 0x78, 0x00, 0xf2, 0x3f,
-	0x34, 0xc3, 0x19, 0xff, 0x77, 0x68, 0x6b, 0x9b, 0xda, 0xac, 0xde, 0xd7, 0x8c, 0x1c, 0x1a, 0x6f,
-	0x3b, 0xb4, 0x55, 0xaa, 0x56, 0x79, 0x27, 0x26, 0x74, 0xff, 0x11, 0x67, 0xd1, 0x98, 0xe1, 0x05,
-	0xf0, 0xea, 0x13, 0xba, 0x78, 0x50, 0x36, 0xd1, 0x6c, 0x44, 0x3e, 0x38, 0xf9, 0x34, 0xca, 0x90,
-	0x3a, 0x6b, 0xdb, 0x2e, 0x8c, 0x19, 0x9e, 0x94, 0xe5, 0xee, 0xa8, 0x6f, 0xc0, 0x0a, 0x47, 0x6d,
-	0xc5, 0x6d, 0x94, 0x0b, 0xbb, 0x42, 0xfa, 0x12, 0xfa, 0xc1, 0xb7, 0xc1, 0xe8, 0x0a, 0x11, 0x9d,
-	0xf5, 0xdd, 0xa0, 0xb5, 0x9d, 0x30, 0x85, 0x74, 0xc7, 0xd6, 0x4f, 0x72, 0x5d, 0xab, 0xf1, 0x46,
-	0x82, 0x23, 0x04, 0x6a, 0x0c, 0x3c, 0xc2, 0xc8, 0x77, 0x1c, 0xe1, 0xfa, 0xd6, 0x23, 0xd7, 0xbd,
-	0xaa, 0x3b, 0x94, 0x6e, 0x13, 0x97, 0xf8, 0xc2, 0xd0, 0x73, 0x35, 0x3b, 0xff, 0x74, 0x97, 0x1b,
-	0x4c, 0x09, 0x57, 0x13, 0xbc, 0xfc, 0xe5, 0x86, 0x47, 0xa5, 0x08, 0xa9, 0xc5, 0x0e, 0x0d, 0xb7,
-	0x8e, 0xca, 0x13, 0xbf, 0xa5, 0x81, 0x28, 0x20, 0xaa, 0xa1, 0xb1, 0x2a, 0xb3, 0xec, 0x24, 0xb5,
-	0xda, 0xff, 0xd7, 0x73, 0x2a, 0x6f, 0x7a, 0x38, 0x6f, 0x3f, 0x15, 0x34, 0xd3, 0x72, 0x0f, 0xdb,
-	0x15, 0xb5, 0xca, 0xea, 0x9a, 0x17, 0xa0, 0x75, 0x03, 0xb4, 0x07, 0x9a, 0x90, 0x50, 0xf7, 0xb8,
-	0x41, 0x1d, 0x08, 0xd4, 0x45, 0x91, 0xf5, 0xaf, 0x13, 0x68, 0x8c, 0xa3, 0xe0, 0xc7, 0x12, 0xca,
-	0x08, 0x09, 0xc4, 0xcb, 0x51, 0x35, 0x43, 0x9a, 0x9b, 0x5f, 0x19, 0xc6, 0x55, 0x9c, 0x4c, 0x99,
-	0x7f, 0xf4, 0xfe, 0xcb, 0x69, 0xba, 0x80, 0x67, 0x43, 0x84, 0xbd, 0xef, 0x0d, 0xfc, 0x5c, 0xea,
-	0x08, 0x0e, 0x5e, 0x8d, 0x4b, 0x1f, 0xd2, 0xe4, 0xbc, 0x3a, 0xac, 0x3b, 0x10, 0xfd, 0xc9, 0x89,
-	0xe6, 0xf1, 0xef, 0x11, 0x44, 0xf0, 0xd6, 0xd2, 0x1e, 0x5a, 0xc6, 0x09, 0x3e, 0x95, 0x10, 0x82,
-	0x04, 0xa5, 0x5a, 0x2d, 0x1e, 0x2d, 0xa4, 0xd4, 0xf1, 0x68, 0x61, 0xd5, 0x55, 0x16, 0x38, 0xda,
-	0x1c, 0x96, 0xe3, 0xd1, 0xf0, 0x3b, 0x09, 0xfd, 0xd4, 0x2f, 0x60, 0xb8, 0x18, 0x57, 0x2c, 0x42,
-	0x3e, 0xf3, 0x7f, 0x5f, 0x2d, 0x08, 0x38, 0xb7, 0x38, 0xe7, 0x06, 0x2e, 0x46, 0x70, 0x7a, 0x3b,
-	0x7f, 0xc0, 0xf5, 0xf6, 0xa0, 0xd3, 0x4d, 0xb8, 0x07, 0x27, 0xf8, 0xa5, 0xd4, 0xd5, 0x0f, 0x9c,
-	0x34, 0xbc, 0x3e, 0x81, 0xcb, 0x6b, 0x43, 0xfb, 0x03, 0xea, 0x5f, 0x1c, 0x75, 0x01, 0xff, 0x11,
-	0x81, 0xea, 0x7f, 0x8e, 0x88, 0x71, 0xbf, 0x90, 0xd0, 0xa4, 0x9f, 0xc2, 0x9b, 0x77, 0xd2, 0x00,
-	0xaf, 0x84, 0x37, 0x40, 0x4b, 0x95, 0x45, 0x8e, 0xf7, 0x1b, 0x2e, 0x24, 0xe0, 0xe1, 0x67, 0x52,
-	0x47, 0xb4, 0x12, 0x2f, 0x48, 0x50, 0x09, 0x13, 0x2f, 0x48, 0x9f, 0x3c, 0x26, 0x32, 0xf9, 0xdf,
-	0x6a, 0xf8, 0xb5, 0x84, 0x26, 0x7b, 0xd4, 0x2c, 0xbe, 0x5b, 0x61, 0xb1, 0x8c, 0xef, 0xd6, 0x00,
-	0x99, 0x54, 0x36, 0x38, 0x99, 0x86, 0x57, 0xe3, 0xf7, 0xae, 0x6f, 0xe3, 0xca, 0xe5, 0xb3, 0x0b,
-	0x59, 0x3a, 0xbf, 0x90, 0xa5, 0xcf, 0x17, 0xb2, 0xf4, 0xf4, 0x52, 0x4e, 0x9d, 0x5f, 0xca, 0xa9,
-	0x0f, 0x97, 0x72, 0xea, 0xd6, 0xd2, 0xb0, 0x0a, 0x5a, 0xc9, 0xf0, 0x8f, 0xd0, 0xe2, 0xb7, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x71, 0x8f, 0x38, 0x20, 0x79, 0x0b, 0x00, 0x00,
+	// 1024 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x97, 0x4f, 0x6f, 0x1b, 0xc5,
+	0x1b, 0xc7, 0xb3, 0x76, 0x92, 0xb6, 0x4f, 0xf4, 0xfb, 0x09, 0xa6, 0x21, 0x58, 0x4b, 0xb3, 0x0e,
+	0x53, 0x9a, 0xb8, 0x85, 0xee, 0xa8, 0x0d, 0x55, 0x05, 0x15, 0x45, 0x31, 0xa1, 0xbd, 0x20, 0x68,
+	0x56, 0xa0, 0x0a, 0x24, 0x94, 0x8e, 0xed, 0xc1, 0x59, 0xd5, 0xde, 0xd9, 0x78, 0xd7, 0x94, 0x28,
+	0xca, 0x85, 0x03, 0xea, 0x11, 0x54, 0x55, 0x88, 0x2b, 0x12, 0x1c, 0x78, 0x09, 0xbc, 0x82, 0x1e,
+	0x2b, 0x71, 0xe1, 0x04, 0x28, 0xe1, 0xc0, 0xcb, 0x40, 0x3b, 0xf3, 0xac, 0xed, 0xf5, 0x7a, 0x77,
+	0x9d, 0x90, 0x9b, 0x77, 0xf6, 0xf9, 0xf3, 0x79, 0xe6, 0x79, 0x66, 0xbe, 0x6b, 0x78, 0x71, 0xb7,
+	0xc1, 0xbd, 0x87, 0x6c, 0xb7, 0x2f, 0x7a, 0x7b, 0xb6, 0xdf, 0x93, 0xa1, 0x24, 0x2f, 0xf1, 0x06,
+	0x6f, 0xdb, 0xbb, 0x7d, 0x1e, 0xf0, 0x9e, 0x27, 0x5b, 0xc2, 0x56, 0x26, 0xe6, 0x62, 0x5b, 0xb6,
+	0xa5, 0xb2, 0x60, 0xd1, 0x2f, 0x6d, 0x6c, 0x5e, 0x68, 0x4b, 0xd9, 0xee, 0x08, 0xc6, 0x7d, 0x97,
+	0x71, 0xcf, 0x93, 0x21, 0x0f, 0x5d, 0xe9, 0x05, 0xf8, 0xf6, 0x4a, 0x53, 0x06, 0x5d, 0x19, 0xb0,
+	0x06, 0x0f, 0x84, 0xce, 0xc1, 0xbe, 0xbc, 0xd6, 0x10, 0x21, 0xbf, 0xc6, 0x7c, 0xde, 0x76, 0x3d,
+	0x65, 0x8c, 0xb6, 0x44, 0x93, 0xf8, 0xbc, 0xc7, 0xbb, 0xb1, 0xff, 0x79, 0xbd, 0xd6, 0x12, 0xbe,
+	0x0c, 0xdc, 0x10, 0x17, 0x17, 0xf5, 0xe2, 0x23, 0x37, 0xdc, 0x69, 0xf5, 0xf8, 0xa3, 0xe4, 0xea,
+	0x17, 0x42, 0x6c, 0xb7, 0x78, 0xc8, 0x93, 0x41, 0x9b, 0xb2, 0xdb, 0x8d, 0x13, 0xd1, 0x45, 0x20,
+	0x5b, 0x11, 0xca, 0x3d, 0x95, 0xc9, 0x11, 0xbb, 0x7d, 0x11, 0x84, 0xd4, 0x81, 0xf3, 0x89, 0xd5,
+	0xc0, 0x97, 0x5e, 0x20, 0xc8, 0x2d, 0x98, 0xd7, 0x44, 0x15, 0x63, 0xc5, 0xa8, 0x2d, 0x5c, 0x5f,
+	0xb6, 0x27, 0xee, 0x8e, 0xad, 0xdd, 0xea, 0xb3, 0xcf, 0xfe, 0xa8, 0xce, 0x38, 0xe8, 0x42, 0x6b,
+	0xb0, 0xa4, 0x62, 0xde, 0x15, 0xe1, 0xa6, 0x2e, 0x01, 0xb3, 0x91, 0xff, 0x43, 0xc9, 0x6d, 0xa9,
+	0x90, 0xb3, 0x4e, 0xc9, 0x6d, 0xd1, 0x4f, 0xe1, 0xe5, 0x94, 0x25, 0x12, 0xdc, 0x86, 0x33, 0xb8,
+	0x84, 0x08, 0x56, 0x06, 0x02, 0x5a, 0x21, 0x43, 0xec, 0x44, 0x1f, 0x20, 0xc4, 0x46, 0xa7, 0x33,
+	0x06, 0x71, 0x07, 0x60, 0xd8, 0x05, 0x0c, 0xbe, 0x6a, 0xeb, 0x96, 0xd9, 0x51, 0xcb, 0x6c, 0x3d,
+	0x16, 0xd8, 0x32, 0xfb, 0x1e, 0x6f, 0x0b, 0xf4, 0x75, 0x46, 0x3c, 0xe9, 0x8f, 0x06, 0xd2, 0x8f,
+	0xa6, 0x98, 0x44, 0x5f, 0x3e, 0x36, 0x3d, 0xb9, 0x9b, 0x60, 0x2c, 0x29, 0xc6, 0xb5, 0x42, 0x46,
+	0x9d, 0x3c, 0x01, 0xf9, 0x21, 0x5c, 0x50, 0x8c, 0x9f, 0x04, 0xa2, 0xb7, 0x29, 0x3c, 0xd9, 0x1d,
+	0xdb, 0x8c, 0x0a, 0x9c, 0xe9, 0x07, 0xa2, 0xb7, 0xd1, 0x6c, 0xaa, 0x9d, 0x38, 0xe7, 0xc4, 0x8f,
+	0x64, 0x11, 0xe6, 0x5a, 0x91, 0x83, 0xca, 0x7e, 0xce, 0xd1, 0x0f, 0xf4, 0x26, 0x2c, 0x67, 0xc4,
+	0xc3, 0xca, 0x97, 0x60, 0x9e, 0x77, 0x65, 0xdf, 0x0b, 0xb1, 0xcd, 0xf8, 0x44, 0x2f, 0x0f, 0x5b,
+	0x7d, 0x1f, 0x47, 0x38, 0x6b, 0x2a, 0x3e, 0x87, 0x4a, 0xda, 0x14, 0xc3, 0x6f, 0xc0, 0xd9, 0x78,
+	0x0d, 0x5b, 0x57, 0xcd, 0xd8, 0xd9, 0xd8, 0x0c, 0xb7, 0x76, 0xe0, 0x46, 0xf9, 0xb0, 0x6d, 0xe3,
+	0x24, 0xa7, 0x35, 0x1a, 0x3f, 0x1b, 0x58, 0x42, 0x22, 0xc7, 0xc4, 0x12, 0xca, 0x27, 0x28, 0xe1,
+	0xf4, 0xc6, 0xa3, 0x32, 0x3c, 0xaa, 0x77, 0x84, 0xd8, 0xe4, 0x21, 0x8f, 0x2f, 0x86, 0x91, 0xa3,
+	0x39, 0x78, 0x33, 0x1c, 0x6e, 0x5c, 0x2a, 0x38, 0x9a, 0x68, 0x15, 0x0f, 0x37, 0x3e, 0xd2, 0x75,
+	0x0c, 0xad, 0x67, 0x68, 0xba, 0x71, 0xa4, 0x8f, 0xe3, 0x2d, 0x4d, 0x78, 0x21, 0x51, 0x07, 0xe6,
+	0x9a, 0xd2, 0xf5, 0x8a, 0x6e, 0xab, 0xad, 0xf7, 0x22, 0xa3, 0xfa, 0xcd, 0x08, 0xe7, 0x97, 0x3f,
+	0xab, 0xac, 0xed, 0x86, 0x3b, 0xfd, 0x86, 0xdd, 0x94, 0x5d, 0x16, 0x39, 0xb0, 0xa1, 0x03, 0xfb,
+	0x8a, 0xe9, 0x2b, 0x34, 0xdc, 0xf3, 0x45, 0x80, 0x8e, 0x8e, 0x4e, 0x42, 0x43, 0xa0, 0xc9, 0x33,
+	0xf0, 0x81, 0x6c, 0x3e, 0xec, 0xfb, 0xff, 0xed, 0x64, 0x11, 0x0b, 0xa0, 0xa3, 0xe2, 0x7c, 0xbc,
+	0xe7, 0x8b, 0x4a, 0x59, 0xbd, 0x1a, 0x59, 0xa1, 0xef, 0xc0, 0xc5, 0xdc, 0xac, 0x05, 0xe7, 0xef,
+	0xa9, 0x01, 0x6b, 0x49, 0xff, 0xf7, 0x7d, 0xd9, 0xdc, 0x39, 0x15, 0x74, 0x13, 0xce, 0x8a, 0x28,
+	0xd8, 0x26, 0xdf, 0xab, 0x94, 0x57, 0xca, 0xb5, 0x59, 0x67, 0xf0, 0x3c, 0x56, 0xd6, 0x6c, 0xaa,
+	0xac, 0x3a, 0xd4, 0x8a, 0xb1, 0xf2, 0x6b, 0xbb, 0x7e, 0xf4, 0x3f, 0x98, 0x53, 0x41, 0xc8, 0x37,
+	0x06, 0xcc, 0x6b, 0x4d, 0x22, 0x97, 0xb3, 0x86, 0x20, 0x25, 0x82, 0xe6, 0x95, 0x69, 0x4c, 0x35,
+	0x03, 0xbd, 0xf4, 0xf5, 0x6f, 0x7f, 0x3f, 0x29, 0x55, 0xc9, 0x72, 0x6a, 0x64, 0x46, 0x85, 0x9c,
+	0x3c, 0x35, 0x06, 0x0a, 0x40, 0xae, 0xe6, 0x85, 0x4f, 0x89, 0xa4, 0x69, 0x4f, 0x6b, 0x8e, 0x44,
+	0xaf, 0x2b, 0xa2, 0x4b, 0xe4, 0x62, 0x06, 0x11, 0x7e, 0x46, 0xb0, 0x7d, 0xb7, 0x75, 0x40, 0x9e,
+	0x18, 0x00, 0x18, 0x60, 0xa3, 0xd3, 0xc9, 0x47, 0x4b, 0x49, 0x67, 0x3e, 0x5a, 0x5a, 0x06, 0xe9,
+	0xaa, 0x42, 0x5b, 0x21, 0x56, 0x3e, 0x1a, 0xf9, 0xd5, 0x80, 0x17, 0xc6, 0x15, 0x85, 0xac, 0xe7,
+	0x25, 0xcb, 0xd0, 0x33, 0xf3, 0xcd, 0xe3, 0x39, 0x21, 0xe7, 0x2d, 0xc5, 0x79, 0x83, 0xac, 0x67,
+	0x70, 0x46, 0xe3, 0xbf, 0xad, 0x66, 0x7d, 0x7b, 0xb0, 0x9b, 0x78, 0x24, 0x0e, 0xc8, 0x0f, 0xc6,
+	0xf0, 0x42, 0x27, 0x45, 0xcd, 0x1b, 0x53, 0x1c, 0x93, 0x4d, 0x6d, 0x8f, 0xa8, 0x6f, 0x28, 0xd4,
+	0x55, 0xf2, 0x5a, 0x06, 0x6a, 0xfc, 0x7d, 0xa8, 0xdb, 0xfd, 0xbd, 0x01, 0x0b, 0x71, 0x88, 0xa8,
+	0xdf, 0x45, 0x0d, 0x3c, 0x16, 0xde, 0x04, 0x71, 0xa3, 0x6b, 0x0a, 0xef, 0x55, 0x52, 0x2d, 0xc0,
+	0x23, 0xdf, 0x19, 0x03, 0x15, 0x29, 0x3c, 0x20, 0x49, 0x69, 0x2a, 0x3c, 0x20, 0x63, 0x7a, 0x55,
+	0xc8, 0x14, 0x7f, 0x3c, 0x93, 0x9f, 0x0c, 0x58, 0x18, 0x91, 0x97, 0xfc, 0xdd, 0x4a, 0xab, 0x57,
+	0xfe, 0x6e, 0x4d, 0xd0, 0x2d, 0x7a, 0x43, 0x91, 0x31, 0x72, 0x35, 0x7f, 0xee, 0xc6, 0x27, 0xee,
+	0x1f, 0x03, 0x96, 0x26, 0xcb, 0x00, 0x79, 0x6b, 0xaa, 0xf9, 0x9f, 0x74, 0xeb, 0x9b, 0x6f, 0x9f,
+	0xc4, 0x15, 0x0b, 0xb9, 0xaf, 0x0a, 0xd9, 0x22, 0x1f, 0x15, 0x1f, 0x20, 0x7d, 0xf7, 0xa7, 0xab,
+	0x62, 0xfb, 0xea, 0xfd, 0x01, 0xdb, 0x1f, 0xaa, 0xc3, 0x01, 0x79, 0x5c, 0x82, 0x57, 0x72, 0xa4,
+	0x81, 0xdc, 0x9e, 0x0a, 0x3a, 0x53, 0xea, 0xcc, 0x77, 0x4f, 0xec, 0x8f, 0x95, 0xef, 0xa8, 0xca,
+	0x1b, 0xe4, 0x41, 0x71, 0xe5, 0x4a, 0x13, 0xa7, 0xa8, 0x3f, 0xd6, 0xce, 0xe4, 0x56, 0xd4, 0xeb,
+	0xcf, 0x0e, 0x2d, 0xe3, 0xf9, 0xa1, 0x65, 0xfc, 0x75, 0x68, 0x19, 0xdf, 0x1e, 0x59, 0x33, 0xcf,
+	0x8f, 0xac, 0x99, 0xdf, 0x8f, 0xac, 0x99, 0xcf, 0x6a, 0xd3, 0x7e, 0xc8, 0x34, 0xe6, 0xd5, 0x7f,
+	0xc1, 0xf5, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xcf, 0xee, 0x55, 0x9e, 0x00, 0x0f, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -852,6 +1086,10 @@ type QueryClient interface {
 	FeeData(ctx context.Context, in *QueryGetFeeDataRequest, opts ...grpc.CallOption) (*QueryGetFeeDataResponse, error)
 	// Queries a list of UserDeposit items.
 	UserDeposit(ctx context.Context, in *QueryUserDepositRequest, opts ...grpc.CallOption) (*QueryUserDepositResponse, error)
+	// Queries a list of UserDenomLockupDeposit items.
+	UserDenomLockupDeposit(ctx context.Context, in *QueryUserDenomLockupDepositRequest, opts ...grpc.CallOption) (*QueryUserDenomLockupDepositResponse, error)
+	// Queries a list of UserDenomEpochLockupDeposit items.
+	UserDenomEpochLockupDeposit(ctx context.Context, in *QueryUserDenomEpochLockupDepositRequest, opts ...grpc.CallOption) (*QueryUserDenomEpochLockupDepositResponse, error)
 }
 
 type queryClient struct {
@@ -934,6 +1172,24 @@ func (c *queryClient) UserDeposit(ctx context.Context, in *QueryUserDepositReque
 	return out, nil
 }
 
+func (c *queryClient) UserDenomLockupDeposit(ctx context.Context, in *QueryUserDenomLockupDepositRequest, opts ...grpc.CallOption) (*QueryUserDenomLockupDepositResponse, error) {
+	out := new(QueryUserDenomLockupDepositResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qbank.Query/UserDenomLockupDeposit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) UserDenomEpochLockupDeposit(ctx context.Context, in *QueryUserDenomEpochLockupDepositRequest, opts ...grpc.CallOption) (*QueryUserDenomEpochLockupDepositResponse, error) {
+	out := new(QueryUserDenomEpochLockupDepositResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qbank.Query/UserDenomEpochLockupDeposit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
@@ -952,6 +1208,10 @@ type QueryServer interface {
 	FeeData(context.Context, *QueryGetFeeDataRequest) (*QueryGetFeeDataResponse, error)
 	// Queries a list of UserDeposit items.
 	UserDeposit(context.Context, *QueryUserDepositRequest) (*QueryUserDepositResponse, error)
+	// Queries a list of UserDenomLockupDeposit items.
+	UserDenomLockupDeposit(context.Context, *QueryUserDenomLockupDepositRequest) (*QueryUserDenomLockupDepositResponse, error)
+	// Queries a list of UserDenomEpochLockupDeposit items.
+	UserDenomEpochLockupDeposit(context.Context, *QueryUserDenomEpochLockupDepositRequest) (*QueryUserDenomEpochLockupDepositResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -981,6 +1241,12 @@ func (*UnimplementedQueryServer) FeeData(ctx context.Context, req *QueryGetFeeDa
 }
 func (*UnimplementedQueryServer) UserDeposit(ctx context.Context, req *QueryUserDepositRequest) (*QueryUserDepositResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserDeposit not implemented")
+}
+func (*UnimplementedQueryServer) UserDenomLockupDeposit(ctx context.Context, req *QueryUserDenomLockupDepositRequest) (*QueryUserDenomLockupDepositResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserDenomLockupDeposit not implemented")
+}
+func (*UnimplementedQueryServer) UserDenomEpochLockupDeposit(ctx context.Context, req *QueryUserDenomEpochLockupDepositRequest) (*QueryUserDenomEpochLockupDepositResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserDenomEpochLockupDeposit not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -1131,6 +1397,42 @@ func _Query_UserDeposit_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_UserDenomLockupDeposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryUserDenomLockupDepositRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UserDenomLockupDeposit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qbank.Query/UserDenomLockupDeposit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UserDenomLockupDeposit(ctx, req.(*QueryUserDenomLockupDepositRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_UserDenomEpochLockupDeposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryUserDenomEpochLockupDepositRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UserDenomEpochLockupDeposit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qbank.Query/UserDenomEpochLockupDeposit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UserDenomEpochLockupDeposit(ctx, req.(*QueryUserDenomEpochLockupDepositRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "abag.quasarnode.qbank.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -1166,6 +1468,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UserDeposit",
 			Handler:    _Query_UserDeposit_Handler,
+		},
+		{
+			MethodName: "UserDenomLockupDeposit",
+			Handler:    _Query_UserDenomLockupDeposit_Handler,
+		},
+		{
+			MethodName: "UserDenomEpochLockupDeposit",
+			Handler:    _Query_UserDenomEpochLockupDeposit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1702,6 +2012,168 @@ func (m *QueryUserDepositResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryUserDenomLockupDepositRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryUserDenomLockupDepositRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryUserDenomLockupDepositRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.LockupType) > 0 {
+		i -= len(m.LockupType)
+		copy(dAtA[i:], m.LockupType)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.LockupType)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UserAcc) > 0 {
+		i -= len(m.UserAcc)
+		copy(dAtA[i:], m.UserAcc)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.UserAcc)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryUserDenomLockupDepositResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryUserDenomLockupDepositResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryUserDenomLockupDepositResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Amount != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Amount))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.LockupType) > 0 {
+		i -= len(m.LockupType)
+		copy(dAtA[i:], m.LockupType)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.LockupType)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.EpochDay) > 0 {
+		dAtA11 := make([]byte, len(m.EpochDay)*10)
+		var j10 int
+		for _, num := range m.EpochDay {
+			for num >= 1<<7 {
+				dAtA11[j10] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j10++
+			}
+			dAtA11[j10] = uint8(num)
+			j10++
+		}
+		i -= j10
+		copy(dAtA[i:], dAtA11[:j10])
+		i = encodeVarintQuery(dAtA, i, uint64(j10))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UserAcc) > 0 {
+		i -= len(m.UserAcc)
+		copy(dAtA[i:], m.UserAcc)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.UserAcc)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryUserDenomEpochLockupDepositResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryUserDenomEpochLockupDepositResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryUserDenomEpochLockupDepositResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Amount != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Amount))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1913,6 +2385,79 @@ func (m *QueryUserDepositResponse) Size() (n int) {
 	_ = l
 	l = m.Coins.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryUserDenomLockupDepositRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.UserAcc)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.LockupType)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryUserDenomLockupDepositResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Amount != 0 {
+		n += 1 + sovQuery(uint64(m.Amount))
+	}
+	return n
+}
+
+func (m *QueryUserDenomEpochLockupDepositRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.UserAcc)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if len(m.EpochDay) > 0 {
+		l = 0
+		for _, e := range m.EpochDay {
+			l += sovQuery(uint64(e))
+		}
+		n += 1 + sovQuery(uint64(l)) + l
+	}
+	l = len(m.LockupType)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryUserDenomEpochLockupDepositResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Amount != 0 {
+		n += 1 + sovQuery(uint64(m.Amount))
+	}
 	return n
 }
 
@@ -3231,6 +3776,512 @@ func (m *QueryUserDepositResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryUserDenomLockupDepositRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryUserDenomLockupDepositRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryUserDenomLockupDepositRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserAcc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserAcc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LockupType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LockupType = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryUserDenomLockupDepositResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryUserDenomLockupDepositResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryUserDenomLockupDepositResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			m.Amount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Amount |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryUserDenomEpochLockupDepositRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryUserDenomEpochLockupDepositRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryUserDenomEpochLockupDepositRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserAcc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserAcc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowQuery
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.EpochDay = append(m.EpochDay, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowQuery
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthQuery
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthQuery
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.EpochDay) == 0 {
+					m.EpochDay = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowQuery
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.EpochDay = append(m.EpochDay, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDay", wireType)
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LockupType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LockupType = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryUserDenomEpochLockupDepositResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryUserDenomEpochLockupDepositResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryUserDenomEpochLockupDepositResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			m.Amount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Amount |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
