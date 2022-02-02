@@ -20,7 +20,7 @@ func (k Keeper) GetAllRewardBalances(ctx sdk.Context, lockupPeriod qbanktypes.Lo
 }
 
 // Retrive the amount of reserve per denomication held by osmoLPV vault.
-func (k Keeper) GetrewardBalance(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Coin {
+func (k Keeper) GetRewardBalance(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Coin {
 	accAddr := k.CreateOrionRewardMacc(lockupPeriod)
 	balance := k.bankKeeper.GetBalance(ctx, accAddr, denom)
 	return balance
