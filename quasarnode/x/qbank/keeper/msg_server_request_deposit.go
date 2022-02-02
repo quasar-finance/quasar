@@ -42,6 +42,11 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 
+	// TODO - Get Current Epoch day and call below AddUserDenomEpochLockupDeposit
+	// k.Keeper.AddUserDenomEpochLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), epochday, deposit.GetLockupPeriod())
+
+	k.Keeper.AddUserDenomLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), deposit.GetLockupPeriod())
+
 	k.Logger(ctx).Info(
 		"RequestDeposit|Deposited|",
 		"Depositor=", msg.GetCreator(),
