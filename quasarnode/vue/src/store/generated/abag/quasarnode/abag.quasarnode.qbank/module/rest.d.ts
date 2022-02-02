@@ -99,6 +99,14 @@ export interface QbankQueryUserDenomDepositResponse {
     /** @format uint64 */
     amount?: string;
 }
+export interface QbankQueryUserDenomEpochLockupDepositResponse {
+    /** @format uint64 */
+    amount?: string;
+}
+export interface QbankQueryUserDenomLockupDepositResponse {
+    /** @format uint64 */
+    amount?: string;
+}
 export interface QbankQueryUserDepositResponse {
     coins?: QbankQCoins;
 }
@@ -299,6 +307,24 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
     queryUserDenomDeposit: (userAcc: string, query?: {
         denom?: string;
     }, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomDepositResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserDenomEpochLockupDeposit
+     * @summary Queries a list of UserDenomEpochLockupDeposit items.
+     * @request GET:/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/{userAcc}/{denom}/{epochDay}/{lockupType}
+     */
+    queryUserDenomEpochLockupDeposit: (userAcc: string, denom: string, epochDay: string[], lockupType: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomEpochLockupDepositResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserDenomLockupDeposit
+     * @summary Queries a list of UserDenomLockupDeposit items.
+     * @request GET:/abag/quasarnode/qbank/user_denom_lockup_deposit/{userAcc}/{denom}/{lockupType}
+     */
+    queryUserDenomLockupDeposit: (userAcc: string, denom: string, lockupType: string, params?: RequestParams) => Promise<HttpResponse<QbankQueryUserDenomLockupDepositResponse, RpcStatus>>;
     /**
      * No description
      *

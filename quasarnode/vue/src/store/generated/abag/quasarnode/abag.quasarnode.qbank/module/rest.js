@@ -220,6 +220,34 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryUserDenomEpochLockupDeposit
+         * @summary Queries a list of UserDenomEpochLockupDeposit items.
+         * @request GET:/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/{userAcc}/{denom}/{epochDay}/{lockupType}
+         */
+        this.queryUserDenomEpochLockupDeposit = (userAcc, denom, epochDay, lockupType, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/${userAcc}/${denom}/${epochDay}/${lockupType}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUserDenomLockupDeposit
+         * @summary Queries a list of UserDenomLockupDeposit items.
+         * @request GET:/abag/quasarnode/qbank/user_denom_lockup_deposit/{userAcc}/{denom}/{lockupType}
+         */
+        this.queryUserDenomLockupDeposit = (userAcc, denom, lockupType, params = {}) => this.request({
+            path: `/abag/quasarnode/qbank/user_denom_lockup_deposit/${userAcc}/${denom}/${lockupType}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryUserDeposit
          * @summary Queries a list of UserDeposit items.
          * @request GET:/abag/quasarnode/qbank/user_deposit/{userAcc}

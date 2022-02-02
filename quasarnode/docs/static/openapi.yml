@@ -370,6 +370,107 @@ paths:
           type: string
       tags:
         - Query
+  '/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/{userAcc}/{denom}/{epochDay}/{lockupType}':
+    get:
+      summary: Queries a list of UserDenomEpochLockupDeposit items.
+      operationId: AbagQuasarnodeQbankUserDenomEpochLockupDeposit
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              amount:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: userAcc
+          in: path
+          required: true
+          type: string
+        - name: denom
+          in: path
+          required: true
+          type: string
+        - name: epochDay
+          in: path
+          required: true
+          type: array
+          items:
+            type: string
+            format: uint64
+          collectionFormat: csv
+          minItems: 1
+        - name: lockupType
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  '/abag/quasarnode/qbank/user_denom_lockup_deposit/{userAcc}/{denom}/{lockupType}':
+    get:
+      summary: Queries a list of UserDenomLockupDeposit items.
+      operationId: AbagQuasarnodeQbankUserDenomLockupDeposit
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              amount:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: userAcc
+          in: path
+          required: true
+          type: string
+        - name: denom
+          in: path
+          required: true
+          type: string
+        - name: lockupType
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   '/abag/quasarnode/qbank/user_deposit/{userAcc}':
     get:
       summary: Queries a list of UserDeposit items.
@@ -13548,6 +13649,18 @@ definitions:
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   abag.quasarnode.qbank.QueryUserDenomDepositResponse:
+    type: object
+    properties:
+      amount:
+        type: string
+        format: uint64
+  abag.quasarnode.qbank.QueryUserDenomEpochLockupDepositResponse:
+    type: object
+    properties:
+      amount:
+        type: string
+        format: uint64
+  abag.quasarnode.qbank.QueryUserDenomLockupDepositResponse:
     type: object
     properties:
       amount:

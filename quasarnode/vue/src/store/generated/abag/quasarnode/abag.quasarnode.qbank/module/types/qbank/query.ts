@@ -79,6 +79,27 @@ export interface QueryUserDepositResponse {
   coins: QCoins | undefined;
 }
 
+export interface QueryUserDenomLockupDepositRequest {
+  userAcc: string;
+  denom: string;
+  lockupType: string;
+}
+
+export interface QueryUserDenomLockupDepositResponse {
+  amount: number;
+}
+
+export interface QueryUserDenomEpochLockupDepositRequest {
+  userAcc: string;
+  denom: string;
+  epochDay: number[];
+  lockupType: string;
+}
+
+export interface QueryUserDenomEpochLockupDepositResponse {
+  amount: number;
+}
+
 const baseQueryParamsRequest: object = {};
 
 export const QueryParamsRequest = {
@@ -1172,6 +1193,392 @@ export const QueryUserDepositResponse = {
   },
 };
 
+const baseQueryUserDenomLockupDepositRequest: object = {
+  userAcc: "",
+  denom: "",
+  lockupType: "",
+};
+
+export const QueryUserDenomLockupDepositRequest = {
+  encode(
+    message: QueryUserDenomLockupDepositRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.userAcc !== "") {
+      writer.uint32(10).string(message.userAcc);
+    }
+    if (message.denom !== "") {
+      writer.uint32(18).string(message.denom);
+    }
+    if (message.lockupType !== "") {
+      writer.uint32(26).string(message.lockupType);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomLockupDepositRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomLockupDepositRequest,
+    } as QueryUserDenomLockupDepositRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userAcc = reader.string();
+          break;
+        case 2:
+          message.denom = reader.string();
+          break;
+        case 3:
+          message.lockupType = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomLockupDepositRequest {
+    const message = {
+      ...baseQueryUserDenomLockupDepositRequest,
+    } as QueryUserDenomLockupDepositRequest;
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = String(object.userAcc);
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = String(object.denom);
+    } else {
+      message.denom = "";
+    }
+    if (object.lockupType !== undefined && object.lockupType !== null) {
+      message.lockupType = String(object.lockupType);
+    } else {
+      message.lockupType = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomLockupDepositRequest): unknown {
+    const obj: any = {};
+    message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+    message.denom !== undefined && (obj.denom = message.denom);
+    message.lockupType !== undefined && (obj.lockupType = message.lockupType);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomLockupDepositRequest>
+  ): QueryUserDenomLockupDepositRequest {
+    const message = {
+      ...baseQueryUserDenomLockupDepositRequest,
+    } as QueryUserDenomLockupDepositRequest;
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = object.userAcc;
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = object.denom;
+    } else {
+      message.denom = "";
+    }
+    if (object.lockupType !== undefined && object.lockupType !== null) {
+      message.lockupType = object.lockupType;
+    } else {
+      message.lockupType = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryUserDenomLockupDepositResponse: object = { amount: 0 };
+
+export const QueryUserDenomLockupDepositResponse = {
+  encode(
+    message: QueryUserDenomLockupDepositResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.amount !== 0) {
+      writer.uint32(8).uint64(message.amount);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomLockupDepositResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomLockupDepositResponse,
+    } as QueryUserDenomLockupDepositResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.amount = longToNumber(reader.uint64() as Long);
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomLockupDepositResponse {
+    const message = {
+      ...baseQueryUserDenomLockupDepositResponse,
+    } as QueryUserDenomLockupDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = Number(object.amount);
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomLockupDepositResponse): unknown {
+    const obj: any = {};
+    message.amount !== undefined && (obj.amount = message.amount);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomLockupDepositResponse>
+  ): QueryUserDenomLockupDepositResponse {
+    const message = {
+      ...baseQueryUserDenomLockupDepositResponse,
+    } as QueryUserDenomLockupDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = object.amount;
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+};
+
+const baseQueryUserDenomEpochLockupDepositRequest: object = {
+  userAcc: "",
+  denom: "",
+  epochDay: 0,
+  lockupType: "",
+};
+
+export const QueryUserDenomEpochLockupDepositRequest = {
+  encode(
+    message: QueryUserDenomEpochLockupDepositRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.userAcc !== "") {
+      writer.uint32(10).string(message.userAcc);
+    }
+    if (message.denom !== "") {
+      writer.uint32(18).string(message.denom);
+    }
+    writer.uint32(26).fork();
+    for (const v of message.epochDay) {
+      writer.uint64(v);
+    }
+    writer.ldelim();
+    if (message.lockupType !== "") {
+      writer.uint32(34).string(message.lockupType);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomEpochLockupDepositRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositRequest,
+    } as QueryUserDenomEpochLockupDepositRequest;
+    message.epochDay = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userAcc = reader.string();
+          break;
+        case 2:
+          message.denom = reader.string();
+          break;
+        case 3:
+          if ((tag & 7) === 2) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.epochDay.push(longToNumber(reader.uint64() as Long));
+            }
+          } else {
+            message.epochDay.push(longToNumber(reader.uint64() as Long));
+          }
+          break;
+        case 4:
+          message.lockupType = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomEpochLockupDepositRequest {
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositRequest,
+    } as QueryUserDenomEpochLockupDepositRequest;
+    message.epochDay = [];
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = String(object.userAcc);
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = String(object.denom);
+    } else {
+      message.denom = "";
+    }
+    if (object.epochDay !== undefined && object.epochDay !== null) {
+      for (const e of object.epochDay) {
+        message.epochDay.push(Number(e));
+      }
+    }
+    if (object.lockupType !== undefined && object.lockupType !== null) {
+      message.lockupType = String(object.lockupType);
+    } else {
+      message.lockupType = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomEpochLockupDepositRequest): unknown {
+    const obj: any = {};
+    message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+    message.denom !== undefined && (obj.denom = message.denom);
+    if (message.epochDay) {
+      obj.epochDay = message.epochDay.map((e) => e);
+    } else {
+      obj.epochDay = [];
+    }
+    message.lockupType !== undefined && (obj.lockupType = message.lockupType);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomEpochLockupDepositRequest>
+  ): QueryUserDenomEpochLockupDepositRequest {
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositRequest,
+    } as QueryUserDenomEpochLockupDepositRequest;
+    message.epochDay = [];
+    if (object.userAcc !== undefined && object.userAcc !== null) {
+      message.userAcc = object.userAcc;
+    } else {
+      message.userAcc = "";
+    }
+    if (object.denom !== undefined && object.denom !== null) {
+      message.denom = object.denom;
+    } else {
+      message.denom = "";
+    }
+    if (object.epochDay !== undefined && object.epochDay !== null) {
+      for (const e of object.epochDay) {
+        message.epochDay.push(e);
+      }
+    }
+    if (object.lockupType !== undefined && object.lockupType !== null) {
+      message.lockupType = object.lockupType;
+    } else {
+      message.lockupType = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryUserDenomEpochLockupDepositResponse: object = { amount: 0 };
+
+export const QueryUserDenomEpochLockupDepositResponse = {
+  encode(
+    message: QueryUserDenomEpochLockupDepositResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.amount !== 0) {
+      writer.uint32(8).uint64(message.amount);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryUserDenomEpochLockupDepositResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositResponse,
+    } as QueryUserDenomEpochLockupDepositResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.amount = longToNumber(reader.uint64() as Long);
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryUserDenomEpochLockupDepositResponse {
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositResponse,
+    } as QueryUserDenomEpochLockupDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = Number(object.amount);
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryUserDenomEpochLockupDepositResponse): unknown {
+    const obj: any = {};
+    message.amount !== undefined && (obj.amount = message.amount);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryUserDenomEpochLockupDepositResponse>
+  ): QueryUserDenomEpochLockupDepositResponse {
+    const message = {
+      ...baseQueryUserDenomEpochLockupDepositResponse,
+    } as QueryUserDenomEpochLockupDepositResponse;
+    if (object.amount !== undefined && object.amount !== null) {
+      message.amount = object.amount;
+    } else {
+      message.amount = 0;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -1196,6 +1603,14 @@ export interface Query {
   UserDeposit(
     request: QueryUserDepositRequest
   ): Promise<QueryUserDepositResponse>;
+  /** Queries a list of UserDenomLockupDeposit items. */
+  UserDenomLockupDeposit(
+    request: QueryUserDenomLockupDepositRequest
+  ): Promise<QueryUserDenomLockupDepositResponse>;
+  /** Queries a list of UserDenomEpochLockupDeposit items. */
+  UserDenomEpochLockupDeposit(
+    request: QueryUserDenomEpochLockupDepositRequest
+  ): Promise<QueryUserDenomEpochLockupDepositResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -1304,6 +1719,36 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryUserDepositResponse.decode(new Reader(data))
+    );
+  }
+
+  UserDenomLockupDeposit(
+    request: QueryUserDenomLockupDepositRequest
+  ): Promise<QueryUserDenomLockupDepositResponse> {
+    const data = QueryUserDenomLockupDepositRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Query",
+      "UserDenomLockupDeposit",
+      data
+    );
+    return promise.then((data) =>
+      QueryUserDenomLockupDepositResponse.decode(new Reader(data))
+    );
+  }
+
+  UserDenomEpochLockupDeposit(
+    request: QueryUserDenomEpochLockupDepositRequest
+  ): Promise<QueryUserDenomEpochLockupDepositResponse> {
+    const data = QueryUserDenomEpochLockupDepositRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qbank.Query",
+      "UserDenomEpochLockupDeposit",
+      data
+    );
+    return promise.then((data) =>
+      QueryUserDenomEpochLockupDepositResponse.decode(new Reader(data))
     );
   }
 }

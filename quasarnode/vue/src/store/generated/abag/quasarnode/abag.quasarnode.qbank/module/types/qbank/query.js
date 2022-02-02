@@ -944,6 +944,354 @@ export const QueryUserDepositResponse = {
         return message;
     },
 };
+const baseQueryUserDenomLockupDepositRequest = {
+    userAcc: "",
+    denom: "",
+    lockupType: "",
+};
+export const QueryUserDenomLockupDepositRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.userAcc !== "") {
+            writer.uint32(10).string(message.userAcc);
+        }
+        if (message.denom !== "") {
+            writer.uint32(18).string(message.denom);
+        }
+        if (message.lockupType !== "") {
+            writer.uint32(26).string(message.lockupType);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomLockupDepositRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.userAcc = reader.string();
+                    break;
+                case 2:
+                    message.denom = reader.string();
+                    break;
+                case 3:
+                    message.lockupType = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomLockupDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = String(object.userAcc);
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = String(object.denom);
+        }
+        else {
+            message.denom = "";
+        }
+        if (object.lockupType !== undefined && object.lockupType !== null) {
+            message.lockupType = String(object.lockupType);
+        }
+        else {
+            message.lockupType = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+        message.denom !== undefined && (obj.denom = message.denom);
+        message.lockupType !== undefined && (obj.lockupType = message.lockupType);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomLockupDepositRequest,
+        };
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = object.userAcc;
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = object.denom;
+        }
+        else {
+            message.denom = "";
+        }
+        if (object.lockupType !== undefined && object.lockupType !== null) {
+            message.lockupType = object.lockupType;
+        }
+        else {
+            message.lockupType = "";
+        }
+        return message;
+    },
+};
+const baseQueryUserDenomLockupDepositResponse = { amount: 0 };
+export const QueryUserDenomLockupDepositResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.amount !== 0) {
+            writer.uint32(8).uint64(message.amount);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomLockupDepositResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.amount = longToNumber(reader.uint64());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomLockupDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = Number(object.amount);
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.amount !== undefined && (obj.amount = message.amount);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomLockupDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = object.amount;
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+};
+const baseQueryUserDenomEpochLockupDepositRequest = {
+    userAcc: "",
+    denom: "",
+    epochDay: 0,
+    lockupType: "",
+};
+export const QueryUserDenomEpochLockupDepositRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.userAcc !== "") {
+            writer.uint32(10).string(message.userAcc);
+        }
+        if (message.denom !== "") {
+            writer.uint32(18).string(message.denom);
+        }
+        writer.uint32(26).fork();
+        for (const v of message.epochDay) {
+            writer.uint64(v);
+        }
+        writer.ldelim();
+        if (message.lockupType !== "") {
+            writer.uint32(34).string(message.lockupType);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositRequest,
+        };
+        message.epochDay = [];
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.userAcc = reader.string();
+                    break;
+                case 2:
+                    message.denom = reader.string();
+                    break;
+                case 3:
+                    if ((tag & 7) === 2) {
+                        const end2 = reader.uint32() + reader.pos;
+                        while (reader.pos < end2) {
+                            message.epochDay.push(longToNumber(reader.uint64()));
+                        }
+                    }
+                    else {
+                        message.epochDay.push(longToNumber(reader.uint64()));
+                    }
+                    break;
+                case 4:
+                    message.lockupType = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositRequest,
+        };
+        message.epochDay = [];
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = String(object.userAcc);
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = String(object.denom);
+        }
+        else {
+            message.denom = "";
+        }
+        if (object.epochDay !== undefined && object.epochDay !== null) {
+            for (const e of object.epochDay) {
+                message.epochDay.push(Number(e));
+            }
+        }
+        if (object.lockupType !== undefined && object.lockupType !== null) {
+            message.lockupType = String(object.lockupType);
+        }
+        else {
+            message.lockupType = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.userAcc !== undefined && (obj.userAcc = message.userAcc);
+        message.denom !== undefined && (obj.denom = message.denom);
+        if (message.epochDay) {
+            obj.epochDay = message.epochDay.map((e) => e);
+        }
+        else {
+            obj.epochDay = [];
+        }
+        message.lockupType !== undefined && (obj.lockupType = message.lockupType);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositRequest,
+        };
+        message.epochDay = [];
+        if (object.userAcc !== undefined && object.userAcc !== null) {
+            message.userAcc = object.userAcc;
+        }
+        else {
+            message.userAcc = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = object.denom;
+        }
+        else {
+            message.denom = "";
+        }
+        if (object.epochDay !== undefined && object.epochDay !== null) {
+            for (const e of object.epochDay) {
+                message.epochDay.push(e);
+            }
+        }
+        if (object.lockupType !== undefined && object.lockupType !== null) {
+            message.lockupType = object.lockupType;
+        }
+        else {
+            message.lockupType = "";
+        }
+        return message;
+    },
+};
+const baseQueryUserDenomEpochLockupDepositResponse = { amount: 0 };
+export const QueryUserDenomEpochLockupDepositResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.amount !== 0) {
+            writer.uint32(8).uint64(message.amount);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.amount = longToNumber(reader.uint64());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = Number(object.amount);
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.amount !== undefined && (obj.amount = message.amount);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryUserDenomEpochLockupDepositResponse,
+        };
+        if (object.amount !== undefined && object.amount !== null) {
+            message.amount = object.amount;
+        }
+        else {
+            message.amount = 0;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -987,6 +1335,16 @@ export class QueryClientImpl {
         const data = QueryUserDepositRequest.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserDeposit", data);
         return promise.then((data) => QueryUserDepositResponse.decode(new Reader(data)));
+    }
+    UserDenomLockupDeposit(request) {
+        const data = QueryUserDenomLockupDepositRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserDenomLockupDeposit", data);
+        return promise.then((data) => QueryUserDenomLockupDepositResponse.decode(new Reader(data)));
+    }
+    UserDenomEpochLockupDeposit(request) {
+        const data = QueryUserDenomEpochLockupDepositRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserDenomEpochLockupDeposit", data);
+        return promise.then((data) => QueryUserDenomEpochLockupDepositResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

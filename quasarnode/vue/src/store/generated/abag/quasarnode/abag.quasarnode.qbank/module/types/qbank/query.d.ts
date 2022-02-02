@@ -58,6 +58,23 @@ export interface QueryUserDepositRequest {
 export interface QueryUserDepositResponse {
     coins: QCoins | undefined;
 }
+export interface QueryUserDenomLockupDepositRequest {
+    userAcc: string;
+    denom: string;
+    lockupType: string;
+}
+export interface QueryUserDenomLockupDepositResponse {
+    amount: number;
+}
+export interface QueryUserDenomEpochLockupDepositRequest {
+    userAcc: string;
+    denom: string;
+    epochDay: number[];
+    lockupType: string;
+}
+export interface QueryUserDenomEpochLockupDepositResponse {
+    amount: number;
+}
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): QueryParamsRequest;
@@ -170,6 +187,34 @@ export declare const QueryUserDepositResponse: {
     toJSON(message: QueryUserDepositResponse): unknown;
     fromPartial(object: DeepPartial<QueryUserDepositResponse>): QueryUserDepositResponse;
 };
+export declare const QueryUserDenomLockupDepositRequest: {
+    encode(message: QueryUserDenomLockupDepositRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomLockupDepositRequest;
+    fromJSON(object: any): QueryUserDenomLockupDepositRequest;
+    toJSON(message: QueryUserDenomLockupDepositRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomLockupDepositRequest>): QueryUserDenomLockupDepositRequest;
+};
+export declare const QueryUserDenomLockupDepositResponse: {
+    encode(message: QueryUserDenomLockupDepositResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomLockupDepositResponse;
+    fromJSON(object: any): QueryUserDenomLockupDepositResponse;
+    toJSON(message: QueryUserDenomLockupDepositResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomLockupDepositResponse>): QueryUserDenomLockupDepositResponse;
+};
+export declare const QueryUserDenomEpochLockupDepositRequest: {
+    encode(message: QueryUserDenomEpochLockupDepositRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomEpochLockupDepositRequest;
+    fromJSON(object: any): QueryUserDenomEpochLockupDepositRequest;
+    toJSON(message: QueryUserDenomEpochLockupDepositRequest): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomEpochLockupDepositRequest>): QueryUserDenomEpochLockupDepositRequest;
+};
+export declare const QueryUserDenomEpochLockupDepositResponse: {
+    encode(message: QueryUserDenomEpochLockupDepositResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryUserDenomEpochLockupDepositResponse;
+    fromJSON(object: any): QueryUserDenomEpochLockupDepositResponse;
+    toJSON(message: QueryUserDenomEpochLockupDepositResponse): unknown;
+    fromPartial(object: DeepPartial<QueryUserDenomEpochLockupDepositResponse>): QueryUserDenomEpochLockupDepositResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -188,6 +233,10 @@ export interface Query {
     FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse>;
     /** Queries a list of UserDeposit items. */
     UserDeposit(request: QueryUserDepositRequest): Promise<QueryUserDepositResponse>;
+    /** Queries a list of UserDenomLockupDeposit items. */
+    UserDenomLockupDeposit(request: QueryUserDenomLockupDepositRequest): Promise<QueryUserDenomLockupDepositResponse>;
+    /** Queries a list of UserDenomEpochLockupDeposit items. */
+    UserDenomEpochLockupDeposit(request: QueryUserDenomEpochLockupDepositRequest): Promise<QueryUserDenomEpochLockupDepositResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -200,6 +249,8 @@ export declare class QueryClientImpl implements Query {
     WithdrawAll(request: QueryAllWithdrawRequest): Promise<QueryAllWithdrawResponse>;
     FeeData(request: QueryGetFeeDataRequest): Promise<QueryGetFeeDataResponse>;
     UserDeposit(request: QueryUserDepositRequest): Promise<QueryUserDepositResponse>;
+    UserDenomLockupDeposit(request: QueryUserDenomLockupDepositRequest): Promise<QueryUserDenomLockupDepositResponse>;
+    UserDenomEpochLockupDeposit(request: QueryUserDenomEpochLockupDepositRequest): Promise<QueryUserDenomEpochLockupDepositResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
