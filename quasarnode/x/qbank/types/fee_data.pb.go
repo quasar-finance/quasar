@@ -24,6 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// FeeData defines the data object for the fee collection fields.
 type FeeData struct {
 	FeeCollector string     `protobuf:"bytes,1,opt,name=feeCollector,proto3" json:"feeCollector,omitempty"`
 	FromAddress  string     `protobuf:"bytes,2,opt,name=fromAddress,proto3" json:"fromAddress,omitempty"`

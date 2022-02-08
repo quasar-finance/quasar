@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// LockupTypes defines different types of locktypes to be used in the system for users deposit
 type LockupTypes int32
 
 const (
@@ -59,6 +60,7 @@ func (LockupTypes) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_910d3f484eab02ad, []int{0}
 }
 
+// QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores.
 type QCoins struct {
 	Coins github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
 }
@@ -103,6 +105,7 @@ func (m *QCoins) GetCoins() github_com_cosmos_cosmos_sdk_types.Coins {
 	return nil
 }
 
+// QDenoms defines encoding/decoding for the slice of denoms to be used in KV stores
 type QDenoms struct {
 	Denoms []string `protobuf:"bytes,1,rep,name=denoms,proto3" json:"denoms,omitempty"`
 }

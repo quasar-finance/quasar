@@ -360,6 +360,26 @@ func New(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter,
 	)
+	/*
+		app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
+			appCodec,
+			keys[osmolpvmoduletypes.StoreKey],
+			keys[osmolpvmoduletypes.MemStoreKey],
+			app.GetSubspace(osmolpvmoduletypes.ModuleName),
+			app.BankKeeper,
+		)
+
+		osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
+	*/
+	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
+		appCodec,
+		keys[qbankmoduletypes.StoreKey],
+		keys[qbankmoduletypes.MemStoreKey],
+		app.GetSubspace(qbankmoduletypes.ModuleName),
+		app.BankKeeper,
+		// app.OsmolpvKeeper,
+	)
+	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
 		appCodec,
@@ -367,19 +387,10 @@ func New(
 		keys[osmolpvmoduletypes.MemStoreKey],
 		app.GetSubspace(osmolpvmoduletypes.ModuleName),
 		app.BankKeeper,
+		app.QbankKeeper,
 	)
 
 	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
-		appCodec,
-		keys[qbankmoduletypes.StoreKey],
-		keys[qbankmoduletypes.MemStoreKey],
-		app.GetSubspace(qbankmoduletypes.ModuleName),
-		app.BankKeeper,
-		app.OsmolpvKeeper,
-	)
-	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -431,7 +442,7 @@ func New(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
-		feegrant.ModuleName,
+		feegrant.ModuleName, qbankmoduletypes.ModuleName, osmolpvmoduletypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)

@@ -5,6 +5,7 @@ import { Coin } from "../cosmos/base/v1beta1/coin";
 
 export const protobufPackage = "abag.quasarnode.qbank";
 
+/** FeeData defines the data object for the fee collection fields. */
 export interface FeeData {
   feeCollector: string;
   fromAddress: string;

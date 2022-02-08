@@ -11,7 +11,7 @@ func (k Keeper) CreateOrionRewardMacc(lockupPeriod qbanktypes.LockupTypes) sdk.A
 	return k.accountKeeper.GetModuleAddress(accName)
 }
 
-// Retrieve the amount of stake as a slice of sdk.Coin as sdk.Coins
+// Retrieve the amount of rewards as a slice of sdk.Coin as sdk.Coins
 // held by Orion vault reward accounts
 func (k Keeper) GetAllRewardBalances(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes) sdk.Coins {
 	accAddr := k.CreateOrionRewardMacc(lockupPeriod)

@@ -1,6 +1,7 @@
 import { Writer, Reader } from "protobufjs/minimal";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
+/** Withdraw defines the withdraw object to be stored in the KV store. */
 export interface Withdraw {
     id: number;
     riskProfile: string;

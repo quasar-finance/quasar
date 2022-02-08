@@ -109,3 +109,10 @@ func GetWithdrawIDBytes(id uint64) []byte {
 func GetWithdrawIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
+
+// GetWithdrawableAmt implements the calculation for the withdrawable denom amount of a given user
+// on a specific epoch day
+func (k Keeper) GetWithdrawableAmt(ctx sdk.Context, uid, denom string, epochday uint64) uint64 {
+	// Process CreateUserDenomEpochLockupDepositKey
+	return 1
+}

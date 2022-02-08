@@ -4,6 +4,7 @@ import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
 /** Depsoit message object to be stored in the KV store. */
 export interface Deposit {
+    /** unique deposit id */
     id: number;
     /** Supported values are "LOW", "MID", "HIGH" */
     riskProfile: string;

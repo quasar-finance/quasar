@@ -9,7 +9,7 @@ import "qbank/common.proto";
 
 // Depsoit message object to be stored in the KV store. 
 message Deposit {
-  uint64 id = 1; 
+  uint64 id = 1; // unique deposit id
   string riskProfile = 2; // Supported values are "LOW", "MID", "HIGH"
   string vaultID = 3; 
   string depositorAccAddress = 4; 

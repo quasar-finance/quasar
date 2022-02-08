@@ -24,6 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Withdraw defines the withdraw object to be stored in the KV store.
 type Withdraw struct {
 	Id                  uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	RiskProfile         string `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`

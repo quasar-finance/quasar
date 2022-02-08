@@ -20,12 +20,17 @@ export interface MsgRequestWithdraw {
 }
 export interface MsgRequestWithdrawResponse {
 }
+/**
+ * MsgClaimRewards is tx message to claim all available rewards from the input vault.
+ * TODO - Should it move to a separate reward module to avoid cyclic dependencies between modules.
+ */
 export interface MsgClaimRewards {
     creator: string;
     vaultID: string;
 }
 export interface MsgClaimRewardsResponse {
 }
+/** MsgRequestWithdrawAll is tx message to withdraw all withdrawable amount from input vault. */
 export interface MsgRequestWithdrawAll {
     creator: string;
     vaultID: string;

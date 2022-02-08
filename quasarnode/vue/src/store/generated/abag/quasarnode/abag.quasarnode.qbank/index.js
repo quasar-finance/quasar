@@ -408,20 +408,20 @@ export default {
                 }
             }
         },
-        async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
+        async sendMsgRequestWithdrawAll({ rootGetters }, { value, fee = [], memo = '' }) {
             try {
                 const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestDeposit(value);
+                const msg = await txClient.msgRequestWithdrawAll(value);
                 const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
                         gas: "200000" }, memo });
                 return result;
             }
             catch (e) {
                 if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
+                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Send', 'Could not broadcast Tx: ' + e.message);
                 }
             }
         },
@@ -442,20 +442,20 @@ export default {
                 }
             }
         },
-        async sendMsgRequestWithdrawAll({ rootGetters }, { value, fee = [], memo = '' }) {
+        async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
             try {
                 const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestWithdrawAll(value);
+                const msg = await txClient.msgRequestDeposit(value);
                 const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
                         gas: "200000" }, memo });
                 return result;
             }
             catch (e) {
                 if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Init', 'Could not initialize signing client. Wallet is required.');
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Send', 'Could not broadcast Tx: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: ' + e.message);
                 }
             }
         },
@@ -474,18 +474,18 @@ export default {
                 }
             }
         },
-        async MsgRequestDeposit({ rootGetters }, { value }) {
+        async MsgRequestWithdrawAll({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestDeposit(value);
+                const msg = await txClient.msgRequestWithdrawAll(value);
                 return msg;
             }
             catch (e) {
                 if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
+                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Create', 'Could not create message: ' + e.message);
                 }
             }
         },
@@ -504,18 +504,18 @@ export default {
                 }
             }
         },
-        async MsgRequestWithdrawAll({ rootGetters }, { value }) {
+        async MsgRequestDeposit({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgRequestWithdrawAll(value);
+                const msg = await txClient.msgRequestDeposit(value);
                 return msg;
             }
             catch (e) {
                 if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Init', 'Could not initialize signing client. Wallet is required.');
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.');
                 }
                 else {
-                    throw new SpVuexError('TxClient:MsgRequestWithdrawAll:Create', 'Could not create message: ' + e.message);
+                    throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message);
                 }
             }
         },

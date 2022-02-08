@@ -39,7 +39,8 @@ message MsgRequestWithdraw {
 message MsgRequestWithdrawResponse {
 }
  
-
+// MsgClaimRewards is tx message to claim all available rewards from the input vault.
+// TODO - Should it move to a separate reward module to avoid cyclic dependencies between modules.
 message MsgClaimRewards {
   string creator = 1;
   string vaultID = 2;
@@ -48,6 +49,7 @@ message MsgClaimRewards {
 message MsgClaimRewardsResponse {
 }
 
+// MsgRequestWithdrawAll is tx message to withdraw all withdrawable amount from input vault.
 message MsgRequestWithdrawAll {
   string creator = 1;
   string vaultID = 2;

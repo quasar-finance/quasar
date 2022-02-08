@@ -2,6 +2,7 @@
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "abag.quasarnode.qbank";
+/** LockupTypes defines different types of locktypes to be used in the system for users deposit */
 export var LockupTypes;
 (function (LockupTypes) {
     LockupTypes[LockupTypes["Invalid"] = 0] = "Invalid";

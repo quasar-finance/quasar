@@ -272,6 +272,7 @@ paths:
                     format: uint64
                   memo:
                     type: string
+                description: FeeData defines the data object for the fee collection fields.
         default:
           description: An unexpected error response.
           schema:
@@ -358,6 +359,9 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                description: >-
+                  QCoins defines encoding/decoding for the slice of sdk.coins to
+                  be used in KV stores.
         default:
           description: An unexpected error response.
           schema:
@@ -598,6 +602,9 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                description: >-
+                  QCoins defines encoding/decoding for the slice of sdk.coins to
+                  be used in KV stores.
         default:
           description: An unexpected error response.
           schema:
@@ -653,6 +660,9 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                description: >-
+                  QCoins defines encoding/decoding for the slice of sdk.coins to
+                  be used in KV stores.
         default:
           description: An unexpected error response.
           schema:
@@ -720,6 +730,9 @@ paths:
                       title: |-
                         string amount = 5; 
                         string denom = 6;
+                  description: >-
+                    Withdraw defines the withdraw object to be stored in the KV
+                    store.
               pagination:
                 type: object
                 properties:
@@ -864,6 +877,9 @@ paths:
                     title: |-
                       string amount = 5; 
                       string denom = 6;
+                description: >-
+                  Withdraw defines the withdraw object to be stored in the KV
+                  store.
         default:
           description: An unexpected error response.
           schema:
@@ -13523,6 +13539,7 @@ definitions:
         format: uint64
       memo:
         type: string
+    description: FeeData defines the data object for the fee collection fields.
   abag.quasarnode.qbank.LockupTypes:
     type: string
     enum:
@@ -13532,6 +13549,9 @@ definitions:
       - Months_1
       - Months_3
     default: Invalid
+    title: >-
+      LockupTypes defines different types of locktypes to be used in the system
+      for users deposit
   abag.quasarnode.qbank.MsgClaimRewardsResponse:
     type: object
   abag.quasarnode.qbank.MsgRequestDepositResponse:
@@ -13560,6 +13580,9 @@ definitions:
 
             NOTE: The amount field is an Int which implements the custom method
             signatures required by gogoproto.
+    description: >-
+      QCoins defines encoding/decoding for the slice of sdk.coins to be used in
+      KV stores.
   abag.quasarnode.qbank.QueryAllDepositResponse:
     type: object
     properties:
@@ -13663,6 +13686,7 @@ definitions:
               title: |-
                 string amount = 5; 
                 string denom = 6;
+          description: Withdraw defines the withdraw object to be stored in the KV store.
       pagination:
         type: object
         properties:
@@ -13762,6 +13786,7 @@ definitions:
             format: uint64
           memo:
             type: string
+        description: FeeData defines the data object for the fee collection fields.
   abag.quasarnode.qbank.QueryGetWithdrawResponse:
     type: object
     properties:
@@ -13795,6 +13820,7 @@ definitions:
             title: |-
               string amount = 5; 
               string denom = 6;
+        description: Withdraw defines the withdraw object to be stored in the KV store.
   abag.quasarnode.qbank.QueryParamsResponse:
     type: object
     properties:
@@ -13825,6 +13851,9 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+        description: >-
+          QCoins defines encoding/decoding for the slice of sdk.coins to be used
+          in KV stores.
   abag.quasarnode.qbank.QueryUserDenomDepositResponse:
     type: object
     properties:
@@ -13872,6 +13901,9 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+        description: >-
+          QCoins defines encoding/decoding for the slice of sdk.coins to be used
+          in KV stores.
   abag.quasarnode.qbank.QueryUserWithdrawResponse:
     type: object
     properties:
@@ -13895,6 +13927,9 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+        description: >-
+          QCoins defines encoding/decoding for the slice of sdk.coins to be used
+          in KV stores.
   abag.quasarnode.qbank.Withdraw:
     type: object
     properties:
@@ -13922,6 +13957,7 @@ definitions:
         title: |-
           string amount = 5; 
           string denom = 6;
+    description: Withdraw defines the withdraw object to be stored in the KV store.
   cosmos.base.query.v1beta1.PageRequest:
     type: object
     properties:

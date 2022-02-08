@@ -146,6 +146,7 @@ func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (curr
 	return currPos, true
 }
 
+/*
 // SetMeissaStrategyTotalHistPos Set the strategy current position
 func (k Keeper) SetMeissaStrategyTotalHistPos(ctx sdk.Context, histPos types.TotalHistPosition, epochday uint64) {
 
@@ -173,7 +174,7 @@ func (k Keeper) GetMeissaStrategyTotalHisPos(ctx sdk.Context, epochday uint64) (
 	k.cdc.MustUnmarshal(b, &histPos)
 	return histPos, true
 }
-
+*/
 func getUniqueNames(names, existingNames []string) []string {
 	var uniqueNames []string
 	uniqueNames = existingNames

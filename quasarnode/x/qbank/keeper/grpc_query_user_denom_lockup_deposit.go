@@ -20,8 +20,8 @@ func (k Keeper) UserDenomLockupDeposit(goCtx context.Context, req *types.QueryUs
 
 	// _ = ctx
 
-	k.Logger(ctx).Info(fmt.Sprintf("UserDenomLockupDeposit|%s|%s\n", req.GetUserAcc(),
-		req.GetDenom()))
+	k.Logger(ctx).Info(fmt.Sprintf("UserDenomLockupDeposit|%s|%s|%s\n", req.GetUserAcc(),
+		req.GetDenom(), req.GetLockupType()))
 
 	tokens, found := k.GetUserDenomLockupDepositAmount(ctx,
 		req.GetUserAcc(), req.GetDenom(),

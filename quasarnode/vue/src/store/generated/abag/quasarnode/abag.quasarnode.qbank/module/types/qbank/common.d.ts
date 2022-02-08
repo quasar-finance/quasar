@@ -1,6 +1,7 @@
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "abag.quasarnode.qbank";
+/** LockupTypes defines different types of locktypes to be used in the system for users deposit */
 export declare enum LockupTypes {
     Invalid = 0,
     /** Days_7 - 7 Days */
@@ -15,9 +16,11 @@ export declare enum LockupTypes {
 }
 export declare function lockupTypesFromJSON(object: any): LockupTypes;
 export declare function lockupTypesToJSON(object: LockupTypes): string;
+/** QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores. */
 export interface QCoins {
     coins: Coin[];
 }
+/** QDenoms defines encoding/decoding for the slice of denoms to be used in KV stores */
 export interface QDenoms {
     denoms: string[];
 }

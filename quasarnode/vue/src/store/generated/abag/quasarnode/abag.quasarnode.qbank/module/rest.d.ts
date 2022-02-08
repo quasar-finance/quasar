@@ -19,6 +19,9 @@ export interface QbankDeposit {
     coin?: V1Beta1Coin;
     lockupPeriod?: QbankLockupTypes;
 }
+/**
+ * FeeData defines the data object for the fee collection fields.
+ */
 export interface QbankFeeData {
     feeCollector?: string;
     fromAddress?: string;
@@ -50,6 +53,9 @@ export declare type QbankMsgRequestWithdrawResponse = object;
  * Params defines the parameters for the module.
  */
 export declare type QbankParams = object;
+/**
+ * QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores.
+ */
 export interface QbankQCoins {
     coins?: V1Beta1Coin[];
 }
@@ -84,9 +90,11 @@ export interface QbankQueryGetDepositResponse {
     Deposit?: QbankDeposit;
 }
 export interface QbankQueryGetFeeDataResponse {
+    /** FeeData defines the data object for the fee collection fields. */
     FeeData?: QbankFeeData;
 }
 export interface QbankQueryGetWithdrawResponse {
+    /** Withdraw defines the withdraw object to be stored in the KV store. */
     Withdraw?: QbankWithdraw;
 }
 /**
@@ -97,6 +105,7 @@ export interface QbankQueryParamsResponse {
     params?: QbankParams;
 }
 export interface QbankQueryUserClaimRewardsResponse {
+    /** QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores. */
     coins?: QbankQCoins;
 }
 export interface QbankQueryUserDenomDepositResponse {
@@ -116,11 +125,16 @@ export interface QbankQueryUserDenomWithdrawResponse {
     amount?: string;
 }
 export interface QbankQueryUserDepositResponse {
+    /** QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores. */
     coins?: QbankQCoins;
 }
 export interface QbankQueryUserWithdrawResponse {
+    /** QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores. */
     coins?: QbankQCoins;
 }
+/**
+ * Withdraw defines the withdraw object to be stored in the KV store.
+ */
 export interface QbankWithdraw {
     /** @format uint64 */
     id?: string;

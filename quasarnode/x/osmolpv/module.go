@@ -101,6 +101,7 @@ type AppModule struct {
 	keeper        keeper.Keeper
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
+	// TODO - Do we need qbank keeper here as well
 }
 
 func NewAppModule(
