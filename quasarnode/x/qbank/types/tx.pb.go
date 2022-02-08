@@ -246,6 +246,8 @@ func (m *MsgRequestWithdrawResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgRequestWithdrawResponse proto.InternalMessageInfo
 
+// MsgClaimRewards is tx message to claim all available rewards from the input vault.
+// TODO - Should it move to a separate reward module to avoid cyclic dependencies between modules.
 type MsgClaimRewards struct {
 	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	VaultID string `protobuf:"bytes,2,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
@@ -334,6 +336,7 @@ func (m *MsgClaimRewardsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgClaimRewardsResponse proto.InternalMessageInfo
 
+// MsgRequestWithdrawAll is tx message to withdraw all withdrawable amount from input vault.
 type MsgRequestWithdrawAll struct {
 	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	VaultID string `protobuf:"bytes,2,opt,name=vaultID,proto3" json:"vaultID,omitempty"`

@@ -5,6 +5,7 @@ option go_package = "github.com/abag/quasarnode/x/qbank/types";
 import "gogoproto/gogo.proto"; 
 import "cosmos/base/v1beta1/coin.proto"; 
 
+// FeeData defines the data object for the fee collection fields.
 message FeeData {
   string feeCollector = 1; 
   string fromAddress = 2;
@@ -12,5 +13,4 @@ message FeeData {
   uint64 feeType = 4; 
   uint64 blockHeight = 5; 
   string memo = 6; 
-  
 }

@@ -37,3 +37,30 @@ func (k Keeper) SendCoinFromAccountToStaking(ctx sdk.Context, senderAddr sdk.Acc
 
 /////////////// Vault Strategy Level staking accounts ///////////////
 ///////////////         Meissa strategy accounts      ///////////////
+
+// Meissa strategy account creation based.
+func (k Keeper) CreateMeissaGlobalMacc() sdk.AccAddress {
+	accName := types.CreateMeissaMaccName()
+	return k.accountKeeper.GetModuleAddress(accName)
+}
+
+// Retrieve the amount of stake as a slice of sdk.Coin as sdk.Coins
+// held by meissa strategy accounts
+func (k Keeper) GetAllMeissaBalances(ctx sdk.Context) sdk.Coins {
+	accAddr := k.CreateMeissaGlobalMacc()
+	balances := k.bankKeeper.GetAllBalances(ctx, accAddr)
+	return balances
+}
+
+// Retrive the amount of reserve per denomication held by meissa global account.
+func (k Keeper) GetMeissaBalance(ctx sdk.Context, denom string) sdk.Coin {
+	accAddr := k.CreateMeissaGlobalMacc()
+	balance := k.bankKeeper.GetBalance(ctx, accAddr, denom)
+	return balance
+}
+
+// Balance transefer function, from user account to meissa global account
+func (k Keeper) SendCoinFromAccountToMeissa(ctx sdk.Context, senderAddr sdk.AccAddress, amt sdk.Coin) error {
+	accName := types.CreateMeissaMaccName()
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, accName, sdk.NewCoins(amt))
+}

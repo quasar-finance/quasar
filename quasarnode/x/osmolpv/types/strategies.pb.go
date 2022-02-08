@@ -74,6 +74,7 @@ func (m *Strategies) GetNames() []string {
 	return nil
 }
 
+// StrategyInfo defines the basic information of any strategy.
 type StrategyInfo struct {
 	Name       string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	IsActive   bool   `protobuf:"varint,2,opt,name=isActive,proto3" json:"isActive,omitempty"`
@@ -142,6 +143,8 @@ func (m *StrategyInfo) GetRewardAcc() string {
 	return ""
 }
 
+// MeissaStrategyInfo defines the meissa strategy specific data. This will represent
+// Each indivisual instance of the meissa strategy
 type MeissaStrategyInfo struct {
 	Base       *StrategyInfo     `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
 	LockupType types.LockupTypes `protobuf:"varint,2,opt,name=lockupType,proto3,enum=abag.quasarnode.qbank.LockupTypes" json:"lockupType,omitempty"`

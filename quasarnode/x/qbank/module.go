@@ -166,10 +166,50 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+	BeginBlocker(ctx, am.keeper)
+}
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
+}
+
+// ----------------------------------------------------------------------------
+// abci end blocker
+// ----------------------------------------------------------------------------
+
+func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("Qbank BeginBlocker %s, blockheight %d", types.ModuleName, ctx.BlockHeight()))
+
+	// Logic - Iterate over EpochLockup part of CreateEpochLockupUserDenomDepositKey
+	// Get K = UserDenom, V = sdk.coin
+
+	prefix := types.UserDenomDepositKBP
+	// TODO : Assume one block as one epoch day for now. Reduce 7 to get block last 7th block
+	pk := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()-7), types.LockupTypes_Days_7, "/")
+	prefix = append(prefix, pk...)
+	// prefixkey := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()), types.LockupTypes_Days_7, "/")
+
+	iterator := func(key []byte, val sdk.Coin) error {
+
+		// iterator := func(key, val []byte) error {
+
+		logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator|modulename = %s| blockheight = %d| Key = %v | Value = %v ",
+			types.ModuleName, ctx.BlockHeight(), string(key), val))
+
+		return nil
+	}
+
+	err := k.Iterate(ctx, prefix, iterator)
+	if err != nil {
+		panic(err)
+	}
+
+	// iterate(ctx sdk.Context, prefix []byte, cb func(key, val []byte) error) error
+
+	// k.Iterate(ctx, []byte(""), interface{})
+
 }

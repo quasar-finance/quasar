@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -154,10 +155,26 @@ func (k Keeper) GetUserDepositAmount(ctx sdk.Context, uid string) (val types.QCo
 }
 
 // Get user's denom deposit amount with given epoch day and lockup period which is sdk.coin specifc to a given coin denom.
+func (k Keeper) GetEpochLockupUserDenomDepositAmount(ctx sdk.Context,
+	uid, denom string, epochday uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	b := store.Get(types.CreateEpochLockupUserDenomDepositKey(uid, "/", denom, epochday, lockupPeriod))
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// Get user's denom deposit amount with given epoch day and lockup period which is sdk.coin specifc to a given coin denom.
 func (k Keeper) GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
 	uid, denom string, epochday uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
-	b := store.Get(types.CreateUserDenomEpochLockupDepositKey(uid, "/", denom, epochday, lockupPeriod))
+	key := types.CreateUserDenomEpochLockupDepositKey(uid, "/", denom, epochday, lockupPeriod)
+	k.Logger(ctx).Info(fmt.Sprintf("GetUserDenomEpochLockupDepositAmount|key=%s|%s|%s|%v|%s\n",
+		string(key), uid, denom, epochday, types.LockupTypes_name[int32(lockupPeriod)]))
+
+	b := store.Get(key)
 	if b == nil {
 		return val, false
 	}
@@ -169,7 +186,14 @@ func (k Keeper) GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
 func (k Keeper) GetUserDenomLockupDepositAmount(ctx sdk.Context,
 	uid, denom string, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
-	b := store.Get(types.CreateUserDenomLockupDepositKey(uid, "/", denom, lockupPeriod))
+	key := types.CreateUserDenomLockupDepositKey(uid, "/", denom, lockupPeriod)
+	// types.CreateUserDenomLockupDepositKey(uid, "/", coin.GetDenom(), lockupPeriod)
+	// b := store.Get(types.CreateUserDenomLockupDepositKey(uid, "/", denom, lockupPeriod))
+
+	k.Logger(ctx).Info(fmt.Sprintf("GetUserDenomLockupDepositAmount|key=%s|%s|%s|%s\n",
+		string(key), uid, denom, types.LockupTypes_name[int32(lockupPeriod)]))
+
+	b := store.Get(key)
 	if b == nil {
 		return val, false
 	}
@@ -182,6 +206,8 @@ func (k Keeper) GetUserDenomLockupDepositAmount(ctx sdk.Context,
 func (k Keeper) AddUserDenomEpochLockupDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
 	key := types.CreateUserDenomEpochLockupDepositKey(uid, "/", coin.GetDenom(), epochday, lockupPeriod)
+	k.Logger(ctx).Info(fmt.Sprintf("AddUserDenomEpochLockupDeposit|key=%s|%s|%s|%d|%s\n",
+		string(key), uid, coin.Denom, epochday, types.LockupTypes_name[int32(lockupPeriod)]))
 	b := store.Get(key)
 	if b == nil {
 		value := k.cdc.MustMarshal(&coin)
@@ -213,11 +239,55 @@ func (k Keeper) SubUserDenomEpochLockupDeposit(ctx sdk.Context, uid string, coin
 	}
 }
 
+/////////////////////
+
+// Add user's lockup period wise denom deposit amount which is sdk.coin specifc to a given coin denom.
+// Input denom examples - ATOM, OSMO, QSAR
+func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateEpochLockupUserDenomDepositKey(uid, "/", coin.GetDenom(), epochday, lockupPeriod)
+
+	k.Logger(ctx).Info(fmt.Sprintf("AddEpochLockupUserDenomDeposit|key=%s|%s|%s|%s\n",
+		string(key), uid, coin.Denom, types.LockupTypes_name[int32(lockupPeriod)]))
+	b := store.Get(key)
+	if b == nil {
+		value := k.cdc.MustMarshal(&coin)
+		store.Set(key, value)
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Add(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+}
+
+// Sub user's lockup period wise denom deposit amount which is sdk.coin specifc to a given coin denom.
+// Input denom examples - ATOM, OSMO, QSAR
+func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	key := types.CreateEpochLockupUserDenomDepositKey(uid, "/", coin.GetDenom(), epochday, lockupPeriod)
+	b := store.Get(key)
+	if b == nil {
+		// Do nothing - Called by mistake.
+		// TODO - panic.
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Sub(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+}
+
 // Add user's lockup period wise denom deposit amount which is sdk.coin specifc to a given coin denom.
 // Input denom examples - ATOM, OSMO, QSAR
 func (k Keeper) AddUserDenomLockupDeposit(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
 	key := types.CreateUserDenomLockupDepositKey(uid, "/", coin.GetDenom(), lockupPeriod)
+
+	k.Logger(ctx).Info(fmt.Sprintf("AddUserDenomLockupDeposit|key=%s|%s|%s|%s\n",
+		string(key), uid, coin.Denom, types.LockupTypes_name[int32(lockupPeriod)]))
 	b := store.Get(key)
 	if b == nil {
 		value := k.cdc.MustMarshal(&coin)

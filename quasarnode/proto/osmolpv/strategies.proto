@@ -13,6 +13,7 @@ message Strategies {
    repeated string names  = 1  [(gogoproto.nullable) = false];
 }
 
+// StrategyInfo defines the basic information of any strategy.
 message StrategyInfo {
    string name = 1;   
    bool isActive = 2;   
@@ -20,6 +21,8 @@ message StrategyInfo {
    string rewardAcc = 4;
 }
 
+// MeissaStrategyInfo defines the meissa strategy specific data. This will represent 
+// Each indivisual instance of the meissa strategy
 message MeissaStrategyInfo {
    StrategyInfo base = 1;
    qbank.LockupTypes lockupType = 2;

@@ -5,15 +5,18 @@ option go_package = "github.com/abag/quasarnode/x/qbank/types";
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 
+// QCoins defines encoding/decoding for the slice of sdk.coins to be used in KV stores. 
 message QCoins {
     repeated cosmos.base.v1beta1.Coin coins = 1
      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }
 
+// QDenoms defines encoding/decoding for the slice of denoms to be used in KV stores
 message QDenoms {
     repeated string denoms = 1  [(gogoproto.nullable) = false];
 }
 
+// LockupTypes defines different types of locktypes to be used in the system for users deposit
 enum LockupTypes {
     Invalid = 0;
     Days_7 = 1; // 7 Days

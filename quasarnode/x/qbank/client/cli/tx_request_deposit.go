@@ -18,7 +18,7 @@ func CmdRequestDeposit() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "request-deposit [risk-profile=LOW/MID/HIGH] [vault-id=orion] [sdk.coin = 1000qsr] [Lockupperiod = Days_7/Days_21/Months_1/Months_3]",
 		Short: "Broadcast message requestDeposit",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argRiskProfile := args[0]
 			argVaultID := args[1]

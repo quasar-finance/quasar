@@ -41,7 +41,15 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	// TODO - Withdraw to unstake type conversion
 	if msg.GetVaultID() == osmolpvypes.ModuleName {
 
-		err = k.oionKeeper.RequestWithdraw(ctx, msg.GetCreator(), msg.GetCoin())
+		// TODO - Calculate or Fetch total withdrawable amount
+		// Maintain withdrawable amount based on the lockup periods.
+		// If a user has locked up 1000atom for 7 days on Jan 1, then he
+		// can not withdraw till Jan 7 same time.
+
+		// qbank does not need to talk to the vault module to do this.
+		// We have a pull based model for the orion vault; orion vault will pull data
+		// from the qbank either at the end blocker or begin blocker.
+		// err = k.oionKeeper.RequestWithdraw(ctx, msg.GetCreator(), msg.GetCoin())
 		if err != nil {
 			return nil, err
 		}

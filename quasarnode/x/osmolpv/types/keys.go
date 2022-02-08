@@ -74,24 +74,26 @@ const (
 	FeeDataKey = "FeeData-value-"
 )
 
-// @desc Function will create store key for the storage of list of base strategies in orion vault
-// @return Key for prefix key store.
+// CreateStrategyKey will create store key for the storage of base strategies in orion vault
+// return Key for prefix key store.
 func CreateStrategyKey() []byte {
 	return []byte(StrategyKey)
 }
 
-// @desc Function will create store key for the storage of  strategy names
-// @return Key for prefix key store.
+// CreateMeissaStrategyKey will create store key for the storage of strategy names
+// return Key for prefix key store.
 func CreateMeissaStrategyKey() []byte {
 	return []byte(MeissaStrategyName)
 }
 
+// CreateRigelStrategyKey will create store key for the storage of strategy names
+// return Key for prefix key store.
 func CreateRigelStrategyKey() []byte {
 	return []byte(RigelStrategyName)
 }
 
-// @desc Function will create account name string for the staking.
-// @return "Orion.stake.[LockupTypes string]"
+// CreateOrionStakingMaccName will create account name string for the staking.
+// return "Orion.stake.[LockupTypes string]"
 func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
 	b.WriteString(types.ModuleName)
@@ -100,8 +102,8 @@ func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	return b.String()
 }
 
-// @desc Function will create account name string for the reward collector.
-// @return "Orion.reward.[LockupTypes string]"
+// CreateOrionRewardMaccName will create account name string for the reward collector.
+// return "Orion.reward.[LockupTypes string]"
 func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
 	b.WriteString(types.ModuleName)
@@ -110,8 +112,8 @@ func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	return b.String()
 }
 
-// @desc Function will create account name string for meissa strategy staking.
-// @return "Orion.Meissa.stake.[LockupTypes string]"
+// CreateMeissaStakingMaccName will create account name string for meissa strategy staking.
+// return "Orion.Meissa.stake.[LockupTypes string]"
 func CreateMeissaStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
 	b.WriteString(types.ModuleName)
@@ -120,8 +122,17 @@ func CreateMeissaStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	return b.String()
 }
 
-// @desc Function will create account name string for the reward collector.
-// @return "Orion.meissa.reward.[LockupTypes string]"
+// CreateMeissaMaccName will create account name string for meissa strategy for its global generic usage.
+// return "Orion.Meissa.global"
+func CreateMeissaMaccName() string {
+	var b bytes.Buffer
+	b.WriteString(types.ModuleName)
+	b.WriteString(".meissa.global")
+	return b.String()
+}
+
+// CreateMeissaRewardMaccName will create account name string for the reward collector.
+// return "Orion.meissa.reward.[LockupTypes string]"
 func CreateMeissaRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
 	b.WriteString(types.ModuleName)
@@ -130,7 +141,7 @@ func CreateMeissaRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	return b.String()
 }
 
-// @desc Function will create key for storing the current position of the strategy
+// CreateMeissaPositionKey will create key for storing the current position of the strategy.
 // Key format -  {0x03} + {“current_pos”}
 func CreateMeissaPositionKey() []byte {
 	return []byte(CurrentPositionName)
