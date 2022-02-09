@@ -181,8 +181,17 @@ func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.Valid
 // ----------------------------------------------------------------------------
 
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
+
+	// TODO - Implement the algorithm to update the current withdrable amount
+	// Iterativelly collect all the lock up periods and get the respective kv store
+	// for the deposited amount on a given day.
+	// lockup : lockupPeriods
+	// 	calc : previousDay = today - lockupPeriod
+	// 	get amount from key previousDay/lockupPeriod/denom
+	// 	if amount != 0 ; add amount to the lockupWithdrable
+
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("Qbank BeginBlocker %s, blockheight %d", types.ModuleName, ctx.BlockHeight()))
+	logger.Info(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
 
 	// Logic - Iterate over EpochLockup part of CreateEpochLockupUserDenomDepositKey
 	// Get K = UserDenom, V = sdk.coin
@@ -193,11 +202,12 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	prefix = append(prefix, pk...)
 	// prefixkey := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()), types.LockupTypes_Days_7, "/")
 
+	/////////////////////////////////////////////////////
+
+	// ITERATOR #1
 	iterator := func(key []byte, val sdk.Coin) error {
-
 		// iterator := func(key, val []byte) error {
-
-		logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator|modulename = %s| blockheight = %d| Key = %v | Value = %v ",
+		logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator|modulename=%s|blockheight=%d|Key=%v|Value=%v",
 			types.ModuleName, ctx.BlockHeight(), string(key), val))
 
 		return nil
@@ -206,6 +216,37 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	err := k.Iterate(ctx, prefix, iterator)
 	if err != nil {
 		panic(err)
+	}
+
+	/*
+		// ITERATOR #2
+		// closure function for updating withdrable amount
+		withdrableClosure := func(key, val []byte) error {
+			var coin sdk.Coin
+			k.GetCdc().MustUnmarshal(val, &coin)
+			logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator2|modulename=%s|blockheight=%d|Key=%v|Value=%v",
+				types.ModuleName, ctx.BlockHeight(), string(key), coin))
+
+			return nil
+		}
+	*/
+
+	for lockupEnm, lockupStr := range types.LockupTypes_name {
+
+		prefix := types.UserDenomDepositKBP
+		// TODO : Assume one block as one epoch day for now. Reduce 7 to get block last 7th block
+		lockupdays := int64(types.Lockupdays[lockupStr])
+		pk := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()-lockupdays), types.LockupTypes(lockupEnm), "/")
+		prefix = append(prefix, pk...)
+
+		logger.Info(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
+			lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(prefix)))
+
+		err2 := k.ProcessWithdrable(ctx, prefix)
+		if err2 != nil {
+			panic(err2)
+		}
+
 	}
 
 	// iterate(ctx sdk.Context, prefix []byte, cb func(key, val []byte) error) error

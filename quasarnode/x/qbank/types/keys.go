@@ -45,9 +45,17 @@ var (
 	UserDenomDepositKBP = []byte{0x02}
 	WithdrawKeyKBP      = []byte{0x03}
 	UserDepositKBP      = []byte{0x04}
+	WithdrawableKeyKBP  = []byte{0x05}
 )
 
+var sepByte = []byte("/")
+
 // Common functions for deposit and withdraw
+func SplitKeyBytes(kb []byte) [][]byte {
+	// First byte is used for the byte prefix
+	split := bytes.Split(kb[1:], sepByte)
+	return split
+}
 
 // store key use the byte as key
 func createStoreKey(k string) []byte {
@@ -153,6 +161,32 @@ func CreateUserDepositKey(uid string) []byte {
 	return createStoreKey(uid)
 }
 
+// CreateWithdrableKey create key for the withdrable KV store to fetch current
+// withdrable amount by a given user of given denom.
+// Key = {denom} + "/" + "uid"
+func CreateWithdrableKey(denom, uid, sep string) []byte {
+	var b bytes.Buffer
+	b.WriteString(denom)
+	b.WriteString(sep)
+	b.WriteString(uid)
+	return b.Bytes()
+}
+
+// CreateWithdrableKey create key for the lockup period based withdrable KV store to fetch current
+// withdrable amount by a given user, denom and lockup period
+// Key = {denom} + "/" + "uid" + "/" + "lockupPeriod"
+func CreateLockupWithdrableKey(denom, uid string, lockupPeriod LockupTypes, sep string) []byte {
+	var b bytes.Buffer
+	b.WriteString(denom)
+	b.WriteString(sep)
+	b.WriteString(uid)
+	b.WriteString(sep)
+	lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
+	b.WriteString(lockupPeriodStr)
+
+	return b.Bytes()
+}
+
 // Withdraw specific functions
 
 // set of key creation functions for withdraw objects
@@ -163,3 +197,15 @@ func CreateWithdrawCountKey() []byte {
 const (
 	FeeDataKey = "FeeData-value-"
 )
+
+// func CreateEpochLockupUserDenomDepositKey(uid, sep, denom string, epochday uint64, lockupPeriod LockupTypes) []byte {
+
+func ParseEpochLockupUserDenomDepositKey(key []byte) (epochday uint64, lockupStr, uid, denom string, err error) {
+	split := SplitKeyBytes(key)
+	epochdayStr := string(split[0])
+	epochday, err = strconv.ParseUint(epochdayStr, 10, 64)
+	lockupStr = string(split[1])
+	uid = string(split[2])
+	denom = string(split[3])
+	return
+}
