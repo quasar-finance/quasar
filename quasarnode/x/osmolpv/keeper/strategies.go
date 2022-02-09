@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/osmolpv/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -175,6 +176,17 @@ func (k Keeper) GetMeissaStrategyTotalHisPos(ctx sdk.Context, epochday uint64) (
 	return histPos, true
 }
 */
+
+// GetDeployableAmt returns the current deployable amount from the given lockup period.
+// Note - Strategy does not hold todays deposited amount for tomorrows deployment.
+// It acts today itself at the end of epoch. This makes the orion module staking amount as
+// always equals the amount that can be deployed today
+func (k Keeper) GetDeployableAmt(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) (coin sdk.Coin) {
+	// TODO - currently all the amount present in the orion module staking account is available for strategy
+	return k.GetStakingBalance(ctx, lockupPeriod, denom)
+
+}
+
 func getUniqueNames(names, existingNames []string) []string {
 	var uniqueNames []string
 	uniqueNames = existingNames

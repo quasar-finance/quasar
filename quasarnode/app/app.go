@@ -165,6 +165,11 @@ var (
 		osmolpvmoduletypes.PerfFeeCollectorMaccName:  nil,
 		osmolpvmoduletypes.EntryFeeCollectorMaccName: nil,
 		osmolpvmoduletypes.ExitFeeCollectorMaccName:  nil,
+		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
+		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
+		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
+		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
+
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
