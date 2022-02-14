@@ -1,0 +1,13 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  string oracleAccounts = 1 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
+}
