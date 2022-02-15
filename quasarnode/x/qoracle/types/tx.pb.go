@@ -9,7 +9,11 @@ import (
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -23,19 +27,353 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type MsgCreatePoolPosition struct {
+	Creator         string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	PoolID          uint64 `protobuf:"varint,2,opt,name=poolID,proto3" json:"poolID,omitempty"`
+	APY             uint64 `protobuf:"varint,3,opt,name=aPY,proto3" json:"aPY,omitempty"`
+	TVL             uint64 `protobuf:"varint,4,opt,name=tVL,proto3" json:"tVL,omitempty"`
+	LastUpdatedTime uint64 `protobuf:"varint,5,opt,name=lastUpdatedTime,proto3" json:"lastUpdatedTime,omitempty"`
+}
+
+func (m *MsgCreatePoolPosition) Reset()         { *m = MsgCreatePoolPosition{} }
+func (m *MsgCreatePoolPosition) String() string { return proto.CompactTextString(m) }
+func (*MsgCreatePoolPosition) ProtoMessage()    {}
+func (*MsgCreatePoolPosition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{0}
+}
+func (m *MsgCreatePoolPosition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCreatePoolPosition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCreatePoolPosition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCreatePoolPosition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCreatePoolPosition.Merge(m, src)
+}
+func (m *MsgCreatePoolPosition) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCreatePoolPosition) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCreatePoolPosition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCreatePoolPosition proto.InternalMessageInfo
+
+func (m *MsgCreatePoolPosition) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgCreatePoolPosition) GetPoolID() uint64 {
+	if m != nil {
+		return m.PoolID
+	}
+	return 0
+}
+
+func (m *MsgCreatePoolPosition) GetAPY() uint64 {
+	if m != nil {
+		return m.APY
+	}
+	return 0
+}
+
+func (m *MsgCreatePoolPosition) GetTVL() uint64 {
+	if m != nil {
+		return m.TVL
+	}
+	return 0
+}
+
+func (m *MsgCreatePoolPosition) GetLastUpdatedTime() uint64 {
+	if m != nil {
+		return m.LastUpdatedTime
+	}
+	return 0
+}
+
+type MsgCreatePoolPositionResponse struct {
+}
+
+func (m *MsgCreatePoolPositionResponse) Reset()         { *m = MsgCreatePoolPositionResponse{} }
+func (m *MsgCreatePoolPositionResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgCreatePoolPositionResponse) ProtoMessage()    {}
+func (*MsgCreatePoolPositionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{1}
+}
+func (m *MsgCreatePoolPositionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCreatePoolPositionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCreatePoolPositionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCreatePoolPositionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCreatePoolPositionResponse.Merge(m, src)
+}
+func (m *MsgCreatePoolPositionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCreatePoolPositionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCreatePoolPositionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCreatePoolPositionResponse proto.InternalMessageInfo
+
+type MsgUpdatePoolPosition struct {
+	Creator         string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	PoolID          uint64 `protobuf:"varint,2,opt,name=poolID,proto3" json:"poolID,omitempty"`
+	APY             uint64 `protobuf:"varint,3,opt,name=aPY,proto3" json:"aPY,omitempty"`
+	TVL             uint64 `protobuf:"varint,4,opt,name=tVL,proto3" json:"tVL,omitempty"`
+	LastUpdatedTime uint64 `protobuf:"varint,5,opt,name=lastUpdatedTime,proto3" json:"lastUpdatedTime,omitempty"`
+}
+
+func (m *MsgUpdatePoolPosition) Reset()         { *m = MsgUpdatePoolPosition{} }
+func (m *MsgUpdatePoolPosition) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdatePoolPosition) ProtoMessage()    {}
+func (*MsgUpdatePoolPosition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{2}
+}
+func (m *MsgUpdatePoolPosition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdatePoolPosition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdatePoolPosition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdatePoolPosition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdatePoolPosition.Merge(m, src)
+}
+func (m *MsgUpdatePoolPosition) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdatePoolPosition) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdatePoolPosition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdatePoolPosition proto.InternalMessageInfo
+
+func (m *MsgUpdatePoolPosition) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgUpdatePoolPosition) GetPoolID() uint64 {
+	if m != nil {
+		return m.PoolID
+	}
+	return 0
+}
+
+func (m *MsgUpdatePoolPosition) GetAPY() uint64 {
+	if m != nil {
+		return m.APY
+	}
+	return 0
+}
+
+func (m *MsgUpdatePoolPosition) GetTVL() uint64 {
+	if m != nil {
+		return m.TVL
+	}
+	return 0
+}
+
+func (m *MsgUpdatePoolPosition) GetLastUpdatedTime() uint64 {
+	if m != nil {
+		return m.LastUpdatedTime
+	}
+	return 0
+}
+
+type MsgUpdatePoolPositionResponse struct {
+}
+
+func (m *MsgUpdatePoolPositionResponse) Reset()         { *m = MsgUpdatePoolPositionResponse{} }
+func (m *MsgUpdatePoolPositionResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdatePoolPositionResponse) ProtoMessage()    {}
+func (*MsgUpdatePoolPositionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{3}
+}
+func (m *MsgUpdatePoolPositionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdatePoolPositionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdatePoolPositionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdatePoolPositionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdatePoolPositionResponse.Merge(m, src)
+}
+func (m *MsgUpdatePoolPositionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdatePoolPositionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdatePoolPositionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdatePoolPositionResponse proto.InternalMessageInfo
+
+type MsgDeletePoolPosition struct {
+	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	PoolID  uint64 `protobuf:"varint,2,opt,name=poolID,proto3" json:"poolID,omitempty"`
+}
+
+func (m *MsgDeletePoolPosition) Reset()         { *m = MsgDeletePoolPosition{} }
+func (m *MsgDeletePoolPosition) String() string { return proto.CompactTextString(m) }
+func (*MsgDeletePoolPosition) ProtoMessage()    {}
+func (*MsgDeletePoolPosition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{4}
+}
+func (m *MsgDeletePoolPosition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgDeletePoolPosition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgDeletePoolPosition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgDeletePoolPosition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDeletePoolPosition.Merge(m, src)
+}
+func (m *MsgDeletePoolPosition) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgDeletePoolPosition) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDeletePoolPosition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgDeletePoolPosition proto.InternalMessageInfo
+
+func (m *MsgDeletePoolPosition) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgDeletePoolPosition) GetPoolID() uint64 {
+	if m != nil {
+		return m.PoolID
+	}
+	return 0
+}
+
+type MsgDeletePoolPositionResponse struct {
+}
+
+func (m *MsgDeletePoolPositionResponse) Reset()         { *m = MsgDeletePoolPositionResponse{} }
+func (m *MsgDeletePoolPositionResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgDeletePoolPositionResponse) ProtoMessage()    {}
+func (*MsgDeletePoolPositionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a216e1369aaebb38, []int{5}
+}
+func (m *MsgDeletePoolPositionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgDeletePoolPositionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgDeletePoolPositionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgDeletePoolPositionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDeletePoolPositionResponse.Merge(m, src)
+}
+func (m *MsgDeletePoolPositionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgDeletePoolPositionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDeletePoolPositionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgDeletePoolPositionResponse proto.InternalMessageInfo
+
+func init() {
+	proto.RegisterType((*MsgCreatePoolPosition)(nil), "abag.quasarnode.qoracle.MsgCreatePoolPosition")
+	proto.RegisterType((*MsgCreatePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgCreatePoolPositionResponse")
+	proto.RegisterType((*MsgUpdatePoolPosition)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolPosition")
+	proto.RegisterType((*MsgUpdatePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolPositionResponse")
+	proto.RegisterType((*MsgDeletePoolPosition)(nil), "abag.quasarnode.qoracle.MsgDeletePoolPosition")
+	proto.RegisterType((*MsgDeletePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgDeletePoolPositionResponse")
+}
+
 func init() { proto.RegisterFile("qoracle/tx.proto", fileDescriptor_a216e1369aaebb38) }
 
 var fileDescriptor_a216e1369aaebb38 = []byte{
-	// 129 bytes of a gzipped FileDescriptorProto
+	// 348 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x28, 0xcc, 0x2f, 0x4a,
 	0x4c, 0xce, 0x49, 0xd5, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x4f, 0x4c,
 	0x4a, 0x4c, 0xd7, 0x2b, 0x2c, 0x4d, 0x2c, 0x4e, 0x2c, 0xca, 0xcb, 0x4f, 0x49, 0xd5, 0x83, 0xaa,
-	0x30, 0x62, 0xe5, 0x62, 0xf6, 0x2d, 0x4e, 0x77, 0x72, 0x39, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23,
-	0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6,
-	0x63, 0x39, 0x86, 0x28, 0xad, 0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0xbd, 0xe4, 0xfc, 0x5c, 0x7d,
-	0x90, 0x21, 0xfa, 0x08, 0x43, 0xf4, 0x2b, 0xf4, 0xe1, 0x16, 0x55, 0x16, 0xa4, 0x16, 0x27, 0xb1,
-	0x81, 0x2d, 0x33, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xdf, 0x52, 0xa1, 0x9a, 0x80, 0x00, 0x00,
-	0x00,
+	0x90, 0x92, 0x86, 0x29, 0x2d, 0xc8, 0xcf, 0xcf, 0x89, 0x2f, 0xc8, 0x2f, 0xce, 0x2c, 0xc9, 0xcc,
+	0xcf, 0x83, 0xe8, 0x52, 0x9a, 0xce, 0xc8, 0x25, 0xea, 0x5b, 0x9c, 0xee, 0x5c, 0x94, 0x9a, 0x58,
+	0x92, 0x1a, 0x90, 0x9f, 0x9f, 0x13, 0x00, 0x95, 0x17, 0x92, 0xe0, 0x62, 0x4f, 0x06, 0x89, 0xe6,
+	0x17, 0x49, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x06, 0xc1, 0xb8, 0x42, 0x62, 0x5c, 0x6c, 0x20, 0xa3,
+	0x3c, 0x5d, 0x24, 0x98, 0x14, 0x18, 0x35, 0x58, 0x82, 0xa0, 0x3c, 0x21, 0x01, 0x2e, 0xe6, 0xc4,
+	0x80, 0x48, 0x09, 0x66, 0xb0, 0x20, 0x88, 0x09, 0x12, 0x29, 0x09, 0xf3, 0x91, 0x60, 0x81, 0x88,
+	0x94, 0x84, 0xf9, 0x08, 0x69, 0x70, 0xf1, 0xe7, 0x24, 0x16, 0x97, 0x84, 0x16, 0xa4, 0x24, 0x96,
+	0xa4, 0xa6, 0x84, 0x64, 0xe6, 0xa6, 0x4a, 0xb0, 0x82, 0x65, 0xd1, 0x85, 0x95, 0xe4, 0xb9, 0x64,
+	0xb1, 0x3a, 0x2c, 0x28, 0xb5, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0x15, 0xe6, 0x74, 0x88, 0x9e, 0x41,
+	0xe8, 0x74, 0x4c, 0x87, 0xc1, 0x9d, 0xee, 0x09, 0x76, 0xb9, 0x4b, 0x6a, 0x4e, 0x2a, 0xa5, 0x2e,
+	0x87, 0xda, 0x85, 0x69, 0x14, 0xcc, 0x2e, 0xa3, 0xff, 0x4c, 0x5c, 0xcc, 0xbe, 0xc5, 0xe9, 0x42,
+	0x35, 0x5c, 0x42, 0x58, 0x62, 0x59, 0x4f, 0x0f, 0x47, 0xb2, 0xd1, 0xc3, 0x1a, 0xf8, 0x52, 0x66,
+	0xa4, 0xa9, 0x87, 0xb9, 0x02, 0x64, 0x3b, 0x96, 0x88, 0xc2, 0x6b, 0x3b, 0xa6, 0x7a, 0xfc, 0xb6,
+	0xe3, 0x0e, 0x6f, 0x90, 0xed, 0x58, 0x02, 0x1b, 0xaf, 0xed, 0x98, 0xea, 0xf1, 0xdb, 0x8e, 0x3b,
+	0x06, 0x9c, 0x5c, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6,
+	0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x2b, 0x3d,
+	0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x57, 0x1f, 0x64, 0xb6, 0x3e, 0xc2, 0x6c, 0xfd,
+	0x0a, 0x7d, 0x78, 0x16, 0xaf, 0x2c, 0x48, 0x2d, 0x4e, 0x62, 0x03, 0x67, 0x58, 0x63, 0x40, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0x5e, 0x32, 0x45, 0xab, 0xfa, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -50,6 +388,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
+	CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPosition, opts ...grpc.CallOption) (*MsgCreatePoolPositionResponse, error)
+	UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPosition, opts ...grpc.CallOption) (*MsgUpdatePoolPositionResponse, error)
+	DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPosition, opts ...grpc.CallOption) (*MsgDeletePoolPositionResponse, error)
 }
 
 type msgClient struct {
@@ -60,22 +401,1095 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
+func (c *msgClient) CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPosition, opts ...grpc.CallOption) (*MsgCreatePoolPositionResponse, error) {
+	out := new(MsgCreatePoolPositionResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolPosition", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPosition, opts ...grpc.CallOption) (*MsgUpdatePoolPositionResponse, error) {
+	out := new(MsgUpdatePoolPositionResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPosition, opts ...grpc.CallOption) (*MsgDeletePoolPositionResponse, error) {
+	out := new(MsgDeletePoolPositionResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolPosition", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
+	CreatePoolPosition(context.Context, *MsgCreatePoolPosition) (*MsgCreatePoolPositionResponse, error)
+	UpdatePoolPosition(context.Context, *MsgUpdatePoolPosition) (*MsgUpdatePoolPositionResponse, error)
+	DeletePoolPosition(context.Context, *MsgDeletePoolPosition) (*MsgDeletePoolPositionResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
+func (*UnimplementedMsgServer) CreatePoolPosition(ctx context.Context, req *MsgCreatePoolPosition) (*MsgCreatePoolPositionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePoolPosition not implemented")
+}
+func (*UnimplementedMsgServer) UpdatePoolPosition(ctx context.Context, req *MsgUpdatePoolPosition) (*MsgUpdatePoolPositionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePoolPosition not implemented")
+}
+func (*UnimplementedMsgServer) DeletePoolPosition(ctx context.Context, req *MsgDeletePoolPosition) (*MsgDeletePoolPositionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePoolPosition not implemented")
+}
+
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
+}
+
+func _Msg_CreatePoolPosition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgCreatePoolPosition)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).CreatePoolPosition(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolPosition",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).CreatePoolPosition(ctx, req.(*MsgCreatePoolPosition))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_UpdatePoolPosition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdatePoolPosition)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdatePoolPosition(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdatePoolPosition(ctx, req.(*MsgUpdatePoolPosition))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_DeletePoolPosition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgDeletePoolPosition)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).DeletePoolPosition(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolPosition",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).DeletePoolPosition(ctx, req.(*MsgDeletePoolPosition))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "abag.quasarnode.qoracle.Msg",
 	HandlerType: (*MsgServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "qoracle/tx.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreatePoolPosition",
+			Handler:    _Msg_CreatePoolPosition_Handler,
+		},
+		{
+			MethodName: "UpdatePoolPosition",
+			Handler:    _Msg_UpdatePoolPosition_Handler,
+		},
+		{
+			MethodName: "DeletePoolPosition",
+			Handler:    _Msg_DeletePoolPosition_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "qoracle/tx.proto",
 }
+
+func (m *MsgCreatePoolPosition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreatePoolPosition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreatePoolPosition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastUpdatedTime != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.LastUpdatedTime))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.TVL != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.TVL))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.APY != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.APY))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.PoolID != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.PoolID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgCreatePoolPositionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreatePoolPositionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreatePoolPositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdatePoolPosition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdatePoolPosition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdatePoolPosition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastUpdatedTime != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.LastUpdatedTime))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.TVL != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.TVL))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.APY != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.APY))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.PoolID != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.PoolID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdatePoolPositionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdatePoolPositionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdatePoolPositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgDeletePoolPosition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgDeletePoolPosition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgDeletePoolPosition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.PoolID != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.PoolID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgDeletePoolPositionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgDeletePoolPositionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgDeletePoolPositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
+	offset -= sovTx(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *MsgCreatePoolPosition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.PoolID != 0 {
+		n += 1 + sovTx(uint64(m.PoolID))
+	}
+	if m.APY != 0 {
+		n += 1 + sovTx(uint64(m.APY))
+	}
+	if m.TVL != 0 {
+		n += 1 + sovTx(uint64(m.TVL))
+	}
+	if m.LastUpdatedTime != 0 {
+		n += 1 + sovTx(uint64(m.LastUpdatedTime))
+	}
+	return n
+}
+
+func (m *MsgCreatePoolPositionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUpdatePoolPosition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.PoolID != 0 {
+		n += 1 + sovTx(uint64(m.PoolID))
+	}
+	if m.APY != 0 {
+		n += 1 + sovTx(uint64(m.APY))
+	}
+	if m.TVL != 0 {
+		n += 1 + sovTx(uint64(m.TVL))
+	}
+	if m.LastUpdatedTime != 0 {
+		n += 1 + sovTx(uint64(m.LastUpdatedTime))
+	}
+	return n
+}
+
+func (m *MsgUpdatePoolPositionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgDeletePoolPosition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.PoolID != 0 {
+		n += 1 + sovTx(uint64(m.PoolID))
+	}
+	return n
+}
+
+func (m *MsgDeletePoolPositionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func sovTx(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozTx(x uint64) (n int) {
+	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *MsgCreatePoolPosition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreatePoolPosition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreatePoolPosition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PoolID", wireType)
+			}
+			m.PoolID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PoolID |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field APY", wireType)
+			}
+			m.APY = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.APY |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TVL", wireType)
+			}
+			m.TVL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TVL |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdatedTime", wireType)
+			}
+			m.LastUpdatedTime = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastUpdatedTime |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgCreatePoolPositionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreatePoolPositionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreatePoolPositionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdatePoolPosition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdatePoolPosition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdatePoolPosition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PoolID", wireType)
+			}
+			m.PoolID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PoolID |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field APY", wireType)
+			}
+			m.APY = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.APY |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TVL", wireType)
+			}
+			m.TVL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TVL |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdatedTime", wireType)
+			}
+			m.LastUpdatedTime = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastUpdatedTime |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdatePoolPositionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdatePoolPositionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdatePoolPositionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDeletePoolPosition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDeletePoolPosition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDeletePoolPosition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PoolID", wireType)
+			}
+			m.PoolID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PoolID |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDeletePoolPositionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDeletePoolPositionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDeletePoolPositionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipTx(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthTx
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupTx
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthTx
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthTx        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowTx          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupTx = fmt.Errorf("proto: unexpected end of group")
+)

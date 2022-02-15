@@ -14,6 +14,11 @@ func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 
+		PoolPosition: &types.PoolPosition{
+			APY:             1,
+			TVL:             41,
+			LastUpdatedTime: 91,
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -25,5 +30,6 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
 
+	require.Equal(t, genesisState.PoolPosition, got.PoolPosition)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

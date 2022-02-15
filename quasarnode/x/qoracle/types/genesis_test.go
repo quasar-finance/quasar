@@ -19,9 +19,14 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid:    true,
 		},
 		{
-			desc:     "valid genesis state",
+			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
+				PoolPosition: &types.PoolPosition{
+					APY:             62,
+					TVL:             85,
+					LastUpdatedTime: 51,
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

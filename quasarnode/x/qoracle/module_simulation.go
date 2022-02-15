@@ -24,7 +24,19 @@ var (
 )
 
 const (
-// this line is used by starport scaffolding # simapp/module/const
+	opWeightMsgCreatePoolPosition = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgCreatePoolPosition int = 100
+
+	opWeightMsgUpdatePoolPosition = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgUpdatePoolPosition int = 100
+
+	opWeightMsgDeletePoolPosition = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgDeletePoolPosition int = 100
+
+	// this line is used by starport scaffolding # simapp/module/const
 )
 
 // GenerateGenesisState creates a randomized GenState of the module
@@ -60,6 +72,39 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
+
+	var weightMsgCreatePoolPosition int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgCreatePoolPosition, &weightMsgCreatePoolPosition, nil,
+		func(_ *rand.Rand) {
+			weightMsgCreatePoolPosition = defaultWeightMsgCreatePoolPosition
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgCreatePoolPosition,
+		qoraclesimulation.SimulateMsgCreatePoolPosition(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgUpdatePoolPosition int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUpdatePoolPosition, &weightMsgUpdatePoolPosition, nil,
+		func(_ *rand.Rand) {
+			weightMsgUpdatePoolPosition = defaultWeightMsgUpdatePoolPosition
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgUpdatePoolPosition,
+		qoraclesimulation.SimulateMsgUpdatePoolPosition(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgDeletePoolPosition int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDeletePoolPosition, &weightMsgDeletePoolPosition, nil,
+		func(_ *rand.Rand) {
+			weightMsgDeletePoolPosition = defaultWeightMsgDeletePoolPosition
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgDeletePoolPosition,
+		qoraclesimulation.SimulateMsgDeletePoolPosition(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
 
