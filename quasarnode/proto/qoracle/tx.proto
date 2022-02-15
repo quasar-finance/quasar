@@ -1,13 +1,40 @@
 syntax = "proto3";
 package abag.quasarnode.qoracle;
 
+import "qoracle/pool_position.proto";
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 
 // Msg defines the Msg service.
 service Msg {
-    // this line is used by starport scaffolding # proto/tx/rpc
+      rpc CreatePoolPosition(MsgCreatePoolPosition) returns (MsgCreatePoolPositionResponse);
+  rpc UpdatePoolPosition(MsgUpdatePoolPosition) returns (MsgUpdatePoolPositionResponse);
+  rpc DeletePoolPosition(MsgDeletePoolPosition) returns (MsgDeletePoolPositionResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
 }
 
+message MsgCreatePoolPosition {
+  string creator = 1;
+  uint64 poolID = 2;
+  uint64 aPY = 3;
+  uint64 tVL = 4;
+  uint64 lastUpdatedTime = 5;
+}
+message MsgCreatePoolPositionResponse {}
+
+message MsgUpdatePoolPosition {
+  string creator = 1;
+  uint64 poolID = 2;
+  uint64 aPY = 3;
+  uint64 tVL = 4;
+  uint64 lastUpdatedTime = 5;
+}
+message MsgUpdatePoolPositionResponse {}
+
+message MsgDeletePoolPosition {
+  string creator = 1;
+  uint64 poolID = 2;
+}
+message MsgDeletePoolPositionResponse {}
 // this line is used by starport scaffolding # proto/tx/message

@@ -906,6 +906,95 @@ paths:
           format: uint64
       tags:
         - Query
+  /abag/quasarnode/qoracle/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: AbagQuasarnodeQoracleParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+                properties:
+                  oracleAccounts:
+                    type: string
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /abag/quasarnode/qoracle/pool_position:
+    get:
+      summary: Queries a PoolPosition by index.
+      operationId: AbagQuasarnodeQoraclePoolPosition
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              PoolPosition:
+                type: object
+                properties:
+                  aPY:
+                    type: string
+                    format: uint64
+                  tVL:
+                    type: string
+                    format: uint64
+                  lastUpdatedTime:
+                    type: string
+                    format: uint64
+                  creator:
+                    type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: PoolID
+          in: query
+          required: false
+          type: string
+          format: uint64
+      tags:
+        - Query
   /cosmos/authz/v1beta1/grants:
     get:
       summary: 'Returns list of `Authorization`, granted to the grantee by the granter.'
@@ -14369,6 +14458,59 @@ definitions:
                   "@type": "type.googleapis.com/google.protobuf.Duration",
                   "value": "1.212s"
                 }
+  abag.quasarnode.qoracle.MsgCreatePoolPositionResponse:
+    type: object
+  abag.quasarnode.qoracle.MsgDeletePoolPositionResponse:
+    type: object
+  abag.quasarnode.qoracle.MsgUpdatePoolPositionResponse:
+    type: object
+  abag.quasarnode.qoracle.Params:
+    type: object
+    properties:
+      oracleAccounts:
+        type: string
+    description: Params defines the parameters for the module.
+  abag.quasarnode.qoracle.PoolPosition:
+    type: object
+    properties:
+      aPY:
+        type: string
+        format: uint64
+      tVL:
+        type: string
+        format: uint64
+      lastUpdatedTime:
+        type: string
+        format: uint64
+      creator:
+        type: string
+  abag.quasarnode.qoracle.QueryGetPoolPositionResponse:
+    type: object
+    properties:
+      PoolPosition:
+        type: object
+        properties:
+          aPY:
+            type: string
+            format: uint64
+          tVL:
+            type: string
+            format: uint64
+          lastUpdatedTime:
+            type: string
+            format: uint64
+          creator:
+            type: string
+  abag.quasarnode.qoracle.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+        properties:
+          oracleAccounts:
+            type: string
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
   cosmos.authz.v1beta1.Grant:
     type: object
     properties:

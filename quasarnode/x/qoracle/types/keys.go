@@ -1,5 +1,10 @@
 package types
 
+import (
+	"bytes"
+	"strconv"
+)
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "qoracle"
@@ -19,4 +24,19 @@ const (
 
 func KeyPrefix(p string) []byte {
 	return []byte(p)
+}
+
+const (
+	PoolPositionKey = "PoolPosition-value-"
+)
+
+var (
+	PoolPositionKBP = []byte{0x01}
+)
+
+func CreatePoolPositionKey(poolID uint64) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(poolID, 10)
+	b.WriteString(strEpochday)
+	return b.Bytes()
 }

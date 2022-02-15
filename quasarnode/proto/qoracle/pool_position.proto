@@ -1,0 +1,11 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message PoolPosition {
+  uint64 aPY = 1; 
+  uint64 tVL = 2; 
+  uint64 lastUpdatedTime = 3; 
+  string creator = 4;
+}

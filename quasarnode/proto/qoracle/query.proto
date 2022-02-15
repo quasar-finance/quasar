@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qoracle/params.proto";
+import "qoracle/pool_position.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -15,7 +16,11 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/qoracle/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a PoolPosition by index.
+	rpc PoolPosition(QueryGetPoolPositionRequest) returns (QueryGetPoolPositionResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_position";
+	}
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -27,4 +32,11 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
+message QueryGetPoolPositionRequest {
+  uint64 PoolID = 1;
+}
+
+message QueryGetPoolPositionResponse {
+	PoolPosition PoolPosition = 1 [(gogoproto.nullable) = false];
+}
 // this line is used by starport scaffolding # 3
