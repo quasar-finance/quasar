@@ -33,6 +33,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdCreatePoolPosition())
 	cmd.AddCommand(CmdUpdatePoolPosition())
 	cmd.AddCommand(CmdDeletePoolPosition())
+	// cmd.AddCommand(CmdBalancerPool())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

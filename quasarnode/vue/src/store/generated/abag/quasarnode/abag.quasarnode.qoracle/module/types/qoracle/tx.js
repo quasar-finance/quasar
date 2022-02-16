@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { Reader, util, configure, Writer } from "protobufjs/minimal";
 import * as Long from "long";
+import { BalancerPool } from "../osmosis/gamm/pool-models/balancer/balancerPool";
 export const protobufPackage = "abag.quasarnode.qoracle";
 const baseMsgCreatePoolPosition = {
     creator: "",
@@ -458,6 +459,117 @@ export const MsgDeletePoolPositionResponse = {
         return message;
     },
 };
+const baseMsgBalancerPool = { creator: "" };
+export const MsgBalancerPool = {
+    encode(message, writer = Writer.create()) {
+        if (message.creator !== "") {
+            writer.uint32(10).string(message.creator);
+        }
+        if (message.balancerPool !== undefined) {
+            BalancerPool.encode(message.balancerPool, writer.uint32(18).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = { ...baseMsgBalancerPool };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.creator = reader.string();
+                    break;
+                case 2:
+                    message.balancerPool = BalancerPool.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = { ...baseMsgBalancerPool };
+        if (object.creator !== undefined && object.creator !== null) {
+            message.creator = String(object.creator);
+        }
+        else {
+            message.creator = "";
+        }
+        if (object.balancerPool !== undefined && object.balancerPool !== null) {
+            message.balancerPool = BalancerPool.fromJSON(object.balancerPool);
+        }
+        else {
+            message.balancerPool = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.creator !== undefined && (obj.creator = message.creator);
+        message.balancerPool !== undefined &&
+            (obj.balancerPool = message.balancerPool
+                ? BalancerPool.toJSON(message.balancerPool)
+                : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = { ...baseMsgBalancerPool };
+        if (object.creator !== undefined && object.creator !== null) {
+            message.creator = object.creator;
+        }
+        else {
+            message.creator = "";
+        }
+        if (object.balancerPool !== undefined && object.balancerPool !== null) {
+            message.balancerPool = BalancerPool.fromPartial(object.balancerPool);
+        }
+        else {
+            message.balancerPool = undefined;
+        }
+        return message;
+    },
+};
+const baseMsgBalancerPoolResponse = {};
+export const MsgBalancerPoolResponse = {
+    encode(_, writer = Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseMsgBalancerPoolResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(_) {
+        const message = {
+            ...baseMsgBalancerPoolResponse,
+        };
+        return message;
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    fromPartial(_) {
+        const message = {
+            ...baseMsgBalancerPoolResponse,
+        };
+        return message;
+    },
+};
 export class MsgClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -476,6 +588,11 @@ export class MsgClientImpl {
         const data = MsgDeletePoolPosition.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qoracle.Msg", "DeletePoolPosition", data);
         return promise.then((data) => MsgDeletePoolPositionResponse.decode(new Reader(data)));
+    }
+    BalancerPool(request) {
+        const data = MsgBalancerPool.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qoracle.Msg", "BalancerPool", data);
+        return promise.then((data) => MsgBalancerPoolResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

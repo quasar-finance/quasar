@@ -1,4 +1,5 @@
 import { Reader, Writer } from "protobufjs/minimal";
+import { BalancerPool } from "../osmosis/gamm/pool-models/balancer/balancerPool";
 export declare const protobufPackage = "abag.quasarnode.qoracle";
 export interface MsgCreatePoolPosition {
     creator: string;
@@ -23,6 +24,16 @@ export interface MsgDeletePoolPosition {
     poolID: number;
 }
 export interface MsgDeletePoolPositionResponse {
+}
+export interface MsgBalancerPool {
+    creator: string;
+    /**
+     * string address = 2;
+     * uint64 uid = 3;
+     */
+    balancerPool: BalancerPool | undefined;
+}
+export interface MsgBalancerPoolResponse {
 }
 export declare const MsgCreatePoolPosition: {
     encode(message: MsgCreatePoolPosition, writer?: Writer): Writer;
@@ -66,12 +77,27 @@ export declare const MsgDeletePoolPositionResponse: {
     toJSON(_: MsgDeletePoolPositionResponse): unknown;
     fromPartial(_: DeepPartial<MsgDeletePoolPositionResponse>): MsgDeletePoolPositionResponse;
 };
+export declare const MsgBalancerPool: {
+    encode(message: MsgBalancerPool, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgBalancerPool;
+    fromJSON(object: any): MsgBalancerPool;
+    toJSON(message: MsgBalancerPool): unknown;
+    fromPartial(object: DeepPartial<MsgBalancerPool>): MsgBalancerPool;
+};
+export declare const MsgBalancerPoolResponse: {
+    encode(_: MsgBalancerPoolResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): MsgBalancerPoolResponse;
+    fromJSON(_: any): MsgBalancerPoolResponse;
+    toJSON(_: MsgBalancerPoolResponse): unknown;
+    fromPartial(_: DeepPartial<MsgBalancerPoolResponse>): MsgBalancerPoolResponse;
+};
 /** Msg defines the Msg service. */
 export interface Msg {
     CreatePoolPosition(request: MsgCreatePoolPosition): Promise<MsgCreatePoolPositionResponse>;
     UpdatePoolPosition(request: MsgUpdatePoolPosition): Promise<MsgUpdatePoolPositionResponse>;
-    /** this line is used by starport scaffolding # proto/tx/rpc */
     DeletePoolPosition(request: MsgDeletePoolPosition): Promise<MsgDeletePoolPositionResponse>;
+    /** this line is used by starport scaffolding # proto/tx/rpc */
+    BalancerPool(request: MsgBalancerPool): Promise<MsgBalancerPoolResponse>;
 }
 export declare class MsgClientImpl implements Msg {
     private readonly rpc;
@@ -79,6 +105,7 @@ export declare class MsgClientImpl implements Msg {
     CreatePoolPosition(request: MsgCreatePoolPosition): Promise<MsgCreatePoolPositionResponse>;
     UpdatePoolPosition(request: MsgUpdatePoolPosition): Promise<MsgUpdatePoolPositionResponse>;
     DeletePoolPosition(request: MsgDeletePoolPosition): Promise<MsgDeletePoolPositionResponse>;
+    BalancerPool(request: MsgBalancerPool): Promise<MsgBalancerPoolResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

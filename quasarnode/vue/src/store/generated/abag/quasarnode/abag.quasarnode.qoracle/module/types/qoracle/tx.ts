@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { Reader, util, configure, Writer } from "protobufjs/minimal";
 import * as Long from "long";
+import { BalancerPool } from "../osmosis/gamm/pool-models/balancer/balancerPool";
 
 export const protobufPackage = "abag.quasarnode.qoracle";
 
@@ -30,6 +31,17 @@ export interface MsgDeletePoolPosition {
 }
 
 export interface MsgDeletePoolPositionResponse {}
+
+export interface MsgBalancerPool {
+  creator: string;
+  /**
+   * string address = 2;
+   * uint64 uid = 3;
+   */
+  balancerPool: BalancerPool | undefined;
+}
+
+export interface MsgBalancerPoolResponse {}
 
 const baseMsgCreatePoolPosition: object = {
   creator: "",
@@ -546,6 +558,130 @@ export const MsgDeletePoolPositionResponse = {
   },
 };
 
+const baseMsgBalancerPool: object = { creator: "" };
+
+export const MsgBalancerPool = {
+  encode(message: MsgBalancerPool, writer: Writer = Writer.create()): Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.balancerPool !== undefined) {
+      BalancerPool.encode(
+        message.balancerPool,
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgBalancerPool {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseMsgBalancerPool } as MsgBalancerPool;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.creator = reader.string();
+          break;
+        case 2:
+          message.balancerPool = BalancerPool.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgBalancerPool {
+    const message = { ...baseMsgBalancerPool } as MsgBalancerPool;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = String(object.creator);
+    } else {
+      message.creator = "";
+    }
+    if (object.balancerPool !== undefined && object.balancerPool !== null) {
+      message.balancerPool = BalancerPool.fromJSON(object.balancerPool);
+    } else {
+      message.balancerPool = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: MsgBalancerPool): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.balancerPool !== undefined &&
+      (obj.balancerPool = message.balancerPool
+        ? BalancerPool.toJSON(message.balancerPool)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<MsgBalancerPool>): MsgBalancerPool {
+    const message = { ...baseMsgBalancerPool } as MsgBalancerPool;
+    if (object.creator !== undefined && object.creator !== null) {
+      message.creator = object.creator;
+    } else {
+      message.creator = "";
+    }
+    if (object.balancerPool !== undefined && object.balancerPool !== null) {
+      message.balancerPool = BalancerPool.fromPartial(object.balancerPool);
+    } else {
+      message.balancerPool = undefined;
+    }
+    return message;
+  },
+};
+
+const baseMsgBalancerPoolResponse: object = {};
+
+export const MsgBalancerPoolResponse = {
+  encode(_: MsgBalancerPoolResponse, writer: Writer = Writer.create()): Writer {
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): MsgBalancerPoolResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseMsgBalancerPoolResponse,
+    } as MsgBalancerPoolResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgBalancerPoolResponse {
+    const message = {
+      ...baseMsgBalancerPoolResponse,
+    } as MsgBalancerPoolResponse;
+    return message;
+  },
+
+  toJSON(_: MsgBalancerPoolResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<MsgBalancerPoolResponse>
+  ): MsgBalancerPoolResponse {
+    const message = {
+      ...baseMsgBalancerPoolResponse,
+    } as MsgBalancerPoolResponse;
+    return message;
+  },
+};
+
 /** Msg defines the Msg service. */
 export interface Msg {
   CreatePoolPosition(
@@ -554,10 +690,11 @@ export interface Msg {
   UpdatePoolPosition(
     request: MsgUpdatePoolPosition
   ): Promise<MsgUpdatePoolPositionResponse>;
-  /** this line is used by starport scaffolding # proto/tx/rpc */
   DeletePoolPosition(
     request: MsgDeletePoolPosition
   ): Promise<MsgDeletePoolPositionResponse>;
+  /** this line is used by starport scaffolding # proto/tx/rpc */
+  BalancerPool(request: MsgBalancerPool): Promise<MsgBalancerPoolResponse>;
 }
 
 export class MsgClientImpl implements Msg {
@@ -604,6 +741,18 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then((data) =>
       MsgDeletePoolPositionResponse.decode(new Reader(data))
+    );
+  }
+
+  BalancerPool(request: MsgBalancerPool): Promise<MsgBalancerPoolResponse> {
+    const data = MsgBalancerPool.encode(request).finish();
+    const promise = this.rpc.request(
+      "abag.quasarnode.qoracle.Msg",
+      "BalancerPool",
+      data
+    );
+    return promise.then((data) =>
+      MsgBalancerPoolResponse.decode(new Reader(data))
     );
   }
 }

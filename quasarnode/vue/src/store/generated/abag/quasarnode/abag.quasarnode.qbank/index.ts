@@ -507,18 +507,18 @@ export default {
 		},
 		
 		
-		async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
+		async sendMsgClaimRewards({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgRequestDeposit(value)
+				const msg = await txClient.msgClaimRewards(value)
 				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
 	gas: "200000" }, memo})
 				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgClaimRewards:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: '+ e.message)
+					throw new SpVuexError('TxClient:MsgClaimRewards:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
@@ -552,32 +552,32 @@ export default {
 				}
 			}
 		},
-		async sendMsgClaimRewards({ rootGetters }, { value, fee = [], memo = '' }) {
+		async sendMsgRequestDeposit({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgClaimRewards(value)
+				const msg = await txClient.msgRequestDeposit(value)
 				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
 	gas: "200000" }, memo})
 				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgClaimRewards:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgClaimRewards:Send', 'Could not broadcast Tx: '+ e.message)
+					throw new SpVuexError('TxClient:MsgRequestDeposit:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
 		
-		async MsgRequestDeposit({ rootGetters }, { value }) {
+		async MsgClaimRewards({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgRequestDeposit(value)
+				const msg = await txClient.msgClaimRewards(value)
 				return msg
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgClaimRewards:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message)
+					throw new SpVuexError('TxClient:MsgClaimRewards:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}
@@ -610,16 +610,16 @@ export default {
 				}
 			}
 		},
-		async MsgClaimRewards({ rootGetters }, { value }) {
+		async MsgRequestDeposit({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgClaimRewards(value)
+				const msg = await txClient.msgRequestDeposit(value)
 				return msg
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgClaimRewards:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgRequestDeposit:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgClaimRewards:Create', 'Could not create message: ' + e.message)
+					throw new SpVuexError('TxClient:MsgRequestDeposit:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}
