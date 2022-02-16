@@ -27,11 +27,14 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	PoolPositionKey = "PoolPosition-value-"
+	PoolPositionKey  = "PoolPosition-value-"
+	PoolAPYRankedKey = "pool_apy_rank_"
 )
 
 var (
-	PoolPositionKBP = []byte{0x01}
+	PoolPositionKBP  = []byte{0x01}
+	PoolInfoKBP      = []byte{0x02}
+	PoolAPYRankedKBP = []byte{0x03}
 )
 
 func CreatePoolPositionKey(poolID uint64) []byte {
@@ -39,4 +42,15 @@ func CreatePoolPositionKey(poolID uint64) []byte {
 	strEpochday := strconv.FormatUint(poolID, 10)
 	b.WriteString(strEpochday)
 	return b.Bytes()
+}
+
+func CreatePoolInfoKey(poolID uint64) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(poolID, 10)
+	b.WriteString(strEpochday)
+	return b.Bytes()
+}
+
+func CreateAPYRankedKey() []byte {
+	return []byte(PoolAPYRankedKey)
 }

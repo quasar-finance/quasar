@@ -4,12 +4,87 @@ import { util, configure, Writer, Reader } from "protobufjs/minimal";
 
 export const protobufPackage = "abag.quasarnode.qoracle";
 
+export interface SortedPools {
+  ID: number[];
+}
+
 export interface PoolPosition {
   aPY: number;
   tVL: number;
   lastUpdatedTime: number;
   creator: string;
 }
+
+const baseSortedPools: object = { ID: 0 };
+
+export const SortedPools = {
+  encode(message: SortedPools, writer: Writer = Writer.create()): Writer {
+    writer.uint32(10).fork();
+    for (const v of message.ID) {
+      writer.uint64(v);
+    }
+    writer.ldelim();
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): SortedPools {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseSortedPools } as SortedPools;
+    message.ID = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if ((tag & 7) === 2) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.ID.push(longToNumber(reader.uint64() as Long));
+            }
+          } else {
+            message.ID.push(longToNumber(reader.uint64() as Long));
+          }
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SortedPools {
+    const message = { ...baseSortedPools } as SortedPools;
+    message.ID = [];
+    if (object.ID !== undefined && object.ID !== null) {
+      for (const e of object.ID) {
+        message.ID.push(Number(e));
+      }
+    }
+    return message;
+  },
+
+  toJSON(message: SortedPools): unknown {
+    const obj: any = {};
+    if (message.ID) {
+      obj.ID = message.ID.map((e) => e);
+    } else {
+      obj.ID = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SortedPools>): SortedPools {
+    const message = { ...baseSortedPools } as SortedPools;
+    message.ID = [];
+    if (object.ID !== undefined && object.ID !== null) {
+      for (const e of object.ID) {
+        message.ID.push(e);
+      }
+    }
+    return message;
+  },
+};
 
 const basePoolPosition: object = {
   aPY: 0,

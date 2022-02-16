@@ -4,15 +4,15 @@ import { StdFee } from "@cosmjs/launchpad";
 import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgCreatePoolPosition } from "./types/qoracle/tx";
 import { MsgUpdatePoolPosition } from "./types/qoracle/tx";
 import { MsgDeletePoolPosition } from "./types/qoracle/tx";
+import { MsgCreatePoolPosition } from "./types/qoracle/tx";
 
 
 const types = [
-  ["/abag.quasarnode.qoracle.MsgCreatePoolPosition", MsgCreatePoolPosition],
   ["/abag.quasarnode.qoracle.MsgUpdatePoolPosition", MsgUpdatePoolPosition],
   ["/abag.quasarnode.qoracle.MsgDeletePoolPosition", MsgDeletePoolPosition],
+  ["/abag.quasarnode.qoracle.MsgCreatePoolPosition", MsgCreatePoolPosition],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -45,9 +45,9 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
 
   return {
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
-    msgCreatePoolPosition: (data: MsgCreatePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolPosition", value: MsgCreatePoolPosition.fromPartial( data ) }),
     msgUpdatePoolPosition: (data: MsgUpdatePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolPosition", value: MsgUpdatePoolPosition.fromPartial( data ) }),
     msgDeletePoolPosition: (data: MsgDeletePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolPosition", value: MsgDeletePoolPosition.fromPartial( data ) }),
+    msgCreatePoolPosition: (data: MsgCreatePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolPosition", value: MsgCreatePoolPosition.fromPartial( data ) }),
     
   };
 };

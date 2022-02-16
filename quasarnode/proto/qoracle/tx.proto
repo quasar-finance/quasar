@@ -37,4 +37,6 @@ message MsgDeletePoolPosition {
   uint64 poolID = 2;
 }
 message MsgDeletePoolPositionResponse {}
+
+
 // this line is used by starport scaffolding # proto/tx/message

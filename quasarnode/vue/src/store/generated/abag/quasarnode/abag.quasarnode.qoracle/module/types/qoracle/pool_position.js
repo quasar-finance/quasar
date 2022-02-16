@@ -2,6 +2,73 @@
 import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "abag.quasarnode.qoracle";
+const baseSortedPools = { ID: 0 };
+export const SortedPools = {
+    encode(message, writer = Writer.create()) {
+        writer.uint32(10).fork();
+        for (const v of message.ID) {
+            writer.uint64(v);
+        }
+        writer.ldelim();
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = { ...baseSortedPools };
+        message.ID = [];
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if ((tag & 7) === 2) {
+                        const end2 = reader.uint32() + reader.pos;
+                        while (reader.pos < end2) {
+                            message.ID.push(longToNumber(reader.uint64()));
+                        }
+                    }
+                    else {
+                        message.ID.push(longToNumber(reader.uint64()));
+                    }
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = { ...baseSortedPools };
+        message.ID = [];
+        if (object.ID !== undefined && object.ID !== null) {
+            for (const e of object.ID) {
+                message.ID.push(Number(e));
+            }
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.ID) {
+            obj.ID = message.ID.map((e) => e);
+        }
+        else {
+            obj.ID = [];
+        }
+        return obj;
+    },
+    fromPartial(object) {
+        const message = { ...baseSortedPools };
+        message.ID = [];
+        if (object.ID !== undefined && object.ID !== null) {
+            for (const e of object.ID) {
+                message.ID.push(e);
+            }
+        }
+        return message;
+    },
+};
 const basePoolPosition = {
     aPY: 0,
     tVL: 0,

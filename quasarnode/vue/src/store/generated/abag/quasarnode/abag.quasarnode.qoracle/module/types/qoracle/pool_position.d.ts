@@ -1,11 +1,21 @@
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "abag.quasarnode.qoracle";
+export interface SortedPools {
+    ID: number[];
+}
 export interface PoolPosition {
     aPY: number;
     tVL: number;
     lastUpdatedTime: number;
     creator: string;
 }
+export declare const SortedPools: {
+    encode(message: SortedPools, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): SortedPools;
+    fromJSON(object: any): SortedPools;
+    toJSON(message: SortedPools): unknown;
+    fromPartial(object: DeepPartial<SortedPools>): SortedPools;
+};
 export declare const PoolPosition: {
     encode(message: PoolPosition, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): PoolPosition;

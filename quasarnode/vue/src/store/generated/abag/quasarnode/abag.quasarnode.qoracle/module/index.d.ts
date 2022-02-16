@@ -1,9 +1,9 @@
 import { StdFee } from "@cosmjs/launchpad";
 import { Registry, OfflineSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgCreatePoolPosition } from "./types/qoracle/tx";
 import { MsgUpdatePoolPosition } from "./types/qoracle/tx";
 import { MsgDeletePoolPosition } from "./types/qoracle/tx";
+import { MsgCreatePoolPosition } from "./types/qoracle/tx";
 export declare const MissingWalletError: Error;
 export declare const registry: Registry;
 interface TxClientOptions {
@@ -15,9 +15,9 @@ interface SignAndBroadcastOptions {
 }
 declare const txClient: (wallet: OfflineSigner, { addr: addr }?: TxClientOptions) => Promise<{
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }?: SignAndBroadcastOptions) => any;
-    msgCreatePoolPosition: (data: MsgCreatePoolPosition) => EncodeObject;
     msgUpdatePoolPosition: (data: MsgUpdatePoolPosition) => EncodeObject;
     msgDeletePoolPosition: (data: MsgDeletePoolPosition) => EncodeObject;
+    msgCreatePoolPosition: (data: MsgCreatePoolPosition) => EncodeObject;
 }>;
 interface QueryClientOptions {
     addr: string;
