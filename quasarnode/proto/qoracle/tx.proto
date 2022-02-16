@@ -2,6 +2,7 @@ syntax = "proto3";
 package abag.quasarnode.qoracle;
 
 import "qoracle/pool_position.proto";
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -11,6 +12,7 @@ service Msg {
       rpc CreatePoolPosition(MsgCreatePoolPosition) returns (MsgCreatePoolPositionResponse);
   rpc UpdatePoolPosition(MsgUpdatePoolPosition) returns (MsgUpdatePoolPositionResponse);
   rpc DeletePoolPosition(MsgDeletePoolPosition) returns (MsgDeletePoolPositionResponse);
+  rpc BalancerPool(MsgBalancerPool) returns (MsgBalancerPoolResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -38,5 +40,15 @@ message MsgDeletePoolPosition {
 }
 message MsgDeletePoolPositionResponse {}
 
+
+message MsgBalancerPool {
+  string creator = 1;
+  // string address = 2;
+  // uint64 uid = 3;
+  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPool  balancerPool = 2;
+}
+
+message MsgBalancerPoolResponse {
+}
 
 // this line is used by starport scaffolding # proto/tx/message

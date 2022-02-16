@@ -36,6 +36,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgDeletePoolPosition int = 100
 
+	opWeightMsgBalancerPool = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgBalancerPool int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -104,6 +108,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgDeletePoolPosition,
 		qoraclesimulation.SimulateMsgDeletePoolPosition(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgBalancerPool int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgBalancerPool, &weightMsgBalancerPool, nil,
+		func(_ *rand.Rand) {
+			weightMsgBalancerPool = defaultWeightMsgBalancerPool
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgBalancerPool,
+		qoraclesimulation.SimulateMsgBalancerPool(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
