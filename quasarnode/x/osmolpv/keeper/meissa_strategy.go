@@ -7,24 +7,34 @@ package keeper
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 */
 import (
+	"fmt"
+
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Get
-func (k Keeper) getPoolAssets(id uint64) (ps gammtypes.PoolAsset) {
-
+func (k Keeper) getPoolAssets(ctx sdk.Context, id uint64) (ps []gammtypes.PoolAsset) {
+	//TODO -  Call oracle module keeper function to fetch the result
 	return
-}
-
-// Get the available amount from the KV store of meissa strategy.
-func (k Keeper) getAssetBalance(ps gammtypes.PoolAsset) (c sdk.Coin) {
-	return c
 }
 
 // Get APY ranked pool list
 func (k Keeper) getAPYRankedPools() (poolIDs []uint64) {
+	//TODO -  Call oracle module keeper function to fetch the result
 	return
+}
+
+// Get APY ranked pool list
+func (k Keeper) getTotalShare(ctx sdk.Context, poolIDs uint64) (totalShare uint64) {
+	//TODO -  Call oracle module keeper function to fetch the result
+	return
+}
+
+// Get the maximum available amount in the orion staking
+func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, denom string, lockupPeriod qbanktypes.LockupTypes) uint64 {
+	return 0
 }
 
 // MeissaCoinDistribution is Meissa algorithm to distribute coins among osmosis pools
@@ -40,14 +50,52 @@ func (k Keeper) getAPYRankedPools() (poolIDs []uint64) {
 // Go to the next pool and repeat [A - F]
 // At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of denoms for which we don't have pool pairs. We can put them in Orion reserve or use osmosis single denom pool staking which internally swaps half of the denom amount of the paired pool denom. It will charge a swap fee, however.
 
-func (k Keeper) MeissaCoinDistribution() {
-	/*
-		poolIDs := k.getAPYRankedPools()
+func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, lockupType qbanktypes.LockupTypes) {
 
-		for idx, poolID := range poolIDs {
-			ps := k.getPoolAssets(poolID)
-			r1, r2 := k.getPoolRatio(poolID)
+	poolIDs := k.getAPYRankedPools()
+
+	for _, poolID := range poolIDs {
+		assets := k.getPoolAssets(ctx, poolID)
+		if len(assets) != 2 {
+			// Initially strategy want to LP only in the pool whith 2 pairs
+			continue
+		}
+		// r1, r2 := k.getPoolRatios(poolID)
+		poolTotalShare := k.getTotalShare(ctx, poolID)
+		var sharePerAssetAmount []uint64
+		var shareRequired []uint64
+		var maxAvailableAmount []uint64
+
+		for idx, asset := range assets {
+			sharePerAssetAmount[idx] = poolTotalShare / asset.Token.Amount.Uint64()
+
+			maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, asset.Token.Denom, lockupType)
+
+			shareRequired[idx] = maxAvailableAmount[idx] * sharePerAssetAmount[idx]
 
 		}
-	*/
+
+		// Calculate required amount for second denom based on first denom.
+		RequiredSecondDenom := shareRequired[0] / sharePerAssetAmount[1]
+		var FirstAssetAmount uint64
+		var SecondAssetAmount uint64
+		if maxAvailableAmount[1] > RequiredSecondDenom {
+			// Consider this amounts for LPing
+			// Use shareRequired[0]
+			FirstAssetAmount = shareRequired[0] * sharePerAssetAmount[0]
+			SecondAssetAmount = shareRequired[0] * sharePerAssetAmount[1]
+		} else {
+			// Use shareRequired[1]
+			FirstAssetAmount = shareRequired[1] * sharePerAssetAmount[0]
+			SecondAssetAmount = shareRequired[1] * sharePerAssetAmount[1]
+
+		}
+
+		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|FirstAssetAmount=%v|SecondAssetAmount=%v\n",
+			FirstAssetAmount, SecondAssetAmount))
+
+		// TODO : Call Intergamm Add Liquidity Method
+		// TODO : Update orion vault staking amount
+	}
+
 }
