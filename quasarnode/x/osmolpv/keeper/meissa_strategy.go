@@ -12,6 +12,7 @@ import (
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/osmolpv/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -34,27 +35,28 @@ func (k Keeper) getTotalShare(ctx sdk.Context, poolIDs uint64) (totalShare sdk.C
 }
 
 // Get the maximum available amount in the orion staking
-func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, denom string, lockupPeriod qbanktypes.LockupTypes) sdk.Int {
-	return sdk.ZeroInt()
+func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Int {
+	return k.GetStakingBalance(ctx, lockupPeriod, denom).Amount
+	//return sdk.ZeroInt()
 }
 
 // ExecuteMeissa iterate over all the meissa strategy registered with the orion vault
-func (k Keeper) ExecuteMeissa(ctx sdk.Context) {
+func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qbanktypes.LockupTypes) {
 	strategies, _ := k.GetSubStrategyNames(ctx, types.MeissaStrategyName)
 
 	// Join pool
 	for _, sn := range strategies.Names {
-		k.MeissaCoinDistribution(ctx, types.MeissaStrategiesLockup[sn])
+		k.MeissaCoinDistribution(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
 	// Exit pool
 	for _, sn := range strategies.Names {
-		k.MeissaExit(ctx, types.MeissaStrategiesLockup[sn])
+		k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
 	// Withdraw from osmosis chain
 	for _, sn := range strategies.Names {
-		k.MeissaWithdraw(ctx, types.MeissaStrategiesLockup[sn])
+		k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
 }
@@ -72,7 +74,7 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context) {
 // Go to the next pool and repeat [A - F]
 // At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of denoms for which we don't have pool pairs. We can put them in Orion reserve or use osmosis single denom pool staking which internally swaps half of the denom amount of the paired pool denom. It will charge a swap fee, however.
 
-func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, lockupType qbanktypes.LockupTypes) {
+func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) {
 
 	poolIDs := k.getAPYRankedPools()
 
@@ -95,7 +97,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, lockupType qbanktypes.Lo
 		for idx, asset := range assets {
 
 			sharePerAssetAmount[idx] = poolTotalShare.Amount.Quo(asset.Token.Amount)
-			maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, asset.Token.Denom, lockupType)
+			maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom)
 			shareRequired[idx] = maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx])
 
 		}
@@ -134,8 +136,9 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, lockupType qbanktypes.Lo
 		// TODO : Update orion vault staking amount.
 		// Most probably not needed as balance in the orion vault is already updated.
 
-		// TODO : Store the pool ID, and denom positions deployed on each epoch day (IF)
-		//
+		// TODO : If sorted coins is required.
+		coins := sdk.NewCoins(coin1, coin2)
+		k.SetMeissaEpochLockupPoolPosition(ctx, epochday, lockupType, poolID, coins)
 	}
 
 }
@@ -143,8 +146,10 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, lockupType qbanktypes.Lo
 // MeissaExit checks for exit pool conditions for the meissa strategy.
 // Logic -
 // If the strategy did deploy any position lockup period ago ( say 7 day ago) then
-// call exit for the pool.
-func (k Keeper) MeissaExit(ctx sdk.Context, lockupType qbanktypes.LockupTypes) {
+// Use the [ currentday - lockupPeriodDays ] as key for epoch
+// Get the pool ids and sdk.coins.
+// Call exit for the pool.
+func (k Keeper) MeissaExit(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) {
 
 }
 
@@ -152,6 +157,33 @@ func (k Keeper) MeissaExit(ctx sdk.Context, lockupType qbanktypes.LockupTypes) {
 // Logic -
 // If the strategy did exited any position lockup period ago ( say 7 day ago) then
 //  call withdraw which will initial IBC transfer from escrow account to strategy account
-func (k Keeper) MeissaWithdraw(ctx sdk.Context, lockupType qbanktypes.LockupTypes) {
+func (k Keeper) MeissaWithdraw(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) {
 
+}
+
+// To audit the positions and KV stores for any unused or leaked amount.
+func (k Keeper) MeissaAudiorFunction() {
+
+}
+
+//
+func (k Keeper) SetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes, poolID uint64, coins sdk.Coins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.MeissaStrategyPoolPosKBP)
+	key := types.CreateMeissaPoolPositionKey(epochday, lockupType, poolID)
+	var qcoins qbanktypes.QCoins
+	// TODO : Check for the slice copy/pointers
+	qcoins.Coins = coins
+	value := k.cdc.MustMarshal(&qcoins)
+	store.Set(key, value)
+}
+
+//
+func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes, poolID uint64) sdk.Coins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.MeissaStrategyPoolPosKBP)
+	key := types.CreateMeissaPoolPositionKey(epochday, lockupType, poolID)
+	b := store.Get(key)
+	var qcoins qbanktypes.QCoins
+	k.cdc.MustUnmarshal(b, &qcoins)
+	// TODO : Check for the slice/pointers
+	return qcoins.Coins
 }

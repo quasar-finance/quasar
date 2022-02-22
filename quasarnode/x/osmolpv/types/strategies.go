@@ -14,3 +14,12 @@ var MeissaStrategiesLockup = map[string]qbanktypes.LockupTypes{
 	//"Meissa.9m":  banktypes.LockupTypes_Months_9,
 	//"Meissa.12m":  banktypes.LockupTypes_Months_12,
 }
+
+var LockupMeissaStrategies = map[qbanktypes.LockupTypes]string{
+
+	qbanktypes.LockupTypes_Invalid:  "Invalid",
+	qbanktypes.LockupTypes_Days_7:   "Meissa.7d",
+	qbanktypes.LockupTypes_Days_21:  "Meissa.21d",
+	qbanktypes.LockupTypes_Months_1: "Meissa.1m",
+	qbanktypes.LockupTypes_Months_3: "Meissa.3m",
+}
