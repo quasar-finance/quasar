@@ -171,6 +171,17 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	EndBlocker(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
+}
+
+// EndBlocker executes logic for strategies implemented in orion module
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+	// Logic :
+	// 1. Get the list of meissa strategies registered.
+	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
+	// 3. Exit Pool Logic - Check the strategy code for Exit conditions And call Exit Pool.
+	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw condition
+	// 5. Update Strategy Positions.
 }

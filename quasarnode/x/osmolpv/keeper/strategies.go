@@ -10,7 +10,7 @@ import (
 // SetStrategyNames Set the list of strategy names in store with prefix key string equals orion_strategies
 // Should be called only once. If even if called it should hold unique valued list
 // Called from init genesis.
-
+// TODO - check slice storage
 func (k Keeper) SetStrategyNames(ctx sdk.Context, names []string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.StrategyKBP)))
 	key := types.CreateStrategyKey()
