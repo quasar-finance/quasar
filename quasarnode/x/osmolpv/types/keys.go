@@ -61,9 +61,10 @@ func KeyPrefix(p string) []byte {
 }
 
 var (
-	UserReceiptCoinsKBP = []byte{0x01}
-	StrategyKBP         = []byte{0x02}
-	MeissaStrategyKBP   = []byte{0x03}
+	UserReceiptCoinsKBP      = []byte{0x01}
+	StrategyKBP              = []byte{0x02}
+	MeissaStrategyKBP        = []byte{0x03}
+	MeissaStrategyPoolPosKBP = []byte{0x04}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -154,5 +155,17 @@ func CreateMeissaEpochPositionKey(epochday uint64) []byte {
 	b.WriteString(CurrentPositionName)
 	b.WriteString("/")
 	b.Write(qbanktypes.CreateIDKey(epochday))
+	return b.Bytes()
+}
+
+// CreateMeissaPoolPositionKey  create key for storing the epoch wise  deployed position on a pool ID
+// Key format -  {0x04} + {epochdays} + "/" + {lockupPeriodStr} + "/" + "PoolID"
+func CreateMeissaPoolPositionKey(epochday uint64, lockupPeriod qbanktypes.LockupTypes, poolID uint64) []byte {
+	var b bytes.Buffer
+	b.Write(qbanktypes.CreateIDKey(epochday))
+	b.WriteString("/")
+	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	b.WriteString("/")
+	b.Write(qbanktypes.CreateIDKey(poolID))
 	return b.Bytes()
 }
