@@ -4,6 +4,9 @@ package abag.quasarnode.qoracle;
 import "gogoproto/gogo.proto";
 import "qoracle/params.proto";
 import "qoracle/pool_position.proto";
+import "qoracle/pool_ranking.proto";
+import "qoracle/pool_spot_price.proto";
+import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -11,6 +14,9 @@ option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 // GenesisState defines the qoracle module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  // PoolPosition poolPosition = 2;
+  repeated PoolPosition poolPositionList = 2 [(gogoproto.nullable) = false];
+  PoolRanking poolRanking = 3;
+  repeated PoolSpotPrice poolSpotPriceList = 4 [(gogoproto.nullable) = false];
+  repeated PoolInfo poolInfoList = 5 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

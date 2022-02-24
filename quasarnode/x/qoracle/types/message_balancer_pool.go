@@ -1,5 +1,6 @@
 package types
 
+/*
 import (
 	gammbalancertypes "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,15 +11,15 @@ const TypeMsgBalancerPool = "balancer_pool"
 
 var _ sdk.Msg = &MsgBalancerPool{}
 
-/*
-func NewMsgBalancerPool(creator string, address string, uid uint64) *MsgBalancerPool {
-	return &MsgBalancerPool{
-		Creator: creator,
-		Address: address,
-		Uid:     uid,
-	}
-}
-*/
+
+//func NewMsgBalancerPool(creator string, address string, uid uint64) *MsgBalancerPool {
+//	return &MsgBalancerPool{
+//		Creator: creator,
+//		Address: address,
+//		Uid:     uid,
+//	}
+//}
+
 
 // TODO - Verify if you need to take care of pointers of deep copy due to the fact that
 // bp argument is of pointer type.
@@ -57,3 +58,4 @@ func (msg *MsgBalancerPool) ValidateBasic() error {
 	}
 	return nil
 }
+*/

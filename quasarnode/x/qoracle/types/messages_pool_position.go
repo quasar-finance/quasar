@@ -13,12 +13,17 @@ const (
 
 var _ sdk.Msg = &MsgCreatePoolPosition{}
 
-func NewMsgCreatePoolPosition(poolID uint64, creator string, aPY uint64, tVL uint64, lastUpdatedTime uint64) *MsgCreatePoolPosition {
+func NewMsgCreatePoolPosition(
+	creator string,
+	poolId string,
+	metrics *PoolMetrics,
+	lastUpdatedTime uint64,
+
+) *MsgCreatePoolPosition {
 	return &MsgCreatePoolPosition{
 		Creator:         creator,
-		PoolID:          poolID,
-		APY:             aPY,
-		TVL:             tVL,
+		PoolId:          poolId,
+		Metrics:         metrics,
 		LastUpdatedTime: lastUpdatedTime,
 	}
 }
@@ -54,12 +59,17 @@ func (msg *MsgCreatePoolPosition) ValidateBasic() error {
 
 var _ sdk.Msg = &MsgUpdatePoolPosition{}
 
-func NewMsgUpdatePoolPosition(creator string, poolID uint64, aPY uint64, tVL uint64, lastUpdatedTime uint64) *MsgUpdatePoolPosition {
+func NewMsgUpdatePoolPosition(
+	creator string,
+	poolId string,
+	metrics *PoolMetrics,
+	lastUpdatedTime uint64,
+
+) *MsgUpdatePoolPosition {
 	return &MsgUpdatePoolPosition{
 		Creator:         creator,
-		PoolID:          poolID,
-		APY:             aPY,
-		TVL:             tVL,
+		PoolId:          poolId,
+		Metrics:         metrics,
 		LastUpdatedTime: lastUpdatedTime,
 	}
 }
@@ -95,10 +105,14 @@ func (msg *MsgUpdatePoolPosition) ValidateBasic() error {
 
 var _ sdk.Msg = &MsgDeletePoolPosition{}
 
-func NewMsgDeletePoolPosition(creator string, poolID uint64) *MsgDeletePoolPosition {
+func NewMsgDeletePoolPosition(
+	creator string,
+	poolId string,
+
+) *MsgDeletePoolPosition {
 	return &MsgDeletePoolPosition{
 		Creator: creator,
-		PoolID:  poolID,
+		PoolId:  poolId,
 	}
 }
 func (msg *MsgDeletePoolPosition) Route() string {

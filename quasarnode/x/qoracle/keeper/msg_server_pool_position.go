@@ -12,21 +12,23 @@ func (k msgServer) CreatePoolPosition(goCtx context.Context, msg *types.MsgCreat
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if the value already exists
-	_, isFound := k.GetPoolPosition(ctx, msg.PoolID)
+	_, isFound := k.GetPoolPosition(
+		ctx,
+		msg.PoolId,
+	)
 	if isFound {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "already set")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "index already set")
 	}
 
 	var poolPosition = types.PoolPosition{
 		Creator:         msg.Creator,
-		APY:             msg.APY,
-		TVL:             msg.TVL,
+		PoolId:          msg.PoolId,
+		Metrics:         msg.Metrics,
 		LastUpdatedTime: msg.LastUpdatedTime,
 	}
 
 	k.SetPoolPosition(
 		ctx,
-		msg.PoolID,
 		poolPosition,
 	)
 	return &types.MsgCreatePoolPositionResponse{}, nil
@@ -36,9 +38,12 @@ func (k msgServer) UpdatePoolPosition(goCtx context.Context, msg *types.MsgUpdat
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if the value exists
-	valFound, isFound := k.GetPoolPosition(ctx, msg.PoolID)
+	valFound, isFound := k.GetPoolPosition(
+		ctx,
+		msg.PoolId,
+	)
 	if !isFound {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, "not set")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, "index not set")
 	}
 
 	// Checks if the the msg creator is the same as the current owner
@@ -49,12 +54,12 @@ func (k msgServer) UpdatePoolPosition(goCtx context.Context, msg *types.MsgUpdat
 
 	var poolPosition = types.PoolPosition{
 		Creator:         msg.Creator,
-		APY:             msg.APY,
-		TVL:             msg.TVL,
+		PoolId:          msg.PoolId,
+		Metrics:         msg.Metrics,
 		LastUpdatedTime: msg.LastUpdatedTime,
 	}
 
-	k.SetPoolPosition(ctx, msg.PoolID, poolPosition)
+	k.SetPoolPosition(ctx, poolPosition)
 
 	return &types.MsgUpdatePoolPositionResponse{}, nil
 }
@@ -63,9 +68,12 @@ func (k msgServer) DeletePoolPosition(goCtx context.Context, msg *types.MsgDelet
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if the value exists
-	valFound, isFound := k.GetPoolPosition(ctx, msg.PoolID)
+	valFound, isFound := k.GetPoolPosition(
+		ctx,
+		msg.PoolId,
+	)
 	if !isFound {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, "not set")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, "index not set")
 	}
 
 	// Checks if the the msg creator is the same as the current owner
@@ -74,7 +82,10 @@ func (k msgServer) DeletePoolPosition(goCtx context.Context, msg *types.MsgDelet
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "incorrect owner")
 	}
 
-	k.RemovePoolPosition(ctx, msg.PoolID)
+	k.RemovePoolPosition(
+		ctx,
+		msg.PoolId,
+	)
 
 	return &types.MsgDeletePoolPositionResponse{}, nil
 }

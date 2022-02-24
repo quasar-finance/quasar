@@ -27,8 +27,9 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	PoolPositionKey  = "PoolPosition-value-"
+	//PoolPositionKey  = "PoolPosition-value-"
 	PoolAPYRankedKey = "pool_apy_rank_"
+	PoolRankingKey   = "PoolRanking-value-"
 )
 
 var (

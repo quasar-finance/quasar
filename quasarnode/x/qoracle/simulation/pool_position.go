@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"math/rand"
+	"strconv"
 
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
@@ -12,6 +13,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 )
 
+// Prevent strconv unused error
+var _ = strconv.IntSize
+
 func SimulateMsgCreatePoolPosition(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
@@ -21,11 +25,13 @@ func SimulateMsgCreatePoolPosition(
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 
+		i := r.Int()
 		msg := &types.MsgCreatePoolPosition{
 			Creator: simAccount.Address.String(),
+			PoolId:  strconv.Itoa(i),
 		}
 
-		_, found := k.GetPoolPosition(ctx, msg.PoolID)
+		_, found := k.GetPoolPosition(ctx, msg.PoolId)
 		if found {
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "PoolPosition already exist"), nil, nil
 		}
@@ -56,19 +62,25 @@ func SimulateMsgUpdatePoolPosition(
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		var (
-			simAccount = simtypes.Account{}
-			msg        = &types.MsgUpdatePoolPosition{}
-			// TODO - check the value of poolID
-			poolPosition, found = k.GetPoolPosition(ctx, msg.PoolID)
+			simAccount      = simtypes.Account{}
+			poolPosition    = types.PoolPosition{}
+			msg             = &types.MsgUpdatePoolPosition{}
+			allPoolPosition = k.GetAllPoolPosition(ctx)
+			found           = false
 		)
-		if !found {
-			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "poolPosition store is empty"), nil, nil
+		for _, obj := range allPoolPosition {
+			simAccount, found = FindAccount(accs, obj.Creator)
+			if found {
+				poolPosition = obj
+				break
+			}
 		}
-		simAccount, found = FindAccount(accs, poolPosition.Creator)
 		if !found {
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "poolPosition creator not found"), nil, nil
 		}
 		msg.Creator = simAccount.Address.String()
+
+		msg.PoolId = poolPosition.PoolId
 
 		txCtx := simulation.OperationInput{
 			R:               r,
@@ -96,19 +108,25 @@ func SimulateMsgDeletePoolPosition(
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		var (
-			simAccount = simtypes.Account{}
-			msg        = &types.MsgUpdatePoolPosition{}
-			// TODO - check the value of poolID
-			poolPosition, found = k.GetPoolPosition(ctx, msg.PoolID)
+			simAccount      = simtypes.Account{}
+			poolPosition    = types.PoolPosition{}
+			msg             = &types.MsgUpdatePoolPosition{}
+			allPoolPosition = k.GetAllPoolPosition(ctx)
+			found           = false
 		)
-		if !found {
-			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "poolPosition store is empty"), nil, nil
+		for _, obj := range allPoolPosition {
+			simAccount, found = FindAccount(accs, obj.Creator)
+			if found {
+				poolPosition = obj
+				break
+			}
 		}
-		simAccount, found = FindAccount(accs, poolPosition.Creator)
 		if !found {
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "poolPosition creator not found"), nil, nil
 		}
 		msg.Creator = simAccount.Address.String()
+
+		msg.PoolId = poolPosition.PoolId
 
 		txCtx := simulation.OperationInput{
 			R:               r,

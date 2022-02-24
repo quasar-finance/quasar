@@ -22,14 +22,88 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
-				PoolPosition: &types.PoolPosition{
-					APY:             62,
-					TVL:             85,
-					LastUpdatedTime: 51,
+				PoolPositionList: []types.PoolPosition{
+					{
+						PoolId: "0",
+					},
+					{
+						PoolId: "1",
+					},
+				},
+				PoolRanking: &types.PoolRanking{
+					PoolIdsSortedByAPY: []string{"52"},
+					PoolIdsSortedByTVL: []string{"100"},
+					LastUpdatedTime:    59,
+				},
+				PoolSpotPriceList: []types.PoolSpotPrice{
+					{
+						PoolId:   "0",
+						DenomIn:  "0",
+						DenomOut: "0",
+					},
+					{
+						PoolId:   "1",
+						DenomIn:  "1",
+						DenomOut: "1",
+					},
+				},
+				PoolInfoList: []types.PoolInfo{
+					{
+						PoolId: "0",
+					},
+					{
+						PoolId: "1",
+					},
 				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
+		},
+		{
+			desc: "duplicated poolPosition",
+			genState: &types.GenesisState{
+				PoolPositionList: []types.PoolPosition{
+					{
+						PoolId: "0",
+					},
+					{
+						PoolId: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated poolSpotPrice",
+			genState: &types.GenesisState{
+				PoolSpotPriceList: []types.PoolSpotPrice{
+					{
+						PoolId:   "0",
+						DenomIn:  "0",
+						DenomOut: "0",
+					},
+					{
+						PoolId:   "0",
+						DenomIn:  "0",
+						DenomOut: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated poolInfo",
+			genState: &types.GenesisState{
+				PoolInfoList: []types.PoolInfo{
+					{
+						PoolId: "0",
+					},
+					{
+						PoolId: "0",
+					},
+				},
+			},
+			valid: false,
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {

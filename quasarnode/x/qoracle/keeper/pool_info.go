@@ -1,91 +1,63 @@
 package keeper
 
 import (
-	gammbalancertypes "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
-
 	"github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetPoolPosition set poolPosition in the store
-func (k Keeper) SetPoolInfo(ctx sdk.Context, poolID uint64, poolInfo gammbalancertypes.BalancerPool) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
-
-	// TODO - Verify if you need to do local copy of poolInfo as there are pointers and slices inside
+// SetPoolInfo set a specific poolInfo in the store from its index
+func (k Keeper) SetPoolInfo(ctx sdk.Context, poolInfo types.PoolInfo) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
 	b := k.cdc.MustMarshal(&poolInfo)
-	// b, _ := poolInfo.Marshal()
-
-	// store.Set([]byte{0}, b)
-	key := types.CreatePoolInfoKey(poolID)
-	store.Set(key, b)
+	store.Set(types.PoolInfoKey(
+		poolInfo.PoolId,
+	), b)
 }
 
-// GetPoolPosition returns poolPosition
-func (k Keeper) GetPoolInfo(ctx sdk.Context, poolID uint64) (poolInfo gammbalancertypes.BalancerPool, found bool) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
-	key := types.CreatePoolInfoKey(poolID)
-	b := store.Get(key)
-	// b := store.Get([]byte{0})
+// GetPoolInfo returns a poolInfo from its index
+func (k Keeper) GetPoolInfo(
+	ctx sdk.Context,
+	poolId string,
+
+) (val types.PoolInfo, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+
+	b := store.Get(types.PoolInfoKey(
+		poolId,
+	))
 	if b == nil {
-		return poolInfo, false
-	}
-	// TODO - Verify if you need to do local copy of poolInfo as there are pointers and slices inside
-
-	k.cdc.MustUnmarshal(b, &poolInfo)
-	//val.Unmarshal()
-	return poolInfo, true
-}
-
-// RemovePoolPosition removes poolPosition from the store
-func (k Keeper) RemovePoolInfo(ctx sdk.Context, poolID uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
-	key := types.CreatePoolInfoKey(poolID)
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	// store.Delete([]byte{0})
-	store.Delete(key)
-}
-
-// KV STORE FOR APY RANKED POOL
-
-// SetPoolPosition set poolPosition in the store
-func (k Keeper) SetAPYRankedPool(ctx sdk.Context, pools types.SortedPools) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolAPYRankedKBP)
-
-	// TODO - Verify if you need to do local copy of pools as it is a slice inside.
-	b := k.cdc.MustMarshal(&pools)
-	// store.Set([]byte{0}, b)
-	key := types.CreateAPYRankedKey()
-	store.Set(key, b)
-}
-
-// GetPoolPosition returns poolPosition
-func (k Keeper) GetAPYRankedPoolInfo(ctx sdk.Context) (pools types.SortedPools, found bool) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolAPYRankedKBP)
-	key := types.CreateAPYRankedKey()
-	b := store.Get(key)
-	// b := store.Get([]byte{0})
-	if b == nil {
-		return pools, false
+		return val, false
 	}
 
-	// TODO - Verify if you need to do local copy of pools as it is a slice inside.
-	k.cdc.MustUnmarshal(b, &pools)
-	//val.Unmarshal()
-	return pools, true
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
 }
 
-/*
-// RemovePoolPosition removes poolPosition from the store
-func (k Keeper) RemovePoolInfo(ctx sdk.Context, poolID uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
-	key := types.CreatePoolInfoKey(poolID)
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	// store.Delete([]byte{0})
-	store.Delete(key)
+// RemovePoolInfo removes a poolInfo from the store
+func (k Keeper) RemovePoolInfo(
+	ctx sdk.Context,
+	poolId string,
+
+) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+	store.Delete(types.PoolInfoKey(
+		poolId,
+	))
 }
-*/
+
+// GetAllPoolInfo returns all poolInfo
+func (k Keeper) GetAllPoolInfo(ctx sdk.Context) (list []types.PoolInfo) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.PoolInfo
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		list = append(list, val)
+	}
+
+	return
+}
