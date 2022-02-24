@@ -21,6 +21,7 @@ type (
 		bankKeeper    types.BankKeeper
 		accountKeeper types.AccountKeeper
 		qbankKeeper   types.QbankKeeper
+		qoracleKeeper types.QoracleKeeper
 	}
 )
 
@@ -29,9 +30,10 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
-
+	accountkeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	qbankkeeper types.QbankKeeper,
+	qoraclekeeper types.QoracleKeeper,
 
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -41,12 +43,14 @@ func NewKeeper(
 
 	return &Keeper{
 
-		cdc:         cdc,
-		storeKey:    storeKey,
-		memKey:      memKey,
-		paramstore:  ps,
-		bankKeeper:  bankKeeper,
-		qbankKeeper: qbankkeeper,
+		cdc:           cdc,
+		storeKey:      storeKey,
+		memKey:        memKey,
+		paramstore:    ps,
+		accountKeeper: accountkeeper,
+		bankKeeper:    bankKeeper,
+		qbankKeeper:   qbankkeeper,
+		qoracleKeeper: qoraclekeeper,
 	}
 }
 

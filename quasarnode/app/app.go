@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -169,6 +170,7 @@ var (
 		osmolpvmoduletypes.PerfFeeCollectorMaccName:  nil,
 		osmolpvmoduletypes.EntryFeeCollectorMaccName: nil,
 		osmolpvmoduletypes.ExitFeeCollectorMaccName:  nil,
+		osmolpvmoduletypes.OsmoLPVReserveMaccName:    nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
@@ -393,17 +395,6 @@ func New(
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
-		appCodec,
-		keys[osmolpvmoduletypes.StoreKey],
-		keys[osmolpvmoduletypes.MemStoreKey],
-		app.GetSubspace(osmolpvmoduletypes.ModuleName),
-		app.BankKeeper,
-		app.QbankKeeper,
-	)
-
-	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.QoracleKeeper = *qoraclemodulekeeper.NewKeeper(
 		appCodec,
 		keys[qoraclemoduletypes.StoreKey],
@@ -411,6 +402,19 @@ func New(
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
+		appCodec,
+		keys[osmolpvmoduletypes.StoreKey],
+		keys[osmolpvmoduletypes.MemStoreKey],
+		app.GetSubspace(osmolpvmoduletypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.QbankKeeper,
+		app.QoracleKeeper,
+	)
+
+	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -466,7 +470,8 @@ func New(
 		feegrant.ModuleName, qbankmoduletypes.ModuleName, osmolpvmoduletypes.ModuleName,
 	)
 
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
+		osmolpvmoduletypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -553,6 +558,8 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
+
+	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
 
 	return app
 }

@@ -28,7 +28,17 @@ func (k Keeper) SendCoinFromAccountToReserve(ctx sdk.Context, senderAddr sdk.Acc
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, types.OsmoLPVReserveMaccName, sdk.NewCoins(amt))
 }
 
+// SendCoinFromAccountToReserve transfer balance from account to osmoLPV vault reserve
+func (k Keeper) SendCoinsFromAccountToReserve(ctx sdk.Context, senderAddr sdk.AccAddress, amts sdk.Coins) error {
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, types.OsmoLPVReserveMaccName, amts)
+}
+
 // SendCoinFromModuleToReserve transfer balance from module to lockup reward account
 func (k Keeper) SendCoinFromModuleToReserve(ctx sdk.Context, senderModule string, amt sdk.Coin) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.OsmoLPVReserveMaccName, sdk.NewCoins(amt))
+}
+
+// SendCoinFromModuleToReserve transfer balance from module to lockup reward account
+func (k Keeper) SendCoinsFromModuleToReserve(ctx sdk.Context, senderModule string, amts sdk.Coins) error {
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.OsmoLPVReserveMaccName, amts)
 }
