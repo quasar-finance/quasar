@@ -1,5 +1,6 @@
 package keeper
 
+/*
 import (
 	"context"
 	"fmt"
@@ -15,3 +16,4 @@ func (k msgServer) BalancerPool(goCtx context.Context, msg *types.MsgBalancerPoo
 
 	return &types.MsgBalancerPoolResponse{}, nil
 }
+*/

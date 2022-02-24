@@ -6,23 +6,26 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetPoolPosition set poolPosition in the store
-func (k Keeper) SetPoolPosition(ctx sdk.Context, poolID uint64, poolPosition types.PoolPosition) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
+// SetPoolPosition set a specific poolPosition in the store from its index
+func (k Keeper) SetPoolPosition(ctx sdk.Context, poolPosition types.PoolPosition) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
 	b := k.cdc.MustMarshal(&poolPosition)
-	// store.Set([]byte{0}, b)
-	key := types.CreatePoolPositionKey(poolID)
-	store.Set(key, b)
+	store.Set(types.PoolPositionKey(
+		poolPosition.PoolId,
+	), b)
 }
 
-// GetPoolPosition returns poolPosition
-func (k Keeper) GetPoolPosition(ctx sdk.Context, poolID uint64) (val types.PoolPosition, found bool) {
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
-	key := types.CreatePoolPositionKey(poolID)
-	b := store.Get(key)
-	// b := store.Get([]byte{0})
+// GetPoolPosition returns a poolPosition from its index
+func (k Keeper) GetPoolPosition(
+	ctx sdk.Context,
+	poolId string,
+
+) (val types.PoolPosition, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+
+	b := store.Get(types.PoolPositionKey(
+		poolId,
+	))
 	if b == nil {
 		return val, false
 	}
@@ -31,11 +34,30 @@ func (k Keeper) GetPoolPosition(ctx sdk.Context, poolID uint64) (val types.PoolP
 	return val, true
 }
 
-// RemovePoolPosition removes poolPosition from the store
-func (k Keeper) RemovePoolPosition(ctx sdk.Context, poolID uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
-	key := types.CreatePoolPositionKey(poolID)
-	// store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKey))
-	// store.Delete([]byte{0})
-	store.Delete(key)
+// RemovePoolPosition removes a poolPosition from the store
+func (k Keeper) RemovePoolPosition(
+	ctx sdk.Context,
+	poolId string,
+
+) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+	store.Delete(types.PoolPositionKey(
+		poolId,
+	))
+}
+
+// GetAllPoolPosition returns all poolPosition
+func (k Keeper) GetAllPoolPosition(ctx sdk.Context) (list []types.PoolPosition) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.PoolPosition
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		list = append(list, val)
+	}
+
+	return
 }

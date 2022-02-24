@@ -154,14 +154,100 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
-         * @name QueryPoolPosition
-         * @summary Queries a PoolPosition by index.
+         * @name QueryPoolInfoAll
+         * @summary Queries a list of PoolInfo items.
+         * @request GET:/abag/quasarnode/qoracle/pool_info
+         */
+        this.queryPoolInfoAll = (query, params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_info`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolInfo
+         * @summary Queries a PoolInfo by index.
+         * @request GET:/abag/quasarnode/qoracle/pool_info/{poolId}
+         */
+        this.queryPoolInfo = (poolId, params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_info/${poolId}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolPositionAll
+         * @summary Queries a list of PoolPosition items.
          * @request GET:/abag/quasarnode/qoracle/pool_position
          */
-        this.queryPoolPosition = (query, params = {}) => this.request({
+        this.queryPoolPositionAll = (query, params = {}) => this.request({
             path: `/abag/quasarnode/qoracle/pool_position`,
             method: "GET",
             query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolPosition
+         * @summary Queries a PoolPosition by index.
+         * @request GET:/abag/quasarnode/qoracle/pool_position/{poolId}
+         */
+        this.queryPoolPosition = (poolId, params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_position/${poolId}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolRanking
+         * @summary Queries a PoolRanking by index.
+         * @request GET:/abag/quasarnode/qoracle/pool_ranking
+         */
+        this.queryPoolRanking = (params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_ranking`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolSpotPriceAll
+         * @summary Queries a list of PoolSpotPrice items.
+         * @request GET:/abag/quasarnode/qoracle/pool_spot_price
+         */
+        this.queryPoolSpotPriceAll = (query, params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_spot_price`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPoolSpotPrice
+         * @summary Queries a PoolSpotPrice by index.
+         * @request GET:/abag/quasarnode/qoracle/pool_spot_price/{poolId}/{denomIn}/{denomOut}
+         */
+        this.queryPoolSpotPrice = (poolId, denomIn, denomOut, params = {}) => this.request({
+            path: `/abag/quasarnode/qoracle/pool_spot_price/${poolId}/${denomIn}/${denomOut}`,
+            method: "GET",
             format: "json",
             ...params,
         });

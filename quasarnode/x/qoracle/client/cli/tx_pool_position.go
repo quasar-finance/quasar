@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -11,25 +14,20 @@ import (
 
 func CmdCreatePoolPosition() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create-pool-position [poolID] [apy] [tvl] [last-updated-time]",
-		Short: "Create PoolPosition",
-		Args:  cobra.ExactArgs(4),
+		Use:   "create-pool-position [pool-id] [metrics]",
+		Short: "Create a new PoolPosition",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// Get indexes
+			indexPoolId := args[0]
 
-			argPoolID, err := cast.ToUint64E(args[0])
+			// Get value arguments
+			argMetrics := new(types.PoolMetrics)
+			err = json.Unmarshal([]byte(args[1]), argMetrics)
 			if err != nil {
 				return err
 			}
-
-			argAPY, err := cast.ToUint64E(args[1])
-			if err != nil {
-				return err
-			}
-			argTVL, err := cast.ToUint64E(args[2])
-			if err != nil {
-				return err
-			}
-			argLastUpdatedTime, err := cast.ToUint64E(args[3])
+			argLastUpdatedTime, err := cast.ToUint64E(time.Now().Unix())
 			if err != nil {
 				return err
 			}
@@ -39,7 +37,12 @@ func CmdCreatePoolPosition() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgCreatePoolPosition(argPoolID, clientCtx.GetFromAddress().String(), argAPY, argTVL, argLastUpdatedTime)
+			msg := types.NewMsgCreatePoolPosition(
+				clientCtx.GetFromAddress().String(),
+				indexPoolId,
+				argMetrics,
+				argLastUpdatedTime,
+			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -54,25 +57,20 @@ func CmdCreatePoolPosition() *cobra.Command {
 
 func CmdUpdatePoolPosition() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update-pool-position [poolID][apy] [tvl] [last-updated-time]",
-		Short: "Update PoolPosition",
-		Args:  cobra.ExactArgs(3),
+		Use:   "update-pool-position [pool-id] [metrics]",
+		Short: "Update a PoolPosition",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// Get indexes
+			indexPoolId := args[0]
 
-			argPoolID, err := cast.ToUint64E(args[0])
+			// Get value arguments
+			argMetrics := new(types.PoolMetrics)
+			err = json.Unmarshal([]byte(args[1]), argMetrics)
 			if err != nil {
 				return err
 			}
-
-			argAPY, err := cast.ToUint64E(args[1])
-			if err != nil {
-				return err
-			}
-			argTVL, err := cast.ToUint64E(args[2])
-			if err != nil {
-				return err
-			}
-			argLastUpdatedTime, err := cast.ToUint64E(args[3])
+			argLastUpdatedTime, err := cast.ToUint64E(time.Now().Unix())
 			if err != nil {
 				return err
 			}
@@ -82,7 +80,12 @@ func CmdUpdatePoolPosition() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgUpdatePoolPosition(clientCtx.GetFromAddress().String(), argPoolID, argAPY, argTVL, argLastUpdatedTime)
+			msg := types.NewMsgUpdatePoolPosition(
+				clientCtx.GetFromAddress().String(),
+				indexPoolId,
+				argMetrics,
+				argLastUpdatedTime,
+			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -97,20 +100,21 @@ func CmdUpdatePoolPosition() *cobra.Command {
 
 func CmdDeletePoolPosition() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete-pool-position",
-		Short: "Delete PoolPosition",
+		Use:   "delete-pool-position [pool-id]",
+		Short: "Delete a PoolPosition",
 		Args:  cobra.ExactArgs(1),
-		// Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			indexPoolId := args[0]
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
-			argPoolID, err := cast.ToUint64E(args[0])
-			if err != nil {
-				return err
-			}
-			msg := types.NewMsgDeletePoolPosition(clientCtx.GetFromAddress().String(), argPoolID)
+
+			msg := types.NewMsgDeletePoolPosition(
+				clientCtx.GetFromAddress().String(),
+				indexPoolId,
+			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

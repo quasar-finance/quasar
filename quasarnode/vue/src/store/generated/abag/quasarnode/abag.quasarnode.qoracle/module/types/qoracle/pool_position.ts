@@ -1,105 +1,30 @@
 /* eslint-disable */
 import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
+import { PoolMetrics } from "../qoracle/pool_metrics";
 
 export const protobufPackage = "abag.quasarnode.qoracle";
 
-export interface SortedPools {
-  ID: number[];
-}
-
 export interface PoolPosition {
-  aPY: number;
-  tVL: number;
+  poolId: string;
+  metrics: PoolMetrics | undefined;
   lastUpdatedTime: number;
   creator: string;
 }
 
-const baseSortedPools: object = { ID: 0 };
-
-export const SortedPools = {
-  encode(message: SortedPools, writer: Writer = Writer.create()): Writer {
-    writer.uint32(10).fork();
-    for (const v of message.ID) {
-      writer.uint64(v);
-    }
-    writer.ldelim();
-    return writer;
-  },
-
-  decode(input: Reader | Uint8Array, length?: number): SortedPools {
-    const reader = input instanceof Uint8Array ? new Reader(input) : input;
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = { ...baseSortedPools } as SortedPools;
-    message.ID = [];
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if ((tag & 7) === 2) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.ID.push(longToNumber(reader.uint64() as Long));
-            }
-          } else {
-            message.ID.push(longToNumber(reader.uint64() as Long));
-          }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SortedPools {
-    const message = { ...baseSortedPools } as SortedPools;
-    message.ID = [];
-    if (object.ID !== undefined && object.ID !== null) {
-      for (const e of object.ID) {
-        message.ID.push(Number(e));
-      }
-    }
-    return message;
-  },
-
-  toJSON(message: SortedPools): unknown {
-    const obj: any = {};
-    if (message.ID) {
-      obj.ID = message.ID.map((e) => e);
-    } else {
-      obj.ID = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<SortedPools>): SortedPools {
-    const message = { ...baseSortedPools } as SortedPools;
-    message.ID = [];
-    if (object.ID !== undefined && object.ID !== null) {
-      for (const e of object.ID) {
-        message.ID.push(e);
-      }
-    }
-    return message;
-  },
-};
-
 const basePoolPosition: object = {
-  aPY: 0,
-  tVL: 0,
+  poolId: "",
   lastUpdatedTime: 0,
   creator: "",
 };
 
 export const PoolPosition = {
   encode(message: PoolPosition, writer: Writer = Writer.create()): Writer {
-    if (message.aPY !== 0) {
-      writer.uint32(8).uint64(message.aPY);
+    if (message.poolId !== "") {
+      writer.uint32(10).string(message.poolId);
     }
-    if (message.tVL !== 0) {
-      writer.uint32(16).uint64(message.tVL);
+    if (message.metrics !== undefined) {
+      PoolMetrics.encode(message.metrics, writer.uint32(18).fork()).ldelim();
     }
     if (message.lastUpdatedTime !== 0) {
       writer.uint32(24).uint64(message.lastUpdatedTime);
@@ -118,10 +43,10 @@ export const PoolPosition = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.aPY = longToNumber(reader.uint64() as Long);
+          message.poolId = reader.string();
           break;
         case 2:
-          message.tVL = longToNumber(reader.uint64() as Long);
+          message.metrics = PoolMetrics.decode(reader, reader.uint32());
           break;
         case 3:
           message.lastUpdatedTime = longToNumber(reader.uint64() as Long);
@@ -139,15 +64,15 @@ export const PoolPosition = {
 
   fromJSON(object: any): PoolPosition {
     const message = { ...basePoolPosition } as PoolPosition;
-    if (object.aPY !== undefined && object.aPY !== null) {
-      message.aPY = Number(object.aPY);
+    if (object.poolId !== undefined && object.poolId !== null) {
+      message.poolId = String(object.poolId);
     } else {
-      message.aPY = 0;
+      message.poolId = "";
     }
-    if (object.tVL !== undefined && object.tVL !== null) {
-      message.tVL = Number(object.tVL);
+    if (object.metrics !== undefined && object.metrics !== null) {
+      message.metrics = PoolMetrics.fromJSON(object.metrics);
     } else {
-      message.tVL = 0;
+      message.metrics = undefined;
     }
     if (
       object.lastUpdatedTime !== undefined &&
@@ -167,8 +92,11 @@ export const PoolPosition = {
 
   toJSON(message: PoolPosition): unknown {
     const obj: any = {};
-    message.aPY !== undefined && (obj.aPY = message.aPY);
-    message.tVL !== undefined && (obj.tVL = message.tVL);
+    message.poolId !== undefined && (obj.poolId = message.poolId);
+    message.metrics !== undefined &&
+      (obj.metrics = message.metrics
+        ? PoolMetrics.toJSON(message.metrics)
+        : undefined);
     message.lastUpdatedTime !== undefined &&
       (obj.lastUpdatedTime = message.lastUpdatedTime);
     message.creator !== undefined && (obj.creator = message.creator);
@@ -177,15 +105,15 @@ export const PoolPosition = {
 
   fromPartial(object: DeepPartial<PoolPosition>): PoolPosition {
     const message = { ...basePoolPosition } as PoolPosition;
-    if (object.aPY !== undefined && object.aPY !== null) {
-      message.aPY = object.aPY;
+    if (object.poolId !== undefined && object.poolId !== null) {
+      message.poolId = object.poolId;
     } else {
-      message.aPY = 0;
+      message.poolId = "";
     }
-    if (object.tVL !== undefined && object.tVL !== null) {
-      message.tVL = object.tVL;
+    if (object.metrics !== undefined && object.metrics !== null) {
+      message.metrics = PoolMetrics.fromPartial(object.metrics);
     } else {
-      message.tVL = 0;
+      message.metrics = undefined;
     }
     if (
       object.lastUpdatedTime !== undefined &&

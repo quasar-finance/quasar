@@ -201,28 +201,132 @@ export interface ProtobufAny {
   "@type"?: string;
 }
 
-export type QoracleMsgBalancerPoolResponse = object;
+export type QoracleMsgCreatePoolInfoResponse = object;
 
 export type QoracleMsgCreatePoolPositionResponse = object;
 
+export type QoracleMsgCreatePoolRankingResponse = object;
+
+export type QoracleMsgCreatePoolSpotPriceResponse = object;
+
+export type QoracleMsgDeletePoolInfoResponse = object;
+
 export type QoracleMsgDeletePoolPositionResponse = object;
+
+export type QoracleMsgDeletePoolRankingResponse = object;
+
+export type QoracleMsgDeletePoolSpotPriceResponse = object;
+
+export type QoracleMsgUpdatePoolInfoResponse = object;
 
 export type QoracleMsgUpdatePoolPositionResponse = object;
 
-export interface QoraclePoolPosition {
-  /** @format uint64 */
-  aPY?: string;
+export type QoracleMsgUpdatePoolRankingResponse = object;
 
-  /** @format uint64 */
-  tVL?: string;
+export type QoracleMsgUpdatePoolSpotPriceResponse = object;
+
+export interface QoraclePoolInfo {
+  poolId?: string;
+  info?: PoolmodelsBalancerPool;
 
   /** @format uint64 */
   lastUpdatedTime?: string;
   creator?: string;
 }
 
+export interface QoraclePoolMetrics {
+  aPY?: string;
+  tVL?: string;
+}
+
+export interface QoraclePoolPosition {
+  poolId?: string;
+  metrics?: QoraclePoolMetrics;
+
+  /** @format uint64 */
+  lastUpdatedTime?: string;
+  creator?: string;
+}
+
+export interface QoraclePoolRanking {
+  poolIdsSortedByAPY?: string[];
+  poolIdsSortedByTVL?: string[];
+
+  /** @format uint64 */
+  lastUpdatedTime?: string;
+  creator?: string;
+}
+
+export interface QoraclePoolSpotPrice {
+  poolId?: string;
+  denomIn?: string;
+  denomOut?: string;
+  price?: string;
+
+  /** @format uint64 */
+  lastUpdatedTime?: string;
+  creator?: string;
+}
+
+export interface QoracleQueryAllPoolInfoResponse {
+  poolInfo?: QoraclePoolInfo[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
+export interface QoracleQueryAllPoolPositionResponse {
+  poolPosition?: QoraclePoolPosition[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
+export interface QoracleQueryAllPoolSpotPriceResponse {
+  poolSpotPrice?: QoraclePoolSpotPrice[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
+export interface QoracleQueryGetPoolInfoResponse {
+  poolInfo?: QoraclePoolInfo;
+}
+
 export interface QoracleQueryGetPoolPositionResponse {
-  PoolPosition?: QoraclePoolPosition;
+  poolPosition?: QoraclePoolPosition;
+}
+
+export interface QoracleQueryGetPoolRankingResponse {
+  PoolRanking?: QoraclePoolRanking;
+}
+
+export interface QoracleQueryGetPoolSpotPriceResponse {
+  poolSpotPrice?: QoraclePoolSpotPrice;
 }
 
 /**
@@ -256,6 +360,69 @@ signatures required by gogoproto.
 export interface V1Beta1Coin {
   denom?: string;
   amount?: string;
+}
+
+/**
+* message SomeRequest {
+         Foo some_parameter = 1;
+         PageRequest pagination = 2;
+ }
+*/
+export interface V1Beta1PageRequest {
+  /**
+   * key is a value returned in PageResponse.next_key to begin
+   * querying the next page most efficiently. Only one of offset or key
+   * should be set.
+   * @format byte
+   */
+  key?: string;
+
+  /**
+   * offset is a numeric offset that can be used when key is unavailable.
+   * It is less efficient than using key. Only one of offset or key should
+   * be set.
+   * @format uint64
+   */
+  offset?: string;
+
+  /**
+   * limit is the total number of results to be returned in the result page.
+   * If left empty it will default to a value to be set by each app.
+   * @format uint64
+   */
+  limit?: string;
+
+  /**
+   * count_total is set to true  to indicate that the result set should include
+   * a count of the total number of items available for pagination in UIs.
+   * count_total is only respected when offset is used. It is ignored when key
+   * is set.
+   */
+  countTotal?: boolean;
+
+  /**
+   * reverse is set to true if results are to be returned in the descending order.
+   *
+   * Since: cosmos-sdk 0.43
+   */
+  reverse?: boolean;
+}
+
+/**
+* PageResponse is to be embedded in gRPC response messages where the
+corresponding request message has used PageRequest.
+
+ message SomeResponse {
+         repeated Bar results = 1;
+         PageResponse page = 2;
+ }
+*/
+export interface V1Beta1PageResponse {
+  /** @format byte */
+  nextKey?: string;
+
+  /** @format uint64 */
+  total?: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -474,15 +641,140 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
-   * @name QueryPoolPosition
-   * @summary Queries a PoolPosition by index.
+   * @name QueryPoolInfoAll
+   * @summary Queries a list of PoolInfo items.
+   * @request GET:/abag/quasarnode/qoracle/pool_info
+   */
+  queryPoolInfoAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<QoracleQueryAllPoolInfoResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_info`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolInfo
+   * @summary Queries a PoolInfo by index.
+   * @request GET:/abag/quasarnode/qoracle/pool_info/{poolId}
+   */
+  queryPoolInfo = (poolId: string, params: RequestParams = {}) =>
+    this.request<QoracleQueryGetPoolInfoResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_info/${poolId}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolPositionAll
+   * @summary Queries a list of PoolPosition items.
    * @request GET:/abag/quasarnode/qoracle/pool_position
    */
-  queryPoolPosition = (query?: { PoolID?: string }, params: RequestParams = {}) =>
-    this.request<QoracleQueryGetPoolPositionResponse, RpcStatus>({
+  queryPoolPositionAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<QoracleQueryAllPoolPositionResponse, RpcStatus>({
       path: `/abag/quasarnode/qoracle/pool_position`,
       method: "GET",
       query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolPosition
+   * @summary Queries a PoolPosition by index.
+   * @request GET:/abag/quasarnode/qoracle/pool_position/{poolId}
+   */
+  queryPoolPosition = (poolId: string, params: RequestParams = {}) =>
+    this.request<QoracleQueryGetPoolPositionResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_position/${poolId}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolRanking
+   * @summary Queries a PoolRanking by index.
+   * @request GET:/abag/quasarnode/qoracle/pool_ranking
+   */
+  queryPoolRanking = (params: RequestParams = {}) =>
+    this.request<QoracleQueryGetPoolRankingResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_ranking`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolSpotPriceAll
+   * @summary Queries a list of PoolSpotPrice items.
+   * @request GET:/abag/quasarnode/qoracle/pool_spot_price
+   */
+  queryPoolSpotPriceAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<QoracleQueryAllPoolSpotPriceResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_spot_price`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPoolSpotPrice
+   * @summary Queries a PoolSpotPrice by index.
+   * @request GET:/abag/quasarnode/qoracle/pool_spot_price/{poolId}/{denomIn}/{denomOut}
+   */
+  queryPoolSpotPrice = (poolId: string, denomIn: string, denomOut: string, params: RequestParams = {}) =>
+    this.request<QoracleQueryGetPoolSpotPriceResponse, RpcStatus>({
+      path: `/abag/quasarnode/qoracle/pool_spot_price/${poolId}/${denomIn}/${denomOut}`,
+      method: "GET",
       format: "json",
       ...params,
     });

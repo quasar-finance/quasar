@@ -2,8 +2,12 @@ syntax = "proto3";
 package abag.quasarnode.qoracle;
 
 import "qoracle/pool_position.proto";
-import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
+import "qoracle/pool_ranking.proto";
+import "qoracle/pool_spot_price.proto";
+import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # proto/tx/import
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto"; 
+import "qoracle/pool_metrics.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 
@@ -12,43 +16,115 @@ service Msg {
       rpc CreatePoolPosition(MsgCreatePoolPosition) returns (MsgCreatePoolPositionResponse);
   rpc UpdatePoolPosition(MsgUpdatePoolPosition) returns (MsgUpdatePoolPositionResponse);
   rpc DeletePoolPosition(MsgDeletePoolPosition) returns (MsgDeletePoolPositionResponse);
-  rpc BalancerPool(MsgBalancerPool) returns (MsgBalancerPoolResponse);
+  rpc CreatePoolRanking(MsgCreatePoolRanking) returns (MsgCreatePoolRankingResponse);
+  rpc UpdatePoolRanking(MsgUpdatePoolRanking) returns (MsgUpdatePoolRankingResponse);
+  rpc DeletePoolRanking(MsgDeletePoolRanking) returns (MsgDeletePoolRankingResponse);
+  rpc CreatePoolSpotPrice(MsgCreatePoolSpotPrice) returns (MsgCreatePoolSpotPriceResponse);
+  rpc UpdatePoolSpotPrice(MsgUpdatePoolSpotPrice) returns (MsgUpdatePoolSpotPriceResponse);
+  rpc DeletePoolSpotPrice(MsgDeletePoolSpotPrice) returns (MsgDeletePoolSpotPriceResponse);
+  rpc CreatePoolInfo(MsgCreatePoolInfo) returns (MsgCreatePoolInfoResponse);
+  rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
+  rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 message MsgCreatePoolPosition {
   string creator = 1;
-  uint64 poolID = 2;
-  uint64 aPY = 3;
-  uint64 tVL = 4;
-  uint64 lastUpdatedTime = 5;
+  string poolId = 2;
+
+  PoolMetrics metrics = 3;
+  uint64 lastUpdatedTime = 4;
 }
 message MsgCreatePoolPositionResponse {}
 
 message MsgUpdatePoolPosition {
   string creator = 1;
-  uint64 poolID = 2;
-  uint64 aPY = 3;
-  uint64 tVL = 4;
-  uint64 lastUpdatedTime = 5;
+  string poolId = 2;
+
+  PoolMetrics metrics = 3;
+  uint64 lastUpdatedTime = 4;
 }
 message MsgUpdatePoolPositionResponse {}
 
 message MsgDeletePoolPosition {
   string creator = 1;
-  uint64 poolID = 2;
+  string poolId = 2;
 }
 message MsgDeletePoolPositionResponse {}
 
-
-message MsgBalancerPool {
+message MsgCreatePoolRanking {
   string creator = 1;
-  // string address = 2;
-  // uint64 uid = 3;
-  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPool  balancerPool = 2;
+  repeated string poolIdsSortedByAPY = 3;
+  repeated string poolIdsSortedByTVL = 4;
+  uint64 lastUpdatedTime = 5;
 }
+message MsgCreatePoolRankingResponse {}
 
-message MsgBalancerPoolResponse {
+message MsgUpdatePoolRanking {
+  string creator = 1;
+  repeated string poolIdsSortedByAPY = 3;
+  repeated string poolIdsSortedByTVL = 4;
+  uint64 lastUpdatedTime = 5;
 }
+message MsgUpdatePoolRankingResponse {}
+
+message MsgDeletePoolRanking {
+  string creator = 1;
+}
+message MsgDeletePoolRankingResponse {}
+
+message MsgCreatePoolSpotPrice {
+  string creator = 1;
+  string poolId = 2;
+  string denomIn = 3;
+  string denomOut = 4;
+
+  string price = 5;
+  uint64 lastUpdatedTime = 6;
+}
+message MsgCreatePoolSpotPriceResponse {}
+
+message MsgUpdatePoolSpotPrice {
+  string creator = 1;
+  string poolId = 2;
+  string denomIn = 3;
+  string denomOut = 4;
+
+  string price = 5;
+  uint64 lastUpdatedTime = 6;
+}
+message MsgUpdatePoolSpotPriceResponse {}
+
+message MsgDeletePoolSpotPrice {
+  string creator = 1;
+  string poolId = 2;
+  string denomIn = 3;
+  string denomOut = 4;
+}
+message MsgDeletePoolSpotPriceResponse {}
+
+message MsgCreatePoolInfo {
+  string creator = 1;
+  string poolId = 2;
+
+  osmosis.gamm.poolmodels.BalancerPool info = 3;
+  uint64 lastUpdatedTime = 4;
+}
+message MsgCreatePoolInfoResponse {}
+
+message MsgUpdatePoolInfo {
+  string creator = 1;
+  string poolId = 2;
+
+  osmosis.gamm.poolmodels.BalancerPool info = 3;
+  uint64 lastUpdatedTime = 4;
+}
+message MsgUpdatePoolInfoResponse {}
+
+message MsgDeletePoolInfo {
+  string creator = 1;
+  string poolId = 2;
+}
+message MsgDeletePoolInfoResponse {}
 
 // this line is used by starport scaffolding # proto/tx/message

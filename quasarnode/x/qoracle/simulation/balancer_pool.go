@@ -1,5 +1,6 @@
 package simulation
 
+/*
 import (
 	"math/rand"
 
@@ -27,3 +28,4 @@ func SimulateMsgBalancerPool(
 		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "BalancerPool simulation not implemented"), nil, nil
 	}
 }
+*/

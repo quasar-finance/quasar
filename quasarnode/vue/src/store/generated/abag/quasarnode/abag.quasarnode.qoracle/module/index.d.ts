@@ -1,10 +1,18 @@
 import { StdFee } from "@cosmjs/launchpad";
 import { Registry, OfflineSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgBalancerPool } from "./types/qoracle/tx";
-import { MsgDeletePoolPosition } from "./types/qoracle/tx";
+import { MsgDeletePoolInfo } from "./types/qoracle/tx";
+import { MsgDeletePoolRanking } from "./types/qoracle/tx";
 import { MsgUpdatePoolPosition } from "./types/qoracle/tx";
+import { MsgDeletePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgDeletePoolPosition } from "./types/qoracle/tx";
 import { MsgCreatePoolPosition } from "./types/qoracle/tx";
+import { MsgCreatePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgCreatePoolInfo } from "./types/qoracle/tx";
+import { MsgUpdatePoolInfo } from "./types/qoracle/tx";
+import { MsgCreatePoolRanking } from "./types/qoracle/tx";
+import { MsgUpdatePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgUpdatePoolRanking } from "./types/qoracle/tx";
 export declare const MissingWalletError: Error;
 export declare const registry: Registry;
 interface TxClientOptions {
@@ -16,10 +24,18 @@ interface SignAndBroadcastOptions {
 }
 declare const txClient: (wallet: OfflineSigner, { addr: addr }?: TxClientOptions) => Promise<{
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }?: SignAndBroadcastOptions) => any;
-    msgBalancerPool: (data: MsgBalancerPool) => EncodeObject;
-    msgDeletePoolPosition: (data: MsgDeletePoolPosition) => EncodeObject;
+    msgDeletePoolInfo: (data: MsgDeletePoolInfo) => EncodeObject;
+    msgDeletePoolRanking: (data: MsgDeletePoolRanking) => EncodeObject;
     msgUpdatePoolPosition: (data: MsgUpdatePoolPosition) => EncodeObject;
+    msgDeletePoolSpotPrice: (data: MsgDeletePoolSpotPrice) => EncodeObject;
+    msgDeletePoolPosition: (data: MsgDeletePoolPosition) => EncodeObject;
     msgCreatePoolPosition: (data: MsgCreatePoolPosition) => EncodeObject;
+    msgCreatePoolSpotPrice: (data: MsgCreatePoolSpotPrice) => EncodeObject;
+    msgCreatePoolInfo: (data: MsgCreatePoolInfo) => EncodeObject;
+    msgUpdatePoolInfo: (data: MsgUpdatePoolInfo) => EncodeObject;
+    msgCreatePoolRanking: (data: MsgCreatePoolRanking) => EncodeObject;
+    msgUpdatePoolSpotPrice: (data: MsgUpdatePoolSpotPrice) => EncodeObject;
+    msgUpdatePoolRanking: (data: MsgUpdatePoolRanking) => EncodeObject;
 }>;
 interface QueryClientOptions {
     addr: string;
