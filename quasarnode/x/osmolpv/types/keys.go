@@ -3,7 +3,6 @@ package types
 import (
 	"bytes"
 
-	"github.com/abag/quasarnode/x/qbank/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -97,8 +96,9 @@ func CreateRigelStrategyKey() []byte {
 // return "Orion.stake.[LockupTypes string]"
 func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
-	b.WriteString(types.ModuleName)
+	b.WriteString(ModuleName)
 	b.WriteString(".stake.")
+	// b.WriteString("stake")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	return b.String()
 }
@@ -107,7 +107,7 @@ func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 // return "Orion.reward.[LockupTypes string]"
 func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
-	b.WriteString(types.ModuleName)
+	b.WriteString(ModuleName)
 	b.WriteString(".reward.")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	return b.String()
@@ -117,7 +117,7 @@ func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 // return "Orion.Meissa.stake.[LockupTypes string]"
 func CreateMeissaStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
-	b.WriteString(types.ModuleName)
+	b.WriteString(ModuleName)
 	b.WriteString(".meissa.stake.")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	return b.String()
@@ -127,7 +127,7 @@ func CreateMeissaStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 // return "Orion.Meissa.global"
 func CreateMeissaMaccName() string {
 	var b bytes.Buffer
-	b.WriteString(types.ModuleName)
+	b.WriteString(ModuleName)
 	b.WriteString(".meissa.global")
 	return b.String()
 }
@@ -136,7 +136,7 @@ func CreateMeissaMaccName() string {
 // return "Orion.meissa.reward.[LockupTypes string]"
 func CreateMeissaRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
-	b.WriteString(types.ModuleName)
+	b.WriteString(ModuleName)
 	b.WriteString(".meissa.reward.")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	return b.String()

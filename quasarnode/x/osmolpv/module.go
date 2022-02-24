@@ -14,6 +14,7 @@ import (
 	"github.com/abag/quasarnode/x/osmolpv/client/cli"
 	"github.com/abag/quasarnode/x/osmolpv/keeper"
 	"github.com/abag/quasarnode/x/osmolpv/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -178,10 +179,29 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 
 // EndBlocker executes logic for strategies implemented in orion module
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+	logger := k.Logger(ctx)
+
+	logger.Info(fmt.Sprintf("Entered Orion EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+
+	//acc := k.accountKeeper.GetModuleAddress( )
+	//fmt.Printf("CHECKING ALL MODULE ACCOUNTS app.AccountKeeper FeeCollector = %v \n",  k.accountKeeper.GetAllAccounts())
 	// Logic :
 	// 1. Get the list of meissa strategies registered.
 	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
 	// 3. Exit Pool Logic - Check the strategy code for Exit conditions And call Exit Pool.
 	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw condition
 	// 5. Update Strategy Positions.
+
+	// TODO | ASSUMPTION | Assume one block as one epochday
+
+	epochday := uint64(ctx.BlockHeight())
+
+	// func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qbanktypes.LockupTypes) {
+
+	for lockupEnm, _ := range qbanktypes.LockupTypes_name {
+		logger.Info(fmt.Sprintf("Entered Orion BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+
+		lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
+		k.ExecuteMeissa(ctx, epochday, lockupPeriod)
+	}
 }

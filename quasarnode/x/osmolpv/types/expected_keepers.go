@@ -28,3 +28,6 @@ type QbankKeeper interface {
 	GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
 		uid, denom string, epochday uint64, lockupPeriod qbanktypes.LockupTypes) (val sdk.Coin, found bool)
 }
+
+type QoracleKeeper interface {
+}

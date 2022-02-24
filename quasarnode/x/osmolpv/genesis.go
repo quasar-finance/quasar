@@ -23,6 +23,8 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	// procedure. New names should be added here whenever a new strategy is launched.
 	strategyNames := []string{types.MeissaStrategyName, types.RigelStrategyName}
 	k.SetStrategyNames(ctx, strategyNames)
+	meissaSubNames := []string{types.Meissa7d, types.Meissa21d, types.Meissa1m, types.Meissa3m}
+	k.SetSubStrategyNames(ctx, types.MeissaStrategyName, meissaSubNames)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
