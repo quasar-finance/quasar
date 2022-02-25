@@ -1,7 +1,9 @@
 declare const _default: {
     AbagQuasarnodeAbagQuasarnodeCommon: (store: any) => void;
+    AbagQuasarnodeAbagQuasarnodeIntergammIntergamm: (store: any) => void;
     AbagQuasarnodeAbagQuasarnodeQbank: (store: any) => void;
     AbagQuasarnodeAbagQuasarnodeQoracle: (store: any) => void;
+    AbagQuasarnodeIntergamm: (store: any) => void;
     CosmosCosmosSdkCosmosAuthzV1Beta1: (store: any) => void;
     CosmosCosmosSdkCosmosBankV1Beta1: (store: any) => void;
     CosmosCosmosSdkCosmosCrisisV1Beta1: (store: any) => void;

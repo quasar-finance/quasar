@@ -76,19 +76,24 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v2/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v2/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
 	"github.com/spf13/cast"
+	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
+	"github.com/tendermint/starport/starport/pkg/openapiconsole"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/tendermint/spm/cosmoscmd"
-	"github.com/tendermint/spm/openapiconsole"
-
+	// TODO - AUDIT
+	// "github.com/tendermint/spm/cosmoscmd"
+	// "github.com/tendermint/spm/openapiconsole"
+	//"github.com/abag/quasarnode/intergamm/docs"
 	"github.com/abag/quasarnode/docs"
 	osmolpvmodule "github.com/abag/quasarnode/x/osmolpv"
 	osmolpvmodulekeeper "github.com/abag/quasarnode/x/osmolpv/keeper"
@@ -99,6 +104,10 @@ import (
 	qoraclemodule "github.com/abag/quasarnode/x/qoracle"
 	qoraclemodulekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	qoraclemoduletypes "github.com/abag/quasarnode/x/qoracle/types"
+
+	intergammmodule "github.com/abag/quasarnode/x/intergamm"
+	intergammmodulekeeper "github.com/abag/quasarnode/x/intergamm/keeper"
+	intergammmoduletypes "github.com/abag/quasarnode/x/intergamm/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -118,6 +127,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		distrclient.ProposalHandler,
 		upgradeclient.ProposalHandler,
 		upgradeclient.CancelProposalHandler,
+		ibcclientclient.UpdateClientProposalHandler,
+		ibcclientclient.UpgradeProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -152,6 +163,7 @@ var (
 		qbankmodule.AppModuleBasic{},
 		osmolpvmodule.AppModuleBasic{},
 		qoraclemodule.AppModuleBasic{},
+		intergammmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -238,6 +250,9 @@ type App struct {
 	OsmolpvKeeper osmolpvmodulekeeper.Keeper
 
 	QoracleKeeper qoraclemodulekeeper.Keeper
+
+	ScopedIntergammKeeper capabilitykeeper.ScopedKeeper
+	IntergammKeeper       intergammmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -277,6 +292,7 @@ func New(
 		qbankmoduletypes.StoreKey,
 		osmolpvmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
+		intergammmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -353,8 +369,10 @@ func New(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
+		// TODO AUDIT Above lines
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
@@ -385,6 +403,23 @@ func New(
 
 		osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
 	*/
+
+	scopedIntergammKeeper := app.CapabilityKeeper.ScopeToModule(intergammmoduletypes.ModuleName)
+
+	app.ScopedIntergammKeeper = scopedIntergammKeeper
+
+	app.IntergammKeeper = *intergammmodulekeeper.NewKeeper(
+		appCodec,
+		keys[intergammmoduletypes.StoreKey],
+		keys[intergammmoduletypes.MemStoreKey],
+		app.GetSubspace(intergammmoduletypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedIntergammKeeper,
+	)
+
+	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
 		appCodec,
 		keys[qbankmoduletypes.StoreKey],
@@ -421,6 +456,7 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	ibcRouter.AddRoute(intergammmoduletypes.ModuleName, intergammModule)
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -457,6 +493,7 @@ func New(
 		qbankModule,
 		osmolpvModule,
 		qoracleModule,
+		intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -495,6 +532,7 @@ func New(
 		qbankmoduletypes.ModuleName,
 		osmolpvmoduletypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
+		intergammmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -520,6 +558,7 @@ func New(
 		qbankModule,
 		osmolpvModule,
 		qoracleModule,
+		intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -712,6 +751,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	paramsKeeper.Subspace(osmolpvmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
+	paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

@@ -13,8 +13,10 @@ require (
 	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.2.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/spm v0.1.9
+	github.com/tendermint/spm v0.1.8
+	github.com/tendermint/starport v0.19.3
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5

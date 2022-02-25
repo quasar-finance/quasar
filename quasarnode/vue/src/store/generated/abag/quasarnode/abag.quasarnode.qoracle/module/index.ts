@@ -4,33 +4,33 @@ import { StdFee } from "@cosmjs/launchpad";
 import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgDeletePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgCreatePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgCreatePoolInfo } from "./types/qoracle/tx";
 import { MsgCreatePoolPosition } from "./types/qoracle/tx";
 import { MsgDeletePoolRanking } from "./types/qoracle/tx";
-import { MsgCreatePoolSpotPrice } from "./types/qoracle/tx";
-import { MsgDeletePoolInfo } from "./types/qoracle/tx";
-import { MsgUpdatePoolRanking } from "./types/qoracle/tx";
-import { MsgDeletePoolPosition } from "./types/qoracle/tx";
-import { MsgUpdatePoolSpotPrice } from "./types/qoracle/tx";
 import { MsgCreatePoolRanking } from "./types/qoracle/tx";
-import { MsgCreatePoolInfo } from "./types/qoracle/tx";
-import { MsgUpdatePoolInfo } from "./types/qoracle/tx";
+import { MsgUpdatePoolSpotPrice } from "./types/qoracle/tx";
 import { MsgUpdatePoolPosition } from "./types/qoracle/tx";
+import { MsgUpdatePoolRanking } from "./types/qoracle/tx";
+import { MsgDeletePoolSpotPrice } from "./types/qoracle/tx";
+import { MsgUpdatePoolInfo } from "./types/qoracle/tx";
+import { MsgDeletePoolPosition } from "./types/qoracle/tx";
+import { MsgDeletePoolInfo } from "./types/qoracle/tx";
 
 
 const types = [
-  ["/abag.quasarnode.qoracle.MsgDeletePoolSpotPrice", MsgDeletePoolSpotPrice],
+  ["/abag.quasarnode.qoracle.MsgCreatePoolSpotPrice", MsgCreatePoolSpotPrice],
+  ["/abag.quasarnode.qoracle.MsgCreatePoolInfo", MsgCreatePoolInfo],
   ["/abag.quasarnode.qoracle.MsgCreatePoolPosition", MsgCreatePoolPosition],
   ["/abag.quasarnode.qoracle.MsgDeletePoolRanking", MsgDeletePoolRanking],
-  ["/abag.quasarnode.qoracle.MsgCreatePoolSpotPrice", MsgCreatePoolSpotPrice],
-  ["/abag.quasarnode.qoracle.MsgDeletePoolInfo", MsgDeletePoolInfo],
-  ["/abag.quasarnode.qoracle.MsgUpdatePoolRanking", MsgUpdatePoolRanking],
-  ["/abag.quasarnode.qoracle.MsgDeletePoolPosition", MsgDeletePoolPosition],
-  ["/abag.quasarnode.qoracle.MsgUpdatePoolSpotPrice", MsgUpdatePoolSpotPrice],
   ["/abag.quasarnode.qoracle.MsgCreatePoolRanking", MsgCreatePoolRanking],
-  ["/abag.quasarnode.qoracle.MsgCreatePoolInfo", MsgCreatePoolInfo],
-  ["/abag.quasarnode.qoracle.MsgUpdatePoolInfo", MsgUpdatePoolInfo],
+  ["/abag.quasarnode.qoracle.MsgUpdatePoolSpotPrice", MsgUpdatePoolSpotPrice],
   ["/abag.quasarnode.qoracle.MsgUpdatePoolPosition", MsgUpdatePoolPosition],
+  ["/abag.quasarnode.qoracle.MsgUpdatePoolRanking", MsgUpdatePoolRanking],
+  ["/abag.quasarnode.qoracle.MsgDeletePoolSpotPrice", MsgDeletePoolSpotPrice],
+  ["/abag.quasarnode.qoracle.MsgUpdatePoolInfo", MsgUpdatePoolInfo],
+  ["/abag.quasarnode.qoracle.MsgDeletePoolPosition", MsgDeletePoolPosition],
+  ["/abag.quasarnode.qoracle.MsgDeletePoolInfo", MsgDeletePoolInfo],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -63,18 +63,18 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
 
   return {
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
-    msgDeletePoolSpotPrice: (data: MsgDeletePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolSpotPrice", value: MsgDeletePoolSpotPrice.fromPartial( data ) }),
+    msgCreatePoolSpotPrice: (data: MsgCreatePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolSpotPrice", value: MsgCreatePoolSpotPrice.fromPartial( data ) }),
+    msgCreatePoolInfo: (data: MsgCreatePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolInfo", value: MsgCreatePoolInfo.fromPartial( data ) }),
     msgCreatePoolPosition: (data: MsgCreatePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolPosition", value: MsgCreatePoolPosition.fromPartial( data ) }),
     msgDeletePoolRanking: (data: MsgDeletePoolRanking): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolRanking", value: MsgDeletePoolRanking.fromPartial( data ) }),
-    msgCreatePoolSpotPrice: (data: MsgCreatePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolSpotPrice", value: MsgCreatePoolSpotPrice.fromPartial( data ) }),
-    msgDeletePoolInfo: (data: MsgDeletePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolInfo", value: MsgDeletePoolInfo.fromPartial( data ) }),
-    msgUpdatePoolRanking: (data: MsgUpdatePoolRanking): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolRanking", value: MsgUpdatePoolRanking.fromPartial( data ) }),
-    msgDeletePoolPosition: (data: MsgDeletePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolPosition", value: MsgDeletePoolPosition.fromPartial( data ) }),
-    msgUpdatePoolSpotPrice: (data: MsgUpdatePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolSpotPrice", value: MsgUpdatePoolSpotPrice.fromPartial( data ) }),
     msgCreatePoolRanking: (data: MsgCreatePoolRanking): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolRanking", value: MsgCreatePoolRanking.fromPartial( data ) }),
-    msgCreatePoolInfo: (data: MsgCreatePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgCreatePoolInfo", value: MsgCreatePoolInfo.fromPartial( data ) }),
-    msgUpdatePoolInfo: (data: MsgUpdatePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolInfo", value: MsgUpdatePoolInfo.fromPartial( data ) }),
+    msgUpdatePoolSpotPrice: (data: MsgUpdatePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolSpotPrice", value: MsgUpdatePoolSpotPrice.fromPartial( data ) }),
     msgUpdatePoolPosition: (data: MsgUpdatePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolPosition", value: MsgUpdatePoolPosition.fromPartial( data ) }),
+    msgUpdatePoolRanking: (data: MsgUpdatePoolRanking): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolRanking", value: MsgUpdatePoolRanking.fromPartial( data ) }),
+    msgDeletePoolSpotPrice: (data: MsgDeletePoolSpotPrice): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolSpotPrice", value: MsgDeletePoolSpotPrice.fromPartial( data ) }),
+    msgUpdatePoolInfo: (data: MsgUpdatePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgUpdatePoolInfo", value: MsgUpdatePoolInfo.fromPartial( data ) }),
+    msgDeletePoolPosition: (data: MsgDeletePoolPosition): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolPosition", value: MsgDeletePoolPosition.fromPartial( data ) }),
+    msgDeletePoolInfo: (data: MsgDeletePoolInfo): EncodeObject => ({ typeUrl: "/abag.quasarnode.qoracle.MsgDeletePoolInfo", value: MsgDeletePoolInfo.fromPartial( data ) }),
     
   };
 };
