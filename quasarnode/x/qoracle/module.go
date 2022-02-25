@@ -170,6 +170,16 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	EndBlocker(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
+}
+
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("Entered Qoracle EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+	pr, _ := k.GetPoolRanking(ctx)
+	logger.Info(fmt.Sprintf("All PoolInfo Qoracle|modulename=%s|blockheight=%d|poolinfo=%v|poolranking=%v|poolspotprices=%v",
+		types.ModuleName, ctx.BlockHeight(), k.GetAllPoolInfo(ctx), pr, k.GetAllPoolSpotPrice(ctx)))
+
 }
