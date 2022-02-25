@@ -25,7 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// option go_package = "github.com/advanced-blockchain/intergamm/x/gamm/types";
+// option go_package = "github.com/abag/quasarnode/x/gamm/types";
 // github.com/abag/quasarnode/x
 type PoolAsset struct {
 	// Coins we are talking about,

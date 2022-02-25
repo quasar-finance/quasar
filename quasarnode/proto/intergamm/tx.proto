@@ -1,0 +1,86 @@
+syntax = "proto3";
+// package advancedblockchain.intergamm.intergamm;
+package abag.quasarnode.intergamm.intergamm;
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/abag/quasarnode/x/intergamm/types";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "osmosis/gamm/v1beta1/pool.proto";
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
+ 
+// Msg defines the Msg service.
+service Msg {
+      rpc SendIbcCreatePool(MsgSendIbcCreatePool) returns (MsgSendIbcCreatePoolResponse);
+  rpc SendIbcJoinPool(MsgSendIbcJoinPool) returns (MsgSendIbcJoinPoolResponse);
+  rpc SendIbcExitPool(MsgSendIbcExitPool) returns (MsgSendIbcExitPoolResponse);
+  rpc SendIbcWithdraw(MsgSendIbcWithdraw) returns (MsgSendIbcWithdrawResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgSendIbcCreatePool {
+  string creator = 1;
+  string port = 2;
+  string channelID = 3;
+  uint64 timeoutTimestamp = 4;
+  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPoolParams poolParams = 5;
+  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 6
+     [ (gogoproto.nullable) = false ];
+  //repeated abag.quasarnode.osmosis.gamm.v1beta1.PoolAsset poolAssets = 6
+  // [ (gogoproto.nullable) = false ];
+  string future_pool_governor = 7;
+}
+
+message MsgSendIbcCreatePoolResponse {
+}
+
+message MsgSendIbcJoinPool {
+  string creator = 1;
+  string port = 2;
+  string channelID = 3;
+  uint64 timeoutTimestamp = 4;
+  uint64 poolId = 5;
+  string shareOutAmount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  repeated cosmos.base.v1beta1.Coin tokenInMaxs = 7
+      [ (gogoproto.nullable) = false ];
+}
+
+message MsgSendIbcJoinPoolResponse {
+}
+
+message MsgSendIbcExitPool {
+  string creator = 1;
+  string port = 2;
+  string channelID = 3;
+  uint64 timeoutTimestamp = 4;
+  uint64 poolId = 5;
+  string shareInAmount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  repeated cosmos.base.v1beta1.Coin tokenOutMins = 7
+      [ (gogoproto.nullable) = false ];
+}
+
+message MsgSendIbcExitPoolResponse {
+}
+
+message MsgSendIbcWithdraw {
+  string creator = 1;
+  string port = 2;
+  string channelID = 3;
+  uint64 timeoutTimestamp = 4;
+  string transferPort = 5;
+  string transferChannel = 6;
+  string receiver = 7;
+  repeated cosmos.base.v1beta1.Coin assets = 8
+      [ (gogoproto.nullable) = false ];
+}
+
+message MsgSendIbcWithdrawResponse {
+}
+// this line is used by starport scaffolding # proto/tx/message

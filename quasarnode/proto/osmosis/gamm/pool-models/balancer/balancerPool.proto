@@ -15,7 +15,7 @@ import "osmosis/gamm/v1beta1/pool.proto";
 
 option go_package = "github.com/abag/quasarnode/x/gamm/pool-models/balancer";
 
-//option go_package = "github.com/advanced-blockchain/intergamm/x/gamm/pool-models/balancer";
+//option go_package = "github.com/abag/quasarnode/x/gamm/pool-models/balancer";
 // option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 
 // Parameters for changing the weights in a balancer pool smoothly from
