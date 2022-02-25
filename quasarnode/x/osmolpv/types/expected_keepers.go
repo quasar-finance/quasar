@@ -2,6 +2,7 @@ package types
 
 import (
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -30,4 +31,6 @@ type QbankKeeper interface {
 }
 
 type QoracleKeeper interface {
+	GetPoolInfo(ctx sdk.Context, poolId string) (val qoracletypes.PoolInfo, found bool)
+	GetPoolRanking(ctx sdk.Context) (val qoracletypes.PoolRanking, found bool)
 }

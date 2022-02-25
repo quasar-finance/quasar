@@ -8,30 +8,38 @@ package keeper
 */
 import (
 	"fmt"
+	"strconv"
 
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/osmolpv/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+
+	// qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Get
-func (k Keeper) getPoolAssets(ctx sdk.Context, id uint64) (ps []gammtypes.PoolAsset) {
-	//TODO -  Call oracle module keeper function to fetch the result
-	return
+// TODO - Need to optimize all these getters to reduce the KV store calls
+// Get pool assets from pool ID
+func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.PoolAsset) {
+	poolIDStr := strconv.FormatUint(poolID, 10)
+	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
+	return poolInfo.Info.PoolAssets
 }
 
 // Get APY ranked pool list
-func (k Keeper) getAPYRankedPools() (poolIDs []uint64) {
-	//TODO -  Call oracle module keeper function to fetch the result
-	return
+//func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
+// TODO : Store the uint64 values inside the KV store
+func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []string) {
+	pr, _ := k.qoracleKeeper.GetPoolRanking(ctx)
+	return pr.PoolIdsSortedByAPY
 }
 
 // Get APY ranked pool list
-func (k Keeper) getTotalShare(ctx sdk.Context, poolIDs uint64) (totalShare sdk.Coin) {
-	//TODO -  Call oracle module keeper function to fetch the result
-	return
+func (k Keeper) getTotalShare(ctx sdk.Context, poolID uint64) (totalShare sdk.Coin) {
+	poolIDStr := strconv.FormatUint(poolID, 10)
+	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
+	return poolInfo.Info.TotalShares
 }
 
 // Get the maximum available amount in the orion staking
@@ -87,9 +95,11 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 	k.Logger(ctx).Info(fmt.Sprintf("Entered MeissaCoinDistribution|epochday=%v|lockupType=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
-	poolIDs := k.getAPYRankedPools()
+	poolIDs := k.getAPYRankedPools(ctx)
 
-	for _, poolID := range poolIDs {
+	for _, poolIDStr := range poolIDs {
+		// TODO - Change the qoracle pool ID storage to uint64
+		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
 		assets := k.getPoolAssets(ctx, poolID)
 		if len(assets) != 2 {
 			// Initially strategy want to LP only in the pool with 2 assets
@@ -163,9 +173,10 @@ func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qban
 		currEpochday, qbanktypes.LockupTypes_name[int32(lockupType)]))
 	// TODO : We can use a different KV store and cache for the list of Currently active pools.
 	// Currently active pool are those in which orion has LPing positions.
-	poolIDs := k.getAPYRankedPools()
+	poolIDs := k.getAPYRankedPools(ctx)
 	offsetedEpochDay := currEpochday - uint64(lockupType)
-	for _, poolID := range poolIDs {
+	for _, poolIDStr := range poolIDs {
+		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
 		coins := k.GetMeissaEpochLockupPoolPosition(ctx, offsetedEpochDay, lockupType, poolID)
 		k.Logger(ctx).Info(fmt.Sprintf("MeissaExit|currEpochday=%v|offsetedEpochDay=%v|PoolID=%v|Coins=%v\n",
 			currEpochday, offsetedEpochDay, poolID, coins))

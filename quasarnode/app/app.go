@@ -471,7 +471,7 @@ func New(
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
-		osmolpvmoduletypes.ModuleName)
+		qoraclemoduletypes.ModuleName, osmolpvmoduletypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
