@@ -1,10 +1,12 @@
 package types
 
 import (
+	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -33,4 +35,20 @@ type QbankKeeper interface {
 type QoracleKeeper interface {
 	GetPoolInfo(ctx sdk.Context, poolId string) (val qoracletypes.PoolInfo, found bool)
 	GetPoolRanking(ctx sdk.Context) (val qoracletypes.PoolRanking, found bool)
+}
+
+type IntergammKeeper interface {
+	TransmitIbcJoinPoolPacket(
+		ctx sdk.Context, packetData intergammtypes.IbcJoinPoolPacketData,
+		sourcePort, sourceChannel string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
+
+	TransmitIbcExitPoolPacket(
+		ctx sdk.Context, packetData intergammtypes.IbcExitPoolPacketData,
+		sourcePort, sourceChannel string,
+		timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
+
+	TransmitIbcWithdrawPacket(
+		ctx sdk.Context, packetData intergammtypes.IbcWithdrawPacketData,
+		sourcePort, sourceChannel string,
+		timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
 }

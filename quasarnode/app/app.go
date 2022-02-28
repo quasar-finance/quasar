@@ -447,6 +447,7 @@ func New(
 		app.BankKeeper,
 		app.QbankKeeper,
 		app.QoracleKeeper,
+		app.IntergammKeeper,
 	)
 
 	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
