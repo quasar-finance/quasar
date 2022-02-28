@@ -18,10 +18,11 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper    types.BankKeeper
-		accountKeeper types.AccountKeeper
-		qbankKeeper   types.QbankKeeper
-		qoracleKeeper types.QoracleKeeper
+		bankKeeper      types.BankKeeper
+		accountKeeper   types.AccountKeeper
+		qbankKeeper     types.QbankKeeper
+		qoracleKeeper   types.QoracleKeeper
+		intergammKeeper types.IntergammKeeper
 	}
 )
 
@@ -31,9 +32,10 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 	accountkeeper types.AccountKeeper,
-	bankKeeper types.BankKeeper,
+	bankkeeper types.BankKeeper,
 	qbankkeeper types.QbankKeeper,
 	qoraclekeeper types.QoracleKeeper,
+	intergammkeeper types.IntergammKeeper,
 
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -43,14 +45,15 @@ func NewKeeper(
 
 	return &Keeper{
 
-		cdc:           cdc,
-		storeKey:      storeKey,
-		memKey:        memKey,
-		paramstore:    ps,
-		accountKeeper: accountkeeper,
-		bankKeeper:    bankKeeper,
-		qbankKeeper:   qbankkeeper,
-		qoracleKeeper: qoraclekeeper,
+		cdc:             cdc,
+		storeKey:        storeKey,
+		memKey:          memKey,
+		paramstore:      ps,
+		accountKeeper:   accountkeeper,
+		bankKeeper:      bankkeeper,
+		qbankKeeper:     qbankkeeper,
+		qoracleKeeper:   qoraclekeeper,
+		intergammKeeper: intergammkeeper,
 	}
 }
 

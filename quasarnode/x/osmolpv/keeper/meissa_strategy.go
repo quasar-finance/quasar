@@ -11,15 +11,25 @@ import (
 	"strconv"
 
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
+	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
 	"github.com/abag/quasarnode/x/osmolpv/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 
-	// qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls
+
+// Get pool info
+func (k Keeper) getPoolInfo(ctx sdk.Context, poolID uint64) qoracletypes.PoolInfo {
+	poolIDStr := strconv.FormatUint(poolID, 10)
+	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
+	return poolInfo
+}
+
 // Get pool assets from pool ID
 func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.PoolAsset) {
 	poolIDStr := strconv.FormatUint(poolID, 10)
@@ -28,7 +38,7 @@ func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.Po
 }
 
 // Get APY ranked pool list
-//func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
+// func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
 // TODO : Store the uint64 values inside the KV store
 func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []string) {
 	pr, _ := k.qoracleKeeper.GetPoolRanking(ctx)
@@ -64,12 +74,13 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 	// Exit pool
 	for _, sn := range strategies.Names {
 		k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
+		k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
 	// Withdraw from osmosis chain
-	for _, sn := range strategies.Names {
-		k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
-	}
+	//for _, sn := range strategies.Names {
+	//	k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
+	// }
 
 	// Audit
 	for _, sn := range strategies.Names {
@@ -97,6 +108,8 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 
 	poolIDs := k.getAPYRankedPools(ctx)
 
+	k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolIds=%v\n",
+		epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
 		// TODO - Change the qoracle pool ID storage to uint64
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
@@ -107,7 +120,8 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 		}
 
 		poolTotalShare := k.getTotalShare(ctx, poolID)
-
+		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
+			epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, assets))
 		var sharePerAssetAmount []sdk.Int
 		var shareRequired []sdk.Int
 		var maxAvailableAmount []sdk.Int
@@ -117,6 +131,12 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 			sharePerAssetAmount[idx] = poolTotalShare.Amount.Quo(asset.Token.Amount)
 			maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom)
 			shareRequired[idx] = maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx])
+			k.Logger(ctx).Info(
+				fmt.Sprintf(
+					"MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|asset=%v|"+
+						"sharePerAssetAmount=%v|maxAvailableAmount=%v|shareRequired=%v|\n",
+					epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID,
+					asset, sharePerAssetAmount[idx], maxAvailableAmount[idx], shareRequired[idx]))
 
 		}
 
@@ -126,20 +146,24 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 
 		var FirstAssetAmount sdk.Int
 		var SecondAssetAmount sdk.Int
+		var shareOutAmount sdk.Int
 		if maxAvailableAmount[1].GT(RequiredSecondDenom) {
-			// Consider this amounts for LPing
+			// Consider this amounts for LPing based on the share required for first asset
 			// Use shareRequired[0]
+			shareOutAmount = shareRequired[0]
 			FirstAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[0])
 			SecondAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[1])
 		} else {
+			// Consider this amounts for LPing based on the share required for second asset
 			// Use shareRequired[1]
+			shareOutAmount = shareRequired[1]
 			FirstAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[0])
 			SecondAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[1])
 
 		}
 
-		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|FirstAssetAmount=%v|SecondAssetAmount=%v\n",
-			FirstAssetAmount, SecondAssetAmount))
+		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v|FirstAssetAmount=%v|SecondAssetAmount=%v\n",
+			shareOutAmount, FirstAssetAmount, SecondAssetAmount))
 
 		// Transfer fund to the strategy global account.
 		// TODO - 1. Optimize it to have one call only
@@ -148,8 +172,12 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 		coin2 := sdk.NewCoin(assets[1].Token.Denom, SecondAssetAmount)
 		k.SendCoinFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coin1)
 		k.SendCoinFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coin2)
+		tokenInMaxs := []sdk.Coin{coin1, coin2}
 
-		// TODO : Call Intergamm Add Liquidity Method
+		// TODO : Call Intergamm IBC token transfer
+
+		// Call Intergamm Add Liquidity Method
+		k.JoinPool(ctx, poolID, shareOutAmount, tokenInMaxs)
 
 		// TODO : Update orion vault staking amount.
 		// Most probably not needed as balance in the orion vault is already updated.
@@ -180,8 +208,18 @@ func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qban
 		coins := k.GetMeissaEpochLockupPoolPosition(ctx, offsetedEpochDay, lockupType, poolID)
 		k.Logger(ctx).Info(fmt.Sprintf("MeissaExit|currEpochday=%v|offsetedEpochDay=%v|PoolID=%v|Coins=%v\n",
 			currEpochday, offsetedEpochDay, poolID, coins))
+		poolTotalShare := k.getTotalShare(ctx, poolID)
+		assets := k.getPoolAssets(ctx, poolID)
+		var shareInAmount sdk.Int
+		var tokenOutMins []sdk.Coin // TODO | AUDIT | Zero value
+		for _, asset := range assets {
 
-		// TODO - Call intergamm exit pool method
+			shareInAmount = poolTotalShare.Amount.Quo(asset.Token.Amount)
+			break
+		}
+		// Call intergamm exit pool method
+		k.ExitPool(ctx, poolID, shareInAmount, tokenOutMins)
+
 	}
 
 }
@@ -201,7 +239,6 @@ func (k Keeper) MeissaWithdraw(ctx sdk.Context, epochday uint64, lockupType qban
 // 1. check the coins available in all the orion lockup accounts at today epochday.
 // 2. transfer coins to the orion treasury. Orion treasury will also be used during users withdrawal.
 func (k Keeper) MeissaAudiorFunction(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes) {
-
 	k.Logger(ctx).Info(fmt.Sprintf("Entered MeissaAudiorFunction|lockupType=%v\n",
 		qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
 	coins := k.GetAllStakingBalances(ctx, lockupPeriod)
@@ -229,4 +266,85 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	k.cdc.MustUnmarshal(b, &qcoins)
 	// TODO | AUDIT Check for the slice/pointers
 	return qcoins.Coins
+}
+
+// Intergamm module method wrappers
+func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) error {
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
+		poolID, shareOutAmount, tokenInMaxs))
+
+	var packet intergammtypes.IbcJoinPoolPacketData
+
+	packet.PoolId = poolID
+	packet.ShareOutAmount = shareOutAmount
+	// TODO - AUDIT | Check if slice copy is needed
+	packet.TokenInMaxs = append(packet.TokenInMaxs, tokenInMaxs...)
+
+	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
+	var port string = intergammtypes.PortID
+	var channelID string = "channel-1"
+
+	err := k.intergammKeeper.TransmitIbcJoinPoolPacket(
+		ctx,
+		packet,
+		port,
+		channelID,
+		clienttypes.ZeroHeight(),
+		uint64(0), // TODO - AUDIT
+	)
+
+	return err
+}
+
+func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {
+
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
+		poolID, shareInAmount, tokenOutMins))
+	var packet intergammtypes.IbcExitPoolPacketData
+
+	packet.PoolId = poolID
+	packet.ShareInAmount = shareInAmount
+	packet.TokenOutMins = tokenOutMins
+
+	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
+	var port string = intergammtypes.PortID
+	var channelID string = "channel-1"
+
+	// Transmit the packet
+	err := k.intergammKeeper.TransmitIbcExitPoolPacket(
+		ctx,
+		packet,
+		port,
+		channelID,
+		clienttypes.ZeroHeight(),
+		uint64(0), // TODO - AUDIT
+	)
+	return err
+}
+
+func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, coins []sdk.Coin) error {
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
+		receiverAddr, coins))
+
+	var packet intergammtypes.IbcWithdrawPacketData
+	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
+	var port string = intergammtypes.PortID
+	var channelID string = "channel-1"
+	packet.TransferPort = port // TODO | AUDIT
+	packet.TransferChannel = channelID
+	packet.Receiver = receiverAddr
+	packet.Assets = coins
+
+	// Transmit the packet
+	err := k.intergammKeeper.TransmitIbcWithdrawPacket(
+		ctx,
+		packet,
+		port,
+		channelID,
+		clienttypes.ZeroHeight(),
+		uint64(0), // TODO - AUDIT
+	)
+
+	return err
+
 }

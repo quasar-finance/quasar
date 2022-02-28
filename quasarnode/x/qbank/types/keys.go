@@ -30,7 +30,9 @@ func KeyPrefix(p string) []byte {
 const (
 
 	// TODO - Use Prefix byte as 0x01, 0x02
+	Sep = ":"
 
+	// Prefix keys
 	DepositKey                = "Deposit-value-"
 	DepositCountKey           = "Deposit-count-"
 	UserDenomDepositKeyPrefix = "User-denom-deposit-"
@@ -46,9 +48,11 @@ var (
 	WithdrawKeyKBP      = []byte{0x03}
 	UserDepositKBP      = []byte{0x04}
 	WithdrawableKeyKBP  = []byte{0x05}
+
+	// TODO Vault level prefix to be used.
 )
 
-var sepByte = []byte("/")
+var sepByte = []byte(":")
 
 // Common functions for deposit and withdraw
 func SplitKeyBytes(kb []byte) [][]byte {
