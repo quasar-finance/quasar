@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,7 +21,8 @@ func (k Keeper) TransmitIbcExitPoolPacket(
 	timeoutHeight clienttypes.Height,
 	timeoutTimestamp uint64,
 ) error {
-
+	k.Logger(ctx).Info(fmt.Sprintf("Entered TransmitIbcExitPoolPacket|packetData=%v|sourcePort=%v|sourceChannel=%v|timeoutHeight=%v|timeoutTimestamp=%v|\n",
+		packetData, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp))
 	sourceChannelEnd, found := k.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	if !found {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "port ID (%s) channel ID (%s)", sourcePort, sourceChannel)
@@ -58,6 +60,7 @@ func (k Keeper) TransmitIbcExitPoolPacket(
 		timeoutHeight,
 		timeoutTimestamp,
 	)
+	k.Logger(ctx).Info(fmt.Sprintf("TransmitIbcExitPoolPacket|packet=%v|\n", packet))
 
 	if err := k.ChannelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
 		return err
@@ -81,8 +84,11 @@ func (k Keeper) OnRecvIbcExitPoolPacket(ctx sdk.Context, packet channeltypes.Pac
 // OnAcknowledgementIbcExitPoolPacket responds to the the success or failure of a packet
 // acknowledgement written on the receiving chain.
 func (k Keeper) OnAcknowledgementIbcExitPoolPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcExitPoolPacketData, ack channeltypes.Acknowledgement) error {
+	k.Logger(ctx).Info(fmt.Sprintf("OnAcknowledgementIbcExitPoolPacket|packet=%v|data=%v|ack=%v\n", packet, data, ack))
+
 	switch dispatchedAck := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
+		k.Logger(ctx).Info("OnAcknowledgementIbcExitPoolPacket|Acknowledgement_Error")
 
 		// TODO: failed acknowledgement logic
 		_ = dispatchedAck.Error
@@ -93,9 +99,11 @@ func (k Keeper) OnAcknowledgementIbcExitPoolPacket(ctx sdk.Context, packet chann
 		var packetAck types.IbcExitPoolPacketAck
 
 		if err := types.ModuleCdc.UnmarshalJSON(dispatchedAck.Result, &packetAck); err != nil {
+
 			// The counter-party module doesn't implement the correct acknowledgment format
 			return errors.New("cannot unmarshal acknowledgment")
 		}
+		k.Logger(ctx).Info(fmt.Sprintf("OnAcknowledgementIbcExitPoolPacket|packetAck=%v|\n", packetAck))
 
 		// TODO: successful acknowledgement logic
 
@@ -110,6 +118,7 @@ func (k Keeper) OnAcknowledgementIbcExitPoolPacket(ctx sdk.Context, packet chann
 func (k Keeper) OnTimeoutIbcExitPoolPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcExitPoolPacketData) error {
 
 	// TODO: packet timeout logic
+	k.Logger(ctx).Info(fmt.Sprintf("OnTimeoutIbcExitPoolPacket|packet=%v|data=%v|\n", packet, data))
 
 	return nil
 }

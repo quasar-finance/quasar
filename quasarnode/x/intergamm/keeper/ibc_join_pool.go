@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,6 +21,9 @@ func (k Keeper) TransmitIbcJoinPoolPacket(
 	timeoutHeight clienttypes.Height,
 	timeoutTimestamp uint64,
 ) error {
+
+	k.Logger(ctx).Info(fmt.Sprintf("Entered TransmitIbcJoinPoolPacket|packetData=%v|sourcePort=%v|sourceChannel=%v|timeoutHeight=%v|timeoutTimestamp=%v|\n",
+		packetData, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp))
 
 	sourceChannelEnd, found := k.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	if !found {
@@ -58,7 +62,7 @@ func (k Keeper) TransmitIbcJoinPoolPacket(
 		timeoutHeight,
 		timeoutTimestamp,
 	)
-
+	k.Logger(ctx).Info(fmt.Sprintf("TransmitIbcJoinPoolPacket|packet=%v|\n", packet))
 	if err := k.ChannelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
 		return err
 	}
@@ -81,8 +85,12 @@ func (k Keeper) OnRecvIbcJoinPoolPacket(ctx sdk.Context, packet channeltypes.Pac
 // OnAcknowledgementIbcJoinPoolPacket responds to the the success or failure of a packet
 // acknowledgement written on the receiving chain.
 func (k Keeper) OnAcknowledgementIbcJoinPoolPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcJoinPoolPacketData, ack channeltypes.Acknowledgement) error {
+
+	k.Logger(ctx).Info(fmt.Sprintf("OnAcknowledgementIbcJoinPoolPacket|packet=%v|data=%v|ack=%v\n", packet, data, ack))
+
 	switch dispatchedAck := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
+		k.Logger(ctx).Info("OnAcknowledgementIbcJoinPoolPacket|Acknowledgement_Error")
 
 		// TODO: failed acknowledgement logic
 		_ = dispatchedAck.Error
@@ -96,6 +104,7 @@ func (k Keeper) OnAcknowledgementIbcJoinPoolPacket(ctx sdk.Context, packet chann
 			// The counter-party module doesn't implement the correct acknowledgment format
 			return errors.New("cannot unmarshal acknowledgment")
 		}
+		k.Logger(ctx).Info(fmt.Sprintf("OnAcknowledgementIbcJoinPoolPacket|packetAck=%v|\n", packetAck))
 
 		// TODO: successful acknowledgement logic
 
@@ -110,6 +119,7 @@ func (k Keeper) OnAcknowledgementIbcJoinPoolPacket(ctx sdk.Context, packet chann
 func (k Keeper) OnTimeoutIbcJoinPoolPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcJoinPoolPacketData) error {
 
 	// TODO: packet timeout logic
+	k.Logger(ctx).Info(fmt.Sprintf("OnTimeoutIbcJoinPoolPacket|packet=%v|data=%v|\n", packet, data))
 
 	return nil
 }
