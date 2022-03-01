@@ -128,9 +128,17 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 
 		for idx, asset := range assets {
 
-			sharePerAssetAmount[idx] = poolTotalShare.Amount.Quo(asset.Token.Amount)
-			maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom)
-			shareRequired[idx] = maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx])
+			//k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|sharePerAssetAmount[idx]=%v|poolTotalShare.Amount=%v|asset.Token.Amount=%v\n",
+			//	sharePerAssetAmount[idx], poolTotalShare.Amount, asset.Token.Amount))
+
+			//sharePerAssetAmount[idx] = poolTotalShare.Amount.Quo(asset.Token.Amount)
+			//maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom)
+			// shareRequired[idx] = maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx])
+			// TODO | AUDIT
+			sharePerAssetAmount = append(sharePerAssetAmount, poolTotalShare.Amount, asset.Token.Amount)
+			maxAvailableAmount = append(maxAvailableAmount, k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom))
+			shareRequired = append(shareRequired, maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx]))
+
 			k.Logger(ctx).Info(
 				fmt.Sprintf(
 					"MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|asset=%v|"+
@@ -175,16 +183,17 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 		tokenInMaxs := []sdk.Coin{coin1, coin2}
 
 		// TODO : Call Intergamm IBC token transfer
+		if shareOutAmount.IsPositive() {
+			// Call Intergamm Add Liquidity Method
+			k.JoinPool(ctx, poolID, shareOutAmount, tokenInMaxs)
 
-		// Call Intergamm Add Liquidity Method
-		k.JoinPool(ctx, poolID, shareOutAmount, tokenInMaxs)
+			// TODO : Update orion vault staking amount.
+			// Most probably not needed as balance in the orion vault is already updated.
 
-		// TODO : Update orion vault staking amount.
-		// Most probably not needed as balance in the orion vault is already updated.
-
-		// TODO : If sorted coins is required.
-		coins := sdk.NewCoins(coin1, coin2)
-		k.SetMeissaEpochLockupPoolPosition(ctx, epochday, lockupType, poolID, coins)
+			// TODO : If sorted coins is required.
+			coins := sdk.NewCoins(coin1, coin2)
+			k.SetMeissaEpochLockupPoolPosition(ctx, epochday, lockupType, poolID, coins)
+		}
 	}
 
 }
@@ -217,8 +226,11 @@ func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qban
 			shareInAmount = poolTotalShare.Amount.Quo(asset.Token.Amount)
 			break
 		}
-		// Call intergamm exit pool method
-		k.ExitPool(ctx, poolID, shareInAmount, tokenOutMins)
+
+		if shareInAmount.IsPositive() {
+			// Call intergamm exit pool method
+			k.ExitPool(ctx, poolID, shareInAmount, tokenOutMins)
+		}
 
 	}
 
