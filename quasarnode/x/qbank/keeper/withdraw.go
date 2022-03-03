@@ -137,7 +137,7 @@ func (k Keeper) GetWithdrawableAmt(ctx sdk.Context, uid, denom string) (coin sdk
 // Called from the Orion vault end blocker
 func (k Keeper) AddWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateWithdrableKey(coin.GetDenom(), uid, "/")
+	key := types.CreateWithdrableKey(coin.GetDenom(), uid, ":")
 	b := store.Get(key)
 	if b == nil {
 		b := k.cdc.MustMarshal(&coin)
@@ -155,7 +155,7 @@ func (k Keeper) AddWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 // Called from the users withdraw transaction processing.
 func (k Keeper) SubWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateWithdrableKey(coin.GetDenom(), uid, "/")
+	key := types.CreateWithdrableKey(coin.GetDenom(), uid, ":")
 	b := store.Get(key)
 	if b == nil {
 		// Do nothing. Call should never come here.
@@ -173,7 +173,7 @@ func (k Keeper) SubWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 // from the lockperiod based KV store container.
 func (k Keeper) GetLockupWithdrawableAmt(ctx sdk.Context, uid, denom string, lockupPeriod types.LockupTypes) (coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(denom, uid, lockupPeriod, "/")
+	key := types.CreateLockupWithdrableKey(denom, uid, lockupPeriod, ":")
 	b := store.Get(key)
 	if b == nil {
 		return sdk.NewInt64Coin(denom, 0)
@@ -186,7 +186,7 @@ func (k Keeper) GetLockupWithdrawableAmt(ctx sdk.Context, uid, denom string, loc
 // Called from the Orion vault end blocker
 func (k Keeper) AddLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, "/")
+	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, ":")
 	b := store.Get(key)
 	if b == nil {
 		b := k.cdc.MustMarshal(&coin)
@@ -204,7 +204,7 @@ func (k Keeper) AddLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coi
 // Called from the users withdraw transaction processing.
 func (k Keeper) SubLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, "/")
+	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, ":")
 	b := store.Get(key)
 	if b == nil {
 		// Do nothing. Call should never come here.
