@@ -1,8 +1,8 @@
 import { StdFee } from "@cosmjs/launchpad";
 import { Registry, OfflineSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
+import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 import { MsgSendIbcExitPool } from "./types/intergamm/tx";
 export declare const MissingWalletError: Error;
@@ -16,8 +16,8 @@ interface SignAndBroadcastOptions {
 }
 declare const txClient: (wallet: OfflineSigner, { addr: addr }?: TxClientOptions) => Promise<{
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }?: SignAndBroadcastOptions) => any;
-    msgSendIbcJoinPool: (data: MsgSendIbcJoinPool) => EncodeObject;
     msgSendIbcCreatePool: (data: MsgSendIbcCreatePool) => EncodeObject;
+    msgSendIbcJoinPool: (data: MsgSendIbcJoinPool) => EncodeObject;
     msgSendIbcWithdraw: (data: MsgSendIbcWithdraw) => EncodeObject;
     msgSendIbcExitPool: (data: MsgSendIbcExitPool) => EncodeObject;
 }>;

@@ -2,13 +2,13 @@
 import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
+import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 import { MsgSendIbcExitPool } from "./types/intergamm/tx";
 const types = [
-    ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", MsgSendIbcJoinPool],
     ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", MsgSendIbcCreatePool],
+    ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", MsgSendIbcJoinPool],
     ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", MsgSendIbcWithdraw],
     ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", MsgSendIbcExitPool],
 ];
@@ -31,8 +31,8 @@ const txClient = async (wallet, { addr: addr } = { addr: "http://localhost:26657
     const { address } = (await wallet.getAccounts())[0];
     return {
         signAndBroadcast: (msgs, { fee, memo } = { fee: defaultFee, memo: "" }) => client.signAndBroadcast(address, msgs, fee, memo),
-        msgSendIbcJoinPool: (data) => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", value: MsgSendIbcJoinPool.fromPartial(data) }),
         msgSendIbcCreatePool: (data) => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", value: MsgSendIbcCreatePool.fromPartial(data) }),
+        msgSendIbcJoinPool: (data) => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", value: MsgSendIbcJoinPool.fromPartial(data) }),
         msgSendIbcWithdraw: (data) => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", value: MsgSendIbcWithdraw.fromPartial(data) }),
         msgSendIbcExitPool: (data) => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", value: MsgSendIbcExitPool.fromPartial(data) }),
     };
