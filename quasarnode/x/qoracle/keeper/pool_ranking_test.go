@@ -13,7 +13,12 @@ import (
 )
 
 func createTestPoolRanking(keeper *keeper.Keeper, ctx sdk.Context) types.PoolRanking {
-	item := types.PoolRanking{}
+	item := types.PoolRanking{
+		Creator:            "quasar170u8l73u3lh7fvg8sr229cezvf9yxzanrkanhm",
+		PoolIdsSortedByAPY: []string{"1", "2", "3"},
+		PoolIdsSortedByTVL: []string{"2", "1", "3"},
+		LastUpdatedTime:    1646229371,
+	}
 	keeper.SetPoolRanking(ctx, item)
 	return item
 }
