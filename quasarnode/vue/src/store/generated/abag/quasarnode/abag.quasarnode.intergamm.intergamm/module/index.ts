@@ -4,17 +4,17 @@ import { StdFee } from "@cosmjs/launchpad";
 import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
-import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
 import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
-import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
+import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
 import { MsgSendIbcExitPool } from "./types/intergamm/tx";
+import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 
 
 const types = [
-  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", MsgSendIbcCreatePool],
   ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", MsgSendIbcJoinPool],
-  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", MsgSendIbcWithdraw],
+  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", MsgSendIbcCreatePool],
   ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", MsgSendIbcExitPool],
+  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", MsgSendIbcWithdraw],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -47,10 +47,10 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
 
   return {
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
-    msgSendIbcCreatePool: (data: MsgSendIbcCreatePool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", value: MsgSendIbcCreatePool.fromPartial( data ) }),
     msgSendIbcJoinPool: (data: MsgSendIbcJoinPool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", value: MsgSendIbcJoinPool.fromPartial( data ) }),
-    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", value: MsgSendIbcWithdraw.fromPartial( data ) }),
+    msgSendIbcCreatePool: (data: MsgSendIbcCreatePool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", value: MsgSendIbcCreatePool.fromPartial( data ) }),
     msgSendIbcExitPool: (data: MsgSendIbcExitPool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", value: MsgSendIbcExitPool.fromPartial( data ) }),
+    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", value: MsgSendIbcWithdraw.fromPartial( data ) }),
     
   };
 };

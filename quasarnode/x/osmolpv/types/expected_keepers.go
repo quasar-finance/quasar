@@ -27,16 +27,19 @@ type BankKeeper interface {
 	SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error
 }
 
+// QbankKeeper defines the expected interface needed by Orion module from qbank
 type QbankKeeper interface {
 	GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
 		uid, denom string, epochday uint64, lockupPeriod qbanktypes.LockupTypes) (val sdk.Coin, found bool)
 }
 
+// QoracleKeeper defines the expected interface needed by Orion module from qoracle module
 type QoracleKeeper interface {
 	GetPoolInfo(ctx sdk.Context, poolId string) (val qoracletypes.PoolInfo, found bool)
 	GetPoolRanking(ctx sdk.Context) (val qoracletypes.PoolRanking, found bool)
 }
 
+// IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	TransmitIbcJoinPoolPacket(
 		ctx sdk.Context, packetData intergammtypes.IbcJoinPoolPacketData,

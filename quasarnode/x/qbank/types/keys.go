@@ -46,6 +46,7 @@ var (
 	WithdrawKeyKBP      = []byte{0x03}
 	UserDepositKBP      = []byte{0x04}
 	WithdrawableKeyKBP  = []byte{0x05}
+	UserClaimKBP        = []byte{0x06}
 
 	// TODO Vault level prefix to be used.
 )
@@ -191,6 +192,16 @@ func CreateLockupWithdrableKey(denom, uid string, lockupPeriod LockupTypes, sep 
 // set of key creation functions for withdraw objects
 func CreateWithdrawCountKey() []byte {
 	return createStoreKey(WithdrawCountKey)
+}
+
+// Claim key
+
+func CreateUsersClaimKey(uid, vaultID, sep string) []byte {
+	var b bytes.Buffer
+	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(vaultID)
+	return b.Bytes()
 }
 
 // Note : Not used now

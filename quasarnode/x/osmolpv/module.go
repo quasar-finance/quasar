@@ -183,8 +183,8 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 	logger.Info(fmt.Sprintf("Entered Orion EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
 
-	//acc := k.accountKeeper.GetModuleAddress( )
-	//fmt.Printf("CHECKING ALL MODULE ACCOUNTS app.AccountKeeper FeeCollector = %v \n",  k.accountKeeper.GetAllAccounts())
+	// acc := k.accountKeeper.GetModuleAddress( )
+	// fmt.Printf("CHECKING ALL MODULE ACCOUNTS app.AccountKeeper FeeCollector = %v \n", k.accountKeeper.GetAllAccounts())
 	// Logic :
 	// 1. Get the list of meissa strategies registered.
 	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
@@ -192,11 +192,10 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw condition
 	// 5. Update Strategy Positions.
 
-	// TODO | ASSUMPTION | Assume one block as one epochday
+	// TODO | ASSUMPTION | Assume one block as one epochday for testing.
+	// TODO | AUDIT | Epoch module should be added here.
 
 	epochday := uint64(ctx.BlockHeight())
-
-	// func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qbanktypes.LockupTypes) {
 
 	for lockupEnm, _ := range qbanktypes.LockupTypes_name {
 		logger.Info(fmt.Sprintf("Entered Orion BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
