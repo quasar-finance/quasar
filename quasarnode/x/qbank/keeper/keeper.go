@@ -60,9 +60,11 @@ func (k Keeper) Iterator2(ctx sdk.Context) error {
 	return nil
 }
 
-// iterate will iterate through all keys with a given prefix using a provided function.
+// Iterate will iterate through all keys with a given prefix using a provided callback function.
 // If the provided callback function returns an error, iteration stops and the error
 // is returned.
+// Here, prefix param consists of complete key byte slice with prefix byte at 0th index
+
 // func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key, val []byte) error) error {
 
 func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key []byte, val sdk.Coin) error) error {
@@ -93,7 +95,9 @@ func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key []byte, val 
 
 // ProcessWithdrable Current implementation is based on the assumption that same withdrable amount
 // will be available to withdraw which the user was submitted initially.
-// TODO - This logic should be changed based on the orion vault receipt token new design.
+// However this logic can be used to calculate the expected withdrable with the assumption that market does not change.
+// This value can be useful to calculate loss if any.
+// TODO | AUDIT |  This logic should be changed based on the orion vault receipt token new design.
 func (k Keeper) ProcessWithdrable(ctx sdk.Context, prefix []byte) error {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, prefix)

@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// UserWithdraw is used by the CLI and grpc query to fetch all the withdrable amount of all denom
+// TODO | AUDIT | As of now this function is not implemented. And it is returning zero value.
 func (k Keeper) UserWithdraw(goCtx context.Context, req *types.QueryUserWithdrawRequest) (*types.QueryUserWithdrawResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

@@ -231,6 +231,8 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 		}
 	*/
 
+	// TODO | AUDIT | This logic for the Withdrable amount to changed based on the new Orion vault
+	// receipt token design.
 	for lockupEnm, lockupStr := range types.LockupTypes_name {
 
 		prefix := types.UserDenomDepositKBP
