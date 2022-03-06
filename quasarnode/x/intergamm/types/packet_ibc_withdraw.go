@@ -20,5 +20,13 @@ func (p IbcWithdrawPacketData) GetBytes() ([]byte, error) {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	return sdk.MustSortJSON(b), nil
 }
+||||||| parent of 22109bf (added tx doc for qbank module)
+	return modulePacket.Marshal()
+}
+=======
+	return modulePacket.Marshal()
+}
+>>>>>>> 22109bf (added tx doc for qbank module)

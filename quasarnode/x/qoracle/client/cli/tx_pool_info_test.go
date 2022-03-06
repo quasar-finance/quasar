@@ -19,7 +19,7 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func samplePoolFile1 () string {
+func samplePoolFile1() string {
 	return `
 {
 	"address": "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t",
@@ -62,7 +62,7 @@ func TestCreatePoolInfo(t *testing.T) {
 
 	sampleJSON := testutil.WriteToNewTempFile(t, samplePoolFile1())
 
-	fields := []string{sampleJSON.Name(),}
+	fields := []string{sampleJSON.Name()}
 	for _, tc := range []struct {
 		desc     string
 		idPoolId string
@@ -110,7 +110,7 @@ func TestUpdatePoolInfo(t *testing.T) {
 
 	sampleJSON := testutil.WriteToNewTempFile(t, samplePoolFile1())
 
-	fields := []string{sampleJSON.Name(),}
+	fields := []string{sampleJSON.Name()}
 	common := []string{
 		fmt.Sprintf("--%s=%s", flags.FlagFrom, val.Address.String()),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
@@ -175,7 +175,7 @@ func TestDeletePoolInfo(t *testing.T) {
 
 	sampleJSON := testutil.WriteToNewTempFile(t, samplePoolFile1())
 
-	fields := []string{sampleJSON.Name(),}
+	fields := []string{sampleJSON.Name()}
 	common := []string{
 		fmt.Sprintf("--%s=%s", flags.FlagFrom, val.Address.String()),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),

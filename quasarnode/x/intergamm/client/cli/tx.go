@@ -34,7 +34,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdSendIbcJoinPool())
 	cmd.AddCommand(CmdSendIbcExitPool())
 	cmd.AddCommand(CmdSendIbcWithdraw())
-// this line is used by starport scaffolding # 1
+	// this line is used by starport scaffolding # 1
 
 	return cmd
 }

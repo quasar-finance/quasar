@@ -12,7 +12,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgSendIbcJoinPool{}, "intergamm/SendIbcJoinPool", nil)
 	cdc.RegisterConcrete(&MsgSendIbcExitPool{}, "intergamm/SendIbcExitPool", nil)
 	cdc.RegisterConcrete(&MsgSendIbcWithdraw{}, "intergamm/SendIbcWithdraw", nil)
-// this line is used by starport scaffolding # 2
+	// this line is used by starport scaffolding # 2
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -26,9 +26,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgSendIbcExitPool{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-	&MsgSendIbcWithdraw{},
-)
-// this line is used by starport scaffolding # 3
+		&MsgSendIbcWithdraw{},
+	)
+	// this line is used by starport scaffolding # 3
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
