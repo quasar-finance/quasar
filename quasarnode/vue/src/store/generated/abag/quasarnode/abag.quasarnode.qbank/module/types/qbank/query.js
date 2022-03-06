@@ -7,6 +7,7 @@ import { PageRequest, PageResponse, } from "../cosmos/base/query/v1beta1/paginat
 import { Withdraw } from "../qbank/withdraw";
 import { FeeData } from "../qbank/fee_data";
 import { QCoins } from "../qbank/common";
+import { Coin } from "../cosmos/base/v1beta1/coin";
 export const protobufPackage = "abag.quasarnode.qbank";
 const baseQueryParamsRequest = {};
 export const QueryParamsRequest = {
@@ -1655,6 +1656,135 @@ export const QueryUserClaimRewardsResponse = {
         return message;
     },
 };
+const baseQueryWithdrableRequest = { userAccount: "", denom: "" };
+export const QueryWithdrableRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.userAccount !== "") {
+            writer.uint32(10).string(message.userAccount);
+        }
+        if (message.denom !== "") {
+            writer.uint32(18).string(message.denom);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = { ...baseQueryWithdrableRequest };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.userAccount = reader.string();
+                    break;
+                case 2:
+                    message.denom = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = { ...baseQueryWithdrableRequest };
+        if (object.userAccount !== undefined && object.userAccount !== null) {
+            message.userAccount = String(object.userAccount);
+        }
+        else {
+            message.userAccount = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = String(object.denom);
+        }
+        else {
+            message.denom = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.userAccount !== undefined &&
+            (obj.userAccount = message.userAccount);
+        message.denom !== undefined && (obj.denom = message.denom);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = { ...baseQueryWithdrableRequest };
+        if (object.userAccount !== undefined && object.userAccount !== null) {
+            message.userAccount = object.userAccount;
+        }
+        else {
+            message.userAccount = "";
+        }
+        if (object.denom !== undefined && object.denom !== null) {
+            message.denom = object.denom;
+        }
+        else {
+            message.denom = "";
+        }
+        return message;
+    },
+};
+const baseQueryWithdrableResponse = {};
+export const QueryWithdrableResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.coin !== undefined) {
+            Coin.encode(message.coin, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryWithdrableResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.coin = Coin.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryWithdrableResponse,
+        };
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromJSON(object.coin);
+        }
+        else {
+            message.coin = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.coin !== undefined &&
+            (obj.coin = message.coin ? Coin.toJSON(message.coin) : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryWithdrableResponse,
+        };
+        if (object.coin !== undefined && object.coin !== null) {
+            message.coin = Coin.fromPartial(object.coin);
+        }
+        else {
+            message.coin = undefined;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -1723,6 +1853,11 @@ export class QueryClientImpl {
         const data = QueryUserClaimRewardsRequest.encode(request).finish();
         const promise = this.rpc.request("abag.quasarnode.qbank.Query", "UserClaimRewards", data);
         return promise.then((data) => QueryUserClaimRewardsResponse.decode(new Reader(data)));
+    }
+    Withdrable(request) {
+        const data = QueryWithdrableRequest.encode(request).finish();
+        const promise = this.rpc.request("abag.quasarnode.qbank.Query", "Withdrable", data);
+        return promise.then((data) => QueryWithdrableResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

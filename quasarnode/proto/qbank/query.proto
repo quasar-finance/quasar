@@ -1,7 +1,6 @@
 syntax = "proto3";
 package abag.quasarnode.qbank;
 
-import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qbank/params.proto";
@@ -10,6 +9,8 @@ import "qbank/withdraw.proto";
 import "qbank/fee_data.proto";
 import "qbank/common.proto";
 // this line is used by starport scaffolding # 1
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 
@@ -76,6 +77,11 @@ service Query {
 // Queries a list of UserClaimRewards items.
 	rpc UserClaimRewards(QueryUserClaimRewardsRequest) returns (QueryUserClaimRewardsResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_claim_rewards/{userAcc}";
+	}
+
+// Queries a list of Withdrable items.
+	rpc Withdrable(QueryWithdrableRequest) returns (QueryWithdrableResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/withdrable/{userAccount}/{denom}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -194,6 +200,15 @@ message QueryUserClaimRewardsRequest {
 message QueryUserClaimRewardsResponse {
 	QCoins coins  = 1 
 	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
+}
+
+message QueryWithdrableRequest {
+  string userAccount = 1;
+  string denom = 2;
+}
+
+message QueryWithdrableResponse {
+  cosmos.base.v1beta1.Coin coin = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

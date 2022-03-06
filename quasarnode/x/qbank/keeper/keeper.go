@@ -91,6 +91,9 @@ func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key []byte, val 
 	return nil
 }
 
+// ProcessWithdrable Current implementation is based on the assumption that same withdrable amount
+// will be available to withdraw which the user was submitted initially.
+// TODO - This logic should be changed based on the orion vault receipt token new design.
 func (k Keeper) ProcessWithdrable(ctx sdk.Context, prefix []byte) error {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, prefix)

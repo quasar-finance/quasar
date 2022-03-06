@@ -199,26 +199,26 @@ func (am AppModule) OnRecvPacket(
 				sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", err != nil)),
 			),
 		)
-		case *types.IntergammPacketData_IbcWithdrawPacket:
-	packetAck, err := am.keeper.OnRecvIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket)
-	if err != nil {
-		ack = channeltypes.NewErrorAcknowledgement(err.Error())
-	} else {
-		// Encode packet acknowledgment
-		packetAckBytes, err := types.ModuleCdc.MarshalJSON(&packetAck)
+	case *types.IntergammPacketData_IbcWithdrawPacket:
+		packetAck, err := am.keeper.OnRecvIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket)
 		if err != nil {
-			return channeltypes.NewErrorAcknowledgement(sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error()).Error())
+			ack = channeltypes.NewErrorAcknowledgement(err.Error())
+		} else {
+			// Encode packet acknowledgment
+			packetAckBytes, err := types.ModuleCdc.MarshalJSON(&packetAck)
+			if err != nil {
+				return channeltypes.NewErrorAcknowledgement(sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error()).Error())
+			}
+			ack = channeltypes.NewResultAcknowledgement(sdk.MustSortJSON(packetAckBytes))
 		}
-		ack = channeltypes.NewResultAcknowledgement(sdk.MustSortJSON(packetAckBytes))
-	}
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			types.EventTypeIbcWithdrawPacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", err != nil)),
-		),
-	)
-// this line is used by starport scaffolding # ibc/packet/module/recv
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeIbcWithdrawPacket,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", err != nil)),
+			),
+		)
+		// this line is used by starport scaffolding # ibc/packet/module/recv
 	default:
 		errMsg := fmt.Sprintf("unrecognized %s packet type: %T", types.ModuleName, packet)
 		return channeltypes.NewErrorAcknowledgement(errMsg)
@@ -269,13 +269,13 @@ func (am AppModule) OnAcknowledgementPacket(
 			return err
 		}
 		eventType = types.EventTypeIbcExitPoolPacket
-		case *types.IntergammPacketData_IbcWithdrawPacket:
-	err := am.keeper.OnAcknowledgementIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket, ack)
-	if err != nil {
-		return err
-	}
-	eventType = types.EventTypeIbcWithdrawPacket
-// this line is used by starport scaffolding # ibc/packet/module/ack
+	case *types.IntergammPacketData_IbcWithdrawPacket:
+		err := am.keeper.OnAcknowledgementIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket, ack)
+		if err != nil {
+			return err
+		}
+		eventType = types.EventTypeIbcWithdrawPacket
+		// this line is used by starport scaffolding # ibc/packet/module/ack
 	default:
 		errMsg := fmt.Sprintf("unrecognized %s packet type: %T", types.ModuleName, packet)
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
@@ -337,12 +337,12 @@ func (am AppModule) OnTimeoutPacket(
 		if err != nil {
 			return err
 		}
-		case *types.IntergammPacketData_IbcWithdrawPacket:
-	err := am.keeper.OnTimeoutIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket)
-	if err != nil {
-		return err
-	}
-// this line is used by starport scaffolding # ibc/packet/module/timeout
+	case *types.IntergammPacketData_IbcWithdrawPacket:
+		err := am.keeper.OnTimeoutIbcWithdrawPacket(ctx, modulePacket, *packet.IbcWithdrawPacket)
+		if err != nil {
+			return err
+		}
+		// this line is used by starport scaffolding # ibc/packet/module/timeout
 	default:
 		errMsg := fmt.Sprintf("unrecognized %s packet type: %T", types.ModuleName, packet)
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)

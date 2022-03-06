@@ -3,9 +3,9 @@ package types
 import (
 	"testing"
 
+	"github.com/abag/quasarnode/testutil/sample"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/abag/quasarnode/testutil/sample"
 )
 
 func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
@@ -17,7 +17,7 @@ func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgSendIbcWithdraw{
-				Creator: "invalid_address",
+				Creator:          "invalid_address",
 				Port:             "port",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 100,
@@ -26,7 +26,7 @@ func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid port",
 			msg: MsgSendIbcWithdraw{
-				Creator: sample.AccAddress(),
+				Creator:          sample.AccAddress(),
 				Port:             "",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 100,
@@ -35,7 +35,7 @@ func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid channel",
 			msg: MsgSendIbcWithdraw{
-				Creator: sample.AccAddress(),
+				Creator:          sample.AccAddress(),
 				Port:             "port",
 				ChannelID:        "",
 				TimeoutTimestamp: 100,
@@ -44,7 +44,7 @@ func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid timeout",
 			msg: MsgSendIbcWithdraw{
-				Creator: sample.AccAddress(),
+				Creator:          sample.AccAddress(),
 				Port:             "port",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 0,
@@ -53,7 +53,7 @@ func TestMsgSendIbcWithdraw_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid message",
 			msg: MsgSendIbcWithdraw{
-				Creator: sample.AccAddress(),
+				Creator:          sample.AccAddress(),
 				Port:             "port",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 100,
