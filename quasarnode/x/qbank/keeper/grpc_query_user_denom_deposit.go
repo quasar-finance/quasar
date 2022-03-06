@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// UserDenomDeposit is used by the CLI and grpc query to fetch the denom deposit value of a give user.
 func (k Keeper) UserDenomDeposit(goCtx context.Context,
 	req *types.QueryUserDenomDepositRequest) (*types.QueryUserDenomDepositResponse, error) {
 	if req == nil {

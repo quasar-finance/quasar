@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// WithdrawAll
+// TODO | This function is to be removed.
 func (k Keeper) WithdrawAll(c context.Context, req *types.QueryAllWithdrawRequest) (*types.QueryAllWithdrawResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
@@ -40,6 +42,8 @@ func (k Keeper) WithdrawAll(c context.Context, req *types.QueryAllWithdrawReques
 	return &types.QueryAllWithdrawResponse{Withdraw: withdraws, Pagination: pageRes}, nil
 }
 
+// Withdraw
+// TODO | AUDIT | This function to be removed.
 func (k Keeper) Withdraw(c context.Context, req *types.QueryGetWithdrawRequest) (*types.QueryGetWithdrawResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

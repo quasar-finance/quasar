@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// DepositAll is used by the CLI and grpc query to fetch the list of all active deposit in the qbank.
 func (k Keeper) DepositAll(c context.Context, req *types.QueryAllDepositRequest) (*types.QueryAllDepositResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
@@ -41,6 +42,7 @@ func (k Keeper) DepositAll(c context.Context, req *types.QueryAllDepositRequest)
 	return &types.QueryAllDepositResponse{Deposit: deposits, Pagination: pageRes}, nil
 }
 
+// Deposit is used by the CLI and grpc query to fetch specific deposit object with the deposit ID.
 func (k Keeper) Deposit(c context.Context, req *types.QueryGetDepositRequest) (*types.QueryGetDepositResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

@@ -9,7 +9,6 @@ message MsgRequestDeposit {
   string riskProfile = 2;
   string vaultID = 3;
   cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
-  // string lockupPeriod = 5;
   LockupTypes lockupPeriod  = 5;
 }
 

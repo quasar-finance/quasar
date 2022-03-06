@@ -17,12 +17,10 @@ func (k Keeper) UserClaimRewards(goCtx context.Context, req *types.QueryUserClai
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Process the query
-	// _ = ctx
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", req.GetUserAcc()))
 	var qcoins types.QCoins
 
-	// TODO - Get the claimable amount from the orion vault
+	// TODO | AUDIT | Get the claimable amount from the orion vault.
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", qcoins.Coins.String()))
 
 	return &types.QueryUserClaimRewardsResponse{Coins: qcoins}, nil
