@@ -1,5 +1,7 @@
 package types
 
+import sdk "github.com/cosmos/cosmos-sdk/types"
+
 // ValidateBasic is used for validating the packet
 func (p IbcWithdrawPacketData) ValidateBasic() error {
 
@@ -13,6 +15,10 @@ func (p IbcWithdrawPacketData) GetBytes() ([]byte, error) {
 	var modulePacket IntergammPacketData
 
 	modulePacket.Packet = &IntergammPacketData_IbcWithdrawPacket{&p}
-
-	return modulePacket.Marshal()
+	b, err := ModuleCdc.MarshalJSON(&modulePacket)
+	if err != nil {
+		return nil, err
+	}
+  
+	return sdk.MustSortJSON(b), nil
 }
