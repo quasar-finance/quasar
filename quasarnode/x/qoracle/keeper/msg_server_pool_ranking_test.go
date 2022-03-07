@@ -17,12 +17,20 @@ func TestPoolRankingMsgServerCreate(t *testing.T) {
 	srv := keeper.NewMsgServerImpl(*k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
-	expected := &types.MsgCreatePoolRanking{Creator: creator}
+	expected := &types.MsgCreatePoolRanking{
+		Creator:            creator,
+		PoolIdsSortedByAPY: []string{"1", "2", "3",},
+		PoolIdsSortedByTVL: []string{"2", "1", "3",},
+		LastUpdatedTime:    1646229371,
+	}
 	_, err := srv.CreatePoolRanking(wctx, expected)
 	require.NoError(t, err)
 	rst, found := k.GetPoolRanking(ctx)
 	require.True(t, found)
 	require.Equal(t, expected.Creator, rst.Creator)
+	require.Equal(t, expected.PoolIdsSortedByAPY, rst.PoolIdsSortedByAPY)
+	require.Equal(t, expected.PoolIdsSortedByTVL, rst.PoolIdsSortedByTVL)
+	require.Equal(t, expected.LastUpdatedTime, rst.LastUpdatedTime)
 }
 
 func TestPoolRankingMsgServerUpdate(t *testing.T) {
@@ -35,7 +43,12 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 	}{
 		{
 			desc:    "Completed",
-			request: &types.MsgUpdatePoolRanking{Creator: creator},
+			request: &types.MsgUpdatePoolRanking{
+				Creator: creator,
+				PoolIdsSortedByAPY: []string{"3", "1", "2",},
+				PoolIdsSortedByTVL: []string{"3", "2", "1",},
+				LastUpdatedTime:    1646229745,
+			},
 		},
 		{
 			desc:    "Unauthorized",
@@ -59,6 +72,9 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 				rst, found := k.GetPoolRanking(ctx)
 				require.True(t, found)
 				require.Equal(t, expected.Creator, rst.Creator)
+				require.Equal(t, tc.request.PoolIdsSortedByAPY, rst.PoolIdsSortedByAPY)
+				require.Equal(t, tc.request.PoolIdsSortedByTVL, rst.PoolIdsSortedByTVL)
+				require.Equal(t, tc.request.LastUpdatedTime, rst.LastUpdatedTime)
 			}
 		})
 	}
