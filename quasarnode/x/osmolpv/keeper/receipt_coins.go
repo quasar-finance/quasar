@@ -8,7 +8,7 @@ import (
 )
 
 // RC - Receipt Coin
-
+// TODO :
 // Get the list of denoms types allocated to input address addr of type sdk.AccAddress
 func (k Keeper) GetRCDenoms(ctx sdk.Context, addr sdk.AccAddress) qbanktypes.QDenoms {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserReceiptCoinsKBP)

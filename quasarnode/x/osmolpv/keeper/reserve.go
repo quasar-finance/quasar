@@ -5,7 +5,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// GetReserveAccAddress retrieve the account address of osmoLPV reserve
+// GetReserveAccAddress retrieve the account address of osmoLPV reserve.
+// This is also the orion module treasury address
 func (k Keeper) GetReserveAccAddress() sdk.AccAddress {
 	return k.accountKeeper.GetModuleAddress(types.OsmoLPVReserveMaccName)
 }
@@ -33,12 +34,12 @@ func (k Keeper) SendCoinsFromAccountToReserve(ctx sdk.Context, senderAddr sdk.Ac
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, types.OsmoLPVReserveMaccName, amts)
 }
 
-// SendCoinFromModuleToReserve transfer balance from module to lockup reward account
+// SendCoinFromModuleToReserve transfer balance from module to osmoLPV vault reserve
 func (k Keeper) SendCoinFromModuleToReserve(ctx sdk.Context, senderModule string, amt sdk.Coin) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.OsmoLPVReserveMaccName, sdk.NewCoins(amt))
 }
 
-// SendCoinFromModuleToReserve transfer balance from module to lockup reward account
+// SendCoinFromModuleToReserve transfer balance from module to osmoLPV vault reserve
 func (k Keeper) SendCoinsFromModuleToReserve(ctx sdk.Context, senderModule string, amts sdk.Coins) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.OsmoLPVReserveMaccName, amts)
 }

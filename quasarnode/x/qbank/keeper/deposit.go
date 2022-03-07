@@ -50,7 +50,7 @@ func (k Keeper) AppendDeposit(
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
 
 	appendedValue := k.cdc.MustMarshal(&deposit)
-	store.Set(GetDepositIDBytes(deposit.Id), appendedValue)
+	store.Set(types.CreateIDKey(deposit.Id), appendedValue)
 
 	// Update deposit count
 	k.SetDepositCount(ctx, count+1)
@@ -58,11 +58,11 @@ func (k Keeper) AppendDeposit(
 	return count
 }
 
-// SetDeposit set a specific deposit in the store
+// SetDeposit set a specific deposit in the store. This should be used only in Init genesis.
 func (k Keeper) SetDeposit(ctx sdk.Context, deposit types.Deposit) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
 	b := k.cdc.MustMarshal(&deposit)
-	store.Set(GetDepositIDBytes(deposit.Id), b)
+	store.Set(types.CreateIDKey(deposit.Id), b)
 }
 
 // GetDeposit returns a deposit from its id
@@ -82,7 +82,8 @@ func (k Keeper) RemoveDeposit(ctx sdk.Context, id uint64) {
 	store.Delete(types.CreateIDKey(id))
 }
 
-// GetAllDeposit returns all deposit
+// GetAllDeposit returns all deposit.GetCoin().String()
+// TODO TESTING | AUDIT
 func (k Keeper) GetAllDeposit(ctx sdk.Context) (list []types.Deposit) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DepositKBP)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // TODO TESTING
@@ -110,6 +111,7 @@ func GetDepositIDFromBytes(bz []byte) uint64 {
 }
 
 // Get key used for user denom deposit in the KV store.
+// TODO | AUDIT | Duplicate of types.CreateUserDenomDepositKey
 func GetUserDenomDepositKey(uid, sep, denom string) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)

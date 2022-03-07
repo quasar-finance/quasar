@@ -28,9 +28,7 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-
-	// TODO - Use Prefix byte as 0x01, 0x02
-	Sep = ":"
+	Sep = ":" // Separater used in the keys
 
 	// Prefix keys
 	DepositKey                = "Deposit-value-"
@@ -48,6 +46,7 @@ var (
 	WithdrawKeyKBP      = []byte{0x03}
 	UserDepositKBP      = []byte{0x04}
 	WithdrawableKeyKBP  = []byte{0x05}
+	UserClaimKBP        = []byte{0x06}
 
 	// TODO Vault level prefix to be used.
 )
@@ -55,6 +54,7 @@ var (
 var sepByte = []byte(":")
 
 // Common functions for deposit and withdraw
+// TODO - AUDIT | unit test case to be written
 func SplitKeyBytes(kb []byte) [][]byte {
 	// First byte is used for the byte prefix
 	split := bytes.Split(kb[1:], sepByte)
@@ -95,9 +95,9 @@ func CreateUserDenomDepositKey(uid, sep, denom string) []byte {
 	return b.Bytes()
 }
 
-// CreateUserDenomLockupDepositKeycreate the prefix store key for the user denom wise deposit storage
+// CreateUserDenomLockupDepositKey create the prefix store key for the user denom wise deposit storage
 // with lockup periods.
-// Ex. {uid} + "/" + {denom} + "/" + "lockupString"
+// Ex. {uid} + ":" + {denom} + ":" + "{lockupString}"
 func CreateUserDenomLockupDepositKey(uid, sep, denom string, lockupPeriod LockupTypes) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)
@@ -109,8 +109,8 @@ func CreateUserDenomLockupDepositKey(uid, sep, denom string, lockupPeriod Lockup
 	return b.Bytes()
 }
 
-// CreateUserDenomEpochLockupDepositKey create the prefix store key for the user denom wise deposit storage
-// Ex. {uid} + "/" + {denom} + "/" + {epochday} + "/" + "lockupString"
+// CreateUserDenomEpochLockupDepositKey create the prefix store key for the user denom epoch lockup wise deposit storage
+// Ex. {uid} + ":" + {denom} + ":" + {epochday} + ":" + {lockupString}
 func CreateUserDenomEpochLockupDepositKey(uid, sep, denom string, epochday uint64, lockupPeriod LockupTypes) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)
@@ -125,8 +125,8 @@ func CreateUserDenomEpochLockupDepositKey(uid, sep, denom string, epochday uint6
 	return b.Bytes()
 }
 
-// CreateEpochLockupUserDenomDepositKey create the prefix store key for the user denom wise deposit storage
-// Ex.  {epochday} + "/" + "lockupString" + "/" + {uid} + "/" + {denom} +
+// CreateEpochLockupUserDenomDepositKey create the prefix store key for the epochday lockup wise user denom wise deposit storage
+// Ex.  {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 func CreateEpochLockupUserDenomDepositKey(uid, sep, denom string, epochday uint64, lockupPeriod LockupTypes) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -142,8 +142,9 @@ func CreateEpochLockupUserDenomDepositKey(uid, sep, denom string, epochday uint6
 	return b.Bytes()
 }
 
-// CreateEpochLockupKey create the prefix store key for the user denom wise deposit storage
-// Ex.  {epochday} + "/" + "lockupString" + "/"
+// CreateEpochLockupKey create the prefix store key for the epochday lockup wise deposit.
+// This key is used for the prefix key iteration to get the deposits done on a given epochday
+// Ex.  {epochday} + ":" + "lockupString" + "/"
 func CreateEpochLockupUserKey(epochday uint64, lockupPeriod LockupTypes, sep string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -155,19 +156,14 @@ func CreateEpochLockupUserKey(epochday uint64, lockupPeriod LockupTypes, sep str
 	return b.Bytes()
 }
 
-// create the prefix store key for the user denom wise deposit storage
+// create the prefix store key for the user account
 func CreateUserDepositKey(uid string) []byte {
-	// var b bytes.Buffer
-	// b.WriteString(uid)
-	// b.WriteString(sep)
-	// b.WriteString(denom)
-	// return b.Bytes()
 	return createStoreKey(uid)
 }
 
 // CreateWithdrableKey create key for the withdrable KV store to fetch current
 // withdrable amount by a given user of given denom.
-// Key = {denom} + "/" + "uid"
+// Key = {denom} + ":" + "uid"
 func CreateWithdrableKey(denom, uid, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(denom)
@@ -178,7 +174,7 @@ func CreateWithdrableKey(denom, uid, sep string) []byte {
 
 // CreateWithdrableKey create key for the lockup period based withdrable KV store to fetch current
 // withdrable amount by a given user, denom and lockup period
-// Key = {denom} + "/" + "uid" + "/" + "lockupPeriod"
+// Key = {denom} + ":" + "uid" + ":" + "lockupPeriod"
 func CreateLockupWithdrableKey(denom, uid string, lockupPeriod LockupTypes, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(denom)
@@ -198,12 +194,23 @@ func CreateWithdrawCountKey() []byte {
 	return createStoreKey(WithdrawCountKey)
 }
 
+// Claim key
+
+func CreateUsersClaimKey(uid, vaultID, sep string) []byte {
+	var b bytes.Buffer
+	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(vaultID)
+	return b.Bytes()
+}
+
+// Note : Not used now
 const (
 	FeeDataKey = "FeeData-value-"
 )
 
-// func CreateEpochLockupUserDenomDepositKey(uid, sep, denom string, epochday uint64, lockupPeriod LockupTypes) []byte {
-
+// ParseEpochLockupUserDenomDepositKey split the composit key of type " {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}"
+// and split into field variable and return accordingly
 func ParseEpochLockupUserDenomDepositKey(key []byte) (epochday uint64, lockupStr, uid, denom string, err error) {
 	split := SplitKeyBytes(key)
 	epochdayStr := string(split[0])

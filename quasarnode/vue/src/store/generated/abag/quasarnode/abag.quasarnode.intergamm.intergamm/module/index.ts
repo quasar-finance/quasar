@@ -6,15 +6,15 @@ import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "
 import { Api } from "./rest";
 import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
-import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 import { MsgSendIbcExitPool } from "./types/intergamm/tx";
+import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 
 
 const types = [
   ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", MsgSendIbcJoinPool],
   ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", MsgSendIbcCreatePool],
-  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", MsgSendIbcWithdraw],
   ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", MsgSendIbcExitPool],
+  ["/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", MsgSendIbcWithdraw],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -49,8 +49,8 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
     msgSendIbcJoinPool: (data: MsgSendIbcJoinPool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcJoinPool", value: MsgSendIbcJoinPool.fromPartial( data ) }),
     msgSendIbcCreatePool: (data: MsgSendIbcCreatePool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcCreatePool", value: MsgSendIbcCreatePool.fromPartial( data ) }),
-    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", value: MsgSendIbcWithdraw.fromPartial( data ) }),
     msgSendIbcExitPool: (data: MsgSendIbcExitPool): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcExitPool", value: MsgSendIbcExitPool.fromPartial( data ) }),
+    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw): EncodeObject => ({ typeUrl: "/abag.quasarnode.intergamm.intergamm.MsgSendIbcWithdraw", value: MsgSendIbcWithdraw.fromPartial( data ) }),
     
   };
 };

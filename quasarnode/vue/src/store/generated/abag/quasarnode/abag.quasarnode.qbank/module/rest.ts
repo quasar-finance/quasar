@@ -172,6 +172,16 @@ export interface QbankQueryUserWithdrawResponse {
   coins?: QbankQCoins;
 }
 
+export interface QbankQueryWithdrableResponse {
+  /**
+   * Coin defines a token with a denomination and an amount.
+   *
+   * NOTE: The amount field is an Int which implements the custom method
+   * signatures required by gogoproto.
+   */
+  coin?: V1Beta1Coin;
+}
+
 /**
  * Withdraw defines the withdraw object to be stored in the KV store.
  */
@@ -656,6 +666,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryUserWithdraw = (userAcc: string, params: RequestParams = {}) =>
     this.request<QbankQueryUserWithdrawResponse, RpcStatus>({
       path: `/abag/quasarnode/qbank/user_withdraw/${userAcc}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryWithdrable
+   * @summary Queries a list of Withdrable items.
+   * @request GET:/abag/quasarnode/qbank/withdrable/{userAccount}/{denom}
+   */
+  queryWithdrable = (userAccount: string, denom: string, params: RequestParams = {}) =>
+    this.request<QbankQueryWithdrableResponse, RpcStatus>({
+      path: `/abag/quasarnode/qbank/withdrable/${userAccount}/${denom}`,
       method: "GET",
       format: "json",
       ...params,

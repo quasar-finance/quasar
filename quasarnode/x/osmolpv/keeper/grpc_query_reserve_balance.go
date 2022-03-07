@@ -10,16 +10,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// ReserveBalance is used by CLI and grpc query to fetch the amount available in the Orion treasury.
 func (k Keeper) ReserveBalance(goCtx context.Context, req *types.QueryReserveBalanceRequest) (*types.QueryReserveBalanceResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// TODO: Process the query
-	// _ = ctx
-
 	k.Logger(ctx).Info(fmt.Sprintf("QueryReserveBalance|%s\n",
 		req.GetDenom()))
 

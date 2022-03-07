@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// UserDenomLockupDeposit is used by the CLI and grpc query to fetch the denom deposit value of a give user with specific lockup duration.
 func (k Keeper) UserDenomLockupDeposit(goCtx context.Context, req *types.QueryUserDenomLockupDepositRequest) (*types.QueryUserDenomLockupDepositResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

@@ -5,6 +5,7 @@ import { PageRequest, PageResponse } from "../cosmos/base/query/v1beta1/paginati
 import { Withdraw } from "../qbank/withdraw";
 import { FeeData } from "../qbank/fee_data";
 import { QCoins } from "../qbank/common";
+import { Coin } from "../cosmos/base/v1beta1/coin";
 export declare const protobufPackage = "abag.quasarnode.qbank";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -93,6 +94,13 @@ export interface QueryUserClaimRewardsRequest {
 }
 export interface QueryUserClaimRewardsResponse {
     coins: QCoins | undefined;
+}
+export interface QueryWithdrableRequest {
+    userAccount: string;
+    denom: string;
+}
+export interface QueryWithdrableResponse {
+    coin: Coin | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -276,6 +284,20 @@ export declare const QueryUserClaimRewardsResponse: {
     toJSON(message: QueryUserClaimRewardsResponse): unknown;
     fromPartial(object: DeepPartial<QueryUserClaimRewardsResponse>): QueryUserClaimRewardsResponse;
 };
+export declare const QueryWithdrableRequest: {
+    encode(message: QueryWithdrableRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryWithdrableRequest;
+    fromJSON(object: any): QueryWithdrableRequest;
+    toJSON(message: QueryWithdrableRequest): unknown;
+    fromPartial(object: DeepPartial<QueryWithdrableRequest>): QueryWithdrableRequest;
+};
+export declare const QueryWithdrableResponse: {
+    encode(message: QueryWithdrableResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryWithdrableResponse;
+    fromJSON(object: any): QueryWithdrableResponse;
+    toJSON(message: QueryWithdrableResponse): unknown;
+    fromPartial(object: DeepPartial<QueryWithdrableResponse>): QueryWithdrableResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -304,6 +326,8 @@ export interface Query {
     UserDenomWithdraw(request: QueryUserDenomWithdrawRequest): Promise<QueryUserDenomWithdrawResponse>;
     /** Queries a list of UserClaimRewards items. */
     UserClaimRewards(request: QueryUserClaimRewardsRequest): Promise<QueryUserClaimRewardsResponse>;
+    /** Queries a list of Withdrable items. */
+    Withdrable(request: QueryWithdrableRequest): Promise<QueryWithdrableResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -321,6 +345,7 @@ export declare class QueryClientImpl implements Query {
     UserWithdraw(request: QueryUserWithdrawRequest): Promise<QueryUserWithdrawResponse>;
     UserDenomWithdraw(request: QueryUserDenomWithdrawRequest): Promise<QueryUserDenomWithdrawResponse>;
     UserClaimRewards(request: QueryUserClaimRewardsRequest): Promise<QueryUserClaimRewardsResponse>;
+    Withdrable(request: QueryWithdrableRequest): Promise<QueryWithdrableResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

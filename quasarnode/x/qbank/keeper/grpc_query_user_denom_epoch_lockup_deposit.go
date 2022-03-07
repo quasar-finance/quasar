@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// UserDenomEpochLockupDeposit is used by the CLI and grpc query to fetch the denom deposit value of a give user.
+// TODO | AUDIT | The request object is taking epochday as slice
 func (k Keeper) UserDenomEpochLockupDeposit(goCtx context.Context, req *types.QueryUserDenomEpochLockupDepositRequest) (*types.QueryUserDenomEpochLockupDepositResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

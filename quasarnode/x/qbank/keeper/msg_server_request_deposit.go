@@ -9,6 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// RequestDeposit process the deposit request transaction message and store in the KV store
+// With appropriate key and value combinations so the store can be used efficiently.
 func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDeposit) (*types.MsgRequestDepositResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -22,8 +24,9 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		return nil, err
 	}
 
-	deposit := types.Deposit{0, msg.GetRiskProfile(),
-		msg.GetVaultID(), msg.GetCreator(), msg.GetCoin(), msg.GetLockupPeriod()}
+	deposit := types.Deposit{Id: 0, RiskProfile: msg.GetRiskProfile(),
+		VaultID: msg.GetVaultID(), DepositorAccAddress: msg.GetCreator(),
+		Coin: msg.GetCoin(), LockupPeriod: msg.GetLockupPeriod()}
 	k.Keeper.AppendDeposit(ctx, deposit)
 
 	// Transfer amount to vault from depositor
@@ -39,7 +42,8 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	// TODO - Mint receipt tokens. Ask vault to do so.
 
-	// TODO - Position Management -
+	// Position Management -
+	// TODO | AUDIT | some of the less important KV store are to be removed for efficiency purposes
 
 	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 	k.Logger(ctx).Info(fmt.Sprintf("RequestDeposit|AddUserDenomDeposit|%s\n", msg.String()))

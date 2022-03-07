@@ -8,6 +8,7 @@ import (
 )
 
 const (
+
 	// ModuleName defines the module name
 	ModuleName = "osmolpv"
 
@@ -49,6 +50,12 @@ const (
 	// Current Position constant
 	CurrentPositionName = "current_position"
 )
+
+const (
+	Sep = ":" // Separater used in the keys
+)
+
+// var sepByte = []byte(":")
 
 // store key use the byte as key
 func createStoreKey(k string) []byte {
@@ -149,23 +156,23 @@ func CreateMeissaPositionKey() []byte {
 }
 
 // @desc Function will create key for storing the epoch wise current position of the strategy
-// Key format -  {0x03} + {“current_pos”} + "/" + {epochdays}
+// Key format -  {0x03} + {“current_pos”} + ":" + {epochdays}
 func CreateMeissaEpochPositionKey(epochday uint64) []byte {
 	var b bytes.Buffer
 	b.WriteString(CurrentPositionName)
-	b.WriteString("/")
+	b.WriteString(Sep)
 	b.Write(qbanktypes.CreateIDKey(epochday))
 	return b.Bytes()
 }
 
 // CreateMeissaPoolPositionKey  create key for storing the epoch wise  deployed position on a pool ID
-// Key format -  {0x04} + {epochdays} + "/" + {lockupPeriodStr} + "/" + "PoolID"
+// Key format -  {0x04} + {epochdays} + ":" + {lockupPeriodStr} + ":" + "PoolID"
 func CreateMeissaPoolPositionKey(epochday uint64, lockupPeriod qbanktypes.LockupTypes, poolID uint64) []byte {
 	var b bytes.Buffer
 	b.Write(qbanktypes.CreateIDKey(epochday))
-	b.WriteString("/")
+	b.WriteString(Sep)
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
-	b.WriteString("/")
+	b.WriteString(Sep)
 	b.Write(qbanktypes.CreateIDKey(poolID))
 	return b.Bytes()
 }

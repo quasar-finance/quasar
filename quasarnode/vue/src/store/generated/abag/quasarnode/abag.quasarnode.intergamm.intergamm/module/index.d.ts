@@ -3,8 +3,8 @@ import { Registry, OfflineSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
 import { MsgSendIbcJoinPool } from "./types/intergamm/tx";
 import { MsgSendIbcCreatePool } from "./types/intergamm/tx";
-import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 import { MsgSendIbcExitPool } from "./types/intergamm/tx";
+import { MsgSendIbcWithdraw } from "./types/intergamm/tx";
 export declare const MissingWalletError: Error;
 export declare const registry: Registry;
 interface TxClientOptions {
@@ -18,8 +18,8 @@ declare const txClient: (wallet: OfflineSigner, { addr: addr }?: TxClientOptions
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }?: SignAndBroadcastOptions) => any;
     msgSendIbcJoinPool: (data: MsgSendIbcJoinPool) => EncodeObject;
     msgSendIbcCreatePool: (data: MsgSendIbcCreatePool) => EncodeObject;
-    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw) => EncodeObject;
     msgSendIbcExitPool: (data: MsgSendIbcExitPool) => EncodeObject;
+    msgSendIbcWithdraw: (data: MsgSendIbcWithdraw) => EncodeObject;
 }>;
 interface QueryClientOptions {
     addr: string;

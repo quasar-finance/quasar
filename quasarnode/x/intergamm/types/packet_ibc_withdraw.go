@@ -19,6 +19,6 @@ func (p IbcWithdrawPacketData) GetBytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
+  
 	return sdk.MustSortJSON(b), nil
 }

@@ -130,7 +130,7 @@ func (k Keeper) SetMeissaStrategyHistPos(ctx sdk.Context, currPos types.CurrentP
 	store.Set(key, b)
 }
 
-// GetMeissaStrategyHistPos Get the strategy current position
+// GetMeissaStrategyHistPos Get the strategy current position at a given epochday
 func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (currPos types.CurrentPosition, found bool) {
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))

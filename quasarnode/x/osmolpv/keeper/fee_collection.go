@@ -9,18 +9,18 @@ import (
 // aka, vault management fee, vault performance fee, entry fee and exit fee.
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
 
-// Get the fee collector account address in sdk.AccAddress type from human readable name.
+// GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human readable name.
 func (k Keeper) GetFeeCollectorAccAddress(feeCollectorName string) sdk.AccAddress {
 	return k.accountKeeper.GetModuleAddress(feeCollectorName)
 }
 
-// Get the account balance of the inputed fee collector name.
+// GetFeeCollectorBalances gets the account balance of the inputed fee collector name.
 func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string) sdk.Coins {
 	balances := k.bankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
 	return balances
 }
 
-// Deduce fees of type based of feeCollector name from the investor address
+// DeductFees deduce fees of type based of feeCollector name from the investor address
 // who deposited tokens in orion vault. There is one to one mapping between the type
 // of fee with the fee collector name.
 // If the feeCollectorName input is MgmtFeeCollectorMaccName then the fee collected is
@@ -52,15 +52,18 @@ func (k Keeper) CalcMgmtFee() sdk.Coin {
 // round. This could be the end of 1-Week Gauge, 3-Week Gauge etc.
 // return value will be deduced from the profit and allocated to the
 // vault reserve.
+// TODO | AUDIT | Initially taking 5% profit as performance fees.
+// Should be a paramater of orion module
 func (k Keeper) CalcPerFee(profit sdk.Coin) sdk.Coin {
 	// TODO - To be added in vault parameter
-	var factor sdk.Dec = sdk.MustNewDecFromStr("0.2")
+	var factor sdk.Dec = sdk.MustNewDecFromStr("0.05")
 	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
 	return sdk.NewCoin(profit.GetDenom(), feeAmt)
 }
 
-// Calculate the entry fee every time when a user deposit coins
+// CalcEntryFee calculate the entry fee every time when a user deposit coins
 // into vault. Return value will be deduced from the depositor account.
+// Note : This function maynot be used
 func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
 	// TODO - Factor value to be added in parameter.
 	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
@@ -68,7 +71,7 @@ func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
 	return sdk.NewCoin(depositAmt.GetDenom(), feeAmt)
 }
 
-// Calculate the exit fee every time when a user withdwar coins
+// CalcExitFee, calculate the exit fee every time when a user withdwar coins
 // into vault. Return value will be deduced from the depositor
 // account, who is exiting his positions.
 func (k Keeper) CalcExitFee(exitAmt sdk.Coin) sdk.Coin {

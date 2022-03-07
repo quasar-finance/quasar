@@ -688,6 +688,60 @@ paths:
           type: string
       tags:
         - Query
+  '/abag/quasarnode/qbank/withdrable/{userAccount}/{denom}':
+    get:
+      summary: Queries a list of Withdrable items.
+      operationId: AbagQuasarnodeQbankWithdrable
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              coin:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  Coin defines a token with a denomination and an amount.
+
+
+                  NOTE: The amount field is an Int which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: userAccount
+          in: path
+          required: true
+          type: string
+        - name: denom
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /abag/quasarnode/qbank/withdraw:
     get:
       summary: Queries a list of Withdraw items.
@@ -16925,6 +16979,21 @@ definitions:
         description: >-
           QCoins defines encoding/decoding for the slice of sdk.coins to be used
           in KV stores.
+  abag.quasarnode.qbank.QueryWithdrableResponse:
+    type: object
+    properties:
+      coin:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
   abag.quasarnode.qbank.Withdraw:
     type: object
     properties:
