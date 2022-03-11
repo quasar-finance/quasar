@@ -4,6 +4,10 @@ package abag.quasarnode.osmolpv;
 import "gogoproto/gogo.proto";
 import "osmolpv/params.proto";
 import "osmolpv/fee_data.proto";
+import "osmolpv/lp_position.proto";
+import "osmolpv/epoch_lp_info.proto";
+import "osmolpv/reward_collection.proto";
+import "osmolpv/user_lp_info.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -12,5 +16,9 @@ option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   FeeData feeData = 2;
+  LpPosition lpPosition = 3;
+  EpochLPInfo epochLPInfo = 4;
+  RewardCollection rewardCollection = 5;
+  UserLPInfo userLPInfo = 6;
   // this line is used by starport scaffolding # genesis/proto/state
 }

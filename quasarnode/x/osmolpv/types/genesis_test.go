@@ -28,6 +28,25 @@ func TestGenesisState_Validate(t *testing.T) {
 					BlockHeight:  95,
 					Memo:         "96",
 				},
+				LpPosition: &types.LpPosition{
+					LpID:                   17,
+					LockID:                 84,
+					BondingStartEpochDay:   30,
+					BondDuration:           76,
+					UnbondingStartEpochDay: 92,
+					UnbondingDuration:      41,
+					PoolID:                 6,
+				},
+				EpochLPInfo: &types.EpochLPInfo{
+					EpochDay: 19,
+					TotalLps: 39,
+				},
+				RewardCollection: &types.RewardCollection{
+					TimeCollected: 21,
+				},
+				UserLPInfo: &types.UserLPInfo{
+					PositionShare: 22,
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

@@ -6,6 +6,10 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "osmolpv/params.proto";
 import "osmolpv/fee_data.proto";
+import "osmolpv/lp_position.proto";
+import "osmolpv/epoch_lp_info.proto";
+import "osmolpv/reward_collection.proto";
+import "osmolpv/user_lp_info.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -24,6 +28,22 @@ service Query {
 // Queries a FeeData by index.
 	rpc FeeData(QueryGetFeeDataRequest) returns (QueryGetFeeDataResponse) {
 		option (google.api.http).get = "/abag/quasarnode/osmolpv/fee_data";
+	}
+// Queries a LpPosition by index.
+	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/lp_position";
+	}
+// Queries a EpochLPInfo by index.
+	rpc EpochLPInfo(QueryGetEpochLPInfoRequest) returns (QueryGetEpochLPInfoResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/epoch_lp_info";
+	}
+// Queries a RewardCollection by index.
+	rpc RewardCollection(QueryGetRewardCollectionRequest) returns (QueryGetRewardCollectionResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/reward_collection";
+	}
+// Queries a UserLPInfo by index.
+	rpc UserLPInfo(QueryGetUserLPInfoRequest) returns (QueryGetUserLPInfoResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/user_lp_info";
 	}
 // this line is used by starport scaffolding # 2
 }
@@ -49,5 +69,25 @@ message QueryGetFeeDataRequest {}
 
 message QueryGetFeeDataResponse {
 	FeeData FeeData = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetLpPositionRequest {}
+
+message QueryGetLpPositionResponse {
+	LpPosition LpPosition = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetEpochLPInfoRequest {}
+
+message QueryGetEpochLPInfoResponse {
+	EpochLPInfo EpochLPInfo = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetRewardCollectionRequest {}
+
+message QueryGetRewardCollectionResponse {
+	RewardCollection RewardCollection = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetUserLPInfoRequest {}
+
+message QueryGetUserLPInfoResponse {
+	UserLPInfo UserLPInfo = 1 [(gogoproto.nullable) = false];
 }
 // this line is used by starport scaffolding # 3

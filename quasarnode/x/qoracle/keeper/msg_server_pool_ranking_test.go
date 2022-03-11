@@ -21,7 +21,7 @@ func TestPoolRankingMsgServerCreate(t *testing.T) {
 		Creator:            creator,
 		PoolIdsSortedByAPY: []string{"1", "2", "3"},
 		PoolIdsSortedByTVL: []string{"2", "1", "3"},
-		LastUpdatedTime:    1,
+		LastUpdatedTime:    1646229371,
 	}
 	_, err := srv.CreatePoolRanking(wctx, expected)
 	require.NoError(t, err)
@@ -46,8 +46,8 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 			request: &types.MsgUpdatePoolRanking{
 				Creator:            creator,
 				PoolIdsSortedByAPY: []string{"3", "1", "2"},
-				PoolIdsSortedByTVL: []string{"2", "1", "3"},
-				LastUpdatedTime:    2,
+				PoolIdsSortedByTVL: []string{"3", "2", "1"},
+				LastUpdatedTime:    1646229745,
 			},
 		},
 		{

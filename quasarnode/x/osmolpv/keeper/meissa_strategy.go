@@ -37,6 +37,13 @@ func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.Po
 	return poolInfo.Info.PoolAssets
 }
 
+// Get pool assets from pool ID
+func (k Keeper) getPoolTotalWeight(ctx sdk.Context, poolID uint64) sdk.Int {
+	poolIDStr := strconv.FormatUint(poolID, 10)
+	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
+	return poolInfo.Info.TotalWeight
+}
+
 // Get APY ranked pool list
 // func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
 // TODO : Store the uint64 values inside the KV store
@@ -55,7 +62,6 @@ func (k Keeper) getTotalShare(ctx sdk.Context, poolID uint64) (totalShare sdk.Co
 // Get the maximum available amount in the orion staking
 func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Int {
 	return k.GetStakingBalance(ctx, lockupPeriod, denom).Amount
-	//return sdk.ZeroInt()
 }
 
 // ExecuteMeissa iterate over all the meissa strategy registered with the orion vault
@@ -71,35 +77,38 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 		k.MeissaCoinDistribution(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
+	// Bond LP tokens.
+	// TODO | AUDIT
+
 	// Exit pool
 	for _, sn := range strategies.Names {
 		k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
 		k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
 	}
 
-	// Withdraw from osmosis chain
-	//for _, sn := range strategies.Names {
-	//	k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
-	// }
-
 	// Audit
 	for _, sn := range strategies.Names {
 		k.MeissaAudiorFunction(ctx, types.MeissaStrategiesLockup[sn])
 	}
+
+	// Claim reward.
+	// TODO | AUDIT
 }
 
 // MeissaCoinDistribution is Meissa algorithm to distribute coins among osmosis pools
 // Logic -
-// Get the list of pools with APY ranks from the oracle module.
-// Iterate apy_ranked_pools with highest apy pool picked first
-// Get the list of denoms from the current pool - Denom1, Denom2, and pool denom ratio.
-// Collect the max possible amount from both denom 1 and denom 2 from the Orion module staking pool.
-// Send the coins using IBC call to osmosis from the quasar custom sender module account ( intergamm module.)
-// Provide liquidity to osmosis via IBC for this pool.
-// Update chain state to reduce staking pool amount for both the denom.
-// Update the amount deployed on osmosis in the appropriate KV store.
-// Go to the next pool and repeat [A - F]
-// At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of denoms for which we don't have pool pairs. We can put them in Orion reserve or use osmosis single denom pool staking which internally swaps half of the denom amount of the paired pool denom. It will charge a swap fee, however.
+// 1. Get the list of pools with APY ranks from the oracle module.
+// 2. Iterate apy_ranked_pools with highest apy pool picked first
+// 3. Get the list of denoms from the current pool - Denom1, Denom2, and pool denom ratio.
+// 4. Collect the max possible amount from both denom 1 and denom 2 from the Orion module staking pool.
+// 5. Send the coins using IBC call to osmosis from the quasar custom sender module account ( intergamm module.)
+// 6. Provide liquidity to osmosis via IBC for this pool.
+// 7. TODO [1] Calculate user lp share amount for this new lp position
+// 8. TODO [2] Create an lp position object for this LP activity.
+// 9. Update chain state to reduce staking pool amount for both the denom.
+// 10. Update the amount deployed on osmosis in the appropriate KV store.
+// Go to the next pool and repeat [3 - 10]
+// NOTE - At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of denoms for which we don't have pool pairs. We can put them in Orion reserve or use osmosis single denom pool staking which internally swaps half of the denom amount of the paired pool denom. It will charge a swap fee, however.
 
 func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) {
 
@@ -111,7 +120,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 	k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolIds=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
-		// TODO - Change the qoracle pool ID storage to uint64
+		// TODO | Refactoing | Change the qoracle pool ID storage to uint64
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
 		assets := k.getPoolAssets(ctx, poolID)
 		if len(assets) != 2 {
@@ -120,53 +129,62 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 		}
 
 		poolTotalShare := k.getTotalShare(ctx, poolID)
-		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
-			epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, assets))
-		var sharePerAssetAmount []sdk.Int
-		var shareRequired []sdk.Int
+		poolTotalWeight := k.getPoolTotalWeight(ctx, poolID)
+		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v|totalweight=%v\n",
+			epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, assets, poolTotalWeight))
+		var sharePerAssetAmount []sdk.Dec
+		var shareRequired []sdk.Dec
 		var maxAvailableAmount []sdk.Int
-
+		var denomPerWeight []sdk.Dec // Percentage
+		// var totalshareRequired sdk.Dec
 		for idx, asset := range assets {
 
-			//k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|sharePerAssetAmount[idx]=%v|poolTotalShare.Amount=%v|asset.Token.Amount=%v\n",
-			//	sharePerAssetAmount[idx], poolTotalShare.Amount, asset.Token.Amount))
-
-			//sharePerAssetAmount[idx] = poolTotalShare.Amount.Quo(asset.Token.Amount)
-			//maxAvailableAmount[idx] = k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom)
-			// shareRequired[idx] = maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx])
-			// TODO | AUDIT
-			sharePerAssetAmount = append(sharePerAssetAmount, poolTotalShare.Amount, asset.Token.Amount)
+			// TODO | AUDIT | WEIGHT USAGE
+			denomPerWeight = append(denomPerWeight, asset.Weight.ToDec().QuoInt(poolTotalWeight))
+			sharePerAssetAmount = append(sharePerAssetAmount, poolTotalShare.Amount.ToDec().QuoInt(asset.Token.Amount))
 			maxAvailableAmount = append(maxAvailableAmount, k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom))
-			shareRequired = append(shareRequired, maxAvailableAmount[idx].Mul(sharePerAssetAmount[idx]))
-
+			shareRequired = append(shareRequired, sharePerAssetAmount[idx].MulInt(maxAvailableAmount[idx]))
+			//totalshareRequired = totalshareRequired.Add(shareRequired[idx])
 			k.Logger(ctx).Info(
 				fmt.Sprintf(
 					"MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|asset=%v|"+
-						"sharePerAssetAmount=%v|maxAvailableAmount=%v|shareRequired=%v|\n",
+						"sharePerAssetAmount=%v|maxAvailableAmount=%v|shareRequired=%v|denomPerWeight=%v\n",
 					epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID,
-					asset, sharePerAssetAmount[idx], maxAvailableAmount[idx], shareRequired[idx]))
+					asset, sharePerAssetAmount[idx], maxAvailableAmount[idx],
+					shareRequired[idx], denomPerWeight[idx]))
 
 		}
 
 		// TODO | AUDIT | Code optimization
 		// Calculate required amount for second denom based on first denom.
-		RequiredSecondDenom := shareRequired[0].Quo(sharePerAssetAmount[1])
+		// totalshareRequired == shareRequired#1 + shareRequired#2
+		totalshareRequired := shareRequired[0].Quo(denomPerWeight[0])
+		secondDenomShareRequired := totalshareRequired.Sub(shareRequired[0])
+		secondDenomAmtRequired := secondDenomShareRequired.Quo(sharePerAssetAmount[1])
+		// Wrong // RequiredSecondDenom := shareRequired[0].Quo(sharePerAssetAmount[1])
 
 		var FirstAssetAmount sdk.Int
 		var SecondAssetAmount sdk.Int
 		var shareOutAmount sdk.Int
-		if maxAvailableAmount[1].GT(RequiredSecondDenom) {
+		if maxAvailableAmount[1].ToDec().GT(secondDenomAmtRequired) {
 			// Consider this amounts for LPing based on the share required for first asset
-			// Use shareRequired[0]
-			shareOutAmount = shareRequired[0]
-			FirstAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[0])
-			SecondAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[1])
+			shareOutAmount = totalshareRequired.TruncateInt()
+			FirstAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[0]).TruncateInt()
+			SecondAssetAmount = secondDenomAmtRequired.TruncateInt()
+			//shareOutAmount = shareRequired[0]
+			//FirstAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[0])
+			//SecondAssetAmount = shareRequired[0].Mul(sharePerAssetAmount[1])
 		} else {
 			// Consider this amounts for LPing based on the share required for second asset
 			// Use shareRequired[1]
-			shareOutAmount = shareRequired[1]
-			FirstAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[0])
-			SecondAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[1])
+			totalshareRequired = shareRequired[1].Quo(denomPerWeight[1])
+			firstDenomShareRequired := totalshareRequired.Sub(shareRequired[1])
+			firstDenomAmtRequired := firstDenomShareRequired.Quo(sharePerAssetAmount[0])
+			FirstAssetAmount = firstDenomAmtRequired.TruncateInt()
+			SecondAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[1]).TruncateInt()
+			//shareOutAmount = shareRequired[1]
+			//FirstAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[0])
+			//SecondAssetAmount = shareRequired[1].Mul(sharePerAssetAmount[1])
 
 		}
 
@@ -182,7 +200,9 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 		k.SendCoinFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coin2)
 		tokenInMaxs := []sdk.Coin{coin1, coin2}
 
-		// TODO : Call Intergamm IBC token transfer
+		// TODO : 1. Call Intergamm IBC token transfer from  OrionStakingMaccName
+		// 		  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
+
 		if shareOutAmount.IsPositive() {
 			// Call Intergamm Add Liquidity Method
 			k.JoinPool(ctx, poolID, shareOutAmount, tokenInMaxs)
@@ -193,6 +213,10 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 			// TODO : If sorted coins is required.
 			coins := sdk.NewCoins(coin1, coin2)
 			k.SetMeissaEpochLockupPoolPosition(ctx, epochday, lockupType, poolID, coins)
+			// TODO - Create pool position object and user shares here
+			// Logic -
+			// Calculate users deposited coin1 and coin2 amount for this epochday.
+			// Calculate percentage of users weight
 		}
 	}
 

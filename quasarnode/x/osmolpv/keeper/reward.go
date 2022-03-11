@@ -38,3 +38,5 @@ func (k Keeper) SendCoinFromModuleToReward(ctx sdk.Context, senderModule string,
 	accName := types.CreateOrionRewardMaccName(lockupPeriod)
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, accName, sdk.NewCoins(amt))
 }
+
+// Total reward collected on an epoch day.
