@@ -1,0 +1,18 @@
+syntax = "proto3";
+package abag.quasarnode.osmolpv;
+
+option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
+
+// EpochLPInfo contains information about an LP position created at an epoch
+message EpochLPInfo {
+  uint64 epochDay = 1; 
+  uint64 totalLps = 2; 
+  
+}
+
+// EpochDayInfo contains generic info about an epoch day 
+message EpochDayInfo {
+  uint64 epochDay = 1;
+  uint64 blockheight = 2;
+  uint64 blockTime = 3;
+}

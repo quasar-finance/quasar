@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"strconv"
 
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,7 +53,8 @@ const (
 )
 
 const (
-	Sep = ":" // Separater used in the keys
+	Sep            = ":" // Separater used in the keys
+	NumDaysPerYear = 365
 )
 
 // var sepByte = []byte(":")
@@ -71,6 +73,12 @@ var (
 	StrategyKBP              = []byte{0x02}
 	MeissaStrategyKBP        = []byte{0x03}
 	MeissaStrategyPoolPosKBP = []byte{0x04}
+	LPPositionKBP            = []byte{0x05}
+	RewardCollectionKBP      = []byte{0x06}
+	LastRewardCollectionKBP  = []byte{0x07}
+	EpochLPUserKBP           = []byte{0x08}
+	LPUserInfoKBP            = []byte{0x09}
+	LPEpochKBP               = []byte{0x10}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -176,3 +184,123 @@ func CreateMeissaPoolPositionKey(epochday uint64, lockupPeriod qbanktypes.Lockup
 	b.Write(qbanktypes.CreateIDKey(poolID))
 	return b.Bytes()
 }
+
+// LP Position Keys
+
+const (
+	LpPositionKey = "LpPosition-value-"
+)
+
+// CreateLPPositionEpochKey create key for the list of all lp position
+// created on an epoch day. Ex. {LPPositionKBP} + {epochday}
+func CreateLPPositionEpochLPInfoKey(epochday uint64) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	return b.Bytes()
+	// return qbanktypes.CreateIDKey(epochday)
+}
+
+func CreateLPIDKey(lpID uint64) []byte {
+	var b bytes.Buffer
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
+	return b.Bytes()
+}
+
+// CreateLPPositionEpochLPIDKey create key for the particular lp position
+// created on an epoch day. Ex. {LPPositionKBP} + {epochday} + ":" + "lpID"
+func CreateLPPositionEpochLPIDKey(epochday uint64, lpID uint64) []byte {
+	var b bytes.Buffer
+	// b.Write(qbanktypes.CreateIDKey(epochday))
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(Sep)
+	b.Write(qbanktypes.CreateIDKey(lpID))
+	return b.Bytes()
+}
+
+// CreateEpochRewardKey create key for the storing reward collected on a specific epoch day
+// Ex. {RewardCollectionKBP} + {epochday}
+func CreateEpochRewardKey(epochday uint64) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	return b.Bytes()
+	// return qbanktypes.CreateIDKey(epochday)
+}
+
+// CreateEpochLPUserKey create key for storing the user records on a specific lp position.
+// Ex. Key = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc} + {":"} + {denom}
+func CreateEpochLPUserKey(epochday uint64, lpID uint64, userAcc string, denom string) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(Sep)
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
+	b.WriteString(Sep)
+	b.WriteString(userAcc)
+	b.WriteString(Sep)
+	b.WriteString(denom)
+	return b.Bytes()
+}
+
+// CreateEpochLPUserKey create key for storing the user records on a specific lp position.
+// Ex. Key = {LPUserInfoKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc}
+func CreateEpochLPUserInfo(epochday uint64, lpID uint64, userAcc string) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(Sep)
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
+	b.WriteString(Sep)
+	b.WriteString(userAcc)
+	return b.Bytes()
+}
+
+// CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
+// Ex. Key = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} +
+func CreateEpochLPKey(epochday uint64, lpID uint64) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(Sep)
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
+	b.WriteString(Sep)
+	return b.Bytes()
+}
+
+// ParseUserDenomKey splits the input key {userAcc} + {":"} + {denom} into uid and denom
+func ParseUserDenomKey(key []byte) (uid, denom string) {
+	split := qbanktypes.SplitKeyBytes(key)
+	uid = string(split[0])
+	denom = string(split[1])
+	return
+}
+
+// CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
+// Ex. Key = {EpochLPUserKBP} +   {lpID} + {":"} + {epochday}
+func CreateLPEpochKey(epochday uint64, lpID uint64) []byte {
+	var b bytes.Buffer
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
+	b.WriteString(Sep)
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	return b.Bytes()
+}
+
+const (
+	EpochLPInfoKey = "EpochLPInfo-value-"
+)
+
+const (
+	RewardCollectionKey = "RewardCollection-value-"
+)
+
+const (
+	UserLPInfoKey = "UserLPInfo-value-"
+)

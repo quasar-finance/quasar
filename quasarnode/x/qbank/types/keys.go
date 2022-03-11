@@ -51,13 +51,13 @@ var (
 	// TODO Vault level prefix to be used.
 )
 
-var sepByte = []byte(":")
+var SepByte = []byte(":")
 
 // Common functions for deposit and withdraw
 // TODO - AUDIT | unit test case to be written
 func SplitKeyBytes(kb []byte) [][]byte {
 	// First byte is used for the byte prefix
-	split := bytes.Split(kb[1:], sepByte)
+	split := bytes.Split(kb[1:], SepByte)
 	return split
 }
 

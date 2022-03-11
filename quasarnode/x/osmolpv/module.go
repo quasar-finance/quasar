@@ -174,6 +174,7 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	EndBlocker(ctx, am.keeper)
+	EndBlockerTesting(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
 }
 
@@ -189,7 +190,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	// 1. Get the list of meissa strategies registered.
 	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
 	// 3. Exit Pool Logic - Check the strategy code for Exit conditions And call Exit Pool.
-	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw condition
+	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw
 	// 5. Update Strategy Positions.
 
 	// TODO | ASSUMPTION | Assume one block as one epochday for testing.
@@ -203,4 +204,16 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 		lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
 		k.ExecuteMeissa(ctx, epochday, lockupPeriod)
 	}
+}
+
+func EndBlockerTesting(ctx sdk.Context, k keeper.Keeper) {
+	i1 := sdk.NewInt(int64(1073741824000000)).ToDec()
+	i2 := sdk.NewInt(int64(536870912000000)).ToDec()
+	r := i2.Quo(i1)
+	r2 := r.TruncateInt64()
+	logger := k.Logger(ctx)
+
+	logger.Info(fmt.Sprintf("EndBlockerTesting|modulename=%s|blockheight=%d|i1=%v|i2=%v|r=%v|r2=%v",
+		types.ModuleName, ctx.BlockHeight(), i1, i2, r, r2))
+
 }

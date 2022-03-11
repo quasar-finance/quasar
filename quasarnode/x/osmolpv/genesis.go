@@ -13,6 +13,27 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	if genState.FeeData != nil {
 		k.SetFeeData(ctx, *genState.FeeData)
 	}
+	// Set if defined
+	if genState.LpPosition != nil {
+		k.SetLpPosition(ctx, *genState.LpPosition)
+	}
+	// Set if defined
+	if genState.EpochLPInfo != nil {
+		k.SetEpochLPInfo(ctx, *genState.EpochLPInfo)
+	}
+	// Set if defined
+	// TODO | AUDIT | Genesis state is to be defined
+	/*
+		if genState.RewardCollection != nil {
+			k.SetRewardCollection(ctx, *genState.RewardCollection)
+		}
+	*/
+	// Set if defined
+	/*
+		if genState.UserLPInfo != nil {
+			k.SetUserLPInfo(ctx, *genState.UserLPInfo)
+		}
+	*/
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 
@@ -37,6 +58,31 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	if found {
 		genesis.FeeData = &feeData
 	}
+	// TODO | AUDIT | Genesis state to be defined
+	/*
+		// Get all lpPosition
+		lpPosition, found := k.GetLpPosition(ctx)
+		if found {
+			genesis.LpPosition = &lpPosition
+		}
+		// Get all epochLPInfo
+		epochLPInfo, found := k.GetEpochLPInfo(ctx)
+		if found {
+			genesis.EpochLPInfo = &epochLPInfo
+		}
+		// Get all rewardCollection
+		rewardCollection, found := k.GetRewardCollection(ctx)
+		if found {
+			genesis.RewardCollection = &rewardCollection
+		}
+	*/
+	/*
+		// Get all userLPInfo
+		userLPInfo, found := k.GetUserLPInfo(ctx)
+		if found {
+			genesis.UserLPInfo = &userLPInfo
+		}
+	*/
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
