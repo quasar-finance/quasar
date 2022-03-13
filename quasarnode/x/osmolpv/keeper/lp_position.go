@@ -10,27 +10,27 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetLpPosition set lpPosition in the store
+// SetLpPosition set lpPosition created by the strategy in a given epochday in the
+// prefixed kv store with key formed using epoch day and lpID.
+// key = types.LPPositionKBP + {epochday} + {":"} + {lpID}
+// Value = types.LpPosition)
 func (k Keeper) SetLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
-	key := types.CreateLPPositionEpochLPIDKey(lpPosition.BondingStartEpochDay, lpPosition.LpID)
+	key := types.EpochLPIDKey(lpPosition.BondingStartEpochDay, lpPosition.LpID)
 	b := k.cdc.MustMarshal(&lpPosition)
 	store.Set(key, b)
 }
 
-// SetLpPosition set lpPosition in the store
+// SetLpEpochPosition set is used to store reverse mapping lpID and epochday as part of key.
+// key = types.LPEpochKBP + {lpID} + {":"} + {epochDay}
 func (k Keeper) SetLpEpochPosition(ctx sdk.Context, lpID uint64, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochKBP)
 	key := types.CreateLPEpochKey(lpID, epochday)
-	// found := true
-	//b := k.cdc.MustMarshal(epochday)
-
 	store.Set(key, []byte{0x00})
 }
 
-func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (uint64, bool) {
-	var epochday uint64
-	var found bool = false
+// GetLPEpochDay fetch the epochday of an lp position on which the position was created.
+func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, found bool) {
 	bytePrefix := types.LPEpochKBP
 	prefixKey := types.CreateLPIDKey(lpID)
 	prefixKey = append(bytePrefix, prefixKey...)
@@ -48,23 +48,23 @@ func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (uint64, bool) {
 	return epochday, found
 }
 
-// GetLpPosition returns lpPosition
+// GetLpPosition fetch the lpPosition based on the epochday and lpID input
+// Note - This could be a reduntant method.
 func (k Keeper) GetLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) (val types.LpPosition, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
-	key := types.CreateLPPositionEpochLPIDKey(epochDay, lpID)
+	key := types.EpochLPIDKey(epochDay, lpID)
 	b := store.Get(key)
 	if b == nil {
 		return val, false
 	}
-
 	k.cdc.MustUnmarshal(b, &val)
 	return val, true
 }
 
-// RemoveLpPosition removes lpPosition from the store
+// RemoveLpPosition removes lpPosition from the store prefixed with epochDay and lpID
 func (k Keeper) RemoveLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
-	key := types.CreateLPPositionEpochLPIDKey(epochDay, lpID)
+	key := types.EpochLPIDKey(epochDay, lpID)
 	store.Delete(key)
 }
 
@@ -72,10 +72,11 @@ func (k Keeper) RemoveLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) 
 func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 	var lpIDs []uint64
 	bytePrefix := types.LPPositionKBP
-	prefixKey := types.CreateLPPositionEpochLPInfoKey(epochday)
+	prefixKey := types.EpochDayKey(epochday)
 	prefixKey = append(bytePrefix, prefixKey...)
 	prefixKey = append(prefixKey, qbanktypes.SepByte...)
 
+	// prefixKey = types.LPPositionKBP + {epochday} + {":"}
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
@@ -93,19 +94,43 @@ func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 // CalculateLPWeight calc weight of an Lp position in the current epoch.
 // This weight will be used for the approx fair reward distribution.
 // Logic -
-// 1. Get the list of all positions in the current epoch.
-// 2. Calculate current APY of each position in the current epoch.
-// 3. Get/Calculate total orions of each position in the current epoch.
-// 4. Calculate weight =  ((total orions of lpID) * (APY of lpID)) / (Sumoforions * APYofAllPositions)
+// 1. Get the lp position
+// 2. Get current active gauge of lpID
+// 3. Get expected apy
+// 4. Get total  tvl*apy
+// 5. Calc weight as ( < tvl of this lpid > * <apy of lpID> ) / Sum (tvl*apy)
+// NOTE - Weight should be updated on each epoch in the object itself.
+// There should be a dedicated field for this.
 func (k Keeper) CalculateLPWeight(ctx sdk.Context, epochDay uint64, lpID uint64) (sdk.Dec, error) {
 	lpp, found := k.GetLpPosition(ctx, epochDay, lpID)
 	if !found {
 		return sdk.ZeroDec(), fmt.Errorf("LP position not found")
 	}
 	k.Logger(ctx).Info(fmt.Sprintf("CalculateLPWeight|epochday=%v|lpp=%v\n", epochDay, lpp))
-	// Iterate over epoch positions.
-	//
-	return sdk.ZeroDec(), nil
+	g := k.GetCurrentActiveGauge(ctx, epochDay, lpID)
+	tvl, _ := k.GetLpTvl(ctx, epochDay, lpID)
+	tvlApy := g.ExpectedApy.Mul(tvl)
+	totalTvlApy := k.GetTotalTvlApy(ctx, epochDay)
+	lpw := tvlApy.Quo(totalTvlApy)
+	return lpw, nil
+}
+
+// GetTotalTvlApy calculate the total tvl in terms of amount of orion receipt tokens.
+// Option #1 Normalize this in terms of one denom. For example - If it is pool#1 <atom, osmo>
+// Then calculate this interms of atom or osmo
+// Option #2 Calculate in terms of allocated orions amount.
+func (k Keeper) GetLpTvl(ctx sdk.Context, epochday uint64, lpID uint64) (sdk.Dec, error) {
+	lpp, found := k.GetLpPosition(ctx, epochday, lpID)
+	if !found {
+		return sdk.ZeroDec(), fmt.Errorf("LP position not found")
+	}
+	return lpp.Lptoken.Amount.ToDec(), nil
+}
+
+// GetTotalTvlApy calculate the total tvl in terms of amount of orion receipt tokens.
+func (k Keeper) GetTotalTvlApy(ctx sdk.Context, epochDay uint64) sdk.Dec {
+	lpi, _ := k.GetEpochLPInfo(ctx, epochDay)
+	return lpi.TotalTVL.Amount.ToDec()
 }
 
 // AddEpochLPUser add kv store with key = {epochday} + {":"} + {lpID} + {":"} + {userAccount} + {":"} + {denom}
@@ -167,9 +192,16 @@ func (k Keeper) GetEpochLPUserCoin(ctx sdk.Context, epochday uint64, lpID uint64
 	return result
 }
 
+// TODO | AUDIT
 // GetCurrentActiveGauge fetch the currently active gauge of an LP position in the live chain
-func (k Keeper) GetCurrentActiveGauge(ctx sdk.Context, lpID uint64) types.GaugeLockInfo {
-	var g types.GaugeLockInfo
-
-	return g
+func (k Keeper) GetCurrentActiveGauge(ctx sdk.Context, epochday uint64, lpID uint64) types.GaugeLockInfo {
+	var activeG types.GaugeLockInfo
+	lp, _ := k.GetLpPosition(ctx, epochday, lpID)
+	e, _ := k.GetEpochDayInfo(ctx, epochday)
+	for _, g := range lp.Gaugelocks {
+		if e.BlockTime.After(g.StartTime) && g.StartTime.Add(g.LockupDuration).After(e.BlockTime) {
+			activeG = *g
+		}
+	}
+	return activeG
 }
