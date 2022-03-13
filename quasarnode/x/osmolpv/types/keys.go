@@ -79,6 +79,8 @@ var (
 	EpochLPUserKBP           = []byte{0x08}
 	LPUserInfoKBP            = []byte{0x09}
 	LPEpochKBP               = []byte{0x10}
+	LPEpochInfoKBP           = []byte{0x11}
+	EpochDayInfoKBP          = []byte{0x12}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -193,7 +195,7 @@ const (
 
 // CreateLPPositionEpochKey create key for the list of all lp position
 // created on an epoch day. Ex. {LPPositionKBP} + {epochday}
-func CreateLPPositionEpochLPInfoKey(epochday uint64) []byte {
+func EpochDayKey(epochday uint64) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
@@ -208,20 +210,20 @@ func CreateLPIDKey(lpID uint64) []byte {
 	return b.Bytes()
 }
 
-// CreateLPPositionEpochLPIDKey create key for the particular lp position
-// created on an epoch day. Ex. {LPPositionKBP} + {epochday} + ":" + "lpID"
-func CreateLPPositionEpochLPIDKey(epochday uint64, lpID uint64) []byte {
+// EpochLPIDKey create key for the particular lp position created on an epoch day.
+// Ex. Prefixed Key = {LPPositionKBP} + {epochday} + ":" + "lpID"
+func EpochLPIDKey(epochday uint64, lpID uint64) []byte {
 	var b bytes.Buffer
-	// b.Write(qbanktypes.CreateIDKey(epochday))
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
 	b.WriteString(Sep)
-	b.Write(qbanktypes.CreateIDKey(lpID))
+	strlpID := strconv.FormatUint(lpID, 10)
+	b.WriteString(strlpID)
 	return b.Bytes()
 }
 
 // CreateEpochRewardKey create key for the storing reward collected on a specific epoch day
-// Ex. {RewardCollectionKBP} + {epochday}
+// Ex. Prefixed Key = {RewardCollectionKBP} + {epochday}
 func CreateEpochRewardKey(epochday uint64) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -231,7 +233,7 @@ func CreateEpochRewardKey(epochday uint64) []byte {
 }
 
 // CreateEpochLPUserKey create key for storing the user records on a specific lp position.
-// Ex. Key = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc} + {":"} + {denom}
+// Ex. Prefixed Key = = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc} + {":"} + {denom}
 func CreateEpochLPUserKey(epochday uint64, lpID uint64, userAcc string, denom string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -247,7 +249,7 @@ func CreateEpochLPUserKey(epochday uint64, lpID uint64, userAcc string, denom st
 }
 
 // CreateEpochLPUserKey create key for storing the user records on a specific lp position.
-// Ex. Key = {LPUserInfoKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc}
+// Ex. Prefixed Key = = {LPUserInfoKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc}
 func CreateEpochLPUserInfo(epochday uint64, lpID uint64, userAcc string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -261,7 +263,7 @@ func CreateEpochLPUserInfo(epochday uint64, lpID uint64, userAcc string) []byte 
 }
 
 // CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
-// Ex. Key = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} +
+// Ex. Prefixed Key = = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} +
 func CreateEpochLPKey(epochday uint64, lpID uint64) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -282,7 +284,7 @@ func ParseUserDenomKey(key []byte) (uid, denom string) {
 }
 
 // CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
-// Ex. Key = {EpochLPUserKBP} +   {lpID} + {":"} + {epochday}
+// Ex. Prefixed Key = = {EpochLPUserKBP} +   {lpID} + {":"} + {epochday}
 func CreateLPEpochKey(epochday uint64, lpID uint64) []byte {
 	var b bytes.Buffer
 	strlpID := strconv.FormatUint(lpID, 10)

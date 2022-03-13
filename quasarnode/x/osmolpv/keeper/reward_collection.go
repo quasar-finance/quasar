@@ -16,7 +16,7 @@ func (k Keeper) SetRewardCollection(ctx sdk.Context, epochday uint64, rewardColl
 	store.Set(key, b)
 }
 
-// GetRewardCollection returns rewardCollection
+// GetRewardCollection returns rewardCollection on a given epoch day
 func (k Keeper) GetRewardCollection(ctx sdk.Context, epochday uint64) (val types.RewardCollection, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochday)
@@ -35,7 +35,7 @@ func (k Keeper) RemoveRewardCollection(ctx sdk.Context, epochday uint64) {
 	store.Delete(key)
 }
 
-// LPPositionReward calculate the reward associated with a particulat LP positon
+// LPPositionReward calculate the reward associated with a particulat LP positon on a given epochday
 func (k Keeper) LPPositionReward(ctx sdk.Context, epochday uint64, lpID uint64) (sdk.Coins, error) {
 	totalReward, found := k.GetRewardCollection(ctx, epochday)
 	var result sdk.Coins
@@ -73,14 +73,17 @@ func (k Keeper) CalculateLPUsersReward(ctx sdk.Context, lpReward sdk.Coins, lpsh
 // LPExpectedReward calculate per day expected reward based on current values of gauge and apy
 func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 	var reward sdk.Coins
-	g := k.GetCurrentActiveGauge(lpID)
-	RewardMuliplier := g.ExpectedApy.QuoInt64(types.NumDaysPerYear)
 	epochday, efound := k.GetLPEpochDay(ctx, lpID)
+	g := k.GetCurrentActiveGauge(ctx, epochday, lpID)
+	RewardMuliplier := g.ExpectedApy.QuoInt64(types.NumDaysPerYear)
+
 	if efound {
 		lp, lpfound := k.GetLpPosition(ctx, epochday, lpID)
 		if lpfound {
-			reward = lp.Coins
+			reward = lp.Coins // initialize
 			for i, coin := range lp.Coins {
+				// Expected reward will be based on the current apy of the active gauge of the position.
+				// But, it should not be confused with the real rewards which will be provided in osmo by osmosis.
 				reward[i].Amount = coin.Amount.ToDec().Mul(RewardMuliplier).TruncateInt()
 			}
 		}
