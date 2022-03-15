@@ -10,6 +10,7 @@ import "osmolpv/lp_position.proto";
 import "osmolpv/epoch_lp_info.proto";
 import "osmolpv/reward_collection.proto";
 import "osmolpv/user_lp_info.proto";
+import "osmolpv/lp_stat.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -44,6 +45,10 @@ service Query {
 // Queries a UserLPInfo by index.
 	rpc UserLPInfo(QueryGetUserLPInfoRequest) returns (QueryGetUserLPInfoResponse) {
 		option (google.api.http).get = "/abag/quasarnode/osmolpv/user_lp_info";
+	}
+// Queries a LpStat by index.
+	rpc LpStat(QueryGetLpStatRequest) returns (QueryGetLpStatResponse) {
+		option (google.api.http).get = "/abag/quasarnode/osmolpv/lp_stat";
 	}
 // this line is used by starport scaffolding # 2
 }
@@ -89,5 +94,10 @@ message QueryGetUserLPInfoRequest {}
 
 message QueryGetUserLPInfoResponse {
 	UserLPInfo UserLPInfo = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetLpStatRequest {}
+
+message QueryGetLpStatResponse {
+	LpStat LpStat = 1 [(gogoproto.nullable) = false];
 }
 // this line is used by starport scaffolding # 3

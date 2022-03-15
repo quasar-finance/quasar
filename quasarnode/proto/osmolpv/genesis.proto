@@ -8,6 +8,7 @@ import "osmolpv/lp_position.proto";
 import "osmolpv/epoch_lp_info.proto";
 import "osmolpv/reward_collection.proto";
 import "osmolpv/user_lp_info.proto";
+import "osmolpv/lp_stat.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
@@ -20,5 +21,6 @@ message GenesisState {
   EpochLPInfo epochLPInfo = 4;
   RewardCollection rewardCollection = 5;
   UserLPInfo userLPInfo = 6;
+  LpStat lpStat = 7;
   // this line is used by starport scaffolding # genesis/proto/state
 }

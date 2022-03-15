@@ -47,6 +47,9 @@ func TestGenesisState_Validate(t *testing.T) {
 				UserLPInfo: &types.UserLPInfo{
 					PositionShare: 22,
 				},
+				LpStat: &types.LpStat{
+					LpCount: 18,
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

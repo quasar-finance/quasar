@@ -1,0 +1,12 @@
+syntax = "proto3";
+package abag.quasarnode.osmolpv;
+
+option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message LpStat {
+  uint64 lpCount = 1; 
+  repeated cosmos.base.v1beta1.Coin totalLPCoins = 2 [(gogoproto.nullable) = false]; 
+  
+}
