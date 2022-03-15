@@ -192,34 +192,80 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 			shareOutAmount, FirstAssetAmount, SecondAssetAmount))
 
 		// Transfer fund to the strategy global account.
-		// TODO - 1. Optimize it to have one call only
-
 		coin1 := sdk.NewCoin(assets[0].Token.Denom, FirstAssetAmount)
 		coin2 := sdk.NewCoin(assets[1].Token.Denom, SecondAssetAmount)
-		k.SendCoinFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coin1)
-		k.SendCoinFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coin2)
+		coins := sdk.NewCoins(coin1, coin2)
+		k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
+
 		tokenInMaxs := []sdk.Coin{coin1, coin2}
 
-		// TODO : 1. Call Intergamm IBC token transfer from  OrionStakingMaccName
-		// 		  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
+		// TODO | AUDIT
+		//  1. Call Intergamm IBC token transfer from  OrionStakingMaccName
+		//  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
 
 		if shareOutAmount.IsPositive() {
 			// Call Intergamm Add Liquidity Method
 			k.JoinPool(ctx, poolID, shareOutAmount, tokenInMaxs)
 
+			// TODO : Lock the LP tokens and receive lockid.
 			// TODO : Update orion vault staking amount.
 			// Most probably not needed as balance in the orion vault is already updated.
 
-			// TODO : If sorted coins is required.
-			coins := sdk.NewCoins(coin1, coin2)
+			// coins := sdk.NewCoins(coin1, coin2)
 			k.SetMeissaEpochLockupPoolPosition(ctx, epochday, lockupType, poolID, coins)
-			// TODO - Create pool position object and user shares here
-			// Logic -
-			// Calculate users deposited coin1 and coin2 amount for this epochday.
-			// Calculate percentage of users weight
+
+			bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
+			bondindStartEpochDay := epochday
+			unbondingStartEpochDay := bondindStartEpochDay + bonding
+			var lockupID uint64   // TODO : To be received from osmosis
+			var lpTokens sdk.Coin // TODO : To be received from osmosis
+			lp := NewLP(lockupID, bondindStartEpochDay, bonding,
+				unbondingStartEpochDay, unbonding, poolID, lpTokens, coins)
+
+			k.AddNewLPPosition(ctx, lp)
+
 		}
 	}
 
+}
+
+// CalcUsersLPWeight calculate users deposited coin1 and coin2 amount for this epochday.
+// Calculate percentage of users weight
+// Logic -
+// 1. Get the list of users and their deposited fund on the given epochday from bank module kv store.
+// 2.
+func (k Keeper) CalcUsersLPWeight(lp types.LpPosition) {
+
+}
+
+// GetLPBondingUnbondingPeriod does the Lockup period to LP bonding-unbonding logic.
+// Logic
+// 7 Day Lockup ->
+// a. 7 day unbonding gauge with 1 day bonding and 7 days of unbonding. So for first day it will
+// earn 7 day apy and for next 7 days it will earn 1 day apy.
+// 14 days Lockup ->
+// a. 7 days unbonding gauge with 7 day bonding and 7 day unbonding period. For the first 7 day it
+// will earn 7 day apy for the first 7 day, and then earn 1 day apy for the next 7 days.
+// 21 days Lockup ->
+// a. 14 day bonding gauge with 7 days of bonding period and 14 days of unbonding period. So for first
+// 7 days it will earn 14 day bonding and for the next 7 days it will earn 7 day apy and for next 7 days it will
+// earn 1 day apy.
+// Note - Initially done for only 7 days and 21 days
+// Return - unbondingPeriod signifies the gauge for which to lock lp tokens for.
+func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (bondingPeriod uint64, unbondingPeriod uint64) {
+	switch lockupType {
+	case qbanktypes.LockupTypes_Days_7:
+		bondingPeriod = 1
+		unbondingPeriod = 7
+	case qbanktypes.LockupTypes_Days_21:
+		bondingPeriod = 7
+		unbondingPeriod = 14
+	default:
+		// Also include invalid type
+		bondingPeriod = 0
+		unbondingPeriod = 0
+	}
+	return bondingPeriod, unbondingPeriod
 }
 
 // MeissaExit checks for exit pool conditions for the meissa strategy.

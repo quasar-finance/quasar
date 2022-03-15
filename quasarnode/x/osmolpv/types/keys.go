@@ -81,6 +81,8 @@ var (
 	LPEpochKBP               = []byte{0x10}
 	LPEpochInfoKBP           = []byte{0x11}
 	EpochDayInfoKBP          = []byte{0x12}
+	LPCountKBP               = []byte{0x13}
+	LPStatKBP                = []byte{0x14}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -89,7 +91,12 @@ func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
 
 const (
 	FeeDataKey = "FeeData-value-"
+	LPCount    = "lpcount-"
 )
+
+func CreateLPCountKey() []byte {
+	return []byte(LPCount)
+}
 
 // CreateStrategyKey will create store key for the storage of base strategies in orion vault
 // return Key for prefix key store.
@@ -305,4 +312,8 @@ const (
 
 const (
 	UserLPInfoKey = "UserLPInfo-value-"
+)
+
+const (
+	LpStatKey = "LpStat-value-"
 )

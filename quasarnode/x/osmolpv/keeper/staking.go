@@ -77,3 +77,9 @@ func (k Keeper) SendCoinFromModuleToMeissa(ctx sdk.Context, senderModule string,
 	accName := types.CreateMeissaMaccName()
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, accName, sdk.NewCoins(amt))
 }
+
+// SendCoinFromModuleToMeissa transefer amount from senderModulet to meissa global account
+func (k Keeper) SendCoinsFromModuleToMeissa(ctx sdk.Context, senderModule string, amts sdk.Coins) error {
+	accName := types.CreateMeissaMaccName()
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, accName, amts)
+}

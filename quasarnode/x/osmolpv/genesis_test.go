@@ -39,6 +39,9 @@ func TestGenesis(t *testing.T) {
 		UserLPInfo: &types.UserLPInfo{
 			PositionShare: 5,
 		},
+		LpStat: &types.LpStat{
+			LpCount: 90,
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -55,5 +58,6 @@ func TestGenesis(t *testing.T) {
 	require.Equal(t, genesisState.EpochLPInfo, got.EpochLPInfo)
 	require.Equal(t, genesisState.RewardCollection, got.RewardCollection)
 	require.Equal(t, genesisState.UserLPInfo, got.UserLPInfo)
+	require.Equal(t, genesisState.LpStat, got.LpStat)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

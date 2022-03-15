@@ -15,6 +15,7 @@ func DefaultGenesis() *GenesisState {
 		EpochLPInfo:      nil,
 		RewardCollection: nil,
 		UserLPInfo:       nil,
+		LpStat:           nil,
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}

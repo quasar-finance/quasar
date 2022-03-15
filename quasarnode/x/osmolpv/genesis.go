@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO | AUDIT | Genesis state is not yet defined.
+
 // InitGenesis initializes the capability module's state from a provided genesis
 // state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
@@ -14,9 +16,11 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		k.SetFeeData(ctx, *genState.FeeData)
 	}
 	// Set if defined
-	if genState.LpPosition != nil {
-		k.SetLpPosition(ctx, *genState.LpPosition)
-	}
+	/*
+		if genState.LpPosition != nil {
+			k.setLpPosition(ctx, *genState.LpPosition)
+		}
+	*/
 	// Set if defined
 	if genState.EpochLPInfo != nil {
 		k.SetEpochLPInfo(ctx, *genState.EpochLPInfo)
@@ -32,6 +36,12 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	/*
 		if genState.UserLPInfo != nil {
 			k.SetUserLPInfo(ctx, *genState.UserLPInfo)
+		}
+	*/
+	// Set if defined
+	/*
+		if genState.LpStat != nil {
+			k.SetLpStat(ctx, *genState.LpStat)
 		}
 	*/
 	// this line is used by starport scaffolding # genesis/module/init
@@ -81,6 +91,13 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 		userLPInfo, found := k.GetUserLPInfo(ctx)
 		if found {
 			genesis.UserLPInfo = &userLPInfo
+		}
+	*/
+	// Get all lpStat
+	/*
+		lpStat, found := k.GetLpStat(ctx)
+		if found {
+			genesis.LpStat = &lpStat
 		}
 	*/
 	// this line is used by starport scaffolding # genesis/module/export
