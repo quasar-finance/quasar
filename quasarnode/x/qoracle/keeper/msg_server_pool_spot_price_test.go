@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,9 +13,6 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 func TestPoolSpotPriceMsgServerCreate(t *testing.T) {
 	k, ctx := keepertest.QoracleKeeper(t)
 	srv := keeper.NewMsgServerImpl(*k)
@@ -23,9 +20,11 @@ func TestPoolSpotPriceMsgServerCreate(t *testing.T) {
 	creator := "A"
 	for i := 0; i < 5; i++ {
 		expected := &types.MsgCreatePoolSpotPrice{Creator: creator,
-			PoolId:   strconv.Itoa(i),
-			DenomIn:  strconv.Itoa(i),
-			DenomOut: strconv.Itoa(i),
+			PoolId:          fmt.Sprintf("%d", i),
+			DenomIn:         fmt.Sprintf("abc%d", i),
+			DenomOut:        fmt.Sprintf("cba%d", i),
+			Price:           fmt.Sprintf("%f", 1.5*float32(i)),
+			LastUpdatedTime: 1 + uint64(i),
 		}
 		_, err := srv.CreatePoolSpotPrice(wctx, expected)
 		require.NoError(t, err)
@@ -50,26 +49,32 @@ func TestPoolSpotPriceMsgServerUpdate(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgUpdatePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 2,
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgUpdatePoolSpotPrice{Creator: "B",
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgUpdatePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(100000),
-				DenomIn:  strconv.Itoa(100000),
-				DenomOut: strconv.Itoa(100000),
+				PoolId:          "10",
+				DenomIn:         "xyz",
+				DenomOut:        "zyx",
+				Price:           "1.2",
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -79,9 +84,11 @@ func TestPoolSpotPriceMsgServerUpdate(t *testing.T) {
 			srv := keeper.NewMsgServerImpl(*k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.1",
+				LastUpdatedTime: 1,
 			}
 			_, err := srv.CreatePoolSpotPrice(wctx, expected)
 			require.NoError(t, err)
@@ -114,26 +121,26 @@ func TestPoolSpotPriceMsgServerDelete(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgDeletePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "cba",
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgDeletePoolSpotPrice{Creator: "B",
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "cba",
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgDeletePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(100000),
-				DenomIn:  strconv.Itoa(100000),
-				DenomOut: strconv.Itoa(100000),
+				PoolId:   "10",
+				DenomIn:  "xyz",
+				DenomOut: "zyx",
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -144,9 +151,11 @@ func TestPoolSpotPriceMsgServerDelete(t *testing.T) {
 			wctx := sdk.WrapSDKContext(ctx)
 
 			_, err := srv.CreatePoolSpotPrice(wctx, &types.MsgCreatePoolSpotPrice{Creator: creator,
-				PoolId:   strconv.Itoa(0),
-				DenomIn:  strconv.Itoa(0),
-				DenomOut: strconv.Itoa(0),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.1",
+				LastUpdatedTime: 1,
 			})
 			require.NoError(t, err)
 			_, err = srv.DeletePoolSpotPrice(wctx, tc.request)

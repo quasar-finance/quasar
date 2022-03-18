@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,9 +13,6 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 func TestPoolPositionMsgServerCreate(t *testing.T) {
 	k, ctx := keepertest.QoracleKeeper(t)
 	srv := keeper.NewMsgServerImpl(*k)
@@ -23,7 +20,9 @@ func TestPoolPositionMsgServerCreate(t *testing.T) {
 	creator := "A"
 	for i := 0; i < 5; i++ {
 		expected := &types.MsgCreatePoolPosition{Creator: creator,
-			PoolId: strconv.Itoa(i),
+			PoolId:          fmt.Sprintf("%d", i),
+			Metrics:         &types.PoolMetrics{APY: sdk.NewDec(int64(i)).String(), TVL: sdk.NewDecCoin("usd", sdk.NewInt(int64(i))).String()},
+			LastUpdatedTime: 1 + uint64(i),
 		}
 		_, err := srv.CreatePoolPosition(wctx, expected)
 		require.NoError(t, err)
@@ -46,20 +45,26 @@ func TestPoolPositionMsgServerUpdate(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgUpdatePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				Metrics:         &types.PoolMetrics{APY: "1.2", TVL: "200.5usd"},
+				LastUpdatedTime: 2,
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgUpdatePoolPosition{Creator: "B",
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				Metrics:         &types.PoolMetrics{APY: "1.2", TVL: "200.5usd"},
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgUpdatePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(100000),
+				PoolId:          "10",
+				Metrics:         &types.PoolMetrics{APY: "1.2", TVL: "200.5usd"},
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -69,7 +74,9 @@ func TestPoolPositionMsgServerUpdate(t *testing.T) {
 			srv := keeper.NewMsgServerImpl(*k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				Metrics:         &types.PoolMetrics{APY: "1.1", TVL: "100.5usd"},
+				LastUpdatedTime: 1,
 			}
 			_, err := srv.CreatePoolPosition(wctx, expected)
 			require.NoError(t, err)
@@ -100,20 +107,20 @@ func TestPoolPositionMsgServerDelete(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgDeletePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId: "1",
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgDeletePoolPosition{Creator: "B",
-				PoolId: strconv.Itoa(0),
+				PoolId: "1",
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgDeletePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(100000),
+				PoolId: "10",
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -124,7 +131,7 @@ func TestPoolPositionMsgServerDelete(t *testing.T) {
 			wctx := sdk.WrapSDKContext(ctx)
 
 			_, err := srv.CreatePoolPosition(wctx, &types.MsgCreatePoolPosition{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId: "1",
 			})
 			require.NoError(t, err)
 			_, err = srv.DeletePoolPosition(wctx, tc.request)

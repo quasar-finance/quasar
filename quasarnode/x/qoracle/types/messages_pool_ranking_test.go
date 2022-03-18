@@ -21,10 +21,64 @@ func TestMsgCreatePoolRanking_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid",
 			msg: MsgCreatePoolRanking{
-				Creator: sample.AccAddress(),
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1"},
+				LastUpdatedTime:    1,
 			},
+		}, {
+			name: "empty slice",
+			msg: MsgCreatePoolRanking{
+				Creator:         sample.AccAddress(),
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "zero LastUpdatedTime",
+			msg: MsgCreatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1"},
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "unequal slice length",
+			msg: MsgCreatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty pool id",
+			msg: MsgCreatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{""},
+				PoolIdsSortedByTVL: []string{""},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "repeated id",
+			msg: MsgCreatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1", "1"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "id exist in one slice only",
+			msg: MsgCreatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1", "3"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
 		},
 	}
 	for _, tt := range tests {
@@ -54,8 +108,62 @@ func TestMsgUpdatePoolRanking_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid address",
 			msg: MsgUpdatePoolRanking{
-				Creator: sample.AccAddress(),
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1"},
+				LastUpdatedTime:    1,
 			},
+		}, {
+			name: "empty slice",
+			msg: MsgUpdatePoolRanking{
+				Creator:         sample.AccAddress(),
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "zero LastUpdatedTime",
+			msg: MsgUpdatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1"},
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "unequal slice length",
+			msg: MsgUpdatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty pool id",
+			msg: MsgUpdatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{""},
+				PoolIdsSortedByTVL: []string{""},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "repeated id",
+			msg: MsgUpdatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1", "1"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "id exist in one slice only",
+			msg: MsgUpdatePoolRanking{
+				Creator:            sample.AccAddress(),
+				PoolIdsSortedByAPY: []string{"1", "3"},
+				PoolIdsSortedByTVL: []string{"1", "2"},
+				LastUpdatedTime:    1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
 		},
 	}
 	for _, tt := range tests {

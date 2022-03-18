@@ -21,10 +21,120 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid",
 			msg: MsgCreatePoolSpotPrice{
-				Creator: sample.AccAddress(),
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
 			},
+		}, {
+			name: "empty PoolId",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomIn",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomOut",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty Price",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "zero LastUpdatedTime",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "cba",
+				Price:    "1.2",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "a",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "1",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "c",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "1",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid Price",
+			msg: MsgCreatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "x",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
 		},
 	}
 	for _, tt := range tests {
@@ -52,10 +162,120 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator: sample.AccAddress(),
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
 			},
+		}, {
+			name: "empty PoolId",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomIn",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomOut",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty Price",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "zero LastUpdatedTime",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "cba",
+				Price:    "1.2",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "a",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "1",
+				DenomOut:        "cba",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "c",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "1",
+				Price:           "1.2",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid Price",
+			msg: MsgUpdatePoolSpotPrice{
+				Creator:         sample.AccAddress(),
+				PoolId:          "1",
+				DenomIn:         "abc",
+				DenomOut:        "cba",
+				Price:           "x",
+				LastUpdatedTime: 1,
+			},
+			err: sdkerrors.ErrInvalidRequest,
 		},
 	}
 	for _, tt := range tests {
@@ -83,10 +303,73 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "cba",
+			},
+		}, {
+			name: "empty PoolId",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				DenomIn:  "abc",
+				DenomOut: "cba",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomIn",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomOut: "cba",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "empty DenomOut",
 			msg: MsgDeletePoolSpotPrice{
 				Creator: sample.AccAddress(),
+				PoolId:  "1",
+				DenomIn: "abc",
 			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "a",
+				DenomOut: "cba",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomIn",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "1",
+				DenomOut: "cba",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "c",
+			},
+			err: sdkerrors.ErrInvalidRequest,
+		}, {
+			name: "invalid DenomOut",
+			msg: MsgDeletePoolSpotPrice{
+				Creator:  sample.AccAddress(),
+				PoolId:   "1",
+				DenomIn:  "abc",
+				DenomOut: "1",
+			},
+			err: sdkerrors.ErrInvalidRequest,
 		},
 	}
 	for _, tt := range tests {

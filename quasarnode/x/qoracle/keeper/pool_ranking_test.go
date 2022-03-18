@@ -8,16 +8,17 @@ import (
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
+	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
 func createTestPoolRanking(keeper *keeper.Keeper, ctx sdk.Context) types.PoolRanking {
 	item := types.PoolRanking{
-		Creator:            "quasar170u8l73u3lh7fvg8sr229cezvf9yxzanrkanhm",
+		Creator:            sample.AccAddress(),
 		PoolIdsSortedByAPY: []string{"1", "2", "3"},
 		PoolIdsSortedByTVL: []string{"2", "1", "3"},
-		LastUpdatedTime:    1646229371,
+		LastUpdatedTime:    1,
 	}
 	keeper.SetPoolRanking(ctx, item)
 	return item

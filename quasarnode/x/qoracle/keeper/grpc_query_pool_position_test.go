@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"strconv"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,9 +13,6 @@ import (
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
-
-// Prevent strconv unused error
-var _ = strconv.IntSize
 
 func TestPoolPositionQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.QoracleKeeper(t)
@@ -45,7 +41,7 @@ func TestPoolPositionQuerySingle(t *testing.T) {
 		{
 			desc: "KeyNotFound",
 			request: &types.QueryGetPoolPositionRequest{
-				PoolId: strconv.Itoa(100000),
+				PoolId: "100000",
 			},
 			err: status.Error(codes.InvalidArgument, "not found"),
 		},

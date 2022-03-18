@@ -2,7 +2,6 @@ package cli_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -15,9 +14,6 @@ import (
 	"github.com/abag/quasarnode/testutil/network"
 	"github.com/abag/quasarnode/x/qoracle/client/cli"
 )
-
-// Prevent strconv unused error
-var _ = strconv.IntSize
 
 func samplePoolFile1() string {
 	return `
@@ -72,7 +68,7 @@ func TestCreatePoolInfo(t *testing.T) {
 		code uint32
 	}{
 		{
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			desc: "valid",
 			args: []string{
@@ -118,7 +114,7 @@ func TestUpdatePoolInfo(t *testing.T) {
 		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(net.Config.BondDenom, sdk.NewInt(10))).String()),
 	}
 	args := []string{
-		"0",
+		"1",
 	}
 	args = append(args, fields...)
 	args = append(args, common...)
@@ -135,13 +131,13 @@ func TestUpdatePoolInfo(t *testing.T) {
 	}{
 		{
 			desc:     "valid",
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			args: common,
 		},
 		{
 			desc:     "key not found",
-			idPoolId: strconv.Itoa(100000),
+			idPoolId: "10",
 
 			args: common,
 			code: sdkerrors.ErrKeyNotFound.ABCICode(),
@@ -183,7 +179,7 @@ func TestDeletePoolInfo(t *testing.T) {
 		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(net.Config.BondDenom, sdk.NewInt(10))).String()),
 	}
 	args := []string{
-		"0",
+		"1",
 	}
 	args = append(args, fields...)
 	args = append(args, common...)
@@ -200,13 +196,13 @@ func TestDeletePoolInfo(t *testing.T) {
 	}{
 		{
 			desc:     "valid",
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			args: common,
 		},
 		{
 			desc:     "key not found",
-			idPoolId: strconv.Itoa(100000),
+			idPoolId: "10",
 
 			args: common,
 			code: sdkerrors.ErrKeyNotFound.ABCICode(),
