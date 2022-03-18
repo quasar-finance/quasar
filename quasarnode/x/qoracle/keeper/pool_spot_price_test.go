@@ -1,26 +1,27 @@
 package keeper_test
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
+	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 func createNPoolSpotPrice(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolSpotPrice {
 	items := make([]types.PoolSpotPrice, n)
 	for i := range items {
-		items[i].PoolId = strconv.Itoa(i)
-		items[i].DenomIn = strconv.Itoa(i)
-		items[i].DenomOut = strconv.Itoa(i)
+		items[i].Creator = sample.AccAddress()
+		items[i].PoolId = fmt.Sprintf("%d", i)
+		items[i].DenomIn = fmt.Sprintf("abc%d", i)
+		items[i].DenomOut = fmt.Sprintf("cba%d", i)
+		items[i].Price = fmt.Sprintf("%f", 1.5*float32(i))
+		items[i].LastUpdatedTime = 1 + uint64(i)
 
 		keeper.SetPoolSpotPrice(ctx, items[i])
 	}

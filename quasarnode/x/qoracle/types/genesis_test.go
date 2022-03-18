@@ -24,27 +24,35 @@ func TestGenesisState_Validate(t *testing.T) {
 
 				PoolPositionList: []types.PoolPosition{
 					{
-						PoolId: "0",
+						PoolId:          "0",
+						Metrics:         &types.PoolMetrics{APY: "10.5", TVL: "1000.5usd"},
+						LastUpdatedTime: 1,
 					},
 					{
-						PoolId: "1",
+						PoolId:          "1",
+						Metrics:         &types.PoolMetrics{APY: "10.5", TVL: "1000.5usd"},
+						LastUpdatedTime: 1,
 					},
 				},
 				PoolRanking: &types.PoolRanking{
-					PoolIdsSortedByAPY: []string{"52"},
-					PoolIdsSortedByTVL: []string{"100"},
-					LastUpdatedTime:    59,
+					PoolIdsSortedByAPY: []string{"1"},
+					PoolIdsSortedByTVL: []string{"1"},
+					LastUpdatedTime:    1,
 				},
 				PoolSpotPriceList: []types.PoolSpotPrice{
 					{
-						PoolId:   "0",
-						DenomIn:  "0",
-						DenomOut: "0",
+						PoolId:          "0",
+						DenomIn:         "abc",
+						DenomOut:        "cba",
+						Price:           "1.2",
+						LastUpdatedTime: 1,
 					},
 					{
-						PoolId:   "1",
-						DenomIn:  "1",
-						DenomOut: "1",
+						PoolId:          "1",
+						DenomIn:         "xyz",
+						DenomOut:        "zyx",
+						Price:           "1.2",
+						LastUpdatedTime: 1,
 					},
 				},
 				PoolInfoList: []types.PoolInfo{
@@ -64,10 +72,14 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				PoolPositionList: []types.PoolPosition{
 					{
-						PoolId: "0",
+						PoolId:          "0",
+						Metrics:         &types.PoolMetrics{APY: "10.5", TVL: "1000.5usd"},
+						LastUpdatedTime: 1,
 					},
 					{
-						PoolId: "0",
+						PoolId:          "0",
+						Metrics:         &types.PoolMetrics{APY: "10.5", TVL: "1000.5usd"},
+						LastUpdatedTime: 1,
 					},
 				},
 			},
@@ -78,14 +90,18 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				PoolSpotPriceList: []types.PoolSpotPrice{
 					{
-						PoolId:   "0",
-						DenomIn:  "0",
-						DenomOut: "0",
+						PoolId:          "0",
+						DenomIn:         "abc",
+						DenomOut:        "cba",
+						Price:           "1.2",
+						LastUpdatedTime: 1,
 					},
 					{
-						PoolId:   "0",
-						DenomIn:  "0",
-						DenomOut: "0",
+						PoolId:          "0",
+						DenomIn:         "abc",
+						DenomOut:        "cba",
+						Price:           "1.2",
+						LastUpdatedTime: 1,
 					},
 				},
 			},

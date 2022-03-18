@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,9 +13,6 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 func TestPoolInfoMsgServerCreate(t *testing.T) {
 	k, ctx := keepertest.QoracleKeeper(t)
 	srv := keeper.NewMsgServerImpl(*k)
@@ -23,7 +20,8 @@ func TestPoolInfoMsgServerCreate(t *testing.T) {
 	creator := "A"
 	for i := 0; i < 5; i++ {
 		expected := &types.MsgCreatePoolInfo{Creator: creator,
-			PoolId: strconv.Itoa(i),
+			PoolId:          fmt.Sprintf("%d", i),
+			LastUpdatedTime: 1 + uint64(i),
 		}
 		_, err := srv.CreatePoolInfo(wctx, expected)
 		require.NoError(t, err)
@@ -46,20 +44,23 @@ func TestPoolInfoMsgServerUpdate(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgUpdatePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				LastUpdatedTime: 2,
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgUpdatePoolInfo{Creator: "B",
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgUpdatePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(100000),
+				PoolId:          "10",
+				LastUpdatedTime: 2,
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -69,7 +70,8 @@ func TestPoolInfoMsgServerUpdate(t *testing.T) {
 			srv := keeper.NewMsgServerImpl(*k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				LastUpdatedTime: 1,
 			}
 			_, err := srv.CreatePoolInfo(wctx, expected)
 			require.NoError(t, err)
@@ -100,20 +102,20 @@ func TestPoolInfoMsgServerDelete(t *testing.T) {
 		{
 			desc: "Completed",
 			request: &types.MsgDeletePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId: "1",
 			},
 		},
 		{
 			desc: "Unauthorized",
 			request: &types.MsgDeletePoolInfo{Creator: "B",
-				PoolId: strconv.Itoa(0),
+				PoolId: "1",
 			},
 			err: sdkerrors.ErrUnauthorized,
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.MsgDeletePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(100000),
+				PoolId: "10",
 			},
 			err: sdkerrors.ErrKeyNotFound,
 		},
@@ -124,7 +126,8 @@ func TestPoolInfoMsgServerDelete(t *testing.T) {
 			wctx := sdk.WrapSDKContext(ctx)
 
 			_, err := srv.CreatePoolInfo(wctx, &types.MsgCreatePoolInfo{Creator: creator,
-				PoolId: strconv.Itoa(0),
+				PoolId:          "1",
+				LastUpdatedTime: 1,
 			})
 			require.NoError(t, err)
 			_, err = srv.DeletePoolInfo(wctx, tc.request)

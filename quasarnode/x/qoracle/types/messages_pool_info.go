@@ -55,6 +55,18 @@ func (msg *MsgCreatePoolInfo) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
+	}
+	if msg.Info == nil {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
+	}
+	if err := msg.Info.Validate(); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
+	}
 	return nil
 }
 
@@ -101,6 +113,18 @@ func (msg *MsgUpdatePoolInfo) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
+	}
+	if msg.Info == nil {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
+	}
+	if err := msg.Info.Validate(); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
+	}
 	return nil
 }
 
@@ -141,6 +165,9 @@ func (msg *MsgDeletePoolInfo) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
 	}
 	return nil
 }

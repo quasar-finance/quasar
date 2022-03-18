@@ -28,6 +28,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -45,6 +46,7 @@ import (
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	feegranttypes "github.com/cosmos/cosmos-sdk/x/feegrant"
 	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
 	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
@@ -507,10 +509,39 @@ func New(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		feegrant.ModuleName, qbankmoduletypes.ModuleName, osmolpvmoduletypes.ModuleName,
+		// TODO check the order of the below
+		vestingtypes.ModuleName,
+		intergammmoduletypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		genutiltypes.ModuleName,
+		banktypes.ModuleName,
+		govtypes.ModuleName,
+		qoraclemoduletypes.ModuleName,
+		crisistypes.ModuleName,
+		paramstypes.ModuleName,
+		authtypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
-		qoraclemoduletypes.ModuleName, osmolpvmoduletypes.ModuleName)
+		qoraclemoduletypes.ModuleName, osmolpvmoduletypes.ModuleName,
+		// TODO check the order of the below
+		evidencetypes.ModuleName,
+		ibchost.ModuleName,
+		feegranttypes.ModuleName,
+		minttypes.ModuleName,
+		slashingtypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		vestingtypes.ModuleName,
+		capabilitytypes.ModuleName,
+		upgradetypes.ModuleName,
+		paramstypes.ModuleName,
+		authtypes.ModuleName,
+		qbankmoduletypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		intergammmoduletypes.ModuleName,
+		genutiltypes.ModuleName,
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -535,6 +566,11 @@ func New(
 		osmolpvmoduletypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
 		intergammmoduletypes.ModuleName,
+		// TODO check the order of the below
+		vestingtypes.ModuleName,
+		feegranttypes.ModuleName,
+		upgradetypes.ModuleName,
+		paramstypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 

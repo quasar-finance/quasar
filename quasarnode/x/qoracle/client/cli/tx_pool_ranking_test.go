@@ -13,12 +13,16 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/client/cli"
 )
 
+func samplePoolRanking() []string {
+	return []string{"1,2,3", "1,3,2"}
+}
+
 func TestCreatePoolRanking(t *testing.T) {
 	net := network.New(t)
 	val := net.Validators[0]
 	ctx := val.ClientCtx
 
-	fields := []string{"abc,xyz", "abc,xyz"}
+	fields := samplePoolRanking()
 	for _, tc := range []struct {
 		desc string
 		args []string
@@ -58,7 +62,7 @@ func TestUpdatePoolRanking(t *testing.T) {
 	val := net.Validators[0]
 	ctx := val.ClientCtx
 
-	fields := []string{"abc,xyz", "abc,xyz"}
+	fields := samplePoolRanking()
 	common := []string{
 		fmt.Sprintf("--%s=%s", flags.FlagFrom, val.Address.String()),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
