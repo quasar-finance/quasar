@@ -58,6 +58,23 @@ func (msg *MsgCreatePoolSpotPrice) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
+	}
+	if err := sdk.ValidateDenom(msg.DenomIn); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomIn '%s': %s", msg.DenomIn, err.Error())
+	}
+	if err := sdk.ValidateDenom(msg.DenomOut); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomOut '%s': %s", msg.DenomOut, err.Error())
+	}
+	if price, err := sdk.NewDecFromStr(msg.Price); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Price '%s': %s", msg.Price, err.Error())
+	} else if !price.IsPositive() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "Price '%s' must be positive", msg.Price)
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
+	}
 	return nil
 }
 
@@ -108,6 +125,23 @@ func (msg *MsgUpdatePoolSpotPrice) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
+	}
+	if err := sdk.ValidateDenom(msg.DenomIn); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomIn '%s': %s", msg.DenomIn, err.Error())
+	}
+	if err := sdk.ValidateDenom(msg.DenomOut); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomOut '%s': %s", msg.DenomOut, err.Error())
+	}
+	if price, err := sdk.NewDecFromStr(msg.Price); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Price '%s': %s", msg.Price, err.Error())
+	} else if !price.IsPositive() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "Price '%s' must be positive", msg.Price)
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
+	}
 	return nil
 }
 
@@ -152,6 +186,15 @@ func (msg *MsgDeletePoolSpotPrice) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if len(msg.PoolId) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolId")
+	}
+	if err := sdk.ValidateDenom(msg.DenomIn); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomIn '%s': %s", msg.DenomIn, err.Error())
+	}
+	if err := sdk.ValidateDenom(msg.DenomOut); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid DenomOut '%s': %s", msg.DenomOut, err.Error())
 	}
 	return nil
 }

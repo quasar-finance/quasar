@@ -11,6 +11,45 @@ const (
 	TypeMsgDeletePoolRanking = "delete_pool_ranking"
 )
 
+func validatePoolIds(idsByAPY []string, idsByTVL []string) error {
+	if len(idsByAPY) != len(idsByTVL) {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "unequal slice length in PoolIdsSortedByAPY and PoolIdsSortedByTVL (%d != %d)", len(idsByAPY), len(idsByTVL))
+	}
+	if len(idsByAPY) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty PoolIdsSortedByAPY slice")
+	}
+	countIdsByAPY := make(map[string]int)
+	countIdsByTVL := make(map[string]int)
+	for _, id := range idsByAPY {
+		if len(id) == 0 {
+			return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty pool id in PoolIdsSortedByAPY")
+		}
+		countIdsByAPY[id]++
+		if countIdsByAPY[id] > 1 {
+			return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "repeated id '%s' in PoolIdsSortedByAPY", id)
+		}
+	}
+	for _, id := range idsByTVL {
+		if len(id) == 0 {
+			return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty pool id in PoolIdsSortedByTVL")
+		}
+		countIdsByTVL[id]++
+		if countIdsByTVL[id] > 1 {
+			return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "repeated id '%s' in PoolIdsSortedByTVL", id)
+		}
+	}
+	for id, _ := range countIdsByAPY {
+		if _, exist := countIdsByTVL[id]; !exist {
+			return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "id '%s' exist in PoolIdsSortedByAPY but not in PoolIdsSortedByTVL", id)
+		}
+		delete(countIdsByTVL, id)
+	}
+	for id, _ := range countIdsByTVL {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "id '%s' exist in PoolIdsSortedByTVL but not in PoolIdsSortedByAPY", id)
+	}
+	return nil
+}
+
 var _ sdk.Msg = &MsgCreatePoolRanking{}
 
 func NewMsgCreatePoolRanking(creator string, poolIdsSortedByAPY []string, poolIdsSortedByTVL []string, lastUpdatedTime uint64) *MsgCreatePoolRanking {
@@ -47,6 +86,12 @@ func (msg *MsgCreatePoolRanking) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if err := validatePoolIds(msg.PoolIdsSortedByAPY, msg.PoolIdsSortedByTVL); err != nil {
+		return err
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
 	}
 	return nil
 }
@@ -87,6 +132,12 @@ func (msg *MsgUpdatePoolRanking) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if err := validatePoolIds(msg.PoolIdsSortedByAPY, msg.PoolIdsSortedByTVL); err != nil {
+		return err
+	}
+	if msg.LastUpdatedTime == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
 	}
 	return nil
 }

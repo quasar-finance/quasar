@@ -2,7 +2,6 @@ package cli_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -15,15 +14,16 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/client/cli"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
+func sampleMetricsStr() string {
+	return "{\"APY\":\"22.5\",\"TVL\":\"10.5usd\"}"
+}
 
 func TestCreatePoolPosition(t *testing.T) {
 	net := network.New(t)
 	val := net.Validators[0]
 	ctx := val.ClientCtx
 
-	fields := []string{"null"}
+	fields := []string{sampleMetricsStr()}
 	for _, tc := range []struct {
 		desc     string
 		idPoolId string
@@ -33,7 +33,7 @@ func TestCreatePoolPosition(t *testing.T) {
 		code uint32
 	}{
 		{
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			desc: "valid",
 			args: []string{
@@ -69,7 +69,7 @@ func TestUpdatePoolPosition(t *testing.T) {
 	val := net.Validators[0]
 	ctx := val.ClientCtx
 
-	fields := []string{"null"}
+	fields := []string{sampleMetricsStr()}
 	common := []string{
 		fmt.Sprintf("--%s=%s", flags.FlagFrom, val.Address.String()),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
@@ -77,7 +77,7 @@ func TestUpdatePoolPosition(t *testing.T) {
 		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(net.Config.BondDenom, sdk.NewInt(10))).String()),
 	}
 	args := []string{
-		"0",
+		"1",
 	}
 	args = append(args, fields...)
 	args = append(args, common...)
@@ -94,13 +94,13 @@ func TestUpdatePoolPosition(t *testing.T) {
 	}{
 		{
 			desc:     "valid",
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			args: common,
 		},
 		{
 			desc:     "key not found",
-			idPoolId: strconv.Itoa(100000),
+			idPoolId: "10",
 
 			args: common,
 			code: sdkerrors.ErrKeyNotFound.ABCICode(),
@@ -132,7 +132,7 @@ func TestDeletePoolPosition(t *testing.T) {
 	val := net.Validators[0]
 	ctx := val.ClientCtx
 
-	fields := []string{"null"}
+	fields := []string{sampleMetricsStr()}
 	common := []string{
 		fmt.Sprintf("--%s=%s", flags.FlagFrom, val.Address.String()),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
@@ -140,7 +140,7 @@ func TestDeletePoolPosition(t *testing.T) {
 		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(net.Config.BondDenom, sdk.NewInt(10))).String()),
 	}
 	args := []string{
-		"0",
+		"1",
 	}
 	args = append(args, fields...)
 	args = append(args, common...)
@@ -157,13 +157,13 @@ func TestDeletePoolPosition(t *testing.T) {
 	}{
 		{
 			desc:     "valid",
-			idPoolId: strconv.Itoa(0),
+			idPoolId: "1",
 
 			args: common,
 		},
 		{
 			desc:     "key not found",
-			idPoolId: strconv.Itoa(100000),
+			idPoolId: "10",
 
 			args: common,
 			code: sdkerrors.ErrKeyNotFound.ABCICode(),
