@@ -8,7 +8,6 @@ import (
 	gamm_types "github.com/abag/quasarnode/x/gamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	osmosis_gamm_types "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,14 +19,14 @@ func sampleBalancerPool() (res balancer.BalancerPool) {
 		ExitFee: sdk.NewDecWithPrec(1, 2),
 	}
 	res.FuturePoolGovernor = "24h"
-	res.TotalShares = sdk.NewCoin(osmosis_gamm_types.GetPoolShareDenom(res.Id), sdk.ZeroInt())
+	res.TotalShares = sdk.NewCoin(gamm_types.GetPoolShareDenom(res.Id), sdk.ZeroInt())
 	res.PoolAssets = []gamm_types.PoolAsset{
 		{
-			Weight: sdk.NewInt(100).MulRaw(osmosis_gamm_types.GuaranteedWeightPrecision),
+			Weight: sdk.NewInt(100).MulRaw(gamm_types.GuaranteedWeightPrecision),
 			Token:  sdk.NewCoin("test", sdk.NewInt(100)),
 		},
 		{
-			Weight: sdk.NewInt(100).MulRaw(osmosis_gamm_types.GuaranteedWeightPrecision),
+			Weight: sdk.NewInt(100).MulRaw(gamm_types.GuaranteedWeightPrecision),
 			Token:  sdk.NewCoin("test2", sdk.NewInt(100)),
 		},
 	}

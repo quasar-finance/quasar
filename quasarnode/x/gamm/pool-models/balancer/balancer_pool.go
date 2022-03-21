@@ -2,13 +2,14 @@ package balancer
 
 import (
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	// 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/abag/quasarnode/x/gamm/types"
-	osmosis_balancer_pool "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	osmosis_gamm_types "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 func (pool BalancerPool) Validate() error {
@@ -23,7 +24,7 @@ func (pool BalancerPool) Validate() error {
 	}
 
 	// validation for future owner
-	if err = osmosis_balancer_pool.ValidateFutureGovernor(pool.FuturePoolGovernor); err != nil {
+	if err = ValidateFutureGovernor(pool.FuturePoolGovernor); err != nil {
 		return err
 	}
 
@@ -32,32 +33,31 @@ func (pool BalancerPool) Validate() error {
 
 func (params BalancerPoolParams) Validate(poolWeights []types.PoolAsset) error {
 	if params.ExitFee.IsNegative() {
-		return osmosis_gamm_types.ErrNegativeExitFee
+		return types.ErrNegativeExitFee
 	}
 
 	if params.ExitFee.GTE(sdk.OneDec()) {
-		return osmosis_gamm_types.ErrTooMuchExitFee
+		return types.ErrTooMuchExitFee
 	}
 
 	if params.SwapFee.IsNegative() {
-		return osmosis_gamm_types.ErrNegativeSwapFee
+		return types.ErrNegativeSwapFee
 	}
 
 	if params.SwapFee.GTE(sdk.OneDec()) {
-		return osmosis_gamm_types.ErrTooMuchSwapFee
+		return types.ErrTooMuchSwapFee
 	}
 
 	if params.SmoothWeightChangeParams != nil {
 		targetWeights := params.SmoothWeightChangeParams.TargetPoolWeights
 		// Ensure it has the right number of weights
 		if len(targetWeights) != len(poolWeights) {
-			return osmosis_gamm_types.ErrPoolParamsInvalidNumDenoms
+			return types.ErrPoolParamsInvalidNumDenoms
 		}
 		// Validate all user specified weights
 		for _, v := range targetWeights {
-			err := osmosis_gamm_types.ValidateUserSpecifiedWeight(v.Weight)
-			if err != nil {
-				return err
+			if !v.Weight.IsPositive() {
+				return sdkerrors.Wrap(types.ErrNotPositiveWeight, v.Weight.String())
 			}
 		}
 		// Ensure that all the target weight denoms are same as pool asset weights
@@ -65,7 +65,7 @@ func (params BalancerPoolParams) Validate(poolWeights []types.PoolAsset) error {
 		sortedPoolWeights := types.SortPoolAssetsOutOfPlaceByDenom(poolWeights)
 		for i, v := range sortedPoolWeights {
 			if sortedTargetPoolWeights[i].Token.Denom != v.Token.Denom {
-				return osmosis_gamm_types.ErrPoolParamsInvalidDenom
+				return types.ErrPoolParamsInvalidDenom
 			}
 		}
 
@@ -80,5 +80,46 @@ func (params BalancerPoolParams) Validate(poolWeights []types.PoolAsset) error {
 		}
 	}
 
+	return nil
+}
+
+func ValidateFutureGovernor(governor string) error {
+	// allow empty governor
+	if governor == "" {
+		return nil
+	}
+
+	// validation for future owner
+	// "osmo1fqlr98d45v5ysqgp6h56kpujcj4cvsjnjq9nck"
+	_, err := sdk.AccAddressFromBech32(governor)
+	if err == nil {
+		return nil
+	}
+
+	lockTimeStr := ""
+	splits := strings.Split(governor, ",")
+	if len(splits) > 2 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, fmt.Sprintf("invalid future governor: %s", governor))
+	}
+
+	// token,100h
+	if len(splits) == 2 {
+		lpTokenStr := splits[0]
+		if sdk.ValidateDenom(lpTokenStr) != nil {
+			return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, fmt.Sprintf("invalid future governor: %s", governor))
+		}
+		lockTimeStr = splits[1]
+	}
+
+	// 100h
+	if len(splits) == 1 {
+		lockTimeStr = splits[0]
+	}
+
+	// Note that a duration of 0 is allowed
+	_, err = time.ParseDuration(lockTimeStr)
+	if err != nil {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, fmt.Sprintf("invalid future governor: %s", governor))
+	}
 	return nil
 }
