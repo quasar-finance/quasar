@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	osmosis_gamm_types "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"gopkg.in/yaml.v2"
 )
 
@@ -32,7 +31,7 @@ type poolAssetPretty struct {
 
 func (asset PoolAsset) prettify() poolAssetPretty {
 	return poolAssetPretty{
-		Weight: sdk.NewDecFromInt(asset.Weight).QuoInt64(osmosis_gamm_types.GuaranteedWeightPrecision),
+		Weight: sdk.NewDecFromInt(asset.Weight).QuoInt64(GuaranteedWeightPrecision),
 		Token:  asset.Token,
 	}
 }
@@ -78,7 +77,7 @@ func SortPoolAssetsByDenom(assets []PoolAsset) {
 
 func ValidateWeight(weight sdk.Int) error {
 	if !weight.IsPositive() {
-		return sdkerrors.Wrap(osmosis_gamm_types.ErrNotPositiveWeight, weight.String())
+		return sdkerrors.Wrap(ErrNotPositiveWeight, weight.String())
 	}
 	return nil
 }
@@ -86,12 +85,12 @@ func ValidateWeight(weight sdk.Int) error {
 func ValidatePoolAssets(assets []PoolAsset) error {
 	// The pool must be swapping between at least two assets
 	if len(assets) < 2 {
-		return osmosis_gamm_types.ErrTooFewPoolAssets
+		return ErrTooFewPoolAssets
 	}
 
 	// TODO: Add the limit of binding token to the pool params?
 	if len(assets) > 8 {
-		return sdkerrors.Wrapf(osmosis_gamm_types.ErrTooManyPoolAssets, "%d", len(assets))
+		return sdkerrors.Wrapf(ErrTooManyPoolAssets, "%d", len(assets))
 	}
 
 	for _, asset := range assets {
