@@ -2137,10 +2137,22 @@ paths:
                     metrics:
                       type: object
                       properties:
-                        aPY:
+                        highestAPY:
                           type: string
                         tVL:
                           type: string
+                        gaugeAPYs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              gaugeId:
+                                type: string
+                                format: uint64
+                              duration:
+                                type: string
+                              aPY:
+                                type: string
                     lastUpdatedTime:
                       type: string
                       format: uint64
@@ -2435,10 +2447,22 @@ paths:
                   metrics:
                     type: object
                     properties:
-                      aPY:
+                      highestAPY:
                         type: string
                       tVL:
                         type: string
+                      gaugeAPYs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            gaugeId:
+                              type: string
+                              format: uint64
+                            duration:
+                              type: string
+                            aPY:
+                              type: string
                   lastUpdatedTime:
                     type: string
                     format: uint64
@@ -17302,6 +17326,16 @@ definitions:
       totalWeight:
         type: string
         title: sum of all non-normalized pool weights
+  abag.quasarnode.qoracle.GaugeAPY:
+    type: object
+    properties:
+      gaugeId:
+        type: string
+        format: uint64
+      duration:
+        type: string
+      aPY:
+        type: string
   abag.quasarnode.qoracle.MsgCreatePoolInfoResponse:
     type: object
   abag.quasarnode.qoracle.MsgCreatePoolPositionResponse:
@@ -17556,10 +17590,22 @@ definitions:
   abag.quasarnode.qoracle.PoolMetrics:
     type: object
     properties:
-      aPY:
+      highestAPY:
         type: string
       tVL:
         type: string
+      gaugeAPYs:
+        type: array
+        items:
+          type: object
+          properties:
+            gaugeId:
+              type: string
+              format: uint64
+            duration:
+              type: string
+            aPY:
+              type: string
   abag.quasarnode.qoracle.PoolPosition:
     type: object
     properties:
@@ -17568,10 +17614,22 @@ definitions:
       metrics:
         type: object
         properties:
-          aPY:
+          highestAPY:
             type: string
           tVL:
             type: string
+          gaugeAPYs:
+            type: array
+            items:
+              type: object
+              properties:
+                gaugeId:
+                  type: string
+                  format: uint64
+                duration:
+                  type: string
+                aPY:
+                  type: string
       lastUpdatedTime:
         type: string
         format: uint64
@@ -17882,10 +17940,22 @@ definitions:
             metrics:
               type: object
               properties:
-                aPY:
+                highestAPY:
                   type: string
                 tVL:
                   type: string
+                gaugeAPYs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      gaugeId:
+                        type: string
+                        format: uint64
+                      duration:
+                        type: string
+                      aPY:
+                        type: string
             lastUpdatedTime:
               type: string
               format: uint64
@@ -18205,10 +18275,22 @@ definitions:
           metrics:
             type: object
             properties:
-              aPY:
+              highestAPY:
                 type: string
               tVL:
                 type: string
+              gaugeAPYs:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    gaugeId:
+                      type: string
+                      format: uint64
+                    duration:
+                      type: string
+                    aPY:
+                      type: string
           lastUpdatedTime:
             type: string
             format: uint64

@@ -2,9 +2,11 @@ syntax = "proto3";
 package abag.quasarnode.qoracle;
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+import "qoracle/gauge_apy.proto"; 
 
 message PoolMetrics {
   
-  string aPY = 1; 
+  string highestAPY = 1; 
   string tVL = 2; 
+  repeated GaugeAPY gaugeAPYs = 3;
 }
