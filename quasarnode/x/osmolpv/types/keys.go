@@ -79,10 +79,12 @@ var (
 	EpochLPUserKBP           = []byte{0x08}
 	LPUserInfoKBP            = []byte{0x09}
 	LPEpochKBP               = []byte{0x10}
-	LPEpochInfoKBP           = []byte{0x11}
+	EpochLPInfoKBP           = []byte{0x11}
 	EpochDayInfoKBP          = []byte{0x12}
 	LPCountKBP               = []byte{0x13}
 	LPStatKBP                = []byte{0x14}
+	LPEpochDenomKBP          = []byte{0x15}
+	DayMapKBP                = []byte{0x16}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -134,6 +136,15 @@ func CreateOrionRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	b.WriteString(ModuleName)
 	b.WriteString(".reward.")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	return b.String()
+}
+
+// CreateOrionRewardGloablMaccName will create account name string for the global reward collector.
+// return "Orion.reward.global"
+func CreateOrionRewardGloablMaccName() string {
+	var b bytes.Buffer
+	b.WriteString(ModuleName)
+	b.WriteString(".reward.global")
 	return b.String()
 }
 
@@ -299,6 +310,34 @@ func CreateLPEpochKey(epochday uint64, lpID uint64) []byte {
 	b.WriteString(Sep)
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
+	return b.Bytes()
+}
+
+// CreateEpochDenomKey create key for fetching the epoch and denom pairs.
+// Ex. Prefixed Key = = {LPEpochDenomKBP} +   {epochday} + {":"} + {denom}
+func CreateEpochDenomKey(epochday uint64, denom string) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(Sep)
+	b.WriteString(denom)
+	return b.Bytes()
+}
+
+// CreateDayMappingKey create the mapping key for expected reward day, actual deposit day and lockup
+// Ex. Prefixed Key = = {DayMapKBP} +   {rewardday} + {":"} + {depositday} + {":"} + {lockupPeriod}
+func CreateDayMappingKey(rewardday uint64,
+	depositday uint64, lockupPeriod qbanktypes.LockupTypes) []byte {
+
+	var b bytes.Buffer
+	strRewardDay := strconv.FormatUint(rewardday, 10)
+	b.WriteString(strRewardDay)
+	b.WriteString(Sep)
+	strDepositDay := strconv.FormatUint(depositday, 10)
+	b.WriteString(strDepositDay)
+	b.WriteString(Sep)
+	lockupPeriodStr := qbanktypes.LockupTypes_name[int32(lockupPeriod)]
+	b.WriteString(lockupPeriodStr)
 	return b.Bytes()
 }
 

@@ -39,4 +39,22 @@ func (k Keeper) SendCoinFromModuleToReward(ctx sdk.Context, senderModule string,
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, accName, sdk.NewCoins(amt))
 }
 
+// SendCoinFromAccountToGlobalReward transfer balance from account to lockup reward account
+func (k Keeper) SendCoinFromAccountToGlobalReward(ctx sdk.Context, senderAddr sdk.AccAddress, amt sdk.Coin) error {
+	accName := types.CreateOrionRewardGloablMaccName()
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, accName, sdk.NewCoins(amt))
+}
+
+// SendCoinFromModuleToGlobalReward transfer balance from module to lockup reward account
+func (k Keeper) SendCoinFromModuleToGlobalReward(ctx sdk.Context, senderModule string, amt sdk.Coin) error {
+	accName := types.CreateOrionRewardGloablMaccName()
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, accName, sdk.NewCoins(amt))
+}
+
+// SendCoinFromGlobalRewardToAccount transfer balance from account to lockup reward account
+func (k Keeper) SendCoinFromGlobalRewardToAccount(ctx sdk.Context, userAcc sdk.AccAddress, amt sdk.Coins) error {
+	accName := types.CreateOrionRewardGloablMaccName()
+	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAcc, amt)
+}
+
 // Total reward collected on an epoch day.

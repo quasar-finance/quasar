@@ -13,7 +13,7 @@ func (k Keeper) GetReserveAccAddress() sdk.AccAddress {
 
 // GetAllReserveBalances retrieve the balance of osmoLPV vault reserve as a slice of
 // sdk.Coin as sdk.Coins
-func (k Keeper) GetAllReserveBalances(ctx sdk.Context, denom string) sdk.Coins {
+func (k Keeper) GetAllReserveBalances(ctx sdk.Context) sdk.Coins {
 	balances := k.bankKeeper.GetAllBalances(ctx, k.GetReserveAccAddress())
 	return balances
 }

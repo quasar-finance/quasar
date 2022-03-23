@@ -3,6 +3,7 @@ import { Registry, OfflineSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
 import { MsgRequestWithdrawAll } from "./types/qbank/tx";
 import { MsgRequestDeposit } from "./types/qbank/tx";
+import { MsgRequestWithdrawAll } from "./types/qbank/tx";
 import { MsgRequestWithdraw } from "./types/qbank/tx";
 import { MsgClaimRewards } from "./types/qbank/tx";
 export declare const MissingWalletError: Error;
@@ -18,6 +19,7 @@ declare const txClient: (wallet: OfflineSigner, { addr: addr }?: TxClientOptions
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }?: SignAndBroadcastOptions) => any;
     msgRequestWithdrawAll: (data: MsgRequestWithdrawAll) => EncodeObject;
     msgRequestDeposit: (data: MsgRequestDeposit) => EncodeObject;
+    msgRequestWithdrawAll: (data: MsgRequestWithdrawAll) => EncodeObject;
     msgRequestWithdraw: (data: MsgRequestWithdraw) => EncodeObject;
     msgClaimRewards: (data: MsgClaimRewards) => EncodeObject;
 }>;

@@ -12,23 +12,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-/*
-	LpID                   uint64           `protobuf:"varint,1,opt,name=lpID,proto3" json:"lpID,omitempty"`
-	LockID                 uint64           `protobuf:"varint,2,opt,name=lockID,proto3" json:"lockID,omitempty"`
-	IsActive               bool             `protobuf:"varint,3,opt,name=isActive,proto3" json:"isActive,omitempty"`
-	StartTime              time.Time        `protobuf:"bytes,4,opt,name=startTime,proto3,stdtime" json:"startTime" yaml:"startTime"`
-	BondingStartEpochDay   uint64           `protobuf:"varint,5,opt,name=bondingStartEpochDay,proto3" json:"bondingStartEpochDay,omitempty"`
-	BondDuration           uint64           `protobuf:"varint,6,opt,name=bondDuration,proto3" json:"bondDuration,omitempty"`
-	UnbondingStartEpochDay uint64           `protobuf:"varint,7,opt,name=unbondingStartEpochDay,proto3" json:"unbondingStartEpochDay,omitempty"`
-	UnbondingDuration      uint64           `protobuf:"varint,8,opt,name=unbondingDuration,proto3" json:"unbondingDuration,omitempty"`
-	PoolID                 uint64           `protobuf:"varint,9,opt,name=poolID,proto3" json:"poolID,omitempty"`
-	Lptoken                *types.Coin      `protobuf:"bytes,10,opt,name=lptoken,proto3" json:"lptoken,omitempty"`
-	Coins                  []types.Coin     `protobuf:"bytes,11,rep,name=coins,proto3" json:"coins"`
-	Gaugelocks
-*/
-
 // Zero Value of LpID, lockid means invalid values.
-// Write proper unit tests.
+// TODO - Write proper unit tests.
 func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
 	unbondingDuration, poolID uint64, lpToken sdk.Coin, coins sdk.Coins) types.LpPosition {
 	lp := types.LpPosition{LpID: 0,
@@ -47,6 +32,7 @@ func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
 }
 
 // GetDepositCount get the total number of deposit
+// Note - This could be a reduntant method.
 func (k Keeper) GetLPCount(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPCountKBP)
 	byteKey := types.CreateLPCountKey()
@@ -82,7 +68,7 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 
 	lps.LpCount = lpPosition.LpID
 	var tmp sdk.Coins
-	tmp = lps.TotalLPCoins
+	tmp = lps.TotalLPCoins // TODO - AUDIT slice usage
 	for _, coin := range lpPosition.Coins {
 		tmp = tmp.Add(coin)
 	}
@@ -94,7 +80,7 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 // SetLpPosition set lpPosition created by the strategy in a given epochday in the
 // prefixed kv store with key formed using epoch day and lpID.
 // key = types.LPPositionKBP + {epochday} + {":"} + {lpID}
-// Value = types.LpPosition)
+// Value = types.LpPosition
 func (k Keeper) setLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
 	key := types.EpochLPIDKey(lpPosition.BondingStartEpochDay, lpPosition.LpID)
@@ -107,6 +93,14 @@ func (k Keeper) setLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 func (k Keeper) setLpEpochPosition(ctx sdk.Context, lpID uint64, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochKBP)
 	key := types.CreateLPEpochKey(lpID, epochday)
+	store.Set(key, []byte{0x00})
+}
+
+// SetLpEpochPosition set is used to store reverse mapping lpID and epochday as part of key.
+// key = types.LPEpochKBP + {lpID} + {":"} + {epochDay}
+func (k Keeper) SetEpochDenom(ctx sdk.Context, epochday uint64, denom string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochDenomKBP)
+	key := types.CreateEpochDenomKey(epochday, denom)
 	store.Set(key, []byte{0x00})
 }
 
@@ -169,6 +163,27 @@ func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 		lpIDs = append(lpIDs, lpID)
 	}
 	return lpIDs
+}
+
+func (k Keeper) GetDenomList(ctx sdk.Context, epochday uint64) []string {
+	var denoms []string
+	bytePrefix := types.LPEpochDenomKBP
+	prefixKey := types.EpochDayKey(epochday)
+	prefixKey = append(bytePrefix, prefixKey...)
+	prefixKey = append(prefixKey, qbanktypes.SepByte...)
+
+	// prefixKey = types.LPEpochDenomKBP + {epochday} + {":"}
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	// Key = denom
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		denom := string(key)
+		denoms = append(denoms, denom)
+	}
+	return denoms
 }
 
 // TODO | AUDIT
@@ -294,7 +309,7 @@ func (k Keeper) GetCurrentActiveGauge(ctx sdk.Context, epochday uint64, lpID uin
 	return activeG
 }
 
-// GetEpochLPDenomAmt returns the total amount of a particular denom used
+// GetEpochLPDenomAmt returns the total amount of a particular denom used for lping on given epochday.
 func (k Keeper) GetEpochLPDenomAmt(ctx sdk.Context, epochday uint64, denom string) (sdk.Int, error) {
 	lps, _ := k.GetLpStat(ctx, epochday)
 	var tmp sdk.Coins = lps.TotalLPCoins
@@ -304,4 +319,88 @@ func (k Keeper) GetEpochLPDenomAmt(ctx sdk.Context, epochday uint64, denom strin
 	}
 	amt := tmp.AmountOf(denom)
 	return amt, nil
+}
+
+// What is the denom weight contribution on a given epoch day?
+// This will be used to calculate the users denom contribution which will be further used
+// to calculate the users reward contribution for this denom
+// GetEpochDenomWeight calculates the denom contribution to LPing on a given day.
+// Logic -
+// 1. Calculate Each denoms amount.
+// 2. Get the total equivalent osmos or usdt for each denom.
+// 3. Get total LP equivalent osmo/usdt/orions/share
+// 4. Calculate denom weight based on its equivalent osmo/usdt/orions/share
+func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.EpochDenomWeight {
+
+	var edws []types.EpochDenomWeight
+	lps, _ := k.GetLpStat(ctx, epochday)
+	var totalOrionAmt sdk.Int
+	denomOrionMap := make(map[string]sdk.Coin)
+	for _, coin := range lps.TotalLPCoins {
+		denomOrions := k.GetOrions(ctx, coin)
+		totalOrionAmt = totalOrionAmt.Add(denomOrions.Amount)
+		denomOrionMap[coin.Denom] = denomOrions
+	}
+
+	for _, coin := range lps.TotalLPCoins {
+		denomOrion := denomOrionMap[coin.Denom]
+		weight := denomOrion.Amount.ToDec().QuoInt(totalOrionAmt)
+		dw := types.EpochDenomWeight{Denom: coin.Denom, Weight: weight}
+		edws = append(edws, dw)
+	}
+	return edws
+}
+
+// TODO | AUDIT
+// Convert sdk.coin into orions equivalent. Calculations is based on the equivalent osmo.
+// Logic -
+// 1. Get the Spot price from the qoacle for <denom, osmo>
+// 2. input denom amount into orions (equivalent osmo amount)
+func (k Keeper) GetOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
+	return sdk.Coin{}
+}
+
+// Store Expected Reward details, Original deposit epoch and lockup.
+// This is used to iterate and create tuple of reward day, deposit day and lockup period.
+// To further calculate the denom weights and users weights.
+func (k Keeper) SetDayMapping(ctx sdk.Context, rewardDay uint64,
+	depositDay uint64, lockupPeriod qbanktypes.LockupTypes) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DayMapKBP)
+	key := types.CreateDayMappingKey(rewardDay, depositDay, lockupPeriod)
+	store.Set(key, []byte{0x00})
+}
+
+// Get the list of deposit day and lockup period for further processing.
+// This method should be called every EOD with today epochday = rewardday.
+func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.DepositDayLockupPair {
+
+	bytePrefix := types.DayMapKBP
+	prefixKey := types.EpochDayKey(rewardDay)
+	prefixKey = append(bytePrefix, prefixKey...)
+	prefixKey = append(prefixKey, qbanktypes.SepByte...)
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	var dls []types.DepositDayLockupPair
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetDepositDayInfos|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+
+	// key = {depositday} + {":"} + {lockupPeriod}
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		bsplits := qbanktypes.SplitKeyBytes(key)
+		depositdayStr := string(bsplits[0])
+		depositday, _ := strconv.ParseUint(depositdayStr, 10, 64)
+		lockupPeriod := qbanktypes.LockupTypes_value[string(bsplits[1])]
+		dl := types.DepositDayLockupPair{
+			Epochday:     depositday,
+			LockupPeriod: qbanktypes.LockupTypes(lockupPeriod)}
+		dls = append(dls, dl)
+
+	}
+
+	return dls
 }
