@@ -190,6 +190,7 @@ var (
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
 		osmolpvmoduletypes.CreateMeissaMaccName():                                            nil,
+		osmolpvmoduletypes.CreateOrionRewardGloablMaccName():                                 nil,
 
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}

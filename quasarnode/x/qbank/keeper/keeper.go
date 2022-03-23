@@ -55,6 +55,9 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k Keeper) GetCdc() codec.BinaryCodec {
 	return k.cdc
 }
+func (k Keeper) GetStoreKey() sdk.StoreKey {
+	return k.storeKey
+}
 
 func (k Keeper) Iterator2(ctx sdk.Context) error {
 	return nil

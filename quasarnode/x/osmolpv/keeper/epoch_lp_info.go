@@ -9,7 +9,7 @@ import (
 // SetEpochLPInfo set epochLPInfo in the store.
 // Caller should provide the updated value of epochLPInfo object.
 func (k Keeper) SetEpochLPInfo(ctx sdk.Context, epochLPInfo types.EpochLPInfo) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochInfoKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPInfoKBP)
 	key := types.EpochDayKey(epochLPInfo.EpochDay)
 	b := k.cdc.MustMarshal(&epochLPInfo)
 	store.Set(key, b)
@@ -17,7 +17,7 @@ func (k Keeper) SetEpochLPInfo(ctx sdk.Context, epochLPInfo types.EpochLPInfo) {
 
 // GetEpochLPInfo returns epochLPInfo
 func (k Keeper) GetEpochLPInfo(ctx sdk.Context, epochDay uint64) (val types.EpochLPInfo, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochInfoKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPInfoKBP)
 	key := types.EpochDayKey(epochDay)
 	b := store.Get(key)
 	if b == nil {
@@ -29,7 +29,7 @@ func (k Keeper) GetEpochLPInfo(ctx sdk.Context, epochDay uint64) (val types.Epoc
 
 // RemoveEpochLPInfo removes epochLPInfo from the store
 func (k Keeper) RemoveEpochLPInfo(ctx sdk.Context, epochDay uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochInfoKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPInfoKBP)
 	key := types.EpochDayKey(epochDay)
 	store.Delete(key)
 }
