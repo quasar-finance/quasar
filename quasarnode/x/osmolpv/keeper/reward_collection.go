@@ -8,7 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetRewardCollection set rewardCollection in the store on a given epoch day
+// SetRewardCollection set rewardCollection from osmosis in the store on a given epoch day.
+// This method should be called on the end blocker. Orion module should initiate reward collection
+// at the end blocker via intergamm module
 // TODO | AUDIT - Make sure the internal coin slice is sorted properly
 func (k Keeper) SetRewardCollection(ctx sdk.Context, epochday uint64, rewardCollection types.RewardCollection) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
@@ -19,7 +21,7 @@ func (k Keeper) SetRewardCollection(ctx sdk.Context, epochday uint64, rewardColl
 
 // GetRewardCollection returns rewardCollection on a given epoch day.
 // Assuming that the reward is collected every day successful.
-// TODO - Edge case If reward can not be collected due to network issue, relayer issue or chain halts etc.
+// TODO | AUDIT - Edge case If reward can not be collected due to network issue, relayer issue or chain halts etc.
 func (k Keeper) GetRewardCollection(ctx sdk.Context, epochday uint64) (val types.RewardCollection, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochday)
@@ -59,11 +61,13 @@ func (k Keeper) LPPositionReward(ctx sdk.Context, epochday uint64, lpID uint64) 
 				result = append(result, coin)
 			}
 		}
+	} else {
+		return result, fmt.Errorf("reward not found for collection epoch day %v", expectedRewardCollectionDay)
 	}
 	return result, nil
 }
 
-// Note : This method may be redundant
+// AUDIT NOTE : This method may be redundant
 // CalculateEpochLPUsersReward calculate a users reward for a givep lp position in the given epoch day.
 // lpReward is the reward collected for an lp position.
 // lpshare is the share contribution to the lp position by a user.
@@ -78,7 +82,9 @@ func (k Keeper) CalculateLPUsersReward(ctx sdk.Context, lpReward sdk.Coins, lpsh
 	return userReward
 }
 
-// LPExpectedReward calculate per day expected reward based on current values of gauge and apy
+// LPExpectedReward calculate per day (todays) expected reward based on current values of gauge and apy.
+// Valid for the active LP position. This will be usefull for loss analytics from the expected reward.
+// TODO - AUDIT | An extended
 func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 	var reward sdk.Coins
 	epochday, efound := k.GetLPEpochDay(ctx, lpID)
@@ -90,7 +96,7 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 		if lpfound {
 			reward = lp.Coins // initialize
 			for i, coin := range lp.Coins {
-				// Expected reward will be based on the current apy of the active gauge of the position.
+				// Todays. expected reward will be based on the current apy of the active gauge of the position.
 				// But, it should not be confused with the real rewards which will be provided in osmo by osmosis.
 				reward[i].Amount = coin.Amount.ToDec().Mul(RewardMuliplier).TruncateInt()
 			}
@@ -168,7 +174,7 @@ func (k Keeper) DistributeRewards(ctx sdk.Context, epochday uint64) error {
 	return nil
 }
 
-// Brainstorming  -
+// Brainstorming Notes -
 // What is the reward collection day for a given LP position ?
 // Expected Day =>  LP Day + lockup period + 2 = LP Day + bond duration + unbond duration + 2
 // Day 1 - LP collection in Quasar.

@@ -12,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// NewLP create a new LPPosition object with input arguments.
 // Zero Value of LpID, lockid means invalid values.
 // TODO - Write proper unit tests.
 func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
@@ -32,7 +33,7 @@ func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
 }
 
 // GetDepositCount get the total number of deposit
-// Note - This could be a reduntant method.
+// AUDIT NOTE - This could be a reduntant method due to SetLpStat method.
 func (k Keeper) GetLPCount(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPCountKBP)
 	byteKey := types.CreateLPCountKey()
@@ -49,7 +50,7 @@ func (k Keeper) GetLPCount(ctx sdk.Context) uint64 {
 }
 
 // SetDepositCount set the total number of deposit
-// Note - This could be a reduntant method.
+//  AUDIT NOTE - This could be a reduntant method due to GetLpStat method.
 func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPCountKBP)
 	bz := make([]byte, 8)
@@ -74,6 +75,10 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	}
 	lps.TotalLPCoins = tmp
 	k.SetLpStat(ctx, lpPosition.BondingStartEpochDay, lps)
+
+	for _, coin := range lpPosition.Coins {
+		k.SetEpochDenom(ctx, lpPosition.BondingStartEpochDay, coin.Denom)
+	}
 	// k.setLPCount(ctx, count)
 }
 
@@ -96,8 +101,8 @@ func (k Keeper) setLpEpochPosition(ctx sdk.Context, lpID uint64, epochday uint64
 	store.Set(key, []byte{0x00})
 }
 
-// SetLpEpochPosition set is used to store reverse mapping lpID and epochday as part of key.
-// key = types.LPEpochKBP + {lpID} + {":"} + {epochDay}
+// SetEpochDenom set is used to store  mapping epochday and denom as part of key.
+// key = types.LPEpochDenomKBP + {epochday} + {":"} + {denom}
 func (k Keeper) SetEpochDenom(ctx sdk.Context, epochday uint64, denom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochDenomKBP)
 	key := types.CreateEpochDenomKey(epochday, denom)
@@ -109,7 +114,9 @@ func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, fo
 	bytePrefix := types.LPEpochKBP
 	prefixKey := types.CreateLPIDKey(lpID)
 	prefixKey = append(bytePrefix, prefixKey...)
+	prefixKey = append(prefixKey, qbanktypes.SepByte...)
 
+	// prefixKey => types.LPEpochKBP + {lpID} + {":"}
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
@@ -165,6 +172,7 @@ func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 	return lpIDs
 }
 
+// GetDenomList fetch the list of denom used in an epoch day.
 func (k Keeper) GetDenomList(ctx sdk.Context, epochday uint64) []string {
 	var denoms []string
 	bytePrefix := types.LPEpochDenomKBP
@@ -295,18 +303,26 @@ func (k Keeper) GetEpochLPUserCoin(ctx sdk.Context, epochday uint64, lpID uint64
 	return result, totalCoins
 }
 
-// TODO | AUDIT
+// TODO | AUDIT | Correctness
 // GetCurrentActiveGauge fetch the currently active gauge of an LP position in the live chain
 func (k Keeper) GetCurrentActiveGauge(ctx sdk.Context, epochday uint64, lpID uint64) types.GaugeLockInfo {
 	var activeG types.GaugeLockInfo
 	lp, _ := k.GetLpPosition(ctx, epochday, lpID)
-	e, _ := k.GetEpochDayInfo(ctx, epochday)
+	currEpochday := k.GetCurrentEpochDay(ctx)
+	e, _ := k.GetEpochDayInfo(ctx, currEpochday)
 	for _, g := range lp.Gaugelocks {
-		if e.BlockTime.After(g.StartTime) && g.StartTime.Add(g.LockupDuration).After(e.BlockTime) {
+		if e.StartBlockTime.After(g.StartTime) && g.StartTime.Add(g.LockupDuration).After(e.EndBlockTime) {
 			activeG = *g
 		}
 	}
 	return activeG
+}
+
+// GetCurrentEpochDay is supposed to given current epochday
+func (k Keeper) GetCurrentEpochDay(ctx sdk.Context) uint64 {
+	// TO DO - Use the upcoming epoch module
+	epochday := uint64(ctx.BlockHeader().Height)
+	return epochday
 }
 
 // GetEpochLPDenomAmt returns the total amount of a particular denom used for lping on given epochday.

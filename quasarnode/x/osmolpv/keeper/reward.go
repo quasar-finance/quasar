@@ -45,6 +45,8 @@ func (k Keeper) SendCoinFromAccountToGlobalReward(ctx sdk.Context, senderAddr sd
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, accName, sdk.NewCoins(amt))
 }
 
+// AUDIT NOTE - As of now global reward module account is used for the account.
+// And below two methods will be used in the module.
 // SendCoinFromModuleToGlobalReward transfer balance from module to lockup reward account
 func (k Keeper) SendCoinFromModuleToGlobalReward(ctx sdk.Context, senderModule string, amt sdk.Coin) error {
 	accName := types.CreateOrionRewardGloablMaccName()
@@ -56,5 +58,3 @@ func (k Keeper) SendCoinFromGlobalRewardToAccount(ctx sdk.Context, userAcc sdk.A
 	accName := types.CreateOrionRewardGloablMaccName()
 	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAcc, amt)
 }
-
-// Total reward collected on an epoch day.

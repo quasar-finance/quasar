@@ -36,7 +36,7 @@ func (k Keeper) GetStakingBalance(ctx sdk.Context, lockupPeriod qbanktypes.Locku
 	return balance
 }
 
-// SendCoinFromAccountToStaking transefer balance from user account to vault lockup staking account
+// SendCoinFromAccountToStaking transfer balance from user account to vault lockup staking account
 func (k Keeper) SendCoinFromAccountToStaking(ctx sdk.Context, senderAddr sdk.AccAddress, amt sdk.Coin, lockupPeriod qbanktypes.LockupTypes) error {
 	accName := types.CreateOrionStakingMaccName(lockupPeriod)
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, accName, sdk.NewCoins(amt))

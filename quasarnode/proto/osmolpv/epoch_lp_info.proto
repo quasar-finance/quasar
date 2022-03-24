@@ -6,7 +6,7 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto"; 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
-// EpochLPInfo contains information about an LP position created at an epoch
+// EpochLPInfo contains information about LP positions created at an epoch
 message EpochLPInfo {
   uint64 epochDay = 1; 
   uint64 totalLps = 2; 
@@ -14,11 +14,20 @@ message EpochLPInfo {
   
 }
 
-// EpochDayInfo contains generic info about an epoch day 
+// EpochDayInfo contains generic info about an epoch day. 
+// AUDIT NOTE - As of now it is not used, And not sure how it will be used. 
+// A possible use case is to verify and adjust the positions in case of network failures.
+// We can add more application specific information in this struct.
 message EpochDayInfo {
   uint64 epochDay = 1;
-  uint64 blockheight = 2;
-  google.protobuf.Timestamp blockTime = 3 [
+  uint64 startBlockheight = 2;
+  uint64 endBlockheight = 3;
+  google.protobuf.Timestamp startBlockTime = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"blockTime\""
+  ];
+  google.protobuf.Timestamp endBlockTime = 5 [
     (gogoproto.stdtime) = true,
     (gogoproto.nullable) = false,
     (gogoproto.moretags) = "yaml:\"blockTime\""

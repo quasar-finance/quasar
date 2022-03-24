@@ -7,7 +7,9 @@ import (
 )
 
 // SetEpochLPInfo set epochLPInfo in the store.
-// Caller should provide the updated value of epochLPInfo object.
+// Caller should provide the updated value of epochLPInfo object. Also make sure to use
+// Latest/Current market value of the orions as lp tokens.
+// AUDIT TODO - To be called from strategy
 func (k Keeper) SetEpochLPInfo(ctx sdk.Context, epochLPInfo types.EpochLPInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPInfoKBP)
 	key := types.EpochDayKey(epochLPInfo.EpochDay)
@@ -15,7 +17,8 @@ func (k Keeper) SetEpochLPInfo(ctx sdk.Context, epochLPInfo types.EpochLPInfo) {
 	store.Set(key, b)
 }
 
-// GetEpochLPInfo returns epochLPInfo
+// GetEpochLPInfo returns epochLPInfo.
+// Caller need to use this for the purpose of calculating equivalent orion receipts used in a given epochday.
 func (k Keeper) GetEpochLPInfo(ctx sdk.Context, epochDay uint64) (val types.EpochLPInfo, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPInfoKBP)
 	key := types.EpochDayKey(epochDay)

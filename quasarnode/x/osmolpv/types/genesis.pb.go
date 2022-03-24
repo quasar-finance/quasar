@@ -24,6 +24,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState defines the osmolpv module's genesis state.
+// AUDIT NOTE - GenesisState definition is not defined yet.
+// TODO - It will be defined properly in the near future before the month of April 2022.
 type GenesisState struct {
 	Params           Params            `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	FeeData          *FeeData          `protobuf:"bytes,2,opt,name=feeData,proto3" json:"feeData,omitempty"`

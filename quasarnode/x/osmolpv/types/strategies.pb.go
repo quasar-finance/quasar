@@ -29,7 +29,8 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Strategies defines the list of strategy names
+// Strategies defines the list of strategy names. This to be used for both
+// base strategy and sub strategy names.
 type Strategies struct {
 	Names []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
 }
@@ -145,6 +146,8 @@ func (m *StrategyInfo) GetRewardAcc() string {
 
 // MeissaStrategyInfo defines the meissa strategy specific data. This will represent
 // Each indivisual instance of the meissa strategy
+// AUDIT NOTE - MeissaStrategyInfo is probably substituted by LpPosition struct.
+// so Probably a redundant because of the addition of LpPosition.
 type MeissaStrategyInfo struct {
 	Base       *StrategyInfo     `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
 	LockupType types.LockupTypes `protobuf:"varint,2,opt,name=lockupType,proto3,enum=abag.quasarnode.qbank.LockupTypes" json:"lockupType,omitempty"`
@@ -213,6 +216,7 @@ func (m *MeissaStrategyInfo) GetDuration() time.Duration {
 	return 0
 }
 
+// CurrentPosition keeps track of the current total position of the strategy.
 type CurrentPosition struct {
 	TotalDeployedTokens  *types.QCoins `protobuf:"bytes,1,opt,name=totalDeployedTokens,proto3" json:"totalDeployedTokens,omitempty"`
 	TotalStakedTokens    *types.QCoins `protobuf:"bytes,2,opt,name=totalStakedTokens,proto3" json:"totalStakedTokens,omitempty"`
@@ -273,6 +277,7 @@ func (m *CurrentPosition) GetTotalUnClaimedReward() *types.QCoins {
 	return nil
 }
 
+// TotalHistPosition keeps track of the total position at a given epoch day.
 type TotalHistPosition struct {
 	TotalDeployedTokens *types.QCoins `protobuf:"bytes,1,opt,name=totalDeployedTokens,proto3" json:"totalDeployedTokens,omitempty"`
 	TotalStakedTokens   *types.QCoins `protobuf:"bytes,2,opt,name=totalStakedTokens,proto3" json:"totalStakedTokens,omitempty"`

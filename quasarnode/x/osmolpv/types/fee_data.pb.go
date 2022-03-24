@@ -24,6 +24,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// AUDIT NOTE - FeeData to be finalised as soon as possible.
+// FeeData is intended to used for fee specific field collection whenver a fee is applied.
 type FeeData struct {
 	FeeCollector string     `protobuf:"bytes,1,opt,name=feeCollector,proto3" json:"feeCollector,omitempty"`
 	FromAddress  string     `protobuf:"bytes,2,opt,name=fromAddress,proto3" json:"fromAddress,omitempty"`
