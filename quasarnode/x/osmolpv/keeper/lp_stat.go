@@ -6,7 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetLpStat set lpStat in the store with given epochday and types.LpStat
+// SetLpStat set lpStat in the store with given epochday and types.LpStat.
+// This allows us to set the total ibc enabled sdk.Coin in an epoch
 func (k Keeper) SetLpStat(ctx sdk.Context, epochday uint64, lpStat types.LpStat) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPStatKBP)
 	byteKey := types.EpochDayKey(epochday)

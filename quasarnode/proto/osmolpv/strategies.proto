@@ -8,7 +8,10 @@ import "qbank/common.proto";
 
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 
-// Strategies defines the list of strategy names
+// AUDIT NOTE - Strategy objects and interfaces need to be defined. After proper testing.
+
+// Strategies defines the list of strategy names. This to be used for both 
+// base strategy and sub strategy names.
 message Strategies {
    repeated string names  = 1  [(gogoproto.nullable) = false];
 }
@@ -23,6 +26,8 @@ message StrategyInfo {
 
 // MeissaStrategyInfo defines the meissa strategy specific data. This will represent 
 // Each indivisual instance of the meissa strategy
+// AUDIT NOTE - MeissaStrategyInfo is probably substituted by LpPosition struct. 
+// so Probably a redundant because of the addition of LpPosition. 
 message MeissaStrategyInfo {
    StrategyInfo base = 1;
    qbank.LockupTypes lockupType = 2;
@@ -40,14 +45,17 @@ message MeissaStrategyInfo {
 
 
 }
+
+// CurrentPosition keeps track of the current total position of the strategy.
 message CurrentPosition {
   qbank.QCoins totalDeployedTokens = 1;
   qbank.QCoins totalStakedTokens = 2;
   qbank.QCoins totalUnClaimedReward = 3;
 }
 
+// TotalHistPosition keeps track of the total position at a given epoch day.
 message TotalHistPosition {
    qbank.QCoins totalDeployedTokens = 1;
    qbank.QCoins totalStakedTokens = 2;
    qbank.QCoins totalClaimedReward = 3;
-  }
+}

@@ -24,6 +24,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// LpStat is used to do the book keeping of Lping activity on a given epochday.
+// Which includes, total number of Lping position and total LP tokens as []sdk.Coin
 type LpStat struct {
 	LpCount      uint64       `protobuf:"varint,1,opt,name=lpCount,proto3" json:"lpCount,omitempty"`
 	TotalLPCoins []types.Coin `protobuf:"bytes,2,rep,name=totalLPCoins,proto3" json:"totalLPCoins"`

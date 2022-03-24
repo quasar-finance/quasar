@@ -103,6 +103,8 @@ func (m *GaugeLockInfo) GetStartTime() time.Time {
 }
 
 // LpPosition is used by the strategy during the the Lping activity.
+// Whenever orion module creates an LP position; an object of LpPosition will be created
+// for book keeping in the KV store.
 type LpPosition struct {
 	LpID                   uint64           `protobuf:"varint,1,opt,name=lpID,proto3" json:"lpID,omitempty"`
 	LockID                 uint64           `protobuf:"varint,2,opt,name=lockID,proto3" json:"lockID,omitempty"`

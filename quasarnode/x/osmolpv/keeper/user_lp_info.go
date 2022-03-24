@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// AUDIT NOTE - This method could be redundant.
 // SetUserLPInfo set userLPInfo in the store
 func (k Keeper) SetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
@@ -17,6 +18,7 @@ func (k Keeper) SetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, use
 	store.Set(key, value)
 }
 
+// AUDIT NOTE - This method could be redundant.
 // GetUserLPInfo returns userLPInfo
 func (k Keeper) GetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string) (val types.UserLPInfo, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
@@ -29,6 +31,7 @@ func (k Keeper) GetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, use
 	return val, true
 }
 
+// AUDIT NOTE - This method could be redundant.
 // RemoveUserLPInfo removes userLPInfo from the store
 func (k Keeper) RemoveUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
@@ -36,6 +39,7 @@ func (k Keeper) RemoveUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, 
 	store.Delete(key)
 }
 
+// AUDIT NOTE - This method could be redundant.
 // AddEpochLPUser add kv store with key = {epochday} + {":"} + {lpID} + {":"} + {userAccount}
 // value = UserLPInfo. This method is to be used for once time only
 func (k Keeper) AddEpochLPUserInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
@@ -46,6 +50,7 @@ func (k Keeper) AddEpochLPUserInfo(ctx sdk.Context, epochday uint64, lpID uint64
 
 }
 
+// AUDIT NOTE - This method could be redundant.
 // Prepare user rewards for the given epoch day.
 // Get the list of users denom deposit done on epochDepositDay for which the lockperiod is ended
 // based on the epochRewardDay ( reward collection day )
@@ -60,6 +65,7 @@ func (k Keeper) PrepareEpochUsersRewards(ctx sdk.Context,
 	return nil
 }
 
+// AUDIT NOTE - This method could be redundant.
 // PrepareEpochUsersWeights prepares users denom weight on a given epoch based on
 // deposited tokens.
 // Return -  []types.EpochUserDenomWeight will be be used to calculate the users rewards
@@ -111,17 +117,20 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 	return udws
 }
 
-// Process for weights for the reward distribution.
-// Note - This method is in connection with GetDepositDayInfos.
+// ProcessDepositDayLockupPair process the list of pairs <deposit epoch day, lockup period>
+// Input param signifies the lockup period used on a given epoch day where users deopisted their funds.
+// Note -
+// 1. This method is in connection with GetDepositDayInfos.
+// 2. In this method, we are iterating over the qbank module KV store.
 // This method should be called after GetDepositDayInfos at each EOD.
-// Return []types.EpochUserDenomWeight is used to calculate the users reward percentage.
+// Return []types.EpochUserDenomWeight is used to calculate the users reward percentage for a given epoch day.
 func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
 	dlpairs []types.DepositDayLockupPair) []types.EpochUserDenomWeight {
 
 	totalDenomAmtMap := make(map[string]sdk.Int) // Key = denom, Value = sdk.Int
 	userCoinsMap := make(map[string]sdk.Coins)   // key = userAcc, Value = sdk.Coins
-
 	var udws []types.EpochUserDenomWeight
+
 	for _, dl := range dlpairs {
 		// Prepare prefix key with epochday and lockup period
 		bytePrefix := qbanktypes.UserDenomDepositKBP

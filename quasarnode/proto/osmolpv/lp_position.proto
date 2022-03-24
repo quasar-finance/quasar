@@ -32,6 +32,8 @@ message GaugeLockInfo {
 }
 
 // LpPosition is used by the strategy during the the Lping activity. 
+// Whenever orion module creates an LP position; an object of LpPosition will be created 
+// for book keeping in the KV store.
 message LpPosition {
   uint64 lpID = 1; 
   uint64 lockID = 2; 

@@ -12,7 +12,8 @@ import (
 // Return error if sufficient withdrawable amount is not yet ready.
 // func (k Keeper) RequestWithdraw(ctx sdk.Context, withdraw qbanktypes.Withdraw) error {
 
-// TODO | AUDIT | This function maybe removed. Orion module should update the withdrable amount based on the
+// AUDIT NOTE | Redundant
+//This function maybe removed. Orion module should update the withdrable amount based on the
 // the strategy performance and exit position.
 func (k Keeper) RequestWithdraw(ctx sdk.Context, depositorAddr string, coin sdk.Coin) error {
 	/*

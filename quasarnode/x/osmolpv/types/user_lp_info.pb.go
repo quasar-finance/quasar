@@ -25,10 +25,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// UserLPInfo is intended to be used for the purpose of users position book keeping.
+// AUDIT NOTE - To be used for the future strategies where end users will be given
+// flexibility to choose specific pools. For now it is redundant.
 type UserLPInfo struct {
 	PositionShare github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=positionShare,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"positionShare"`
-	//uint64 positionShare = 1;
-	Coins []types.Coin `protobuf:"bytes,2,rep,name=coins,proto3" json:"coins"`
+	Coins         []types.Coin                           `protobuf:"bytes,2,rep,name=coins,proto3" json:"coins"`
 }
 
 func (m *UserLPInfo) Reset()         { *m = UserLPInfo{} }

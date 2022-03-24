@@ -14,6 +14,8 @@ import "osmolpv/lp_stat.proto";
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 
 // GenesisState defines the osmolpv module's genesis state.
+// AUDIT NOTE - GenesisState definition is not defined yet. 
+// TODO - It will be defined properly in the near future before the month of April 2022.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   FeeData feeData = 2;
