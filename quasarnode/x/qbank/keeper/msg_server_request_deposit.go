@@ -27,7 +27,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	deposit := types.Deposit{Id: 0, RiskProfile: msg.GetRiskProfile(),
 		VaultID: msg.GetVaultID(), DepositorAccAddress: msg.GetCreator(),
 		Coin: msg.GetCoin(), LockupPeriod: msg.GetLockupPeriod()}
-	k.Keeper.AppendDeposit(ctx, deposit)
+	// k.Keeper.AppendDeposit(ctx, deposit)
 
 	// Transfer amount to vault from depositor
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
@@ -51,10 +51,10 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
 	k.Logger(ctx).Info(fmt.Sprintf("RequestDeposit|AddUserDeposit|%s\n", msg.String()))
 	// TODO - Get Current Epoch day and call below AddUserDenomEpochLockupDeposit
-	k.Keeper.AddUserDenomEpochLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), uint64(ctx.BlockHeight()), deposit.GetLockupPeriod())
+	// k.Keeper.AddUserDenomEpochLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), uint64(ctx.BlockHeight()), deposit.GetLockupPeriod())
 
-	k.Keeper.AddUserDenomLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), deposit.GetLockupPeriod())
-	k.Logger(ctx).Info(fmt.Sprintf("RequestDeposit|AddUserDenomLockupDeposit|%s\n", msg.String()))
+	//k.Keeper.AddUserDenomLockupDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), deposit.GetLockupPeriod())
+	//k.Logger(ctx).Info(fmt.Sprintf("RequestDeposit|AddUserDenomLockupDeposit|%s\n", msg.String()))
 
 	// TODO - consider a blockheight as epochday for now. Integrate epochmodule later.
 	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), uint64(ctx.BlockHeight()), deposit.GetLockupPeriod())
