@@ -15,6 +15,11 @@ Quasar is implemeting strategies to aggregate users deposited fund to optimally 
 2. Current state of the repo ca not be used directly for a live production as there are many parallel moving developments in different branches.
 3. Task management is happening via clickup project mangement internally. So we will not create any github task, till it is in good situation. 
 
+# current active branches -
+quasarnode_integrated_ak
+quasarnode_orion_reward_ak
+add_gauge_apy_type_and_msg
+qusarnode_integrated_ak_ibc3
 To know more about the project, active branches, current developments please connect with quasar development team.
 
 
