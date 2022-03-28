@@ -420,3 +420,94 @@ func (k Keeper) SubUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
 		store.Set(key, value)
 	}
 }
+
+// GetTotalActiveDeposits calculates the current total active deposits.
+// Logic -
+// Iterate over { types.UserDepositKBP } => CreateUserDepositKey }
+// Note -
+// We need to guarantee actual deposit returns to the users irrespective of IL loss.
+func (k Keeper) GetTotalActiveDeposits(ctx sdk.Context, module string) sdk.Coins {
+
+	allCoins := sdk.NewCoins()
+
+	bytePrefix := types.UserDepositKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	// key = userID, value = sdk.Coins
+	for ; iter.Valid(); iter.Next() {
+		_, value := iter.Key(), iter.Value()
+		var qcoins types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoins)
+		for _, c := range qcoins.Coins {
+			allCoins = allCoins.Add(c)
+		}
+	}
+	return allCoins
+}
+
+// GetEpochUserDepositAmount calculates the total deposit amount of the given users on a given day
+// Iterate over all lockup periods, and prepare prefix key
+// as - {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:}
+// On iteration, key - {denom}, value = sdk.Coin. No. of iteration can be upto the number of lockup periods
+func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
+	epochday uint64, userAcc string) sdk.Coins {
+
+	bytePrefix := types.UserDenomDepositKBP
+	var prefixKey []byte
+	for lockupStr, _ := range types.LockupTypes_value {
+		prefixKey = types.CreateEpochLockupUserSepKey(epochday, lockupStr, userAcc, types.Sep)
+	}
+	prefixKey = append(bytePrefix, prefixKey...)
+	prefixKey = append(prefixKey, types.SepByte...)
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetEpochUserDepositAmount|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+
+	var coins sdk.Coins
+	for ; iter.Valid(); iter.Next() {
+		// key = denom string byte, value = sdk.Coin marshled
+		_, value := iter.Key(), iter.Value()
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		coins = coins.Add(coin)
+	}
+	return coins
+}
+
+// GetEpochTotalActiveDeposits calculates the total amount deposited on a given epoch day
+// Logic - Iterate with epoch day as prefix keys
+// Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
+func (k Keeper) GetEpochTotalActiveDeposits(ctx sdk.Context,
+	epochday uint64, moduleName string) sdk.Coins {
+
+	bytePrefix := types.UserDenomDepositKBP
+	prefixKey := types.EpochDaySepKey(epochday, types.Sep)
+	prefixKey = append(bytePrefix, prefixKey...)
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetEpochTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+
+	var coins sdk.Coins
+	for ; iter.Valid(); iter.Next() {
+		// key = {$lockupperiods} + {:} + {userAcc} + {:} + {denom}, value = sdk.Coin marshled
+		_, value := iter.Key(), iter.Value()
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		coins = coins.Add(coin)
+	}
+	return coins
+}

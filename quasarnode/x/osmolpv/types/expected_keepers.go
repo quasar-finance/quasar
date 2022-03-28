@@ -25,6 +25,8 @@ type BankKeeper interface {
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error
+	MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error
+	BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error
 }
 
 // QbankKeeper defines the expected interface needed by Orion module from qbank
@@ -32,6 +34,10 @@ type QbankKeeper interface {
 	GetStoreKey() sdk.StoreKey
 	GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
 		uid, denom string, epochday uint64, lockupPeriod qbanktypes.LockupTypes) (val sdk.Coin, found bool)
+	GetUserDepositAmount(ctx sdk.Context, uid string) (val qbanktypes.QCoins, found bool)
+	GetTotalActiveDeposits(ctx sdk.Context, moduleName string) sdk.Coins
+	GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, moduleName string) sdk.Coins
+	GetEpochUserDepositAmount(ctx sdk.Context, epochday uint64, uid string) sdk.Coins
 }
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module

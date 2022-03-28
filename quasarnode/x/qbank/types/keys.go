@@ -144,7 +144,7 @@ func CreateEpochLockupUserDenomDepositKey(uid, sep, denom string, epochday uint6
 
 // CreateEpochLockupKey create the prefix store key for the epochday lockup wise deposit.
 // This key is used for the prefix key iteration to get the deposits done on a given epochday
-// Ex.  {epochday} + ":" + "lockupString" + "/"
+// Ex.  {epochday} + ":" + "lockupString" + ":"
 func CreateEpochLockupUserKey(epochday uint64, lockupPeriod LockupTypes, sep string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -152,6 +152,22 @@ func CreateEpochLockupUserKey(epochday uint64, lockupPeriod LockupTypes, sep str
 	b.WriteString(sep)
 	lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
 	b.WriteString(lockupPeriodStr)
+	b.WriteString(sep)
+	return b.Bytes()
+}
+
+// CreateEpochLockupUserSepKey  create the prefix store key for the iteration.
+// This key is used for the prefix key iteration to get the deposits done on a given epochday
+// Ex.  {epochday} + ":" + "lockupString" + ":" + {uid} + ":"
+func CreateEpochLockupUserSepKey(epochday uint64, lockupPeriodStr, uid, sep string) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(sep)
+	// lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
+	b.WriteString(lockupPeriodStr)
+	b.WriteString(sep)
+	b.WriteString(uid)
 	b.WriteString(sep)
 	return b.Bytes()
 }
@@ -219,4 +235,13 @@ func ParseEpochLockupUserDenomDepositKey(key []byte) (epochday uint64, lockupStr
 	uid = string(split[2])
 	denom = string(split[3])
 	return
+}
+
+// EpochDayKey create key  for the epochday
+func EpochDaySepKey(epochday uint64, sep string) []byte {
+	var b bytes.Buffer
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
+	b.WriteString(sep)
+	return b.Bytes()
 }

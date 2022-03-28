@@ -175,7 +175,7 @@ func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
 	for user, coins := range userCoinsMap {
 		for _, coin := range coins {
 			weight := coin.Amount.ToDec().QuoInt(totalDenomAmtMap[coin.Denom])
-			udw := types.EpochUserDenomWeight{UserAcc: user, Denom: coin.Denom, Weight: weight}
+			udw := types.EpochUserDenomWeight{UserAcc: user, Denom: coin.Denom, Weight: weight, Amt: coin.Amount}
 			udws = append(udws, udw)
 		}
 	}
