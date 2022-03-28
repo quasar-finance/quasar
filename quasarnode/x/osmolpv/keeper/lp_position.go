@@ -379,6 +379,9 @@ func (k Keeper) GetOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 // Store Expected Reward details, Original deposit epoch and lockup.
 // This is used to iterate and create tuple of reward day, deposit day and lockup period.
 // To further calculate the denom weights and users weights.
+// Key = {DayMapKBP} +   {rewardday} + {":"} + {depositday} + {":"} + {lockupPeriod}
+// Reward is happening everyday - dueing thw whole periods.
+// This map is also used for distribution of exited funds. reward day/distribution day is same.
 func (k Keeper) SetDayMapping(ctx sdk.Context, rewardDay uint64,
 	depositDay uint64, lockupPeriod qbanktypes.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DayMapKBP)

@@ -21,6 +21,7 @@ type EpochUserDenomWeight struct {
 	UserAcc string
 	Denom   string
 	Weight  sdk.Dec
+	Amt     sdk.Int
 }
 
 // EpochDenomWeight is used to create a pair of denom and its weight on a particular epoch day

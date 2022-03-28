@@ -85,6 +85,7 @@ var (
 	LPStatKBP                = []byte{0x14}
 	LPEpochDenomKBP          = []byte{0x15}
 	DayMapKBP                = []byte{0x16}
+	ExitKBP                  = []byte{0x17}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {

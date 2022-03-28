@@ -108,6 +108,9 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 // DistributeRewards is used to distribute the rewards for a given epoch day.
 // Logic -
 // 1. Fetch the reward from the epoch KV store GetRewardCollection.
+//  Note - Assuming that the GetRewardCollection will return the reward at the end
+// the users deposit lockups.
+// AUDIT - TODO | So storage into this need to be implemented carefully.
 // 2. Fetch the corresponding epoch deposit day and lockup periods using GetDepositDayInfos
 // 3. Process the ProcessDepositDayLockupPair and get EpochUserDenomWeight
 // 4. Get Each Denoms weight based on equivalent orions. Get list of denoms used on deposit day
