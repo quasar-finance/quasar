@@ -16,10 +16,10 @@ Quasar is implemeting strategies to aggregate users deposited fund to optimally 
 3. Task management is happening via clickup project mangement internally. So we will not create any github task, till it is in good situation. 
 
 # current active branches -
-quasarnode_integrated_ak
-quasarnode_orion_reward_ak
-add_gauge_apy_type_and_msg
-qusarnode_integrated_ak_ibc3
+1. quasarnode_integrated_ak
+2. quasarnode_orion_reward_ak
+3. add_gauge_apy_type_and_msg
+4. qusarnode_integrated_ak_ibc3
 To know more about the project, active branches, current developments please connect with quasar development team.
 
 
