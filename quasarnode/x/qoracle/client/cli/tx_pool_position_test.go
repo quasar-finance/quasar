@@ -15,7 +15,7 @@ import (
 )
 
 func sampleMetricsStr() string {
-	return "{\"APY\":\"22.5\",\"TVL\":\"10.5usd\"}"
+	return "{\"HighestAPY\":\"22.5\",\"TVL\":\"10.5usd\",\"GaugeAPYs\":[{\"GaugeId\":1,\"Duration\":\"1s\",\"APY\":\"1.1\"},{\"GaugeId\":2,\"Duration\":\"2s\",\"APY\":\"1.2\"}]}"
 }
 
 func TestCreatePoolPosition(t *testing.T) {

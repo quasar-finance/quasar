@@ -130,7 +130,7 @@ export class HttpClient {
     }
 }
 /**
- * @title qoracle/genesis.proto
+ * @title qoracle/gauge_apy.proto
  * @version version not set
  */
 export class Api extends HttpClient {

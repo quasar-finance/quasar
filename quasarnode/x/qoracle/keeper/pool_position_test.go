@@ -18,7 +18,14 @@ func createNPoolPosition(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.
 	for i := range items {
 		items[i].Creator = sample.AccAddress()
 		items[i].PoolId = fmt.Sprintf("%d", i)
-		items[i].Metrics = &types.PoolMetrics{APY: sdk.NewDec(int64(i)).String(), TVL: sdk.NewDecCoin("usd", sdk.NewInt(int64(i))).String()}
+		items[i].Metrics = &types.PoolMetrics{
+			HighestAPY: sdk.NewDec(int64(i)).String(),
+			TVL:        sdk.NewDecCoin("usd", sdk.NewInt(int64(i))).String(),
+			GaugeAPYs: []*types.GaugeAPY{
+				&types.GaugeAPY{GaugeId: 3*uint64(i) + 1, Duration: "1s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
+				&types.GaugeAPY{GaugeId: 3*uint64(i) + 2, Duration: "2s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
+			},
+		}
 		items[i].LastUpdatedTime = 1 + uint64(i)
 
 		keeper.SetPoolPosition(ctx, items[i])

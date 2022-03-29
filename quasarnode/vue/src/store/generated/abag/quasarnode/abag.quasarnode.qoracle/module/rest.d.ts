@@ -180,6 +180,12 @@ export interface ProtobufAny {
      */
     "@type"?: string;
 }
+export interface QoracleGaugeAPY {
+    /** @format uint64 */
+    gaugeId?: string;
+    duration?: string;
+    aPY?: string;
+}
 export declare type QoracleMsgCreatePoolInfoResponse = object;
 export declare type QoracleMsgCreatePoolPositionResponse = object;
 export declare type QoracleMsgCreatePoolRankingResponse = object;
@@ -200,8 +206,9 @@ export interface QoraclePoolInfo {
     creator?: string;
 }
 export interface QoraclePoolMetrics {
-    aPY?: string;
+    highestAPY?: string;
     tVL?: string;
+    gaugeAPYs?: QoracleGaugeAPY[];
 }
 export interface QoraclePoolPosition {
     poolId?: string;
@@ -416,7 +423,7 @@ export declare class HttpClient<SecurityDataType = unknown> {
     request: <T = any, E = any>({ body, secure, path, type, query, format, baseUrl, cancelToken, ...params }: FullRequestParams) => Promise<HttpResponse<T, E>>;
 }
 /**
- * @title qoracle/genesis.proto
+ * @title qoracle/gauge_apy.proto
  * @version version not set
  */
 export declare class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {

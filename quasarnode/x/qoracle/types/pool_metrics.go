@@ -6,13 +6,23 @@ import (
 )
 
 func (m PoolMetrics) Validate() error {
-	if apy, err := sdk.NewDecFromStr(m.APY); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "invalid APY '%s': %s", m.APY, err.Error())
+	if apy, err := sdk.NewDecFromStr(m.HighestAPY); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "invalid HighestAPY '%s': %s", m.HighestAPY, err.Error())
 	} else if apy.IsNegative() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "negative APY '%s'", m.APY)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "negative HighestAPY '%s'", m.HighestAPY)
 	}
 	if _, err := sdk.ParseDecCoin(m.TVL); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "invalid TVL '%s': %s", m.TVL, err.Error())
+	}
+	if m.GaugeAPYs != nil {
+		for i, ga := range m.GaugeAPYs {
+			if m.GaugeAPYs[i] == nil {
+				return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "nil GaugeAPY at index %d", i)
+			}
+			if err := ga.Validate(); err != nil {
+				return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "invalid GaugeAPY at index %d: %s", i, err.Error())
+			}
+		}
 	}
 	return nil
 }

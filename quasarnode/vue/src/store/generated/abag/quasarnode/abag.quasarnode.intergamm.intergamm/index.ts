@@ -108,21 +108,6 @@ export default {
 			})
 		},
 		
-		async sendMsgSendIbcJoinPool({ rootGetters }, { value, fee = [], memo = '' }) {
-			try {
-				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgSendIbcJoinPool(value)
-				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
-	gas: "200000" }, memo})
-				return result
-			} catch (e) {
-				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Init', 'Could not initialize signing client. Wallet is required.')
-				}else{
-					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Send', 'Could not broadcast Tx: '+ e.message)
-				}
-			}
-		},
 		async sendMsgSendIbcCreatePool({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -168,21 +153,22 @@ export default {
 				}
 			}
 		},
-		
-		async MsgSendIbcJoinPool({ rootGetters }, { value }) {
+		async sendMsgSendIbcJoinPool({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
 				const msg = await txClient.msgSendIbcJoinPool(value)
-				return msg
+				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
+	gas: "200000" }, memo})
+				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
 					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Create', 'Could not create message: ' + e.message)
-					
+					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
+		
 		async MsgSendIbcCreatePool({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -221,6 +207,20 @@ export default {
 					throw new SpVuexError('TxClient:MsgSendIbcWithdraw:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
 					throw new SpVuexError('TxClient:MsgSendIbcWithdraw:Create', 'Could not create message: ' + e.message)
+					
+				}
+			}
+		},
+		async MsgSendIbcJoinPool({ rootGetters }, { value }) {
+			try {
+				const txClient=await initTxClient(rootGetters)
+				const msg = await txClient.msgSendIbcJoinPool(value)
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Init', 'Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new SpVuexError('TxClient:MsgSendIbcJoinPool:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}
