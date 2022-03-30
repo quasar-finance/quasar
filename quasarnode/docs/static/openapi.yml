@@ -976,6 +976,10 @@ paths:
                 properties:
                   oracleAccounts:
                     type: string
+                  stableDenoms:
+                    type: array
+                    items:
+                      type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -17365,6 +17369,10 @@ definitions:
     properties:
       oracleAccounts:
         type: string
+      stableDenoms:
+        type: array
+        items:
+          type: string
     description: Params defines the parameters for the module.
   abag.quasarnode.qoracle.PoolInfo:
     type: object
@@ -18343,6 +18351,10 @@ definitions:
         properties:
           oracleAccounts:
             type: string
+          stableDenoms:
+            type: array
+            items:
+              type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   cosmos.authz.v1beta1.Grant:
     type: object

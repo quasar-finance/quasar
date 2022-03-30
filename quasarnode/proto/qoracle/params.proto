@@ -10,4 +10,5 @@ message Params {
   option (gogoproto.goproto_stringer) = false;
   
   string oracleAccounts = 1 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
+  repeated  string stableDenoms = 2 [(gogoproto.moretags) = "yaml:\"stable_denoms\""];
 }
