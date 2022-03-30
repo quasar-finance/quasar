@@ -980,6 +980,17 @@ paths:
                     type: array
                     items:
                       type: string
+                  oneHopDenomMap:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        originName:
+                          type: string
+                        quasar:
+                          type: string
+                        osmo:
+                          type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -17364,6 +17375,15 @@ definitions:
     type: object
   abag.quasarnode.qoracle.MsgUpdatePoolSpotPriceResponse:
     type: object
+  abag.quasarnode.qoracle.OneHopIbcDenomMapping:
+    type: object
+    properties:
+      originName:
+        type: string
+      quasar:
+        type: string
+      osmo:
+        type: string
   abag.quasarnode.qoracle.Params:
     type: object
     properties:
@@ -17373,6 +17393,17 @@ definitions:
         type: array
         items:
           type: string
+      oneHopDenomMap:
+        type: array
+        items:
+          type: object
+          properties:
+            originName:
+              type: string
+            quasar:
+              type: string
+            osmo:
+              type: string
     description: Params defines the parameters for the module.
   abag.quasarnode.qoracle.PoolInfo:
     type: object
@@ -18355,6 +18386,17 @@ definitions:
             type: array
             items:
               type: string
+          oneHopDenomMap:
+            type: array
+            items:
+              type: object
+              properties:
+                originName:
+                  type: string
+                quasar:
+                  type: string
+                osmo:
+                  type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   cosmos.authz.v1beta1.Grant:
     type: object
