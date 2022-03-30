@@ -152,6 +152,20 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 
 	} // lpids loop
 
+	// Fill the denomActualRewardMap
+	totalEquivalentReceipt := k.GetTotalOrions(ctx, totalLPV)
+	for denom, amt := range denomAmt {
+		equivalentReciept := k.CalcReceipts(ctx, sdk.NewCoin(denom, amt))
+		weight := equivalentReciept.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
+		for _, rewardCoin := range rc.Coins {
+			reward := sdk.NewCoin(rewardCoin.Denom, rewardCoin.Amount.ToDec().Mul(weight).TruncateInt())
+			if r, ok := denomActualReward[denom]; ok {
+				denomActualReward[denom] = r.Add(reward)
+			} else {
+				denomActualReward[denom] = sdk.NewCoins(reward)
+			}
+		}
+	}
 	//////////////////////////////
 	// Get users denom reward
 	// Note - This iteration is happening qbank module keeper.
