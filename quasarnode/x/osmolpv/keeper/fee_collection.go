@@ -8,7 +8,7 @@ import (
 // There are four types of fee collectors to collect fees for each type of fee
 // aka, vault management fee, vault performance fee, entry fee and exit fee.
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
-// AUDOT NOTE - We still need to decide which fee collections to be activate. Code should be flexible enough
+// AUDIT NOTE - We still need to decide which fee collections to be activate. Code should be flexible enough
 // to activate any of the fee type with parameters changes.
 
 // GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human readable name.
@@ -42,20 +42,18 @@ func (k Keeper) DeductFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 }
 
 ///////////////////// Calculation of Fees /////////////////////
-// Calculate the management fee
+// AUDIT NOTE - This method is probably going to be removed due to Performance fee
+// CalcMgmtFee Calculate the management fee
 func (k Keeper) CalcMgmtFee() sdk.Coin {
-	// TODO -
 	// To be calculated on pro rata basis at every epoch
-	return sdk.NewCoin("test", sdk.ZeroInt())
+	return sdk.NewCoin("QSR", sdk.ZeroInt())
 }
 
-// Calculate vault performance fee.
 // This function is called by vault at the end of every profit collection
-// round. This could be the end of every epoch, 1-Week Gauge, 3-Week Gauge etc.
-// return value will be deduced from the profit and allocated to the
-// vault reserve.
-// TODO | AUDIT | Initially taking 5% hardocded profit as performance fees.
+// round. This could be the end of every epoch.
+// AUDIT NOTE | Initially taking 5% hardocded profit as performance fees.
 // Should be a paramater of orion module
+// CalcPerFee Calculate vault performance fee.
 func (k Keeper) CalcPerFee(profit sdk.Coin) sdk.Coin {
 	// TODO - To be added in vault parameter
 	var factor sdk.Dec = sdk.MustNewDecFromStr("0.05")

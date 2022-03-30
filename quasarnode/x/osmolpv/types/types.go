@@ -45,3 +45,19 @@ type DepositDayLockupPair struct {
 	Epochday     uint64
 	LockupPeriod qbanktypes.LockupTypes
 }
+
+type UserDenomInfo struct {
+	Denom  string
+	Weight sdk.Dec
+	Amt    sdk.Int
+	Reward sdk.Coins
+}
+
+type UserInfo struct {
+	UserAcc     string
+	DenomMap    map[string]UserDenomInfo
+	TotalReward sdk.Coins
+}
+
+// A map of user account to UserInfo
+type UserInfoMap map[string]UserInfo
