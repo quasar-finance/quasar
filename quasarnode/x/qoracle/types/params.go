@@ -12,9 +12,14 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyOracleAccounts = []byte("OracleAccounts")
 	KeyStableDenoms   = []byte("stableDenoms")
+	KeyOneHopDenomMap = []byte("oneHopDenomMap")
 	// TODO: Determine the default value
-	DefaultOracleAccounts string = "oracle_accounts"
-	DefaultStableDenoms          = []string{"UST", "USTTESTA"}
+	DefaultOracleAccounts string                = "oracle_accounts"
+	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
+	denom1                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
+	denom2                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uosmo", Quasar: "IBC/TESTOSMO", Osmo: "uosmo"}
+
+	DefaultOneHopDenomMap = []*OneHopIbcDenomMapping{&denom1, &denom2}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -26,10 +31,12 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(
 	oracleAccounts string,
 	stableDenoms []string,
+	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
 		OracleAccounts: oracleAccounts,
 		StableDenoms:   stableDenoms, // AUDIT slice copy
+		OneHopDenomMap: onehopDenoms,
 	}
 }
 
@@ -38,6 +45,7 @@ func DefaultParams() Params {
 	return NewParams(
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
+		DefaultOneHopDenomMap,
 	)
 }
 
@@ -46,6 +54,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
+		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
 	}
 }
 
@@ -59,6 +68,9 @@ func (p Params) Validate() error {
 		return err
 	}
 
+	if err := validateOneHopDenomMaps(p.OneHopDenomMap); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -90,6 +102,19 @@ func validateStableDenoms(v interface{}) error {
 
 	// TODO implement validation
 	_ = stableDenoms
+
+	return nil
+}
+
+// validateOneHopDenomMaps validates the StableDenoms param
+func validateOneHopDenomMaps(v interface{}) error {
+	oneHopDenomMaps, ok := v.([]*OneHopIbcDenomMapping)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = oneHopDenomMaps
 
 	return nil
 }
