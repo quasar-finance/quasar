@@ -11,7 +11,7 @@ Anything that merges to `main` is a candidate for release.
 
 Features or bug fixes are merged frequently to the `main` branch via pull-requests (PR) and mandatory code review.
 
-All pull-requests should be merged with a forced merge commit (`--no-ff`), this helps for traceability, as **github** will insert details about the pull-request in the commit message.
+All pull-requests should be merged with a forced merge commit, this helps for traceability as **github** will insert details about the pull-request in the commit message. The Github repo is configured to enforce this.
 
 As much as possible, pull-requests should be rebased onto `main` before merging, this helps in creating a clean and straight history for the `main` branch.
 
@@ -25,11 +25,31 @@ Instead, discuss with the development team about the review (at standup) and ask
 
 Usually, one reviewer is sufficient. However, if the work requires more specific knowledge, the author can ask for more than one person to review. The reviewer can also appoint someone else if agreed.
 
+### Pull-request review material
+
+[Official Github documentation](https://docs.github.com/en/pull-requests)
+[Pull-requests review best practices](https://rewind.com/blog/best-practices-for-reviewing-pull-requests-in-github/)
+
 ## Feature & bugfix workflow
 
 New code can be added via either a **feature** or **bugfix** branch, using the `feature/` or `bugfix/` branch name prefix respectively.
 
-Usually, a single developer will work on a feature branch, so it is fine to re-write the history in these branch (with `git rebase` for instance).
+Example: create a new feature branch out of `main`
+
+```bash
+git checkout main                   # assuming not on main already
+git pull                            # make sure main is in sync with remote
+git checkout -b feature/feature-abc # create the new branch
+```
+
+Usually, a single developer will work on a feature branch, so it is fine to re-write the history in these branch (with `git rebase` for instance). In practice it can be used when new code has been merged to `main` in the meantime.
+
+Example: sync new code from `main` via rebase:
+
+```bash
+git fetch --all        # fetch new code from remote origin
+git rebase origin/main # rebase current branch on top of new code
+```
 
 If developers work on a feature together, they can individually branch off from the feature branch, as long as the merge is done via either a squash commit or a fast-forward commit (`--ff-only`).
 By doing this, the feature branch will still be a single series of commits (no intermediate branching will be visible) and therefore the clear history visibility will be preserved.
@@ -59,11 +79,31 @@ This new git tag can be used to triggers automated CI/CD workflows that will bui
 
 If release notes and other documentation needs to be updated prior to releasing, it should be done via a **feature** branch and merged to `main`. This merge commit will be the one to be tagged to represent the new release.
 
+Release tags can be created directly from the Github interface, by selecting the proper commit, or via command-line on a developer's machine as follows:
+
+```bash
+git checkout main    # assuming not on main already
+git pull             # make sure main is in sync with remote
+git tag v2.0         # create the new tag
+git push origin v2.0 # push tag to remote
+```
+
 ### Hotfix workflow
 
 If a bug needs to be fixed on a version already released, a branch can be created out of the release tag, with the prefix `release/<tag>`.
 
 Commits can then be cherry-picked to this new branch, if a fix is already available on `main`, or directly in the new branch (decide if we need a special **hotfix** branch here with mandatory PR review).
+
+Example: create a hotfix on existing release v2.0
+
+```bash
+git checkout -b release/v2.0 v2.0 # create release branch out of tag
+git push -u origin release/v2.0   # push new branch to remote
+# do the hotfix work
+git add .                         # make sure main is in sync with remote
+git commit -m "hotfix abc"        # create the new tag
+git push                          # push commit to remote release branch
+```
 
 ### Visual example
 
