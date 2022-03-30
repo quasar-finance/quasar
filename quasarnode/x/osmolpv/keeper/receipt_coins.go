@@ -63,8 +63,8 @@ func (k Keeper) GetRCBalance(ctx sdk.Context, addr sdk.AccAddress, denom string)
 // Step #2 - Front end calls the current Orions amount equivalent to the input sdk.Coins
 // GetTotalOrions method will be used for step #2
 // AUDIT TODO - grpc query to be added
-func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) sdk.Coins {
-	var orions sdk.Coins
+func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) sdk.Coin {
+	var orions sdk.Coin
 	for _, coin := range coins {
 		orion := k.CalcReceipts(ctx, coin)
 		orions = orions.Add(orion)

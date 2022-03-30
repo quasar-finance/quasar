@@ -13,7 +13,7 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// Set if defined
 	if genState.FeeData != nil {
-		k.SetFeeData(ctx, *genState.FeeData)
+		// k.SetFeeData(ctx, *genState.FeeData)
 	}
 	// Set if defined
 	/*
@@ -64,10 +64,12 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.Params = k.GetParams(ctx)
 
 	// Get all feeData
-	feeData, found := k.GetFeeData(ctx)
-	if found {
-		genesis.FeeData = &feeData
-	}
+	/*
+		feeData, found := k.GetFeeData(ctx)
+		if found {
+			genesis.FeeData = &feeData
+		}
+	*/
 	// TODO | AUDIT | Genesis state to be defined
 	/*
 		// Get all lpPosition
