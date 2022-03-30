@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/abag/quasarnode/x/osmolpv/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -105,6 +106,93 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 	return reward
 }
 
+// GetUserRewardDistribution2 - Gives the users reward distribution map.
+// AUDIT TODO - The reward is to be available to the users view for claim in qbank module KV store.
+// Based on the return value of this function. And the actual reward amount should be moved to orion
+// reward collection global account. When a user will click on the claim reward it will go to the users account
+// func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context, epochday uint64) (types.UserInfoMap, error) {
+func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
+	epochday uint64) (map[string]types.UserDenomInfo, error) {
+
+	lpids := k.GetActiveLpIDList(ctx, epochday)
+	rc, found := k.GetRewardCollection(ctx, epochday)
+	if !found {
+		return nil, fmt.Errorf("rewards not yet collected for epoch day %v", epochday)
+	}
+	//var um types.UserInfoMap
+	denomExpReward := make(map[string]sdk.Coin)
+	denomActualReward := make(map[string]sdk.Coins) // AUDIT TODO
+	denomAmt := make(map[string]sdk.Int)
+	//	lpExpRewardMap := make(map[uint64]sdk.Coins)
+	var totalLPV sdk.Coins // Total LP in deployment
+	for _, lpid := range lpids {
+		//var lpExpReward sdk.Coins
+		lpday, _ := k.GetLPEpochDay(ctx, lpid)
+		lp, _ := k.GetLpPosition(ctx, lpday, lpid)
+		g := k.GetCurrentActiveGauge(ctx, lpday, lpid)
+		for _, c := range lp.Coins {
+			totalLPV = totalLPV.Add(c)
+
+			if v, ok := denomAmt[c.Denom]; ok {
+				denomAmt[c.Denom] = v.Add(c.Amount)
+			} else {
+				denomAmt[c.Denom] = c.Amount
+			}
+
+			// Calc todays expected reward based APY in terms of LP tokens
+			rAmt := (*lp.Lptoken).Amount.ToDec().Mul(g.ExpectedApy).TruncateInt()
+			rCoin := sdk.NewCoin((*lp.Lptoken).Denom, rAmt)
+			if v, ok := denomExpReward[c.Denom]; ok {
+				denomExpReward[c.Denom] = v.Add(rCoin)
+			} else {
+				denomExpReward[c.Denom] = rCoin
+			}
+
+		}
+
+	} // lpids loop
+
+	//////////////////////////////
+	// Get users denom reward
+	// Note - This iteration is happening qbank module keeper.
+	useDenomInfoMap := make(map[string]types.UserDenomInfo) // Key = "{uid}" + {":"} + "{denom}"
+	bytePrefix := qbanktypes.UserDenomDepositKBP
+	store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetUserRewardDistribution2|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	// Key = "{uid}" + {":"} + "{denom}", value = sdk.Coin
+	for ; iter.Valid(); iter.Next() {
+		var udi types.UserDenomInfo
+		key, value := iter.Key(), iter.Value()
+		splits := qbanktypes.SplitKeyBytes(key)
+		// userAcc := string(splits[0])
+		denom := string(splits[1])
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		udi.Denom = denom
+		udi.Amt = coin.Amount
+		udi.Weight = udi.Amt.ToDec().QuoInt(denomAmt[denom])
+		for _, r := range denomActualReward[denom] {
+			tmp := sdk.NewCoin(r.Denom, r.Amount.ToDec().Mul(udi.Weight).TruncateInt())
+			udi.Reward = udi.Reward.Add(tmp)
+		}
+
+		useDenomInfoMap[string(key)] = udi
+	}
+
+	// AUDIT NOTE - Optimization bank module IO call to be used
+	for usrAcc, udi := range useDenomInfoMap {
+		usrAccAddr, _ := sdk.AccAddressFromBech32(usrAcc)
+		k.SendCoinFromGlobalRewardToAccount(ctx, usrAccAddr, udi.Reward)
+	}
+	return useDenomInfoMap, nil
+}
+
+// AUDIT NOTE - Incorrect implementation.
 // DistributeRewards is used to distribute the rewards for a given epoch day.
 // Logic -
 // 1. Fetch the reward from the epoch KV store GetRewardCollection.
@@ -159,6 +247,7 @@ func (k Keeper) GetUserRewardDistribution(ctx sdk.Context, epochday uint64) (map
 	return userRewardMap, nil
 }
 
+// AUDIT NOTE - Incorrect implementation.
 // DistributeRewards distribute the rewards to the end users
 func (k Keeper) DistributeRewards(ctx sdk.Context, epochday uint64) error {
 	userRewardMap, err := k.GetUserRewardDistribution(ctx, epochday)

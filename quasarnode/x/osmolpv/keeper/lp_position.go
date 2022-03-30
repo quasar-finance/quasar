@@ -14,13 +14,12 @@ import (
 
 // NewLP create a new LPPosition object with input arguments.
 // Zero Value of LpID, lockid means invalid values.
-// TODO - Write proper unit tests.
 func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
 	unbondingDuration, poolID uint64, lpToken sdk.Coin, coins sdk.Coins) types.LpPosition {
 	lp := types.LpPosition{LpID: 0,
 		LockID:                 lockid,
 		IsActive:               false,
-		StartTime:              time.Now(), // TODO AUDIT
+		StartTime:              time.Now(),
 		BondingStartEpochDay:   bondingStartEpochday,
 		BondDuration:           bondDuration,
 		UnbondingStartEpochDay: unbondingDuration,
@@ -60,26 +59,29 @@ func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 
 // AddNewLPPosition update the LP ID of the newly created lp and set the position data in the KV store.
 func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
-	// count := k.GetLPCount(ctx)
+	count := k.GetLPCount(ctx)
 	lps, _ := k.GetLpStat(ctx, lpPosition.BondingStartEpochDay)
-	count := lps.LpCount
-	lpPosition.LpID = count + 1
+	// count := lps.LpCount
+	lpPosition.LpID = count + 1   // Global count
+	lps.LpCount = lps.LpCount + 1 // Epoch level count
 	k.setLpPosition(ctx, lpPosition)
 	k.setLpEpochPosition(ctx, lpPosition.LpID, lpPosition.BondingStartEpochDay)
 
-	lps.LpCount = lpPosition.LpID
+	// lps.LpCount = lpPosition.LpID
 	var tmp sdk.Coins
 	tmp = lps.TotalLPCoins // TODO - AUDIT slice usage
 	for _, coin := range lpPosition.Coins {
 		tmp = tmp.Add(coin)
 	}
 	lps.TotalLPCoins = tmp
+
 	k.SetLpStat(ctx, lpPosition.BondingStartEpochDay, lps)
 
+	// Helps to know the denom used in the particular epoch
 	for _, coin := range lpPosition.Coins {
 		k.SetEpochDenom(ctx, lpPosition.BondingStartEpochDay, coin.Denom)
 	}
-	// k.setLPCount(ctx, count)
+	k.setLPCount(ctx, lpPosition.LpID)
 }
 
 // SetLpPosition set lpPosition created by the strategy in a given epochday in the
@@ -94,6 +96,7 @@ func (k Keeper) setLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 }
 
 // SetLpEpochPosition set is used to store reverse mapping lpID and epochday as part of key.
+// Note - Ideally every entry in this should be an Active LP, Expired Lps should be removed from the system.
 // key = types.LPEpochKBP + {lpID} + {":"} + {epochDay}
 func (k Keeper) setLpEpochPosition(ctx sdk.Context, lpID uint64, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochKBP)
@@ -131,7 +134,6 @@ func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, fo
 }
 
 // GetLpPosition fetch the lpPosition based on the epochday and lpID input
-// Note - This could be a reduntant method.
 func (k Keeper) GetLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) (val types.LpPosition, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
 	key := types.EpochLPIDKey(epochDay, lpID)
@@ -150,7 +152,7 @@ func (k Keeper) RemoveLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) 
 	store.Delete(key)
 }
 
-// GetLPIDList fetch the list of lp position lpid for a given epoch day
+// GetLPIDList fetch the list of lp position lpid created on a given epoch day
 func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 	var lpIDs []uint64
 	bytePrefix := types.LPPositionKBP
@@ -168,6 +170,41 @@ func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 		lpIDStr := string(key)
 		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
 		lpIDs = append(lpIDs, lpID)
+	}
+	return lpIDs
+}
+
+// GetActiveLpIDList get the list of currently active lpIDs on a given epochday
+// Ideally every entry present in this types.LPPositionKBP byte prefix corresponds
+// to the active lpID, all other expired should be either removed or moved to the separate
+// expired KV stores.
+func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
+
+	var lpIDs []uint64
+	bytePrefix := types.LPPositionKBP
+
+	// prefixKey = types.LPPositionKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	// key - {epochday} + {":""} + {LPID}
+
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		splits := qbanktypes.SplitKeyBytes(key)
+		epochdayStr := string(splits[0])
+		epochday, _ := strconv.ParseUint(epochdayStr, 10, 64)
+		lpIDStr := string(splits[1])
+		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
+
+		lp, _ := k.GetLpPosition(ctx, epochday, lpID)
+		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
+		if lp.BondingStartEpochDay <= epochday && epochday <= lpEndDay {
+			// Active LP
+			lpIDs = append(lpIDs, lpID)
+		}
+
 	}
 	return lpIDs
 }
@@ -194,7 +231,7 @@ func (k Keeper) GetDenomList(ctx sdk.Context, epochday uint64) []string {
 	return denoms
 }
 
-// TODO | AUDIT
+// AUDIT NOTE - Testing required
 // CalculateLPWeight calc weight of an Lp position in the current epoch.
 // This weight will be used for the approx fair reward distribution.
 // Logic -
@@ -237,7 +274,7 @@ func (k Keeper) GetTotalTvlApy(ctx sdk.Context, epochDay uint64) sdk.Dec {
 	return lpi.TotalTVL.Amount.ToDec()
 }
 
-// Note - This maynot be used
+// AUDIT NOTE - This maynot be used
 // AddEpochLPUser add kv store with key = {epochday} + {":"} + {lpID} + {":"} + {userAccount} + {":"} + {denom}
 // value = sdk.Coin
 func (k Keeper) AddEpochLPUserDenomAmt(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, coin sdk.Coin) {
@@ -256,7 +293,7 @@ func (k Keeper) AddEpochLPUserDenomAmt(ctx sdk.Context, epochday uint64, lpID ui
 	}
 }
 
-// Note - This maynot be used
+// AUDIT NOTE - This maynot be used
 // GetEpochLPUser get user's denom amount used in a given and epoch day and lp id
 func (k Keeper) GetEpochLPUserDenomAmt(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, denom string) (val sdk.Coin, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLPUserKBP)
@@ -353,7 +390,7 @@ func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.Ep
 	var totalOrionAmt sdk.Int
 	denomOrionMap := make(map[string]sdk.Coin)
 	for _, coin := range lps.TotalLPCoins {
-		denomOrions := k.GetOrions(ctx, coin)
+		denomOrions := k.CalcReceipts(ctx, coin)
 		totalOrionAmt = totalOrionAmt.Add(denomOrions.Amount)
 		denomOrionMap[coin.Denom] = denomOrions
 	}
@@ -365,15 +402,6 @@ func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.Ep
 		edws = append(edws, dw)
 	}
 	return edws
-}
-
-// TODO | AUDIT
-// Convert sdk.coin into orions equivalent. Calculations is based on the equivalent osmo.
-// Logic -
-// 1. Get the Spot price from the qoacle for <denom, osmo>
-// 2. input denom amount into orions (equivalent osmo amount)
-func (k Keeper) GetOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
-	return sdk.Coin{}
 }
 
 // Store Expected Reward details, Original deposit epoch and lockup.
