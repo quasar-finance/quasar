@@ -11,8 +11,10 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyOracleAccounts = []byte("OracleAccounts")
+	KeyStableDenoms   = []byte("stableDenoms")
 	// TODO: Determine the default value
 	DefaultOracleAccounts string = "oracle_accounts"
+	DefaultStableDenoms          = []string{"UST", "USTTESTA"}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -23,9 +25,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	oracleAccounts string,
+	stableDenoms []string,
 ) Params {
 	return Params{
 		OracleAccounts: oracleAccounts,
+		StableDenoms:   stableDenoms, // AUDIT slice copy
 	}
 }
 
@@ -33,6 +37,7 @@ func NewParams(
 func DefaultParams() Params {
 	return NewParams(
 		DefaultOracleAccounts,
+		DefaultStableDenoms,
 	)
 }
 
@@ -40,12 +45,17 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
+		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateOracleAccounts(p.OracleAccounts); err != nil {
+		return err
+	}
+
+	if err := validateStableDenoms(p.StableDenoms); err != nil {
 		return err
 	}
 
@@ -67,6 +77,19 @@ func validateOracleAccounts(v interface{}) error {
 
 	// TODO implement validation
 	_ = oracleAccounts
+
+	return nil
+}
+
+// validateStableDenoms validates the StableDenoms param
+func validateStableDenoms(v interface{}) error {
+	stableDenoms, ok := v.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = stableDenoms
 
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.OracleAccounts(ctx),
+		k.StableDenoms(ctx),
 	)
 }
 
@@ -19,6 +20,12 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 
 // OracleAccounts returns the OracleAccounts param
 func (k Keeper) OracleAccounts(ctx sdk.Context) (res string) {
+	k.paramstore.Get(ctx, types.KeyOracleAccounts, &res)
+	return
+}
+
+// OracleAccounts returns the OracleAccounts param
+func (k Keeper) StableDenoms(ctx sdk.Context) (res []string) {
 	k.paramstore.Get(ctx, types.KeyOracleAccounts, &res)
 	return
 }
