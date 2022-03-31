@@ -20,9 +20,6 @@ func (k Keeper) UserDenomEpochLockupDeposit(goCtx context.Context, req *types.Qu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Process the query
-	_ = ctx
-
 	k.Logger(ctx).Info(fmt.Sprintf("UserDenomEpochLockupDeposit|%s|%s\n", req.GetUserAcc(),
 		req.GetDenom()))
 
