@@ -6,12 +6,12 @@ import (
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+// AUDIT | Deprecated
 // DepositAll is used by the CLI and grpc query to fetch the list of all active deposit in the qbank.
 func (k Keeper) DepositAll(c context.Context, req *types.QueryAllDepositRequest) (*types.QueryAllDepositResponse, error) {
 	if req == nil {
@@ -42,6 +42,7 @@ func (k Keeper) DepositAll(c context.Context, req *types.QueryAllDepositRequest)
 	return &types.QueryAllDepositResponse{Deposit: deposits, Pagination: pageRes}, nil
 }
 
+// AUDIT | Deprecated
 // Deposit is used by the CLI and grpc query to fetch specific deposit object with the deposit ID.
 func (k Keeper) Deposit(c context.Context, req *types.QueryGetDepositRequest) (*types.QueryGetDepositResponse, error) {
 	if req == nil {
@@ -49,10 +50,7 @@ func (k Keeper) Deposit(c context.Context, req *types.QueryGetDepositRequest) (*
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	deposit, found := k.GetDeposit(ctx, req.Id)
-	if !found {
-		return nil, sdkerrors.ErrKeyNotFound
-	}
+	_ = ctx
 
-	return &types.QueryGetDepositResponse{Deposit: deposit}, nil
+	return &types.QueryGetDepositResponse{}, nil
 }
