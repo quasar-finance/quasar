@@ -28,6 +28,19 @@ func createNPoolSpotPrice(keeper *keeper.Keeper, ctx sdk.Context, n int) []types
 	return items
 }
 
+type DenomPrice struct {
+	Denom string
+	Price sdk.Dec
+}
+
+func createStablePrice(keeper *keeper.Keeper, ctx sdk.Context) DenomPrice {
+	price, _ := sdk.NewDecFromStr("10.12")
+	dp := DenomPrice{Denom: "testd_enom_1", Price: price}
+
+	keeper.SetStablePrice(ctx, dp.Denom, dp.Price)
+
+	return dp
+}
 func TestPoolSpotPriceGet(t *testing.T) {
 	keeper, ctx := keepertest.QoracleKeeper(t)
 	items := createNPoolSpotPrice(keeper, ctx, 10)
@@ -68,5 +81,21 @@ func TestPoolSpotPriceGetAll(t *testing.T) {
 	require.ElementsMatch(t,
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllPoolSpotPrice(ctx)),
+	)
+}
+
+func TestStablePrice(t *testing.T) {
+	keeper, ctx := keepertest.QoracleKeeper(t)
+	// Input
+	inputDP1 := createStablePrice(keeper, ctx)
+	inputDPS := []DenomPrice{inputDP1}
+
+	// Outputs
+	price1 := keeper.GetStablePrice(ctx, inputDP1.Denom)
+	var outputDPS []DenomPrice
+	outputDPS = append(outputDPS, DenomPrice{Denom: inputDP1.Denom, Price: price1})
+	require.ElementsMatch(t,
+		nullify.Fill(inputDPS),
+		nullify.Fill(outputDPS),
 	)
 }

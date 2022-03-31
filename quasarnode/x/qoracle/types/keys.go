@@ -36,7 +36,12 @@ var (
 	PoolPositionKBP  = []byte{0x01}
 	PoolInfoKBP      = []byte{0x02}
 	PoolAPYRankedKBP = []byte{0x03}
+	StablePriceKBP   = []byte{0x04}
 )
+
+func CreateStablePriceKey(denom string) []byte {
+	return []byte(denom)
+}
 
 func CreatePoolPositionKey(poolID uint64) []byte {
 	var b bytes.Buffer
