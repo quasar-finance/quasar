@@ -11,21 +11,7 @@ import (
 // TODO | AUDIT | How to build the other KV stores? Probably set functions of all the other KV store
 // should be used. Genesis state should have all other KV stores informations.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-	// Set all the deposit
-	for _, elem := range genState.DepositList {
-		k.SetDeposit(ctx, elem)
-	}
 
-	// Set deposit count
-	k.SetDepositCount(ctx, genState.DepositCount)
-	// Set all the withdraw
-	for _, elem := range genState.WithdrawList {
-		k.SetWithdraw(ctx, elem)
-	}
-
-	// Set withdraw count
-	k.SetWithdrawCount(ctx, genState.WithdrawCount)
-	// Set if defined
 	if genState.FeeData != nil {
 		k.SetFeeData(ctx, *genState.FeeData)
 	}
@@ -39,10 +25,6 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
 
-	genesis.DepositList = k.GetAllDeposit(ctx)
-	genesis.DepositCount = k.GetDepositCount(ctx)
-	genesis.WithdrawList = k.GetAllWithdraw(ctx)
-	genesis.WithdrawCount = k.GetWithdrawCount(ctx)
 	// Get all feeData
 	feeData, found := k.GetFeeData(ctx)
 	if found {
