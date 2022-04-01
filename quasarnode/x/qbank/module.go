@@ -182,77 +182,33 @@ func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.Valid
 
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 
-	// TODO - Implement the algorithm to update the current withdrable amount
-	// Iterativelly collect all the lock up periods and get the respective kv store
-	// for the deposited amount on a given day.
-	// lockup : lockupPeriods
-	// 	calc : previousDay = today - lockupPeriod
-	// 	get amount from key previousDay/lockupPeriod/denom
-	// 	if amount != 0 ; add amount to the lockupWithdrable
-
+	// Note -
+	// Algorithm to update the current withdrable amount.
+	// 	Iterativelly collect all the lock up periods and get the respective kv store
+	// 	for the deposited amount on a given day.
+	// 	lockup : lockupPeriods
+	// 	  calc : depositDay = todayEpoch - lockupPeriod
+	// 	  get amount from key = {depositDay} + {:} + {lockupPeriod} + {:} +
+	//    add users withdrable amount in the KV store.
 	logger := k.Logger(ctx)
 	logger.Info(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
 
-	// Logic - Iterate over EpochLockup part of CreateEpochLockupUserDenomDepositKey
-	// Get K = UserDenom, V = sdk.coin
-
-	prefix := types.UserDenomDepositKBP
-	// TODO : Assume one block as one epoch day for now. Reduce 7 to get block last 7th block
-	pk := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()-7), types.LockupTypes_Days_7, "/")
-	prefix = append(prefix, pk...)
-	// prefixkey := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()), types.LockupTypes_Days_7, "/")
-
-	/////////////////////////////////////////////////////
-
-	// ITERATOR #1
-	iterator := func(key []byte, val sdk.Coin) error {
-		// iterator := func(key, val []byte) error {
-		logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator|modulename=%s|blockheight=%d|Key=%v|Value=%v",
-			types.ModuleName, ctx.BlockHeight(), string(key), val))
-
-		return nil
-	}
-
-	err := k.Iterate(ctx, prefix, iterator)
-	if err != nil {
-		panic(err)
-	}
-
-	/*
-		// ITERATOR #2
-		// closure function for updating withdrable amount
-		withdrableClosure := func(key, val []byte) error {
-			var coin sdk.Coin
-			k.GetCdc().MustUnmarshal(val, &coin)
-			logger.Info(fmt.Sprintf("Qbank BeginBlocker Callbackfunction|Iterator2|modulename=%s|blockheight=%d|Key=%v|Value=%v",
-				types.ModuleName, ctx.BlockHeight(), string(key), coin))
-
-			return nil
-		}
-	*/
-
-	// TODO | AUDIT | This logic for the Withdrable amount to changed based on the new Orion vault
-	// receipt token design.
 	for lockupEnm, lockupStr := range types.LockupTypes_name {
 
-		prefix := types.UserDenomDepositKBP
-		// TODO : Assume one block as one epoch day for now. Reduce 7 to get block last 7th block
+		bytePrefix := types.UserDenomDepositKBP
+		// AUDIT NOTE - TODO : Assume one block as one epoch day for now. Ex. Reduce 7 to get block last 7th block.
+		// We will need to integrate epoch module probably from osmosis as next priority.
+		// For the initial development testing,this assumtion of one block = one epoch day is sufficient.
+		// With that a 7 day deposit will become 7 block deposit.
 		lockupdays := int64(types.Lockupdays[lockupStr])
-		pk := types.CreateEpochLockupUserKey(uint64(ctx.BlockHeight()-lockupdays), types.LockupTypes(lockupEnm), "/")
-		prefix = append(prefix, pk...)
+		depositDay := uint64(ctx.BlockHeight() - lockupdays)
+		key := types.CreateEpochLockupUserKey(depositDay, types.LockupTypes(lockupEnm), types.Sep)
+		keyPrefix := append(bytePrefix, key...)
 
 		logger.Info(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
-			lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(prefix)))
+			lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
 
-		err2 := k.ProcessWithdrable(ctx, prefix)
-		if err2 != nil {
-			panic(err2)
-		}
+		k.ProcessWithdrable(ctx, keyPrefix)
 
 	}
-
-	// iterate(ctx sdk.Context, prefix []byte, cb func(key, val []byte) error) error
-
-	// k.Iterate(ctx, []byte(""), interface{})
-
 }

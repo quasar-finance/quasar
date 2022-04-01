@@ -6,6 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// AUDIT NOTE - This file and all its related files and functions are deprecated. Ad should be removed.
+// Bacasue we do't need to maintain the historical data on the KV store for the fee applied.
+
 // SetFeeData set feeData in the store
 func (k Keeper) SetFeeData(ctx sdk.Context, feeData types.FeeData) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.FeeDataKey))

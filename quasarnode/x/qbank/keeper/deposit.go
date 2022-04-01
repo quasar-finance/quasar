@@ -225,7 +225,6 @@ func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
 		prefixKey = types.CreateEpochLockupUserSepKey(epochday, lockupStr, userAcc, types.Sep)
 	}
 	prefixKey = append(bytePrefix, prefixKey...)
-	prefixKey = append(prefixKey, types.SepByte...)
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
@@ -241,6 +240,9 @@ func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 		coins = coins.Add(coin)
+		logger.Info(fmt.Sprintf("GetEpochUserDepositAmount|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
+
 	}
 	return coins
 }
@@ -269,6 +271,9 @@ func (k Keeper) GetEpochTotalActiveDeposits(ctx sdk.Context,
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 		coins = coins.Add(coin)
+		logger.Info(fmt.Sprintf("GetEpochTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
+
 	}
 	return coins
 }
