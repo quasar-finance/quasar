@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// AUDIT NOTE - this method should  be deprecated
 // UserDenomEpochLockupDeposit is used by the CLI and grpc query to fetch the denom deposit value of a give user.
 // TODO | AUDIT | The request object is taking epochday as slice
 func (k Keeper) UserDenomEpochLockupDeposit(goCtx context.Context, req *types.QueryUserDenomEpochLockupDepositRequest) (*types.QueryUserDenomEpochLockupDepositResponse, error) {

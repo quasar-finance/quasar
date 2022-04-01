@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -134,10 +135,11 @@ func (k Keeper) GetWithdrawableAmt(ctx sdk.Context, uid, denom string) (coin sdk
 }
 
 // AddWithdrableAmt adds withdrable amount from to the store for a given user and denom.
-// Called from the Orion vault end blocker
+// Called from the Orion vault end blocker.
+// Key = {denom} + ":" + {uid}
 func (k Keeper) AddWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateWithdrableKey(coin.GetDenom(), uid, ":")
+	key := types.CreateWithdrableKey(coin.GetDenom(), uid, types.Sep)
 	b := store.Get(key)
 	if b == nil {
 		b := k.cdc.MustMarshal(&coin)
@@ -153,13 +155,14 @@ func (k Keeper) AddWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 
 // SubWithdrableAmt substracts withdrable amount from to the store for a given user and denom.
 // Called from the users withdraw transaction processing.
+// Key = {denom} + ":" + {uid}
 func (k Keeper) SubWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
 	key := types.CreateWithdrableKey(coin.GetDenom(), uid, ":")
 	b := store.Get(key)
 	if b == nil {
-		// Do nothing. Call should never come here.
-		// Can panic
+		// Do nothing. Ideally call should never come here.
+		panic(fmt.Errorf("empty withdrable amount for key=%v", string(key)))
 	} else {
 		var storedCoin sdk.Coin
 		k.cdc.MustUnmarshal(b, &storedCoin)
@@ -170,10 +173,11 @@ func (k Keeper) SubWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin) {
 }
 
 // GetLockupWithdrawableAmt fetch the current withdrable amount of a given user, denom and lockup period.
-// from the lockperiod based KV store container.
+// from the lockperiod based KV store container. This method could be used for the analytics by external processes.
+// Key = {denom} + ":" + {uid} + ":" + {lockupPeriod}
 func (k Keeper) GetLockupWithdrawableAmt(ctx sdk.Context, uid, denom string, lockupPeriod types.LockupTypes) (coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(denom, uid, lockupPeriod, ":")
+	key := types.CreateLockupWithdrableKey(denom, uid, lockupPeriod, types.Sep)
 	b := store.Get(key)
 	if b == nil {
 		return sdk.NewInt64Coin(denom, 0)
@@ -183,7 +187,7 @@ func (k Keeper) GetLockupWithdrawableAmt(ctx sdk.Context, uid, denom string, loc
 }
 
 // AddWithdrableAmt adds withdrable amount from to the store for a given user and denom.
-// Called from the Orion vault end blocker
+// Called from the Orion vault end blocker.
 func (k Keeper) AddLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.WithdrawableKeyKBP)
 	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, ":")
@@ -207,8 +211,8 @@ func (k Keeper) SubLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coi
 	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, ":")
 	b := store.Get(key)
 	if b == nil {
-		// Do nothing. Call should never come here.
-		// Can panic
+		// Do nothing. Ideally call should never come here.
+		panic(fmt.Errorf("empty withdrable amount for key=%v", string(key)))
 	} else {
 		var storedCoin sdk.Coin
 		k.cdc.MustUnmarshal(b, &storedCoin)
