@@ -19,7 +19,6 @@ type (
 		paramstore paramtypes.Subspace
 
 		bankKeeper types.BankKeeper
-		//oionKeeper types.OrionKeeper
 	}
 )
 
@@ -30,7 +29,6 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 
 	bankKeeper types.BankKeeper,
-	//orionKeeper types.OrionKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -58,47 +56,12 @@ func (k Keeper) GetStoreKey() sdk.StoreKey {
 	return k.storeKey
 }
 
-// Iterate will iterate through all keys with a given prefix using a provided callback function.
-// If the provided callback function returns an error, iteration stops and the error
-// is returned.
-// Here, prefix param consists of complete key byte slice with prefix byte at 0th index
-
-// func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key, val []byte) error) error {
-
-func (k Keeper) Iterate(ctx sdk.Context, prefix []byte, cb func(key []byte, val sdk.Coin) error) error {
-	store := ctx.KVStore(k.storeKey)
-
-	iter := sdk.KVStorePrefixIterator(store, prefix)
-
-	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("Qbank Keeper Iterate|modulename=%s|blockheight=%d|prefix=%s",
-		types.ModuleName, ctx.BlockHeight(), string(prefix)))
-
-	defer iter.Close()
-
-	for ; iter.Valid(); iter.Next() {
-		key, val := iter.Key(), iter.Value()
-
-		var storedCoin sdk.Coin
-
-		k.cdc.MustUnmarshal(val, &storedCoin)
-
-		if err := cb(key, storedCoin); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// ProcessWithdrable Current implementation is based on the assumption that same withdrable amount
-// will be available to withdraw which the user was submitted initially.
-// However this logic can be used to calculate the expected withdrable with the assumption that market does
-// not change.
-// In the MVP phase - We are maintianing the same assumption, and implementing an assurance for the users
-// to give back same deposited amount.
+// ProcessWithdrable implemtns the logic for the current expected withdrable amount based on
+// the users deposit done; Expected withdraw amount = actual deposited amount.
+// In the MVP phase - We are maintianing the same assumption to give back same equivalent deposited amount
+// based on the current market value. And implementing an assurance for the users by giving them vault
+// based tokens backed by quasar tokens.
 // This value can also be useful to calculate denom level PnL.
-// AUDIT |  This logic can be changed in future based on the orion vault design.
 func (k Keeper) ProcessWithdrable(ctx sdk.Context, keyPrefix []byte) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, keyPrefix)

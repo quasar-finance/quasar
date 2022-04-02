@@ -6,8 +6,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "qbank/params.proto";
 import "qbank/deposit.proto";
 import "qbank/withdraw.proto";
-import "qbank/fee_data.proto";
-import "qbank/common.proto";
+ import "qbank/common.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -20,35 +19,14 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/qbank/params";
   }
-  // Queries a Deposit by id.
-	rpc Deposit(QueryGetDepositRequest) returns (QueryGetDepositResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/deposit/{id}";
-	}
-
-	// Queries a list of Deposit items.
-	rpc DepositAll(QueryAllDepositRequest) returns (QueryAllDepositResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/deposit";
-	}
-
+ 
 // Queries a list of UserDenomDeposit items.
 	rpc UserDenomDeposit(QueryUserDenomDepositRequest) returns (QueryUserDenomDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_deposit/{userAcc}";
 	}
 
-// Queries a Withdraw by id.
-	rpc Withdraw(QueryGetWithdrawRequest) returns (QueryGetWithdrawResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/withdraw/{id}";
-	}
-
-	// Queries a list of Withdraw items.
-	rpc WithdrawAll(QueryAllWithdrawRequest) returns (QueryAllWithdrawResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/withdraw";
-	}
-
-// Queries a FeeData by index.
-	rpc FeeData(QueryGetFeeDataRequest) returns (QueryGetFeeDataResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/fee_data";
-	}
+ 
+ 
 // Queries a list of UserDeposit items.
 	rpc UserDeposit(QueryUserDepositRequest) returns (QueryUserDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_deposit/{userAcc}";
@@ -95,24 +73,7 @@ message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
 }
-
-message QueryGetDepositRequest {
-	uint64 id = 1;
-}
-
-message QueryGetDepositResponse {
-	Deposit Deposit = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllDepositRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllDepositResponse {
-	repeated Deposit Deposit = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
+  
 message QueryUserDenomDepositRequest {
   string userAcc = 1;
   string denom = 2;
@@ -121,29 +82,8 @@ message QueryUserDenomDepositRequest {
 message QueryUserDenomDepositResponse {
 	uint64 amount = 1;
 }
+ 
 
-message QueryGetWithdrawRequest {
-	uint64 id = 1;
-}
-
-message QueryGetWithdrawResponse {
-	Withdraw Withdraw = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllWithdrawRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllWithdrawResponse {
-	repeated Withdraw Withdraw = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryGetFeeDataRequest {}
-
-message QueryGetFeeDataResponse {
-	FeeData FeeData = 1 [(gogoproto.nullable) = false];
-}
 message QueryUserDepositRequest {
   string userAcc = 1;
 }

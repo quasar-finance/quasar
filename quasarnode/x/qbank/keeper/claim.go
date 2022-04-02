@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,6 +37,25 @@ func (k Keeper) AddUserClaimDeposit(ctx sdk.Context, uid, vaultID string, coin s
 		// Make sure that the stored coin set is in sorted order.
 		// As the single coin element is always sorted, so the Add will never panic
 		qcoins.Coins = qcoins.Coins.Add(coin)
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	}
+}
+
+// SubUserClaimDeposit subs user's claim amount. This method is called by qbank module
+// key - types.UserDepositKBP + {uid}
+func (k Keeper) SubUserClaimDeposit(ctx sdk.Context, uid, vaultID string, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
+	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		panic(fmt.Sprintf("claim amount is empty for the key key=%v", string(key)))
+	} else {
+		k.cdc.MustUnmarshal(b, &qcoins)
+		// Make sure that the stored coin set is in sorted order.
+		// As the single coin element is always sorted, so the Add will never panic
+		qcoins.Coins = qcoins.Coins.Sub(sdk.NewCoins(coin))
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	}
