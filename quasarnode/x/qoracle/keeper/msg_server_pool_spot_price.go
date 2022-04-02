@@ -48,6 +48,13 @@ func (k msgServer) CreatePoolSpotPrice(goCtx context.Context, msg *types.MsgCrea
 				panic(err)
 			}
 			k.SetStablePrice(ctx, msg.DenomIn, decPrice)
+		} else if msg.DenomIn == stableDenom {
+			decPrice, err := sdk.NewDecFromStr(msg.Price)
+			if err != nil {
+				panic(err)
+			}
+			stableDecPrice := sdk.NewDec(1).Quo(decPrice)
+			k.SetStablePrice(ctx, msg.DenomIn, stableDecPrice)
 		}
 	}
 
