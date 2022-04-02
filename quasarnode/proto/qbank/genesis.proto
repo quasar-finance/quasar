@@ -4,8 +4,7 @@ package abag.quasarnode.qbank;
 import "gogoproto/gogo.proto";
 import "qbank/params.proto";
 import "qbank/deposit.proto";
-import "qbank/withdraw.proto";
- // this line is used by starport scaffolding # genesis/proto/import
+  // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 

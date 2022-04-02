@@ -30,14 +30,6 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdUserDeposit())
 
-	cmd.AddCommand(CmdUserDenomLockupDeposit())
-
-	cmd.AddCommand(CmdUserDenomEpochLockupDeposit())
-
-	cmd.AddCommand(CmdUserWithdraw())
-
-	cmd.AddCommand(CmdUserDenomWithdraw())
-
 	cmd.AddCommand(CmdUserClaimRewards())
 
 	cmd.AddCommand(CmdWithdrable())
