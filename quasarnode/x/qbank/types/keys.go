@@ -40,13 +40,14 @@ const (
 
 var (
 	// KBP - short of KeyBytePrefix, Byte prfix for the key used in KV store
-	QbankGlobalKBP      = []byte{0x00} // Used for counts of deposit and withdraw
-	DepositKBP          = []byte{0x01}
-	UserDenomDepositKBP = []byte{0x02}
-	WithdrawKeyKBP      = []byte{0x03}
-	UserDepositKBP      = []byte{0x04}
-	WithdrawableKeyKBP  = []byte{0x05}
-	UserClaimKBP        = []byte{0x06}
+	QbankGlobalKBP           = []byte{0x00} // Used for counts of deposit and withdraw
+	DepositKBP               = []byte{0x01}
+	UserDenomDepositKBP      = []byte{0x02}
+	WithdrawKeyKBP           = []byte{0x03}
+	UserDepositKBP           = []byte{0x04}
+	WithdrawableKeyKBP       = []byte{0x05}
+	UserClaimKBP             = []byte{0x06}
+	ActualWithdrawableKeyKBP = []byte{0x07}
 
 	// TODO Vault level prefix to be used.
 )
@@ -164,7 +165,6 @@ func CreateEpochLockupUserSepKey(epochday uint64, lockupPeriodStr, uid, sep stri
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
 	b.WriteString(sep)
-	// lockupPeriodStr := LockupTypes_name[int32(lockupPeriod)]
 	b.WriteString(lockupPeriodStr)
 	b.WriteString(sep)
 	b.WriteString(uid)
@@ -179,7 +179,7 @@ func CreateUserDepositKey(uid string) []byte {
 
 // CreateWithdrableKey create key for the withdrable KV store to fetch current
 // withdrable amount by a given user of given denom.
-// Key = {denom} + ":" + "uid"
+// Key = {denom} + ":" + {uid}
 func CreateWithdrableKey(denom, uid, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(denom)
@@ -190,7 +190,7 @@ func CreateWithdrableKey(denom, uid, sep string) []byte {
 
 // CreateWithdrableKey create key for the lockup period based withdrable KV store to fetch current
 // withdrable amount by a given user, denom and lockup period
-// Key = {denom} + ":" + "uid" + ":" + "lockupPeriod"
+// Key = {denom} + ":" + {uid} + ":" + {lockupPeriod}
 func CreateLockupWithdrableKey(denom, uid string, lockupPeriod LockupTypes, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(denom)

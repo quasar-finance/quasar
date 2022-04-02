@@ -25,22 +25,10 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	}
 
 	cmd.AddCommand(CmdQueryParams())
-	cmd.AddCommand(CmdListDeposit())
-	cmd.AddCommand(CmdShowDeposit())
+
 	cmd.AddCommand(CmdUserDenomDeposit())
 
-	cmd.AddCommand(CmdListWithdraw())
-	cmd.AddCommand(CmdShowWithdraw())
-	cmd.AddCommand(CmdShowFeeData())
 	cmd.AddCommand(CmdUserDeposit())
-
-	cmd.AddCommand(CmdUserDenomLockupDeposit())
-
-	cmd.AddCommand(CmdUserDenomEpochLockupDeposit())
-
-	cmd.AddCommand(CmdUserWithdraw())
-
-	cmd.AddCommand(CmdUserDenomWithdraw())
 
 	cmd.AddCommand(CmdUserClaimRewards())
 

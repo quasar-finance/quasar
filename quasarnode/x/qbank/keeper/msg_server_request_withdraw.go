@@ -16,15 +16,11 @@ import (
 func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestWithdraw) (*types.MsgRequestWithdrawResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// _ = ctx
 	k.Logger(ctx).Info(fmt.Sprintf("RequestWithdraw|%s\n", msg.String()))
 
 	// Using zero value of ID. ID field is redundant for this request.
 	withdraw := types.Withdraw{Id: 0, RiskProfile: msg.GetRiskProfile(),
 		VaultID: msg.GetVaultID(), DepositorAccAddress: msg.GetCreator(), Coin: msg.GetCoin()}
-
-	// This call should be removed.
-	// k.Keeper.AppendWithdraw(ctx, withdraw)
 
 	if msg.GetVaultID() == osmolpvypes.ModuleName {
 		wcoin := k.GetWithdrawableAmt(ctx, msg.Creator, msg.Coin.Denom)

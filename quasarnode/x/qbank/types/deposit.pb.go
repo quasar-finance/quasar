@@ -26,13 +26,12 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Depsoit message object to be stored in the KV store.
 type Deposit struct {
-	Id                  uint64     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	RiskProfile         string     `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`
-	VaultID             string     `protobuf:"bytes,3,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
-	DepositorAccAddress string     `protobuf:"bytes,4,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
-	Coin                types.Coin `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin"`
-	// string lockupPeriod = 6; //
-	LockupPeriod LockupTypes `protobuf:"varint,6,opt,name=lockupPeriod,proto3,enum=abag.quasarnode.qbank.LockupTypes" json:"lockupPeriod,omitempty"`
+	Id                  uint64      `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	RiskProfile         string      `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`
+	VaultID             string      `protobuf:"bytes,3,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
+	DepositorAccAddress string      `protobuf:"bytes,4,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
+	Coin                types.Coin  `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin"`
+	LockupPeriod        LockupTypes `protobuf:"varint,6,opt,name=lockupPeriod,proto3,enum=abag.quasarnode.qbank.LockupTypes" json:"lockupPeriod,omitempty"`
 }
 
 func (m *Deposit) Reset()         { *m = Deposit{} }

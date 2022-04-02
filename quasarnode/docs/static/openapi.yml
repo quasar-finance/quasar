@@ -4,295 +4,6 @@ info:
   name: ''
   description: ''
 paths:
-  /abag/quasarnode/qbank/deposit:
-    get:
-      summary: Queries a list of Deposit items.
-      operationId: AbagQuasarnodeQbankDepositAll
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              Deposit:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                    riskProfile:
-                      type: string
-                    vaultID:
-                      type: string
-                    depositorAccAddress:
-                      type: string
-                    coin:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    lockupPeriod:
-                      title: string lockupPeriod = 6; //
-                      type: string
-                      enum:
-                        - Invalid
-                        - Days_7
-                        - Days_21
-                        - Months_1
-                        - Months_3
-                      default: Invalid
-                  description: Depsoit message object to be stored in the KV store.
-              pagination:
-                type: object
-                properties:
-                  nextKey:
-                    type: string
-                    format: byte
-                    title: |-
-                      next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently
-                  total:
-                    type: string
-                    format: uint64
-                    title: >-
-                      total is total number of results available if
-                      PageRequest.count_total
-
-                      was set, its value is undefined otherwise
-                description: >-
-                  PageResponse is to be embedded in gRPC response messages where
-                  the
-
-                  corresponding request message has used PageRequest.
-
-                   message SomeResponse {
-                           repeated Bar results = 1;
-                           PageResponse page = 2;
-                   }
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: pagination.key
-          description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          required: false
-          type: string
-          format: byte
-        - name: pagination.offset
-          description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.limit
-          description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.countTotal
-          description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
-      tags:
-        - Query
-  '/abag/quasarnode/qbank/deposit/{id}':
-    get:
-      summary: Queries a Deposit by id.
-      operationId: AbagQuasarnodeQbankDeposit
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              Deposit:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                  riskProfile:
-                    type: string
-                  vaultID:
-                    type: string
-                  depositorAccAddress:
-                    type: string
-                  coin:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
-                  lockupPeriod:
-                    title: string lockupPeriod = 6; //
-                    type: string
-                    enum:
-                      - Invalid
-                      - Days_7
-                      - Days_21
-                      - Months_1
-                      - Months_3
-                    default: Invalid
-                description: Depsoit message object to be stored in the KV store.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: id
-          in: path
-          required: true
-          type: string
-          format: uint64
-      tags:
-        - Query
-  /abag/quasarnode/qbank/fee_data:
-    get:
-      summary: Queries a FeeData by index.
-      operationId: AbagQuasarnodeQbankFeeData
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              FeeData:
-                type: object
-                properties:
-                  feeCollector:
-                    type: string
-                  fromAddress:
-                    type: string
-                  fee:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
-                  feeType:
-                    type: string
-                    format: uint64
-                  blockHeight:
-                    type: string
-                    format: uint64
-                  memo:
-                    type: string
-                description: FeeData defines the data object for the fee collection fields.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      tags:
-        - Query
   /abag/quasarnode/qbank/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -429,211 +140,10 @@ paths:
           type: string
       tags:
         - Query
-  '/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/{userAcc}/{denom}/{epochDay}/{lockupType}':
-    get:
-      summary: Queries a list of UserDenomEpochLockupDeposit items.
-      operationId: AbagQuasarnodeQbankUserDenomEpochLockupDeposit
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              amount:
-                type: string
-                format: uint64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: userAcc
-          in: path
-          required: true
-          type: string
-        - name: denom
-          in: path
-          required: true
-          type: string
-        - name: epochDay
-          in: path
-          required: true
-          type: array
-          items:
-            type: string
-            format: uint64
-          collectionFormat: csv
-          minItems: 1
-        - name: lockupType
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
-  '/abag/quasarnode/qbank/user_denom_lockup_deposit/{userAcc}/{denom}/{lockupType}':
-    get:
-      summary: Queries a list of UserDenomLockupDeposit items.
-      operationId: AbagQuasarnodeQbankUserDenomLockupDeposit
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              amount:
-                type: string
-                format: uint64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: userAcc
-          in: path
-          required: true
-          type: string
-        - name: denom
-          in: path
-          required: true
-          type: string
-        - name: lockupType
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
-  '/abag/quasarnode/qbank/user_denom_withdraw/{userAcc}/{denom}':
-    get:
-      summary: Queries a list of UserDenomWithdraw items.
-      operationId: AbagQuasarnodeQbankUserDenomWithdraw
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              amount:
-                type: string
-                format: uint64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: userAcc
-          in: path
-          required: true
-          type: string
-        - name: denom
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   '/abag/quasarnode/qbank/user_deposit/{userAcc}':
     get:
       summary: Queries a list of UserDeposit items.
       operationId: AbagQuasarnodeQbankUserDeposit
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              coins:
-                type: object
-                properties:
-                  coins:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                description: >-
-                  QCoins defines encoding/decoding for the slice of sdk.coins to
-                  be used in KV stores.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: userAcc
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
-  '/abag/quasarnode/qbank/user_withdraw/{userAcc}':
-    get:
-      summary: Queries a list of UserWithdraw items.
-      operationId: AbagQuasarnodeQbankUserWithdraw
       responses:
         '200':
           description: A successful response.
@@ -740,224 +250,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - Query
-  /abag/quasarnode/qbank/withdraw:
-    get:
-      summary: Queries a list of Withdraw items.
-      operationId: AbagQuasarnodeQbankWithdrawAll
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              Withdraw:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                    riskProfile:
-                      type: string
-                    vaultID:
-                      type: string
-                    depositorAccAddress:
-                      type: string
-                    coin:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                      title: |-
-                        string amount = 5; 
-                        string denom = 6;
-                  description: >-
-                    Withdraw defines the withdraw object to be stored in the KV
-                    store.
-              pagination:
-                type: object
-                properties:
-                  nextKey:
-                    type: string
-                    format: byte
-                    title: |-
-                      next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently
-                  total:
-                    type: string
-                    format: uint64
-                    title: >-
-                      total is total number of results available if
-                      PageRequest.count_total
-
-                      was set, its value is undefined otherwise
-                description: >-
-                  PageResponse is to be embedded in gRPC response messages where
-                  the
-
-                  corresponding request message has used PageRequest.
-
-                   message SomeResponse {
-                           repeated Bar results = 1;
-                           PageResponse page = 2;
-                   }
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: pagination.key
-          description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          required: false
-          type: string
-          format: byte
-        - name: pagination.offset
-          description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.limit
-          description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.countTotal
-          description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
-      tags:
-        - Query
-  '/abag/quasarnode/qbank/withdraw/{id}':
-    get:
-      summary: Queries a Withdraw by id.
-      operationId: AbagQuasarnodeQbankWithdraw
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              Withdraw:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                  riskProfile:
-                    type: string
-                  vaultID:
-                    type: string
-                  depositorAccAddress:
-                    type: string
-                  coin:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
-                    title: |-
-                      string amount = 5; 
-                      string denom = 6;
-                description: >-
-                  Withdraw defines the withdraw object to be stored in the KV
-                  store.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: id
-          in: path
-          required: true
-          type: string
-          format: uint64
       tags:
         - Query
   /abag/quasarnode/qoracle/params:
@@ -16565,69 +15857,6 @@ definitions:
                   "@type": "type.googleapis.com/google.protobuf.Duration",
                   "value": "1.212s"
                 }
-  abag.quasarnode.qbank.Deposit:
-    type: object
-    properties:
-      id:
-        type: string
-        format: uint64
-      riskProfile:
-        type: string
-      vaultID:
-        type: string
-      depositorAccAddress:
-        type: string
-      coin:
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
-      lockupPeriod:
-        title: string lockupPeriod = 6; //
-        type: string
-        enum:
-          - Invalid
-          - Days_7
-          - Days_21
-          - Months_1
-          - Months_3
-        default: Invalid
-    description: Depsoit message object to be stored in the KV store.
-  abag.quasarnode.qbank.FeeData:
-    type: object
-    properties:
-      feeCollector:
-        type: string
-      fromAddress:
-        type: string
-      fee:
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
-      feeType:
-        type: string
-        format: uint64
-      blockHeight:
-        type: string
-        format: uint64
-      memo:
-        type: string
-    description: FeeData defines the data object for the fee collection fields.
   abag.quasarnode.qbank.LockupTypes:
     type: string
     enum:
@@ -16671,244 +15900,6 @@ definitions:
     description: >-
       QCoins defines encoding/decoding for the slice of sdk.coins to be used in
       KV stores.
-  abag.quasarnode.qbank.QueryAllDepositResponse:
-    type: object
-    properties:
-      Deposit:
-        type: array
-        items:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uint64
-            riskProfile:
-              type: string
-            vaultID:
-              type: string
-            depositorAccAddress:
-              type: string
-            coin:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-            lockupPeriod:
-              title: string lockupPeriod = 6; //
-              type: string
-              enum:
-                - Invalid
-                - Days_7
-                - Days_21
-                - Months_1
-                - Months_3
-              default: Invalid
-          description: Depsoit message object to be stored in the KV store.
-      pagination:
-        type: object
-        properties:
-          nextKey:
-            type: string
-            format: byte
-            title: |-
-              next_key is the key to be passed to PageRequest.key to
-              query the next page most efficiently
-          total:
-            type: string
-            format: uint64
-            title: >-
-              total is total number of results available if
-              PageRequest.count_total
-
-              was set, its value is undefined otherwise
-        description: |-
-          PageResponse is to be embedded in gRPC response messages where the
-          corresponding request message has used PageRequest.
-
-           message SomeResponse {
-                   repeated Bar results = 1;
-                   PageResponse page = 2;
-           }
-  abag.quasarnode.qbank.QueryAllWithdrawResponse:
-    type: object
-    properties:
-      Withdraw:
-        type: array
-        items:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uint64
-            riskProfile:
-              type: string
-            vaultID:
-              type: string
-            depositorAccAddress:
-              type: string
-            coin:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-              title: |-
-                string amount = 5; 
-                string denom = 6;
-          description: Withdraw defines the withdraw object to be stored in the KV store.
-      pagination:
-        type: object
-        properties:
-          nextKey:
-            type: string
-            format: byte
-            title: |-
-              next_key is the key to be passed to PageRequest.key to
-              query the next page most efficiently
-          total:
-            type: string
-            format: uint64
-            title: >-
-              total is total number of results available if
-              PageRequest.count_total
-
-              was set, its value is undefined otherwise
-        description: |-
-          PageResponse is to be embedded in gRPC response messages where the
-          corresponding request message has used PageRequest.
-
-           message SomeResponse {
-                   repeated Bar results = 1;
-                   PageResponse page = 2;
-           }
-  abag.quasarnode.qbank.QueryGetDepositResponse:
-    type: object
-    properties:
-      Deposit:
-        type: object
-        properties:
-          id:
-            type: string
-            format: uint64
-          riskProfile:
-            type: string
-          vaultID:
-            type: string
-          depositorAccAddress:
-            type: string
-          coin:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-          lockupPeriod:
-            title: string lockupPeriod = 6; //
-            type: string
-            enum:
-              - Invalid
-              - Days_7
-              - Days_21
-              - Months_1
-              - Months_3
-            default: Invalid
-        description: Depsoit message object to be stored in the KV store.
-  abag.quasarnode.qbank.QueryGetFeeDataResponse:
-    type: object
-    properties:
-      FeeData:
-        type: object
-        properties:
-          feeCollector:
-            type: string
-          fromAddress:
-            type: string
-          fee:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-          feeType:
-            type: string
-            format: uint64
-          blockHeight:
-            type: string
-            format: uint64
-          memo:
-            type: string
-        description: FeeData defines the data object for the fee collection fields.
-  abag.quasarnode.qbank.QueryGetWithdrawResponse:
-    type: object
-    properties:
-      Withdraw:
-        type: object
-        properties:
-          id:
-            type: string
-            format: uint64
-          riskProfile:
-            type: string
-          vaultID:
-            type: string
-          depositorAccAddress:
-            type: string
-          coin:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-            title: |-
-              string amount = 5; 
-              string denom = 6;
-        description: Withdraw defines the withdraw object to be stored in the KV store.
   abag.quasarnode.qbank.QueryParamsResponse:
     type: object
     properties:
@@ -16948,51 +15939,7 @@ definitions:
       amount:
         type: string
         format: uint64
-  abag.quasarnode.qbank.QueryUserDenomEpochLockupDepositResponse:
-    type: object
-    properties:
-      amount:
-        type: string
-        format: uint64
-  abag.quasarnode.qbank.QueryUserDenomLockupDepositResponse:
-    type: object
-    properties:
-      amount:
-        type: string
-        format: uint64
-  abag.quasarnode.qbank.QueryUserDenomWithdrawResponse:
-    type: object
-    properties:
-      amount:
-        type: string
-        format: uint64
   abag.quasarnode.qbank.QueryUserDepositResponse:
-    type: object
-    properties:
-      coins:
-        type: object
-        properties:
-          coins:
-            type: array
-            items:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-        description: >-
-          QCoins defines encoding/decoding for the slice of sdk.coins to be used
-          in KV stores.
-  abag.quasarnode.qbank.QueryUserWithdrawResponse:
     type: object
     properties:
       coins:
@@ -17033,110 +15980,6 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
-  abag.quasarnode.qbank.Withdraw:
-    type: object
-    properties:
-      id:
-        type: string
-        format: uint64
-      riskProfile:
-        type: string
-      vaultID:
-        type: string
-      depositorAccAddress:
-        type: string
-      coin:
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
-        title: |-
-          string amount = 5; 
-          string denom = 6;
-    description: Withdraw defines the withdraw object to be stored in the KV store.
-  cosmos.base.query.v1beta1.PageRequest:
-    type: object
-    properties:
-      key:
-        type: string
-        format: byte
-        description: |-
-          key is a value returned in PageResponse.next_key to begin
-          querying the next page most efficiently. Only one of offset or key
-          should be set.
-      offset:
-        type: string
-        format: uint64
-        description: |-
-          offset is a numeric offset that can be used when key is unavailable.
-          It is less efficient than using key. Only one of offset or key should
-          be set.
-      limit:
-        type: string
-        format: uint64
-        description: >-
-          limit is the total number of results to be returned in the result
-          page.
-
-          If left empty it will default to a value to be set by each app.
-      countTotal:
-        type: boolean
-        description: >-
-          count_total is set to true  to indicate that the result set should
-          include
-
-          a count of the total number of items available for pagination in UIs.
-
-          count_total is only respected when offset is used. It is ignored when
-          key
-
-          is set.
-      reverse:
-        type: boolean
-        description: >-
-          reverse is set to true if results are to be returned in the descending
-          order.
-
-
-          Since: cosmos-sdk 0.43
-    description: |-
-      message SomeRequest {
-               Foo some_parameter = 1;
-               PageRequest pagination = 2;
-       }
-    title: |-
-      PageRequest is to be embedded in gRPC request messages for efficient
-      pagination. Ex:
-  cosmos.base.query.v1beta1.PageResponse:
-    type: object
-    properties:
-      nextKey:
-        type: string
-        format: byte
-        title: |-
-          next_key is the key to be passed to PageRequest.key to
-          query the next page most efficiently
-      total:
-        type: string
-        format: uint64
-        title: |-
-          total is total number of results available if PageRequest.count_total
-          was set, its value is undefined otherwise
-    description: |-
-      PageResponse is to be embedded in gRPC response messages where the
-      corresponding request message has used PageRequest.
-
-       message SomeResponse {
-               repeated Bar results = 1;
-               PageResponse page = 2;
-       }
   abag.quasarnode.osmosis.gamm.poolmodels.BalancerPool:
     type: object
     properties:
@@ -18398,6 +17241,82 @@ definitions:
                 osmo:
                   type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  cosmos.base.query.v1beta1.PageRequest:
+    type: object
+    properties:
+      key:
+        type: string
+        format: byte
+        description: |-
+          key is a value returned in PageResponse.next_key to begin
+          querying the next page most efficiently. Only one of offset or key
+          should be set.
+      offset:
+        type: string
+        format: uint64
+        description: |-
+          offset is a numeric offset that can be used when key is unavailable.
+          It is less efficient than using key. Only one of offset or key should
+          be set.
+      limit:
+        type: string
+        format: uint64
+        description: >-
+          limit is the total number of results to be returned in the result
+          page.
+
+          If left empty it will default to a value to be set by each app.
+      countTotal:
+        type: boolean
+        description: >-
+          count_total is set to true  to indicate that the result set should
+          include
+
+          a count of the total number of items available for pagination in UIs.
+
+          count_total is only respected when offset is used. It is ignored when
+          key
+
+          is set.
+      reverse:
+        type: boolean
+        description: >-
+          reverse is set to true if results are to be returned in the descending
+          order.
+
+
+          Since: cosmos-sdk 0.43
+    description: |-
+      message SomeRequest {
+               Foo some_parameter = 1;
+               PageRequest pagination = 2;
+       }
+    title: |-
+      PageRequest is to be embedded in gRPC request messages for efficient
+      pagination. Ex:
+  cosmos.base.query.v1beta1.PageResponse:
+    type: object
+    properties:
+      nextKey:
+        type: string
+        format: byte
+        title: |-
+          next_key is the key to be passed to PageRequest.key to
+          query the next page most efficiently
+      total:
+        type: string
+        format: uint64
+        title: |-
+          total is total number of results available if PageRequest.count_total
+          was set, its value is undefined otherwise
+    description: |-
+      PageResponse is to be embedded in gRPC response messages where the
+      corresponding request message has used PageRequest.
+
+       message SomeResponse {
+               repeated Bar results = 1;
+               PageResponse page = 2;
+       }
   cosmos.authz.v1beta1.Grant:
     type: object
     properties:
