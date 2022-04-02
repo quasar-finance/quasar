@@ -31,26 +31,9 @@ service Query {
 	rpc UserDeposit(QueryUserDepositRequest) returns (QueryUserDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_deposit/{userAcc}";
 	}
+ 
+  
 
-// Queries a list of UserDenomLockupDeposit items.
-	rpc UserDenomLockupDeposit(QueryUserDenomLockupDepositRequest) returns (QueryUserDenomLockupDepositResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_lockup_deposit/{userAcc}/{denom}/{lockupType}";
-	}
-
-// Queries a list of UserDenomEpochLockupDeposit items.
-	rpc UserDenomEpochLockupDeposit(QueryUserDenomEpochLockupDepositRequest) returns (QueryUserDenomEpochLockupDepositResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_epoch_lockup_deposit/{userAcc}/{denom}/{epochDay}/{lockupType}";
-	}
-
-// Queries a list of UserWithdraw items.
-	rpc UserWithdraw(QueryUserWithdrawRequest) returns (QueryUserWithdrawResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/user_withdraw/{userAcc}";
-	}
-
-// Queries a list of UserDenomWithdraw items.
-	rpc UserDenomWithdraw(QueryUserDenomWithdrawRequest) returns (QueryUserDenomWithdrawResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_withdraw/{userAcc}/{denom}";
-	}
 
 // Queries a list of UserClaimRewards items.
 	rpc UserClaimRewards(QueryUserClaimRewardsRequest) returns (QueryUserClaimRewardsResponse) {
@@ -92,47 +75,9 @@ message QueryUserDepositResponse {
 	QCoins coins  = 1 
 	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
 }
-
-message QueryUserDenomLockupDepositRequest {
-  string userAcc = 1;
-  string denom = 2;
-  string lockupType = 3;
-}
-
-message QueryUserDenomLockupDepositResponse {
-	uint64 amount = 1;
-}
-
-message QueryUserDenomEpochLockupDepositRequest {
-  string userAcc = 1;
-  string denom = 2;
-  repeated uint64 epochDay = 3;
-  string lockupType = 4;
-}
-
-message QueryUserDenomEpochLockupDepositResponse {
-	uint64 amount = 1;
-}
-
-message QueryUserWithdrawRequest {
-  string userAcc = 1;
-}
-
-message QueryUserWithdrawResponse {
-	QCoins coins  = 1 
-	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
-
-}
-
-message QueryUserDenomWithdrawRequest {
-  string userAcc = 1;
-  string denom = 2;
-}
-
-message QueryUserDenomWithdrawResponse {
-	uint64 amount = 1;
-}
-
+ 
+  
+ 
 message QueryUserClaimRewardsRequest {
   string userAcc = 1;
 }
