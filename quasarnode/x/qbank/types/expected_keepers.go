@@ -25,6 +25,5 @@ type BankKeeper interface {
 }
 
 type OrionKeeper interface {
-	// RequestWithdraw(ctx sdk.Context, withdraw oriontypes.Withdraw) error
 	RequestWithdraw(ctx sdk.Context, depositorAddr string, coin sdk.Coin) error
 }

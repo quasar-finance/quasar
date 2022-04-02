@@ -32,12 +32,7 @@ func TestGenesis(t *testing.T) {
 			},
 		},
 		WithdrawCount: 2,
-		FeeData: &types.FeeData{
-			FeeCollector: "72",
-			FeeType:      19,
-			BlockHeight:  73,
-			Memo:         "36",
-		},
+
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -53,6 +48,6 @@ func TestGenesis(t *testing.T) {
 	require.Equal(t, genesisState.DepositCount, got.DepositCount)
 	require.ElementsMatch(t, genesisState.WithdrawList, got.WithdrawList)
 	require.Equal(t, genesisState.WithdrawCount, got.WithdrawCount)
-	require.Equal(t, genesisState.FeeData, got.FeeData)
+
 	// this line is used by starport scaffolding # genesis/test/assert
 }

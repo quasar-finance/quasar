@@ -183,13 +183,15 @@ func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.Valid
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 	// Note -
-	// Algorithm to update the current withdrable amount.
+	// Algorithm to update the current expected withdrable amount.
 	// 	Iterativelly collect all the lock up periods and get the respective kv store
 	// 	for the deposited amount on a given day.
 	// 	lockup : lockupPeriods
 	// 	  calc : depositDay = todayEpoch - lockupPeriod
 	// 	  get amount from key = {depositDay} + {:} + {lockupPeriod} + {:} +
-	//    add users withdrable amount in the KV store.
+	//    add users expected withdrable amount in the KV store.
+	// Note that the actual withdrawable amount will be different from the expected withdrable amount.
+	// It will be based on the Orion vault performance and market movement in destination dex (osmosis)
 	logger := k.Logger(ctx)
 	logger.Info(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
 
@@ -202,13 +204,16 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 		// With that a 7 day deposit will become 7 block deposit.
 		lockupdays := int64(types.Lockupdays[lockupStr])
 		depositDay := uint64(ctx.BlockHeight() - lockupdays)
-		key := types.CreateEpochLockupUserKey(depositDay, types.LockupTypes(lockupEnm), types.Sep)
-		keyPrefix := append(bytePrefix, key...)
+		if depositDay > 0 {
+			key := types.CreateEpochLockupUserKey(depositDay, types.LockupTypes(lockupEnm), types.Sep)
+			keyPrefix := append(bytePrefix, key...)
 
-		logger.Info(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
-			lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
+			logger.Info(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
+				lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
 
-		k.ProcessWithdrable(ctx, keyPrefix)
+			// Process for the current expected withdrawable amount
+			k.ProcessWithdrable(ctx, keyPrefix)
+		}
 
 	}
 }

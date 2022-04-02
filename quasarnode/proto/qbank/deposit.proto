@@ -14,6 +14,5 @@ message Deposit {
   string vaultID = 3; 
   string depositorAccAddress = 4; 
   cosmos.base.v1beta1.Coin coin = 5 [ (gogoproto.nullable) = false ];
-  // string lockupPeriod = 6; //  
   LockupTypes lockupPeriod  = 6;
 }

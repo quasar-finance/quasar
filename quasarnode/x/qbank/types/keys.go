@@ -40,13 +40,14 @@ const (
 
 var (
 	// KBP - short of KeyBytePrefix, Byte prfix for the key used in KV store
-	QbankGlobalKBP      = []byte{0x00} // Used for counts of deposit and withdraw
-	DepositKBP          = []byte{0x01}
-	UserDenomDepositKBP = []byte{0x02}
-	WithdrawKeyKBP      = []byte{0x03}
-	UserDepositKBP      = []byte{0x04}
-	WithdrawableKeyKBP  = []byte{0x05}
-	UserClaimKBP        = []byte{0x06}
+	QbankGlobalKBP           = []byte{0x00} // Used for counts of deposit and withdraw
+	DepositKBP               = []byte{0x01}
+	UserDenomDepositKBP      = []byte{0x02}
+	WithdrawKeyKBP           = []byte{0x03}
+	UserDepositKBP           = []byte{0x04}
+	WithdrawableKeyKBP       = []byte{0x05}
+	UserClaimKBP             = []byte{0x06}
+	ActualWithdrawableKeyKBP = []byte{0x07}
 
 	// TODO Vault level prefix to be used.
 )
