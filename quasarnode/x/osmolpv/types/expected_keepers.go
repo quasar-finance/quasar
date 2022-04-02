@@ -44,6 +44,7 @@ type QbankKeeper interface {
 type QoracleKeeper interface {
 	GetPoolInfo(ctx sdk.Context, poolId string) (val qoracletypes.PoolInfo, found bool)
 	GetPoolRanking(ctx sdk.Context) (val qoracletypes.PoolRanking, found bool)
+	GetStablePrice(ctx sdk.Context, denom string) sdk.Dec
 }
 
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module

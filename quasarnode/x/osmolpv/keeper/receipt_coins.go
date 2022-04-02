@@ -80,12 +80,10 @@ func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	return sdk.NewCoin(types.ModuleName, OrionAmt)
 }
 
-// AUDIT NOTE | TODO in qoracle module.
 // GetSpotPrice gets the amount of UST equivalent to the input one denom from the qoracle module
 func (k Keeper) GetSpotPrice(ctx sdk.Context, denom string) sdk.Dec {
-	// TODO - Fetch from oracle. Oracle module needs to implement this query method.
-	// spotPrice := k.qoracleKeeper.GetStableSpotPrice(ctx, denom)
-	return sdk.OneDec()
+	spotPrice := k.qoracleKeeper.GetStablePrice(ctx, denom)
+	return spotPrice
 }
 
 // MintOrion will mint orions from the Orion module and transfer to the orion module account.

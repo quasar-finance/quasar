@@ -35,6 +35,29 @@ func (k msgServer) CreatePoolSpotPrice(goCtx context.Context, msg *types.MsgCrea
 		ctx,
 		poolSpotPrice,
 	)
+
+	// Storing the stable price of a given input denom
+	// Note - checking only the msg.DenomOut for stable USD denom; if it is then we are sure
+	// that price of msg.DenomIn is the stable price
+
+	stabledenoms := k.StableDenoms(ctx)
+	for _, stableDenom := range stabledenoms {
+		if msg.DenomOut == stableDenom {
+			decPrice, err := sdk.NewDecFromStr(msg.Price)
+			if err != nil {
+				panic(err)
+			}
+			k.SetStablePrice(ctx, msg.DenomIn, decPrice)
+		} else if msg.DenomIn == stableDenom {
+			decPrice, err := sdk.NewDecFromStr(msg.Price)
+			if err != nil {
+				panic(err)
+			}
+			stableDecPrice := sdk.NewDec(1).Quo(decPrice)
+			k.SetStablePrice(ctx, msg.DenomIn, stableDecPrice)
+		}
+	}
+
 	return &types.MsgCreatePoolSpotPriceResponse{}, nil
 }
 
