@@ -8,9 +8,9 @@ import (
 
 // SetPoolSpotPrice set a specific poolSpotPrice in the store from its index
 func (k Keeper) SetPoolSpotPrice(ctx sdk.Context, poolSpotPrice types.PoolSpotPrice) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolSpotPriceKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolSpotPriceKBP)
 	b := k.cdc.MustMarshal(&poolSpotPrice)
-	store.Set(types.PoolSpotPriceKey(
+	store.Set(types.CreatePoolSpotPriceKey(
 		poolSpotPrice.PoolId,
 		poolSpotPrice.DenomIn,
 		poolSpotPrice.DenomOut,
@@ -25,9 +25,9 @@ func (k Keeper) GetPoolSpotPrice(
 	denomOut string,
 
 ) (val types.PoolSpotPrice, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolSpotPriceKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolSpotPriceKBP)
 
-	b := store.Get(types.PoolSpotPriceKey(
+	b := store.Get(types.CreatePoolSpotPriceKey(
 		poolId,
 		denomIn,
 		denomOut,
@@ -46,10 +46,9 @@ func (k Keeper) RemovePoolSpotPrice(
 	poolId string,
 	denomIn string,
 	denomOut string,
-
 ) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolSpotPriceKeyPrefix))
-	store.Delete(types.PoolSpotPriceKey(
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolSpotPriceKBP)
+	store.Delete(types.CreatePoolSpotPriceKey(
 		poolId,
 		denomIn,
 		denomOut,
@@ -58,7 +57,7 @@ func (k Keeper) RemovePoolSpotPrice(
 
 // GetAllPoolSpotPrice returns all poolSpotPrice
 func (k Keeper) GetAllPoolSpotPrice(ctx sdk.Context) (list []types.PoolSpotPrice) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolSpotPriceKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolSpotPriceKBP)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()

@@ -28,7 +28,7 @@ func (gs GenesisState) Validate() error {
 	poolPositionIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.PoolPositionList {
-		b := PoolPositionKey(elem.PoolId)
+		b := CreatePoolPositionKey(elem.PoolId)
 		index := string(b)
 		if _, ok := poolPositionIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for poolPosition")
@@ -39,7 +39,7 @@ func (gs GenesisState) Validate() error {
 	poolSpotPriceIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.PoolSpotPriceList {
-		index := string(PoolSpotPriceKey(elem.PoolId, elem.DenomIn, elem.DenomOut))
+		index := string(CreatePoolSpotPriceKey(elem.PoolId, elem.DenomIn, elem.DenomOut))
 		if _, ok := poolSpotPriceIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for poolSpotPrice")
 		}
@@ -49,7 +49,7 @@ func (gs GenesisState) Validate() error {
 	poolInfoIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.PoolInfoList {
-		index := string(PoolInfoKey(elem.PoolId))
+		index := string(CreatePoolInfoKey(elem.PoolId))
 		if _, ok := poolInfoIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for poolInfo")
 		}

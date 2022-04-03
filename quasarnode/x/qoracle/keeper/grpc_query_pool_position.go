@@ -20,7 +20,7 @@ func (k Keeper) PoolPositionAll(c context.Context, req *types.QueryAllPoolPositi
 	ctx := sdk.UnwrapSDKContext(c)
 
 	store := ctx.KVStore(k.storeKey)
-	poolPositionStore := prefix.NewStore(store, types.KeyPrefix(types.PoolPositionKeyPrefix))
+	poolPositionStore := prefix.NewStore(store, types.PoolPositionKBP)
 
 	pageRes, err := query.Paginate(poolPositionStore, req.Pagination, func(key []byte, value []byte) error {
 		var poolPosition types.PoolPosition
