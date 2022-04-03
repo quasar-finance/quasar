@@ -8,11 +8,9 @@ import (
 
 // SetPoolInfo set a specific poolInfo in the store from its index
 func (k Keeper) SetPoolInfo(ctx sdk.Context, poolInfo types.PoolInfo) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
 	b := k.cdc.MustMarshal(&poolInfo)
-	store.Set(types.PoolInfoKey(
-		poolInfo.PoolId,
-	), b)
+	store.Set(types.CreatePoolInfoKey(poolInfo.PoolId), b)
 }
 
 // GetPoolInfo returns a poolInfo from its index
@@ -21,11 +19,9 @@ func (k Keeper) GetPoolInfo(
 	poolId string,
 
 ) (val types.PoolInfo, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
 
-	b := store.Get(types.PoolInfoKey(
-		poolId,
-	))
+	b := store.Get(types.CreatePoolInfoKey(poolId))
 	if b == nil {
 		return val, false
 	}
@@ -40,15 +36,13 @@ func (k Keeper) RemovePoolInfo(
 	poolId string,
 
 ) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
-	store.Delete(types.PoolInfoKey(
-		poolId,
-	))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
+	store.Delete(types.CreatePoolInfoKey(poolId))
 }
 
 // GetAllPoolInfo returns all poolInfo
 func (k Keeper) GetAllPoolInfo(ctx sdk.Context) (list []types.PoolInfo) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolInfoKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolInfoKBP)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()

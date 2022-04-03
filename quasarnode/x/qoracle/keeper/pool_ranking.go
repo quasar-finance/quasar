@@ -8,14 +8,14 @@ import (
 
 // SetPoolRanking set poolRanking in the store
 func (k Keeper) SetPoolRanking(ctx sdk.Context, poolRanking types.PoolRanking) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolRankingKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolAPYRankedKBP)
 	b := k.cdc.MustMarshal(&poolRanking)
 	store.Set([]byte{0}, b)
 }
 
 // GetPoolRanking returns poolRanking
 func (k Keeper) GetPoolRanking(ctx sdk.Context) (val types.PoolRanking, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolRankingKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolAPYRankedKBP)
 
 	b := store.Get([]byte{0})
 	if b == nil {
@@ -28,6 +28,6 @@ func (k Keeper) GetPoolRanking(ctx sdk.Context) (val types.PoolRanking, found bo
 
 // RemovePoolRanking removes poolRanking from the store
 func (k Keeper) RemovePoolRanking(ctx sdk.Context) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolRankingKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolAPYRankedKBP)
 	store.Delete([]byte{0})
 }

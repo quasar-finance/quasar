@@ -8,11 +8,9 @@ import (
 
 // SetPoolPosition set a specific poolPosition in the store from its index
 func (k Keeper) SetPoolPosition(ctx sdk.Context, poolPosition types.PoolPosition) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
 	b := k.cdc.MustMarshal(&poolPosition)
-	store.Set(types.PoolPositionKey(
-		poolPosition.PoolId,
-	), b)
+	store.Set(types.CreatePoolPositionKey(poolPosition.PoolId), b)
 }
 
 // GetPoolPosition returns a poolPosition from its index
@@ -21,11 +19,9 @@ func (k Keeper) GetPoolPosition(
 	poolId string,
 
 ) (val types.PoolPosition, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
 
-	b := store.Get(types.PoolPositionKey(
-		poolId,
-	))
+	b := store.Get(types.CreatePoolPositionKey(poolId))
 	if b == nil {
 		return val, false
 	}
@@ -40,15 +36,13 @@ func (k Keeper) RemovePoolPosition(
 	poolId string,
 
 ) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
-	store.Delete(types.PoolPositionKey(
-		poolId,
-	))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
+	store.Delete(types.CreatePoolPositionKey(poolId))
 }
 
 // GetAllPoolPosition returns all poolPosition
 func (k Keeper) GetAllPoolPosition(ctx sdk.Context) (list []types.PoolPosition) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PoolPositionKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PoolPositionKBP)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()

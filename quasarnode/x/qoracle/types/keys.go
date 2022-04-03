@@ -1,10 +1,5 @@
 package types
 
-import (
-	"bytes"
-	"strconv"
-)
-
 const (
 	// ModuleName defines the module name
 	ModuleName = "qoracle"
@@ -27,9 +22,7 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	//PoolPositionKey  = "PoolPosition-value-"
-	PoolAPYRankedKey = "pool_apy_rank_"
-	PoolRankingKey   = "PoolRanking-value-"
+	Sep = "#" // Separater used in the keys
 )
 
 var (
@@ -37,26 +30,38 @@ var (
 	PoolInfoKBP      = []byte{0x02}
 	PoolAPYRankedKBP = []byte{0x03}
 	StablePriceKBP   = []byte{0x04}
+	PoolSpotPriceKBP = []byte{0x05}
 )
+
+var SepByte = []byte("#")
 
 func CreateStablePriceKey(denom string) []byte {
 	return []byte(denom)
 }
 
-func CreatePoolPositionKey(poolID uint64) []byte {
-	var b bytes.Buffer
-	strEpochday := strconv.FormatUint(poolID, 10)
-	b.WriteString(strEpochday)
-	return b.Bytes()
+func CreatePoolPositionKey(poolID string) []byte {
+	return []byte(poolID)
 }
 
-func CreatePoolInfoKey(poolID uint64) []byte {
-	var b bytes.Buffer
-	strEpochday := strconv.FormatUint(poolID, 10)
-	b.WriteString(strEpochday)
-	return b.Bytes()
+func CreatePoolInfoKey(poolID string) []byte {
+	return []byte(poolID)
 }
 
-func CreateAPYRankedKey() []byte {
-	return []byte(PoolAPYRankedKey)
+// PoolSpotPriceKey returns the store key to retrieve a PoolSpotPrice from the index fields
+func CreatePoolSpotPriceKey(poolId string, denomIn string, denomOut string) []byte {
+	var key []byte
+
+	poolIdBytes := []byte(poolId)
+	key = append(key, poolIdBytes...)
+	key = append(key, SepByte...)
+
+	denomInBytes := []byte(denomIn)
+	key = append(key, denomInBytes...)
+	key = append(key, SepByte...)
+
+	denomOutBytes := []byte(denomOut)
+	key = append(key, denomOutBytes...)
+	// key = append(key, SepByte...)
+
+	return key
 }
