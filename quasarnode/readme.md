@@ -1,4 +1,5 @@
 # quasarnode
+
 **quasarnode** is a blockchain built using Cosmos SDK and Tendermint and created with [Starport](https://starport.com).
 
 ## Get started
@@ -26,6 +27,7 @@ npm run serve
 The frontend app is built using the `@starport/vue` and `@starport/vuex` packages. For details, see the [monorepo for Starport front-end development](https://github.com/tendermint/vue).
 
 ## Release
+
 To release a new version of your blockchain, create and push a new tag with `v` prefix. A new draft release with the configured targets will be created.
 
 ```
@@ -36,6 +38,7 @@ git push origin v0.1
 After a draft release is created, make your final changes from the release page and publish it.
 
 ### Install
+
 To install the latest version of your blockchain node's binary, execute the following command on your machine:
 
 ```
@@ -43,13 +46,21 @@ curl https://get.starport.com/abag/quasarnode@latest! | sudo bash
 ```
 `abag/quasarnode` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
 
-QUASARNODE IMPORTANT COMMANDS - 
+## QUASARNODE IMPORTANT COMMANDS
+
+```bash
 quasarnoded keys list --home ~/.quasarnode/
-quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar 
-quasarnoded tx qbank request-deposit "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
-quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar 
-quasarnoded tx qbank request-withdraw "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
+
 quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+
+quasarnoded tx qbank request-deposit SENIOR VAULT-01 30000uqsar Days_7 --from alice
+
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+
+quasarnoded tx qbank request-withdraw "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
+
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+```
 
 ## Learn more
 

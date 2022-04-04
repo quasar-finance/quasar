@@ -1,3 +1,3 @@
-### Params 
+### Params
 
-As of now qbank module does not have any parameters and genesis state variables. 
+As of now qbank module does not have any parameters and genesis state variables.
