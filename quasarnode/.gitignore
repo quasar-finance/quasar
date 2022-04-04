@@ -1,6 +1,9 @@
-vue/node_modules
-vue/dist
+vue/
+docs/static/openapi.yml
 release/
 .idea/
 .vscode/
 .DS_Store
+tmp/
+*.tmp
+*.log
