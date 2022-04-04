@@ -288,6 +288,21 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) cosmoscmd.App {
+	return NewQuasarApp(logger, db, traceStore, loadLatest, skipUpgradeHeights, homePath, invCheckPeriod, encodingConfig, appOpts, baseAppOptions...)
+}
+
+func NewQuasarApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	loadLatest bool,
+	skipUpgradeHeights map[int64]bool,
+	homePath string,
+	invCheckPeriod uint,
+	encodingConfig cosmoscmd.EncodingConfig,
+	appOpts servertypes.AppOptions,
+	baseAppOptions ...func(*baseapp.BaseApp),
+) *App {
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -635,8 +650,10 @@ func New(
 		transferModule,
 		qbankModule,
 		osmolpvModule,
-		qoracleModule,
-		intergammModule,
+		// TODO fix qoracle testing for sim
+		// qoracleModule,
+		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
+		// intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -721,6 +738,8 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 
 	return modAccAddrs
 }
+
+// TODO AG: move the below function to a test package
 
 // LegacyAmino returns SimApp's amino codec.
 //
