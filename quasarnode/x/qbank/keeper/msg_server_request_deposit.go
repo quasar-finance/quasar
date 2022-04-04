@@ -16,31 +16,39 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	k.Logger(ctx).Debug(fmt.Sprintf("RequestDeposit|%s\n", msg.String()))
 
-	depositorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	depositorAccAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
+		// TODO wrap error for context
 		return nil, err
 	}
-
-	deposit := types.Deposit{Id: 0, RiskProfile: msg.GetRiskProfile(),
-		VaultID: msg.GetVaultID(), DepositorAccAddress: msg.GetCreator(),
-		Coin: msg.GetCoin(), LockupPeriod: msg.GetLockupPeriod()}
 
 	// Transfer amount to vault from depositor
-	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx,
-		depositorAddr,
+	err = k.bankKeeper.SendCoinsFromAccountToModule(
+		ctx,
+		depositorAccAddr,
 		osmolptypes.CreateOrionStakingMaccName(msg.GetLockupPeriod()),
-		sdk.NewCoins(deposit.GetCoin())); err != nil {
+		sdk.NewCoins(msg.GetCoin()),
+	)
+	if err != nil {
+		// TODO AG wrap
 		return nil, err
 	}
 
-	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
-	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), deposit.GetCoin())
+	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin())
+	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), msg.GetCoin())
 
 	// AUDIT TODO - consider a blockheight as epochday for now. Integrate epochmodule later.
-	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, msg.GetCreator(), deposit.GetCoin(), uint64(ctx.BlockHeight()), deposit.GetLockupPeriod())
-	k.Logger(ctx).Info(fmt.Sprintf("RequestDeposit|AddEpochLockupUserDenomDeposit|%s|blockheight = %d\n", msg.String(), uint64(ctx.BlockHeight())))
+	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin(), uint64(ctx.BlockHeight()), msg.GetLockupPeriod())
 
 	// TODO - Events And Telementry
+
+	// TODO AG document logging convention
+	k.Logger(ctx).Info(
+		"RequestDeposit|Deposited|",
+		"Depositor=", msg.GetCreator(),
+		"Coin=", msg.GetCoin().String(),
+		"Epoch=", uint64(ctx.BlockHeight()),
+	)
 
 	return &types.MsgRequestDepositResponse{}, nil
 }
