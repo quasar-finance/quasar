@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	"github.com/abag/quasarnode/x/osmolpv/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,11 +11,16 @@ import (
 // CreateOrionStakingMacc create acc for orion staking based on lockup period.
 func (k Keeper) CreateOrionStakingMacc(lockupPeriod qbanktypes.LockupTypes) sdk.AccAddress {
 	accName := types.CreateOrionStakingMaccName(lockupPeriod)
-	fmt.Printf("CreateOrionStakingMacc|accountName=%v \n", accName)
 	acc := k.accountKeeper.GetModuleAddress(accName)
-	fmt.Printf("CreateOrionStakingMacc|accountAddress=%v\n", acc)
-	accStr, err := sdk.Bech32ifyAddressBytes("quasar", acc)
-	fmt.Printf("CreateOrionStakingMacc|accountAddress=%v|ERROR=%v\n", accStr, err)
+
+	// accStr, err := sdk.Bech32ifyAddressBytes("quasar", acc)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("CreateOrionStakingMacc|accountName=%v \n", accName)
+	// fmt.Printf("CreateOrionStakingMacc|accountAddress=%v\n", acc)
+	// fmt.Printf("CreateOrionStakingMacc|accountAddress=%v|ERROR=%v\n", accStr, err)
+
 	return acc
 }
 

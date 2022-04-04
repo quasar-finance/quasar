@@ -16,7 +16,7 @@ import (
 func createNPoolPosition(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolPosition {
 	items := make([]types.PoolPosition, n)
 	for i := range items {
-		items[i].Creator = sample.AccAddress()
+		items[i].Creator = sample.AccAddressStr()
 		items[i].PoolId = fmt.Sprintf("%d", i)
 		items[i].Metrics = &types.PoolMetrics{
 			HighestAPY: sdk.NewDec(int64(i)).String(),

@@ -15,7 +15,7 @@ import (
 
 func createTestPoolRanking(keeper *keeper.Keeper, ctx sdk.Context) types.PoolRanking {
 	item := types.PoolRanking{
-		Creator:            sample.AccAddress(),
+		Creator:            sample.AccAddressStr(),
 		PoolIdsSortedByAPY: []string{"1", "2", "3"},
 		PoolIdsSortedByTVL: []string{"2", "1", "3"},
 		LastUpdatedTime:    1,

@@ -2,11 +2,13 @@ package osmolpv_test
 
 import (
 	"testing"
+	"time"
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/osmolpv"
 	"github.com/abag/quasarnode/x/osmolpv/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,10 +36,10 @@ func TestGenesis(t *testing.T) {
 			TotalLps: 87,
 		},
 		RewardCollection: &types.RewardCollection{
-			TimeCollected: 25,
+			TimeCollected: time.Time{},
 		},
 		UserLPInfo: &types.UserLPInfo{
-			PositionShare: 5,
+			PositionShare: sdk.NewDec(5),
 		},
 		LpStat: &types.LpStat{
 			LpCount: 90,

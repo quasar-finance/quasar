@@ -107,7 +107,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["valid"],
 				LastUpdatedTime: 1,
@@ -115,7 +115,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				Metrics:         samplePoolMetricsMap["valid"],
 				LastUpdatedTime: 1,
 			},
@@ -123,7 +123,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil Metrics",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				LastUpdatedTime: 1,
 			},
@@ -131,7 +131,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Metrics",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         &PoolMetrics{},
 				LastUpdatedTime: 1,
@@ -140,7 +140,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid HighestAPY",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid HighestAPY"],
 				LastUpdatedTime: 1,
@@ -149,7 +149,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "negative HighestAPY",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["negative HighestAPY"],
 				LastUpdatedTime: 1,
@@ -158,7 +158,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid TVL 1",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid TVL 1"],
 				LastUpdatedTime: 1,
@@ -167,7 +167,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid TVL 2",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid TVL 2"],
 				LastUpdatedTime: 1,
@@ -176,7 +176,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil GaugeAPYs[0]",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["nil GaugeAPYs[0]"],
 				LastUpdatedTime: 1,
@@ -185,7 +185,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid Duration",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid Duration"],
 				LastUpdatedTime: 1,
@@ -194,7 +194,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "negative Duration",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["negative Duration"],
 				LastUpdatedTime: 1,
@@ -203,7 +203,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid APY",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid APY"],
 				LastUpdatedTime: 1,
@@ -212,7 +212,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "negative APY",
 			msg: MsgCreatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["negative APY"],
 				LastUpdatedTime: 1,
@@ -221,7 +221,7 @@ func TestMsgCreatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgCreatePoolPosition{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 				Metrics: samplePoolMetricsMap["valid"],
 			},
@@ -257,7 +257,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["valid"],
 				LastUpdatedTime: 1,
@@ -265,7 +265,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				Metrics:         samplePoolMetricsMap["valid"],
 				LastUpdatedTime: 1,
 			},
@@ -273,7 +273,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil Metrics",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				LastUpdatedTime: 1,
 			},
@@ -281,7 +281,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Metrics",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         &PoolMetrics{},
 				LastUpdatedTime: 1,
@@ -290,7 +290,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid HighestAPY",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid HighestAPY"],
 				LastUpdatedTime: 1,
@@ -299,7 +299,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid TVL 1",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid TVL 1"],
 				LastUpdatedTime: 1,
@@ -308,7 +308,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid TVL 2",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid TVL 2"],
 				LastUpdatedTime: 1,
@@ -317,7 +317,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil GaugeAPYs[0]",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["nil GaugeAPYs[0]"],
 				LastUpdatedTime: 1,
@@ -326,7 +326,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid Duration",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid Duration"],
 				LastUpdatedTime: 1,
@@ -335,7 +335,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "negative Duration",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["negative Duration"],
 				LastUpdatedTime: 1,
@@ -344,7 +344,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid APY",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["invalid APY"],
 				LastUpdatedTime: 1,
@@ -353,7 +353,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "negative APY",
 			msg: MsgUpdatePoolPosition{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Metrics:         samplePoolMetricsMap["negative APY"],
 				LastUpdatedTime: 1,
@@ -362,7 +362,7 @@ func TestMsgUpdatePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgUpdatePoolPosition{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 				Metrics: samplePoolMetricsMap["valid"],
 			},
@@ -396,13 +396,13 @@ func TestMsgDeletePoolPosition_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgDeletePoolPosition{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 			},
 		}, {
 			name: "empty PoolId",
 			msg: MsgDeletePoolPosition{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 			},
 			err: sdkerrors.ErrInvalidRequest,
 		},

@@ -16,7 +16,7 @@ import (
 func createNPoolInfo(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolInfo {
 	items := make([]types.PoolInfo, n)
 	for i := range items {
-		items[i].Creator = sample.AccAddress()
+		items[i].Creator = sample.AccAddressStr()
 		items[i].PoolId = fmt.Sprintf("%d", i)
 		items[i].LastUpdatedTime = 1 + uint64(i)
 
