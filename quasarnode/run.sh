@@ -1,3 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-starport chain serve -c config.yml --reset-once -v  > q.log 2>&1
+set -Cue -o pipefail
+
+starport chain serve -c config.yml --reset-once -v
