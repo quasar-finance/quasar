@@ -1,0 +1,12 @@
+syntax = "proto3";
+package abag.quasarnode.intergamm;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/abag/quasarnode/x/intergamm/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}

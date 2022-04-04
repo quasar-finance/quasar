@@ -1,0 +1,30 @@
+accounts:
+  - name: alice
+    coins: ["1000token", "100000000stake", "1000000uqsar"]
+    mnemonic: "cupboard various gauge exclude scrub lyrics wrist crew advance sea clerk permit change gown crouch trust amateur list fire inject federal capable dune siren"
+  - name: tellurian
+    coins: ["500token", "100000000stake", "1000000uqsar"]
+    mnemonic: "liar good discover business cute round sport okay explain sure ozone oxygen pizza diagram want crew arctic wolf better destroy enlist arctic occur weather"
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4501"
+  name: tellurian
+  coins: ["500000token", "100000000stake", "1000000uqsar"]
+host:
+  rpc: ":26659"
+  p2p: ":26661"
+  prof: ":6061"
+  grpc: ":9095"
+  grpc-web: ":8091"
+  api: ":1311"
+  frontend: ":8081"
+  dev-ui: ":12351"
+genesis:
+  chain_id: "quasar1"
+init:
+  home: "$HOME/.q1"

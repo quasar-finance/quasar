@@ -1,0 +1,53 @@
+syntax = "proto3";
+package abag.quasarnode.osmolpv;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "qbank/common.proto";
+
+option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
+
+// Strategies defines the list of strategy names
+message Strategies {
+   repeated string names  = 1  [(gogoproto.nullable) = false];
+}
+
+// StrategyInfo defines the basic information of any strategy.
+message StrategyInfo {
+   string name = 1;   
+   bool isActive = 2;   
+   string stakingAcc = 3; 
+   string rewardAcc = 4;
+}
+
+// MeissaStrategyInfo defines the meissa strategy specific data. This will represent 
+// Each indivisual instance of the meissa strategy
+message MeissaStrategyInfo {
+   StrategyInfo base = 1;
+   qbank.LockupTypes lockupType = 2;
+   google.protobuf.Timestamp start_time = 3 [
+      (gogoproto.stdtime) = true,
+      (gogoproto.nullable) = false,
+      (gogoproto.moretags) = "yaml:\"start_time\""
+    ];
+    google.protobuf.Duration duration = 4 [
+      (gogoproto.nullable) = false,
+      (gogoproto.stdduration) = true,
+      (gogoproto.jsontag) = "duration,omitempty",
+      (gogoproto.moretags) = "yaml:\"duration\""
+    ];
+
+
+}
+message CurrentPosition {
+  qbank.QCoins totalDeployedTokens = 1;
+  qbank.QCoins totalStakedTokens = 2;
+  qbank.QCoins totalUnClaimedReward = 3;
+}
+
+message TotalHistPosition {
+   qbank.QCoins totalDeployedTokens = 1;
+   qbank.QCoins totalStakedTokens = 2;
+   qbank.QCoins totalClaimedReward = 3;
+  }

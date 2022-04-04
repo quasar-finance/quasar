@@ -1,0 +1,14 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message PoolSpotPrice {
+  string poolId = 1; 
+  string denomIn = 2; 
+  string denomOut = 3; 
+  string price = 4; 
+  uint64 lastUpdatedTime = 5; 
+  string creator = 6;
+}
+

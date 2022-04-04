@@ -1,0 +1,35 @@
+accounts:
+  - name: alice
+    coins: ["1000token", "1000000000stake", "1000000uqsar"]
+    mnemonic: "execute insect frequent depart toy symbol dove shrug bronze script pistol love grocery stock donate slow tank fringe history notice punch catalog wage vault"
+  - name: greenman
+    coins: ["500token", "100000000stake", "1000000uqsar"]
+    mnemonic: "advance large monster cattle gasp member elephant sea vacant dream vivid unhappy ski diesel leopard obtain north fade museum blue stem turn ahead expire"
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: quasar139njd402zqj368sk65y753ppp4hxr926pkhrkk
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4502"
+  name: greenman
+  coins: ["5token", "100000stake", "1000000uqsar"]
+host:
+  rpc: ":26559"
+  p2p: ":26662"
+  prof: ":6062"
+  grpc: ":9096"
+  grpc-web: ":8092"
+  api: ":1312"
+  frontend: ":8082"
+  dev-ui: ":12352"
+genesis:
+  chain_id: "quasar2"
+  app_state:
+    interchainaccounts:
+      host_genesis_state:
+        params:
+          allow_messages: ["/cosmos.bank.v1beta1.MsgSend", "/ibc.applications.transfer.v1.MsgTransfer"]
+init:
+  home: "$HOME/.q2"

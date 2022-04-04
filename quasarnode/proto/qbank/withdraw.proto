@@ -1,0 +1,18 @@
+syntax = "proto3";
+package abag.quasarnode.qbank;
+
+option go_package = "github.com/abag/quasarnode/x/qbank/types";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+// Withdraw defines the withdraw object to be stored in the KV store.
+message Withdraw {
+  uint64 id = 1;
+  string riskProfile = 2; 
+  string vaultID = 3; 
+  string depositorAccAddress = 4; 
+  //string amount = 5; 
+  //string denom = 6;
+  cosmos.base.v1beta1.Coin coin = 5 [ (gogoproto.nullable) = false ];
+  
+}

@@ -1,0 +1,23 @@
+starport chain serve --config sender.yml --reset-once
+
+starport chain serve --config receiver.yml --reset-once
+
+cp ./hermes_config.toml ~/.hermes/config.toml
+
+hermes keys restore --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter" quasar1
+
+hermes keys restore --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner" quasar2
+
+hermes create connection quasar1 quasar2
+
+hermes create channel quasar1 quasar2 --port-a transfer --port-b transfer
+
+hermes start
+
+quasarnoded tx intergamm register-account connection-0 --chain-id=quasar1 --node=tcp://localhost:26659 --home ~/.q1 --from alice
+
+quasarnoded query intergamm interchain-account-from-address connection-0 quasar1cqfvf7w7jnhxl0e4hhn8rh9h0hcafp9rsrshmw --node=tcp://localhost:26659
+
+Send 1000 stake tokens to quasar17mg67v46ze2tx7hfw6s3wlnksrm607g9ehrmmtd8mcvgsa2ey8lslcjx87
+
+quasarnoded tx intergamm ibc-transfer connection-0 transfer channel-0 10stake quasar1sh4z0f637ej8k9m76ph2h3lr8j93g4ndc4m2dx --chain-id=quasar1 --node=tcp://localhost:26659 --home ~/.q1 --from alice
