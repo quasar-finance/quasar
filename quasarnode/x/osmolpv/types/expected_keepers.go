@@ -6,7 +6,7 @@ import (
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
