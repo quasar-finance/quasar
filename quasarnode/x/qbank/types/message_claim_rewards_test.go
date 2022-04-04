@@ -23,7 +23,7 @@ func TestMsgClaimRewards_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid address",
 			msg: MsgClaimRewards{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 			},
 		},
 	}

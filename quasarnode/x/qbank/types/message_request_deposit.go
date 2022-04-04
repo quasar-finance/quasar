@@ -11,8 +11,7 @@ const TypeMsgRequestDeposit = "request_deposit"
 
 var _ sdk.Msg = &MsgRequestDeposit{}
 
-func NewMsgRequestDeposit(creator string, riskProfile string, vaultID string,
-	coin sdk.Coin, lockupPeriod LockupTypes) /*amount string, denom string) */ *MsgRequestDeposit {
+func NewMsgRequestDeposit(creator string, riskProfile string, vaultID string, coin sdk.Coin, lockupPeriod LockupTypes) *MsgRequestDeposit {
 	return &MsgRequestDeposit{
 		Creator:      creator,
 		RiskProfile:  riskProfile,
@@ -49,8 +48,10 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
+	// TODO enum?
+	// How to update the proto defs and regenarate everything?
 	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
-		return fmt.Errorf("invalid deposit msg risk  profile")
+		return fmt.Errorf("invalid deposit msg risk profile")
 	}
 
 	return nil

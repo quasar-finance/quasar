@@ -10,7 +10,7 @@ import "qbank/common.proto";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc RequestDeposit(MsgRequestDeposit) returns (MsgRequestDepositResponse);
+  rpc RequestDeposit(MsgRequestDeposit) returns (MsgRequestDepositResponse);
   rpc RequestWithdraw(MsgRequestWithdraw) returns (MsgRequestWithdrawResponse);
   rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
   rpc RequestWithdrawAll(MsgRequestWithdrawAll) returns (MsgRequestWithdrawAllResponse);
@@ -38,7 +38,7 @@ message MsgRequestWithdraw {
 
 message MsgRequestWithdrawResponse {
 }
- 
+
 // MsgClaimRewards is tx message to claim all available rewards from the input vault.
 // TODO - Should it move to a separate reward module to avoid cyclic dependencies between modules.
 message MsgClaimRewards {
