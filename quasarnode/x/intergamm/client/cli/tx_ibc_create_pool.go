@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	channelutils "github.com/cosmos/ibc-go/v2/modules/core/04-channel/client/utils"
+	channelutils "github.com/cosmos/ibc-go/v3/modules/core/04-channel/client/utils"
 	"github.com/spf13/cobra"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

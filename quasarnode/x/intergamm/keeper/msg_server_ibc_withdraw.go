@@ -5,7 +5,7 @@ import (
 
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 func (k msgServer) SendIbcWithdraw(goCtx context.Context, msg *types.MsgSendIbcWithdraw) (*types.MsgSendIbcWithdrawResponse, error) {
