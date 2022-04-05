@@ -13,4 +13,7 @@ test_simulation:
 run:
 	./run.sh
 
-.PHONY: go.mod test_file test test_simulation run
+run_silent:
+	./run.sh > q.log 2>&1
+
+.PHONY: go.mod test_path test test_simulation run run_silent
