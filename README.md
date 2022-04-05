@@ -17,11 +17,74 @@ Quasar is implemeting strategies to aggregate users deposited fund to optimally 
 2. Current state of the repo ca not be used directly for a live production as there are many parallel moving developments in different branches.
 3. Task management is happening via clickup project mangement internally. So we will not create any github task, till it is in good situation.
 
-## Current active branches
+## Quasar Node
 
-1. quasarnode_integrated_ak
-2. quasarnode_orion_reward_ak
-3. add_gauge_apy_type_and_msg
-4. qusarnode_integrated_ak_ibc3
+**quasarnode** is a blockchain built using Cosmos SDK and Tendermint and created with [Starport](https://starport.com).
 
-To know more about the project, active branches, current developments please connect with quasar development team.
+### Get started
+
+```
+starport chain serve
+```
+
+`serve` command installs dependencies, builds, initializes, and starts your blockchain in development.
+
+#### Configure
+
+Your blockchain in development can be configured with `config.yml`. To learn more, see the [Starport docs](https://docs.starport.com).
+
+#### Web Frontend
+
+Starport has scaffolded a Vue.js-based web app in the `vue` directory. Run the following commands to install dependencies and start the app:
+
+```
+cd vue
+npm install
+npm run serve
+```
+
+The frontend app is built using the `@starport/vue` and `@starport/vuex` packages. For details, see the [monorepo for Starport front-end development](https://github.com/tendermint/vue).
+
+### Release
+
+To release a new version of your blockchain, create and push a new tag with `v` prefix. A new draft release with the configured targets will be created.
+
+```
+git tag v0.1
+git push origin v0.1
+```
+
+After a draft release is created, make your final changes from the release page and publish it.
+
+#### Install
+
+To install the latest version of your blockchain node's binary, execute the following command on your machine:
+
+```
+curl https://get.starport.com/abag/quasarnode@latest! | sudo bash
+```
+`abag/quasarnode` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
+
+### Important node commands
+
+```bash
+quasarnoded keys list --home ~/.quasarnode/
+
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+
+quasarnoded tx qbank request-deposit SENIOR VAULT-01 30000uqsar Days_7 --from alice
+
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+
+quasarnoded tx qbank request-withdraw "SENIOR" "VAULT-01" 30000 "uqsar" --from alice
+
+quasarnoded q qbank user-denom-deposit cosmos146c4e9w55su0czahwxrz8v660p0c2s93cmam6w uqsar
+```
+
+## Learn more
+
+- [Starport](https://starport.com)
+- [Tutorials](https://docs.starport.com/guide)
+- [Starport docs](https://docs.starport.com)
+- [Cosmos SDK docs](https://docs.cosmos.network)
+- [Developer Chat](https://discord.gg/H6wGTY8sxw)
