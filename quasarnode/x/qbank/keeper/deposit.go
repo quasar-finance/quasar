@@ -21,6 +21,31 @@ func (k Keeper) GetUserDepositAmount(ctx sdk.Context, uid string) (val types.QCo
 	return val, true
 }
 
+// GetTotalDeposits calculates the current total active deposits.
+// Logic -
+// Iterate over { types.UserDepositKBP } => CreateUserDepositKey }
+// Note - We need to guarantee actual deposit returns to the users irrespective of IL loss.
+func (k Keeper) GetTotalDeposits(ctx sdk.Context) sdk.Coins {
+	allCoins := sdk.NewCoins()
+	bytePrefix := types.UserDepositKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	k.Logger(ctx).Info(fmt.Sprintf("GetTotalDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	for ; iter.Valid(); iter.Next() {
+		_, value := iter.Key(), iter.Value()
+		var qcoins types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoins)
+		for _, c := range qcoins.Coins {
+			allCoins = allCoins.Add(c)
+		}
+	}
+	return allCoins
+}
+
 // AddUserDeposit adds user's deposit amount with key - types.UserDepositKBP + {uid} ,
 // and will aggregate the total depsoited amount so far.
 func (k Keeper) AddUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
@@ -49,7 +74,6 @@ func (k Keeper) SubUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
 	key := types.CreateUserDepositKey(uid)
 	b := store.Get(key)
 	if b == nil {
-		// Do nothing - Called by mistake. Ideally code should never come here.
 		panic(fmt.Sprintf("method SubUserDeposit |kv store does not have key=%v", string(key)))
 	}
 
@@ -100,7 +124,6 @@ func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 	key := types.CreateUserDenomDepositKey(uid, types.Sep, coin.GetDenom())
 	b := store.Get(key)
 	if b == nil {
-		// Do nothing - Called by mistake. Ideally code should never come here.
 		panic(fmt.Sprintf("method SubUserDenomDeposit |kv store does not have key=%v", string(key)))
 	}
 
@@ -156,7 +179,6 @@ func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin
 	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, coin.GetDenom(), epochday, lockupPeriod)
 	b := store.Get(key)
 	if b == nil {
-		// Do nothing - Called by mistake. Ideally code should never come here.
 		panic(fmt.Sprintf("method SubEpochLockupUserDenomDeposit |kv store does not have key=%v", string(key)))
 	}
 
@@ -167,33 +189,7 @@ func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin
 	store.Set(key, value)
 }
 
-// GetTotalActiveDeposits calculates the current total active deposits.
-// Logic -
-// Iterate over { types.UserDepositKBP } => CreateUserDepositKey }
-// Note - We need to guarantee actual deposit returns to the users irrespective of IL loss.
-func (k Keeper) GetTotalActiveDeposits(ctx sdk.Context, module string) sdk.Coins {
-	allCoins := sdk.NewCoins()
-	bytePrefix := types.UserDepositKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
-	defer iter.Close()
-
-	k.Logger(ctx).Info(fmt.Sprintf("GetTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
-
-	// key = userID, value = sdk.Coins
-	for ; iter.Valid(); iter.Next() {
-		_, value := iter.Key(), iter.Value()
-		var qcoins types.QCoins
-		k.cdc.MustUnmarshal(value, &qcoins)
-		for _, c := range qcoins.Coins {
-			allCoins = allCoins.Add(c)
-		}
-	}
-	return allCoins
-}
-
-// GetEpochUserDepositAmt calculates the total deposit amount of the given users on a given day
+// GetEpochUserDepositAmount calculates the total deposit amount of the given users on a given day
 // Iterate over all lockup periods, and prepare prefix key
 // as - {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:}
 // On iteration, key - {denom}, value = sdk.Coin. No. of iteration can be upto the number of lockup periods
@@ -227,10 +223,10 @@ func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context, epochday uint64, user
 	return coins
 }
 
-// GetEpochTotalActiveDeposits calculates the total amount deposited on a given epoch day
+// GetTotalEpochDeposits calculates the total amount deposited on a given epoch day
 // Logic - Iterate with epoch day as prefix keys
 // Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
-func (k Keeper) GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, moduleName string) sdk.Coins {
+func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coins {
 	bytePrefix := types.UserDenomDepositKBP
 	prefixKey := types.EpochDaySepKey(epochday, types.Sep)
 	prefixKey = append(bytePrefix, prefixKey...)
@@ -239,7 +235,7 @@ func (k Keeper) GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, mo
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetEpochTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
+	logger.Info(fmt.Sprintf("GetTotalEpochDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
 		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
 	var coins sdk.Coins
@@ -249,7 +245,7 @@ func (k Keeper) GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, mo
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 		coins = coins.Add(coin)
-		logger.Info(fmt.Sprintf("GetEpochTotalActiveDeposits|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+		logger.Info(fmt.Sprintf("GetTotalEpochDeposits|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
 			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
 
 	}

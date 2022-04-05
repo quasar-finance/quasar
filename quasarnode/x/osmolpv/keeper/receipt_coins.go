@@ -108,7 +108,7 @@ func (k Keeper) GetUsersOrionShare(ctx sdk.Context, userAcc string) sdk.Dec {
 		orion := k.CalcReceipts(ctx, c)
 		usersOrion = usersOrion.Add(orion)
 	}
-	allCoins := k.qbankKeeper.GetTotalActiveDeposits(ctx, types.ModuleName)
+	allCoins := k.qbankKeeper.GetTotalDeposits(ctx)
 	totalOrions := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
 	for _, c := range allCoins {
 		orion := k.CalcReceipts(ctx, c)
@@ -131,7 +131,7 @@ func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context,
 		orion := k.CalcReceipts(ctx, c)
 		usersOrion = usersOrion.Add(orion)
 	}
-	allCoins := k.qbankKeeper.GetEpochTotalActiveDeposits(ctx, epochDay, types.ModuleName)
+	allCoins := k.qbankKeeper.GetTotalEpochDeposits(ctx, epochDay)
 	totalOrions := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
 	for _, c := range allCoins {
 		orion := k.CalcReceipts(ctx, c)

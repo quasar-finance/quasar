@@ -45,6 +45,22 @@ func TestGetAddSubUserDeposit(t *testing.T) {
 	require.Equal(t, sdk.NewInt(0), got.Coins.AmountOf(denom2))
 }
 
+func TestGetTotalDeposits(t *testing.T) {
+	keeper, ctx := keepertest.QbankKeeper(t)
+	depositorAddr := sample.AccAddressStr()
+	denom1 := "ABC"
+	denom2 := "DEF"
+	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
+	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
+
+	keeper.AddUserDeposit(ctx, depositorAddr, coin1)
+	keeper.AddUserDeposit(ctx, depositorAddr, coin2)
+
+	coins := keeper.GetTotalDeposits(ctx)
+	require.Equal(t, sdk.NewInt(50), coins.AmountOf(denom1))
+	require.Equal(t, sdk.NewInt(100), coins.AmountOf(denom2))
+}
+
 func TestGetUserDepositInvalidKey(t *testing.T) {
 	keeper, ctx := keepertest.QbankKeeper(t)
 	_, found := keeper.GetUserDepositAmount(ctx, "invalid")
@@ -141,6 +157,25 @@ func TestGetAddSubEpochLockupUserDenomDeposit(t *testing.T) {
 	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, uint64(1), types.LockupTypes_Months_1)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(0), got.Amount)
+}
+
+func TestGetTotalEpochDeposits(t *testing.T) {
+	keeper, ctx := keepertest.QbankKeeper(t)
+	depositorAddr := sample.AccAddressStr()
+	denom1 := "ABC"
+	denom2 := "DEF"
+	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
+	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
+
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, uint64(1), types.LockupTypes_Days_7)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, uint64(2), types.LockupTypes_Days_7)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin2, uint64(2), types.LockupTypes_Days_7)
+
+	got := keeper.GetTotalEpochDeposits(ctx, uint64(1))
+	require.Equal(t, sdk.NewInt(50), got.AmountOf(denom1))
+	got = keeper.GetTotalEpochDeposits(ctx, uint64(2))
+	require.Equal(t, sdk.NewInt(50), got.AmountOf(denom1))
+	require.Equal(t, sdk.NewInt(100), got.AmountOf(denom2))
 }
 
 func TestGetEpochLockupUserDenomDepositInvalidKey(t *testing.T) {
