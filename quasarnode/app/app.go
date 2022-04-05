@@ -545,6 +545,7 @@ func New(
 		osmolpvmoduletypes.ModuleName,
 		// TODO check the order of the below
 		vestingtypes.ModuleName,
+		icatypes.ModuleName,
 		intergammmoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName,
@@ -577,6 +578,7 @@ func New(
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		intergammmoduletypes.ModuleName,
+		icatypes.ModuleName,
 		genutiltypes.ModuleName,
 	)
 
