@@ -6,11 +6,11 @@ accounts:
 validator:
   name: alice
   staked: "100000000stake"
-client:
-  openapi:
-    path: "docs/static/openapi.yml"
-  vuex:
-    path: "vue/src/store"
+#client:
+#  openapi:
+#    path: "docs/static/openapi.yml"
+#  vuex:
+#    path: "vue/src/store"
 faucet:
   name: bob
   coins: ["5token", "100000stake", "10000uqsar"]
