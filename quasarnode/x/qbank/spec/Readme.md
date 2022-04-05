@@ -5,7 +5,7 @@ qbank is the custom bank module for managing user deposit and withdrawal. Intern
 Store Key, Getter, Setters Naming -
 {Get/Set}{KeyPrefixName}{ValueTypeName}
 
-GetUserDenomDepositAmount
+GetUserDenomDepositAmt
 
 Naming convention used in the KV store:
 variable name key is used as byte repr of actual key string object.
