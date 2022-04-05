@@ -3,16 +3,16 @@ package keeper_test
 import (
 	"testing"
 
-	testkeeper "github.com/abag/quasarnode/testutil/keeper"
+	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetParams(t *testing.T) {
-	k, ctx := testkeeper.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	params := types.DefaultParams()
 
-	k.SetParams(ctx, params)
+	keeper.SetParams(ctx, params)
 
-	require.EqualValues(t, params, k.GetParams(ctx))
+	require.EqualValues(t, params, keeper.GetParams(ctx))
 }

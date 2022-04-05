@@ -441,7 +441,7 @@ func New(
 
 	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.QbankKeeper = *qbankmodulekeeper.NewKeeper(
+	app.QbankKeeper = qbankmodulekeeper.NewKeeper(
 		appCodec,
 		keys[qbankmoduletypes.StoreKey],
 		keys[qbankmoduletypes.MemStoreKey],

@@ -3,76 +3,73 @@ package keeper
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/app"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	osmolpvtypes "github.com/abag/quasarnode/x/osmolpv/types"
+	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
-type TestKeeperState struct {
-	T              *testing.T
-	Logger         log.Logger
-	EncodingConfig cosmoscmd.EncodingConfig
-
-	TestDb     *tmdb.MemDB
-	StateStore storetypes.CommitMultiStore
-
-	Ctx sdk.Context
-
-	ParamsKeeper  *paramskeeper.Keeper
-	AccountKeeper *authkeeper.AccountKeeper
+type TestKeepers struct {
+	T             testing.TB
+	Ctx           sdk.Context
+	ParamsKeeper  paramskeeper.Keeper
+	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
+	QBankKeeper   qbankkeeper.Keeper
 }
 
-func NewTestKeeperState(t *testing.T) *TestKeeperState {
-	logger := log.TestingLogger()
-	logger.Info("creating TestKeeperState")
-
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, logger)
-	encodingConfig := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
-
-	return &TestKeeperState{
-		T:              t,
-		Logger:         logger,
-		EncodingConfig: encodingConfig,
-		TestDb:         db,
-		StateStore:     stateStore,
-		Ctx:            ctx,
+func moduleAccountPerms() map[string][]string {
+	return map[string][]string{
+		qbanktypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21):  nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_1): nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_3): nil,
 	}
 }
 
-func (tks *TestKeeperState) LoadKVStores() {
-	require.NoError(tks.T, tks.StateStore.LoadLatestVersion())
+func NameToAddress(name string) string {
+	return authtypes.NewModuleAddress(name).String()
 }
 
-func (tks *TestKeeperState) GetParamsKeeper() paramskeeper.Keeper {
-	if tks.ParamsKeeper == nil {
-		panic("ParamsKeeper cannot be nil")
+// BlockModuleAccountAddrs returns all the app's module account addresses.
+func BlockModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
+	modAccAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		modAccAddrs[NameToAddress(acc)] = true
 	}
-	return *tks.ParamsKeeper
+
+	return modAccAddrs
 }
 
-func (tks *TestKeeperState) GetAccountKeeper() authkeeper.AccountKeeper {
-	if tks.AccountKeeper == nil {
-		panic("AccountKeeper cannot be nil")
+func NewTestSetup(t testing.TB) TestKeepers {
+	initializer := newInitializer()
+
+	maccPerms := moduleAccountPerms()
+	blockedMaccAddresses := BlockModuleAccountAddrs(maccPerms)
+
+	paramsKeeper := initializer.ParamsKeeper()
+	accountKeeper := initializer.AccountKeeper(paramsKeeper, maccPerms)
+	bankKeeper := initializer.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
+	qbankkeeper := initializer.QbankKeeper(paramsKeeper, bankKeeper)
+
+	require.NoError(t, initializer.StateStore.LoadLatestVersion())
+
+	return TestKeepers{
+		T:             t,
+		Ctx:           initializer.Ctx,
+		ParamsKeeper:  paramsKeeper,
+		AccountKeeper: accountKeeper,
+		BankKeeper:    bankKeeper,
+		QBankKeeper:   qbankkeeper,
 	}
-	return *tks.AccountKeeper
 }
 
-func (tks *TestKeeperState) GetBankKeeper() bankkeeper.Keeper {
-	if tks.BankKeeper == nil {
-		panic("BankKeeper cannot be nil")
-	}
-	return tks.BankKeeper
+func (tk TestKeepers) QbankKeeper() (sdk.Context, qbankkeeper.Keeper) {
+	return tk.Ctx, tk.QBankKeeper
 }

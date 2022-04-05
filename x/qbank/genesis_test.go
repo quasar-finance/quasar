@@ -16,9 +16,9 @@ func TestGenesis(t *testing.T) {
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	k, ctx := keepertest.QbankKeeper(t)
-	qbank.InitGenesis(ctx, *k, genesisState)
-	got := qbank.ExportGenesis(ctx, *k)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
+	qbank.InitGenesis(ctx, keeper, genesisState)
+	got := qbank.ExportGenesis(ctx, keeper)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

@@ -36,7 +36,8 @@ func OsmolpvKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"OsmolpvParams",
 	)
-	qbankKeeper, _ := QbankKeeper(t)
+	// TODO use TestKeepers
+	qbankKeeper := newInitializer().QbankKeeper(newInitializer().ParamsKeeper(), nil)
 	qoracleKeeper, _ := QoracleKeeper(t)
 	k := keeper.NewKeeper(
 		cdc,

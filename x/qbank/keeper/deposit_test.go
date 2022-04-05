@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetAddSubUserDeposit(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
@@ -46,7 +46,7 @@ func TestGetAddSubUserDeposit(t *testing.T) {
 }
 
 func TestGetTotalDeposits(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
@@ -62,20 +62,20 @@ func TestGetTotalDeposits(t *testing.T) {
 }
 
 func TestGetUserDepositInvalidKey(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	_, found := keeper.GetUserDepositAmt(ctx, "invalid")
 	require.False(t, found)
 }
 
 func TestSubUserDepositInvalidKey(t *testing.T) {
 	defer func() { recover() }()
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	keeper.SubUserDeposit(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))
 	t.Errorf("did not panic")
 }
 
 func TestGetAddSubUserDenomDeposit(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
@@ -110,20 +110,20 @@ func TestGetAddSubUserDenomDeposit(t *testing.T) {
 }
 
 func TestGetUserDenomDepositInvalidKey(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	_, found := keeper.GetUserDenomDepositAmt(ctx, "invalid", "invalid")
 	require.False(t, found)
 }
 
 func TestSubUserDenomDepositInvalidKey(t *testing.T) {
 	defer func() { recover() }()
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	keeper.SubUserDenomDeposit(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))
 	t.Errorf("did not panic")
 }
 
 func TestGetAddSubEpochLockupUserDenomDeposit(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
@@ -160,7 +160,7 @@ func TestGetAddSubEpochLockupUserDenomDeposit(t *testing.T) {
 }
 
 func TestGetTotalEpochDeposits(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
@@ -179,7 +179,7 @@ func TestGetTotalEpochDeposits(t *testing.T) {
 }
 
 func TestGetEpochLockupUserDenomDepositInvalidKey(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	_, found := keeper.GetEpochLockupUserDenomDepositAmt(ctx, "invalid", "invalid", uint64(0), types.LockupTypes_Days_7)
 	require.False(t, found)
 }
