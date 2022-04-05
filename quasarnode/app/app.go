@@ -406,17 +406,6 @@ func New(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter,
 	)
-	/*
-		app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
-			appCodec,
-			keys[osmolpvmoduletypes.StoreKey],
-			keys[osmolpvmoduletypes.MemStoreKey],
-			app.GetSubspace(osmolpvmoduletypes.ModuleName),
-			app.BankKeeper,
-		)
-
-		osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
-	*/
 
 	// Create the scoped keepers for each submodule keeper and authentication keeper
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
@@ -542,16 +531,53 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		banktypes.ModuleName, govtypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName, feegrant.ModuleName,
-		paramstypes.ModuleName, vestingtypes.ModuleName, qbankmoduletypes.ModuleName, osmolpvmoduletypes.ModuleName, icatypes.ModuleName, intergammmoduletypes.ModuleName,
+		upgradetypes.ModuleName,
+		capabilitytypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibchost.ModuleName,
+		feegrant.ModuleName,
+		qbankmoduletypes.ModuleName,
+		osmolpvmoduletypes.ModuleName,
+		// TODO check the order of the below
+		vestingtypes.ModuleName,
+		intergammmoduletypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		genutiltypes.ModuleName,
+		banktypes.ModuleName,
+		govtypes.ModuleName,
+		qoraclemoduletypes.ModuleName,
+		crisistypes.ModuleName,
+		paramstypes.ModuleName,
+		authtypes.ModuleName,
 	)
 
-	app.mm.SetOrderEndBlockers(upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, ibctransfertypes.ModuleName, authtypes.ModuleName,
-		banktypes.ModuleName, govtypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName, feegrant.ModuleName,
-		paramstypes.ModuleName, vestingtypes.ModuleName,
-		qoraclemoduletypes.ModuleName, osmolpvmoduletypes.ModuleName, icatypes.ModuleName, intergammmoduletypes.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
+		govtypes.ModuleName,
+		stakingtypes.ModuleName,
+		qoraclemoduletypes.ModuleName,
+		osmolpvmoduletypes.ModuleName,
+		// TODO check the order of the below
+		evidencetypes.ModuleName,
+		ibchost.ModuleName,
+		feegrant.ModuleName,
+		minttypes.ModuleName,
+		slashingtypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		vestingtypes.ModuleName,
+		capabilitytypes.ModuleName,
+		upgradetypes.ModuleName,
+		paramstypes.ModuleName,
+		authtypes.ModuleName,
+		qbankmoduletypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		intergammmoduletypes.ModuleName,
+		genutiltypes.ModuleName,
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -571,15 +597,17 @@ func New(
 		ibchost.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		feegrant.ModuleName,
-		paramstypes.ModuleName,
-		vestingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		qbankmoduletypes.ModuleName,
 		osmolpvmoduletypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
 		icatypes.ModuleName,
 		intergammmoduletypes.ModuleName,
+		// TODO check the order of the below
+		vestingtypes.ModuleName,
+		feegrant.ModuleName,
+		upgradetypes.ModuleName,
+		paramstypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
