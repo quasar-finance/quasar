@@ -1,8 +1,11 @@
 go.mod:
 	go mod tidy && go mod verify
 
+test_path:
+	go test -v $(path)
+
 test:
-	go test -v ./x/qbank/...
+	@$(MAKE) test_path path="./x/qbank/..."
 
 test_simulation:
 	starport chain simulate -v
@@ -10,4 +13,4 @@ test_simulation:
 run:
 	./run.sh
 
-.PHONY: go.mod test test_simulation run
+.PHONY: go.mod test_file test test_simulation run
