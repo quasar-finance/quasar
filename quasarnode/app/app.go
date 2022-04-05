@@ -305,7 +305,8 @@ func New(
 		qbankmoduletypes.StoreKey,
 		osmolpvmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
-		icacontrollertypes.StoreKey, icahosttypes.StoreKey, intergammmoduletypes.StoreKey,
+		icacontrollertypes.StoreKey,
+		icahosttypes.StoreKey,
 		intergammmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
