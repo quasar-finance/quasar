@@ -22,7 +22,7 @@ func (k Keeper) UserDenomDeposit(goCtx context.Context,
 
 	k.Logger(ctx).Info(fmt.Sprintf("UserDenomDeposit|%s|%s\n", req.GetUserAcc(),
 		req.GetDenom()))
-	tokens, found := k.GetUserDenomDepositAmount(ctx,
+	tokens, found := k.GetUserDenomDepositAmt(ctx,
 		req.GetUserAcc(), req.GetDenom())
 	if !found {
 		return nil, sdkerrors.ErrKeyNotFound

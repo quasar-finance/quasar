@@ -16,7 +16,7 @@ import (
 func createNPoolSpotPrice(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolSpotPrice {
 	items := make([]types.PoolSpotPrice, n)
 	for i := range items {
-		items[i].Creator = sample.AccAddress()
+		items[i].Creator = sample.AccAddressStr()
 		items[i].PoolId = fmt.Sprintf("%d", i)
 		items[i].DenomIn = fmt.Sprintf("abc%d", i)
 		items[i].DenomOut = fmt.Sprintf("cba%d", i)

@@ -23,7 +23,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -33,7 +33,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				DenomIn:         "abc",
 				DenomOut:        "cba",
 				Price:           "1.2",
@@ -43,7 +43,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomIn",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomOut:        "cba",
 				Price:           "1.2",
@@ -53,7 +53,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomOut",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				Price:           "1.2",
@@ -63,7 +63,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Price",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -73,7 +73,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "abc",
 				DenomOut: "cba",
@@ -83,7 +83,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "a",
 				DenomOut:        "cba",
@@ -94,7 +94,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "1",
 				DenomOut:        "cba",
@@ -105,7 +105,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "c",
@@ -116,7 +116,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "1",
@@ -127,7 +127,7 @@ func TestMsgCreatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid Price",
 			msg: MsgCreatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -164,7 +164,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -174,7 +174,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				DenomIn:         "abc",
 				DenomOut:        "cba",
 				Price:           "1.2",
@@ -184,7 +184,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomIn",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomOut:        "cba",
 				Price:           "1.2",
@@ -194,7 +194,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomOut",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				Price:           "1.2",
@@ -204,7 +204,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Price",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -214,7 +214,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "abc",
 				DenomOut: "cba",
@@ -224,7 +224,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "a",
 				DenomOut:        "cba",
@@ -235,7 +235,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "1",
 				DenomOut:        "cba",
@@ -246,7 +246,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "c",
@@ -257,7 +257,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "1",
@@ -268,7 +268,7 @@ func TestMsgUpdatePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid Price",
 			msg: MsgUpdatePoolSpotPrice{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				DenomIn:         "abc",
 				DenomOut:        "cba",
@@ -305,7 +305,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "abc",
 				DenomOut: "cba",
@@ -313,7 +313,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				DenomIn:  "abc",
 				DenomOut: "cba",
 			},
@@ -321,7 +321,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomIn",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomOut: "cba",
 			},
@@ -329,7 +329,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty DenomOut",
 			msg: MsgDeletePoolSpotPrice{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 				DenomIn: "abc",
 			},
@@ -337,7 +337,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "a",
 				DenomOut: "cba",
@@ -346,7 +346,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomIn",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "1",
 				DenomOut: "cba",
@@ -355,7 +355,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "abc",
 				DenomOut: "c",
@@ -364,7 +364,7 @@ func TestMsgDeletePoolSpotPrice_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid DenomOut",
 			msg: MsgDeletePoolSpotPrice{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "abc",
 				DenomOut: "1",

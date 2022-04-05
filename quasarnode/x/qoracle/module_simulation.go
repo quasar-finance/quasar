@@ -16,7 +16,7 @@ import (
 
 // avoid unused import issue
 var (
-	_ = sample.AccAddress
+	_ = sample.AccAddressStr
 	_ = qoraclesimulation.FindAccount
 	_ = simappparams.StakePerAccount
 	_ = simulation.MsgEntryKind
@@ -84,23 +84,23 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	qoracleGenesis := types.GenesisState{
 		PoolPositionList: []types.PoolPosition{
 			{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "0",
 			},
 			{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 			},
 		},
 		PoolSpotPriceList: []types.PoolSpotPrice{
 			{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "0",
 				DenomIn:  "0",
 				DenomOut: "0",
 			},
 			{
-				Creator:  sample.AccAddress(),
+				Creator:  sample.AccAddressStr(),
 				PoolId:   "1",
 				DenomIn:  "1",
 				DenomOut: "1",
@@ -108,11 +108,11 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 		},
 		PoolInfoList: []types.PoolInfo{
 			{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "0",
 			},
 			{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 			},
 		},

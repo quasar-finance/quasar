@@ -10,13 +10,15 @@ import (
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
+	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/osmolpv/types"
 )
 
 func TestUserLPInfoQuery(t *testing.T) {
 	keeper, ctx := keepertest.OsmolpvKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	item := createTestUserLPInfo(keeper, ctx)
+	userAddr := sample.AccAddressStr()
+	item := createTestUserLPInfo(keeper, ctx, userAddr)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetUserLPInfoRequest

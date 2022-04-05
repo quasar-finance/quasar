@@ -125,7 +125,6 @@ func CreateOrionStakingMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	var b bytes.Buffer
 	b.WriteString(ModuleName)
 	b.WriteString(".stake.")
-	// b.WriteString("stake")
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	return b.String()
 }

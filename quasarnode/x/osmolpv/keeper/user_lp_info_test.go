@@ -8,20 +8,22 @@ import (
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
+	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/osmolpv/keeper"
 	"github.com/abag/quasarnode/x/osmolpv/types"
 )
 
-func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context) types.UserLPInfo {
+func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context, userAddr string) types.UserLPInfo {
 	item := types.UserLPInfo{}
-	keeper.SetUserLPInfo(ctx, item)
+	keeper.SetUserLPInfo(ctx, uint64(42), uint64(0), userAddr, item)
 	return item
 }
 
 func TestUserLPInfoGet(t *testing.T) {
 	keeper, ctx := keepertest.OsmolpvKeeper(t)
-	item := createTestUserLPInfo(keeper, ctx)
-	rst, found := keeper.GetUserLPInfo(ctx)
+	userAddr := sample.AccAddressStr()
+	item := createTestUserLPInfo(keeper, ctx, userAddr)
+	rst, found := keeper.GetUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
@@ -31,8 +33,9 @@ func TestUserLPInfoGet(t *testing.T) {
 
 func TestUserLPInfoRemove(t *testing.T) {
 	keeper, ctx := keepertest.OsmolpvKeeper(t)
-	createTestUserLPInfo(keeper, ctx)
-	keeper.RemoveUserLPInfo(ctx)
-	_, found := keeper.GetUserLPInfo(ctx)
+	userAddr := sample.AccAddressStr()
+	createTestUserLPInfo(keeper, ctx, userAddr)
+	keeper.RemoveUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
+	_, found := keeper.GetUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
 	require.False(t, found)
 }

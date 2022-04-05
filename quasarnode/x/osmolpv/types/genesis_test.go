@@ -2,8 +2,10 @@ package types_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/abag/quasarnode/x/osmolpv/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,10 +44,10 @@ func TestGenesisState_Validate(t *testing.T) {
 					TotalLps: 39,
 				},
 				RewardCollection: &types.RewardCollection{
-					TimeCollected: 21,
+					TimeCollected: time.Time{},
 				},
 				UserLPInfo: &types.UserLPInfo{
-					PositionShare: 22,
+					PositionShare: sdk.NewDec(22),
 				},
 				LpStat: &types.LpStat{
 					LpCount: 18,

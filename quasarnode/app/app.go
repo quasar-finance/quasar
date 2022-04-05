@@ -635,8 +635,10 @@ func New(
 		transferModule,
 		qbankModule,
 		osmolpvModule,
-		qoracleModule,
-		intergammModule,
+		// TODO fix qoracle testing for sim
+		// qoracleModule,
+		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
+		// intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -721,6 +723,8 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 
 	return modAccAddrs
 }
+
+// TODO AG: move the below function to a test package
 
 // LegacyAmino returns SimApp's amino codec.
 //

@@ -56,7 +56,7 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgCreatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Info:            &validPool,
 				LastUpdatedTime: 1,
@@ -64,7 +64,7 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgCreatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				Info:            &validPool,
 				LastUpdatedTime: 1,
 			},
@@ -72,7 +72,7 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil Info",
 			msg: MsgCreatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				LastUpdatedTime: 1,
 			},
@@ -80,7 +80,7 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Pool",
 			msg: MsgCreatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Info:            &balancer.BalancerPool{},
 				LastUpdatedTime: 1,
@@ -89,7 +89,7 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgCreatePoolInfo{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 				Info:    &validPool,
 			},
@@ -125,7 +125,7 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgUpdatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Info:            &validPool,
 				LastUpdatedTime: 1,
@@ -133,7 +133,7 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty PoolId",
 			msg: MsgUpdatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				Info:            &validPool,
 				LastUpdatedTime: 1,
 			},
@@ -141,7 +141,7 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "nil Info",
 			msg: MsgUpdatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				LastUpdatedTime: 1,
 			},
@@ -149,7 +149,7 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "empty Pool",
 			msg: MsgUpdatePoolInfo{
-				Creator:         sample.AccAddress(),
+				Creator:         sample.AccAddressStr(),
 				PoolId:          "1",
 				Info:            &balancer.BalancerPool{},
 				LastUpdatedTime: 1,
@@ -158,7 +158,7 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "zero LastUpdatedTime",
 			msg: MsgUpdatePoolInfo{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 				Info:    &validPool,
 			},
@@ -192,13 +192,13 @@ func TestMsgDeletePoolInfo_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid",
 			msg: MsgDeletePoolInfo{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 				PoolId:  "1",
 			},
 		}, {
 			name: "empty PoolId",
 			msg: MsgDeletePoolInfo{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 			},
 			err: sdkerrors.ErrInvalidRequest,
 		},

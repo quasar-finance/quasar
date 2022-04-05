@@ -13,26 +13,6 @@ import (
 func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
-
-		DepositList: []types.Deposit{
-			{
-				Id: 0,
-			},
-			{
-				Id: 1,
-			},
-		},
-		DepositCount: 2,
-		WithdrawList: []types.Withdraw{
-			{
-				Id: 0,
-			},
-			{
-				Id: 1,
-			},
-		},
-		WithdrawCount: 2,
-
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -44,10 +24,7 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
 
-	require.ElementsMatch(t, genesisState.DepositList, got.DepositList)
-	require.Equal(t, genesisState.DepositCount, got.DepositCount)
-	require.ElementsMatch(t, genesisState.WithdrawList, got.WithdrawList)
-	require.Equal(t, genesisState.WithdrawCount, got.WithdrawCount)
+	require.ElementsMatch(t, genesisState.Params, got.Params)
 
 	// this line is used by starport scaffolding # genesis/test/assert
 }

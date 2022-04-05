@@ -23,7 +23,7 @@ func TestMsgSendIbcExitPool_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid address",
 			msg: MsgSendIbcExitPool{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 			},
 		},
 	}

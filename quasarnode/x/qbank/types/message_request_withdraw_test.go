@@ -23,7 +23,7 @@ func TestMsgRequestWithdraw_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid address",
 			msg: MsgRequestWithdraw{
-				Creator: sample.AccAddress(),
+				Creator: sample.AccAddressStr(),
 			},
 		},
 	}

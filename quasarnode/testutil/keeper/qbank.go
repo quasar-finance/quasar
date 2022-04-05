@@ -3,51 +3,60 @@ package keeper
 import (
 	"testing"
 
+	osmolpvtypes "github.com/abag/quasarnode/x/osmolpv/types"
 	"github.com/abag/quasarnode/x/qbank/keeper"
-	"github.com/abag/quasarnode/x/qbank/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-func QbankKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+const QbankMaccName = qbanktypes.ModuleName
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
+func QbankKeeperExistingState(tks *TestKeeperState) (*keeper.Keeper, sdk.Context) {
+	TestParamsKeeper(tks)
 
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
+	maccPerms := map[string][]string{
+		qbanktypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21):  nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_1): nil,
+		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_3): nil,
+	}
+	TestAccountKeeper(tks, maccPerms)
 
-	paramsSubspace := typesparams.NewSubspace(cdc,
-		types.Amino,
+	activeModuleAccAddresses := ActiveAddressesMap(NamesToAddresses(qbanktypes.ModuleName, osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21))...)
+	TestBankKeeper(tks, activeModuleAccAddresses)
+
+	return TestQbankKeeper(tks)
+}
+
+func QbankKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
+	tks := NewTestKeeperState(t)
+	defer tks.LoadKVStores()
+
+	return QbankKeeperExistingState(tks)
+}
+
+func TestQbankKeeper(tks *TestKeeperState) (*keeper.Keeper, sdk.Context) {
+	storeKey := sdk.NewKVStoreKey(qbanktypes.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(qbanktypes.MemStoreKey)
+	tks.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, tks.TestDb)
+	tks.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+
+	bankKeeper := tks.GetBankKeeper()
+	paramsKeeper := tks.GetParamsKeeper()
+
+	qbankSubspace := paramsKeeper.Subspace(qbanktypes.ModuleName)
+	qbankKeeper := keeper.NewKeeper(
+		tks.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
-		"QbankParams",
+		qbankSubspace,
+		bankKeeper,
 	)
-	k := keeper.NewKeeper(
-		cdc,
-		storeKey,
-		memStoreKey,
-		paramsSubspace,
-		nil,
-	)
-
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
 	// Initialize params
-	k.SetParams(ctx, types.DefaultParams())
+	qbankKeeper.SetParams(tks.Ctx, qbanktypes.DefaultParams())
 
-	return k, ctx
+	return qbankKeeper, tks.Ctx
 }

@@ -26,7 +26,7 @@ func TestMsgSendIbcCreatePool_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid port",
 			msg: MsgSendIbcCreatePool{
-				Creator:          sample.AccAddress(),
+				Creator:          sample.AccAddressStr(),
 				Port:             "",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 100,
@@ -35,7 +35,7 @@ func TestMsgSendIbcCreatePool_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid channel",
 			msg: MsgSendIbcCreatePool{
-				Creator:          sample.AccAddress(),
+				Creator:          sample.AccAddressStr(),
 				Port:             "port",
 				ChannelID:        "",
 				TimeoutTimestamp: 100,
@@ -44,7 +44,7 @@ func TestMsgSendIbcCreatePool_ValidateBasic(t *testing.T) {
 		}, {
 			name: "invalid timeout",
 			msg: MsgSendIbcCreatePool{
-				Creator:          sample.AccAddress(),
+				Creator:          sample.AccAddressStr(),
 				Port:             "port",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 0,
@@ -53,7 +53,7 @@ func TestMsgSendIbcCreatePool_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid message",
 			msg: MsgSendIbcCreatePool{
-				Creator:          sample.AccAddress(),
+				Creator:          sample.AccAddressStr(),
 				Port:             "port",
 				ChannelID:        "channel-0",
 				TimeoutTimestamp: 100,
