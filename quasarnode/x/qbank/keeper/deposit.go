@@ -22,9 +22,9 @@ func (k Keeper) GetUserDenomDepositAmount(ctx sdk.Context,
 	return val, true
 }
 
-// GetUserDepositAmount get the current value of user's total deposit amount.
+// GetUserDepositAmt get the current value of user's total deposit amount.
 // Key - types.UserDepositKBP + {useraccount}
-func (k Keeper) GetUserDepositAmount(ctx sdk.Context, uid string) (val types.QCoins, found bool) {
+func (k Keeper) GetUserDepositAmt(ctx sdk.Context, uid string) (val types.QCoins, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
 	b := store.Get(types.CreateUserDepositKey(uid))
 
@@ -212,11 +212,11 @@ func (k Keeper) GetTotalActiveDeposits(ctx sdk.Context, module string) sdk.Coins
 	return allCoins
 }
 
-// GetEpochUserDepositAmount calculates the total deposit amount of the given users on a given day
+// GetEpochUserDepositAmt calculates the total deposit amount of the given users on a given day
 // Iterate over all lockup periods, and prepare prefix key
 // as - {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:}
 // On iteration, key - {denom}, value = sdk.Coin. No. of iteration can be upto the number of lockup periods
-func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
+func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context,
 	epochday uint64, userAcc string) sdk.Coins {
 
 	bytePrefix := types.UserDenomDepositKBP
@@ -230,7 +230,7 @@ func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetEpochUserDepositAmount|modulename=%s|blockheight=%d|prefixKey=%s",
+	logger.Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
 		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
 	var coins sdk.Coins
@@ -240,7 +240,7 @@ func (k Keeper) GetEpochUserDepositAmount(ctx sdk.Context,
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 		coins = coins.Add(coin)
-		logger.Info(fmt.Sprintf("GetEpochUserDepositAmount|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+		logger.Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
 			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
 
 	}

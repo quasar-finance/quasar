@@ -102,7 +102,7 @@ func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
 // Total orion = Users orion amounts + orion coin amount owned by the orion module
 // Users share = users equivalent orions / total equivalent deposited orions
 func (k Keeper) GetUsersOrionShare(ctx sdk.Context, userAcc string) sdk.Dec {
-	qc, _ := k.qbankKeeper.GetUserDepositAmount(ctx, userAcc)
+	qc, _ := k.qbankKeeper.GetUserDepositAmt(ctx, userAcc)
 	usersOrion := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
 	for _, c := range qc.Coins {
 		orion := k.CalcReceipts(ctx, c)
@@ -125,7 +125,7 @@ func (k Keeper) GetUsersOrionShare(ctx sdk.Context, userAcc string) sdk.Dec {
 // Users share = users equivalent orions / total equivalent deposited orions
 func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context,
 	epochDay uint64, userAcc string) sdk.Dec {
-	coins := k.qbankKeeper.GetEpochUserDepositAmount(ctx, epochDay, userAcc)
+	coins := k.qbankKeeper.GetEpochUserDepositAmt(ctx, epochDay, userAcc)
 	usersOrion := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
 	for _, c := range coins {
 		orion := k.CalcReceipts(ctx, c)

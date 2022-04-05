@@ -42,7 +42,6 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 			k.cdc.MustUnmarshal(value, &coin)
 			coins = coins.Add(coin)
 			k.EmptyActualWithdrableAmt(ctx, msg.Creator, coin.Denom)
-
 		}
 
 		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,

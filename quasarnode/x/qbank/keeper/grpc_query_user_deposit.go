@@ -21,7 +21,7 @@ func (k Keeper) UserDeposit(goCtx context.Context, req *types.QueryUserDepositRe
 
 	k.Logger(ctx).Info(fmt.Sprintf("UserDeposit|%s\n", req.GetUserAcc()))
 
-	qcoins, found := k.GetUserDepositAmount(ctx, req.GetUserAcc())
+	qcoins, found := k.GetUserDepositAmt(ctx, req.GetUserAcc())
 	if !found {
 		return nil, sdkerrors.ErrKeyNotFound
 	}

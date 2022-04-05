@@ -32,12 +32,10 @@ type BankKeeper interface {
 // QbankKeeper defines the expected interface needed by Orion module from qbank
 type QbankKeeper interface {
 	GetStoreKey() sdk.StoreKey
-	GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
-		uid, denom string, epochday uint64, lockupPeriod qbanktypes.LockupTypes) (val sdk.Coin, found bool)
-	GetUserDepositAmount(ctx sdk.Context, uid string) (val qbanktypes.QCoins, found bool)
+	GetUserDepositAmt(ctx sdk.Context, uid string) (val qbanktypes.QCoins, found bool)
 	GetTotalActiveDeposits(ctx sdk.Context, moduleName string) sdk.Coins
 	GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, moduleName string) sdk.Coins
-	GetEpochUserDepositAmount(ctx sdk.Context, epochday uint64, uid string) sdk.Coins
+	GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, uid string) sdk.Coins
 	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
 	AddActualWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
 }
