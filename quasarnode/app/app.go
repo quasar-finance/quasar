@@ -305,7 +305,8 @@ func New(
 		qbankmoduletypes.StoreKey,
 		osmolpvmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
-		icacontrollertypes.StoreKey, icahosttypes.StoreKey, intergammmoduletypes.StoreKey,
+		icacontrollertypes.StoreKey,
+		icahosttypes.StoreKey,
 		intergammmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
@@ -544,6 +545,7 @@ func New(
 		osmolpvmoduletypes.ModuleName,
 		// TODO check the order of the below
 		vestingtypes.ModuleName,
+		icatypes.ModuleName,
 		intergammmoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName,
@@ -576,6 +578,7 @@ func New(
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		intergammmoduletypes.ModuleName,
+		icatypes.ModuleName,
 		genutiltypes.ModuleName,
 	)
 
