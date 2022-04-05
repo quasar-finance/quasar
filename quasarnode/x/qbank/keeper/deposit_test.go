@@ -18,11 +18,11 @@ func TestGetAddSubUserDeposit(t *testing.T) {
 	denom2 := "DEF"
 	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
 	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
-	coin3 := sdk.NewCoin(denom2, sdk.NewInt(1))
 
 	keeper.AddUserDeposit(ctx, depositorAddr, coin1)
+	// Add same denom
 	keeper.AddUserDeposit(ctx, depositorAddr, coin2)
-	keeper.AddUserDeposit(ctx, depositorAddr, coin3)
+	keeper.AddUserDeposit(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(1)))
 
 	got, found := keeper.GetUserDepositAmount(ctx, depositorAddr)
 	require.True(t, found)
@@ -32,15 +32,13 @@ func TestGetAddSubUserDeposit(t *testing.T) {
 	require.Equal(t, sdk.NewInt(101), got.Coins[1].Amount)
 
 	// subtract 10 from ABC
-	coin4 := sdk.NewCoin(denom1, sdk.NewInt(10))
-	keeper.SubUserDeposit(ctx, depositorAddr, coin4)
+	keeper.SubUserDeposit(ctx, depositorAddr, sdk.NewCoin(denom1, sdk.NewInt(10)))
 	got, found = keeper.GetUserDepositAmount(ctx, depositorAddr)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(40), got.Coins[0].Amount)
 
 	// subtract all from DEF
-	coin5 := sdk.NewCoin(denom2, sdk.NewInt(101))
-	keeper.SubUserDeposit(ctx, depositorAddr, coin5)
+	keeper.SubUserDeposit(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(101)))
 	got, found = keeper.GetUserDepositAmount(ctx, depositorAddr)
 	require.True(t, found)
 	require.Equal(t, 1, got.Coins.Len())
@@ -67,30 +65,29 @@ func TestGetAddSubUserDenomDeposit(t *testing.T) {
 	denom2 := "DEF"
 	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
 	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
-	coin3 := sdk.NewCoin(denom2, sdk.NewInt(1))
 
 	keeper.AddUserDenomDeposit(ctx, depositorAddr, coin1)
-	keeper.AddUserDenomDeposit(ctx, depositorAddr, coin2)
-	keeper.AddUserDenomDeposit(ctx, depositorAddr, coin3)
 
 	got, found := keeper.GetUserDenomDepositAmount(ctx, depositorAddr, denom1)
 	require.True(t, found)
 	require.Equal(t, nullify.Fill(&coin1), nullify.Fill(&got))
+
+	// Add same denom
+	keeper.AddUserDenomDeposit(ctx, depositorAddr, coin2)
+	keeper.AddUserDenomDeposit(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(1)))
 
 	got, found = keeper.GetUserDenomDepositAmount(ctx, depositorAddr, denom2)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(101), got.Amount)
 
 	// subtract 10 from ABC
-	coin4 := sdk.NewCoin(denom1, sdk.NewInt(10))
-	keeper.SubUserDenomDeposit(ctx, depositorAddr, coin4)
+	keeper.SubUserDenomDeposit(ctx, depositorAddr, sdk.NewCoin(denom1, sdk.NewInt(10)))
 	got, found = keeper.GetUserDenomDepositAmount(ctx, depositorAddr, denom1)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(40), got.Amount)
 
 	// subtract all from DEF
-	coin5 := sdk.NewCoin(denom2, sdk.NewInt(101))
-	keeper.SubUserDenomDeposit(ctx, depositorAddr, coin5)
+	keeper.SubUserDenomDeposit(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(101)))
 	got, found = keeper.GetUserDenomDepositAmount(ctx, depositorAddr, denom2)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(0), got.Amount)
@@ -109,43 +106,41 @@ func TestSubUserDenomDepositInvalidKey(t *testing.T) {
 	t.Errorf("did not panic")
 }
 
-func TestGetAddEpochLockupUserDenomDeposit(t *testing.T) {
+func TestGetAddSubEpochLockupUserDenomDeposit(t *testing.T) {
 	keeper, ctx := keepertest.QbankKeeper(t)
 	depositorAddr := sample.AccAddressStr()
 	denom1 := "ABC"
 	denom2 := "DEF"
 	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
 	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
-	coin3 := sdk.NewCoin(denom2, sdk.NewInt(1))
-	epoch1 := uint64(1)
-	epoch2 := uint64(2)
-	epoch3 := uint64(3)
-	lockup1 := types.LockupTypes_Days_7
-	lockup2 := types.LockupTypes_Months_1
-	lockup3 := types.LockupTypes_Months_1
 
 	// same denom, different lockup
-	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, epoch1, lockup1)
-	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, epoch1, lockup2)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, uint64(1), types.LockupTypes_Days_7)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin1, uint64(1), types.LockupTypes_Days_21)
 
-	got, found := keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom1, epoch1, lockup1)
+	got, found := keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom1, uint64(1), types.LockupTypes_Days_7)
 	require.True(t, found)
 	require.Equal(t, nullify.Fill(&coin1), nullify.Fill(&got))
 
 	// same denom, same lockup, should add up the balances
-	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin2, epoch2, lockup2)
-	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin2, epoch2, lockup2)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin2, uint64(1), types.LockupTypes_Months_1)
+	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin2, uint64(1), types.LockupTypes_Months_1)
 
-	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, epoch2, lockup2)
+	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, uint64(1), types.LockupTypes_Months_1)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(200), got.Amount)
 
-	// different denom, different epoch
-	keeper.AddEpochLockupUserDenomDeposit(ctx, depositorAddr, coin3, epoch3, lockup3)
+	// different denom, different epoch and lockups, not found
+	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, uint64(2), types.LockupTypes_Months_1)
+	require.False(t, found)
+	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, uint64(1), types.LockupTypes_Months_3)
+	require.False(t, found)
 
-	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, epoch3, lockup3)
+	// subtract all from DEF
+	keeper.SubEpochLockupUserDenomDeposit(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(200)), uint64(1), types.LockupTypes_Months_1)
+	got, found = keeper.GetEpochLockupUserDenomDepositAmount(ctx, depositorAddr, denom2, uint64(1), types.LockupTypes_Months_1)
 	require.True(t, found)
-	require.Equal(t, nullify.Fill(&coin3), nullify.Fill(&got))
+	require.Equal(t, sdk.NewInt(0), got.Amount)
 }
 
 func TestGetEpochLockupUserDenomDepositInvalidKey(t *testing.T) {

@@ -30,13 +30,12 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		sdk.NewCoins(msg.GetCoin()),
 	)
 	if err != nil {
-		// TODO AG wrap
+		// TODO wrap error for context
 		return nil, err
 	}
 
 	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin())
 	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), msg.GetCoin())
-
 	// AUDIT TODO - consider a blockheight as epochday for now. Integrate epochmodule later.
 	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin(), uint64(ctx.BlockHeight()), msg.GetLockupPeriod())
 

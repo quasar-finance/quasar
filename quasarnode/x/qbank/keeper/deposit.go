@@ -127,26 +127,6 @@ func (k Keeper) GetEpochLockupUserDenomDepositAmount(ctx sdk.Context,
 	return val, true
 }
 
-// AUDIT NOTE - This method could be redundant.
-// GetUserDenomEpochLockupDepositAmount get user's denom deposit amount
-// with given epoch day and lockup period
-func (k Keeper) GetUserDenomEpochLockupDepositAmount(ctx sdk.Context,
-	uid, denom string, epochday uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
-	key := types.CreateUserDenomEpochLockupDepositKey(uid, types.Sep, denom, epochday, lockupPeriod)
-
-	k.Logger(ctx).Info(fmt.Sprintf("GetUserDenomEpochLockupDepositAmount|key=%s|%s|%s|%v|%s\n",
-		string(key), uid, denom, epochday, types.LockupTypes_name[int32(lockupPeriod)]))
-
-	b := store.Get(key)
-	if b == nil {
-		return val, false
-	}
-	k.cdc.MustUnmarshal(b, &val)
-
-	return val, true
-}
-
 // AddEpochLockupUserDenomDeposit adds user's denom deposit amount with
 // Key - {UserDenomDepositKBP} +  ":" + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
