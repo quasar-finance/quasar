@@ -12,7 +12,7 @@ import (
 ////////////// Methods for the current expected withdrable amount /////////////////
 ///////////////////////////////////////////////////////////////////////////////////
 
-// AUDIT NOTE - Possibly candidates for the removal. Because these analysis can be performed offline.
+// AUDIT NOTE - Discuss with team and decide. Possibly candidates for the removal. Because these analysis can be performed offline.
 // GetWithdrawableAmt fetch the current withdrable amount of a given user for a given denom
 // from the KV store.
 // Called for users expected withdrable query and withdraw tx.
@@ -183,59 +183,9 @@ func (k Keeper) SubActualWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coi
 	}
 }
 
+// EmptyActualWithdrableAmt removes the key for uid and denom
 func (k Keeper) EmptyActualWithdrableAmt(ctx sdk.Context, uid, denom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
 	key := types.CreateWithdrableKey(uid, denom, types.Sep)
 	store.Delete(key)
-}
-
-// AUDIT NOTE - XXXLockupWithdrawableAmt methods are unused for now. Don't write unit test cases.
-// GetActualLockupWithdrawableAmt fetch the current withdrable amount of a given user, denom and lockup period.
-// from the lockperiod based KV store container. This method could be used for the analytics by external processes.
-// Key = {denom} + ":" + {uid} + ":" + {lockupPeriod}
-func (k Keeper) GetActualLockupWithdrawableAmt(ctx sdk.Context, uid, denom string, lockupPeriod types.LockupTypes) (coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(denom, uid, lockupPeriod, types.Sep)
-	b := store.Get(key)
-	if b == nil {
-		return sdk.NewInt64Coin(denom, 0)
-	}
-	k.cdc.MustUnmarshal(b, &coin)
-	return coin
-}
-
-// AddActualLockupWithdrableAmt adds withdrable amount from to the store for a given user and denom.
-// Called from the Orion vault end blocker.
-func (k Keeper) AddActualLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, types.Sep)
-	b := store.Get(key)
-	if b == nil {
-		b := k.cdc.MustMarshal(&coin)
-		store.Set(key, b)
-	} else {
-		var storedCoin sdk.Coin
-		k.cdc.MustUnmarshal(b, &storedCoin)
-		storedCoin = storedCoin.Add(coin)
-		b = k.cdc.MustMarshal(&storedCoin)
-		store.Set(key, b)
-	}
-}
-
-// SubActualLockupWithdrableAmt substracts withdrable amount from to the store for a given user and denom.
-// Called from the users withdraw transaction processing.
-func (k Keeper) SubActualLockupWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin, lockupPeriod types.LockupTypes) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
-	key := types.CreateLockupWithdrableKey(coin.GetDenom(), uid, lockupPeriod, types.Sep)
-	b := store.Get(key)
-	if b == nil {
-		// Do nothing. Ideally call should never come here.
-		panic(fmt.Errorf("empty withdrable amount for key=%v", string(key)))
-	} else {
-		var storedCoin sdk.Coin
-		k.cdc.MustUnmarshal(b, &storedCoin)
-		storedCoin = storedCoin.Sub(coin)
-		b = k.cdc.MustMarshal(&storedCoin)
-		store.Set(key, b)
-	}
 }
