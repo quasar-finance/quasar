@@ -184,7 +184,9 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 			userCoins = userCoins.Add(sdk.NewCoin(v.Denom, o.ToDec().Mul(v.Weight).TruncateInt()))
 		}
 
-		k.SendCoinFromCollectionToAccount(ctx, v.UserAcc, userCoins)
+		for _, c := range userCoins {
+			k.qbankKeeper.AddActualWithdrableAmt(ctx, v.UserAcc, c)
+		}
 	}
 	return nil
 }

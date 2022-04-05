@@ -18,12 +18,8 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 
 	k.Logger(ctx).Info(fmt.Sprintf("RequestWithdraw|%s\n", msg.String()))
 
-	// Using zero value of ID. ID field is redundant for this request.
-	withdraw := types.Withdraw{Id: 0, RiskProfile: msg.GetRiskProfile(),
-		VaultID: msg.GetVaultID(), DepositorAccAddress: msg.GetCreator(), Coin: msg.GetCoin()}
-
 	if msg.GetVaultID() == osmolpvypes.ModuleName {
-		wcoin := k.GetWithdrawableAmt(ctx, msg.Creator, msg.Coin.Denom)
+		wcoin := k.GetActualWithdrawableAmt(ctx, msg.Creator, msg.Coin.Denom)
 		if wcoin.Amount.LT(msg.Coin.Amount) {
 			return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Requested amt is greater than withwrable amt")
 		}
@@ -35,17 +31,12 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,
 			osmolpvypes.ModuleName,
 			depositorAddr,
-			sdk.NewCoins(withdraw.GetCoin())); err != nil {
+			sdk.NewCoins(msg.GetCoin())); err != nil {
 			return nil, err
 		}
 	}
 
-	// TODO - Burn receipt tokens. Ask vault to do so.
-
-	// Subtracts the withdraw request amount to state transition the user denom deposit kv store
-	//to reflect the current total deposit after successful withdraw.
-	k.Keeper.SubUserDenomDeposit(ctx, msg.GetCreator(), withdraw.GetCoin())
-	k.Keeper.SubUserDeposit(ctx, msg.GetCreator(), withdraw.GetCoin())
+	k.Keeper.SubActualWithdrableAmt(ctx, msg.GetCreator(), msg.GetCoin())
 
 	k.Logger(ctx).Info(
 		"RequestWithdraw|Withdraw|",

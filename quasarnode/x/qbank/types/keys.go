@@ -179,12 +179,12 @@ func CreateUserDepositKey(uid string) []byte {
 
 // CreateWithdrableKey create key for the withdrable KV store to fetch current
 // withdrable amount by a given user of given denom.
-// Key = {denom} + ":" + {uid}
-func CreateWithdrableKey(denom, uid, sep string) []byte {
+// Key = {uid} + ":" + {denom}
+func CreateWithdrableKey(uid, denom, sep string) []byte {
 	var b bytes.Buffer
-	b.WriteString(denom)
-	b.WriteString(sep)
 	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(denom)
 	return b.Bytes()
 }
 
