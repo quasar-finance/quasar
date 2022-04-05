@@ -38,6 +38,8 @@ type QbankKeeper interface {
 	GetTotalActiveDeposits(ctx sdk.Context, moduleName string) sdk.Coins
 	GetEpochTotalActiveDeposits(ctx sdk.Context, epochday uint64, moduleName string) sdk.Coins
 	GetEpochUserDepositAmount(ctx sdk.Context, epochday uint64, uid string) sdk.Coins
+	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
+	AddActualWithdrableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
 }
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module

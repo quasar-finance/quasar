@@ -271,10 +271,10 @@ func (k Keeper) DistributeRewards(ctx sdk.Context, epochday uint64) error {
 		return err
 	}
 	for user, reward := range userRewardMap {
-		// Call bank transfer function from reward collector module account
-		// to user account
-		accAddr, _ := sdk.AccAddressFromBech32(user)
-		k.SendCoinFromGlobalRewardToAccount(ctx, accAddr, reward)
+		// Update the qbank module KV store
+		for _, r := range reward {
+			k.qbankKeeper.AddUserClaimReward(ctx, user, types.ModuleName, r)
+		}
 	}
 
 	return nil

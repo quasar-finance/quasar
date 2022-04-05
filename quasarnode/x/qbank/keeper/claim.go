@@ -21,9 +21,9 @@ func (k Keeper) GetUserClaimAmount(ctx sdk.Context, uid, vaultID string) (val ty
 	return val, true
 }
 
-// AddUserClaimDeposit adds user's claim amount. This method is called by orion vault
-// key - types.UserDepositKBP + {uid}
-func (k Keeper) AddUserClaimDeposit(ctx sdk.Context, uid, vaultID string, coin sdk.Coin) {
+// AddUserClaimReward adds user's claim amount. This method is called by orion vault
+// key - types.UserClaimKBP + {userAccount} + {":"} + {VaultID}
+func (k Keeper) AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
 	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
 	b := store.Get(key)
@@ -42,9 +42,19 @@ func (k Keeper) AddUserClaimDeposit(ctx sdk.Context, uid, vaultID string, coin s
 	}
 }
 
-// SubUserClaimDeposit subs user's claim amount. This method is called by qbank module
-// key - types.UserDepositKBP + {uid}
-func (k Keeper) SubUserClaimDeposit(ctx sdk.Context, uid, vaultID string, coin sdk.Coin) {
+// Claim will remove users key from the KV store value for the requested user
+func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
+	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
+	store.Delete(key)
+}
+
+// NOTE - Not used now.
+// A possible use case for the future for this method is when users want to use a part of his
+// reward for other purpose - like re-investing in the treasury; once those features are supported.
+// SubUserClaimReward subs user's claim amount. This method is called by qbank module
+// key - types.UserClaimKBP + {userAccount} + {":"} + {VaultID}
+func (k Keeper) SubUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
 	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
 	b := store.Get(key)
