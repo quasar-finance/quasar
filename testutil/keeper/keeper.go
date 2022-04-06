@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Structure holding keepers that will be used for testing
 type TestKeepers struct {
 	T             testing.TB
 	Ctx           sdk.Context
@@ -23,7 +24,8 @@ type TestKeepers struct {
 	QBankKeeper   qbankkeeper.Keeper
 }
 
-func moduleAccountPerms() map[string][]string {
+// return module account permissions for testing
+func testModuleAccountPerms() map[string][]string {
 	return map[string][]string{
 		qbanktypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
@@ -33,25 +35,22 @@ func moduleAccountPerms() map[string][]string {
 	}
 }
 
-func NameToAddress(name string) string {
-	return authtypes.NewModuleAddress(name).String()
-}
-
-// BlockModuleAccountAddrs returns all the app's module account addresses.
-func BlockModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
+// blockModuleAccountAddrs returns all the app's module account addresses that are active
+func blockModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		modAccAddrs[NameToAddress(acc)] = true
+		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
 
 	return modAccAddrs
 }
 
+// Create and initialize all the keepers for testing purposes
 func NewTestSetup(t testing.TB) TestKeepers {
 	initializer := newInitializer()
 
-	maccPerms := moduleAccountPerms()
-	blockedMaccAddresses := BlockModuleAccountAddrs(maccPerms)
+	maccPerms := testModuleAccountPerms()
+	blockedMaccAddresses := blockModuleAccountAddrs(maccPerms)
 
 	paramsKeeper := initializer.ParamsKeeper()
 	accountKeeper := initializer.AccountKeeper(paramsKeeper, maccPerms)

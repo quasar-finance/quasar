@@ -16,6 +16,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
+// Structure holding storage context for initializing test keepers
 type initializer struct {
 	DB             *tmdb.MemDB
 	StateStore     store.CommitMultiStore
@@ -23,6 +24,7 @@ type initializer struct {
 	EncodingConfig cosmoscmd.EncodingConfig
 }
 
+// Create an initializer with in memory database and default codecs
 func newInitializer() initializer {
 	logger := log.TestingLogger()
 	logger.Debug("initializing test keepers")
