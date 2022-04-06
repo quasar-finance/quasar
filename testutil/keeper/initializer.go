@@ -25,7 +25,7 @@ type initializer struct {
 
 func newInitializer() initializer {
 	logger := log.TestingLogger()
-	logger.Debug("creating TestKeeperState")
+	logger.Debug("initializing test keepers")
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
