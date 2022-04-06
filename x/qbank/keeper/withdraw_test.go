@@ -10,7 +10,7 @@ import (
 )
 
 func TestWithdrawGet(t *testing.T) {
-	keeper, ctx := keepertest.QbankKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
 	depositorAddr := sample.AccAddressStr()
 	denom := "QSR"
 

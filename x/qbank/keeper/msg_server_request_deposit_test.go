@@ -11,22 +11,22 @@ import (
 )
 
 func TestRequestDeposit(t *testing.T) {
-	tks := keepertest.NewTestKeeperState(t)
-	server, ctx := setupMsgServer(tks)
-	tks.LoadKVStores()
+	keepers := keepertest.NewTestSetup(t)
+	_, keeper := keepers.QbankKeeper()
+	server, srvCtx := setupMsgServer(keepers.Ctx, keeper)
 	userAddr := sample.AccAddress()
 	mintAmount := int64(100)
 	initialBalance := int64(50)
 	targetAmount := int64(42)
 
-	tks.GetAccountKeeper().NewAccountWithAddress(tks.Ctx, userAddr)
-	tks.GetBankKeeper().MintCoins(
-		tks.Ctx,
+	keepers.AccountKeeper.NewAccountWithAddress(keepers.Ctx, userAddr)
+	keepers.BankKeeper.MintCoins(
+		keepers.Ctx,
 		keepertest.QbankMaccName,
 		sdk.NewCoins(sdk.NewCoin("QSR", sdk.NewInt(mintAmount))),
 	)
-	tks.GetBankKeeper().SendCoinsFromModuleToAccount(
-		tks.Ctx,
+	keepers.BankKeeper.SendCoinsFromModuleToAccount(
+		keepers.Ctx,
 		keepertest.QbankMaccName,
 		userAddr,
 		sdk.NewCoins(sdk.NewCoin("QSR", sdk.NewInt(initialBalance))),
@@ -40,11 +40,11 @@ func TestRequestDeposit(t *testing.T) {
 		types.LockupTypes_Days_21,
 	)
 
-	res, err := server.RequestDeposit(ctx, d)
+	res, err := server.RequestDeposit(srvCtx, d)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	balance := tks.GetBankKeeper().GetBalance(tks.Ctx, userAddr, "QSR")
+	balance := keepers.BankKeeper.GetBalance(keepers.Ctx, userAddr, "QSR")
 	require.Equal(t, sdk.NewInt(initialBalance-targetAmount), balance.Amount)
 	require.Equal(t, "QSR", balance.Denom)
 }
