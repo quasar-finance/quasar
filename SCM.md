@@ -29,17 +29,18 @@ Usually, one reviewer is sufficient. However, if the work requires more specific
 
 [Official Github documentation](https://docs.github.com/en/pull-requests)
 [Pull-requests review best practices](https://rewind.com/blog/best-practices-for-reviewing-pull-requests-in-github/)
+["Semi-linear" or "Rebase, merge" strategy](https://stackoverflow.com/questions/59714347/semi-linear-merge)
 
 ## Feature & bugfix workflow
 
-New code can be added via either a **feature** or **bugfix** branch, using the `feature/` or `bugfix/` branch name prefix respectively.
+New code can be added via either a **feature** or **bugfix** branch, using the `feature/` or `bugfix/` branch name prefix respectively, followed by a sentence-like description of the feature or bugfix separated by underscores (i.e `feature/my_feature_desc`).
 
 Example: create a new feature branch out of `main`
 
 ```bash
-git checkout main                   # assuming not on main already
-git pull                            # make sure main is in sync with remote
-git checkout -b feature/feature-abc # create the new branch
+git checkout main               # assuming not on main already
+git pull                        # make sure main is in sync with remote
+git checkout -b feature/abc_123 # create the new branch
 ```
 
 Usually, a single developer will work on a feature branch, so it is fine to re-write the history in these branch (with `git rebase` for instance). In practice it can be used when new code has been merged to `main` in the meantime.
@@ -57,15 +58,15 @@ By doing this, the feature branch will still be a single series of commits (no i
 ### Visual example
 
 ```
-*   0d54d68 - (3 seconds ago) Merge branch 'bugfix/bug-1' - Alice (HEAD -> main)
+*   0d54d68 - (3 seconds ago) Merge branch 'bugfix/bug_1' - Alice (HEAD -> main)
 |\
-| * 912ce23 - (15 seconds ago) Fix 3 - Alice (bugfix/bug-1)
+| * 912ce23 - (15 seconds ago) Fix 3 - Alice (bugfix/bug_1)
 | * d988e05 - (26 seconds ago) Fix 2 - Alice
 | * e9cf5d9 - (65 seconds ago) Fix 1 - Alice
 |/
-*   736087f - (4 minutes ago) Merge branch 'feature/feature-1' - Bob
+*   736087f - (4 minutes ago) Merge branch 'feature/feature_1' - Bob
 |\
-| * b7e26f3 - (5 minutes ago) Update README with 2 - Bob (feature/feature-1)
+| * b7e26f3 - (5 minutes ago) Update README with 2 - Bob (feature/feature_1)
 | * 0b085c6 - (5 minutes ago) Update README with 1 - Bob
 |/
 * 9460178 - (8 minutes ago) Init - Alice
@@ -108,20 +109,20 @@ git push                          # push commit to remote release branch
 ### Visual example
 
 ```
-*   9b470d3 - (8 minutes ago) Merge branch 'feature/feature-43' - Alice
+*   9b470d3 - (8 minutes ago) Merge branch 'feature/feature_43' - Alice
 |\
-| * 6e4fe81 - (8 minutes ago) Work on feature-3 - Alice (feature/feature-43)
+| * 6e4fe81 - (8 minutes ago) Work on feature_3 - Alice (feature/feature_43)
 |/
 | * b80093a - (3 minutes ago) hotfix 2 - Bob (release/v2.0)
 | * 981ca74 - (4 minutes ago) hotfix 1 - Bob
 |/
-*   5522161 - (9 minutes ago) Merge branch 'feature/release-v2.0-prep' - Alice (tag: v2.0)
+*   5522161 - (9 minutes ago) Merge branch 'feature/release_v2.0_prep' - Alice (tag: v2.0)
 |\
-| * b303e19 - (9 minutes ago) Prepare release v2.0 - Alice (feature/release-v2.0-prep)
+| * b303e19 - (9 minutes ago) Prepare release v2.0 - Alice (feature/release_v2.0_prep)
 |/
-*   c6de55a - (14 minutes ago) Merge branch 'feature/feature-42' - Alice
+*   c6de55a - (14 minutes ago) Merge branch 'feature/feature_42' - Alice
 |\
-| * 7850c00 - (14 minutes ago) Work on feature-42 - Alice (feature/feature-42)
+| * 7850c00 - (14 minutes ago) Work on feature_42 - Alice (feature/feature_42)
 |/
-*   0d54d68 - (19 minutes ago) Merge branch 'bugfix/bug-13' - Bob
+*   0d54d68 - (19 minutes ago) Merge branch 'bugfix/bug_13' - Bob
 ```
