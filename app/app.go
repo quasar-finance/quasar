@@ -104,6 +104,9 @@ import (
 	// "github.com/tendermint/spm/openapiconsole"
 	//"github.com/abag/quasarnode/intergamm/docs"
 	"github.com/abag/quasarnode/docs"
+	epochsmodule "github.com/abag/quasarnode/x/epochs"
+	epochsmodulekeeper "github.com/abag/quasarnode/x/epochs/keeper"
+	epochsmoduletypes "github.com/abag/quasarnode/x/epochs/types"
 	osmolpvmodule "github.com/abag/quasarnode/x/osmolpv"
 	osmolpvmodulekeeper "github.com/abag/quasarnode/x/osmolpv/keeper"
 	osmolpvmoduletypes "github.com/abag/quasarnode/x/osmolpv/types"
@@ -169,6 +172,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
+		epochsmodule.AppModuleBasic{},
 		qbankmodule.AppModuleBasic{},
 		osmolpvmodule.AppModuleBasic{},
 		qoraclemodule.AppModuleBasic{},
@@ -256,6 +260,8 @@ type App struct {
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
+	EpochsKeeper *epochsmodulekeeper.Keeper
+
 	QbankKeeper qbankmodulekeeper.Keeper
 
 	OsmolpvKeeper osmolpvmodulekeeper.Keeper
@@ -302,6 +308,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
+		epochsmoduletypes.StoreKey,
 		qbankmoduletypes.StoreKey,
 		osmolpvmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
@@ -439,6 +446,14 @@ func New(
 		scopedIntergammKeeper,
 	)
 
+	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
+	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
+	app.EpochsKeeper.SetHooks(
+		epochsmoduletypes.NewMultiEpochHooks(
+		// TODO insert epoch hooks receivers here
+		),
+	)
+
 	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.QbankKeeper = qbankmodulekeeper.NewKeeper(
@@ -519,6 +534,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
+		epochsModule,
 		qbankModule,
 		osmolpvModule,
 		qoracleModule,
@@ -533,6 +549,7 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
+		epochsmoduletypes.ModuleName,
 		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
@@ -580,6 +597,7 @@ func New(
 		intergammmoduletypes.ModuleName,
 		icatypes.ModuleName,
 		genutiltypes.ModuleName,
+		epochsmoduletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -611,6 +629,7 @@ func New(
 		feegrant.ModuleName,
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
+		epochsmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -633,6 +652,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
+		epochsModule,
 		qbankModule,
 		osmolpvModule,
 		// TODO fix qoracle testing for sim
@@ -830,6 +850,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	paramsKeeper.Subspace(osmolpvmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)

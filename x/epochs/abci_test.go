@@ -15,7 +15,7 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 	// TODO use TestKeepers context
 	var ctx sdk.Context
 	// TODO use TestKeepers
-	var epochsKeeper keeper.Keeper
+	var epochsKeeper *keeper.Keeper
 
 	var epochInfo types.EpochInfo
 
@@ -156,7 +156,7 @@ func TestEpochStartingOneMonthAfterInitGenesis(t *testing.T) {
 	// TODO use TestKeepers context
 	var ctx sdk.Context
 	// TODO use TestKeepers
-	var epochsKeeper keeper.Keeper
+	var epochsKeeper *keeper.Keeper
 
 	// On init genesis, default epochs information is set
 	// To check init genesis again, should make it fresh status
@@ -231,7 +231,7 @@ func TestLegacyEpochSerialization(t *testing.T) {
 	// TODO use TestKeepers context
 	var ctx sdk.Context
 	// TODO use TestKeepers
-	var epochsKeeper keeper.Keeper
+	var epochsKeeper *keeper.Keeper
 
 	// On init genesis, default epochs information is set
 	// To check init genesis again, should make it fresh status
