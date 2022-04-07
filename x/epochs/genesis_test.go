@@ -4,23 +4,20 @@ import (
 	"testing"
 	"time"
 
+	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/x/epochs"
-	"github.com/abag/quasarnode/x/epochs/keeper"
 	"github.com/abag/quasarnode/x/epochs/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEpochsExportGenesis(t *testing.T) {
-	// TODO use TestKeepers context
-	var ctx sdk.Context
-	// TODO use TestKeepers
-	var epochsKeeper *keeper.Keeper
+	ctx, keeper := keepertest.NewTestSetup(t).GetEpochsKeeper()
+	epochs.InitGenesis(ctx, keeper, *types.DefaultGenesis())
 
 	chainStartTime := ctx.BlockTime()
 	chainStartHeight := ctx.BlockHeight()
 
-	genesis := epochs.ExportGenesis(ctx, epochsKeeper)
+	genesis := epochs.ExportGenesis(ctx, keeper)
 	require.Len(t, genesis.Epochs, 2)
 
 	require.Equal(t, genesis.Epochs[0].Identifier, "day")
@@ -40,16 +37,13 @@ func TestEpochsExportGenesis(t *testing.T) {
 }
 
 func TestEpochsInitGenesis(t *testing.T) {
-	// TODO use TestKeepers context
-	var ctx sdk.Context
-	// TODO use TestKeepers
-	var epochsKeeper *keeper.Keeper
+	ctx, keeper := keepertest.NewTestSetup(t).GetEpochsKeeper()
 
 	// On init genesis, default epochs information is set
 	// To check init genesis again, should make it fresh status
-	epochInfos := epochsKeeper.AllEpochInfos(ctx)
+	epochInfos := keeper.AllEpochInfos(ctx)
 	for _, epochInfo := range epochInfos {
-		epochsKeeper.DeleteEpochInfo(ctx, epochInfo.Identifier)
+		keeper.DeleteEpochInfo(ctx, epochInfo.Identifier)
 	}
 
 	now := time.Now()
@@ -95,8 +89,8 @@ func TestEpochsInitGenesis(t *testing.T) {
 		},
 	}
 
-	epochs.InitGenesis(ctx, epochsKeeper, genesisState)
-	epochInfo := epochsKeeper.GetEpochInfo(ctx, "monthly")
+	epochs.InitGenesis(ctx, keeper, genesisState)
+	epochInfo := keeper.GetEpochInfo(ctx, "monthly")
 	require.Equal(t, epochInfo.Identifier, "monthly")
 	require.Equal(t, epochInfo.StartTime.UTC().String(), now.UTC().String())
 	require.Equal(t, epochInfo.Duration, time.Hour*24)

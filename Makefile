@@ -5,7 +5,7 @@ test_path:
 	go test -v $(path)
 
 test:
-	@$(MAKE) test_path path="./x/qbank/..."
+	@$(MAKE) test_path path="./x/qbank/... ./x/epochs/... "
 
 test_simulation:
 	starport chain simulate -v

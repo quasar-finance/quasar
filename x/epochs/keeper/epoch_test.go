@@ -4,17 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abag/quasarnode/x/epochs/keeper"
+	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/x/epochs"
 	"github.com/abag/quasarnode/x/epochs/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEpochLifeCycle(t *testing.T) {
-	// TODO use TestKeepers context
-	var ctx sdk.Context
-	// TODO use TestKeepers
-	var epochsKeeper keeper.Keeper
+	ctx, keeper := keepertest.NewTestSetup(t).GetEpochsKeeper()
+	epochs.InitGenesis(ctx, keeper, *types.DefaultGenesis())
 
 	epochInfo := types.EpochInfo{
 		Identifier:            "monthly",
@@ -24,11 +22,11 @@ func TestEpochLifeCycle(t *testing.T) {
 		CurrentEpochStartTime: time.Time{},
 		EpochCountingStarted:  false,
 	}
-	epochsKeeper.SetEpochInfo(ctx, epochInfo)
-	epochInfoSaved := epochsKeeper.GetEpochInfo(ctx, "monthly")
+	keeper.SetEpochInfo(ctx, epochInfo)
+	epochInfoSaved := keeper.GetEpochInfo(ctx, "monthly")
 	require.Equal(t, epochInfo, epochInfoSaved)
 
-	allEpochs := epochsKeeper.AllEpochInfos(ctx)
+	allEpochs := keeper.AllEpochInfos(ctx)
 	require.Len(t, allEpochs, 3)
 	require.Equal(t, allEpochs[0].Identifier, "day") // alphabetical order
 	require.Equal(t, allEpochs[1].Identifier, "monthly")

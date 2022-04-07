@@ -3,31 +3,27 @@ package keeper_test
 import (
 	"testing"
 
-	gocontext "context"
 	"time"
 
-	"github.com/abag/quasarnode/x/epochs/keeper"
+	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/x/epochs"
+	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	"github.com/abag/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQueryEpochInfos(t *testing.T) {
-	// TODO use TestKeepers context
-	var ctx sdk.Context
-	// TODO use TestKeepers
-	var epochsKeeper *keeper.Keeper
+	ctx, keeper := keepertest.NewTestSetup(t).GetEpochsKeeper()
+	epochs.InitGenesis(ctx, keeper, *types.DefaultGenesis())
+	goCtx := sdk.WrapSDKContext(ctx)
 
 	chainStartTime := ctx.BlockTime()
 
-	querier := keeper.NewQuerier(epochsKeeper)
-
-	// queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	// types.RegisterQueryServer(queryHelper, keeper.NewQuerier(*suite.app.EpochsKeeper))
-	// queryClient := types.NewQueryClient(queryHelper)
+	querier := epochskeeper.NewQuerier(keeper)
 
 	// Invalid param
-	epochInfosResponse, err := querier.EpochInfos(gocontext.Background(), &types.QueryEpochsInfoRequest{})
+	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})
 	require.NoError(t, err)
 	require.Len(t, epochInfosResponse.Epochs, 2)
 
