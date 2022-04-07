@@ -59,11 +59,6 @@ const (
 
 // var sepByte = []byte(":")
 
-// store key use the byte as key
-func createStoreKey(k string) []byte {
-	return []byte(k)
-}
-
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
@@ -177,50 +172,48 @@ func CreateMeissaRewardMaccName(lockupPeriod qbanktypes.LockupTypes) string {
 	return b.String()
 }
 
-// CreateMeissaPositionKey will create key for storing the current position of the strategy.
-// Key format -  {0x03} + {“current_pos”}
+// CreateMeissaPositionKey create key for storing the current position of the strategy.
+// Key format -  types.MeissaStrategyKBP + {“current_pos”}
 func CreateMeissaPositionKey() []byte {
 	return []byte(CurrentPositionName)
 }
 
-// @desc Function will create key for storing the epoch wise current position of the strategy
-// Key format -  {0x03} + {“current_pos”} + ":" + {epochdays}
+// CreateMeissaEpochPositionKey create key for storing the epoch wise current position of the strategy
+// Key format -  types.MeissaStrategyKBP + {“current_pos”} + ":" + {epochdays}
 func CreateMeissaEpochPositionKey(epochday uint64) []byte {
 	var b bytes.Buffer
 	b.WriteString(CurrentPositionName)
 	b.WriteString(Sep)
-	b.Write(qbanktypes.CreateIDKey(epochday))
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
 	return b.Bytes()
 }
 
+// AUDIT NOTE - Probably a redundant method
 // CreateMeissaPoolPositionKey  create key for storing the epoch wise  deployed position on a pool ID
-// Key format -  {0x04} + {epochdays} + ":" + {lockupPeriodStr} + ":" + "PoolID"
+// Key format -  types.MeissaStrategyPoolPosKBP + {epochdays} + ":" + {lockupPeriodStr} + ":" + "PoolID"
 func CreateMeissaPoolPositionKey(epochday uint64, lockupPeriod qbanktypes.LockupTypes, poolID uint64) []byte {
 	var b bytes.Buffer
-	b.Write(qbanktypes.CreateIDKey(epochday))
+	strEpochday := strconv.FormatUint(epochday, 10)
+	b.WriteString(strEpochday)
 	b.WriteString(Sep)
 	b.WriteString(qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	b.WriteString(Sep)
-	b.Write(qbanktypes.CreateIDKey(poolID))
+	strPoolID := strconv.FormatUint(poolID, 10)
+	b.WriteString(strPoolID)
 	return b.Bytes()
 }
 
-// LP Position Keys
-
-const (
-	LpPositionKey = "LpPosition-value-"
-)
-
-// CreateLPPositionEpochKey create key for the list of all lp position
+// EpochDayKey create key for the list of all lp position
 // created on an epoch day. Ex. {LPPositionKBP} + {epochday}
 func EpochDayKey(epochday uint64) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
 	return b.Bytes()
-	// return qbanktypes.CreateIDKey(epochday)
 }
 
+// CreateLPIDKey create key for the LP ID
 func CreateLPIDKey(lpID uint64) []byte {
 	var b bytes.Buffer
 	strlpID := strconv.FormatUint(lpID, 10)
@@ -229,7 +222,7 @@ func CreateLPIDKey(lpID uint64) []byte {
 }
 
 // EpochLPIDKey create key for the particular lp position created on an epoch day.
-// Ex. Prefixed Key = {LPPositionKBP} + {epochday} + ":" + "lpID"
+// Ex. Prefixed Key = {LPPositionKBP} + {epochday} + ":" + {lpID}
 func EpochLPIDKey(epochday uint64, lpID uint64) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -247,11 +240,11 @@ func CreateEpochRewardKey(epochday uint64) []byte {
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
 	return b.Bytes()
-	// return qbanktypes.CreateIDKey(epochday)
 }
 
+// AUDIT NOTE - Probably a redundant method
 // CreateEpochLPUserKey create key for storing the user records on a specific lp position.
-// Ex. Prefixed Key = = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc} + {":"} + {denom}
+// Ex. Prefixed Key = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc} + {":"} + {denom}
 func CreateEpochLPUserKey(epochday uint64, lpID uint64, userAcc string, denom string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -266,6 +259,7 @@ func CreateEpochLPUserKey(epochday uint64, lpID uint64, userAcc string, denom st
 	return b.Bytes()
 }
 
+// AUDIT NOTE - Probably a redundant method
 // CreateEpochLPUserKey create key for storing the user records on a specific lp position.
 // Ex. Prefixed Key = = {LPUserInfoKBP} + {epochday} + {":"} + {lpID} + {":"} + {userAcc}
 func CreateEpochLPUserInfo(epochday uint64, lpID uint64, userAcc string) []byte {
@@ -280,6 +274,7 @@ func CreateEpochLPUserInfo(epochday uint64, lpID uint64, userAcc string) []byte 
 	return b.Bytes()
 }
 
+// AUDIT NOTE - Probably a redundant method
 // CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
 // Ex. Prefixed Key = = {EpochLPUserKBP} + {epochday} + {":"} + {lpID} + {":"} +
 func CreateEpochLPKey(epochday uint64, lpID uint64) []byte {
@@ -301,8 +296,8 @@ func ParseUserDenomKey(key []byte) (uid, denom string) {
 	return
 }
 
-// CreateEpochLPUserKey create key for fetching the user records on a specific lp position.
-// Ex. Prefixed Key = = {EpochLPUserKBP} +   {lpID} + {":"} + {epochday}
+// CreateLPEpochKey create key for keeping the record of lpID and epoch pair
+// Ex. Prefixed Key = = {LPEpochKBP} +   {lpID} + {":"} + {epochday}
 func CreateLPEpochKey(epochday uint64, lpID uint64) []byte {
 	var b bytes.Buffer
 	strlpID := strconv.FormatUint(lpID, 10)
@@ -314,7 +309,7 @@ func CreateLPEpochKey(epochday uint64, lpID uint64) []byte {
 }
 
 // CreateEpochDenomKey create key for fetching the epoch and denom pairs.
-// Ex. Prefixed Key = = {LPEpochDenomKBP} +   {epochday} + {":"} + {denom}
+// Ex. Prefixed Key = = {types.LPEpochDenomKBP/types.ExitKBP} +   {epochday} + {":"} + {denom}
 func CreateEpochDenomKey(epochday uint64, denom string) []byte {
 	var b bytes.Buffer
 	strEpochday := strconv.FormatUint(epochday, 10)
@@ -325,13 +320,13 @@ func CreateEpochDenomKey(epochday uint64, denom string) []byte {
 }
 
 // CreateDayMappingKey create the mapping key for expected reward day, actual deposit day and lockup
-// Ex. Prefixed Key = = {DayMapKBP} +   {rewardday} + {":"} + {depositday} + {":"} + {lockupPeriod}
-func CreateDayMappingKey(rewardday uint64,
+// Ex. Prefixed Key = = {DayMapKBP} +   {rewardday/exitday} + {":"} + {depositday} + {":"} + {lockupPeriod}
+func CreateDayMappingKey(exitday uint64,
 	depositday uint64, lockupPeriod qbanktypes.LockupTypes) []byte {
 
 	var b bytes.Buffer
-	strRewardDay := strconv.FormatUint(rewardday, 10)
-	b.WriteString(strRewardDay)
+	strExitDay := strconv.FormatUint(exitday, 10)
+	b.WriteString(strExitDay)
 	b.WriteString(Sep)
 	strDepositDay := strconv.FormatUint(depositday, 10)
 	b.WriteString(strDepositDay)
@@ -340,19 +335,3 @@ func CreateDayMappingKey(rewardday uint64,
 	b.WriteString(lockupPeriodStr)
 	return b.Bytes()
 }
-
-const (
-	EpochLPInfoKey = "EpochLPInfo-value-"
-)
-
-const (
-	RewardCollectionKey = "RewardCollection-value-"
-)
-
-const (
-	UserLPInfoKey = "UserLPInfo-value-"
-)
-
-const (
-	LpStatKey = "LpStat-value-"
-)
