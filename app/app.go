@@ -196,7 +196,7 @@ var (
 		osmolpvmoduletypes.PerfFeeCollectorMaccName:  nil,
 		osmolpvmoduletypes.EntryFeeCollectorMaccName: nil,
 		osmolpvmoduletypes.ExitFeeCollectorMaccName:  nil,
-		osmolpvmoduletypes.OsmoLPVReserveMaccName:    nil,
+		osmolpvmoduletypes.OsmoLPVReserveMaccName:    {authtypes.Minter, authtypes.Burner},
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
 		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,

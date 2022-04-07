@@ -127,8 +127,8 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
 	dlpairs []types.DepositDayLockupPair) []types.EpochUserDenomWeight {
 
-	totalDenomAmtMap := make(map[string]sdk.Int) // Key = denom, Value = sdk.Int
-	userCoinsMap := make(map[string]sdk.Coins)   // key = userAcc, Value = sdk.Coins
+	totalDenomAmtMap := make(map[string]sdk.Int)
+	userCoinsMap := make(map[string]sdk.Coins)
 	var udws []types.EpochUserDenomWeight
 
 	for _, dl := range dlpairs {
@@ -137,7 +137,7 @@ func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
 		prefixKey := qbanktypes.CreateEpochLockupUserKey(dl.Epochday, dl.LockupPeriod, qbanktypes.Sep)
 		prefixKey = append(bytePrefix, prefixKey...)
 
-		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochday} + ":" + "lockupString" + "/"
+		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochday} + ":" + "lockupString" + ":"
 		store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
 		iter := sdk.KVStorePrefixIterator(store, prefixKey)
 		defer iter.Close()

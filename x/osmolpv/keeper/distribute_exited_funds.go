@@ -9,7 +9,7 @@ import (
 )
 
 // Note - Managing the amount to exit is the strategy concerns. But orion should make sure that users
-// will get the same amount of deposited amount
+// will get the same equivalent tokens of deposited tokens based on current market value.
 
 // AddEpochExitAmt adds exited amount from the osmosis pools on a given epochday.
 // Key - {types.ExitKBP} + {epochday} +  {":"} + {denom}
@@ -18,7 +18,7 @@ func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochday uint64, coin sdk.Coin)
 	key := types.CreateEpochDenomKey(epochday, coin.Denom)
 
 	k.Logger(ctx).Info(fmt.Sprintf("AddEpochExitAmt|key=%s|%s\n",
-		string(key), coin.Denom))
+		string(key), coin))
 
 	b := store.Get(key)
 	if b == nil {
@@ -33,7 +33,7 @@ func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochday uint64, coin sdk.Coin)
 	}
 }
 
-// SubEpochExitAmt subsexited amount from the osmosis pools on a given epoch day
+// SubEpochExitAmt subs exited amount from the osmosis pools on a given epoch day
 // Key -  {types.ExitKBP} + {epochday} +  {":"} + {denom}
 func (k Keeper) SubEpochExitAmt(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
@@ -41,7 +41,7 @@ func (k Keeper) SubEpochExitAmt(ctx sdk.Context, uid string, coin sdk.Coin, epoc
 	b := store.Get(key)
 	if b == nil {
 		// Do nothing - Called by mistake.
-		// TODO - panic.
+		panic(fmt.Errorf("exit amount is empty. Epoch: %v", epochday))
 	} else {
 		var storedCoin sdk.Coin
 		k.cdc.MustUnmarshal(b, &storedCoin)
@@ -67,19 +67,19 @@ func (k Keeper) GetEpochExitAmt(ctx sdk.Context,
 }
 
 // SendCoinFromCollectionToAccount transfer balance from account to lockup reward account
-// AUDIT TODO | Use the module name for now.
+// AUDIT  | Module account is the collection account for the deployed fund.
 func (k Keeper) SendCoinFromCollectionToAccount(ctx sdk.Context, userAcc string, amt sdk.Coins) error {
 	userAccAddr, _ := sdk.AccAddressFromBech32(userAcc)
 	accName := types.ModuleName
 	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAccAddr, amt)
 }
 
-// DistributeEpochLockupFunds distribute the deposited funds done
+// DistributeEpochLockupFunds distribute the exited funds to the dipositors.
 // Logic -
 // 0. Fetch the actual deposit day and lockup periods corresponding to the todays distributionDay.
-// 1. Calculate the total deposited funds on epochday for which today is the withdrawal.
+// 1. Calculate the total deposited funds on epochday for which today is the exit.
 // 2. Validate how much funds are we able to exit from the osmosis today.
-// 3. Check the difference between the two. And
+// 3. Check the difference between the exit funds and deposit funds for each denom.
 // 		3.1 Mint necessary quasar for the end users.
 //		3.2 OR Get it from the reserve.
 //		3.3 Swap from other tokens available to us.
@@ -112,7 +112,7 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 	denomAmountFromCollectionMap := make(map[string]sdk.Int)
 	// denomAmountFromReserve - map to indicate the amount to be taken from the orion reserve.
 	denomAmountFromReserve := make(map[string]sdk.Int)
-	// denomOrions - map of denom and Orions amount allocated to the
+	// denomOrions - map of denom and Orions amount allocated
 	denomOrionsMap := make(map[string]sdk.Int)
 
 	// Compare denomAmountMap and GetEpochExitAmt
@@ -122,7 +122,6 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 		c := k.GetEpochExitAmt(ctx, distributionDay, denom)
 		if amt.LTE(c.Amount) {
 			// All good, sufficient amount can be distributed back to users for this denom.
-			// AUDIT - TODO Actual distribution to user
 			// Transfer the remaining positive amount to the orion module treasury account.
 			denomAmountFromCollectionMap[denom] = amt
 			diff := c.Amount.Sub(amt) // ( collection amt - required amount ) => treasury
@@ -135,7 +134,7 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 			diff := amt.Sub(c.Amount)
 			denomRequiredAmtMap[denom] = diff
 
-			// AUDIT - TODO Get the fund from othr resources treasury or mint
+			// Get the fund from othr resources -> treasury or mint
 			r := k.GetReserveBalance(ctx, denom)
 			if r.Amount.GTE(diff) {
 				// All good, sufficient amount in the reserve. diff amount is to be taken from
@@ -144,9 +143,6 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 
 			} else {
 				// All denom amount available in reserve will be used.
-				// This denomRequiredAmtMap[denom] amount is further required. It should be processed in the end.
-				// 1. It should be fulfilled by Minting qsr or mint orions as backup
-				// 2. Should be declared as loss.
 				denomRequiredAmtMap[denom] = denomRequiredAmtMap[denom].Sub(r.Amount)
 				denomAmountFromReserve[denom] = r.Amount
 				orions := k.MintAndAllocateOrions(ctx, sdk.NewCoin(denom, denomRequiredAmtMap[denom]))
@@ -157,14 +153,18 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 				}
 				denomOrionsMap[denom] = orions.Amount
 			}
-			// Distribution of the amount to users
 		}
 
 	}
 
 	k.Logger(ctx).Info(
-		fmt.Sprintf("DistributeEpochLockupFunds|Epochday=%vdenomRequiredAmtMap=%v|denomExcessAmountMap=%v\n",
-			distributionDay, denomRequiredAmtMap, denomExcessAmountMap))
+		fmt.Sprintf("DistributeEpochLockupFunds|Epochday=%v|denomRequiredAmtMap=%v|"+
+			"denomExcessAmountMap=%v|denomOrionsMap=%v|denomAmountFromReserve=%v\n",
+			distributionDay,
+			denomRequiredAmtMap,
+			denomExcessAmountMap,
+			denomOrionsMap,
+			denomAmountFromReserve))
 
 	// AUDIT | TODO | Possible Optmization is to use InputOutput call from bank module
 	// Process epochUserInfo, denomAmountMap, denomAmountFromCollectionMap, denomAmountFromReserve
@@ -203,10 +203,10 @@ func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	orions := k.CalcReceipts(ctx, coin)
 	k.MintOrion(ctx, orions.Amount)
 	qsr := k.CalcQSR(ctx, coin)
-	// Note - As of now Mint in the orion module. The QSR present in the orion module
+	// Note - As of now Mint in the orion module reserve acc . The QSR present in the orion module reserve
 	// should not be used for the users distribution. They are considered as locked in
-	// the module account.
-	k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(qsr))
+	// the module reserve account.
+	k.bankKeeper.MintCoins(ctx, types.OsmoLPVReserveMaccName, sdk.NewCoins(qsr))
 	return orions
 }
 
