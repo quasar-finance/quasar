@@ -48,8 +48,10 @@ message LpPosition {
   uint64 unbondingStartEpochDay = 7; 
   uint64 unbondingDuration = 8; 
   uint64 poolID = 9; 
-  cosmos.base.v1beta1.Coin lptoken = 10;
-  repeated cosmos.base.v1beta1.Coin coins = 11 [(gogoproto.nullable) = false]; 
+  cosmos.base.v1beta1.Coin lptoken = 10 [(gogoproto.nullable) = false];
+  
+  repeated cosmos.base.v1beta1.Coin coins = 11 
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
   repeated GaugeLockInfo gaugelocks  = 12;
   
 }

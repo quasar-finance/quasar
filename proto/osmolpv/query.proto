@@ -5,7 +5,6 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "osmolpv/params.proto";
-import "osmolpv/fee_data.proto";
 import "osmolpv/lp_position.proto";
 import "osmolpv/epoch_lp_info.proto";
 import "osmolpv/reward_collection.proto";
@@ -25,11 +24,7 @@ service Query {
 	rpc ReserveBalance(QueryReserveBalanceRequest) returns (QueryReserveBalanceResponse) {
 		option (google.api.http).get = "/abag/quasarnode/osmolpv/reserve_balance/{denom}";
 	}
-
-// Queries a FeeData by index.
-	rpc FeeData(QueryGetFeeDataRequest) returns (QueryGetFeeDataResponse) {
-		option (google.api.http).get = "/abag/quasarnode/osmolpv/fee_data";
-	}
+ 
 // Queries a LpPosition by index.
 	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/osmolpv/lp_position";
@@ -69,12 +64,13 @@ message QueryReserveBalanceRequest {
 message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
-
+/*
 message QueryGetFeeDataRequest {}
 
 message QueryGetFeeDataResponse {
 	FeeData FeeData = 1 [(gogoproto.nullable) = false];
 }
+*/
 message QueryGetLpPositionRequest {}
 
 message QueryGetLpPositionResponse {

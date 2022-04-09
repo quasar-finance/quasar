@@ -6,8 +6,7 @@ import "gogoproto/gogo.proto";
 option go_package = "github.com/abag/quasarnode/x/osmolpv/types";
 
 // Params defines the parameters for the module.
-// AUDIT NOTE - Params definition is not defined yet for the orian module.
-message Params {
+ message Params {
   option (gogoproto.goproto_stringer) = false;
   string perf_fee_per                = 1 [
     (gogoproto.moretags)   = "yaml:\"perf_fee_per\"",

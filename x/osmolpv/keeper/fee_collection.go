@@ -8,8 +8,11 @@ import (
 // There are four types of fee collectors to collect fees for each type of fee
 // aka, vault management fee, vault performance fee, entry fee and exit fee.
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
-// AUDIT NOTE - We still need to decide which fee collections to be activate. Code should be flexible enough
-// to activate any of the fee type with parameters changes.
+// Perf Fee = A set percentage to be taken from the reward collection.
+// Mgmt Fee = A set percentage to be taken from the users deposit amount.
+// AUDIT NOTE -
+// Initially Performance fee collections is activated. Code should be flexible enough
+// to activate any of the fee type with parameters addition/changes.
 
 // GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human readable name.
 func (k Keeper) GetFeeCollectorAccAddress(feeCollectorName string) sdk.AccAddress {
@@ -22,12 +25,12 @@ func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string
 	return balances
 }
 
-// DeductFees deduce fees of type based of feeCollector name from the investor address
+// DeductAccFees deduce fees of type based of feeCollector name from the investor address
 // who deposited tokens in orion vault. There is one to one mapping between the type
 // of fee with the fee collector name.
 // If the feeCollectorName input is MgmtFeeCollectorMaccName then the fee collected is
 // Management fee, and so for other types of fee.
-func (k Keeper) DeductFees(ctx sdk.Context, senderAddr sdk.AccAddress,
+func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	feeCollectorName string, fees sdk.Coins) error {
 
 	if !fees.IsValid() {
@@ -41,24 +44,39 @@ func (k Keeper) DeductFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	return nil
 }
 
+// DeductVaultFees deduce performance fees of type based of feeCollector name from the investor address
+// who deposited tokens in orion vault. There is one to one mapping between the type
+// of fee with the fee collector name.
+// If the feeCollectorName input is PerfFeeCollectorMaccName then the fee collected is
+// Performance fee, and so for other types of fee.
+func (k Keeper) DeductVaultFees(ctx sdk.Context, sourceMacc string,
+	feeCollectorName string, fees sdk.Coins) error {
+
+	if !fees.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, sourceMacc, feeCollectorName, fees)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
+	}
+
+	return nil
+}
+
 ///////////////////// Calculation of Fees /////////////////////
-// AUDIT NOTE - This method is probably going to be removed due to Performance fee
-// CalcMgmtFee Calculate the management fee
+
+// CalcPerFee is called by vault at the end of every profit collection round.
+// CalcPerFee calculate vault performance fee.
+func (k Keeper) CalcPerFee(ctx sdk.Context, profit sdk.Coin) sdk.Coin {
+	var factor sdk.Dec = k.PerfFeePer(ctx)
+	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
+	return sdk.NewCoin(profit.GetDenom(), feeAmt)
+}
+
+// CalcMgmtFee Calculate the management fee.
 func (k Keeper) CalcMgmtFee() sdk.Coin {
 	// To be calculated on pro rata basis at every epoch
 	return sdk.NewCoin("QSR", sdk.ZeroInt())
-}
-
-// This function is called by vault at the end of every profit collection
-// round. This could be the end of every epoch.
-// AUDIT NOTE | Initially taking 5% hardocded profit as performance fees.
-// Should be a paramater of orion module
-// CalcPerFee Calculate vault performance fee.
-func (k Keeper) CalcPerFee(profit sdk.Coin) sdk.Coin {
-	// TODO - To be added in vault parameter
-	var factor sdk.Dec = sdk.MustNewDecFromStr("0.05")
-	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
-	return sdk.NewCoin(profit.GetDenom(), feeAmt)
 }
 
 // CalcEntryFee calculate the entry fee every time when a user deposit coins

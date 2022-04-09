@@ -14,6 +14,8 @@ message UserLPInfo {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];  
- repeated cosmos.base.v1beta1.Coin coins = 2 [(gogoproto.nullable) = false]; 
+ repeated cosmos.base.v1beta1.Coin coins = 2  
+ [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+ 
   
 }

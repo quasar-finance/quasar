@@ -140,8 +140,8 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 			}
 
 			// Calc todays expected reward based APY in terms of LP tokens
-			rAmt := (*lp.Lptoken).Amount.ToDec().Mul(g.ExpectedApy).TruncateInt()
-			rCoin := sdk.NewCoin((*lp.Lptoken).Denom, rAmt)
+			rAmt := lp.Lptoken.Amount.ToDec().Mul(g.ExpectedApy).TruncateInt()
+			rCoin := sdk.NewCoin(lp.Lptoken.Denom, rAmt)
 			if v, ok := denomExpReward[c.Denom]; ok {
 				denomExpReward[c.Denom] = v.Add(rCoin)
 			} else {

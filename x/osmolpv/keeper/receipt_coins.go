@@ -2,60 +2,8 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/osmolpv/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-// RC - Receipt Coin
-// AUDIT NOTE - This could be a reduntant method
-// Get the list of denoms types allocated to input address addr of type sdk.AccAddress
-func (k Keeper) GetRCDenoms(ctx sdk.Context, addr sdk.AccAddress) qbanktypes.QDenoms {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserReceiptCoinsKBP)
-	key := types.CreateUserReceiptCoinsKey(addr)
-	b := store.Get(key)
-	var qdenoms qbanktypes.QDenoms
-	k.cdc.MustUnmarshal(b, &qdenoms)
-	return qdenoms
-}
-
-// AUDIT NOTE - This could be a reduntant method
-// Add a denom to the list of receipt token denom type allocated to a user
-func (k Keeper) AddRCDenoms(ctx sdk.Context, addr sdk.AccAddress, denom string) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserReceiptCoinsKBP)
-	key := types.CreateUserReceiptCoinsKey(addr)
-	b := store.Get(key)
-	var qdenoms qbanktypes.QDenoms
-	if b == nil {
-		qdenoms.Denoms = append(qdenoms.Denoms, denom)
-		value := k.cdc.MustMarshal(&qdenoms)
-		store.Set(key, value)
-	} else {
-		k.cdc.MustUnmarshal(b, &qdenoms)
-		qdenoms.Denoms = append(qdenoms.Denoms, denom)
-		value := k.cdc.MustMarshal(&qdenoms)
-		store.Set(key, value)
-	}
-}
-
-// AUDIT NOTE - This could be a reduntant method
-// Retrieve the amount of receipt coins as a slice of sdk.Coin as sdk.Coins
-// help by an account
-func (k Keeper) GetAllRCBalances(ctx sdk.Context, addr sdk.AccAddress, denoms []string) sdk.Coins {
-	var receiptCoins sdk.Coins
-	for _, denom := range denoms {
-		coin := k.GetRCBalance(ctx, addr, denom)
-		receiptCoins = append(receiptCoins, coin)
-	}
-	return receiptCoins
-}
-
-// AUDIT NOTE - This could be a reduntant method
-// Retrive the amount of receipt coins per denomication held by an account
-func (k Keeper) GetRCBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	balance := k.bankKeeper.GetBalance(ctx, addr, denom)
-	return balance
-}
 
 // GetTotalOrions calculates the total amount of orions for the input sdk.Coins
 // This method will be used for end user queries by the front end in two steps.
@@ -73,7 +21,6 @@ func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) sdk.Coin {
 }
 
 // CalcReceipts calculates the amount of orion coin equivalent to the input sdk.Coin
-// This method is supposed to be called by the orion module.
 func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	spotPrice := k.GetSpotPrice(ctx, coin.Denom)
 	OrionAmt := coin.Amount.ToDec().Mul(spotPrice).TruncateInt()
@@ -100,7 +47,8 @@ func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
 // GetUsersOrionShare calculates the percentage of users Orion share based on the
 // Total Orion printed so far, and total users deposit in the orion vault.
 // Total orion = Users orion amounts + orion coin amount owned by the orion module
-// Users share = users equivalent orions / total equivalent deposited orions
+// Users share = users equivalent orions / total equivalent deposited orions.
+// This can also be extended to calc share in ref to total orions minted so far
 func (k Keeper) GetUsersOrionShare(ctx sdk.Context, userAcc string) sdk.Dec {
 	qc, _ := k.qbankKeeper.GetUserDepositAmt(ctx, userAcc)
 	usersOrion := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
