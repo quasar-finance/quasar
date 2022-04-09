@@ -1,56 +1,66 @@
 package cli_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
 
+	"github.com/abag/quasarnode/testutil/network"
 	"github.com/abag/quasarnode/x/epochs/client/cli"
 	"github.com/abag/quasarnode/x/epochs/types"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
+	tmcli "github.com/tendermint/tendermint/libs/cli"
 )
 
 func setupNetwork(t *testing.T) *network.Network {
 	t.Helper()
-	cfg := network.DefaultConfig()
-
-	state := types.DefaultGenesis()
-	buf, err := cfg.Codec.MarshalJSON(state)
-	require.NoError(t, err)
-	cfg.GenesisState[types.ModuleName] = buf
-
-	network := network.New(t, cfg)
-	_, err = network.WaitForHeight(1)
+	network := network.New(t)
+	_, err := network.WaitForHeight(1)
 	require.NoError(t, err)
 
 	return network
 }
 
 func TestGetCmdCurrentEpoch(t *testing.T) {
-	// FIXME
-	t.Skip("FIXME")
 	network := setupNetwork(t)
-	defer network.Cleanup()
 
-	val := network.Validators[0]
-
+	clientCtx := network.Validators[0].ClientCtx
+	common := []string{
+		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+	}
 	testCases := []struct {
 		name       string
 		identifier string
+		args       []string
 		expectErr  bool
 		respType   proto.Message
 	}{
 		{
+			"query daily epoch number",
+			"day",
+			common,
+			false,
+			&types.QueryCurrentEpochResponse{
+				CurrentEpoch: int64(1),
+			},
+		},
+		{
 			"query weekly epoch number",
-			"weekly",
-			false, &types.QueryCurrentEpochResponse{},
+			"week",
+			common,
+			false,
+			&types.QueryCurrentEpochResponse{
+				CurrentEpoch: int64(0),
+			},
 		},
 		{
 			"query unavailable epoch number",
 			"unavailable",
-			false, &types.QueryCurrentEpochResponse{},
+			common,
+			true,
+			&types.QueryCurrentEpochResponse{},
 		},
 	}
 
@@ -59,12 +69,10 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := cli.GetCmdCurrentEpoch()
-			clientCtx := val.ClientCtx
-
 			args := []string{
 				tc.identifier,
 			}
-
+			args = append(args, tc.args...)
 			out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, args)
 			if tc.expectErr {
 				require.Error(t, err)
@@ -77,33 +85,32 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 }
 
 func TestGetCmdEpochsInfos(t *testing.T) {
-	// FIXME
-	t.Skip("FIXME")
 	network := setupNetwork(t)
-	defer network.Cleanup()
 
-	val := network.Validators[0]
-
+	clientCtx := network.Validators[0].ClientCtx
+	common := []string{
+		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+	}
 	testCases := []struct {
 		name      string
+		args      []string
 		expectErr bool
 		respType  proto.Message
 	}{
 		{
-			"query epoch infos",
-			false, &types.QueryEpochsInfoResponse{},
+			"query default genesis epoch infos",
+			common,
+			false,
+			&types.QueryEpochsInfoResponse{
+				Epochs: types.DefaultGenesis().Epochs,
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
-			cmd := cli.GetCmdCurrentEpoch()
-			clientCtx := val.ClientCtx
-
-			args := []string{}
-
+			cmd := cli.GetCmdEpochsInfos()
+			args := tc.args
 			out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, args)
 			if tc.expectErr {
 				require.Error(t, err)
