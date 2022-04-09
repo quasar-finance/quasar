@@ -107,9 +107,9 @@ import (
 	epochsmodule "github.com/abag/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/abag/quasarnode/x/epochs/types"
-	osmolpvmodule "github.com/abag/quasarnode/x/osmolpv"
-	osmolpvmodulekeeper "github.com/abag/quasarnode/x/osmolpv/keeper"
-	osmolpvmoduletypes "github.com/abag/quasarnode/x/osmolpv/types"
+	orionmodule "github.com/abag/quasarnode/x/orion"
+	orionmodulekeeper "github.com/abag/quasarnode/x/orion/keeper"
+	orionmoduletypes "github.com/abag/quasarnode/x/orion/types"
 	qbankmodule "github.com/abag/quasarnode/x/qbank"
 	qbankmodulekeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
@@ -174,7 +174,7 @@ var (
 		vesting.AppModuleBasic{},
 		epochsmodule.AppModuleBasic{},
 		qbankmodule.AppModuleBasic{},
-		osmolpvmodule.AppModuleBasic{},
+		orionmodule.AppModuleBasic{},
 		qoraclemodule.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		intergammmodule.AppModuleBasic{},
@@ -183,26 +183,26 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                   nil,
-		distrtypes.ModuleName:                        nil,
-		minttypes.ModuleName:                         {authtypes.Minter},
-		stakingtypes.BondedPoolName:                  {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:               {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                          {authtypes.Burner},
-		ibctransfertypes.ModuleName:                  {authtypes.Minter, authtypes.Burner},
-		qbankmoduletypes.ModuleName:                  {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		osmolpvmoduletypes.ModuleName:                {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		osmolpvmoduletypes.MgmtFeeCollectorMaccName:  nil,
-		osmolpvmoduletypes.PerfFeeCollectorMaccName:  nil,
-		osmolpvmoduletypes.EntryFeeCollectorMaccName: nil,
-		osmolpvmoduletypes.ExitFeeCollectorMaccName:  nil,
-		osmolpvmoduletypes.OsmoLPVReserveMaccName:    {authtypes.Minter, authtypes.Burner},
-		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
-		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
-		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
-		osmolpvmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
-		osmolpvmoduletypes.CreateMeissaMaccName():                                            nil,
-		icatypes.ModuleName: nil,
+		authtypes.FeeCollectorName:                 nil,
+		distrtypes.ModuleName:                      nil,
+		minttypes.ModuleName:                       {authtypes.Minter},
+		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                        {authtypes.Burner},
+		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		qbankmoduletypes.ModuleName:                {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		orionmoduletypes.ModuleName:                {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		orionmoduletypes.MgmtFeeCollectorMaccName:  nil,
+		orionmoduletypes.PerfFeeCollectorMaccName:  nil,
+		orionmoduletypes.EntryFeeCollectorMaccName: nil,
+		orionmoduletypes.ExitFeeCollectorMaccName:  nil,
+		orionmoduletypes.OrionReserveMaccName:      {authtypes.Minter, authtypes.Burner},
+		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
+		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
+		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
+		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
+		orionmoduletypes.CreateMeissaMaccName():                                            nil,
+		icatypes.ModuleName:                                                                nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -264,7 +264,7 @@ type App struct {
 
 	QbankKeeper qbankmodulekeeper.Keeper
 
-	OsmolpvKeeper osmolpvmodulekeeper.Keeper
+	OrionKeeper orionmodulekeeper.Keeper
 
 	QoracleKeeper qoraclemodulekeeper.Keeper
 
@@ -310,7 +310,7 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		epochsmoduletypes.StoreKey,
 		qbankmoduletypes.StoreKey,
-		osmolpvmoduletypes.StoreKey,
+		orionmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
@@ -463,7 +463,7 @@ func New(
 		keys[qbankmoduletypes.MemStoreKey],
 		app.GetSubspace(qbankmoduletypes.ModuleName),
 		app.BankKeeper,
-		// app.OsmolpvKeeper,
+		// app.OrionKeeper,
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -475,11 +475,11 @@ func New(
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.OsmolpvKeeper = *osmolpvmodulekeeper.NewKeeper(
+	app.OrionKeeper = *orionmodulekeeper.NewKeeper(
 		appCodec,
-		keys[osmolpvmoduletypes.StoreKey],
-		keys[osmolpvmoduletypes.MemStoreKey],
-		app.GetSubspace(osmolpvmoduletypes.ModuleName),
+		keys[orionmoduletypes.StoreKey],
+		keys[orionmoduletypes.MemStoreKey],
+		app.GetSubspace(orionmoduletypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.QbankKeeper,
@@ -487,7 +487,7 @@ func New(
 		app.IntergammKeeper,
 	)
 
-	osmolpvModule := osmolpvmodule.NewAppModule(appCodec, app.OsmolpvKeeper, app.AccountKeeper, app.BankKeeper)
+	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -537,7 +537,7 @@ func New(
 		transferModule,
 		epochsModule,
 		qbankModule,
-		osmolpvModule,
+		orionModule,
 		qoracleModule,
 		icaModule,
 		intergammModule,
@@ -560,7 +560,7 @@ func New(
 		ibchost.ModuleName,
 		feegrant.ModuleName,
 		qbankmoduletypes.ModuleName,
-		osmolpvmoduletypes.ModuleName,
+		orionmoduletypes.ModuleName,
 		// TODO check the order of the below
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
@@ -579,7 +579,7 @@ func New(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
-		osmolpvmoduletypes.ModuleName,
+		orionmoduletypes.ModuleName,
 		// TODO check the order of the below
 		evidencetypes.ModuleName,
 		ibchost.ModuleName,
@@ -621,7 +621,7 @@ func New(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		qbankmoduletypes.ModuleName,
-		osmolpvmoduletypes.ModuleName,
+		orionmoduletypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
 		icatypes.ModuleName,
 		intergammmoduletypes.ModuleName,
@@ -655,7 +655,7 @@ func New(
 		transferModule,
 		epochsModule,
 		qbankModule,
-		osmolpvModule,
+		orionModule,
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
@@ -853,7 +853,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
-	paramsKeeper.Subspace(osmolpvmoduletypes.ModuleName)
+	paramsKeeper.Subspace(orionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)

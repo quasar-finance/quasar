@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	osmolpvypes "github.com/abag/quasarnode/x/osmolpv/types"
+	orionypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -19,7 +19,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 	}
 	k.Logger(ctx).Info(fmt.Sprintf("RequestWithdrawAll|%s\n", msg.String()))
 
-	if msg.GetVaultID() == osmolpvypes.ModuleName {
+	if msg.GetVaultID() == orionypes.ModuleName {
 		// Iterate over types.ActualWithdrawableKeyKBP + {userAcc} + {":"}
 		bytePrefix := types.ActualWithdrawableKeyKBP
 		prefixKey := []byte(msg.Creator)
@@ -45,7 +45,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 		}
 
 		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,
-			osmolpvypes.ModuleName,
+			orionypes.ModuleName,
 			depositorAddr,
 			coins); err != nil {
 			return nil, err // AUDIT NOTE - Test it properly in the unit tests.

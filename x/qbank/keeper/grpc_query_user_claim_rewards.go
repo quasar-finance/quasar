@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	osmolpvtypes "github.com/abag/quasarnode/x/osmolpv/types"
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
@@ -18,7 +18,7 @@ func (k Keeper) UserClaimRewards(goCtx context.Context, req *types.QueryUserClai
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", req.GetUserAcc()))
-	qcoins, _ := k.GetUserClaimAmount(ctx, req.UserAcc, osmolpvtypes.ModuleName)
+	qcoins, _ := k.GetUserClaimAmount(ctx, req.UserAcc, oriontypes.ModuleName)
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", qcoins.Coins.String()))
 	return &types.QueryUserClaimRewardsResponse{Coins: qcoins}, nil
 }

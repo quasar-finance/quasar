@@ -1,0 +1,17 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+
+// Params defines the parameters for the module.
+ message Params {
+  option (gogoproto.goproto_stringer) = false;
+  string perf_fee_per                = 1 [
+    (gogoproto.moretags)   = "yaml:\"perf_fee_per\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  
+}

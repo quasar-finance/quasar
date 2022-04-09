@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	osmolptypes "github.com/abag/quasarnode/x/osmolpv/types"
+	osmolptypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

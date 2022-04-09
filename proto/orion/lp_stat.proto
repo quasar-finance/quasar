@@ -1,0 +1,17 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+
+// LpStat is used to do the book keeping of Lping activity on a given epochday.
+// Which includes, total number of Lping position and total LP tokens as []sdk.Coin
+message LpStat {
+  uint64 lpCount = 1; 
+  repeated cosmos.base.v1beta1.Coin totalLPCoins = 2 
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  
+}
