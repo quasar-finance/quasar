@@ -450,7 +450,8 @@ func New(
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-		// TODO insert epoch hooks receivers here
+			// TODO insert epoch hooks receivers here
+			app.QbankKeeper.Hooks(),
 		),
 	)
 

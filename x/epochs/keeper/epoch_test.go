@@ -27,8 +27,9 @@ func TestEpochLifeCycle(t *testing.T) {
 	require.Equal(t, epochInfo, epochInfoSaved)
 
 	allEpochs := keeper.AllEpochInfos(ctx)
-	require.Len(t, allEpochs, 3)
+	require.Len(t, allEpochs, 4)
 	require.Equal(t, allEpochs[0].Identifier, "day") // alphabetical order
-	require.Equal(t, allEpochs[1].Identifier, "monthly")
-	require.Equal(t, allEpochs[2].Identifier, "week")
+	require.Equal(t, allEpochs[1].Identifier, "minute")
+	require.Equal(t, allEpochs[2].Identifier, "monthly")
+	require.Equal(t, allEpochs[3].Identifier, "week")
 }

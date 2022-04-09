@@ -25,19 +25,26 @@ func TestQueryEpochInfos(t *testing.T) {
 	// Invalid param
 	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})
 	require.NoError(t, err)
-	require.Len(t, epochInfosResponse.Epochs, 2)
+	require.Len(t, epochInfosResponse.Epochs, 3)
 
-	// check if EpochInfos are correct
+	// check that EpochInfos are correct
+	// Epochs come ordered alphabetically by identifier
 	require.Equal(t, epochInfosResponse.Epochs[0].Identifier, "day")
 	require.Equal(t, epochInfosResponse.Epochs[0].StartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[0].Duration, time.Hour*24)
 	require.Equal(t, epochInfosResponse.Epochs[0].CurrentEpoch, int64(0))
 	require.Equal(t, epochInfosResponse.Epochs[0].CurrentEpochStartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[0].EpochCountingStarted, false)
-	require.Equal(t, epochInfosResponse.Epochs[1].Identifier, "week")
+	require.Equal(t, epochInfosResponse.Epochs[1].Identifier, "minute")
 	require.Equal(t, epochInfosResponse.Epochs[1].StartTime, chainStartTime)
-	require.Equal(t, epochInfosResponse.Epochs[1].Duration, time.Hour*24*7)
+	require.Equal(t, epochInfosResponse.Epochs[1].Duration, time.Minute)
 	require.Equal(t, epochInfosResponse.Epochs[1].CurrentEpoch, int64(0))
 	require.Equal(t, epochInfosResponse.Epochs[1].CurrentEpochStartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[1].EpochCountingStarted, false)
+	require.Equal(t, epochInfosResponse.Epochs[2].Identifier, "week")
+	require.Equal(t, epochInfosResponse.Epochs[2].StartTime, chainStartTime)
+	require.Equal(t, epochInfosResponse.Epochs[2].Duration, time.Hour*24*7)
+	require.Equal(t, epochInfosResponse.Epochs[2].CurrentEpoch, int64(0))
+	require.Equal(t, epochInfosResponse.Epochs[2].CurrentEpochStartTime, chainStartTime)
+	require.Equal(t, epochInfosResponse.Epochs[2].EpochCountingStarted, false)
 }
