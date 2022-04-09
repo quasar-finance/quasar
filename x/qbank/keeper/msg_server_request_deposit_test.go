@@ -12,7 +12,7 @@ import (
 
 func TestRequestDeposit(t *testing.T) {
 	keepers := keepertest.NewTestSetup(t)
-	_, keeper := keepers.QbankKeeper()
+	_, keeper := keepers.GetQbankKeeper()
 	server, srvCtx := setupMsgServer(keepers.Ctx, keeper)
 	userAddr := sample.AccAddress()
 	mintAmount := int64(100)

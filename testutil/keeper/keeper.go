@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	osmolpvtypes "github.com/abag/quasarnode/x/osmolpv/types"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
@@ -19,9 +20,10 @@ type TestKeepers struct {
 	T             testing.TB
 	Ctx           sdk.Context
 	ParamsKeeper  paramskeeper.Keeper
+	EpochsKeeper  *epochskeeper.Keeper
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
-	QBankKeeper   qbankkeeper.Keeper
+	QbankKeeper   qbankkeeper.Keeper
 }
 
 // return module account permissions for testing
@@ -53,6 +55,7 @@ func NewTestSetup(t testing.TB) TestKeepers {
 	blockedMaccAddresses := blockModuleAccountAddrs(maccPerms)
 
 	paramsKeeper := initializer.ParamsKeeper()
+	epochsKeeper := initializer.EpochsKeeper(paramsKeeper)
 	accountKeeper := initializer.AccountKeeper(paramsKeeper, maccPerms)
 	bankKeeper := initializer.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	qbankkeeper := initializer.QbankKeeper(paramsKeeper, bankKeeper)
@@ -63,12 +66,17 @@ func NewTestSetup(t testing.TB) TestKeepers {
 		T:             t,
 		Ctx:           initializer.Ctx,
 		ParamsKeeper:  paramsKeeper,
+		EpochsKeeper:  epochsKeeper,
 		AccountKeeper: accountKeeper,
 		BankKeeper:    bankKeeper,
-		QBankKeeper:   qbankkeeper,
+		QbankKeeper:   qbankkeeper,
 	}
 }
 
-func (tk TestKeepers) QbankKeeper() (sdk.Context, qbankkeeper.Keeper) {
-	return tk.Ctx, tk.QBankKeeper
+func (tk TestKeepers) GetEpochsKeeper() (sdk.Context, *epochskeeper.Keeper) {
+	return tk.Ctx, tk.EpochsKeeper
+}
+
+func (tk TestKeepers) GetQbankKeeper() (sdk.Context, qbankkeeper.Keeper) {
+	return tk.Ctx, tk.QbankKeeper
 }

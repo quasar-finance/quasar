@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetParams(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).QbankKeeper()
+	ctx, keeper := keepertest.NewTestSetup(t).GetQbankKeeper()
 	params := types.DefaultParams()
 
 	keeper.SetParams(ctx, params)
