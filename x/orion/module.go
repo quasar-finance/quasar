@@ -183,9 +183,6 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	logger := k.Logger(ctx)
 
 	logger.Info(fmt.Sprintf("Entered Orion EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
-
-	// acc := k.accountKeeper.GetModuleAddress( )
-	// fmt.Printf("CHECKING ALL MODULE ACCOUNTS app.AccountKeeper FeeCollector = %v \n", k.accountKeeper.GetAllAccounts())
 	// Logic :
 	// 1. Get the list of meissa strategies registered.
 	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
@@ -198,11 +195,15 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 	epochday := uint64(ctx.BlockHeight())
 
-	for lockupEnm, _ := range qbanktypes.LockupTypes_name {
-		logger.Info(fmt.Sprintf("Entered Orion BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+	for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
 
-		lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
-		k.ExecuteMeissa(ctx, epochday, lockupPeriod)
+		logger.Debug(fmt.Sprintf("Orion EndBlocker|modulename=%s|blockheight=%d|lockup=%v",
+			types.ModuleName, ctx.BlockHeight(), lockupStr))
+
+		if lockupStr != "Invalid" {
+			lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
+			k.ExecuteMeissa(ctx, epochday, lockupPeriod)
+		}
 	}
 }
 
@@ -213,7 +214,7 @@ func EndBlockerTesting(ctx sdk.Context, k keeper.Keeper) {
 	r2 := r.TruncateInt64()
 	logger := k.Logger(ctx)
 
-	logger.Info(fmt.Sprintf("EndBlockerTesting|modulename=%s|blockheight=%d|i1=%v|i2=%v|r=%v|r2=%v",
+	logger.Debug(fmt.Sprintf("EndBlockerTesting|modulename=%s|blockheight=%d|i1=%v|i2=%v|r=%v|r2=%v",
 		types.ModuleName, ctx.BlockHeight(), i1, i2, r, r2))
 
 }

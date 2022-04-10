@@ -67,29 +67,38 @@ func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.L
 // ExecuteMeissa iterate over all the meissa strategy registered with the orion vault
 func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qbanktypes.LockupTypes) {
 
-	k.Logger(ctx).Info(fmt.Sprintf("Entered ExecuteMeissa|epochday=%v|lockupType=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered ExecuteMeissa|epochday=%v|lockupType=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
 
-	strategies, _ := k.GetSubStrategyNames(ctx, types.MeissaStrategyName)
+	// strategies, _ := k.GetSubStrategyNames(ctx, types.MeissaStrategyName)
 
-	// Join pool
-	for _, sn := range strategies.Names {
-		k.MeissaCoinDistribution(ctx, epochday, types.MeissaStrategiesLockup[sn])
-	}
+	k.MeissaCoinDistribution(ctx, epochday, lockupPeriod)
+	k.MeissaExit(ctx, epochday, lockupPeriod)
+	k.MeissaWithdraw(ctx, epochday, lockupPeriod)
+	k.MeissaAudiorFunction(ctx, lockupPeriod)
+	/*
+			// Join pool
+			for _, sn := range strategies.Names {
+				k.Logger(ctx).Info(fmt.Sprintf("ExecuteMeissa|subname=%v|epochday=%v|lockupType=%v\n",
+					sn, epochday, qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
+				k.MeissaCoinDistribution(ctx, epochday, types.MeissaStrategiesLockup[sn])
+			}
 
-	// Bond LP tokens.
-	// TODO | AUDIT
 
-	// Exit pool
-	for _, sn := range strategies.Names {
-		k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
-		k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
-	}
+		// Bond LP tokens.
+		// TODO | AUDIT
 
-	// Audit
-	for _, sn := range strategies.Names {
-		k.MeissaAudiorFunction(ctx, types.MeissaStrategiesLockup[sn])
-	}
+		// Exit pool
+		for _, sn := range strategies.Names {
+			k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
+			k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
+		}
+
+		// Audit
+		for _, sn := range strategies.Names {
+			k.MeissaAudiorFunction(ctx, types.MeissaStrategiesLockup[sn])
+		}
+	*/
 
 	// Claim reward.
 	// TODO | AUDIT
@@ -112,12 +121,12 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 
 func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) {
 
-	k.Logger(ctx).Info(fmt.Sprintf("Entered MeissaCoinDistribution|epochday=%v|lockupType=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaCoinDistribution|epochday=%v|lockupType=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
 	poolIDs := k.getAPYRankedPools(ctx)
 
-	k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolIds=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolIds=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
 		// TODO | Refactoing | Change the qoracle pool ID storage to uint64
@@ -130,7 +139,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 
 		poolTotalShare := k.getTotalShare(ctx, poolID)
 		poolTotalWeight := k.getPoolTotalWeight(ctx, poolID)
-		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v|totalweight=%v\n",
+		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v|totalweight=%v\n",
 			epochday, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, assets, poolTotalWeight))
 		var sharePerAssetAmount []sdk.Dec
 		var shareRequired []sdk.Dec
@@ -145,7 +154,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 			maxAvailableAmount = append(maxAvailableAmount, k.getMaxAvailableAmount(ctx, lockupType, asset.Token.Denom))
 			shareRequired = append(shareRequired, sharePerAssetAmount[idx].MulInt(maxAvailableAmount[idx]))
 			//totalshareRequired = totalshareRequired.Add(shareRequired[idx])
-			k.Logger(ctx).Info(
+			k.Logger(ctx).Debug(
 				fmt.Sprintf(
 					"MeissaCoinDistribution|epochday=%v|lockupType=%v|poolId=%v|asset=%v|"+
 						"sharePerAssetAmount=%v|maxAvailableAmount=%v|shareRequired=%v|denomPerWeight=%v\n",
@@ -188,7 +197,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochday uint64, lockupT
 
 		}
 
-		k.Logger(ctx).Info(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v|FirstAssetAmount=%v|SecondAssetAmount=%v\n",
+		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v|FirstAssetAmount=%v|SecondAssetAmount=%v\n",
 			shareOutAmount, FirstAssetAmount, SecondAssetAmount))
 
 		// Transfer fund to the strategy global account.
@@ -276,7 +285,7 @@ func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (
 // Get the pool ids and sdk.coins.
 // Call exit for the pool.
 func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qbanktypes.LockupTypes) {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered MeissaExit|currEpochday=%v|lockupType=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaExit|currEpochday=%v|lockupType=%v\n",
 		currEpochday, qbanktypes.LockupTypes_name[int32(lockupType)]))
 	// TODO : We can use a different KV store and cache for the list of Currently active pools.
 	// Currently active pool are those in which orion has LPing positions.
@@ -285,7 +294,7 @@ func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qban
 	for _, poolIDStr := range poolIDs {
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
 		coins := k.GetMeissaEpochLockupPoolPosition(ctx, offsetedEpochDay, lockupType, poolID)
-		k.Logger(ctx).Info(fmt.Sprintf("MeissaExit|currEpochday=%v|offsetedEpochDay=%v|PoolID=%v|Coins=%v\n",
+		k.Logger(ctx).Debug(fmt.Sprintf("MeissaExit|currEpochday=%v|offsetedEpochDay=%v|PoolID=%v|Coins=%v\n",
 			currEpochday, offsetedEpochDay, poolID, coins))
 		poolTotalShare := k.getTotalShare(ctx, poolID)
 		assets := k.getPoolAssets(ctx, poolID)
@@ -320,11 +329,12 @@ func (k Keeper) MeissaWithdraw(ctx sdk.Context, epochday uint64, lockupType qban
 // Logic :
 // 1. check the coins available in all the orion lockup accounts at today epochday.
 // 2. transfer coins to the orion treasury. Orion treasury will also be used during users withdrawal.
+// 3. a secondary strategy to be implemented to use the left over coins
 func (k Keeper) MeissaAudiorFunction(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes) {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered MeissaAudiorFunction|lockupType=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaAudiorFunction|lockupType=%v\n",
 		qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
 	coins := k.GetAllStakingBalances(ctx, lockupPeriod)
-	k.Logger(ctx).Info(fmt.Sprintf("MeissaAudiorFunction|Coins=%v\n", coins))
+	k.Logger(ctx).Debug(fmt.Sprintf("MeissaAudiorFunction|Coins=%v\n", coins))
 	k.SendCoinsFromModuleToReserve(ctx, types.CreateOrionStakingMaccName(lockupPeriod), coins)
 }
 
@@ -352,7 +362,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 
 // Intergamm module method wrappers
 func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
 		poolID, shareOutAmount, tokenInMaxs))
 
 	var packet intergammtypes.IbcJoinPoolPacketData
@@ -380,7 +390,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 
 func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {
 
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
 		poolID, shareInAmount, tokenOutMins))
 	var packet intergammtypes.IbcExitPoolPacketData
 
@@ -405,7 +415,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 }
 
 func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, coins []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
+	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
 		receiverAddr, coins))
 
 	var packet intergammtypes.IbcWithdrawPacketData
