@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	// osmolpvmodulekeeper "github.com/abag/quasarnode/x/osmolpv/keeper"
-	osmolpvypes "github.com/abag/quasarnode/x/osmolpv/types"
+	// orionmodulekeeper "github.com/abag/quasarnode/x/orion/keeper"
+	orionypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -18,7 +18,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 
 	k.Logger(ctx).Info(fmt.Sprintf("RequestWithdraw|%s\n", msg.String()))
 
-	if msg.GetVaultID() == osmolpvypes.ModuleName {
+	if msg.GetVaultID() == orionypes.ModuleName {
 		wcoin := k.GetActualWithdrawableAmt(ctx, msg.Creator, msg.Coin.Denom)
 		if wcoin.Amount.LT(msg.Coin.Amount) {
 			return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Requested amt is greater than withwrable amt")
@@ -29,7 +29,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 		}
 		// Transfer amount to depositor from vault module acc.
 		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx,
-			osmolpvypes.ModuleName,
+			orionypes.ModuleName,
 			depositorAddr,
 			sdk.NewCoins(msg.GetCoin())); err != nil {
 			return nil, err

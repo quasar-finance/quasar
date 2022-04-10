@@ -1,0 +1,99 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "orion/params.proto";
+import "orion/lp_position.proto";
+import "orion/epoch_lp_info.proto";
+import "orion/reward_collection.proto";
+import "orion/user_lp_info.proto";
+import "orion/lp_stat.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/abag/quasarnode/orion/params";
+  }
+  // Queries a list of ReserveBalance items.
+	rpc ReserveBalance(QueryReserveBalanceRequest) returns (QueryReserveBalanceResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/reserve_balance/{denom}";
+	}
+ 
+// Queries a LpPosition by index.
+	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/lp_position";
+	}
+// Queries a EpochLPInfo by index.
+	rpc EpochLPInfo(QueryGetEpochLPInfoRequest) returns (QueryGetEpochLPInfoResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/epoch_lp_info";
+	}
+// Queries a RewardCollection by index.
+	rpc RewardCollection(QueryGetRewardCollectionRequest) returns (QueryGetRewardCollectionResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/reward_collection";
+	}
+// Queries a UserLPInfo by index.
+	rpc UserLPInfo(QueryGetUserLPInfoRequest) returns (QueryGetUserLPInfoResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/user_lp_info";
+	}
+// Queries a LpStat by index.
+	rpc LpStat(QueryGetLpStatRequest) returns (QueryGetLpStatResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/lp_stat";
+	}
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryReserveBalanceRequest {
+  string denom = 1;
+}
+
+message QueryReserveBalanceResponse {
+  uint64 amount = 1;
+}
+/*
+message QueryGetFeeDataRequest {}
+
+message QueryGetFeeDataResponse {
+	FeeData FeeData = 1 [(gogoproto.nullable) = false];
+}
+*/
+message QueryGetLpPositionRequest {}
+
+message QueryGetLpPositionResponse {
+	LpPosition LpPosition = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetEpochLPInfoRequest {}
+
+message QueryGetEpochLPInfoResponse {
+	EpochLPInfo EpochLPInfo = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetRewardCollectionRequest {}
+
+message QueryGetRewardCollectionResponse {
+	RewardCollection RewardCollection = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetUserLPInfoRequest {}
+
+message QueryGetUserLPInfoResponse {
+	UserLPInfo UserLPInfo = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetLpStatRequest {}
+
+message QueryGetLpStatResponse {
+	LpStat LpStat = 1 [(gogoproto.nullable) = false];
+}
+// this line is used by starport scaffolding # 3

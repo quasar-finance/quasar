@@ -3,8 +3,8 @@ package keeper
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/x/osmolpv/keeper"
-	"github.com/abag/quasarnode/x/osmolpv/types"
+	"github.com/abag/quasarnode/x/orion/keeper"
+	"github.com/abag/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -17,7 +17,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
-func OsmolpvKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
+func OrionKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -34,7 +34,7 @@ func OsmolpvKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 		types.Amino,
 		storeKey,
 		memStoreKey,
-		"OsmolpvParams",
+		"OrionParams",
 	)
 	// TODO use TestKeepers
 	qbankKeeper := newInitializer().QbankKeeper(newInitializer().ParamsKeeper(), nil)

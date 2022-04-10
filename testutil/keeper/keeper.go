@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
-	osmolpvtypes "github.com/abag/quasarnode/x/osmolpv/types"
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,10 +30,10 @@ type TestKeepers struct {
 func testModuleAccountPerms() map[string][]string {
 	return map[string][]string{
 		qbanktypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
-		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21):  nil,
-		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_1): nil,
-		osmolpvtypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_3): nil,
+		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
+		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21):  nil,
+		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_1): nil,
+		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_3): nil,
 	}
 }
 

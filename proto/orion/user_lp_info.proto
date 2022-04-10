@@ -1,0 +1,21 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+// UserLPInfo is intended to be used for the purpose of users position book keeping.
+// AUDIT NOTE - To be used for the future strategies where end users will be given 
+// flexibility to choose specific pools. For now it is redundant.
+message UserLPInfo {
+  string positionShare = 1 
+  [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];  
+ repeated cosmos.base.v1beta1.Coin coins = 2  
+ [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+ 
+  
+}

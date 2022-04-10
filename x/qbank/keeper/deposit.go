@@ -196,28 +196,28 @@ func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin
 func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, userAcc string) sdk.Coins {
 	bytePrefix := types.UserDenomDepositKBP
 	var prefixKey []byte
+	var coins sdk.Coins
 	for lockupStr := range types.LockupTypes_value {
 		prefixKey = types.CreateEpochLockupUserSepKey(epochday, lockupStr, userAcc, types.Sep)
-	}
 
-	prefixKey = append(bytePrefix, prefixKey...)
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, prefixKey)
-	defer iter.Close()
+		prefixKey = append(bytePrefix, prefixKey...)
+		store := ctx.KVStore(k.storeKey)
+		iter := sdk.KVStorePrefixIterator(store, prefixKey)
+		defer iter.Close()
 
-	k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
+			types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
-	var coins sdk.Coins
-	for ; iter.Valid(); iter.Next() {
-		// key = denom string byte, value = sdk.Coin marshled
-		_, value := iter.Key(), iter.Value()
-		var coin sdk.Coin
-		k.cdc.MustUnmarshal(value, &coin)
-		coins = coins.Add(coin)
-		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
-			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
+		for ; iter.Valid(); iter.Next() {
+			// key = denom string byte, value = sdk.Coin marshled
+			_, value := iter.Key(), iter.Value()
+			var coin sdk.Coin
+			k.cdc.MustUnmarshal(value, &coin)
+			coins = coins.Add(coin)
+			k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+				types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
 
+		}
 	}
 
 	return coins

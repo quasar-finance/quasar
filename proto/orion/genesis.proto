@@ -1,0 +1,27 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+import "gogoproto/gogo.proto";
+import "orion/params.proto";
+ import "orion/lp_position.proto";
+import "orion/epoch_lp_info.proto";
+import "orion/reward_collection.proto";
+import "orion/user_lp_info.proto";
+import "orion/lp_stat.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+
+// GenesisState defines the orion module's genesis state.
+// AUDIT NOTE - GenesisState definition is not defined yet. 
+// TODO - It will be defined properly in the near future before the month of April 2022.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  // FeeData feeData = 2;
+  LpPosition lpPosition = 2;
+  EpochLPInfo epochLPInfo = 3;
+  RewardCollection rewardCollection = 4;
+  UserLPInfo userLPInfo = 5;
+  LpStat lpStat = 6;
+  // this line is used by starport scaffolding # genesis/proto/state
+}
