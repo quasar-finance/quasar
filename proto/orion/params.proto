@@ -13,5 +13,11 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
   ];
+
+  string mgmt_fee_per                = 2 [
+    (gogoproto.moretags)   = "yaml:\"mgmt_fee_per\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
   
 }

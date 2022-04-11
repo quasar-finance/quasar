@@ -27,8 +27,8 @@ func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string
 
 // DeductAccFees deduce fees of type based of feeCollector name from the investor address
 // who deposited tokens in orion vault. There is one to one mapping between the type
-// of fee with the fee collector name.
-// If the feeCollectorName input is MgmtFeeCollectorMaccName then the fee collected is
+// of fee with the fee collector name.  In this method, fee deduction is done from end user account managed
+// by the Orion module. If the feeCollectorName input is MgmtFeeCollectorMaccName then the fee collected is
 // Management fee, and so for other types of fee.
 func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	feeCollectorName string, fees sdk.Coins) error {
@@ -46,8 +46,8 @@ func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 
 // DeductVaultFees deduce performance fees of type based of feeCollector name from the investor address
 // who deposited tokens in orion vault. There is one to one mapping between the type
-// of fee with the fee collector name.
-// If the feeCollectorName input is PerfFeeCollectorMaccName then the fee collected is
+// of fee with the fee collector name. In this method, fee deduction is done from a module account managed
+// by the Orion module. If the feeCollectorName input is PerfFeeCollectorMaccName then the fee collected is
 // Performance fee, and so for other types of fee.
 func (k Keeper) DeductVaultFees(ctx sdk.Context, sourceMacc string,
 	feeCollectorName string, fees sdk.Coins) error {
@@ -74,9 +74,11 @@ func (k Keeper) CalcPerFee(ctx sdk.Context, profit sdk.Coin) sdk.Coin {
 }
 
 // CalcMgmtFee Calculate the management fee.
-func (k Keeper) CalcMgmtFee() sdk.Coin {
-	// To be calculated on pro rata basis at every epoch
-	return sdk.NewCoin("QSR", sdk.ZeroInt())
+func (k Keeper) CalcMgmtFee(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
+	var factor sdk.Dec = k.MgmtFeePer(ctx)
+	feeAmt := coin.Amount.ToDec().Mul(factor).RoundInt()
+	return sdk.NewCoin(coin.GetDenom(), feeAmt)
+
 }
 
 // CalcEntryFee calculate the entry fee every time when a user deposit coins

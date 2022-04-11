@@ -17,7 +17,6 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
 // TODO - It will be defined properly in the near future before the month of April 2022.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  // FeeData feeData = 2;
   LpPosition lpPosition = 2;
   EpochLPInfo epochLPInfo = 3;
   RewardCollection rewardCollection = 4;
