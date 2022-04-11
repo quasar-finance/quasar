@@ -452,6 +452,7 @@ func New(
 		epochsmoduletypes.NewMultiEpochHooks(
 			// TODO insert epoch hooks receivers here
 			app.QbankKeeper.Hooks(),
+			app.OrionKeeper.Hooks(),
 		),
 	)
 
