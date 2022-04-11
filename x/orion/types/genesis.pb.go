@@ -27,8 +27,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // AUDIT NOTE - GenesisState definition is not defined yet.
 // TODO - It will be defined properly in the near future before the month of April 2022.
 type GenesisState struct {
-	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	// FeeData feeData = 2;
+	Params           Params            `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	LpPosition       *LpPosition       `protobuf:"bytes,2,opt,name=lpPosition,proto3" json:"lpPosition,omitempty"`
 	EpochLPInfo      *EpochLPInfo      `protobuf:"bytes,3,opt,name=epochLPInfo,proto3" json:"epochLPInfo,omitempty"`
 	RewardCollection *RewardCollection `protobuf:"bytes,4,opt,name=rewardCollection,proto3" json:"rewardCollection,omitempty"`

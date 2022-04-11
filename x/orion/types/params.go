@@ -12,7 +12,9 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyPerfFeePer             = []byte("PerFeePer")
-	DefaultPerfFeePer sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00%
+	KeyMgmtFeePer             = []byte("MgmtFeePer")
+	DefaultPerfFeePer sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
+	DefaultmgmtFeePer sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
 )
 
 // ParamKeyTable the param key table for launch module
@@ -21,25 +23,29 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(perFeePer sdk.Dec) Params {
-	return Params{PerfFeePer: perFeePer}
+func NewParams(perFeePer sdk.Dec, mgmtFeePer sdk.Dec) Params {
+	return Params{PerfFeePer: perFeePer, MgmtFeePer: mgmtFeePer}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultPerfFeePer)
+	return NewParams(DefaultPerfFeePer, DefaultmgmtFeePer)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyPerfFeePer, &p.PerfFeePer, validatePerfFeePer),
+		paramtypes.NewParamSetPair(KeyMgmtFeePer, &p.MgmtFeePer, validateMgmtFeePer),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validatePerfFeePer(p.PerfFeePer); err != nil {
+		return err
+	}
+	if err := validateMgmtFeePer(p.PerfFeePer); err != nil {
 		return err
 	}
 	return nil
@@ -65,6 +71,25 @@ func validatePerfFeePer(i interface{}) error {
 	}
 	if v.GT(sdk.OneDec()) {
 		return fmt.Errorf("perfFeePer too large: %s", v)
+	}
+
+	return nil
+}
+
+func validateMgmtFeePer(i interface{}) error {
+	v, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v.IsNil() {
+		return fmt.Errorf("mgmtFeePer must be not nil")
+	}
+	if v.IsNegative() {
+		return fmt.Errorf("mgmtFeePer must be positive: %s", v)
+	}
+	if v.GT(sdk.OneDec()) {
+		return fmt.Errorf("mgmtFeePer too large: %s", v)
 	}
 
 	return nil

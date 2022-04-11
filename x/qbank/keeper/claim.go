@@ -42,6 +42,29 @@ func (k Keeper) AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sd
 	}
 }
 
+// AddUserClaimRewards adds user's claim amount in sdk.Coins. This method is called by orion vault
+// key - types.UserClaimKBP + {userAccount} + {":"} + {VaultID}
+func (k Keeper) AddUserClaimRewards(ctx sdk.Context, uid, vaultID string, coins sdk.Coins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
+	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		qcoins.Coins = coins // AUDIT the slice usage here.
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	} else {
+		k.cdc.MustUnmarshal(b, &qcoins)
+		// Make sure that the stored coin set is in sorted order.
+		// As the single coin element is always sorted, so the Add will never panic
+		for _, coin := range coins {
+			qcoins.Coins = qcoins.Coins.Add(coin)
+		}
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	}
+}
+
 // Claim will remove users key from the KV store value for the requested user
 func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)

@@ -110,35 +110,43 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 // AUDIT TODO - The reward is to be available to the users view for claim in qbank module KV store.
 // Based on the return value of this function. And the actual reward amount should be moved to orion
 // reward collection global account. When a user will click on the claim reward it will go to the users account
-// func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context, epochday uint64) (types.UserInfoMap, error) {
+
 func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
-	epochday uint64) (map[string]types.UserDenomInfo, error) {
+	epochday uint64) error {
 
 	lpids := k.GetActiveLpIDList(ctx, epochday)
 	rc, found := k.GetRewardCollection(ctx, epochday)
+
 	if !found {
-		return nil, fmt.Errorf("rewards not yet collected for epoch day %v", epochday)
+		return fmt.Errorf("rewards not yet collected for epoch day %v", epochday)
 	}
-	//var um types.UserInfoMap
+
+	// Deduce the performance fees for each denom
+	var perFees sdk.Coins
+	for _, c := range rc.Coins {
+		perFees = perFees.Add(k.CalcPerFee(ctx, c))
+	}
+	// rc.Coins to be used for further reward distribution so needs to be substracted by perFees
+	rc.Coins = rc.Coins.Sub(perFees)
+	k.DeductVaultFees(ctx, types.CreateOrionRewardGloablMaccName(), types.PerfFeeCollectorMaccName, perFees)
+
 	denomExpReward := make(map[string]sdk.Coin)
 	denomActualReward := make(map[string]sdk.Coins) // AUDIT TODO
 	denomAmt := make(map[string]sdk.Int)
-	//	lpExpRewardMap := make(map[uint64]sdk.Coins)
 	var totalLPV sdk.Coins // Total LP in deployment
+
+	// Preparing denomExpReward and denomAmt
 	for _, lpid := range lpids {
-		//var lpExpReward sdk.Coins
 		lpday, _ := k.GetLPEpochDay(ctx, lpid)
 		lp, _ := k.GetLpPosition(ctx, lpday, lpid)
 		g := k.GetCurrentActiveGauge(ctx, lpday, lpid)
 		for _, c := range lp.Coins {
 			totalLPV = totalLPV.Add(c)
-
 			if v, ok := denomAmt[c.Denom]; ok {
 				denomAmt[c.Denom] = v.Add(c.Amount)
 			} else {
 				denomAmt[c.Denom] = c.Amount
 			}
-
 			// Calc todays expected reward based APY in terms of LP tokens
 			rAmt := lp.Lptoken.Amount.ToDec().Mul(g.ExpectedApy).TruncateInt()
 			rCoin := sdk.NewCoin(lp.Lptoken.Denom, rAmt)
@@ -147,9 +155,7 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 			} else {
 				denomExpReward[c.Denom] = rCoin
 			}
-
 		}
-
 	} // lpids loop
 
 	// Fill the denomActualRewardMap
@@ -169,7 +175,7 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 	//////////////////////////////
 	// Get users denom reward
 	// Note - This iteration is happening qbank module keeper.
-	useDenomInfoMap := make(map[string]types.UserDenomInfo) // Key = "{uid}" + {":"} + "{denom}"
+	uim := make(types.UserInfoMap)
 	bytePrefix := qbanktypes.UserDenomDepositKBP
 	store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
 	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
@@ -183,7 +189,7 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 		var udi types.UserDenomInfo
 		key, value := iter.Key(), iter.Value()
 		splits := qbanktypes.SplitKeyBytes(key)
-		// userAcc := string(splits[0])
+		userAcc := string(splits[0])
 		denom := string(splits[1])
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
@@ -195,15 +201,28 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 			udi.Reward = udi.Reward.Add(tmp)
 		}
 
-		useDenomInfoMap[string(key)] = udi
+		if tmpui, ok := uim[userAcc]; ok {
+			for _, c := range udi.Reward {
+				tmpui.TotalReward = tmpui.TotalReward.Add(c)
+			}
+			tmpui.DenomMap[denom] = udi
+			uim[userAcc] = tmpui
+		} else {
+			var ui types.UserInfo
+			ui.UserAcc = userAcc
+			ui.TotalReward = ui.TotalReward.Add()
+			ui.DenomMap = make(map[string]types.UserDenomInfo)
+			ui.DenomMap[denom] = udi
+			uim[userAcc] = ui
+		}
+
 	}
 
-	// AUDIT NOTE - Optimization bank module IO call to be used
-	for usrAcc, udi := range useDenomInfoMap {
-		usrAccAddr, _ := sdk.AccAddressFromBech32(usrAcc)
-		k.SendCoinFromGlobalRewardToAccount(ctx, usrAccAddr, udi.Reward)
+	for userAcc, ui := range uim {
+		k.qbankKeeper.AddUserClaimRewards(ctx, userAcc, types.ModuleName, ui.TotalReward)
 	}
-	return useDenomInfoMap, nil
+
+	return nil
 }
 
 // AUDIT NOTE - Incorrect implementation.
