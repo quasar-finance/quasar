@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	osmolptypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
@@ -14,9 +13,13 @@ import (
 func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDeposit) (*types.MsgRequestDepositResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	k.Logger(ctx).Debug(fmt.Sprintf("RequestDeposit|%s\n", msg.String()))
+	depositor := msg.GetCreator()
+	coin := msg.GetCoin()
+	lockupPeriod := msg.GetLockupPeriod()
+	// TODO get current epoch
+	currentEpoch := uint64(ctx.BlockHeight())
 
-	depositorAccAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	depositorAccAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		// TODO wrap error for context
 		return nil, err
@@ -26,27 +29,27 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	err = k.bankKeeper.SendCoinsFromAccountToModule(
 		ctx,
 		depositorAccAddr,
-		osmolptypes.CreateOrionStakingMaccName(msg.GetLockupPeriod()),
-		sdk.NewCoins(msg.GetCoin()),
+		osmolptypes.CreateOrionStakingMaccName(lockupPeriod),
+		sdk.NewCoins(coin),
 	)
 	if err != nil {
 		// TODO wrap error for context
 		return nil, err
 	}
 
-	k.Keeper.AddUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin())
-	k.Keeper.AddUserDeposit(ctx, msg.GetCreator(), msg.GetCoin())
-	// AUDIT TODO - consider a blockheight as epochday for now. Integrate epochmodule later.
-	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, msg.GetCreator(), msg.GetCoin(), uint64(ctx.BlockHeight()), msg.GetLockupPeriod())
+	// TODO AG merge these 3 calls into a single public function in the keeper
+	k.Keeper.AddUserDenomDeposit(ctx, depositor, coin)
+	k.Keeper.AddUserDeposit(ctx, depositor, coin)
+	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, depositor, coin, currentEpoch, lockupPeriod)
 
-	// TODO - Events And Telementry
+	ctx.EventManager().EmitEvent(types.CreateFundsDepositedEvent(ctx, depositorAccAddr, coin, lockupPeriod, currentEpoch))
 
-	// TODO AG document logging convention
 	k.Logger(ctx).Info(
-		"RequestDeposit|Deposited|",
-		"Depositor=", msg.GetCreator(),
-		"Coin=", msg.GetCoin().String(),
-		"Epoch=", uint64(ctx.BlockHeight()),
+		"RequestDeposit",
+		"Depositor", depositor,
+		"Coin", coin.String(),
+		"LockupPeriod", lockupPeriod.String(),
+		"Epoch", currentEpoch,
 	)
 
 	return &types.MsgRequestDepositResponse{}, nil

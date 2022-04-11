@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	eventtest "github.com/abag/quasarnode/testutil/event"
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qbank/types"
@@ -43,6 +44,9 @@ func TestRequestDeposit(t *testing.T) {
 	res, err := server.RequestDeposit(srvCtx, d)
 	require.NoError(t, err)
 	require.NotNil(t, res)
+
+	ctx := sdk.UnwrapSDKContext(srvCtx)
+	eventtest.AssertEventEmitted(t, ctx, types.TypeEvtFundsDeposited)
 
 	balance := keepers.BankKeeper.GetBalance(keepers.Ctx, userAddr, "QSR")
 	require.Equal(t, sdk.NewInt(initialBalance-targetAmount), balance.Amount)
