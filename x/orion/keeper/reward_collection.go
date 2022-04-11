@@ -175,7 +175,6 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 	//////////////////////////////
 	// Get users denom reward
 	// Note - This iteration is happening qbank module keeper.
-	useDenomInfoMap := make(map[string]types.UserDenomInfo) // Key = "{uid}" + {":"} + "{denom}"
 	uim := make(types.UserInfoMap)
 	bytePrefix := qbanktypes.UserDenomDepositKBP
 	store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
@@ -202,7 +201,6 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 			udi.Reward = udi.Reward.Add(tmp)
 		}
 
-		useDenomInfoMap[string(key)] = udi
 		if tmpui, ok := uim[userAcc]; ok {
 			for _, c := range udi.Reward {
 				tmpui.TotalReward = tmpui.TotalReward.Add(c)
