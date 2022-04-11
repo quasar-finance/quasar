@@ -19,7 +19,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	// TODO get current epoch
 	currentEpoch := uint64(ctx.BlockHeight())
 
-	depositorAccAddr, err := sdk.AccAddressFromBech32(depositor)
+	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		// TODO wrap error for context
 		return nil, err
@@ -28,7 +28,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	// Transfer amount to vault from depositor
 	err = k.bankKeeper.SendCoinsFromAccountToModule(
 		ctx,
-		depositorAccAddr,
+		depositorAddr,
 		osmolptypes.CreateOrionStakingMaccName(lockupPeriod),
 		sdk.NewCoins(coin),
 	)
@@ -42,7 +42,9 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	k.Keeper.AddUserDeposit(ctx, depositor, coin)
 	k.Keeper.AddEpochLockupUserDenomDeposit(ctx, depositor, coin, currentEpoch, lockupPeriod)
 
-	ctx.EventManager().EmitEvent(types.CreateFundsDepositedEvent(ctx, depositorAccAddr, coin, lockupPeriod, currentEpoch))
+	ctx.EventManager().EmitEvent(
+		types.CreateDepositEvent(ctx, depositorAddr, coin, lockupPeriod, currentEpoch),
+	)
 
 	k.Logger(ctx).Info(
 		"RequestDeposit",

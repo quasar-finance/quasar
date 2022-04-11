@@ -30,6 +30,7 @@ type TestKeepers struct {
 func testModuleAccountPerms() map[string][]string {
 	return map[string][]string{
 		qbanktypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		oriontypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_7):   nil,
 		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Days_21):  nil,
 		oriontypes.CreateOrionStakingMaccName(qbanktypes.LockupTypes_Months_1): nil,
