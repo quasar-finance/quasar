@@ -187,8 +187,9 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 		// Deduce management fee from UserAcc.
 		var mgmtFees sdk.Coins
 		for _, c := range userCoins {
-
-			mgmtFees = mgmtFees.Add(k.CalcMgmtFee(ctx, c))
+			mgmtFee := k.CalcMgmtFee(ctx, c)
+			mgmtFees = mgmtFees.Add(mgmtFee)
+			c = c.Sub(mgmtFee)
 			k.qbankKeeper.AddActualWithdrableAmt(ctx, v.UserAcc, c)
 		}
 		userAccAddr, _ := sdk.AccAddressFromBech32(v.UserAcc)
