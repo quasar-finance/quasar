@@ -1,8 +1,6 @@
 package types
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -51,7 +49,7 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 	// TODO enum?
 	// How to update the proto defs and regenarate everything?
 	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
-		return fmt.Errorf("invalid deposit msg risk profile")
+		return ErrDepositInvalidRiskProfile
 	}
 
 	return nil

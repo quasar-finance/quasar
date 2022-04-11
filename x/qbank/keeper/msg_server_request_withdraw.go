@@ -7,7 +7,6 @@ import (
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // RequestWithdraw withdraw of previously deposited funds by the depositors from the
@@ -28,7 +27,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	if msg.GetVaultID() == oriontypes.ModuleName {
 		wcoin := k.GetActualWithdrawableAmt(ctx, depositor, coin.Denom)
 		if wcoin.Amount.LT(msg.Coin.Amount) {
-			return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Requested amt is greater than withdrawable amt")
+			return nil, types.ErrWithdrawInsufficientFunds
 		}
 
 		// Transfer amount to depositor from vault module acc.

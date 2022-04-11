@@ -27,7 +27,7 @@ func TestMsgRequestDeposit_ValidateBasic(t *testing.T) {
 				Creator:     sample.AccAddressStr(),
 				RiskProfile: "FOO",
 			},
-			errMsg: "invalid deposit msg risk profile",
+			errMsg: "invalid risk profile",
 		}, {
 			name: "valid address",
 			msg: MsgRequestDeposit{

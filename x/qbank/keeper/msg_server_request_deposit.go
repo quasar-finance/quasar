@@ -5,6 +5,7 @@ import (
 
 	osmolptypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -21,7 +22,6 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
-		// TODO wrap error for context
 		return nil, err
 	}
 
@@ -33,7 +33,6 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		sdk.NewCoins(coin),
 	)
 	if err != nil {
-		// TODO wrap error for context
 		return nil, err
 	}
 
