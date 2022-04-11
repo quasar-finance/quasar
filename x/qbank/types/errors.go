@@ -8,6 +8,7 @@ import (
 
 // x/qbank module sentinel errors
 var (
-	ErrDepositInvalidRiskProfile = sdkerrors.Register(ModuleName, 100, "invalid risk profile")
-	ErrWithdrawInsufficientFunds = sdkerrors.Register(ModuleName, 200, "insufficient funds")
+	ErrInvalidVaultId            = sdkerrors.Register(ModuleName, 100, "invalid vault")
+	ErrDepositInvalidRiskProfile = sdkerrors.Register(ModuleName, 200, "invalid risk profile")
+	ErrWithdrawInsufficientFunds = sdkerrors.Register(ModuleName, 300, "insufficient funds")
 )

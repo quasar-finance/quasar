@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	// orionmodulekeeper "github.com/abag/quasarnode/x/orion/keeper"
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,7 +23,8 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 		return nil, err
 	}
 
-	if msg.GetVaultID() == oriontypes.ModuleName {
+	switch vaultId {
+	case oriontypes.ModuleName:
 		wcoin := k.GetActualWithdrawableAmt(ctx, depositor, coin.Denom)
 		if wcoin.Amount.LT(msg.Coin.Amount) {
 			return nil, types.ErrWithdrawInsufficientFunds
@@ -35,11 +35,14 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 			ctx,
 			oriontypes.ModuleName,
 			depositorAddr,
-			sdk.NewCoins(msg.GetCoin()),
+			sdk.NewCoins(coin),
 		)
 		if err != nil {
 			return nil, err
 		}
+
+	default:
+		return nil, types.ErrInvalidVaultId
 	}
 
 	k.Keeper.SubActualWithdrableAmt(ctx, depositor, coin)

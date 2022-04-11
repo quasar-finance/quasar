@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRequestWithdraw(t *testing.T) {
+func TestRequestWithdrawAll(t *testing.T) {
 	keepers := keepertest.NewTestSetup(t)
 	_, keeper := keepers.GetQbankKeeper()
 	userAddr := sample.AccAddress()
@@ -29,25 +29,34 @@ func TestRequestWithdraw(t *testing.T) {
 		sdk.NewCoins(sdk.NewCoin("QSR", mintAmount)),
 	)
 	require.NoError(t, err)
+	err = keepers.BankKeeper.MintCoins(
+		keepers.Ctx,
+		oriontypes.ModuleName,
+		sdk.NewCoins(sdk.NewCoin("FOO", mintAmount)),
+	)
+	require.NoError(t, err)
 
 	// Give a claim of targetAmount of these coins for a user
 	keeper.AddActualWithdrableAmt(keepers.Ctx, userAddr.String(), sdk.NewCoin("QSR", targetAmount))
+	keeper.AddActualWithdrableAmt(keepers.Ctx, userAddr.String(), sdk.NewCoin("FOO", targetAmount))
 
 	// Then withdraw a target amount
-	w := types.NewMsgRequestWithdraw(
+	w := types.NewMsgRequestWithdrawAll(
 		userAddr.String(),
-		"HIGH",
 		"orion",
-		sdk.NewCoin("QSR", targetAmount),
 	)
-	res, err := server.RequestWithdraw(srvCtx, w)
+	res, err := server.RequestWithdrawAll(srvCtx, w)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
 	ctx := sdk.UnwrapSDKContext(srvCtx)
-	eventtest.AssertEventEmitted(t, ctx, types.TypeEvtWithdraw)
+	eventtest.AssertEventEmitted(t, ctx, types.TypeEvtWithdrawAll)
 
-	balance := keepers.BankKeeper.GetBalance(keepers.Ctx, userAddr, "QSR")
-	require.Equal(t, targetAmount, balance.Amount)
-	require.Equal(t, "QSR", balance.Denom)
+	balance1 := keepers.BankKeeper.GetBalance(keepers.Ctx, userAddr, "QSR")
+	require.Equal(t, targetAmount, balance1.Amount)
+	require.Equal(t, "QSR", balance1.Denom)
+
+	balance2 := keepers.BankKeeper.GetBalance(keepers.Ctx, userAddr, "FOO")
+	require.Equal(t, targetAmount, balance2.Amount)
+	require.Equal(t, "FOO", balance2.Denom)
 }

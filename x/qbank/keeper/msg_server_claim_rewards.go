@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	orionypes "github.com/abag/quasarnode/x/orion/types"
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -19,8 +19,8 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 	}
 	qcoins, found := k.GetUserClaimAmount(ctx, msg.Creator, msg.VaultID)
 	if found {
-		if msg.GetVaultID() == orionypes.ModuleName {
-			rewardAccName := orionypes.CreateOrionRewardGloablMaccName()
+		if msg.GetVaultID() == oriontypes.ModuleName {
+			rewardAccName := oriontypes.CreateOrionRewardGloablMaccName()
 			err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, rewardAccName, accAddr, qcoins.Coins)
 			if err != nil {
 				panic(err)

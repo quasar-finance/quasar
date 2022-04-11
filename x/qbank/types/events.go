@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	TypeEvtDeposit  = "deposit"
-	TypeEvtWithdraw = "withdraw"
+	TypeEvtDeposit     = "deposit"
+	TypeEvtWithdraw    = "withdraw"
+	TypeEvtWithdrawAll = "withdraw_all"
 
 	AttributeValueCategory          = ModuleName
 	AttributeKeyDepositCoin         = "deposit_coin"
@@ -17,6 +18,7 @@ const (
 	AttributeKeyWithdrawCoin        = "withdraw_coin"
 	AttributeKeyWithdrawVaultId     = "withdraw_vault_id"
 	AttributeKeyWithdrawRiskProfile = "withdraw_risk_profile"
+	AttributeKeyWithdrawAllVaultId  = "withdraw_all_vault_id"
 )
 
 func CreateDepositEvent(ctx sdk.Context, sender sdk.AccAddress, coin sdk.Coin, lockupPeriod LockupTypes, currentEpoch uint64) sdk.Event {
@@ -38,5 +40,14 @@ func CreateWithdrawEvent(ctx sdk.Context, sender sdk.AccAddress, coin sdk.Coin, 
 		sdk.NewAttribute(AttributeKeyWithdrawCoin, coin.String()),
 		sdk.NewAttribute(AttributeKeyWithdrawVaultId, vaultId),
 		sdk.NewAttribute(AttributeKeyWithdrawRiskProfile, riskProfile),
+	)
+}
+
+func CreateWithdrawAllEvent(ctx sdk.Context, sender sdk.AccAddress, vaultId string) sdk.Event {
+	return sdk.NewEvent(
+		TypeEvtWithdrawAll,
+		sdk.NewAttribute(sdk.AttributeKeyModule, AttributeValueCategory),
+		sdk.NewAttribute(sdk.AttributeKeySender, sender.String()),
+		sdk.NewAttribute(AttributeKeyWithdrawAllVaultId, vaultId),
 	)
 }
