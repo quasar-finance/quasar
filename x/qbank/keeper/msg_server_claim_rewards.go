@@ -13,21 +13,46 @@ import (
 // be processed from the orion vault global reward account.
 func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimRewards) (*types.MsgClaimRewardsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	accAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+
+	depositor := msg.GetCreator()
+	vaultId := msg.GetVaultID()
+
+	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		return nil, err
 	}
-	qcoins, found := k.GetUserClaimAmount(ctx, msg.Creator, msg.VaultID)
-	if found {
-		if msg.GetVaultID() == oriontypes.ModuleName {
+
+	switch vaultId {
+	case oriontypes.ModuleName:
+		qcoins, found := k.GetUserClaimAmount(ctx, depositor, vaultId)
+		if found {
 			rewardAccName := oriontypes.CreateOrionRewardGloablMaccName()
-			err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, rewardAccName, accAddr, qcoins.Coins)
+			err := k.bankKeeper.SendCoinsFromModuleToAccount(
+				ctx,
+				rewardAccName,
+				depositorAddr,
+				qcoins.Coins,
+			)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
-			k.ClaimAll(ctx, msg.Creator, msg.VaultID)
+
+			k.ClaimAll(ctx, depositor, vaultId)
 		}
+
+	default:
+		return nil, types.ErrInvalidVaultId
 	}
+
+	ctx.EventManager().EmitEvent(
+		types.CreateClaimRewardsEvent(ctx, depositorAddr, vaultId),
+	)
+
+	k.Logger(ctx).Info(
+		"ClaimRewards",
+		"Depositor", depositor,
+		"VaultId", vaultId,
+	)
 
 	// TODO - Define and Emit Events
 	return &types.MsgClaimRewardsResponse{}, nil

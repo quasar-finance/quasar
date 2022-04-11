@@ -26,7 +26,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	switch vaultId {
 	case oriontypes.ModuleName:
 		wcoin := k.GetActualWithdrawableAmt(ctx, depositor, coin.Denom)
-		if wcoin.Amount.LT(msg.Coin.Amount) {
+		if wcoin.Amount.LT(coin.Amount) {
 			return nil, types.ErrWithdrawInsufficientFunds
 		}
 

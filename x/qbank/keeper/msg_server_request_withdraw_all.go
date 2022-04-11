@@ -15,7 +15,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 	depositor := msg.GetCreator()
 	vaultId := msg.GetVaultID()
 
-	depositorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 	case oriontypes.ModuleName:
 		// Iterate over types.ActualWithdrawableKeyKBP + {userAcc} + {":"}
 		bytePrefix := types.ActualWithdrawableKeyKBP
-		prefixKey := []byte(msg.Creator)
+		prefixKey := []byte(depositor)
 		prefixKey = append(bytePrefix, prefixKey...)
 		prefixKey = append(prefixKey, types.SepByte...)
 
@@ -45,7 +45,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 			var coin sdk.Coin
 			k.cdc.MustUnmarshal(value, &coin)
 			coins = coins.Add(coin)
-			k.EmptyActualWithdrableAmt(ctx, msg.Creator, coin.Denom)
+			k.EmptyActualWithdrableAmt(ctx, depositor, coin.Denom)
 		}
 
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(
