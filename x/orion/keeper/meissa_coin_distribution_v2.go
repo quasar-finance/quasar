@@ -59,7 +59,10 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 			shareOutAmount))
 
 		// Transfer fund to the strategy global account.
-		coins := computeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
+		coins, err := computeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
+		if err != nil {
+			continue
+		}
 		k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
 
 		// TODO | AUDIT
@@ -107,6 +110,9 @@ func computeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gamm_types.PoolA
 	}
 	shareOutAmount := sdk.NewInt(math.MaxInt64)
 	for _, asset := range poolAssets {
+		if asset.Token.Amount.IsZero() {
+			return sdk.ZeroInt(), errors.New("error: zero asset amount")
+		}
 		share := totalSharesAmt.Mul(maxAvailableTokens.AmountOf(asset.Token.GetDenom())).Quo(asset.Token.Amount)
 		if share.LT(shareOutAmount) {
 			shareOutAmount = share
@@ -116,9 +122,13 @@ func computeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gamm_types.PoolA
 }
 
 // computeNeededCoins computes the coins needed to obtain shareOutAmount
-func computeNeededCoins(totalSharesAmt, shareOutAmount sdk.Int, poolAssets []gamm_types.PoolAsset) (res sdk.Coins) {
-	for _, asset := range poolAssets {
-		res.Add(sdk.NewCoin(asset.Token.GetDenom(), shareOutAmount.Mul(asset.Token.Amount).Quo(totalSharesAmt)))
+func computeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gamm_types.PoolAsset) (sdk.Coins, error) {
+	res := sdk.NewCoins()
+	if totalSharesAmount.IsZero() && len(poolAssets) > 0 {
+		return res, errors.New("error: zero totalSharesAmount and non-empty poolAssets are illogical")
 	}
-	return res
+	for _, asset := range poolAssets {
+		res = res.Add(sdk.NewCoin(asset.Token.GetDenom(), shareOutAmount.Mul(asset.Token.Amount).Quo(totalSharesAmount)))
+	}
+	return res, nil
 }
