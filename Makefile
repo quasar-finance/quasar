@@ -8,7 +8,7 @@ test:
 	@$(MAKE) test_path path="./x/qbank/... ./x/epochs/... "
 
 test_simulation:
-	starport chain simulate -v
+	ignite chain simulate -v
 
 run:
 	./run.sh
