@@ -99,10 +99,6 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	// TODO - AUDIT
-	// "github.com/tendermint/spm/cosmoscmd"
-	// "github.com/tendermint/spm/openapiconsole"
-	//"github.com/abag/quasarnode/intergamm/docs"
 	"github.com/abag/quasarnode/docs"
 	epochsmodule "github.com/abag/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/abag/quasarnode/x/epochs/keeper"
@@ -183,26 +179,25 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                 nil,
-		distrtypes.ModuleName:                      nil,
-		minttypes.ModuleName:                       {authtypes.Minter},
-		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                        {authtypes.Burner},
-		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
-		qbankmoduletypes.ModuleName:                {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		orionmoduletypes.ModuleName:                {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		orionmoduletypes.MgmtFeeCollectorMaccName:  nil,
-		orionmoduletypes.PerfFeeCollectorMaccName:  nil,
-		orionmoduletypes.EntryFeeCollectorMaccName: nil,
-		orionmoduletypes.ExitFeeCollectorMaccName:  nil,
-		orionmoduletypes.OrionReserveMaccName:      {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:                nil,
+		distrtypes.ModuleName:                     nil,
+		minttypes.ModuleName:                      {authtypes.Minter},
+		stakingtypes.BondedPoolName:               {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:            {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                       {authtypes.Burner},
+		ibctransfertypes.ModuleName:               {authtypes.Minter, authtypes.Burner},
+		qbankmoduletypes.ModuleName:               {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		orionmoduletypes.ModuleName:               {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		orionmoduletypes.MgmtFeeCollectorMaccName: nil,
+		orionmoduletypes.PerfFeeCollectorMaccName: nil,
+		orionmoduletypes.OrionReserveMaccName:     {authtypes.Minter, authtypes.Burner},
 		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
 		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
 		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
 		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
 		orionmoduletypes.CreateMeissaMaccName():                                            nil,
-		icatypes.ModuleName:                                                                nil,
+		orionmoduletypes.CreateOrionRewardGloablMaccName():                                 nil,
+		icatypes.ModuleName: nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -394,8 +389,7 @@ func New(
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
-		// TODO AUDIT Above lines
-	// Create Transfer Keepers
+		// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
@@ -448,13 +442,6 @@ func New(
 
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
-	app.EpochsKeeper.SetHooks(
-		epochsmoduletypes.NewMultiEpochHooks(
-			// TODO insert epoch hooks receivers here
-			app.QbankKeeper.Hooks(),
-			app.OrionKeeper.Hooks(),
-		),
-	)
 
 	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -464,7 +451,6 @@ func New(
 		keys[qbankmoduletypes.MemStoreKey],
 		app.GetSubspace(qbankmoduletypes.ModuleName),
 		app.BankKeeper,
-		// app.OrionKeeper,
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -489,6 +475,15 @@ func New(
 	)
 
 	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// Set epoch hooks
+	app.EpochsKeeper.SetHooks(
+		epochsmoduletypes.NewMultiEpochHooks(
+			// TODO insert epoch hooks receivers here
+			app.QbankKeeper.Hooks(),
+			app.OrionKeeper.Hooks(),
+		),
+	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

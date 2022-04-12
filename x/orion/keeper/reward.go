@@ -45,8 +45,16 @@ func (k Keeper) SendCoinFromAccountToGlobalReward(ctx sdk.Context, senderAddr sd
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, accName, sdk.NewCoins(amt))
 }
 
+///////////////////////// Global Reward Account //////////////////////////
 // AUDIT NOTE - As of now global reward module account is used for the account.
 // And below two methods will be used in the module.
+
+// CreateOrionRewardMacc create orion vault lockup based reward account
+func (k Keeper) CreateOrionGlobalRewardMacc() sdk.AccAddress {
+	accName := types.CreateOrionRewardGloablMaccName()
+	return k.accountKeeper.GetModuleAddress(accName)
+}
+
 // SendCoinFromModuleToGlobalReward transfer balance from module to lockup reward account
 func (k Keeper) SendCoinFromModuleToGlobalReward(ctx sdk.Context, senderModule string, amt sdk.Coin) error {
 	accName := types.CreateOrionRewardGloablMaccName()
@@ -57,4 +65,19 @@ func (k Keeper) SendCoinFromModuleToGlobalReward(ctx sdk.Context, senderModule s
 func (k Keeper) SendCoinFromGlobalRewardToAccount(ctx sdk.Context, userAcc sdk.AccAddress, amt sdk.Coins) error {
 	accName := types.CreateOrionRewardGloablMaccName()
 	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAcc, amt)
+}
+
+// GetAllRewardBalances retrieve the reward balance as a slice of sdk.Coin as sdk.Coins
+// held by Orion vault reward accounts
+func (k Keeper) GetAllGlobalRewardBalances(ctx sdk.Context) sdk.Coins {
+	accAddr := k.CreateOrionGlobalRewardMacc()
+	balances := k.bankKeeper.GetAllBalances(ctx, accAddr)
+	return balances
+}
+
+// GetRewardBalance retrieve the denom balance held by orion lockup reward account.
+func (k Keeper) GetGlobalRewardBalance(ctx sdk.Context, denom string) sdk.Coin {
+	accAddr := k.CreateOrionGlobalRewardMacc()
+	balance := k.bankKeeper.GetBalance(ctx, accAddr, denom)
+	return balance
 }

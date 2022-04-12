@@ -14,7 +14,6 @@ import (
 	"github.com/abag/quasarnode/x/orion/client/cli"
 	"github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -173,38 +172,8 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	EndBlocker(ctx, am.keeper)
 	EndBlockerTesting(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
-}
-
-// EndBlocker executes logic for strategies implemented in orion module
-func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
-	logger := k.Logger(ctx)
-
-	logger.Info(fmt.Sprintf("Entered Orion EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
-	// Logic :
-	// 1. Get the list of meissa strategies registered.
-	// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
-	// 3. Exit Pool Logic - Check the strategy code for Exit conditions And call Exit Pool.
-	// 4. Withdraw Pool - Check the strategy code for withdraw condition and call withdraw
-	// 5. Update Strategy Positions.
-
-	// TODO | ASSUMPTION | Assume one block as one epochday for testing.
-	// TODO | AUDIT | Epoch module should be added here.
-
-	epochday := uint64(ctx.BlockHeight())
-
-	for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
-
-		logger.Debug(fmt.Sprintf("Orion EndBlocker|modulename=%s|blockheight=%d|lockup=%v",
-			types.ModuleName, ctx.BlockHeight(), lockupStr))
-
-		if lockupStr != "Invalid" {
-			lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
-			k.ExecuteMeissa(ctx, epochday, lockupPeriod)
-		}
-	}
 }
 
 func EndBlockerTesting(ctx sdk.Context, k keeper.Keeper) {

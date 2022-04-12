@@ -1,11 +1,5 @@
 package keeper
 
-/*
-	"fmt"
-	"github.com/abag/quasarnode/x/orion/types"
-
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-*/
 import (
 	"fmt"
 	"strconv"
