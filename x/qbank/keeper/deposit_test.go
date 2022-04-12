@@ -28,7 +28,7 @@ func TestGetAddSubUserDeposit(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, 2, got.Coins.Len())
 	// Coins are sorted by denom
-	require.Equal(t, nullify.Fill(&coin1), nullify.Fill(&got.Coins[0]))
+	require.Equal(t, coin1, got.Coins[0])
 	require.Equal(t, sdk.NewInt(101), got.Coins[1].Amount)
 
 	// subtract 10 from ABC
