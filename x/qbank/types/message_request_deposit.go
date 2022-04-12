@@ -46,8 +46,6 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	// TODO enum?
-	// How to update the proto defs and regenarate everything?
 	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
 		return ErrDepositInvalidRiskProfile
 	}

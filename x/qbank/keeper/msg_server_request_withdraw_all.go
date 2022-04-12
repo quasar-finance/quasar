@@ -55,7 +55,7 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 			coins,
 		)
 		if err != nil {
-			return nil, err // AUDIT NOTE - Test it properly in the unit tests.
+			return nil, err
 		}
 
 	default:
