@@ -183,14 +183,14 @@ func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.Valid
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 	// Note -
-	// Algorithm to update the current expected withdrable amount.
+	// Algorithm to update the current expected withdrawable amount.
 	// 	Iterativelly collect all the lock up periods and get the respective kv store
 	// 	for the deposited amount on a given day.
 	// 	lockup : lockupPeriods
 	// 	  calc : depositDay = todayEpoch - lockupPeriod
 	// 	  get amount from key = {depositDay} + {:} + {lockupPeriod} + {:} +
-	//    add users expected withdrable amount in the KV store.
-	// Note that the actual withdrawable amount will be different from the expected withdrable amount.
+	//    add users expected withdrawable amount in the KV store.
+	// Note that the actual withdrawable amount will be different from the expected withdrawable amount.
 	// It will be based on the Orion vault performance and market movement in destination dex (osmosis)
 	logger := k.Logger(ctx)
 	logger.Info(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
@@ -212,7 +212,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 				lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
 
 			// Process for the current expected withdrawable amount
-			k.ProcessWithdrable(ctx, keyPrefix)
+			k.ProcessWithdrawable(ctx, keyPrefix)
 		}
 
 	}

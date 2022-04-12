@@ -190,7 +190,7 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 			mgmtFee := k.CalcMgmtFee(ctx, c)
 			mgmtFees = mgmtFees.Add(mgmtFee)
 			c = c.Sub(mgmtFee)
-			k.qbankKeeper.AddActualWithdrableAmt(ctx, v.UserAcc, c)
+			k.qbankKeeper.AddActualWithdrawableAmt(ctx, v.UserAcc, c)
 		}
 		userAccAddr, _ := sdk.AccAddressFromBech32(v.UserAcc)
 		k.DeductAccFees(ctx, userAccAddr, types.MgmtFeeCollectorMaccName, mgmtFees)

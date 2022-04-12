@@ -31,7 +31,7 @@ func TestRequestWithdraw(t *testing.T) {
 	require.NoError(t, err)
 
 	// Give a claim of targetAmount of these coins for a user
-	keeper.AddActualWithdrableAmt(keepers.Ctx, userAddr.String(), sdk.NewCoin("QSR", targetAmount))
+	keeper.AddActualWithdrawableAmt(keepers.Ctx, userAddr.String(), sdk.NewCoin("QSR", targetAmount))
 
 	// Then withdraw a target amount
 	w := types.NewMsgRequestWithdraw(

@@ -177,10 +177,10 @@ func CreateUserDepositKey(uid string) []byte {
 	return createStoreKey(uid)
 }
 
-// CreateWithdrableKey create key for the withdrable KV store to fetch current
-// withdrable amount by a given user of given denom.
+// CreateWithdrawableKey create key for the withdrawable KV store to fetch current
+// withdrawable amount by a given user of given denom.
 // Key = {uid} + ":" + {denom}
-func CreateWithdrableKey(uid, denom, sep string) []byte {
+func CreateWithdrawableKey(uid, denom, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)
 	b.WriteString(sep)
@@ -188,10 +188,10 @@ func CreateWithdrableKey(uid, denom, sep string) []byte {
 	return b.Bytes()
 }
 
-// CreateWithdrableKey create key for the lockup period based withdrable KV store to fetch current
-// withdrable amount by a given user, denom and lockup period
+// CreateWithdrawableKey create key for the lockup period based withdrawable KV store to fetch current
+// withdrawable amount by a given user, denom and lockup period
 // Key = {denom} + ":" + {uid} + ":" + {lockupPeriod}
-func CreateLockupWithdrableKey(denom, uid string, lockupPeriod LockupTypes, sep string) []byte {
+func CreateLockupWithdrawableKey(denom, uid string, lockupPeriod LockupTypes, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(denom)
 	b.WriteString(sep)

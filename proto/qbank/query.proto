@@ -19,20 +19,20 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/qbank/params";
   }
- 
+
 // Queries a list of UserDenomDeposit items.
 	rpc UserDenomDeposit(QueryUserDenomDepositRequest) returns (QueryUserDenomDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_denom_deposit/{userAcc}";
 	}
 
- 
- 
+
+
 // Queries a list of UserDeposit items.
 	rpc UserDeposit(QueryUserDepositRequest) returns (QueryUserDepositResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_deposit/{userAcc}";
 	}
- 
-  
+
+
 
 
 // Queries a list of UserClaimRewards items.
@@ -40,9 +40,9 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/qbank/user_claim_rewards/{userAcc}";
 	}
 
-// Queries a list of Withdrable items.
-	rpc Withdrable(QueryWithdrableRequest) returns (QueryWithdrableResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qbank/withdrable/{userAccount}/{denom}";
+// Queries a list of Withdrawable items.
+	rpc Withdrawable(QueryWithdrawableRequest) returns (QueryWithdrawableResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/withdrawable/{userAccount}/{denom}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -56,7 +56,7 @@ message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
 }
-  
+
 message QueryUserDenomDepositRequest {
   string userAcc = 1;
   string denom = 2;
@@ -65,34 +65,34 @@ message QueryUserDenomDepositRequest {
 message QueryUserDenomDepositResponse {
 	uint64 amount = 1;
 }
- 
+
 
 message QueryUserDepositRequest {
   string userAcc = 1;
 }
 
 message QueryUserDepositResponse {
-	QCoins coins  = 1 
-	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
+	QCoins coins  = 1
+	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"];
 }
- 
-  
- 
+
+
+
 message QueryUserClaimRewardsRequest {
   string userAcc = 1;
 }
 
 message QueryUserClaimRewardsResponse {
-	QCoins coins  = 1 
-	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"]; 
+	QCoins coins  = 1
+	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"];
 }
 
-message QueryWithdrableRequest {
+message QueryWithdrawableRequest {
   string userAccount = 1;
   string denom = 2;
 }
 
-message QueryWithdrableResponse {
+message QueryWithdrawableResponse {
   cosmos.base.v1beta1.Coin coin = 1 [(gogoproto.nullable) = false];
 }
 

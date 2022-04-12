@@ -13,7 +13,7 @@ import (
 // func (k Keeper) RequestWithdraw(ctx sdk.Context, withdraw qbanktypes.Withdraw) error {
 
 // AUDIT NOTE | Redundant
-//This function maybe removed. Orion module should update the withdrable amount based on the
+//This function maybe removed. Orion module should update the withdrawable amount based on the
 // the strategy performance and exit position.
 func (k Keeper) RequestWithdraw(ctx sdk.Context, depositorAddr string, coin sdk.Coin) error {
 	/*
