@@ -18,7 +18,7 @@ func (k Keeper) UserClaimRewards(goCtx context.Context, req *types.QueryUserClai
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", req.GetUserAcc()))
-	qcoins, _ := k.GetUserClaimAmount(ctx, req.UserAcc, oriontypes.ModuleName)
+	qcoins, _ := k.GetUserClaimAmt(ctx, req.UserAcc, oriontypes.ModuleName)
 	k.Logger(ctx).Info(fmt.Sprintf("UserClaimRewards|%s\n", qcoins.Coins.String()))
 	return &types.QueryUserClaimRewardsResponse{Coins: qcoins}, nil
 }

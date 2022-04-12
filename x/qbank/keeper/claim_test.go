@@ -25,27 +25,27 @@ func TestGetAddSubClaimAmt(t *testing.T) {
 	keeper.AddUserClaimReward(ctx, depositorAddr, vaultId, coin1)
 	keeper.AddUserClaimRewards(ctx, depositorAddr, vaultId, coins)
 
-	got, found = keeper.GetUserClaimAmount(ctx, depositorAddr, vaultId)
+	got, found = keeper.GetUserClaimAmt(ctx, depositorAddr, vaultId)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(100), got.Coins.AmountOf("ABC"))
 	require.Equal(t, sdk.NewInt(100), got.Coins.AmountOf("DEF"))
 
 	// Sub some amount
 	keeper.SubUserClaimReward(ctx, depositorAddr, vaultId, sdk.NewCoin(denom1, sdk.NewInt(58)))
-	got, found = keeper.GetUserClaimAmount(ctx, depositorAddr, vaultId)
+	got, found = keeper.GetUserClaimAmt(ctx, depositorAddr, vaultId)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(42), got.Coins.AmountOf("ABC"))
 
 	// Sub all
 	keeper.SubUserClaimReward(ctx, depositorAddr, vaultId, sdk.NewCoin(denom1, sdk.NewInt(42)))
-	got, found = keeper.GetUserClaimAmount(ctx, depositorAddr, vaultId)
+	got, found = keeper.GetUserClaimAmt(ctx, depositorAddr, vaultId)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(0), got.Coins.AmountOf("ABC"))
 }
 
 func TestGetClaimAmtInvalidKey(t *testing.T) {
 	ctx, keeper := keepertest.NewTestSetup(t).GetQbankKeeper()
-	_, found := keeper.GetUserClaimAmount(ctx, "invalid", "orion")
+	_, found := keeper.GetUserClaimAmt(ctx, "invalid", "orion")
 	// Invalid key should result in a not found
 	require.False(t, found)
 }
@@ -68,12 +68,12 @@ func TestClaimAll(t *testing.T) {
 
 	keeper.AddUserClaimReward(ctx, depositorAddr, vaultId, coin1)
 
-	got, found = keeper.GetUserClaimAmount(ctx, depositorAddr, vaultId)
+	got, found = keeper.GetUserClaimAmt(ctx, depositorAddr, vaultId)
 	require.True(t, found)
 	require.Equal(t, sdk.NewInt(50), got.Coins.AmountOf("ABC"))
 
 	// Claim all
 	keeper.ClaimAll(ctx, depositorAddr, vaultId)
-	got, found = keeper.GetUserClaimAmount(ctx, depositorAddr, vaultId)
+	got, found = keeper.GetUserClaimAmt(ctx, depositorAddr, vaultId)
 	require.False(t, found)
 }

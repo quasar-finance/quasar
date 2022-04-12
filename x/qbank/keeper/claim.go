@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// GetUserClaimAmount get the current value of user's total claimable amount.
+// GetUserClaimAmt get the current value of user's total claimable amount.
 // Key - types.UserClaimKBP + {userAccount} + {":"} + {VaultID}
-func (k Keeper) GetUserClaimAmount(ctx sdk.Context, uid, vaultID string) (val types.QCoins, found bool) {
+func (k Keeper) GetUserClaimAmt(ctx sdk.Context, uid, vaultID string) (val types.QCoins, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
 	b := store.Get(types.CreateUsersClaimKey(uid, vaultID, types.Sep))
 
