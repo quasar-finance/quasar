@@ -30,7 +30,7 @@ func TestClaimRewards(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Give a claim of targetAmount of these coins for a user on orien vault
+	// Give a claim of targetAmount of these coins for a user on orion vault
 	keeper.AddUserClaimReward(keepers.Ctx, userAddr.String(), "orion", sdk.NewCoin("QSR", targetAmount))
 
 	// Then withdraw a target amount

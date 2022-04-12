@@ -65,13 +65,6 @@ func (k Keeper) AddUserClaimRewards(ctx sdk.Context, uid, vaultID string, coins 
 	}
 }
 
-// Claim will remove users key from the KV store value for the requested user
-func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
-	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
-	store.Delete(key)
-}
-
 // NOTE - Not used now.
 // A possible use case for the future for this method is when users want to use a part of his
 // reward for other purpose - like re-investing in the treasury; once those features are supported.
@@ -92,4 +85,11 @@ func (k Keeper) SubUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sd
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	}
+}
+
+// Claim will remove users key from the KV store value for the requested user
+func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
+	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
+	store.Delete(key)
 }
