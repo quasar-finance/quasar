@@ -24,7 +24,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 
 	switch vaultId {
 	case oriontypes.ModuleName:
-		qcoins, found := k.GetUserClaimAmount(ctx, depositor, vaultId)
+		qcoins, found := k.GetUserClaimAmt(ctx, depositor, vaultId)
 		if found {
 			rewardAccName := oriontypes.CreateOrionRewardGloablMaccName()
 			err := k.bankKeeper.SendCoinsFromModuleToAccount(

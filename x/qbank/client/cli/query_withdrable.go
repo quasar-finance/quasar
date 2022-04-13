@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdWithdrable() *cobra.Command {
+func CmdWithdrawable() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "withdrable [user-account] [denom]",
-		Short: "Query Withdrable",
+		Use:   "withdrawable [user-account] [denom]",
+		Short: "Query Withdrawable",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqUserAccount := args[0]
@@ -27,13 +27,13 @@ func CmdWithdrable() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryWithdrableRequest{
+			params := &types.QueryWithdrawableRequest{
 
 				UserAccount: reqUserAccount,
 				Denom:       reqDenom,
 			}
 
-			res, err := queryClient.Withdrable(cmd.Context(), params)
+			res, err := queryClient.Withdrawable(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

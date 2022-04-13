@@ -45,7 +45,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 		return nil, types.ErrInvalidVaultId
 	}
 
-	k.Keeper.SubActualWithdrableAmt(ctx, depositor, coin)
+	k.Keeper.SubActualWithdrawableAmt(ctx, depositor, coin)
 
 	ctx.EventManager().EmitEvent(
 		types.CreateWithdrawEvent(ctx, depositorAddr, coin, vaultId, riskProfile),

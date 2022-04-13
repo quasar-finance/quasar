@@ -2,4 +2,4 @@
 
 set -Cue -o pipefail
 
-starport chain serve -c config.yml --reset-once -v
+ignite chain serve -c config.yml --reset-once -v
