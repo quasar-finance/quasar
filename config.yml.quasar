@@ -10,7 +10,7 @@ validator:
   staked: "1000000000uqsar"
 client:
   openapi:
-    path: "docs/static/openapi.yml"
+    path: "docs/client/static/openapi/openapi.yml"
   vuex:
     path: "vue/src/store"
 faucet:

@@ -1,8 +1,12 @@
-vue/
-release/
 .idea/
 .vscode/
 .DS_Store
 tmp/
 *.tmp
 *.log
+
+release/
+build/
+
+node_modules/
+vue/
