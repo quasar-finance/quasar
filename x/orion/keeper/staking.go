@@ -12,20 +12,10 @@ import (
 func (k Keeper) CreateOrionStakingMacc(lockupPeriod qbanktypes.LockupTypes) sdk.AccAddress {
 	accName := types.CreateOrionStakingMaccName(lockupPeriod)
 	acc := k.accountKeeper.GetModuleAddress(accName)
-
-	// accStr, err := sdk.Bech32ifyAddressBytes("quasar", acc)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Printf("CreateOrionStakingMacc|accountName=%v \n", accName)
-	// fmt.Printf("CreateOrionStakingMacc|accountAddress=%v\n", acc)
-	// fmt.Printf("CreateOrionStakingMacc|accountAddress=%v|ERROR=%v\n", accStr, err)
-
 	return acc
 }
 
-// GetAllStakingBalances retrieve the amount of stake as a slice of sdk.Coin as sdk.Coins
-// held by an Orion vault lockup based staking accounts
+// GetAllStakingBalances retrieve the stake balance (users deposits) held by Orion vault lockup based staking accounts
 func (k Keeper) GetAllStakingBalances(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes) sdk.Coins {
 	accAddr := k.CreateOrionStakingMacc(lockupPeriod)
 	balances := k.bankKeeper.GetAllBalances(ctx, accAddr)

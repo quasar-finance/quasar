@@ -19,5 +19,12 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
   ];
+
+  string lp_epoch_id = 3 [
+    (gogoproto.moretags)   = "yaml:\"lp_epoch_id\""];
+  
+  bool enabled = 4
+  [(gogoproto.moretags) = "yaml:\"enabled,omitempty\""];
+
   
 }
