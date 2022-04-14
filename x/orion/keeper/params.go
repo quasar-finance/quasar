@@ -21,13 +21,13 @@ func (k Keeper) PerfFeePer(ctx sdk.Context) (res sdk.Dec) {
 	return
 }
 
-// PerfFeePer returns the value of per-fee in sdk.Dec
+// MgmtFeePer returns the value of per-fee in sdk.Dec
 func (k Keeper) MgmtFeePer(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyMgmtFeePer, &res)
 	return
 }
 
-// PerfFeePer returns the value of per-fee in sdk.Dec
+// LpEpochId returns the value of per-fee in sdk.Dec
 func (k Keeper) LpEpochId(ctx sdk.Context) (res string) {
 	k.paramstore.Get(ctx, types.KeyLpEpochId, &res)
 	return
