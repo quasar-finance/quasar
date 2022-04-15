@@ -3,16 +3,16 @@ package keeper
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
-	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls
@@ -333,79 +333,69 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 
 // Intergamm module method wrappers
 func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) error {
-	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
 		poolID, shareOutAmount, tokenInMaxs))
 
-	var packet intergammtypes.IbcJoinPoolPacketData
+	owner := ""
+	connectionId := ""
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 
-	packet.PoolId = poolID
-	packet.ShareOutAmount = shareOutAmount
-	// TODO - AUDIT | Check if slice copy is needed
-	packet.TokenInMaxs = append(packet.TokenInMaxs, tokenInMaxs...)
-
-	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
-	var port string = intergammtypes.PortID
-	var channelID string = "channel-1"
-
-	err := k.intergammKeeper.TransmitIbcJoinPoolPacket(
+	err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
-		packet,
-		port,
-		channelID,
-		clienttypes.ZeroHeight(),
-		uint64(0), // TODO - AUDIT
+		owner,
+		connectionId,
+		uint64(timeoutTimestamp),
+		poolID,
+		shareOutAmount,
+		tokenInMaxs,
 	)
 
 	return err
 }
 
 func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {
-
-	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
 		poolID, shareInAmount, tokenOutMins))
-	var packet intergammtypes.IbcExitPoolPacketData
 
-	packet.PoolId = poolID
-	packet.ShareInAmount = shareInAmount
-	packet.TokenOutMins = tokenOutMins
+	owner := ""
+	connectionId := ""
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 
-	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
-	var port string = intergammtypes.PortID
-	var channelID string = "channel-1"
-
-	// Transmit the packet
-	err := k.intergammKeeper.TransmitIbcExitPoolPacket(
+	err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
-		packet,
-		port,
-		channelID,
-		clienttypes.ZeroHeight(),
-		uint64(0), // TODO - AUDIT
+		owner,
+		connectionId,
+		uint64(timeoutTimestamp),
+		poolID,
+		shareInAmount,
+		tokenOutMins,
 	)
+
 	return err
 }
 
 func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, coins []sdk.Coin) error {
-	k.Logger(ctx).Debug(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
+	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
 		receiverAddr, coins))
 
-	var packet intergammtypes.IbcWithdrawPacketData
-	// TODO - AUDIT | Change the hardcoding. Takes the value from param. Hardcoded for initial testing
-	var port string = intergammtypes.PortID
-	var channelID string = "channel-1"
-	packet.TransferPort = port // TODO | AUDIT
-	packet.TransferChannel = channelID
-	packet.Receiver = receiverAddr
-	packet.Assets = coins
+	owner := ""
+	connectionId := ""
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
+	transferPort := "transfer"
+	transferChannel := "channel-1"
+	token := sdk.NewCoin("uatom", sdk.NewInt(10))
 
-	// Transmit the packet
-	err := k.intergammKeeper.TransmitIbcWithdrawPacket(
+	err := k.intergammKeeper.TransmitIbcTransfer(
 		ctx,
-		packet,
-		port,
-		channelID,
-		clienttypes.ZeroHeight(),
-		uint64(0), // TODO - AUDIT
+		owner,
+		connectionId,
+		uint64(timeoutTimestamp),
+		transferPort,
+		transferChannel,
+		token,
+		receiverAddr,
+		ibcclienttypes.ZeroHeight(),
+		uint64(timeoutTimestamp),
 	)
 
 	return err

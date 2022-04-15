@@ -1,12 +1,13 @@
 package types
 
 import (
-	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
+	gammbalancer "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
+	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -50,17 +51,43 @@ type QoracleKeeper interface {
 
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
-	TransmitIbcJoinPoolPacket(
-		ctx sdk.Context, packetData intergammtypes.IbcJoinPoolPacketData,
-		sourcePort, sourceChannel string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
+	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 
-	TransmitIbcExitPoolPacket(
-		ctx sdk.Context, packetData intergammtypes.IbcExitPoolPacketData,
-		sourcePort, sourceChannel string,
-		timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
+	TransmitIbcCreatePool(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		poolParams *gammbalancer.BalancerPoolParams,
+		poolAssets []gammtypes.PoolAsset,
+		futurePoolGovernor string) error
 
-	TransmitIbcWithdrawPacket(
-		ctx sdk.Context, packetData intergammtypes.IbcWithdrawPacketData,
-		sourcePort, sourceChannel string,
-		timeoutHeight clienttypes.Height, timeoutTimestamp uint64) error
+	TransmitIbcJoinPool(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		poolId uint64,
+		shareOutAmount sdk.Int,
+		tokenInMaxs []sdk.Coin) error
+
+	TransmitIbcExitPool(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		poolId uint64,
+		shareInAmount sdk.Int,
+		tokenOutMins []sdk.Coin) error
+
+	TransmitIbcTransfer(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		transferPort, transferChannel string,
+		token sdk.Coin,
+		receiver string,
+		transferTimeoutHeight ibcclienttypes.Height,
+		transferTimeoutTimestamp uint64) error
 }
