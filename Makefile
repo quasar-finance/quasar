@@ -5,7 +5,7 @@ test_path:
 	go test -v $(path)
 
 test:
-	@$(MAKE) test_path path="./x/qbank/... ./x/epochs/... "
+	@$(MAKE) test_path path="./x/epochs/... ./x/intergamm/... ./x/qbank/..."
 
 test_simulation:
 	ignite chain simulate -v

@@ -1,45 +1,24 @@
 package keeper
 
 import (
-	"testing"
-
 	"github.com/abag/quasarnode/x/intergamm/keeper"
 	"github.com/abag/quasarnode/x/intergamm/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
-func IntergammKeeper(t testing.TB) (keeper.Keeper, sdk.Context) {
+func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
+	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	paramsSubspace := typesparams.NewSubspace(cdc,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"IntergammParams",
-	)
+	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		cdc,
+		i.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		capabilitykeeper.ScopedKeeper{},
@@ -47,10 +26,8 @@ func IntergammKeeper(t testing.TB) (keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 	)
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
 	// Initialize params
-	k.SetParams(ctx, types.DefaultParams())
+	k.SetParams(i.Ctx, types.DefaultParams())
 
-	return k, ctx
+	return k
 }

@@ -99,16 +99,21 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	// Quasar imports
 	"github.com/abag/quasarnode/docs"
+
 	epochsmodule "github.com/abag/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/abag/quasarnode/x/epochs/types"
+
 	orionmodule "github.com/abag/quasarnode/x/orion"
 	orionmodulekeeper "github.com/abag/quasarnode/x/orion/keeper"
 	orionmoduletypes "github.com/abag/quasarnode/x/orion/types"
+
 	qbankmodule "github.com/abag/quasarnode/x/qbank"
 	qbankmodulekeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
+
 	qoraclemodule "github.com/abag/quasarnode/x/qoracle"
 	qoraclemodulekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	qoraclemoduletypes "github.com/abag/quasarnode/x/qoracle/types"
@@ -258,12 +263,9 @@ type App struct {
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
 
-	EpochsKeeper *epochsmodulekeeper.Keeper
-
-	QbankKeeper qbankmodulekeeper.Keeper
-
-	OrionKeeper orionmodulekeeper.Keeper
-
+	EpochsKeeper  *epochsmodulekeeper.Keeper
+	QbankKeeper   qbankmodulekeeper.Keeper
+	OrionKeeper   orionmodulekeeper.Keeper
 	QoracleKeeper qoraclemodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper

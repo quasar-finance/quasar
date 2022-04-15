@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
+	intergammkeeper "github.com/abag/quasarnode/x/intergamm/keeper"
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
@@ -17,13 +18,14 @@ import (
 
 // Structure holding keepers that will be used for testing
 type TestKeepers struct {
-	T             testing.TB
-	Ctx           sdk.Context
-	ParamsKeeper  paramskeeper.Keeper
-	EpochsKeeper  *epochskeeper.Keeper
-	AccountKeeper authkeeper.AccountKeeper
-	BankKeeper    bankkeeper.Keeper
-	QbankKeeper   qbankkeeper.Keeper
+	T               testing.TB
+	Ctx             sdk.Context
+	ParamsKeeper    paramskeeper.Keeper
+	EpochsKeeper    *epochskeeper.Keeper
+	AccountKeeper   authkeeper.AccountKeeper
+	BankKeeper      bankkeeper.Keeper
+	QbankKeeper     qbankkeeper.Keeper
+	InterGammKeeper intergammkeeper.Keeper
 }
 
 // return module account permissions for testing
@@ -81,4 +83,8 @@ func (tk TestKeepers) GetEpochsKeeper() (sdk.Context, *epochskeeper.Keeper) {
 
 func (tk TestKeepers) GetQbankKeeper() (sdk.Context, qbankkeeper.Keeper) {
 	return tk.Ctx, tk.QbankKeeper
+}
+
+func (tk TestKeepers) GetInterGammKeeper() (sdk.Context, intergammkeeper.Keeper) {
+	return tk.Ctx, tk.InterGammKeeper
 }

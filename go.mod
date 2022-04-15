@@ -24,7 +24,6 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.7 // indirect
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 )
 

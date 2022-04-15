@@ -13,13 +13,11 @@ import (
 func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
-
 		// this line is used by starport scaffolding # genesis/test/state
 	}
-
-	k, ctx := keepertest.IntergammKeeper(t)
-	intergamm.InitGenesis(ctx, k, genesisState)
-	got := intergamm.ExportGenesis(ctx, k)
+	ctx, keeper := keepertest.NewTestSetup(t).GetInterGammKeeper()
+	intergamm.InitGenesis(ctx, keeper, genesisState)
+	got := intergamm.ExportGenesis(ctx, keeper)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)
