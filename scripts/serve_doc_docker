@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+build_dir="${BUILD_DIR:-"${project_dir}/build"}"
+docs_dir="${build_dir}/docs"
+out_dir="${docs_dir}/grpc-swagger-doc"
+
+fail() {
+  echo "$*"
+  false
+}
+
+test -f "${out_dir}/swagger.yaml" || \
+  fail "swagger definition not found, did you run 'make docs_gen'?"
+
+docker run -p 8080:8080 \
+  -e SWAGGER_JSON=/grpc-swagger-doc/swagger.yaml \
+  -v "${out_dir}":"/grpc-swagger-doc" \
+  swaggerapi/swagger-ui

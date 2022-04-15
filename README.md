@@ -33,6 +33,22 @@ ignite chain serve
 
 Your blockchain in development can be configured with `config.yml`. To learn more, see the [Ignite docs](https://docs.ignite.com/).
 
+#### Generate docs
+
+All the gRPC endpoints documentation can be generated as a swagger file and served with `swagger-ui`.
+
+First generate the swagger file:
+
+```bash
+make docs_gen
+```
+
+Then serve it locally using docker:
+
+```bash
+make docs_serve
+```
+
 #### Web Frontend
 
 Ignite has scaffolded a Vue.js-based web app in the `vue` directory. Run the following commands to install dependencies and start the app:

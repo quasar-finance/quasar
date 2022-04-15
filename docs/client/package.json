@@ -1,0 +1,9 @@
+{
+  "name": "quasar-client-docs",
+  "scripts": {
+    "build": "swagger-combine ./swagger.json -o $OUT_FILE -f yaml --continueOnConflictingPaths --includeDefinitions"
+  },
+  "dependencies": {
+    "swagger-combine": "^1.4.0"
+  }
+}
