@@ -2,5 +2,5 @@ package docs
 
 import "embed"
 
-//go:embed static
+//go:embed client
 var Docs embed.FS
