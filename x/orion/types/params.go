@@ -13,8 +13,12 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyPerfFeePer             = []byte("PerFeePer")
 	KeyMgmtFeePer             = []byte("MgmtFeePer")
+	KeyLpEpochId              = []byte("LpEpochId")
+	KeyEnabled                = []byte("Enabled")
 	DefaultPerfFeePer sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
-	DefaultmgmtFeePer sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
+	DefaultMgmtFeePer sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
+	DefaultLpEpochId          = "minute"                 // AUDIT TODO - should be day. minute used for quick testing
+	DefaultEnabled            = true
 )
 
 // ParamKeyTable the param key table for launch module
@@ -23,13 +27,13 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(perFeePer sdk.Dec, mgmtFeePer sdk.Dec) Params {
-	return Params{PerfFeePer: perFeePer, MgmtFeePer: mgmtFeePer}
+func NewParams(perFeePer sdk.Dec, mgmtFeePer sdk.Dec, enabled bool, lpEpochID string) Params {
+	return Params{PerfFeePer: perFeePer, MgmtFeePer: mgmtFeePer, Enabled: enabled, LpEpochId: lpEpochID}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultPerfFeePer, DefaultmgmtFeePer)
+	return NewParams(DefaultPerfFeePer, DefaultMgmtFeePer, DefaultEnabled, DefaultLpEpochId)
 }
 
 // ParamSetPairs get the params.ParamSet
@@ -37,6 +41,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyPerfFeePer, &p.PerfFeePer, validatePerfFeePer),
 		paramtypes.NewParamSetPair(KeyMgmtFeePer, &p.MgmtFeePer, validateMgmtFeePer),
+		paramtypes.NewParamSetPair(KeyLpEpochId, &p.LpEpochId, validateLpEpochId),
+		paramtypes.NewParamSetPair(KeyEnabled, &p.Enabled, validateEnabled),
 	}
 }
 
@@ -92,5 +98,20 @@ func validateMgmtFeePer(i interface{}) error {
 		return fmt.Errorf("mgmtFeePer too large: %s", v)
 	}
 
+	return nil
+}
+
+func validateLpEpochId(i interface{}) error {
+	_, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+func validateEnabled(i interface{}) error {
+	_, ok := i.(bool)
+	if !ok {
+		return fmt.Errorf("invalid orion vault enabled parameter type: %T", i)
+	}
 	return nil
 }

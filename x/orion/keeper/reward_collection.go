@@ -9,10 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// SetRewardCollection set rewardCollection from osmosis in the store on a given epoch day.
-// This method should be called on the end blocker. Orion module should initiate reward collection
-// at the end blocker via intergamm module
-// TODO | AUDIT - Make sure the internal coin slice is sorted properly
+// SetRewardCollection set the osmosis RewardCollection in kv store and is expected to be called
+// on each epoch day.
 func (k Keeper) SetRewardCollection(ctx sdk.Context, epochday uint64, rewardCollection types.RewardCollection) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochday)
@@ -20,9 +18,7 @@ func (k Keeper) SetRewardCollection(ctx sdk.Context, epochday uint64, rewardColl
 	store.Set(key, b)
 }
 
-// GetRewardCollection returns rewardCollection on a given epoch day.
-// Assuming that the reward is collected every day successful.
-// TODO | AUDIT - Edge case If reward can not be collected due to network issue, relayer issue or chain halts etc.
+// GetRewardCollection returns RewardCollection info for a given epoch day.
 func (k Keeper) GetRewardCollection(ctx sdk.Context, epochday uint64) (val types.RewardCollection, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochday)
@@ -34,7 +30,7 @@ func (k Keeper) GetRewardCollection(ctx sdk.Context, epochday uint64) (val types
 	return val, true
 }
 
-// RemoveRewardCollection removes rewardCollection from the store
+// RemoveRewardCollection removes RewardCollection from the store
 func (k Keeper) RemoveRewardCollection(ctx sdk.Context, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochday)
@@ -68,24 +64,8 @@ func (k Keeper) LPPositionReward(ctx sdk.Context, epochday uint64, lpID uint64) 
 	return result, nil
 }
 
-// AUDIT NOTE : This method may be redundant
-// CalculateEpochLPUsersReward calculate a users reward for a givep lp position in the given epoch day.
-// lpReward is the reward collected for an lp position.
-// lpshare is the share contribution to the lp position by a user.
-// Caller of this function should determine the lp reward for the position, fetch
-// the user lp shares before calling.
-func (k Keeper) CalculateLPUsersReward(ctx sdk.Context, lpReward sdk.Coins, lpshare sdk.Dec) sdk.Coins {
-	var userReward sdk.Coins
-	for _, r := range lpReward {
-		amt := r.Amount.ToDec().Mul(lpshare).TruncateInt()
-		userReward = userReward.Add(sdk.NewCoin(r.Denom, amt))
-	}
-	return userReward
-}
-
 // LPExpectedReward calculate per day (todays) expected reward based on current values of gauge and apy.
 // Valid for the active LP position. This will be usefull for loss analytics from the expected reward.
-// TODO - AUDIT | An extended
 func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 	var reward sdk.Coins
 	epochday, efound := k.GetLPEpochDay(ctx, lpID)
@@ -97,7 +77,7 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 		if lpfound {
 			reward = lp.Coins // initialize
 			for i, coin := range lp.Coins {
-				// Todays. expected reward will be based on the current apy of the active gauge of the position.
+				// Today's expected reward will be based on the current apy of the active gauge of the position.
 				// But, it should not be confused with the real rewards which will be provided in osmo by osmosis.
 				reward[i].Amount = coin.Amount.ToDec().Mul(RewardMuliplier).TruncateInt()
 			}
@@ -106,12 +86,8 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) sdk.Coins {
 	return reward
 }
 
-// GetUserRewardDistribution2 - Gives the users reward distribution map.
-// AUDIT TODO - The reward is to be available to the users view for claim in qbank module KV store.
-// Based on the return value of this function. And the actual reward amount should be moved to orion
-// reward collection global account. When a user will click on the claim reward it will go to the users account
-
-func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
+// GetUserRewardDistribution implements the reward distribution to users
+func (k Keeper) RewardDistribution(ctx sdk.Context,
 	epochday uint64) error {
 
 	lpids := k.GetActiveLpIDList(ctx, epochday)
@@ -215,7 +191,6 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 			ui.DenomMap[denom] = udi
 			uim[userAcc] = ui
 		}
-
 	}
 
 	for userAcc, ui := range uim {
@@ -224,88 +199,3 @@ func (k Keeper) GetUserRewardDistribution2(ctx sdk.Context,
 
 	return nil
 }
-
-// AUDIT NOTE - Incorrect implementation.
-// DistributeRewards is used to distribute the rewards for a given epoch day.
-// Logic -
-// 1. Fetch the reward from the epoch KV store GetRewardCollection.
-//  Note - Assuming that the GetRewardCollection will return the reward at the end
-// the users deposit lockups.
-// AUDIT - TODO | So storage into this need to be implemented carefully.
-// 2. Fetch the corresponding epoch deposit day and lockup periods using GetDepositDayInfos
-// 3. Process the ProcessDepositDayLockupPair and get EpochUserDenomWeight
-// 4. Get Each Denoms weight based on equivalent orions. Get list of denoms used on deposit day
-// 5. Calculate denom contribution of reward
-// 6. Calculate the users contribution for each of users denom deposit based on EpochUserDenomWeight
-// Return - map[string]sdk.Coins // key = user, value = sdk.Coins
-func (k Keeper) GetUserRewardDistribution(ctx sdk.Context, epochday uint64) (map[string]sdk.Coins, error) {
-	rc, found := k.GetRewardCollection(ctx, epochday)
-	if !found {
-		return nil, fmt.Errorf("rewards not yet collected for epoch day %v", epochday)
-	}
-
-	// epochday is the reward collection day here.
-	// ddlps => slice of DepositDay - Lockup Pair. []types.DepositDayLockupPair
-	ddlps := k.GetDepositDayInfos(ctx, epochday)
-	// denomWeights => []types.EpochUserDenomWeight
-	userDenomWeights := k.ProcessDepositDayLockupPair(ctx, ddlps)
-	// denomWeights => []types.EpochDenomWeight
-	denomWeights := k.GetEpochDenomWeight(ctx, epochday)
-	denomRewardMap := make(map[string]sdk.Coins) // key = denom, value = sdk.Coins
-	userRewardMap := make(map[string]sdk.Coins)  // key = user, value = sdk.Coins
-
-	// Process one denom at a time
-	for _, dw := range denomWeights {
-		var rewards sdk.Coins
-		// rc => reward coin will be mostly osmo ibc coins
-		for _, coin := range rc.Coins {
-			reward := coin.Amount.ToDec().Mul(dw.Weight).TruncateInt() // one denom amount
-			rewards = rewards.Add(sdk.NewCoin(coin.Denom, reward))
-		}
-
-		denomRewardMap[dw.Denom] = rewards
-	}
-
-	// One user - denom at a time. udr => user denom rewards
-	for _, udw := range userDenomWeights {
-		denomTotalRewards := denomRewardMap[udw.Denom]
-		ur := userRewardMap[udw.UserAcc]
-		for _, coin := range denomTotalRewards {
-			rAmt := coin.Amount.ToDec().Mul(udw.Weight).TruncateInt()
-			rCoin := sdk.NewCoin(udw.Denom, rAmt)
-			ur = append(ur, rCoin)
-		}
-		userRewardMap[udw.UserAcc] = ur
-	}
-	return userRewardMap, nil
-}
-
-// AUDIT NOTE - Incorrect implementation.
-// DistributeRewards distribute the rewards to the end users
-func (k Keeper) DistributeRewards(ctx sdk.Context, epochday uint64) error {
-	userRewardMap, err := k.GetUserRewardDistribution(ctx, epochday)
-	if err != nil {
-		// Note - Can't panic because it is not a tx message processing.
-		// This process is happning in the end blocker
-		return err
-	}
-	for user, reward := range userRewardMap {
-		// Update the qbank module KV store
-		for _, r := range reward {
-			k.qbankKeeper.AddUserClaimReward(ctx, user, types.ModuleName, r)
-		}
-	}
-
-	return nil
-}
-
-// Brainstorming Notes -
-// What is the reward collection day for a given LP position ?
-// Expected Day =>  LP Day + lockup period + 2 = LP Day + bond duration + unbond duration + 2
-// Day 1 - LP collection in Quasar.
-// Day 2 - Osmosis LPing will be done on the next day just after the osmosis EOD.
-// Day N - Reward collection, Pool Exit and Distribution. N = Day 2 + bond duration + unbond duration + 1
-// Notes
-// - LPExpectedReward and LPPositionReward should not differ by a large amount
-// - LPExpectedReward can be used by cross validation and fulfiling users expectation in
-//   case of destination chain failure/halt

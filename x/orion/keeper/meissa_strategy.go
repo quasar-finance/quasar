@@ -1,11 +1,5 @@
 package keeper
 
-/*
-	"fmt"
-	"github.com/abag/quasarnode/x/orion/types"
-
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-*/
 import (
 	"fmt"
 	"strconv"
@@ -76,29 +70,6 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 	k.MeissaExit(ctx, epochday, lockupPeriod)
 	k.MeissaWithdraw(ctx, epochday, lockupPeriod)
 	k.MeissaAudiorFunction(ctx, lockupPeriod)
-	/*
-			// Join pool
-			for _, sn := range strategies.Names {
-				k.Logger(ctx).Info(fmt.Sprintf("ExecuteMeissa|subname=%v|epochday=%v|lockupType=%v\n",
-					sn, epochday, qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
-				k.MeissaCoinDistribution(ctx, epochday, types.MeissaStrategiesLockup[sn])
-			}
-
-
-		// Bond LP tokens.
-		// TODO | AUDIT
-
-		// Exit pool
-		for _, sn := range strategies.Names {
-			k.MeissaExit(ctx, epochday, types.MeissaStrategiesLockup[sn])
-			k.MeissaWithdraw(ctx, epochday, types.MeissaStrategiesLockup[sn])
-		}
-
-		// Audit
-		for _, sn := range strategies.Names {
-			k.MeissaAudiorFunction(ctx, types.MeissaStrategiesLockup[sn])
-		}
-	*/
 
 	// Claim reward.
 	// TODO | AUDIT
