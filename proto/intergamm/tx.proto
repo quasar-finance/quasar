@@ -12,7 +12,7 @@ option go_package = "github.com/abag/quasarnode/x/intergamm/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc RegisterAccount(MsgRegisterAccount) returns (MsgRegisterAccountResponse);
+  rpc RegisterAccount(MsgRegisterAccount) returns (MsgRegisterAccountResponse);
   rpc CreatePool(MsgCreatePool) returns (MsgCreatePoolResponse);
   rpc JoinPool(MsgJoinPool) returns (MsgJoinPoolResponse);
   rpc ExitPool(MsgExitPool) returns (MsgExitPoolResponse);
