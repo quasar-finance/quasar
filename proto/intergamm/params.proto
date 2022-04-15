@@ -1,6 +1,5 @@
 syntax = "proto3";
-// package advancedblockchain.intergamm.intergamm;
-package abag.quasarnode.intergamm.intergamm;
+package abag.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
 

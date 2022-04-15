@@ -1,86 +1,99 @@
 syntax = "proto3";
-// package advancedblockchain.intergamm.intergamm;
-package abag.quasarnode.intergamm.intergamm;
+package abag.quasarnode.intergamm;
 
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "ibc/core/client/v1/client.proto";
+import "osmosis/gamm/v1beta1/pool.proto";
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/abag/quasarnode/x/intergamm/types";
-import "gogoproto/gogo.proto";
-import "cosmos/base/v1beta1/coin.proto";
-import "osmosis/gamm/v1beta1/pool.proto";
-import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
- 
+
 // Msg defines the Msg service.
 service Msg {
-      rpc SendIbcCreatePool(MsgSendIbcCreatePool) returns (MsgSendIbcCreatePoolResponse);
-  rpc SendIbcJoinPool(MsgSendIbcJoinPool) returns (MsgSendIbcJoinPoolResponse);
-  rpc SendIbcExitPool(MsgSendIbcExitPool) returns (MsgSendIbcExitPoolResponse);
-  rpc SendIbcWithdraw(MsgSendIbcWithdraw) returns (MsgSendIbcWithdrawResponse);
+  rpc RegisterAccount(MsgRegisterAccount) returns (MsgRegisterAccountResponse);
+  rpc CreatePool(MsgCreatePool) returns (MsgCreatePoolResponse);
+  rpc JoinPool(MsgJoinPool) returns (MsgJoinPoolResponse);
+  rpc ExitPool(MsgExitPool) returns (MsgExitPoolResponse);
+  rpc IbcTransfer(MsgIbcTransfer) returns (MsgIbcTransferResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
-message MsgSendIbcCreatePool {
+message MsgRegisterAccount {
   string creator = 1;
-  string port = 2;
-  string channelID = 3;
-  uint64 timeoutTimestamp = 4;
-  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPoolParams poolParams = 5;
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 6
+  string connectionId = 2;
+}
+
+message MsgRegisterAccountResponse {
+}
+
+message MsgCreatePool {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPoolParams poolParams = 4;
+  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 5
      [ (gogoproto.nullable) = false ];
-  //repeated abag.quasarnode.osmosis.gamm.v1beta1.PoolAsset poolAssets = 6
-  // [ (gogoproto.nullable) = false ];
-  string future_pool_governor = 7;
+  string future_pool_governor = 6;
 }
 
-message MsgSendIbcCreatePoolResponse {
+message MsgCreatePoolResponse {
 }
 
-message MsgSendIbcJoinPool {
+message MsgJoinPool {
   string creator = 1;
-  string port = 2;
-  string channelID = 3;
-  uint64 timeoutTimestamp = 4;
-  uint64 poolId = 5;
-  string shareOutAmount = 6 [
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4 [ (gogoproto.moretags) = "yaml:\"pool_id\"" ];
+  string shareOutAmount = 5 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.moretags) = "yaml:\"pool_amount_out\"",
     (gogoproto.nullable) = false
   ];
-  repeated cosmos.base.v1beta1.Coin tokenInMaxs = 7
-      [ (gogoproto.nullable) = false ];
-}
-
-message MsgSendIbcJoinPoolResponse {
-}
-
-message MsgSendIbcExitPool {
-  string creator = 1;
-  string port = 2;
-  string channelID = 3;
-  uint64 timeoutTimestamp = 4;
-  uint64 poolId = 5;
-  string shareInAmount = 6 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+  repeated cosmos.base.v1beta1.Coin tokenInMaxs = 6 [
+    (gogoproto.moretags) = "yaml:\"token_in_max_amounts\"",
     (gogoproto.nullable) = false
   ];
-  repeated cosmos.base.v1beta1.Coin tokenOutMins = 7
-      [ (gogoproto.nullable) = false ];
 }
 
-message MsgSendIbcExitPoolResponse {
+message MsgJoinPoolResponse {
 }
 
-message MsgSendIbcWithdraw {
+message MsgExitPool {
   string creator = 1;
-  string port = 2;
-  string channelID = 3;
-  uint64 timeoutTimestamp = 4;
-  string transferPort = 5;
-  string transferChannel = 6;
-  string receiver = 7;
-  repeated cosmos.base.v1beta1.Coin assets = 8
-      [ (gogoproto.nullable) = false ];
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4 [ (gogoproto.moretags) = "yaml:\"pool_id\"" ];
+  string shareInAmount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.moretags) = "yaml:\"share_in_amount\"",
+    (gogoproto.nullable) = false
+  ];
+
+  repeated cosmos.base.v1beta1.Coin tokenOutMins = 6 [
+    (gogoproto.moretags) = "yaml:\"token_out_min_amounts\"",
+    (gogoproto.nullable) = false
+  ];
 }
 
-message MsgSendIbcWithdrawResponse {
+message MsgExitPoolResponse {
 }
+
+message MsgIbcTransfer {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  string transferPort = 4;
+  string transferChannel = 5;
+	cosmos.base.v1beta1.Coin token = 6 [(gogoproto.nullable) = false];
+	string receiver = 7;
+	ibc.core.client.v1.Height transferTimeoutHeight = 8
+    [(gogoproto.moretags) = "yaml:\"timeout_height\"", (gogoproto.nullable) = false];
+	uint64 transferTimeoutTimestamp = 9;
+}
+
+message MsgIbcTransferResponse {
+}
+
 // this line is used by starport scaffolding # proto/tx/message

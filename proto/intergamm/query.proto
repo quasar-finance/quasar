@@ -1,6 +1,5 @@
 syntax = "proto3";
-// package advancedblockchain.intergamm.intergamm;
-package abag.quasarnode.intergamm.intergamm;
+package abag.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -14,8 +13,14 @@ option go_package = "github.com/abag/quasarnode/x/intergamm/types";
 service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/abag/quasarnode/intergamm/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a list of InterchainAccountFromAddress items.
+	rpc InterchainAccountFromAddress(QueryInterchainAccountFromAddressRequest) returns (QueryInterchainAccountFromAddressResponse) {
+		option (google.api.http).get = "/abag/quasarnode/intergamm/interchain_account_from_address";
+	}
+
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -25,6 +30,15 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryInterchainAccountFromAddressRequest {
+  string owner                      = 1;
+  string connection_id = 2 [(gogoproto.moretags) = "yaml:\"connection_id\""];
+}
+
+message QueryInterchainAccountFromAddressResponse {
+  string interchain_account_address = 1 [(gogoproto.moretags) = "yaml:\"interchain_account_address\""];
 }
 
 // this line is used by starport scaffolding # 3

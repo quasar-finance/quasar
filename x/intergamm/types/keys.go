@@ -15,17 +15,6 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_intergamm"
-
-	// Version defines the current version the IBC module supports
-	Version = "intergamm-1"
-
-	// PortID is the default port id that module binds to
-	PortID = "intergamm"
-)
-
-var (
-	// PortKey defines the key to store the port ID in store
-	PortKey = KeyPrefix("intergamm-port-")
 )
 
 func KeyPrefix(p string) []byte {

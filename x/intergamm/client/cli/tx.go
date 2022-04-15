@@ -30,10 +30,11 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(CmdSendIbcCreatePool())
-	cmd.AddCommand(CmdSendIbcJoinPool())
-	cmd.AddCommand(CmdSendIbcExitPool())
-	cmd.AddCommand(CmdSendIbcWithdraw())
+	cmd.AddCommand(CmdRegisterAccount())
+	cmd.AddCommand(CmdCreatePool())
+	cmd.AddCommand(CmdJoinPool())
+	cmd.AddCommand(CmdExitPool())
+	cmd.AddCommand(CmdIbcTransfer())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

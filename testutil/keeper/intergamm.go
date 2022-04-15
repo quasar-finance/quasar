@@ -12,16 +12,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 )
 
-func IntergammKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	logger := log.NewNopLogger()
-
+func IntergammKeeper(t testing.TB) (keeper.Keeper, sdk.Context) {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -32,41 +30,24 @@ func IntergammKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
-	appCodec := codec.NewProtoCodec(registry)
-	capabilityKeeper := capabilitykeeper.NewKeeper(appCodec, storeKey, memStoreKey)
+	cdc := codec.NewProtoCodec(registry)
 
-	ss := typesparams.NewSubspace(appCodec,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"IntergammSubSpace",
-	)
-	IBCKeeper := ibckeeper.NewKeeper(
-		appCodec,
-		storeKey,
-		ss,
-		nil,
-		nil,
-		capabilityKeeper.ScopeToModule("IntergammIBCKeeper"),
-	)
-
-	paramsSubspace := typesparams.NewSubspace(appCodec,
+	paramsSubspace := typesparams.NewSubspace(cdc,
 		types.Amino,
 		storeKey,
 		memStoreKey,
 		"IntergammParams",
 	)
 	k := keeper.NewKeeper(
-		appCodec,
+		cdc,
 		storeKey,
 		memStoreKey,
+		capabilitykeeper.ScopedKeeper{},
+		icacontrollerkeeper.Keeper{},
 		paramsSubspace,
-		IBCKeeper.ChannelKeeper,
-		IBCKeeper.PortKeeper,
-		capabilityKeeper.ScopeToModule("IntergammScopedKeeper"),
 	)
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, logger)
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())

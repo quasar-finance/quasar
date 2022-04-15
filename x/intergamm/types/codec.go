@@ -8,25 +8,29 @@ import (
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgSendIbcCreatePool{}, "intergamm/SendIbcCreatePool", nil)
-	cdc.RegisterConcrete(&MsgSendIbcJoinPool{}, "intergamm/SendIbcJoinPool", nil)
-	cdc.RegisterConcrete(&MsgSendIbcExitPool{}, "intergamm/SendIbcExitPool", nil)
-	cdc.RegisterConcrete(&MsgSendIbcWithdraw{}, "intergamm/SendIbcWithdraw", nil)
+	cdc.RegisterConcrete(&MsgRegisterAccount{}, "intergamm/RegisterAccount", nil)
+	cdc.RegisterConcrete(&MsgCreatePool{}, "intergamm/CreatePool", nil)
+	cdc.RegisterConcrete(&MsgJoinPool{}, "intergamm/JoinPool", nil)
+	cdc.RegisterConcrete(&MsgExitPool{}, "intergamm/ExitPool", nil)
+	cdc.RegisterConcrete(&MsgIbcTransfer{}, "intergamm/IbcTransfer", nil)
 	// this line is used by starport scaffolding # 2
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgSendIbcCreatePool{},
+		&MsgRegisterAccount{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgSendIbcJoinPool{},
+		&MsgCreatePool{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgSendIbcExitPool{},
+		&MsgJoinPool{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgSendIbcWithdraw{},
+		&MsgExitPool{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgIbcTransfer{},
 	)
 	// this line is used by starport scaffolding # 3
 

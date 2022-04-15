@@ -24,13 +24,25 @@ var (
 )
 
 const (
-	opWeightMsgSendIbcJoinPool = "op_weight_msg_create_chain"
+	opWeightMsgRegisterAccount = "op_weight_msg_create_chain"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSendIbcJoinPool int = 100
+	defaultWeightMsgRegisterAccount int = 100
 
-	opWeightMsgSendIbcExitPool = "op_weight_msg_create_chain"
+	opWeightMsgCreatePool = "op_weight_msg_create_chain"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSendIbcExitPool int = 100
+	defaultWeightMsgCreatePool int = 100
+
+	opWeightMsgJoinPool = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgJoinPool int = 100
+
+	opWeightMsgExitPool = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgExitPool int = 100
+
+	opWeightMsgIbcTransfer = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgIbcTransfer int = 100
 
 	// this line is used by starport scaffolding # simapp/module/const
 )
@@ -65,26 +77,59 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
 
-	var weightMsgSendIbcJoinPool int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSendIbcJoinPool, &weightMsgSendIbcJoinPool, nil,
+	var weightMsgRegisterAccount int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRegisterAccount, &weightMsgRegisterAccount, nil,
 		func(_ *rand.Rand) {
-			weightMsgSendIbcJoinPool = defaultWeightMsgSendIbcJoinPool
+			weightMsgRegisterAccount = defaultWeightMsgRegisterAccount
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSendIbcJoinPool,
-		intergammsimulation.SimulateMsgSendIbcJoinPool(am.accountKeeper, am.bankKeeper, am.keeper),
+		weightMsgRegisterAccount,
+		intergammsimulation.SimulateMsgRegisterAccount(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
-	var weightMsgSendIbcExitPool int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSendIbcExitPool, &weightMsgSendIbcExitPool, nil,
+	var weightMsgCreatePool int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgCreatePool, &weightMsgCreatePool, nil,
 		func(_ *rand.Rand) {
-			weightMsgSendIbcExitPool = defaultWeightMsgSendIbcExitPool
+			weightMsgCreatePool = defaultWeightMsgCreatePool
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSendIbcExitPool,
-		intergammsimulation.SimulateMsgSendIbcExitPool(am.accountKeeper, am.bankKeeper, am.keeper),
+		weightMsgCreatePool,
+		intergammsimulation.SimulateMsgCreatePool(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgJoinPool int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgJoinPool, &weightMsgJoinPool, nil,
+		func(_ *rand.Rand) {
+			weightMsgJoinPool = defaultWeightMsgJoinPool
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgJoinPool,
+		intergammsimulation.SimulateMsgJoinPool(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgExitPool int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgExitPool, &weightMsgExitPool, nil,
+		func(_ *rand.Rand) {
+			weightMsgExitPool = defaultWeightMsgExitPool
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgExitPool,
+		intergammsimulation.SimulateMsgExitPool(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgIbcTransfer int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgIbcTransfer, &weightMsgIbcTransfer, nil,
+		func(_ *rand.Rand) {
+			weightMsgIbcTransfer = defaultWeightMsgIbcTransfer
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgIbcTransfer,
+		intergammsimulation.SimulateMsgIbcTransfer(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
