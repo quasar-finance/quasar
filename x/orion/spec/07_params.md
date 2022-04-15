@@ -1,3 +1,8 @@
 # Params 
 
-Orion module does not have any param as of now.
+Orion module has below parameters. 
+
+1. PerfFeePer  
+2. MgmtFeePer  
+3. LpEpochId  
+4. Enabled  
