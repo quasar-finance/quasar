@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -27,9 +25,9 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			// Assumption 1 minute is one epoch day for testing
 			for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
 
-				logger.Debug(fmt.Sprintf("Orion AfterEpochEnd|epochday=%d|blockheight=%d|lockup=%v",
-					epochNumber, ctx.BlockHeight(), lockupStr))
-
+				logger.Debug("Orion AfterEpochEnd", "epochday", epochNumber,
+					"blockheight", ctx.BlockHeight(),
+					"lockup", lockupStr)
 				if lockupStr != "Invalid" {
 					lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
 					k.ExecuteMeissa(ctx, uint64(epochNumber), lockupPeriod)
