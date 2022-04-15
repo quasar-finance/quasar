@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
+pf_dir="${project_dir}/demos/packet-forwarder"
+this_script="${pf_dir}/$(basename "${0}")"
+run_dir="${pf_dir}/run"
+reset_run="${RESET:-true}"
+
+env_subst() {
+  # shellcheck disable=SC2016
+  python -c '
+import os, sys
+data = sys.stdin.read(65536)
+for v in os.environ:
+  data = data.replace("$%s" % v, os.environ[v])
+  data = data.replace("${%s}" % v, os.environ[v])
+sys.stdout.write(data) ; sys.stdout.flush()
+'
+}
+
+run_in_terminal() {
+  gnome-terminal -- "$@"
+}
+
+osmosis() {
+  (
+    cd "${project_dir}/../osmosis"
+
+    local osmosis_dir="${run_dir}/osmosis"
+
+    if [ "$reset_run" == true ] ; then
+      rm -rf "$osmosis_dir"
+    fi
+
+    export home_dir="${osmosis_dir}/home"
+    mkdir -p "$home_dir"
+
+    cat "${pf_dir}/osmosis.yml" | env_subst >| "${osmosis_dir}/config.yml"
+
+    ignite chain serve --config "${osmosis_dir}/config.yml" --reset-once
+  )
+}
+
+quasar() {
+  (
+    local id="$1" ; shift
+    local quasar_dir="${run_dir}/quasar${id}"
+
+    cd "$project_dir"
+
+    if [ "$reset_run" == true ] ; then
+      rm -rf "$quasar_dir"
+    fi
+
+    export home_dir="${quasar_dir}/home"
+    mkdir -p "$home_dir"
+
+    cat "${pf_dir}/quasar${id}.yml" | env_subst >| "${quasar_dir}/config.yml"
+
+    ignite chain serve --config "${quasar_dir}/config.yml" --reset-once
+  )
+}
+
+all() {
+  gnome-terminal -- "$this_script" osmosis &
+  sleep 1
+  gnome-terminal -- "$this_script" quasar 1 &
+  sleep 1
+  gnome-terminal -- "$this_script" quasar 2 &
+
+  wait
+}
+
+test -d "${project_dir}/../osmosis" || ( echo "osmosis dir not found" && false )
+
+"$@"

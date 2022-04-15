@@ -7,6 +7,7 @@ tmp/
 
 release/
 build/
+run/
 
 node_modules/
 vue/
