@@ -22,16 +22,14 @@ import (
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 )
 
-type (
-	Keeper struct {
-		cdc                 codec.BinaryCodec
-		storeKey            sdk.StoreKey
-		memKey              sdk.StoreKey
-		scopedKeeper        capabilitykeeper.ScopedKeeper
-		icaControllerKeeper icacontrollerkeeper.Keeper
-		paramstore          paramtypes.Subspace
-	}
-)
+type Keeper struct {
+	cdc                 codec.BinaryCodec
+	storeKey            sdk.StoreKey
+	memKey              sdk.StoreKey
+	scopedKeeper        capabilitykeeper.ScopedKeeper
+	icaControllerKeeper icacontrollerkeeper.Keeper
+	paramstore          paramtypes.Subspace
+}
 
 func NewKeeper(
 	cdc codec.BinaryCodec,
