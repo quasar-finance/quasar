@@ -34,12 +34,6 @@ const (
 	// Performance fee collector module account name
 	PerfFeeCollectorMaccName = "orion_perffee_cltr"
 
-	// Entry fee collector module account name
-	EntryFeeCollectorMaccName = "orion_entryfee_cltr"
-
-	// Exit fee collector module account name
-	ExitFeeCollectorMaccName = "orion_exitfee_cltr"
-
 	// Strategy Key
 	StrategyKey = "orion_strategies"
 	// Meissa strategy name

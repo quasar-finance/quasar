@@ -53,11 +53,18 @@ At some point of time in the future when Orion Treasury collects a sufficient am
 
 - Orion calculate the current market value of the diff ( Withdrawable - Deposit ) 
 - Mint and Lock equivalent Quasar native tokens in the Orion Module.
-- Mint Orions and allocate them to users.  This way Orion will back the user's deposit diff and Orion itself is backed by Quasar.
+- Mint Orions and allocate them to users.  This way Orion will back the user's deposit diff and Orion itself is backed by Quasar. 
+- Ref methods to check is `MintAndAllocateOrions` and `DistributeEpochLockupFunds`
 - The locked Quasar can be reused by the Quasar to secure the network with internal bonding to Validators. [ Phase 2 ] 
 
 
 # Treasury build up 
 Orion module has two type of fees to build its treasury. 
-1. Management Fee - Orion module charge a fixed configurable percentage of the deposit amount.  
-2. Performance Fee - Orion module charge a fixed configurable percentage on the reward collected from osmosis dex on each day. 
+1. Management Fee - 
+   Orion module charge a fixed configurable percentage of the deposit amount.  Management fee is collected by the `types.MgmtFeeCollectorMaccName` account.
+2. Performance Fee - 
+   Orion module charge a fixed configurable percentage on the reward collected from osmosis dex on each day. Performance fee is collected by the `types.PerfFeeCollectorMaccName`
+
+
+# Connection with the intergamm module
+Orion module call the intergamm module keeper methods for sending ibc messages using interchain account to osmosis dex. 
