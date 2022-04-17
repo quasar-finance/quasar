@@ -7,17 +7,15 @@ on:
       - main
   workflow_dispatch:
 
-# This workflow makes x86_64 binaries for mac and linux.
+# This workflow makes x86_64 binaries for linux.
+# TODO: add darwin later
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         arch: [amd64]
-        targetos: [darwin, linux]
-        include:
-          - targetos: darwin
-            arch: arm64
+        targetos: [linux]
 
     name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
     steps:
