@@ -23,7 +23,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+require (
+	github.com/strangelove-ventures/packet-forward-middleware/v2 v2.1.1
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+)
 
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1

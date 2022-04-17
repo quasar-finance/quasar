@@ -99,7 +99,10 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	// Quasar imports
+	pfrouter "github.com/strangelove-ventures/packet-forward-middleware/v2/router"
+	pfrouterkeeper "github.com/strangelove-ventures/packet-forward-middleware/v2/router/keeper"
+	pfroutertypes "github.com/strangelove-ventures/packet-forward-middleware/v2/router/types"
+
 	"github.com/abag/quasarnode/docs"
 
 	epochsmodule "github.com/abag/quasarnode/x/epochs"
@@ -251,10 +254,11 @@ type App struct {
 	CrisisKeeper     crisiskeeper.Keeper
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper   evidencekeeper.Keeper
+	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
+	RouterKeeper     pfrouterkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -314,6 +318,7 @@ func New(
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		intergammmoduletypes.StoreKey,
+		pfroutertypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -430,6 +435,14 @@ func New(
 		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
 	)
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
+	app.RouterKeeper = pfrouterkeeper.NewKeeper(
+		appCodec,
+		keys[pfroutertypes.StoreKey],
+		app.GetSubspace(pfroutertypes.ModuleName),
+		app.TransferKeeper,
+		app.DistrKeeper,
+	)
+	routerModule := pfrouter.NewAppModule(app.RouterKeeper, transferIBCModule)
 
 	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
 		appCodec,
@@ -496,7 +509,8 @@ func New(
 	// Register host and authentication routes
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		// AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, routerModule).
 		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -553,6 +567,7 @@ func New(
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
+		// pfroutertypes.ModuleName,
 		feegrant.ModuleName,
 		qbankmoduletypes.ModuleName,
 		orionmoduletypes.ModuleName,
@@ -849,6 +864,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(pfroutertypes.ModuleName).WithKeyTable(pfroutertypes.ParamKeyTable())
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	paramsKeeper.Subspace(orionmoduletypes.ModuleName)
