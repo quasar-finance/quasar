@@ -9,6 +9,10 @@ go-mod:
 	go mod verify
 	go mod download
 
+lint:
+	@echo "SKIPPED"
+	#go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
+
 build:
 	scripts/build
 
