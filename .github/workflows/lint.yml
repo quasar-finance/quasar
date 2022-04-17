@@ -10,7 +10,7 @@ on:
 # This workflow makes x86_64 binaries for linux.
 # TODO: add darwin later
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
