@@ -1,8 +1,9 @@
 # Messages 
 
-qoracle supports the transaction messages for broadcasting the pool info, pool positions, pool spot prices and pool ranking. 
+`qoracle` supports the transaction messages for broadcasting the pool info, pool positions, pool spot prices and pool ranking. 
 
 ## Pool Info message
+```
 message MsgCreatePoolInfo {
   string creator = 1;
   string poolId = 2;
@@ -10,7 +11,9 @@ message MsgCreatePoolInfo {
   osmosis.gamm.poolmodels.BalancerPool info = 3;
   uint64 lastUpdatedTime = 4;
 }
+```
 
+```
 message MsgUpdatePoolInfo {
   string creator = 1;
   string poolId = 2;
@@ -18,12 +21,14 @@ message MsgUpdatePoolInfo {
   osmosis.gamm.poolmodels.BalancerPool info = 3;
   uint64 lastUpdatedTime = 4;
 }
+```
 
 BalancerPool is defined in balancerPool.proto
 File - proto/osmosis/gamm/pool-models/balancer/balancerPool.proto 
 Note - BalancerPool proto message is taken from the osmosis chain. 
 
-
+## Balancer Pool
+```
 message BalancerPool {
   // option (gogoproto.goproto_getters) = false;
   // option (gogoproto.goproto_stringer) = false;
@@ -66,8 +71,10 @@ message BalancerPool {
     (gogoproto.nullable) = false
   ];
 }
+```
 
-
+## Balancer Pool Param
+```
 // BalancerPoolParams defined the parameters that will be managed by the pool
 // governance in the future. This params are not managed by the chain
 // governance. Instead they will be managed by the token holders of the pool.
@@ -88,8 +95,9 @@ message BalancerPoolParams {
     (gogoproto.nullable) = true
   ];
 }
-
-
+```
+## Pool parameter change 
+```
 // Parameters for changing the weights in a balancer pool smoothly from
 // a start weight and end weight over a period of time.
 // Currently, the only smooth change supported is linear changing between
@@ -101,6 +109,7 @@ message BalancerPoolParams {
 //     w(t) = initial_pool_weights + (t - start_time) *
 //       (target_pool_weights - initial_pool_weights) / (duration)
 //   t > start_time + duration: w(t) = target_pool_weights
+
 message SmoothWeightChangeParams {
   // The start time for beginning the weight change.
   // If a parameter change / pool instantiation leaves this blank,
@@ -142,7 +151,10 @@ message SmoothWeightChangeParams {
   //  (gogoproto.nullable) = false
   // ];
 }
-## Pool Position message 
+```
+
+## Pool Position messages 
+```
 message MsgCreatePoolPosition {
   string creator = 1;
   string poolId = 2;
@@ -150,7 +162,9 @@ message MsgCreatePoolPosition {
   PoolMetrics metrics = 3;
   uint64 lastUpdatedTime = 4;
 }
+```
 
+```
 message MsgUpdatePoolPosition {
   string creator = 1;
   string poolId = 2;
@@ -158,9 +172,10 @@ message MsgUpdatePoolPosition {
   PoolMetrics metrics = 3;
   uint64 lastUpdatedTime = 4;
 }
+```
 
 ## Pool spot prices 
-
+```
 message MsgCreatePoolSpotPrice {
   string creator = 1;
   string poolId = 2;
@@ -180,18 +195,23 @@ message MsgUpdatePoolSpotPrice {
   string price = 5;
   uint64 lastUpdatedTime = 6;
 }
+```
 
 ## Pool ranking 
+```
 message MsgCreatePoolRanking {
   string creator = 1;
   repeated string poolIdsSortedByAPY = 3;
   repeated string poolIdsSortedByTVL = 4;
   uint64 lastUpdatedTime = 5;
 }
+```
 
+```
 message MsgUpdatePoolRanking {
   string creator = 1;
   repeated string poolIdsSortedByAPY = 3;
   repeated string poolIdsSortedByTVL = 4;
   uint64 lastUpdatedTime = 5;
 }
+```
