@@ -1,5 +1,10 @@
 go.mod:
-	go mod tidy && go mod verify
+	go mod tidy
+	go mod verify
+	go mod download
+
+build:
+	scripts/build
 
 test_path:
 	go test -v $(path)
@@ -22,4 +27,4 @@ run:
 run_silent:
 	./run.sh > q.log 2>&1
 
-.PHONY: go.mod test_path test test_simulation docs_gen docs_serve run run_silent
+.PHONY: go.mod build test_path test test_simulation docs_gen docs_serve run run_silent

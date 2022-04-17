@@ -1,0 +1,37 @@
+name: Build Quasar
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# This workflow makes x86_64 binaries for mac and linux.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64]
+        targetos: [darwin, linux]
+        include:
+          - targetos: darwin
+            arch: arm64
+
+    name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2.1.4
+        with:
+          go-version: '^1.18'
+        env:
+          GOOS: ${{ matrix.targetos }}
+          GOARCH: ${{ matrix.arch }}
+
+      - name: Build quasarnoded
+        run: make build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: build/quasarnoded

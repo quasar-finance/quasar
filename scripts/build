@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+build_dir="${BUILD_DIR:-"${project_dir}/build"}"
+
+mkdir -p "$build_dir"
+
+(
+  cd "$project_dir"
+
+  go mod download
+  go build -o "${build_dir}/quasarnoded" ./cmd/quasarnoded
+)
