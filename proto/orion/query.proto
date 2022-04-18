@@ -37,10 +37,7 @@ service Query {
 	rpc RewardCollection(QueryGetRewardCollectionRequest) returns (QueryGetRewardCollectionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/reward_collection";
 	}
-// Queries a UserLPInfo by index.
-	rpc UserLPInfo(QueryGetUserLPInfoRequest) returns (QueryGetUserLPInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/orion/user_lp_info";
-	}
+ 
 // Queries a LpStat by index.
 	rpc LpStat(QueryGetLpStatRequest) returns (QueryGetLpStatResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_stat";
@@ -64,34 +61,32 @@ message QueryReserveBalanceRequest {
 message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
-/*
-message QueryGetFeeDataRequest {}
-
-message QueryGetFeeDataResponse {
-	FeeData FeeData = 1 [(gogoproto.nullable) = false];
+ 
+message QueryGetLpPositionRequest {
+	uint64 lpId = 1;
 }
-*/
-message QueryGetLpPositionRequest {}
 
 message QueryGetLpPositionResponse {
 	LpPosition LpPosition = 1 [(gogoproto.nullable) = false];
 }
-message QueryGetEpochLPInfoRequest {}
+message QueryGetEpochLPInfoRequest {
+	uint64 epochDay = 1;
+}
 
 message QueryGetEpochLPInfoResponse {
 	EpochLPInfo EpochLPInfo = 1 [(gogoproto.nullable) = false];
 }
-message QueryGetRewardCollectionRequest {}
+message QueryGetRewardCollectionRequest {
+	uint64 epochDay = 1;
+}
 
 message QueryGetRewardCollectionResponse {
 	RewardCollection RewardCollection = 1 [(gogoproto.nullable) = false];
-}
-message QueryGetUserLPInfoRequest {}
+} 
 
-message QueryGetUserLPInfoResponse {
-	UserLPInfo UserLPInfo = 1 [(gogoproto.nullable) = false];
+message QueryGetLpStatRequest {
+	uint64 epochDay = 1;
 }
-message QueryGetLpStatRequest {}
 
 message QueryGetLpStatResponse {
 	LpStat LpStat = 1 [(gogoproto.nullable) = false];

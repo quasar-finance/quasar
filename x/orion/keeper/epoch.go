@@ -15,6 +15,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			"blockheight", ctx.BlockHeight())
 
 		if k.Enabled(ctx) {
+
 			// Logic :
 			// 1. Get the list of meissa strategies registered.
 			// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
@@ -33,6 +34,11 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 					k.ExecuteMeissa(ctx, uint64(epochNumber), lockupPeriod)
 				}
 			}
+
+			// Refund distribution
+			k.DistributeEpochLockupFunds(ctx, uint64(epochNumber))
+			// Reward distribution
+			k.RewardDistribution(ctx, uint64(epochNumber))
 		} // k.Enabled(ctx)
 	}
 }

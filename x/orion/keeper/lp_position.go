@@ -127,6 +127,14 @@ func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, fo
 	return epochday, found
 }
 
+func (k Keeper) GetLpIdPosition(ctx sdk.Context, lpid uint64) (val types.LpPosition, found bool) {
+	epochday, found := k.GetLPEpochDay(ctx, lpid)
+	if found {
+		return k.GetLpPosition(ctx, epochday, lpid)
+	}
+	return
+}
+
 // GetLpPosition fetch the lpPosition based on the epochday and lpID input
 func (k Keeper) GetLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) (val types.LpPosition, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)

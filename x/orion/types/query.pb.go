@@ -201,13 +201,8 @@ func (m *QueryReserveBalanceResponse) GetAmount() uint64 {
 	return 0
 }
 
-//
-//message QueryGetFeeDataRequest {}
-//
-//message QueryGetFeeDataResponse {
-//FeeData FeeData = 1 [(gogoproto.nullable) = false];
-//}
 type QueryGetLpPositionRequest struct {
+	LpId uint64 `protobuf:"varint,1,opt,name=lpId,proto3" json:"lpId,omitempty"`
 }
 
 func (m *QueryGetLpPositionRequest) Reset()         { *m = QueryGetLpPositionRequest{} }
@@ -242,6 +237,13 @@ func (m *QueryGetLpPositionRequest) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_QueryGetLpPositionRequest proto.InternalMessageInfo
+
+func (m *QueryGetLpPositionRequest) GetLpId() uint64 {
+	if m != nil {
+		return m.LpId
+	}
+	return 0
+}
 
 type QueryGetLpPositionResponse struct {
 	LpPosition LpPosition `protobuf:"bytes,1,opt,name=LpPosition,proto3" json:"LpPosition"`
@@ -288,6 +290,7 @@ func (m *QueryGetLpPositionResponse) GetLpPosition() LpPosition {
 }
 
 type QueryGetEpochLPInfoRequest struct {
+	EpochDay uint64 `protobuf:"varint,1,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
 }
 
 func (m *QueryGetEpochLPInfoRequest) Reset()         { *m = QueryGetEpochLPInfoRequest{} }
@@ -322,6 +325,13 @@ func (m *QueryGetEpochLPInfoRequest) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_QueryGetEpochLPInfoRequest proto.InternalMessageInfo
+
+func (m *QueryGetEpochLPInfoRequest) GetEpochDay() uint64 {
+	if m != nil {
+		return m.EpochDay
+	}
+	return 0
+}
 
 type QueryGetEpochLPInfoResponse struct {
 	EpochLPInfo EpochLPInfo `protobuf:"bytes,1,opt,name=EpochLPInfo,proto3" json:"EpochLPInfo"`
@@ -368,6 +378,7 @@ func (m *QueryGetEpochLPInfoResponse) GetEpochLPInfo() EpochLPInfo {
 }
 
 type QueryGetRewardCollectionRequest struct {
+	EpochDay uint64 `protobuf:"varint,1,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
 }
 
 func (m *QueryGetRewardCollectionRequest) Reset()         { *m = QueryGetRewardCollectionRequest{} }
@@ -402,6 +413,13 @@ func (m *QueryGetRewardCollectionRequest) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_QueryGetRewardCollectionRequest proto.InternalMessageInfo
+
+func (m *QueryGetRewardCollectionRequest) GetEpochDay() uint64 {
+	if m != nil {
+		return m.EpochDay
+	}
+	return 0
+}
 
 type QueryGetRewardCollectionResponse struct {
 	RewardCollection RewardCollection `protobuf:"bytes,1,opt,name=RewardCollection,proto3" json:"RewardCollection"`
@@ -447,94 +465,15 @@ func (m *QueryGetRewardCollectionResponse) GetRewardCollection() RewardCollectio
 	return RewardCollection{}
 }
 
-type QueryGetUserLPInfoRequest struct {
-}
-
-func (m *QueryGetUserLPInfoRequest) Reset()         { *m = QueryGetUserLPInfoRequest{} }
-func (m *QueryGetUserLPInfoRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryGetUserLPInfoRequest) ProtoMessage()    {}
-func (*QueryGetUserLPInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_92ba854d0f1d3172, []int{10}
-}
-func (m *QueryGetUserLPInfoRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetUserLPInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetUserLPInfoRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetUserLPInfoRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetUserLPInfoRequest.Merge(m, src)
-}
-func (m *QueryGetUserLPInfoRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetUserLPInfoRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetUserLPInfoRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetUserLPInfoRequest proto.InternalMessageInfo
-
-type QueryGetUserLPInfoResponse struct {
-	UserLPInfo UserLPInfo `protobuf:"bytes,1,opt,name=UserLPInfo,proto3" json:"UserLPInfo"`
-}
-
-func (m *QueryGetUserLPInfoResponse) Reset()         { *m = QueryGetUserLPInfoResponse{} }
-func (m *QueryGetUserLPInfoResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryGetUserLPInfoResponse) ProtoMessage()    {}
-func (*QueryGetUserLPInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_92ba854d0f1d3172, []int{11}
-}
-func (m *QueryGetUserLPInfoResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetUserLPInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetUserLPInfoResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetUserLPInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetUserLPInfoResponse.Merge(m, src)
-}
-func (m *QueryGetUserLPInfoResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetUserLPInfoResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetUserLPInfoResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetUserLPInfoResponse proto.InternalMessageInfo
-
-func (m *QueryGetUserLPInfoResponse) GetUserLPInfo() UserLPInfo {
-	if m != nil {
-		return m.UserLPInfo
-	}
-	return UserLPInfo{}
-}
-
 type QueryGetLpStatRequest struct {
+	EpochDay uint64 `protobuf:"varint,1,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
 }
 
 func (m *QueryGetLpStatRequest) Reset()         { *m = QueryGetLpStatRequest{} }
 func (m *QueryGetLpStatRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryGetLpStatRequest) ProtoMessage()    {}
 func (*QueryGetLpStatRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_92ba854d0f1d3172, []int{12}
+	return fileDescriptor_92ba854d0f1d3172, []int{10}
 }
 func (m *QueryGetLpStatRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -563,6 +502,13 @@ func (m *QueryGetLpStatRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryGetLpStatRequest proto.InternalMessageInfo
 
+func (m *QueryGetLpStatRequest) GetEpochDay() uint64 {
+	if m != nil {
+		return m.EpochDay
+	}
+	return 0
+}
+
 type QueryGetLpStatResponse struct {
 	LpStat LpStat `protobuf:"bytes,1,opt,name=LpStat,proto3" json:"LpStat"`
 }
@@ -571,7 +517,7 @@ func (m *QueryGetLpStatResponse) Reset()         { *m = QueryGetLpStatResponse{}
 func (m *QueryGetLpStatResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryGetLpStatResponse) ProtoMessage()    {}
 func (*QueryGetLpStatResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_92ba854d0f1d3172, []int{13}
+	return fileDescriptor_92ba854d0f1d3172, []int{11}
 }
 func (m *QueryGetLpStatResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -618,8 +564,6 @@ func init() {
 	proto.RegisterType((*QueryGetEpochLPInfoResponse)(nil), "abag.quasarnode.orion.QueryGetEpochLPInfoResponse")
 	proto.RegisterType((*QueryGetRewardCollectionRequest)(nil), "abag.quasarnode.orion.QueryGetRewardCollectionRequest")
 	proto.RegisterType((*QueryGetRewardCollectionResponse)(nil), "abag.quasarnode.orion.QueryGetRewardCollectionResponse")
-	proto.RegisterType((*QueryGetUserLPInfoRequest)(nil), "abag.quasarnode.orion.QueryGetUserLPInfoRequest")
-	proto.RegisterType((*QueryGetUserLPInfoResponse)(nil), "abag.quasarnode.orion.QueryGetUserLPInfoResponse")
 	proto.RegisterType((*QueryGetLpStatRequest)(nil), "abag.quasarnode.orion.QueryGetLpStatRequest")
 	proto.RegisterType((*QueryGetLpStatResponse)(nil), "abag.quasarnode.orion.QueryGetLpStatResponse")
 }
@@ -627,55 +571,53 @@ func init() {
 func init() { proto.RegisterFile("orion/query.proto", fileDescriptor_92ba854d0f1d3172) }
 
 var fileDescriptor_92ba854d0f1d3172 = []byte{
-	// 768 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x96, 0xcd, 0x6e, 0xd3, 0x4a,
-	0x14, 0xc7, 0xe3, 0xab, 0x36, 0xba, 0x77, 0x2a, 0x5d, 0xdd, 0x3b, 0xfd, 0x76, 0x5b, 0xb7, 0x1d,
-	0xda, 0x52, 0x42, 0xb1, 0x9b, 0x20, 0xca, 0x82, 0x5d, 0x10, 0xaa, 0x40, 0x5d, 0x14, 0xa3, 0x2e,
-	0x60, 0x13, 0x4d, 0xd2, 0xa9, 0x6b, 0x29, 0xf1, 0xb8, 0x9e, 0x49, 0xa1, 0x42, 0xdd, 0xb0, 0x60,
-	0x87, 0x84, 0xc4, 0x1a, 0x16, 0xbc, 0x00, 0x2b, 0xde, 0xa1, 0xcb, 0x4a, 0x6c, 0x58, 0x21, 0xd4,
-	0xf2, 0x00, 0x3c, 0x02, 0xca, 0xcc, 0xb8, 0x9e, 0xd8, 0x71, 0xdd, 0xee, 0xe2, 0x73, 0xce, 0xff,
-	0x9c, 0xdf, 0xf8, 0xcc, 0x39, 0x0e, 0xf8, 0x9f, 0x46, 0x3e, 0x0d, 0x9c, 0x83, 0x2e, 0x89, 0x8e,
-	0xec, 0x30, 0xa2, 0x9c, 0xc2, 0x71, 0xdc, 0xc4, 0x9e, 0x7d, 0xd0, 0xc5, 0x0c, 0x47, 0x01, 0xdd,
-	0x25, 0xb6, 0x08, 0x31, 0xc7, 0x3c, 0xea, 0x51, 0x11, 0xe1, 0xf4, 0x7e, 0xc9, 0x60, 0x73, 0xd6,
-	0xa3, 0xd4, 0x6b, 0x13, 0x07, 0x87, 0xbe, 0x83, 0x83, 0x80, 0x72, 0xcc, 0x7d, 0x1a, 0x30, 0xe5,
-	0xad, 0xb4, 0x28, 0xeb, 0x50, 0xe6, 0x34, 0x31, 0x23, 0xb2, 0x86, 0x73, 0x58, 0x6d, 0x12, 0x8e,
-	0xab, 0x4e, 0x88, 0x3d, 0x3f, 0x10, 0xc1, 0x2a, 0x16, 0x4a, 0x92, 0x10, 0x47, 0xb8, 0x13, 0xeb,
-	0x27, 0xa5, 0xad, 0x1d, 0x36, 0x42, 0xca, 0x7c, 0x2d, 0x78, 0x5a, 0x3a, 0x48, 0x48, 0x5b, 0xfb,
-	0x8d, 0x76, 0xd8, 0xf0, 0x83, 0xbd, 0x98, 0x68, 0x4e, 0xba, 0x22, 0xf2, 0x12, 0x47, 0xbb, 0x8d,
-	0x16, 0x6d, 0xb7, 0x49, 0x4b, 0x53, 0x4e, 0x49, 0x77, 0x97, 0x91, 0x28, 0x25, 0x1c, 0xbd, 0x28,
-	0xc6, 0x38, 0xe6, 0xd2, 0x88, 0xc6, 0x00, 0x7c, 0xda, 0xe3, 0xde, 0x16, 0x58, 0x2e, 0x39, 0xe8,
-	0x12, 0xc6, 0x91, 0x0b, 0x46, 0xfb, 0xac, 0x2c, 0xa4, 0x01, 0x23, 0xf0, 0x01, 0x28, 0x4b, 0xfc,
-	0x29, 0x63, 0xc1, 0x58, 0x1d, 0xa9, 0xcd, 0xd9, 0x03, 0x5f, 0xa5, 0x2d, 0x65, 0xf5, 0xa1, 0x93,
-	0x1f, 0xf3, 0x25, 0x57, 0x49, 0x50, 0x0d, 0x98, 0x22, 0xa7, 0x4b, 0x18, 0x89, 0x0e, 0x49, 0x1d,
-	0xb7, 0x71, 0xd0, 0x22, 0xaa, 0x22, 0x1c, 0x03, 0xc3, 0xbb, 0x24, 0xa0, 0x1d, 0x91, 0xf9, 0x1f,
-	0x57, 0x3e, 0xa0, 0x7b, 0x60, 0x66, 0xa0, 0x46, 0xf1, 0x4c, 0x80, 0x32, 0xee, 0xd0, 0x6e, 0xc0,
-	0x85, 0x6a, 0xc8, 0x55, 0x4f, 0x68, 0x06, 0x4c, 0x0b, 0xd9, 0x26, 0xe1, 0x5b, 0xe1, 0xb6, 0x7a,
-	0xb3, 0xf1, 0xd9, 0x88, 0xe2, 0x48, 0x39, 0x55, 0xca, 0x4d, 0x00, 0x12, 0xab, 0x3a, 0xe6, 0x62,
-	0xce, 0x31, 0x93, 0x40, 0x75, 0x54, 0x4d, 0x8a, 0x66, 0x93, 0x32, 0x8f, 0x7a, 0x5d, 0xdc, 0xda,
-	0x7e, 0x1c, 0xec, 0xd1, 0x18, 0xc2, 0x57, 0x07, 0x4b, 0x7b, 0x15, 0xc5, 0x13, 0x30, 0xa2, 0x99,
-	0x15, 0x06, 0xca, 0xc1, 0xd0, 0x22, 0x15, 0x87, 0x2e, 0x46, 0x8b, 0x60, 0x3e, 0x2e, 0xe5, 0x8a,
-	0x3b, 0xf3, 0xf0, 0xe2, 0xca, 0xc4, 0x34, 0xc7, 0x60, 0x21, 0x3f, 0x44, 0x21, 0x3d, 0x07, 0xff,
-	0xa5, 0x7d, 0x8a, 0xeb, 0x66, 0x0e, 0x57, 0x3a, 0x5c, 0xc1, 0x65, 0xd2, 0xe8, 0xed, 0xda, 0x61,
-	0x24, 0xea, 0x7f, 0x53, 0x5a, 0xbb, 0x74, 0x67, 0xd2, 0xae, 0xc4, 0x5a, 0xd0, 0xae, 0x24, 0x30,
-	0x6e, 0x57, 0x62, 0x41, 0x93, 0x60, 0x3c, 0xb9, 0x15, 0xcf, 0x38, 0xe6, 0x71, 0xfd, 0x1d, 0x30,
-	0x91, 0x76, 0x24, 0xd3, 0x20, 0x2d, 0x05, 0xd3, 0x20, 0x83, 0xe2, 0x69, 0x90, 0x4f, 0xb5, 0xdf,
-	0x7f, 0x83, 0x61, 0x91, 0x17, 0xbe, 0x35, 0x40, 0x59, 0x0e, 0x0c, 0xbc, 0x95, 0x93, 0x21, 0x3b,
-	0xa1, 0x66, 0xe5, 0x2a, 0xa1, 0x12, 0x14, 0x2d, 0xbf, 0xf9, 0xf6, 0xeb, 0xc3, 0x5f, 0xf3, 0x70,
-	0xce, 0xe9, 0x69, 0x9c, 0x44, 0xe3, 0xe8, 0x2b, 0x09, 0x7e, 0x31, 0xc0, 0xbf, 0xfd, 0x83, 0x06,
-	0xab, 0x97, 0x55, 0x19, 0x38, 0xc8, 0x66, 0xed, 0x3a, 0x12, 0x05, 0xb8, 0x21, 0x00, 0xd7, 0xa1,
-	0x9d, 0x03, 0x18, 0x49, 0x59, 0xa3, 0x29, 0x75, 0xce, 0x6b, 0xb1, 0x1d, 0x8e, 0xe1, 0x47, 0x43,
-	0x9f, 0x56, 0xb8, 0x7e, 0x59, 0xe9, 0x41, 0xbb, 0xc0, 0xac, 0x5e, 0x43, 0xa1, 0x58, 0x2b, 0x82,
-	0x75, 0x09, 0xa2, 0x1c, 0x56, 0x6d, 0x97, 0xc3, 0xcf, 0x46, 0xdf, 0x1c, 0xc3, 0xa2, 0x72, 0xd9,
-	0x45, 0x71, 0xf9, 0xeb, 0x1c, 0xbc, 0x3d, 0xd0, 0x9a, 0x40, 0x5c, 0x81, 0x4b, 0x39, 0x88, 0x7d,
-	0x5f, 0x15, 0xf8, 0xd5, 0xc8, 0x4e, 0x36, 0xdc, 0x28, 0x28, 0x9b, 0xb3, 0x49, 0xcc, 0xfb, 0xd7,
-	0xd6, 0x29, 0xe6, 0x75, 0xc1, 0x5c, 0x81, 0xab, 0xb9, 0x57, 0x20, 0xf5, 0xb9, 0x83, 0x9f, 0x0c,
-	0x7d, 0xf6, 0x0b, 0x9b, 0x9f, 0xd9, 0x2c, 0x85, 0xcd, 0xcf, 0xae, 0x1b, 0x74, 0x5b, 0x50, 0x2e,
-	0xc3, 0x1b, 0x39, 0x94, 0xfa, 0x57, 0x17, 0xbe, 0x33, 0xe2, 0x05, 0x01, 0xd7, 0x0a, 0xef, 0x99,
-	0xb6, 0x72, 0xcc, 0x3b, 0x57, 0x8c, 0x56, 0x50, 0x2b, 0x02, 0x6a, 0x01, 0x5a, 0xf9, 0x37, 0xb2,
-	0xf7, 0xc1, 0xaf, 0xd7, 0x4f, 0xce, 0x2c, 0xe3, 0xf4, 0xcc, 0x32, 0x7e, 0x9e, 0x59, 0xc6, 0xfb,
-	0x73, 0xab, 0x74, 0x7a, 0x6e, 0x95, 0xbe, 0x9f, 0x5b, 0xa5, 0x17, 0xab, 0x9e, 0xcf, 0xf7, 0xbb,
-	0x4d, 0xbb, 0x45, 0x3b, 0x99, 0x1c, 0xaf, 0x54, 0x16, 0x7e, 0x14, 0x12, 0xd6, 0x2c, 0x8b, 0x7f,
-	0x0d, 0x77, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0xea, 0x74, 0xe6, 0xa8, 0x57, 0x09, 0x00, 0x00,
+	// 734 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x95, 0xcf, 0x6f, 0xd3, 0x30,
+	0x14, 0xc7, 0x1b, 0xb4, 0x15, 0xf0, 0x24, 0x04, 0xde, 0x0f, 0xb6, 0xc0, 0xba, 0x61, 0x8d, 0x31,
+	0xaa, 0x91, 0xac, 0x9d, 0x18, 0x48, 0x88, 0x4b, 0x01, 0x4d, 0x43, 0x3b, 0x8c, 0x20, 0x0e, 0x70,
+	0xa9, 0xdc, 0xd6, 0xcb, 0x22, 0xa5, 0x71, 0x16, 0xbb, 0x83, 0x09, 0xed, 0xc2, 0x81, 0x1b, 0x12,
+	0x12, 0x67, 0x2e, 0xfc, 0x03, 0x9c, 0xf8, 0x1f, 0x76, 0x63, 0x12, 0x17, 0x4e, 0x08, 0x6d, 0xfc,
+	0x21, 0xa8, 0xf6, 0xcb, 0x9a, 0xa6, 0xcd, 0xda, 0xdd, 0x62, 0xfb, 0x7d, 0xdf, 0xfb, 0xc4, 0x7e,
+	0x5f, 0x1b, 0x5d, 0xe3, 0x91, 0xc7, 0x03, 0x7b, 0xb7, 0xc5, 0xa2, 0x7d, 0x2b, 0x8c, 0xb8, 0xe4,
+	0x78, 0x92, 0xd6, 0xa8, 0x6b, 0xed, 0xb6, 0xa8, 0xa0, 0x51, 0xc0, 0x1b, 0xcc, 0x52, 0x21, 0xe6,
+	0x84, 0xcb, 0x5d, 0xae, 0x22, 0xec, 0xf6, 0x97, 0x0e, 0x36, 0x6f, 0xba, 0x9c, 0xbb, 0x3e, 0xb3,
+	0x69, 0xe8, 0xd9, 0x34, 0x08, 0xb8, 0xa4, 0xd2, 0xe3, 0x81, 0x80, 0xd5, 0x62, 0x9d, 0x8b, 0x26,
+	0x17, 0x76, 0x8d, 0x0a, 0xa6, 0x6b, 0xd8, 0x7b, 0xa5, 0x1a, 0x93, 0xb4, 0x64, 0x87, 0xd4, 0xf5,
+	0x02, 0x15, 0x0c, 0xb1, 0x58, 0x93, 0x84, 0x34, 0xa2, 0xcd, 0x58, 0x7f, 0x5d, 0xcf, 0xf9, 0x61,
+	0x35, 0xe4, 0xc2, 0x4b, 0x04, 0xcf, 0xe8, 0x05, 0x16, 0xf2, 0xfa, 0x4e, 0xd5, 0x0f, 0xab, 0x5e,
+	0xb0, 0x1d, 0x13, 0xcd, 0xea, 0xa5, 0x88, 0xbd, 0xa5, 0x51, 0xa3, 0x5a, 0xe7, 0xbe, 0xcf, 0xea,
+	0x09, 0xe5, 0xb4, 0x5e, 0x6e, 0x09, 0x16, 0xa5, 0x84, 0xe3, 0xa7, 0xc5, 0x84, 0xa4, 0x52, 0x4f,
+	0x92, 0x09, 0x84, 0x5f, 0xb4, 0xb9, 0xb7, 0x14, 0x96, 0xc3, 0x76, 0x5b, 0x4c, 0x48, 0xe2, 0xa0,
+	0xf1, 0xae, 0x59, 0x11, 0xf2, 0x40, 0x30, 0xfc, 0x08, 0xe5, 0x35, 0xfe, 0xb4, 0x31, 0x6f, 0x2c,
+	0x8d, 0x95, 0x67, 0xad, 0xbe, 0x5b, 0x69, 0x69, 0x59, 0x65, 0xe4, 0xf0, 0xcf, 0x5c, 0xce, 0x01,
+	0x09, 0x29, 0x23, 0x53, 0xe5, 0x74, 0x98, 0x60, 0xd1, 0x1e, 0xab, 0x50, 0x9f, 0x06, 0x75, 0x06,
+	0x15, 0xf1, 0x04, 0x1a, 0x6d, 0xb0, 0x80, 0x37, 0x55, 0xe6, 0xcb, 0x8e, 0x1e, 0x90, 0xfb, 0xe8,
+	0x46, 0x5f, 0x0d, 0xf0, 0x4c, 0xa1, 0x3c, 0x6d, 0xf2, 0x56, 0x20, 0x95, 0x6a, 0xc4, 0x81, 0x11,
+	0xb1, 0xd1, 0x8c, 0x92, 0xad, 0x33, 0xb9, 0x19, 0x6e, 0xc1, 0xce, 0xc6, 0x95, 0x30, 0x1a, 0xf1,
+	0xc3, 0x8d, 0x06, 0x48, 0xd4, 0x37, 0x61, 0xc0, 0x96, 0x12, 0x40, 0x99, 0x75, 0x84, 0x3a, 0xb3,
+	0xf0, 0xeb, 0xb7, 0x32, 0x7e, 0xbd, 0x13, 0x08, 0xbf, 0x9f, 0x90, 0x92, 0x87, 0x9d, 0x32, 0xcf,
+	0xda, 0x27, 0xbb, 0xb9, 0xb5, 0x11, 0x6c, 0xf3, 0x18, 0xcc, 0x44, 0x97, 0xd4, 0x79, 0x3f, 0xa5,
+	0xfb, 0x00, 0x77, 0x3a, 0x26, 0x1e, 0x6c, 0x44, 0x5a, 0x09, 0x84, 0xcf, 0xd1, 0x58, 0x62, 0x1a,
+	0x10, 0x49, 0x06, 0x62, 0x22, 0x12, 0x18, 0x93, 0x62, 0xf2, 0x18, 0xcd, 0xc5, 0xa5, 0x1c, 0xd5,
+	0x63, 0x4f, 0x4e, 0x5b, 0x6c, 0x18, 0xd2, 0x03, 0x34, 0x9f, 0x2d, 0x07, 0xdc, 0xd7, 0xe8, 0x6a,
+	0x7a, 0x0d, 0x98, 0xef, 0x64, 0x30, 0xa7, 0xc3, 0x01, 0xbc, 0x27, 0x0d, 0x59, 0x45, 0x93, 0x9d,
+	0x93, 0x7c, 0x29, 0xa9, 0x1c, 0x86, 0xf9, 0x15, 0x9a, 0x4a, 0x8b, 0x3a, 0x1d, 0xaf, 0x67, 0x06,
+	0x74, 0xbc, 0x0e, 0x8a, 0x3b, 0x5e, 0x8f, 0xca, 0x3f, 0x2f, 0xa2, 0x51, 0x95, 0x17, 0x7f, 0x34,
+	0x50, 0x5e, 0x9b, 0x02, 0xdf, 0xcd, 0xc8, 0xd0, 0xeb, 0x42, 0xb3, 0x38, 0x4c, 0xa8, 0x06, 0x25,
+	0xb7, 0x3f, 0xfc, 0xfa, 0xf7, 0xe5, 0xc2, 0x1c, 0x9e, 0xb5, 0xdb, 0x1a, 0xbb, 0xa3, 0xb1, 0x93,
+	0xd7, 0x0e, 0xfe, 0x6e, 0xa0, 0x2b, 0xdd, 0x66, 0xc2, 0xa5, 0xb3, 0xaa, 0xf4, 0x35, 0xab, 0x59,
+	0x3e, 0x8f, 0x04, 0x00, 0xd7, 0x14, 0xe0, 0x0a, 0xb6, 0x32, 0x00, 0x23, 0x2d, 0xab, 0xd6, 0xb4,
+	0xce, 0x7e, 0xaf, 0x6e, 0x80, 0x03, 0xfc, 0xd5, 0x48, 0xba, 0x0f, 0xaf, 0x9c, 0x55, 0xba, 0x9f,
+	0xdf, 0xcd, 0xd2, 0x39, 0x14, 0xc0, 0x5a, 0x54, 0xac, 0x0b, 0x98, 0x64, 0xb0, 0x26, 0xee, 0x6b,
+	0xfc, 0xcd, 0xe8, 0xf2, 0x1e, 0x1e, 0x54, 0xae, 0xd7, 0xf8, 0x67, 0x6f, 0x67, 0x7f, 0xc7, 0x93,
+	0x65, 0x85, 0xb8, 0x88, 0x17, 0x32, 0x10, 0xbb, 0x5e, 0x0e, 0xfc, 0xc3, 0xe8, 0x75, 0x1c, 0x5e,
+	0x1b, 0x50, 0x36, 0xc3, 0xfd, 0xe6, 0x83, 0x73, 0xeb, 0x80, 0x79, 0x45, 0x31, 0x17, 0xf1, 0x52,
+	0x66, 0x0b, 0xa4, 0x9e, 0x34, 0xfc, 0xc9, 0x88, 0xfd, 0x87, 0x97, 0x07, 0x1e, 0x63, 0xc2, 0xed,
+	0xe6, 0xbd, 0x21, 0xa3, 0x81, 0x6c, 0x51, 0x91, 0xcd, 0xe3, 0x42, 0xf6, 0x81, 0xb7, 0xdf, 0xcc,
+	0x4a, 0xe5, 0xf0, 0xb8, 0x60, 0x1c, 0x1d, 0x17, 0x8c, 0xbf, 0xc7, 0x05, 0xe3, 0xf3, 0x49, 0x21,
+	0x77, 0x74, 0x52, 0xc8, 0xfd, 0x3e, 0x29, 0xe4, 0xde, 0x2c, 0xb9, 0x9e, 0xdc, 0x69, 0xd5, 0xac,
+	0x3a, 0x6f, 0xf6, 0xe4, 0x78, 0x07, 0x59, 0xe4, 0x7e, 0xc8, 0x44, 0x2d, 0xaf, 0x1e, 0xde, 0xd5,
+	0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x10, 0x5b, 0x07, 0xd2, 0x9a, 0x08, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -700,8 +642,6 @@ type QueryClient interface {
 	EpochLPInfo(ctx context.Context, in *QueryGetEpochLPInfoRequest, opts ...grpc.CallOption) (*QueryGetEpochLPInfoResponse, error)
 	// Queries a RewardCollection by index.
 	RewardCollection(ctx context.Context, in *QueryGetRewardCollectionRequest, opts ...grpc.CallOption) (*QueryGetRewardCollectionResponse, error)
-	// Queries a UserLPInfo by index.
-	UserLPInfo(ctx context.Context, in *QueryGetUserLPInfoRequest, opts ...grpc.CallOption) (*QueryGetUserLPInfoResponse, error)
 	// Queries a LpStat by index.
 	LpStat(ctx context.Context, in *QueryGetLpStatRequest, opts ...grpc.CallOption) (*QueryGetLpStatResponse, error)
 }
@@ -759,15 +699,6 @@ func (c *queryClient) RewardCollection(ctx context.Context, in *QueryGetRewardCo
 	return out, nil
 }
 
-func (c *queryClient) UserLPInfo(ctx context.Context, in *QueryGetUserLPInfoRequest, opts ...grpc.CallOption) (*QueryGetUserLPInfoResponse, error) {
-	out := new(QueryGetUserLPInfoResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.orion.Query/UserLPInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *queryClient) LpStat(ctx context.Context, in *QueryGetLpStatRequest, opts ...grpc.CallOption) (*QueryGetLpStatResponse, error) {
 	out := new(QueryGetLpStatResponse)
 	err := c.cc.Invoke(ctx, "/abag.quasarnode.orion.Query/LpStat", in, out, opts...)
@@ -789,8 +720,6 @@ type QueryServer interface {
 	EpochLPInfo(context.Context, *QueryGetEpochLPInfoRequest) (*QueryGetEpochLPInfoResponse, error)
 	// Queries a RewardCollection by index.
 	RewardCollection(context.Context, *QueryGetRewardCollectionRequest) (*QueryGetRewardCollectionResponse, error)
-	// Queries a UserLPInfo by index.
-	UserLPInfo(context.Context, *QueryGetUserLPInfoRequest) (*QueryGetUserLPInfoResponse, error)
 	// Queries a LpStat by index.
 	LpStat(context.Context, *QueryGetLpStatRequest) (*QueryGetLpStatResponse, error)
 }
@@ -813,9 +742,6 @@ func (*UnimplementedQueryServer) EpochLPInfo(ctx context.Context, req *QueryGetE
 }
 func (*UnimplementedQueryServer) RewardCollection(ctx context.Context, req *QueryGetRewardCollectionRequest) (*QueryGetRewardCollectionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RewardCollection not implemented")
-}
-func (*UnimplementedQueryServer) UserLPInfo(ctx context.Context, req *QueryGetUserLPInfoRequest) (*QueryGetUserLPInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UserLPInfo not implemented")
 }
 func (*UnimplementedQueryServer) LpStat(ctx context.Context, req *QueryGetLpStatRequest) (*QueryGetLpStatResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LpStat not implemented")
@@ -915,24 +841,6 @@ func _Query_RewardCollection_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_UserLPInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryGetUserLPInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).UserLPInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/abag.quasarnode.orion.Query/UserLPInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).UserLPInfo(ctx, req.(*QueryGetUserLPInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_LpStat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryGetLpStatRequest)
 	if err := dec(in); err != nil {
@@ -974,10 +882,6 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RewardCollection",
 			Handler:    _Query_RewardCollection_Handler,
-		},
-		{
-			MethodName: "UserLPInfo",
-			Handler:    _Query_UserLPInfo_Handler,
 		},
 		{
 			MethodName: "LpStat",
@@ -1122,6 +1026,11 @@ func (m *QueryGetLpPositionRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
+	if m.LpId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.LpId))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1178,6 +1087,11 @@ func (m *QueryGetEpochLPInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 	_ = i
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.EpochDay))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1234,6 +1148,11 @@ func (m *QueryGetRewardCollectionRequest) MarshalToSizedBuffer(dAtA []byte) (int
 	_ = i
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.EpochDay))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1270,62 +1189,6 @@ func (m *QueryGetRewardCollectionResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryGetUserLPInfoRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetUserLPInfoRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetUserLPInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryGetUserLPInfoResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetUserLPInfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetUserLPInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.UserLPInfo.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
 func (m *QueryGetLpStatRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1346,6 +1209,11 @@ func (m *QueryGetLpStatRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.EpochDay))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1444,6 +1312,9 @@ func (m *QueryGetLpPositionRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.LpId != 0 {
+		n += 1 + sovQuery(uint64(m.LpId))
+	}
 	return n
 }
 
@@ -1464,6 +1335,9 @@ func (m *QueryGetEpochLPInfoRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		n += 1 + sovQuery(uint64(m.EpochDay))
+	}
 	return n
 }
 
@@ -1484,6 +1358,9 @@ func (m *QueryGetRewardCollectionRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		n += 1 + sovQuery(uint64(m.EpochDay))
+	}
 	return n
 }
 
@@ -1498,32 +1375,15 @@ func (m *QueryGetRewardCollectionResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryGetUserLPInfoRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryGetUserLPInfoResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.UserLPInfo.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
 func (m *QueryGetLpStatRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.EpochDay != 0 {
+		n += 1 + sovQuery(uint64(m.EpochDay))
+	}
 	return n
 }
 
@@ -1857,6 +1717,25 @@ func (m *QueryGetLpPositionRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryGetLpPositionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LpId", wireType)
+			}
+			m.LpId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LpId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -1990,6 +1869,25 @@ func (m *QueryGetEpochLPInfoRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryGetEpochLPInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDay", wireType)
+			}
+			m.EpochDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2123,6 +2021,25 @@ func (m *QueryGetRewardCollectionRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryGetRewardCollectionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDay", wireType)
+			}
+			m.EpochDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2227,139 +2144,6 @@ func (m *QueryGetRewardCollectionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryGetUserLPInfoRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetUserLPInfoRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetUserLPInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryGetUserLPInfoResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetUserLPInfoResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetUserLPInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UserLPInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.UserLPInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *QueryGetLpStatRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2389,6 +2173,25 @@ func (m *QueryGetLpStatRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryGetLpStatRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDay", wireType)
+			}
+			m.EpochDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
