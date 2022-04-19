@@ -1,0 +1,25 @@
+name: Lint Quasar code
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# This workflow makes x86_64 binaries for linux.
+# TODO: add darwin later
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - name: Display go version
+        run: go version
+      - name: Go lint
+        run: make lint

@@ -40,13 +40,13 @@ All the gRPC endpoints documentation can be generated as a swagger file and serv
 First generate the swagger file:
 
 ```bash
-make docs_gen
+make docs-gen
 ```
 
 Then serve it locally using docker:
 
 ```bash
-make docs_serve
+make docs-serve
 ```
 
 #### Web Frontend

@@ -1,0 +1,38 @@
+name: Build Quasar
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# This workflow makes x86_64 binaries for linux.
+# TODO: add darwin later
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64]
+        targetos: [linux]
+
+    name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+        env:
+          GOOS: ${{ matrix.targetos }}
+          GOARCH: ${{ matrix.arch }}
+      - name: Display go version
+        run: go version
+      - name: Build quasarnoded
+        run: make build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: build/quasarnoded
