@@ -23,6 +23,6 @@ host:
 genesis:
   chain_id: "osmosis"
 init:
-  home: "${home_dir}/osmosis"
+  home: "${home_dir}"
 build:
   main: "cmd/osmosisd"

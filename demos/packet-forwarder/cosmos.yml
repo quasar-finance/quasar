@@ -20,6 +20,6 @@ host:
   frontend: ":8083"
   dev-ui: ":12353"
 genesis:
-  chain_id: "quasar2"
+  chain_id: "cosmos"
 init:
-  home: "${home_dir}/quasar2"
+  home: "${home_dir}"

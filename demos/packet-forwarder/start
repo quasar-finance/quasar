@@ -20,12 +20,15 @@ sys.stdout.write(data) ; sys.stdout.flush()
 '
 }
 
-run_in_terminal() {
-  gnome-terminal -- "$@"
+# TODO make macos / darwin version of this
+run_in_terminal_bg() {
+  gnome-terminal -- "$@" &
 }
 
 osmosis() {
   (
+    echo "running osmosis chain"
+
     cd "${project_dir}/../osmosis"
 
     local osmosis_dir="${run_dir}/osmosis"
@@ -43,32 +46,39 @@ osmosis() {
   )
 }
 
-quasar() {
+run_quasar_chain() {
   (
-    local id="$1" ; shift
-    local quasar_dir="${run_dir}/quasar${id}"
+    local name="$1" ; shift
+    local chain_dir="${run_dir}/${name}"
+
+    echo "running ${name} chain"
 
     cd "$project_dir"
 
     if [ "$reset_run" == true ] ; then
-      rm -rf "$quasar_dir"
+      rm -rf "$chain_dir"
     fi
 
-    export home_dir="${quasar_dir}/home"
+    export home_dir="${chain_dir}/home"
     mkdir -p "$home_dir"
 
-    cat "${pf_dir}/quasar${id}.yml" | env_subst >| "${quasar_dir}/config.yml"
+    cat "${pf_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
 
-    ignite chain serve --config "${quasar_dir}/config.yml" --reset-once
+    ignite chain serve --config "${chain_dir}/config.yml" --reset-once
   )
 }
 
+quasar() { run_quasar_chain "quasar" ; }
+cosmos() { run_quasar_chain "cosmos" ; }
+
 all() {
-  gnome-terminal -- "$this_script" osmosis &
+  rm -rf ~/.ignite/
+
+  run_in_terminal_bg "$this_script" osmosis
   sleep 1
-  gnome-terminal -- "$this_script" quasar 1 &
+  run_in_terminal_bg "$this_script" quasar
   sleep 1
-  gnome-terminal -- "$this_script" quasar 2 &
+  run_in_terminal_bg "$this_script" cosmos
 
   wait
 }
