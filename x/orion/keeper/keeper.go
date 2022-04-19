@@ -36,7 +36,6 @@ func NewKeeper(
 	qbankkeeper types.QbankKeeper,
 	qoraclekeeper types.QoracleKeeper,
 	intergammkeeper types.IntergammKeeper,
-
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
