@@ -16,4 +16,6 @@ func TestGetParams(t *testing.T) {
 
 	require.EqualValues(t, params, k.GetParams(ctx))
 	require.EqualValues(t, params.OracleAccounts, k.OracleAccounts(ctx))
+	require.EqualValues(t, params.StableDenoms, k.StableDenoms(ctx))
+	require.EqualValues(t, params.OneHopDenomMap, k.OneHopDenomMap(ctx))
 }
