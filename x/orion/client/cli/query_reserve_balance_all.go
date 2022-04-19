@@ -11,21 +11,23 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdReserveBalance() *cobra.Command {
+func CmdReserveBalanceAll() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "reserve-balance <denom>",
-		Short: "Query reserveBalance",
-		Args:  cobra.ExactArgs(1),
+		Use:   "reserve-balance-all",
+		Short: "Query ReserveBalanceAll",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqDenom := args[0]
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
-			params := &types.QueryReserveBalanceRequest{Denom: reqDenom}
-			res, err := queryClient.ReserveBalance(cmd.Context(), params)
+
+			params := &types.QueryReserveBalanceAllRequest{}
+
+			res, err := queryClient.ReserveBalanceAll(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

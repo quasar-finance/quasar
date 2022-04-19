@@ -10,6 +10,7 @@ import "orion/epoch_lp_info.proto";
 import "orion/reward_collection.proto";
 import "orion/user_lp_info.proto";
 import "orion/lp_stat.proto";
+import "orion/account_info.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/orion/types";
@@ -37,14 +38,21 @@ service Query {
 	rpc RewardCollection(QueryGetRewardCollectionRequest) returns (QueryGetRewardCollectionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/reward_collection";
 	}
-// Queries a UserLPInfo by index.
-	rpc UserLPInfo(QueryGetUserLPInfoRequest) returns (QueryGetUserLPInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/orion/user_lp_info";
-	}
+ 
 // Queries a LpStat by index.
 	rpc LpStat(QueryGetLpStatRequest) returns (QueryGetLpStatResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_stat";
 	}
+// Queries a list of ReserveBalanceAll items.
+	rpc ReserveBalanceAll(QueryReserveBalanceAllRequest) returns (QueryReserveBalanceAllResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/reserve_balance_all";
+	}
+
+// Queries a list of LpEpochPairs items.
+	rpc LpEpochPairs(QueryLpEpochPairsRequest) returns (QueryLpEpochPairsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/lp_epoch_pairs";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -64,36 +72,48 @@ message QueryReserveBalanceRequest {
 message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
-/*
-message QueryGetFeeDataRequest {}
-
-message QueryGetFeeDataResponse {
-	FeeData FeeData = 1 [(gogoproto.nullable) = false];
+ 
+message QueryGetLpPositionRequest {
+	uint64 lpId = 1;
 }
-*/
-message QueryGetLpPositionRequest {}
 
 message QueryGetLpPositionResponse {
 	LpPosition LpPosition = 1 [(gogoproto.nullable) = false];
 }
-message QueryGetEpochLPInfoRequest {}
+message QueryGetEpochLPInfoRequest {
+	uint64 epochDay = 1;
+}
 
 message QueryGetEpochLPInfoResponse {
 	EpochLPInfo EpochLPInfo = 1 [(gogoproto.nullable) = false];
 }
-message QueryGetRewardCollectionRequest {}
+message QueryGetRewardCollectionRequest {
+	uint64 epochDay = 1;
+}
 
 message QueryGetRewardCollectionResponse {
 	RewardCollection RewardCollection = 1 [(gogoproto.nullable) = false];
-}
-message QueryGetUserLPInfoRequest {}
+} 
 
-message QueryGetUserLPInfoResponse {
-	UserLPInfo UserLPInfo = 1 [(gogoproto.nullable) = false];
+message QueryGetLpStatRequest {
+	uint64 epochDay = 1;
 }
-message QueryGetLpStatRequest {}
 
 message QueryGetLpStatResponse {
 	LpStat LpStat = 1 [(gogoproto.nullable) = false];
 }
+message QueryReserveBalanceAllRequest {
+}
+
+message QueryReserveBalanceAllResponse {
+  repeated AccountInfo accInfo = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryLpEpochPairsRequest {
+}
+
+message QueryLpEpochPairsResponse {
+  repeated LpEpochPair lpEpochPairs = 1 [(gogoproto.nullable) = false];
+}
+
 // this line is used by starport scaffolding # 3

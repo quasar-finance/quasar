@@ -1,0 +1,17 @@
+syntax = "proto3";
+package abag.quasarnode.orion;
+
+option go_package = "github.com/abag/quasarnode/x/orion/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+
+// AccountInfo is used for orion module reserve account detail 
+message AccountInfo {
+  string name = 1; // string name of module account
+  string account = 2; //bech32 account string value
+  repeated cosmos.base.v1beta1.Coin balance = 3 
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  
+}

@@ -127,6 +127,14 @@ func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, fo
 	return epochday, found
 }
 
+func (k Keeper) GetLpIdPosition(ctx sdk.Context, lpid uint64) (val types.LpPosition, found bool) {
+	epochday, found := k.GetLPEpochDay(ctx, lpid)
+	if found {
+		return k.GetLpPosition(ctx, epochday, lpid)
+	}
+	return
+}
+
 // GetLpPosition fetch the lpPosition based on the epochday and lpID input
 func (k Keeper) GetLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) (val types.LpPosition, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
@@ -199,6 +207,27 @@ func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 
 	}
 	return lpIDs
+}
+
+// GetAllLpIdList returns all the LpEpochPair present in the KV store.
+func (k Keeper) GetAllLpEpochPairList(ctx sdk.Context) []types.LpEpochPair {
+	var lpepochs []types.LpEpochPair
+	bytePrefix := types.LPPositionKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	// key - {epochday} + {":"} + {LPID}
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		splits := qbanktypes.SplitKeyBytes(key)
+		epochdayStr := string(splits[0])
+		epochday, _ := strconv.ParseUint(epochdayStr, 10, 64)
+		lpIDStr := string(splits[1])
+		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
+		lpepochs = append(lpepochs, types.LpEpochPair{LpId: lpID, EpochDay: epochday})
+	}
+	return lpepochs
 }
 
 // GetDenomList fetch the list of denom used in an epoch day.

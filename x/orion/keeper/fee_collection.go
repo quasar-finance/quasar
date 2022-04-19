@@ -19,6 +19,15 @@ func (k Keeper) GetFeeCollectorAccAddress(feeCollectorName string) sdk.AccAddres
 	return k.accountKeeper.GetModuleAddress(feeCollectorName)
 }
 
+// GetBech32FeeCollectorAccAddress returns bech32 address of orion fee collector account
+func (k Keeper) GetBech32FeeCollectorAccAddress(feeCollectorName string) string {
+	accStr, err := sdk.Bech32ifyAddressBytes("quasar", k.GetFeeCollectorAccAddress(feeCollectorName))
+	if err != nil {
+		panic(err)
+	}
+	return accStr
+}
+
 // GetFeeCollectorBalances gets the account balance of the inputed fee collector name.
 func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string) sdk.Coins {
 	balances := k.bankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
