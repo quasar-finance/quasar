@@ -27,6 +27,9 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdShowEpochLPInfo())
 	cmd.AddCommand(CmdShowRewardCollection())
 	cmd.AddCommand(CmdShowLpStat())
+	cmd.AddCommand(CmdReserveBalanceAll())
+	cmd.AddCommand(CmdLpEpochPairs())
+
 	// this line is used by starport scaffolding # 1
 
 	return cmd

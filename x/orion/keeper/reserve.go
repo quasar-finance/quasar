@@ -11,6 +11,15 @@ func (k Keeper) GetReserveAccAddress() sdk.AccAddress {
 	return k.accountKeeper.GetModuleAddress(types.OrionReserveMaccName)
 }
 
+// GetBech32ReserveAccAddress returns bech32 address of orion reserve account
+func (k Keeper) GetBech32ReserveAccAddress() string {
+	accStr, err := sdk.Bech32ifyAddressBytes("quasar", k.GetReserveAccAddress())
+	if err != nil {
+		panic(err)
+	}
+	return accStr
+}
+
 // GetAllReserveBalances retrieve the balance of orion vault reserve as a slice of
 // sdk.Coin as sdk.Coins
 func (k Keeper) GetAllReserveBalances(ctx sdk.Context) sdk.Coins {

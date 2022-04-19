@@ -10,6 +10,7 @@ import "orion/epoch_lp_info.proto";
 import "orion/reward_collection.proto";
 import "orion/user_lp_info.proto";
 import "orion/lp_stat.proto";
+import "orion/account_info.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/orion/types";
@@ -42,6 +43,16 @@ service Query {
 	rpc LpStat(QueryGetLpStatRequest) returns (QueryGetLpStatResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_stat";
 	}
+// Queries a list of ReserveBalanceAll items.
+	rpc ReserveBalanceAll(QueryReserveBalanceAllRequest) returns (QueryReserveBalanceAllResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/reserve_balance_all";
+	}
+
+// Queries a list of LpEpochPairs items.
+	rpc LpEpochPairs(QueryLpEpochPairsRequest) returns (QueryLpEpochPairsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/lp_epoch_pairs";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -91,4 +102,18 @@ message QueryGetLpStatRequest {
 message QueryGetLpStatResponse {
 	LpStat LpStat = 1 [(gogoproto.nullable) = false];
 }
+message QueryReserveBalanceAllRequest {
+}
+
+message QueryReserveBalanceAllResponse {
+  repeated AccountInfo accInfo = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryLpEpochPairsRequest {
+}
+
+message QueryLpEpochPairsResponse {
+  repeated LpEpochPair lpEpochPairs = 1 [(gogoproto.nullable) = false];
+}
+
 // this line is used by starport scaffolding # 3

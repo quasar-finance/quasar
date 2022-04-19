@@ -7,6 +7,12 @@ import "cosmos/base/v1beta1/coin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
+//LpEpochPair indicates the epoch day on which lpId was created.
+message LpEpochPair {
+  uint64 lpId = 1;
+  uint64 epochDay = 2;
+}
+
 // GaugeLockInfo object is used to save the lockup period, associated approx apy
 // and state whether it is active, and start time of this gauge to check the expected aPY
 // on any given day. Multiple gaugeLockInfo objects will be associated with each LPPosition
