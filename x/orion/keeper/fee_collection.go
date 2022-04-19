@@ -5,14 +5,11 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// There are four types of fee collectors to collect fees for each type of fee
-// aka, vault management fee, vault performance fee, entry fee and exit fee.
+// There are two types of fee collectors to collect fees for each type of fee
+// management fee, vault performance fee
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
 // Perf Fee = A set percentage to be taken from the reward collection.
 // Mgmt Fee = A set percentage to be taken from the users deposit amount.
-// AUDIT NOTE -
-// Initially Performance fee collections is activated. Code should be flexible enough
-// to activate any of the fee type with parameters addition/changes.
 
 // GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human readable name.
 func (k Keeper) GetFeeCollectorAccAddress(feeCollectorName string) sdk.AccAddress {

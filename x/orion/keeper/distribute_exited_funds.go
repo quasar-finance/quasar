@@ -192,6 +192,8 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 			c = c.Sub(mgmtFee)
 			k.qbankKeeper.AddActualWithdrawableAmt(ctx, v.UserAcc, c)
 		}
+		// AUDIT TODO - Need to check if the user has sufficient balance or should orion
+		// Deduce the balance from the module account. And adjust the AddActualWithdrawableAmt argument.
 		userAccAddr, _ := sdk.AccAddressFromBech32(v.UserAcc)
 		k.DeductAccFees(ctx, userAccAddr, types.MgmtFeeCollectorMaccName, mgmtFees)
 
