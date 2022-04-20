@@ -63,9 +63,6 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 
 	k.Logger(ctx).Debug(fmt.Sprintf("Entered ExecuteMeissa|epochday=%v|lockupType=%v\n",
 		epochday, qbanktypes.LockupTypes_name[int32(lockupPeriod)]))
-
-	// strategies, _ := k.GetSubStrategyNames(ctx, types.MeissaStrategyName)
-
 	k.MeissaCoinDistribution(ctx, epochday, lockupPeriod)
 	k.MeissaExit(ctx, epochday, lockupPeriod)
 	k.MeissaWithdraw(ctx, epochday, lockupPeriod)

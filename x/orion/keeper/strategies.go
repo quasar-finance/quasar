@@ -147,36 +147,6 @@ func (k Keeper) GetMeissaStrategyHistPos(ctx sdk.Context, epochday uint64) (curr
 	return currPos, true
 }
 
-/*
-// SetMeissaStrategyTotalHistPos Set the strategy current position
-func (k Keeper) SetMeissaStrategyTotalHistPos(ctx sdk.Context, histPos types.TotalHistPosition, epochday uint64) {
-
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
-	key := types.CreateMeissaEpochPositionKey(epochday)
-	// TODO - Validate this because types.CurrentPosition has pointer elements
-	// inside as fields. In the unit test cases.
-	b := k.cdc.MustMarshal(&histPos)
-	store.Set(key, b)
-}
-
-// GetMeissaStrategyTotalHisPos Get the strategy current position
-func (k Keeper) GetMeissaStrategyTotalHisPos(ctx sdk.Context, epochday uint64) (histPos types.TotalHistPosition, found bool) {
-
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(string(types.MeissaStrategyKBP)))
-	key := types.CreateMeissaEpochPositionKey(epochday)
-
-	b := store.Get(key)
-	if b == nil {
-		return histPos, false
-	}
-	// TODO - Validate this because types.CurrentPosition has pointer elements
-	// inside as fields
-
-	k.cdc.MustUnmarshal(b, &histPos)
-	return histPos, true
-}
-*/
-
 // GetDeployableAmt returns the current deployable amount from the given lockup period.
 // Note - Strategy does not hold todays deposited amount for tomorrows deployment.
 // It acts today itself at the end of epoch. This makes the orion module staking amount as
