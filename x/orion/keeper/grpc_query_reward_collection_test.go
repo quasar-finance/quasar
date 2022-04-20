@@ -10,17 +10,15 @@ import (
 
 	keepertest "github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/orion/types"
 )
 
 func TestRewardCollectionQuery(t *testing.T) {
 	keeper, ctx := keepertest.OrionKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	userAddr := sample.AccAddressStr()
 
 	// TODO broken test
-	_ = createTestUserLPInfo(keeper, ctx, userAddr)
+	item := createTestRewardCollection(keeper, ctx)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetRewardCollectionRequest
@@ -28,9 +26,13 @@ func TestRewardCollectionQuery(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "First",
-			request:  &types.QueryGetRewardCollectionRequest{},
-			response: &types.QueryGetRewardCollectionResponse{},
+			desc: "First",
+			request: &types.QueryGetRewardCollectionRequest{
+				EpochDay: 9, // TODO replace with correct value stored in item
+			},
+			response: &types.QueryGetRewardCollectionResponse{
+				RewardCollection: item,
+			},
 		},
 		{
 			desc: "InvalidRequest",

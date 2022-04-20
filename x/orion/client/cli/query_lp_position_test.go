@@ -2,9 +2,12 @@ package cli_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"google.golang.org/grpc/status"
@@ -21,7 +24,20 @@ func networkWithLpPositionObjects(t *testing.T) (*network.Network, types.LpPosit
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
-	lpPosition := &types.LpPosition{}
+	lpPosition := &types.LpPosition{
+		LpID:                   42,
+		LockID:                 24,
+		IsActive:               false,
+		StartTime:              time.Now().UTC(),
+		BondingStartEpochDay:   2,
+		BondDuration:           5,
+		UnbondingStartEpochDay: 7,
+		UnbondingDuration:      8,
+		PoolID:                 1,
+		Lptoken:                sdk.NewCoin("LPT", sdk.NewInt(100)),
+		Coins:                  sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+		Gaugelocks:             nil,
+	}
 	nullify.Fill(&lpPosition)
 	state.LpPosition = lpPosition
 	buf, err := cfg.Codec.MarshalJSON(&state)
@@ -38,20 +54,24 @@ func TestShowLpPosition(t *testing.T) {
 		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
 	}
 	for _, tc := range []struct {
-		desc string
-		args []string
-		err  error
-		obj  types.LpPosition
+		desc   string
+		idLpId uint64
+		args   []string
+		err    error
+		obj    types.LpPosition
 	}{
 		{
-			desc: "get",
-			args: common,
-			obj:  obj,
+			desc:   "get",
+			idLpId: obj.LpID,
+			args:   common,
+			obj:    obj,
 		},
 	} {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			var args []string
+			args := []string{
+				strconv.FormatUint(tc.idLpId, 10),
+			}
 			args = append(args, tc.args...)
 			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowLpPosition(), args)
 			if tc.err != nil {

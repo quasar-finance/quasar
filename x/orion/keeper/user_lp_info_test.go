@@ -14,7 +14,10 @@ import (
 )
 
 func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context, userAddr string) types.UserLPInfo {
-	item := types.UserLPInfo{}
+	item := types.UserLPInfo{
+		PositionShare: sdk.NewDecWithPrec(12321, 2),
+		Coins:         sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+	}
 	keeper.SetUserLPInfo(ctx, uint64(42), uint64(0), userAddr, item)
 	return item
 }
