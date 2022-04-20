@@ -18,7 +18,7 @@ build:
 
 # Testing
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... | grep -E -v "simapp|e2e")
+PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e")
 
 test:
 	go test -mod=readonly -v $(PACKAGES_UNIT)
