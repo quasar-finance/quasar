@@ -25,13 +25,13 @@ func (k Keeper) OracleAccounts(ctx sdk.Context) (res string) {
 	return
 }
 
-// OracleAccounts returns the OracleAccounts param
+// StableDenoms returns the StableDenoms param
 func (k Keeper) StableDenoms(ctx sdk.Context) (res []string) {
 	k.paramstore.Get(ctx, types.KeyStableDenoms, &res)
 	return
 }
 
-// OracleAccounts returns the OracleAccounts param
+// OneHopDenomMap returns the OneHopIbcDenomMapping param
 func (k Keeper) OneHopDenomMap(ctx sdk.Context) (res []*types.OneHopIbcDenomMapping) {
 	k.paramstore.Get(ctx, types.KeyOneHopDenomMap, &res)
 	return
