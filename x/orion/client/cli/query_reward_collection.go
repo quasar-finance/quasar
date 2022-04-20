@@ -12,18 +12,18 @@ import (
 
 func CmdShowRewardCollection() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-reward-collection <epochday>",
+		Use:   "show-reward-collection <epochDay>",
 		Short: "shows rewardCollection",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			queryClient := types.NewQueryClient(clientCtx)
-			epochday, err := strconv.ParseUint(args[0], 10, 64)
+			epochDay, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
 				return err
 			}
 
-			params := &types.QueryGetRewardCollectionRequest{EpochDay: epochday}
+			params := &types.QueryGetRewardCollectionRequest{EpochDay: epochDay}
 			res, err := queryClient.RewardCollection(context.Background(), params)
 			if err != nil {
 				return err

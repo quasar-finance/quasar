@@ -23,13 +23,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
-				FeeData: &types.FeeData{
-					FeeCollector: "37",
-					FeeType:      17,
-					BlockHeight:  95,
-					Memo:         "96",
-				},
+				Params: types.DefaultParams(),
 				LpPosition: &types.LpPosition{
 					LpID:                   17,
 					LockID:                 84,

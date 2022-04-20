@@ -24,8 +24,10 @@ func TestEpochLPInfoQuery(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "First",
-			request:  &types.QueryGetEpochLPInfoRequest{},
+			desc: "First",
+			request: &types.QueryGetEpochLPInfoRequest{
+				EpochDay: item.EpochDay,
+			},
 			response: &types.QueryGetEpochLPInfoResponse{EpochLPInfo: item},
 		},
 		{

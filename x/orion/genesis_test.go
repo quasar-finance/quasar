@@ -16,12 +16,6 @@ func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 
-		FeeData: &types.FeeData{
-			FeeCollector: "8",
-			FeeType:      42,
-			BlockHeight:  66,
-			Memo:         "52",
-		},
 		LpPosition: &types.LpPosition{
 			LpID:                   85,
 			LockID:                 35,
@@ -55,7 +49,7 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
 
-	require.Equal(t, genesisState.FeeData, got.FeeData)
+	require.Equal(t, genesisState.Params, got.Params)
 	require.Equal(t, genesisState.LpPosition, got.LpPosition)
 	require.Equal(t, genesisState.EpochLPInfo, got.EpochLPInfo)
 	require.Equal(t, genesisState.RewardCollection, got.RewardCollection)

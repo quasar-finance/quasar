@@ -2,9 +2,11 @@ package cli_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"google.golang.org/grpc/status"
@@ -21,7 +23,11 @@ func networkWithEpochLPInfoObjects(t *testing.T) (*network.Network, types.EpochL
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
-	epochLPInfo := &types.EpochLPInfo{}
+	epochLPInfo := &types.EpochLPInfo{
+		EpochDay: 42,
+		TotalLps: 2,
+		TotalTVL: sdk.NewCoin("abc", sdk.NewInt(100)),
+	}
 	nullify.Fill(&epochLPInfo)
 	state.EpochLPInfo = epochLPInfo
 	buf, err := cfg.Codec.MarshalJSON(&state)
@@ -38,20 +44,24 @@ func TestShowEpochLPInfo(t *testing.T) {
 		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
 	}
 	for _, tc := range []struct {
-		desc string
-		args []string
-		err  error
-		obj  types.EpochLPInfo
+		desc       string
+		idEpochDay uint64
+		args       []string
+		err        error
+		obj        types.EpochLPInfo
 	}{
 		{
-			desc: "get",
-			args: common,
-			obj:  obj,
+			desc:       "get",
+			idEpochDay: obj.EpochDay,
+			args:       common,
+			obj:        obj,
 		},
 	} {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			var args []string
+			args := []string{
+				strconv.FormatUint(tc.idEpochDay, 10),
+			}
 			args = append(args, tc.args...)
 			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowEpochLPInfo(), args)
 			if tc.err != nil {
