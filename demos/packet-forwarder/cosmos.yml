@@ -1,7 +1,9 @@
 accounts:
   - name: alice
+    mnemonic: blur service enlist into false certain replace arrow until fatal glory mule design into dilemma palm helmet upper behave gallery into afford candy exercise
     coins: ["20000000uatom", "2000000000stake"]
   - name: bob
+    mnemonic: lucky surface version conduct ketchup cash unfair rival shoulder example demand upset deny tilt very clinic tribe rather renew skirt naive sweet box chicken
     coins: ["10000000uatom", "1000000000stake"]
 validator:
   name: alice

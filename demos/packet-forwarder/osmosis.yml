@@ -1,8 +1,10 @@
 version: 1
 accounts:
   - name: alice
+    mnemonic: cruise scene law sea push expose scorpion wire trick repair wave quote task dose inner denial alpha favorite certain blouse motion flash split lunch
     coins: ["20000000uosmo", "2000000000stake"]
   - name: bob
+    mnemonic: lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool
     coins: ["10000000000000uosmo", "1000000000stake"]
 validator:
   name: alice
