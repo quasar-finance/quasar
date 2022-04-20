@@ -3,6 +3,10 @@
 We want to setup and run 3 blockchains locally, `quasar`, `cosmos`, and `osmosis`.
 These 3 blockchains will be communicating for the purpose of demonstrating a token transfer from `cosmos` to `quasar`, then from `quasar` to osmosis, using the IBC packet forwarding feature.
 
+Both the `gaia` and `osmosis` repositories need to be cloned in a `contrib/` directory at the same level as the `quasar` repository.
+
+The `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
+
 A script is there to run all the demo steps.
 
 ## Setup
