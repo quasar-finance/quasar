@@ -41,9 +41,9 @@ func TestGenesis(t *testing.T) {
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	k, ctx := keepertest.OrionKeeper(t)
-	orion.InitGenesis(ctx, *k, genesisState)
-	got := orion.ExportGenesis(ctx, *k)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	orion.InitGenesis(ctx, k, genesisState)
+	got := orion.ExportGenesis(ctx, k)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

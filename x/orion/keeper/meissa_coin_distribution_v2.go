@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	gamm_types "github.com/abag/quasarnode/x/gamm/types"
+	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -50,8 +50,8 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
 			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, poolAssets))
 
-		maxAvailableTokens := k.getMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, poolAssets)
-		shareOutAmount, err := computeShareOutAmount(poolTotalShare.Amount, poolAssets, maxAvailableTokens)
+		maxAvailableTokens := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, poolAssets)
+		shareOutAmount, err := ComputeShareOutAmount(poolTotalShare.Amount, poolAssets, maxAvailableTokens)
 		if err != nil {
 			continue
 		}
@@ -59,7 +59,7 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 			shareOutAmount))
 
 		// Transfer fund to the strategy global account.
-		coins, err := computeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
+		coins, err := ComputeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
 		if err != nil {
 			continue
 		}
@@ -93,18 +93,18 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 	}
 }
 
-// getMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
+// GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
 // that are in the poolAssets as a sdk.Coins object
-func (k Keeper) getMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, poolAssets []gamm_types.PoolAsset) (res sdk.Coins) {
+func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, poolAssets []gammtypes.PoolAsset) (res sdk.Coins) {
 	for _, asset := range poolAssets {
 		denom := asset.Token.GetDenom()
-		res.Add(sdk.NewCoin(denom, k.getMaxAvailableAmount(ctx, lockupPeriod, denom)))
+		res = res.Add(sdk.NewCoin(denom, k.getMaxAvailableAmount(ctx, lockupPeriod, denom)))
 	}
 	return res
 }
 
-// computeShareOutAmount computes the max number of shares that can be obtained given the maxAvailableTokens (in all-asset deposit mode)
-func computeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gamm_types.PoolAsset, maxAvailableTokens sdk.Coins) (sdk.Int, error) {
+// ComputeShareOutAmount computes the max number of shares that can be obtained given the maxAvailableTokens (in all-asset deposit mode)
+func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammtypes.PoolAsset, maxAvailableTokens sdk.Coins) (sdk.Int, error) {
 	if len(poolAssets) == 0 {
 		return sdk.ZeroInt(), errors.New("error: empty pool assets")
 	}
@@ -121,8 +121,8 @@ func computeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gamm_types.PoolA
 	return shareOutAmount, nil
 }
 
-// computeNeededCoins computes the coins needed to obtain shareOutAmount
-func computeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gamm_types.PoolAsset) (sdk.Coins, error) {
+// ComputeNeededCoins computes the coins needed to obtain shareOutAmount
+func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gammtypes.PoolAsset) (sdk.Coins, error) {
 	res := sdk.NewCoins()
 	if totalSharesAmount.IsZero() && len(poolAssets) > 0 {
 		return res, errors.New("error: zero totalSharesAmount and non-empty poolAssets are illogical")

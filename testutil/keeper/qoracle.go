@@ -1,52 +1,31 @@
 package keeper
 
 import (
-	"testing"
-
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func QoracleKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
+func (i initializer) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
+	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
+	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, i.DB)
 
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	paramsSubspace := typesparams.NewSubspace(cdc,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"QoracleParams",
-	)
+	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		cdc,
+		i.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
 	)
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	return *k
+}
 
-	// Initialize params
-	k.SetParams(ctx, types.DefaultParams())
-
-	return k, ctx
+func (i initializer) SetQoracleDefaultParams(k keeper.Keeper) {
+	k.SetParams(i.Ctx, types.DefaultParams())
 }

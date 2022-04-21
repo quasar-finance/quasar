@@ -14,9 +14,9 @@ import (
 )
 
 func TestPoolRankingQuery(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	item := createTestPoolRanking(keeper, ctx)
+	item := createTestPoolRanking(&keeper, ctx)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetPoolRankingRequest

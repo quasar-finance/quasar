@@ -50,9 +50,9 @@ func TestGenesis(t *testing.T) {
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	k, ctx := keepertest.QoracleKeeper(t)
-	qoracle.InitGenesis(ctx, *k, genesisState)
-	got := qoracle.ExportGenesis(ctx, *k)
+	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	qoracle.InitGenesis(ctx, k, genesisState)
+	got := qoracle.ExportGenesis(ctx, k)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

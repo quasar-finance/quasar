@@ -14,11 +14,10 @@ import (
 )
 
 func TestRewardCollectionQuery(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetOrionKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
 
-	// TODO broken test
-	item := createTestRewardCollection(keeper, ctx)
+	item, epochDay := createTestRewardCollection(&keeper, ctx)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetRewardCollectionRequest
@@ -28,7 +27,7 @@ func TestRewardCollectionQuery(t *testing.T) {
 		{
 			desc: "First",
 			request: &types.QueryGetRewardCollectionRequest{
-				EpochDay: 9, // TODO replace with correct value stored in item
+				EpochDay: epochDay,
 			},
 			response: &types.QueryGetRewardCollectionResponse{
 				RewardCollection: item,

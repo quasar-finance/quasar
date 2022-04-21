@@ -14,8 +14,8 @@ import (
 )
 
 func TestPoolSpotPriceMsgServerCreate(t *testing.T) {
-	k, ctx := keepertest.QoracleKeeper(t)
-	srv := keeper.NewMsgServerImpl(*k)
+	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	srv := keeper.NewMsgServerImpl(k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
 	for i := 0; i < 5; i++ {
@@ -80,8 +80,8 @@ func TestPoolSpotPriceMsgServerUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			k, ctx := keepertest.QoracleKeeper(t)
-			srv := keeper.NewMsgServerImpl(*k)
+			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolSpotPrice{Creator: creator,
 				PoolId:          "1",
@@ -146,8 +146,8 @@ func TestPoolSpotPriceMsgServerDelete(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			k, ctx := keepertest.QoracleKeeper(t)
-			srv := keeper.NewMsgServerImpl(*k)
+			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 
 			_, err := srv.CreatePoolSpotPrice(wctx, &types.MsgCreatePoolSpotPrice{Creator: creator,

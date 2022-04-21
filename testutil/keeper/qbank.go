@@ -25,8 +25,10 @@ func (i initializer) QbankKeeper(paramsKeeper paramskeeper.Keeper, bankKeeper ba
 		paramsSubspace,
 		bankKeeper,
 	)
-	// Initialize params
-	qbankKeeper.SetParams(i.Ctx, types.DefaultParams())
 
 	return qbankKeeper
+}
+
+func (i initializer) SetQbankDefaultParams(k keeper.Keeper) {
+	k.SetParams(i.Ctx, types.DefaultParams())
 }

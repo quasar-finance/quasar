@@ -34,8 +34,8 @@ func createNPoolPosition(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.
 }
 
 func TestPoolPositionGet(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolPosition(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolPosition(&keeper, ctx, 10)
 	for _, item := range items {
 		rst, found := keeper.GetPoolPosition(ctx,
 			item.PoolId,
@@ -49,8 +49,8 @@ func TestPoolPositionGet(t *testing.T) {
 }
 
 func TestPoolPositionRemove(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolPosition(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolPosition(&keeper, ctx, 10)
 	for _, item := range items {
 		keeper.RemovePoolPosition(ctx,
 			item.PoolId,
@@ -63,8 +63,8 @@ func TestPoolPositionRemove(t *testing.T) {
 }
 
 func TestPoolPositionGetAll(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolPosition(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolPosition(&keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllPoolPosition(ctx)),

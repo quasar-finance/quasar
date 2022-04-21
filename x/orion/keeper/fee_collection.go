@@ -27,7 +27,7 @@ func (k Keeper) GetBech32FeeCollectorAccAddress(feeCollectorName string) string 
 
 // GetFeeCollectorBalances gets the account balance of the inputed fee collector name.
 func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string) sdk.Coins {
-	balances := k.bankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
+	balances := k.BankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
 	return balances
 }
 
@@ -42,7 +42,7 @@ func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	if !fees.IsValid() {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
 	}
-	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, feeCollectorName, fees)
+	err := k.BankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, feeCollectorName, fees)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
 	}
@@ -61,7 +61,7 @@ func (k Keeper) DeductVaultFees(ctx sdk.Context, sourceMacc string,
 	if !fees.IsValid() {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
 	}
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, sourceMacc, feeCollectorName, fees)
+	err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, sourceMacc, feeCollectorName, fees)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
 	}

@@ -10,7 +10,7 @@ import (
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 )
 
-func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
+func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilityKeeper capabilitykeeper.Keeper, icaControllerKeeper icacontrollerkeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
@@ -21,13 +21,14 @@ func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper) keeper.Ke
 		i.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
-		capabilitykeeper.ScopedKeeper{},
-		icacontrollerkeeper.Keeper{},
+		capabilityKeeper.ScopeToModule(types.ModuleName),
+		icaControllerKeeper,
 		paramsSubspace,
 	)
 
-	// Initialize params
-	k.SetParams(i.Ctx, types.DefaultParams())
-
 	return k
+}
+
+func (i initializer) SetIntergammDefaultParams(k keeper.Keeper) {
+	k.SetParams(i.Ctx, types.DefaultParams())
 }

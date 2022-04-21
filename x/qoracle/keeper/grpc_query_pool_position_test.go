@@ -15,9 +15,9 @@ import (
 )
 
 func TestPoolPositionQuerySingle(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolPosition(keeper, ctx, 2)
+	msgs := createNPoolPosition(&keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetPoolPositionRequest
@@ -66,9 +66,9 @@ func TestPoolPositionQuerySingle(t *testing.T) {
 }
 
 func TestPoolPositionQueryPaginated(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolPosition(keeper, ctx, 5)
+	msgs := createNPoolPosition(&keeper, ctx, 5)
 
 	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllPoolPositionRequest {
 		return &types.QueryAllPoolPositionRequest{

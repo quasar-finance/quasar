@@ -10,7 +10,7 @@ import (
 )
 
 func TestParamsQuery(t *testing.T) {
-	keeper, ctx := testkeeper.OrionKeeper(t)
+	ctx, keeper := testkeeper.NewTestSetup(t).GetOrionKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
 	params := types.DefaultParams()
 	keeper.SetParams(ctx, params)
