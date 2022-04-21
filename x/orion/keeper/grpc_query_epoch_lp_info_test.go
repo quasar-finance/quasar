@@ -14,9 +14,9 @@ import (
 )
 
 func TestEpochLPInfoQuery(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetOrionKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	item := createTestEpochLPInfo(keeper, ctx)
+	item := createTestEpochLPInfo(&keeper, ctx)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetEpochLPInfoRequest

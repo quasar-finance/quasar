@@ -11,6 +11,6 @@ import (
 )
 
 func setupMsgServer(t testing.TB) (types.MsgServer, context.Context) {
-	k, ctx := keepertest.QoracleKeeper(t)
-	return keeper.NewMsgServerImpl(*k), sdk.WrapSDKContext(ctx)
+	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	return keeper.NewMsgServerImpl(k), sdk.WrapSDKContext(ctx)
 }

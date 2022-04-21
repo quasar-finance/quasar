@@ -13,20 +13,22 @@ import (
 	"github.com/abag/quasarnode/x/orion/types"
 )
 
-func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context, userAddr string) types.UserLPInfo {
+func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context, userAddr string) (types.UserLPInfo, uint64, uint64) {
 	item := types.UserLPInfo{
 		PositionShare: sdk.NewDecWithPrec(12321, 2),
 		Coins:         sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 	}
-	keeper.SetUserLPInfo(ctx, uint64(42), uint64(0), userAddr, item)
-	return item
+	epochDay := uint64(42)
+	lpId := uint64(1)
+	keeper.SetUserLPInfo(ctx, epochDay, lpId, userAddr, item)
+	return item, epochDay, lpId
 }
 
 func TestUserLPInfoGet(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
 	userAddr := sample.AccAddressStr()
-	item := createTestUserLPInfo(keeper, ctx, userAddr)
-	rst, found := keeper.GetUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
+	item, epochDay, lpId := createTestUserLPInfo(&k, ctx, userAddr)
+	rst, found := k.GetUserLPInfo(ctx, epochDay, lpId, userAddr)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
@@ -35,10 +37,10 @@ func TestUserLPInfoGet(t *testing.T) {
 }
 
 func TestUserLPInfoRemove(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
 	userAddr := sample.AccAddressStr()
-	createTestUserLPInfo(keeper, ctx, userAddr)
-	keeper.RemoveUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
-	_, found := keeper.GetUserLPInfo(ctx, uint64(42), uint64(0), userAddr)
+	_, epochDay, lpId := createTestUserLPInfo(&k, ctx, userAddr)
+	k.RemoveUserLPInfo(ctx, epochDay, lpId, userAddr)
+	_, found := k.GetUserLPInfo(ctx, epochDay, lpId, userAddr)
 	require.False(t, found)
 }

@@ -15,9 +15,9 @@ import (
 )
 
 func TestPoolSpotPriceQuerySingle(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolSpotPrice(keeper, ctx, 2)
+	msgs := createNPoolSpotPrice(&keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetPoolSpotPriceRequest
@@ -72,9 +72,9 @@ func TestPoolSpotPriceQuerySingle(t *testing.T) {
 }
 
 func TestPoolSpotPriceQueryPaginated(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolSpotPrice(keeper, ctx, 5)
+	msgs := createNPoolSpotPrice(&keeper, ctx, 5)
 
 	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllPoolSpotPriceRequest {
 		return &types.QueryAllPoolSpotPriceRequest{

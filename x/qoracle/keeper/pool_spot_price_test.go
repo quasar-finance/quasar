@@ -42,8 +42,8 @@ func createStablePrice(keeper *keeper.Keeper, ctx sdk.Context) DenomPrice {
 	return dp
 }
 func TestPoolSpotPriceGet(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolSpotPrice(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolSpotPrice(&keeper, ctx, 10)
 	for _, item := range items {
 		rst, found := keeper.GetPoolSpotPrice(ctx,
 			item.PoolId,
@@ -58,8 +58,8 @@ func TestPoolSpotPriceGet(t *testing.T) {
 	}
 }
 func TestPoolSpotPriceRemove(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolSpotPrice(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolSpotPrice(&keeper, ctx, 10)
 	for _, item := range items {
 		keeper.RemovePoolSpotPrice(ctx,
 			item.PoolId,
@@ -76,8 +76,8 @@ func TestPoolSpotPriceRemove(t *testing.T) {
 }
 
 func TestPoolSpotPriceGetAll(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolSpotPrice(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolSpotPrice(&keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllPoolSpotPrice(ctx)),
@@ -85,9 +85,9 @@ func TestPoolSpotPriceGetAll(t *testing.T) {
 }
 
 func TestStablePrice(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
 	// Input
-	inputDP1 := createStablePrice(keeper, ctx)
+	inputDP1 := createStablePrice(&keeper, ctx)
 	inputDPS := []DenomPrice{inputDP1}
 
 	// Outputs

@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetParams(t *testing.T) {
-	k, ctx := testkeeper.OrionKeeper(t)
+	ctx, k := testkeeper.NewTestSetup(t).GetOrionKeeper()
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)

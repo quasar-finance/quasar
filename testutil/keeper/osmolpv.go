@@ -1,60 +1,48 @@
 package keeper
 
 import (
-	"testing"
-
+	intergammkeeper "github.com/abag/quasarnode/x/intergamm/keeper"
 	"github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
+	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
+	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func OrionKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
+func (i initializer) OrionKeeper(
+	paramsKeeper paramskeeper.Keeper,
+	accountKeeper authkeeper.AccountKeeper,
+	bankKeeper bankkeeper.Keeper,
+	qbankKeeper qbankkeeper.Keeper,
+	qoracleKeeper qoraclekeeper.Keeper,
+	intergammKeeper intergammkeeper.Keeper,
+) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
+	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
+	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, i.DB)
 
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	paramsSubspace := typesparams.NewSubspace(cdc,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"OrionParams",
-	)
-	// TODO use TestKeepers
-	qbankKeeper := newInitializer().QbankKeeper(newInitializer().ParamsKeeper(), nil)
-	qoracleKeeper, _ := QoracleKeeper(t)
+	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		cdc,
+		i.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
-		nil,
-		nil,
+		accountKeeper,
+		bankKeeper,
 		qbankKeeper,
 		qoracleKeeper,
-		nil,
+		intergammKeeper,
 	)
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	return *k
+}
 
-	// Initialize params
-	k.SetParams(ctx, types.DefaultParams())
-
-	return k, ctx
+func (i initializer) SetOrionDefaultParams(k keeper.Keeper) {
+	k.SetParams(i.Ctx, types.DefaultParams())
 }

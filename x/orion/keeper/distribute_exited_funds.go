@@ -71,7 +71,7 @@ func (k Keeper) GetEpochExitAmt(ctx sdk.Context,
 func (k Keeper) SendCoinFromCollectionToAccount(ctx sdk.Context, userAcc string, amt sdk.Coins) error {
 	userAccAddr, _ := sdk.AccAddressFromBech32(userAcc)
 	accName := types.ModuleName
-	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAccAddr, amt)
+	return k.BankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAccAddr, amt)
 }
 
 // DistributeEpochLockupFunds distribute the exited funds to the dipositors.
@@ -216,7 +216,7 @@ func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	// Note - As of now Mint in the orion module reserve acc . The QSR present in the orion module reserve
 	// should not be used for the users distribution. They are considered as locked in
 	// the module reserve account.
-	k.bankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(qsr))
+	k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(qsr))
 	return orions
 }
 

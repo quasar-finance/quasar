@@ -18,7 +18,7 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper      types.BankKeeper
+		BankKeeper      types.BankKeeper
 		accountKeeper   types.AccountKeeper
 		qbankKeeper     types.QbankKeeper
 		qoracleKeeper   types.QoracleKeeper
@@ -49,7 +49,7 @@ func NewKeeper(
 		memKey:          memKey,
 		paramstore:      ps,
 		accountKeeper:   accountkeeper,
-		bankKeeper:      bankkeeper,
+		BankKeeper:      bankkeeper,
 		qbankKeeper:     qbankkeeper,
 		qoracleKeeper:   qoraclekeeper,
 		intergammKeeper: intergammkeeper,

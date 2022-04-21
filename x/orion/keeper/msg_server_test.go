@@ -11,6 +11,6 @@ import (
 )
 
 func setupMsgServer(t *testing.T) (types.MsgServer, context.Context) {
-	k, ctx := keepertest.OrionKeeper(t)
-	return keeper.NewMsgServerImpl(*k), sdk.WrapSDKContext(ctx)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	return keeper.NewMsgServerImpl(k), sdk.WrapSDKContext(ctx)
 }

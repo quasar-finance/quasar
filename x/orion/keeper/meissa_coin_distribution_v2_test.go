@@ -1,15 +1,20 @@
-package keeper
+package keeper_test
 
 import (
 	"github.com/stretchr/testify/require"
 	"testing"
 
-	gamm_types "github.com/abag/quasarnode/x/gamm/types"
+	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	gammtypes "github.com/abag/quasarnode/x/gamm/types"
+	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
+	"github.com/abag/quasarnode/x/orion/types"
+	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func createSampleValidPoolAssetsSlice() []gamm_types.PoolAsset {
-	return []gamm_types.PoolAsset{
+func createSampleValidPoolAssetsSlice() []gammtypes.PoolAsset {
+	return []gammtypes.PoolAsset{
 		{
 			Token:  sdk.NewCoin("abc", sdk.NewInt(80)),
 			Weight: sdk.NewInt(3),
@@ -21,8 +26,8 @@ func createSampleValidPoolAssetsSlice() []gamm_types.PoolAsset {
 	}
 }
 
-func createSampleInvalidPoolAssetsSlice() []gamm_types.PoolAsset {
-	return []gamm_types.PoolAsset{
+func createSampleInvalidPoolAssetsSlice() []gammtypes.PoolAsset {
+	return []gammtypes.PoolAsset{
 		{
 			Token:  sdk.NewCoin("abc", sdk.NewInt(80)),
 			Weight: sdk.NewInt(3),
@@ -34,11 +39,56 @@ func createSampleInvalidPoolAssetsSlice() []gamm_types.PoolAsset {
 	}
 }
 
+func stakeSampleTokens(k *orionkeeper.Keeper, ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, coins sdk.Coins) {
+	if err := k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, coins); err != nil {
+		panic(err)
+	}
+	accName := types.CreateOrionStakingMaccName(lockupPeriod)
+	if err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, types.OrionReserveMaccName, accName, coins); err != nil {
+		panic(err)
+	}
+}
+
+func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
+	var tests = []struct {
+		name         string
+		lockupPeriod qbanktypes.LockupTypes
+		stakedCoins  sdk.Coins
+		poolAssets   []gammtypes.PoolAsset
+		want         sdk.Coins
+	}{
+		{
+			name:         "valid",
+			lockupPeriod: qbankmoduletypes.LockupTypes_Days_7,
+			stakedCoins: sdk.NewCoins(
+				sdk.NewCoin("abc", sdk.NewInt(100)),
+				sdk.NewCoin("def", sdk.NewInt(150)),
+				sdk.NewCoin("xyz", sdk.NewInt(120)),
+				sdk.NewCoin("zyx", sdk.NewInt(50)),
+			),
+			poolAssets: createSampleValidPoolAssetsSlice(),
+			want: sdk.NewCoins(
+				sdk.NewCoin("abc", sdk.NewInt(100)),
+				sdk.NewCoin("xyz", sdk.NewInt(120)),
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, keeper := keepertest.NewTestSetup(t).GetOrionKeeper()
+			stakeSampleTokens(&keeper, ctx, tt.lockupPeriod, tt.stakedCoins)
+			res := keeper.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, tt.lockupPeriod, tt.poolAssets)
+			require.EqualValues(t, tt.want, res)
+		})
+	}
+}
+
 func TestComputeShareOutAmount(t *testing.T) {
 	var tests = []struct {
 		name           string
 		totalShares    sdk.Int
-		poolAssets     []gamm_types.PoolAsset
+		poolAssets     []gammtypes.PoolAsset
 		maxCoins       sdk.Coins
 		error          bool
 		shareOutAmount sdk.Int
@@ -127,7 +177,7 @@ func TestComputeShareOutAmount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shareOutAmount, err := computeShareOutAmount(tt.totalShares, tt.poolAssets, tt.maxCoins)
+			shareOutAmount, err := orionkeeper.ComputeShareOutAmount(tt.totalShares, tt.poolAssets, tt.maxCoins)
 			if tt.error {
 				require.Error(t, err)
 			} else {
@@ -143,7 +193,7 @@ func TestComputeNeededCoins(t *testing.T) {
 		name              string
 		totalSharesAmount sdk.Int
 		shareOutAmount    sdk.Int
-		poolAssets        []gamm_types.PoolAsset
+		poolAssets        []gammtypes.PoolAsset
 		error             bool
 		neededCoins       sdk.Coins
 	}{
@@ -195,7 +245,7 @@ func TestComputeNeededCoins(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			neededCoins, err := computeNeededCoins(tt.totalSharesAmount, tt.shareOutAmount, tt.poolAssets)
+			neededCoins, err := orionkeeper.ComputeNeededCoins(tt.totalSharesAmount, tt.shareOutAmount, tt.poolAssets)
 			if tt.error {
 				require.Error(t, err)
 			} else {

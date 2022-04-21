@@ -26,8 +26,8 @@ func createNPoolInfo(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Pool
 }
 
 func TestPoolInfoGet(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolInfo(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolInfo(&keeper, ctx, 10)
 	for _, item := range items {
 		rst, found := keeper.GetPoolInfo(ctx,
 			item.PoolId,
@@ -40,8 +40,8 @@ func TestPoolInfoGet(t *testing.T) {
 	}
 }
 func TestPoolInfoRemove(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolInfo(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolInfo(&keeper, ctx, 10)
 	for _, item := range items {
 		keeper.RemovePoolInfo(ctx,
 			item.PoolId,
@@ -54,8 +54,8 @@ func TestPoolInfoRemove(t *testing.T) {
 }
 
 func TestPoolInfoGetAll(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	items := createNPoolInfo(keeper, ctx, 10)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	items := createNPoolInfo(&keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllPoolInfo(ctx)),

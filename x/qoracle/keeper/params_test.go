@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetParams(t *testing.T) {
-	k, ctx := testkeeper.QoracleKeeper(t)
+	ctx, k := testkeeper.NewTestSetup(t).GetQoracleKeeper()
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)

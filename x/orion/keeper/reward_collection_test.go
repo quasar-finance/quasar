@@ -12,19 +12,20 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func createTestRewardCollection(keeper *keeper.Keeper, ctx sdk.Context) types.RewardCollection {
+func createTestRewardCollection(keeper *keeper.Keeper, ctx sdk.Context) (types.RewardCollection, uint64) {
 	item := types.RewardCollection{
 		TimeCollected: time.Now().UTC(),
 		Coins:         sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 	}
-	keeper.SetRewardCollection(ctx, 42, item)
-	return item
+	epochDay := uint64(42)
+	keeper.SetRewardCollection(ctx, epochDay, item)
+	return item, epochDay
 }
 
 func TestRewardCollection(t *testing.T) {
-	k, ctx := keepertest.OrionKeeper(t)
-	item := createTestRewardCollection(k, ctx)
-	rst, found := k.GetRewardCollection(ctx, 42)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	item, epochDay := createTestRewardCollection(&k, ctx)
+	rst, found := k.GetRewardCollection(ctx, epochDay)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
@@ -33,9 +34,9 @@ func TestRewardCollection(t *testing.T) {
 }
 
 func TestRemoveRewardCollection(t *testing.T) {
-	k, ctx := keepertest.OrionKeeper(t)
-	createTestRewardCollection(k, ctx)
-	k.RemoveRewardCollection(ctx, 42)
-	_, found := k.GetRewardCollection(ctx, 42)
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	_, epochDay := createTestRewardCollection(&k, ctx)
+	k.RemoveRewardCollection(ctx, epochDay)
+	_, found := k.GetRewardCollection(ctx, epochDay)
 	require.False(t, found)
 }

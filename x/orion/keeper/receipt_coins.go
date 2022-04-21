@@ -35,12 +35,12 @@ func (k Keeper) GetSpotPrice(ctx sdk.Context, denom string) sdk.Dec {
 
 // MintOrion will mint orions from the Orion module and transfer to the orion module reserve account.
 func (k Keeper) MintOrion(ctx sdk.Context, amt sdk.Int) error {
-	return k.bankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(sdk.NewCoin(types.ModuleName, amt)))
+	return k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(sdk.NewCoin(types.ModuleName, amt)))
 }
 
 // BurnOrion will mint orions from the Orion module and transfer to the orion module reserve account.
 func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
-	return k.bankKeeper.BurnCoins(ctx, types.OrionReserveMaccName,
+	return k.BankKeeper.BurnCoins(ctx, types.OrionReserveMaccName,
 		sdk.NewCoins(sdk.NewCoin(types.ModuleName, amt)))
 }
 

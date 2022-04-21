@@ -25,8 +25,8 @@ func createTestPoolRanking(keeper *keeper.Keeper, ctx sdk.Context) types.PoolRan
 }
 
 func TestPoolRankingGet(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	item := createTestPoolRanking(keeper, ctx)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	item := createTestPoolRanking(&keeper, ctx)
 	rst, found := keeper.GetPoolRanking(ctx)
 	require.True(t, found)
 	require.Equal(t,
@@ -36,8 +36,8 @@ func TestPoolRankingGet(t *testing.T) {
 }
 
 func TestPoolRankingRemove(t *testing.T) {
-	keeper, ctx := keepertest.QoracleKeeper(t)
-	createTestPoolRanking(keeper, ctx)
+	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	createTestPoolRanking(&keeper, ctx)
 	keeper.RemovePoolRanking(ctx)
 	_, found := keeper.GetPoolRanking(ctx)
 	require.False(t, found)

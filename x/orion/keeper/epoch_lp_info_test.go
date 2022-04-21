@@ -21,9 +21,9 @@ func createTestEpochLPInfo(keeper *keeper.Keeper, ctx sdk.Context) types.EpochLP
 }
 
 func TestEpochLPInfoGet(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
-	item := createTestEpochLPInfo(keeper, ctx)
-	rst, found := keeper.GetEpochLPInfo(ctx, uint64(42))
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	item := createTestEpochLPInfo(&k, ctx)
+	rst, found := k.GetEpochLPInfo(ctx, item.EpochDay)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
@@ -32,9 +32,9 @@ func TestEpochLPInfoGet(t *testing.T) {
 }
 
 func TestEpochLPInfoRemove(t *testing.T) {
-	keeper, ctx := keepertest.OrionKeeper(t)
-	createTestEpochLPInfo(keeper, ctx)
-	keeper.RemoveEpochLPInfo(ctx, uint64(42))
-	_, found := keeper.GetEpochLPInfo(ctx, uint64(42))
+	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	item := createTestEpochLPInfo(&k, ctx)
+	k.RemoveEpochLPInfo(ctx, item.EpochDay)
+	_, found := k.GetEpochLPInfo(ctx, item.EpochDay)
 	require.False(t, found)
 }
