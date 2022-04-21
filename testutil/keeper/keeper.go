@@ -8,6 +8,7 @@ import (
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	intergammkeeper "github.com/abag/quasarnode/x/intergamm/keeper"
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,6 +35,13 @@ type TestKeepers struct {
 	OrionKeeper      orionkeeper.Keeper
 }
 
+// testModuleAccountPerms returns module account permissions for testing
+func testModuleAccountPerms() map[string][]string {
+	moduleAccPerms := app.GetMaccPerms()
+	moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
+	return moduleAccPerms
+}
+
 // blockModuleAccountAddrs returns all the app's module account addresses that are active
 func blockModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 	modAccAddrs := make(map[string]bool)
@@ -48,7 +56,7 @@ func blockModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 func NewTestSetup(t testing.TB) TestKeepers {
 	initializer := newInitializer()
 
-	maccPerms := app.GetMaccPerms()
+	maccPerms := testModuleAccountPerms()
 	blockedMaccAddresses := blockModuleAccountAddrs(maccPerms)
 
 	paramsKeeper := initializer.ParamsKeeper()
