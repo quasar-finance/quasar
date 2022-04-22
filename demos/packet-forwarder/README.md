@@ -17,7 +17,7 @@ A script is there to run all the demo steps.
 ./demo start_all
 ```
 
-1. Configure and start the `transfer` channel on ignite relayer only and wait for it to finish creating the connections, it might take a couple of minutes.
+2. Configure and start the `transfer` channel on ignite relayer only and wait for it to finish creating the connections, it might take a couple of minutes.
 
 ```bash
 ./demo init_relayer
@@ -27,13 +27,15 @@ Now the 3 blockchains are able to communicate.
 
 ## Token transfer scenario
 
+Alice's address on quasar is: `quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec`
+
 1. Check that Alice on Quasar does not have yet any ATOM:
 
 ```bash
 curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```
 
-1. Now Bob transfers 2000 uatom from `cosmos` to `quasar`
+2. Now Bob transfers 2000 uatom from `cosmos` to `quasar`
 
 ```bash
 ./demo tx_bob_cosmos_to_alice_quasar
@@ -45,10 +47,15 @@ Now the new ATOM transferred to alice on `quasar` should be visibile:
 curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```
 
-1. Alice has the ATOM available in the form of an IBC token on `quasar`. We now transfer it to `osmosis` but doing a multi-hop transaction via `cosmos` using the packet forwarder.
+3. Alice has the ATOM available in the form of an IBC token on `quasar`. We now transfer it to `osmosis` but doing a multi-hop transaction via `cosmos` using the packet forwarder.
+
+Alice's address on osmosis is: `osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq`
+
 
 The receiver address looks like:
 `cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs|transfer/channel-1:osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq`
+
+The initial cosmos address can be a random address. It is in fact a temporary address that will hold the denom + amount, from which the fee will be deducted and retained by cosmos, before being forwarded to osmosis.
 
 We check first that the receiver on `osmosis` does not yet have the atom balance.
 
@@ -59,7 +66,7 @@ curl http://localhost:1312/bank/balances/osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7
 Then we make the tx:
 
 ```bash
-./demo tx_bob_cosmos_to_quasar
+./demo tx_alice_quasar_to_alice_osmosis_via_cosmos
 ```
 
 And we check the balance again for Alice on `osmosis`:
