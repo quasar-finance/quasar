@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
 
 	"github.com/abag/quasarnode/testutil/network"
@@ -35,14 +34,23 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 		identifier string
 		args       []string
 		expectErr  bool
-		respType   proto.Message
+		resp       types.QueryCurrentEpochResponse
 	}{
+		{
+			"query minutely epoch number",
+			"minute",
+			common,
+			false,
+			types.QueryCurrentEpochResponse{
+				CurrentEpoch: int64(1),
+			},
+		},
 		{
 			"query daily epoch number",
 			"day",
 			common,
 			false,
-			&types.QueryCurrentEpochResponse{
+			types.QueryCurrentEpochResponse{
 				CurrentEpoch: int64(1),
 			},
 		},
@@ -51,8 +59,8 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 			"week",
 			common,
 			false,
-			&types.QueryCurrentEpochResponse{
-				CurrentEpoch: int64(0),
+			types.QueryCurrentEpochResponse{
+				CurrentEpoch: int64(1),
 			},
 		},
 		{
@@ -60,7 +68,7 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 			"unavailable",
 			common,
 			true,
-			&types.QueryCurrentEpochResponse{},
+			types.QueryCurrentEpochResponse{},
 		},
 	}
 
@@ -78,46 +86,30 @@ func TestGetCmdCurrentEpoch(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err, out.String())
-				require.NoError(t, clientCtx.Codec.UnmarshalJSON(out.Bytes(), tc.respType), out.String())
+
+				var actualResp types.QueryCurrentEpochResponse
+				err := clientCtx.Codec.UnmarshalJSON(out.Bytes(), &actualResp)
+				require.NoError(t, err)
+				require.Equal(t, tc.resp, actualResp)
 			}
 		})
 	}
 }
 
 func TestGetCmdEpochsInfos(t *testing.T) {
+	var err error
 	network := setupNetwork(t)
-
 	clientCtx := network.Validators[0].ClientCtx
 	common := []string{
 		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
 	}
-	testCases := []struct {
-		name      string
-		args      []string
-		expectErr bool
-		respType  proto.Message
-	}{
-		{
-			"query default genesis epoch infos",
-			common,
-			false,
-			&types.QueryEpochsInfoResponse{
-				Epochs: types.DefaultGenesis().Epochs,
-			},
-		},
-	}
+	cmd := cli.GetCmdEpochsInfos()
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			cmd := cli.GetCmdEpochsInfos()
-			args := tc.args
-			out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, args)
-			if tc.expectErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err, out.String())
-				require.NoError(t, clientCtx.Codec.UnmarshalJSON(out.Bytes(), tc.respType), out.String())
-			}
-		})
-	}
+	out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, common)
+	require.NoError(t, err, out.String())
+
+	var resp types.QueryEpochsInfoResponse
+	err = clientCtx.Codec.UnmarshalJSON(out.Bytes(), &resp)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(resp.Epochs))
 }

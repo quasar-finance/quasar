@@ -53,10 +53,10 @@ func newInitializer() initializer {
 func (i initializer) ParamsKeeper() paramskeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	transientStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	paramsKeeper := paramskeeper.NewKeeper(i.EncodingConfig.Marshaler, i.EncodingConfig.Amino, storeKey, transientStoreKey)
-
 	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
 	i.StateStore.MountStoreWithDB(transientStoreKey, sdk.StoreTypeTransient, i.DB)
+
+	paramsKeeper := paramskeeper.NewKeeper(i.EncodingConfig.Marshaler, i.EncodingConfig.Amino, storeKey, transientStoreKey)
 
 	return paramsKeeper
 }

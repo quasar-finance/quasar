@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/abag/quasarnode/app"
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
