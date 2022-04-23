@@ -41,9 +41,9 @@ docs-serve:
 # Run targets
 
 run:
-	./run.sh
+	scripts/run
 
 run-silent:
-	./run.sh > q.log 2>&1
+	scripts/run > q.log 2>&1
 
-.PHONY: go.mod build test_path test test_simulation docs_gen docs_serve run run_silent
+.PHONY: go.mod build test test-simulation docs-gen docs-serve run run-silent

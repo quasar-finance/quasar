@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
+pf_dir="${project_dir}/demos/packet-forwarder"
+this_script="${pf_dir}/$(basename "${0}")"
+run_dir="${pf_dir}/run"
+reset_run="${RESET:-true}"
+
+fail() {
+  echo "$*"
+  false
+}
+
+cmd_exists() {
+  type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
+}
+
+env_subst() {
+  # shellcheck disable=SC2016
+  python -c '
+import os, sys
+data = sys.stdin.read(65536)
+for v in os.environ:
+  data = data.replace("$%s" % v, os.environ[v])
+  data = data.replace("${%s}" % v, os.environ[v])
+sys.stdout.write(data) ; sys.stdout.flush()
+'
+}
+
+# TODO make macos / darwin version of this
+run_in_terminal_bg() {
+  gnome-terminal -- "$@" &
+}
+
+run_chain() {
+  (
+    local name="$1" ; shift
+    local dir="$1"  ; shift
+
+    echo "running ${name} chain"
+
+    cd "$dir"
+
+    local chain_dir="${run_dir}/${name}"
+
+    if [ "$reset_run" == true ] ; then
+      rm -rf "$chain_dir"
+    fi
+
+    export home_dir="${chain_dir}/home"
+    mkdir -p "$home_dir"
+
+    cat "${pf_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
+
+    ignite chain serve --config "${chain_dir}/config.yml" --reset-once
+  )
+}
+
+start_cosmos()  { run_chain "cosmos"  "${project_dir}/../contrib/gaia"  ; }
+start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis" ; }
+start_quasar()  { run_chain "quasar"  "${project_dir}"                    ; }
+
+start_all() {
+  rm -rf ~/.ignite/
+
+  run_in_terminal_bg "$this_script" start_osmosis
+  sleep 1
+  run_in_terminal_bg "$this_script" start_quasar
+  sleep 1
+  run_in_terminal_bg "$this_script" start_cosmos
+
+  wait
+}
+
+init_relayer() {
+  ignite relayer configure \
+    --source-rpc "http://localhost:26659" \
+    --source-faucet "http://localhost:4500" \
+    --source-account default \
+    --source-gaslimit 300000 \
+    --source-gasprice 0.00025stake \
+    --source-prefix quasar \
+    \
+    --target-rpc "http://localhost:26559" \
+    --target-faucet "http://localhost:4501" \
+    --target-account default \
+    --target-gaslimit 300000 \
+    --target-gasprice 0.00025stake \
+    --target-prefix osmo
+
+  ignite relayer configure \
+    --source-rpc "http://localhost:26659" \
+    --source-faucet "http://localhost:4500" \
+    --source-account default \
+    --source-gaslimit 300000 \
+    --source-gasprice 0.00025stake \
+    --source-prefix quasar \
+    \
+    --target-rpc "http://localhost:26669" \
+    --target-faucet "http://localhost:4502" \
+    --target-account default \
+    --target-gaslimit 300000 \
+    --target-gasprice 0.00025stake \
+    --target-prefix cosmos
+
+  ignite relayer configure \
+    --source-rpc "http://localhost:26559" \
+    --source-faucet "http://localhost:4501" \
+    --source-account default \
+    --source-gaslimit 300000 \
+    --source-gasprice 0.00025stake \
+    --source-prefix osmo \
+    \
+    --target-rpc "http://localhost:26669" \
+    --target-faucet "http://localhost:4502" \
+    --target-account default \
+    --target-gaslimit 300000 \
+    --target-gasprice 0.00025stake \
+    --target-prefix cosmos
+
+  ignite relayer connect
+}
+
+tx_bob_cosmos_to_alice_quasar() {
+  local home_dir="${run_dir}/cosmos/home"
+
+  gaiad \
+    --home "$home_dir" \
+    --node=http://localhost:26669 \
+    --chain-id cosmos \
+    tx --from bob \
+    ibc-transfer transfer \
+    transfer channel-0 \
+    quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec \
+    2000uatom
+}
+
+tx_alice_quasar_to_alice_osmosis_via_cosmos() {
+  local home_dir="${run_dir}/quasar/home"
+
+  quasarnoded \
+    --home "$home_dir" \
+    --node=http://localhost:26659 \
+    --chain-id quasar \
+    tx --from alice \
+    ibc-transfer transfer \
+    transfer channel-1 \
+    "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs|transfer/channel-1:osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" \
+    1000ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9
+}
+
+tx_alice_cosmos_to_alice_osmosis() {
+  local home_dir="${run_dir}/cosmos/home"
+
+  gaiad \
+    --home "$home_dir" \
+    --node=http://localhost:26669 \
+    --chain-id cosmos \
+    tx --from alice \
+    ibc-transfer transfer \
+    transfer channel-1 \
+    osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq \
+    1000uatom
+}
+
+
+test -d "${project_dir}/../contrib/gaia"    || fail "gaia dir not found"
+test -d "${project_dir}/../contrib/osmosis" || fail "osmosis dir not found"
+
+cmd_exists "gaiad"
+cmd_exists "osmosisd"
+cmd_exists "quasarnoded"
+
+"$@"
