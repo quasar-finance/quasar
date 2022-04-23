@@ -151,6 +151,21 @@ tx_alice_quasar_to_alice_osmosis_via_cosmos() {
     1000ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9
 }
 
+tx_alice_cosmos_to_alice_osmosis() {
+  local home_dir="${run_dir}/cosmos/home"
+
+  gaiad \
+    --home "$home_dir" \
+    --node=http://localhost:26669 \
+    --chain-id cosmos \
+    tx --from alice \
+    ibc-transfer transfer \
+    transfer channel-1 \
+    osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq \
+    1000uatom
+}
+
+
 test -d "${project_dir}/../contrib/gaia"    || fail "gaia dir not found"
 test -d "${project_dir}/../contrib/osmosis" || fail "osmosis dir not found"
 

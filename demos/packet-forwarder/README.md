@@ -50,15 +50,28 @@ Now the 3 blockchains are able to communicate.
 
 ## Token transfer scenario
 
+1. Get the Alice's address in the quasar chain. 
+In this demo; users address is already fixed in the .yml file with mnemonics.
+
+In the demos/packet-forwarder directory.
+```bash
+quasarnoded keys list --home run/quasar/home/
+```
+
 Alice's address on quasar is: `quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec`
 
-1. Check that Alice on Quasar does not have yet any ATOM:
+2. Check that Alice on Quasar does not have yet any ATOM:
 
 ```bash
 curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```
+or 
 
-2. Now Bob transfers 2000 uatom from `cosmos` to `quasar`
+```bash 
+quasarnoded q bank balances $(quasarnoded keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
+```
+
+3. Now Bob transfers 2000 uatom from `cosmos` to `quasar`
 
 ```bash
 ./demo tx_bob_cosmos_to_alice_quasar
@@ -70,9 +83,15 @@ Now the new ATOM transferred to alice on `quasar` should be visibile:
 curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```
 
+or 
+
+```bash
+quasarnoded q bank balances $(quasarnoded keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
+```
+
 3. Alice has the ATOM available in the form of an IBC token on `quasar`. We now transfer it to `osmosis` but doing a multi-hop transaction via `cosmos` using the packet forwarder.
 
-Alice's address on osmosis is: `osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq`
+If Alice's address on osmosis is: `osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq`
 
 
 The receiver address looks like:
@@ -86,6 +105,18 @@ We check first that the receiver on `osmosis` does not yet have the atom balance
 curl http://localhost:1312/bank/balances/osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq
 ```
 
+or 
+Alice's address in osmosis. 
+
+In the demos/packet-forwarder directory.
+
+```
+osmosisd keys show -a alice --home run/osmosis/home
+```
+```
+osmosisd q bank balances $(osmosisd keys show -a alice --home run/osmosis/home) --home run/osmosis/home/ --node http://localhost:26559
+```
+
 Then we make the tx:
 
 ```bash
@@ -96,5 +127,36 @@ And we check the balance again for Alice on `osmosis`:
 ```bash
 curl http://localhost:1312/bank/balances/osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq
 ```
+or 
+
+```
+osmosisd q bank balances $(osmosisd keys show -a alice --home run/osmosis/home) --home run/osmosis/home/ --node http://localhost:26559
+```
 
 It should display the 1000 IBC denom for the original ATOM.
+
+4. Send 1000 uatom (one hop ibc transfer) from cosmos-hub to osmosis using alice as sender and receiver.
+
+```
+/demo tx_alice_cosmos_to_alice_osmosis
+```
+
+and verify the balance 
+
+```
+curl http://localhost:1312/bank/balances/osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq
+```
+
+or 
+
+```
+osmosisd q bank balances $(osmosisd keys show -a alice --home run/osmosis/home) --home run/osmosis/home/ --node http://localhost:26559
+```
+
+This step is to verify that the final denom that reaches to osmosis via both the paths are same. 
+Path #1 `quasar` (one hop atom hex hash ( `cosmos-hub` -> `quasar` ) -> `cosmos-hub` -> `osmosis` 
+Path #2 `cosmos-hub` -> `osmosis`  
+
+This step should update the alice ibc hexh hash atom balance to be increased by the sent amount.
+
+### Thanks for runnig demo ###
