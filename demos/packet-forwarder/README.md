@@ -1,23 +1,46 @@
 # IBC Packet forwarder demo
+This demo tutorial demonstrates the working of multi-hop packet forwarding by using three chains from their latest source code in the local environment. The three chains used for the demo purpose are `quasar`, `cosmos-hub`, and `osmosis`. 
 
-We want to setup and run 3 blockchains locally, `quasar`, `cosmos`, and `osmosis`.
+Repo links - 
+`quasar` https://github.com/quasar-finance/quasar
+`cosmos-hub`  https://github.com/quasar-finance/gaia 
+`osmosis` https://github.com/osmosis-labs/osmosis
+`multi-hop packet forwarder` https://github.com/strangelove-ventures/packet-forward-middleware
+
 These 3 blockchains will be communicating for the purpose of demonstrating a token transfer from `cosmos` to `quasar`, then from `quasar` to osmosis, using the IBC packet forwarding feature.
 
-Both the `gaia` and `osmosis` repositories need to be cloned in a `contrib/` directory at the same level as the `quasar` repository.
+## Prerequisits - 
+1. Both the `gaia` and `osmosis` repositories need to be cloned in a `contrib/` directory at the same level as the `quasar` repository.
 
-The `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
+2. The cosmos-hub `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
+   
+3. `osmosis` require go version 1.18 
+4. `ignite` latest version should be installed.
+Ref - [https://docs.ignite.com/guide/install.html]
+   
+5. `gnome terminal` should also be installed if not already installed.
+For ubuntu - 
+   ```bash 
+        sudo apt-get install gnome-terminal
+   ```
+
 
 A script is there to run all the demo steps.
 
 ## Setup
+1. Go to the `quasar` cloned directory, and cd demos/packet-forwarder. A script is there to run all the demo steps.
+   
+   ```bash 
+   cd demos/packet-forwarder
+   ```
 
-1. Start 3 blockchains locally
+2. Start 3 blockchains locally
 
 ```bash
 ./demo start_all
 ```
 
-2. Configure and start the `transfer` channel on ignite relayer only and wait for it to finish creating the connections, it might take a couple of minutes.
+3. Configure and start the `transfer` channel on ignite relayer only and wait for it to finish creating the connections, it might take a couple of minutes.
 
 ```bash
 ./demo init_relayer
