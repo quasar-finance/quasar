@@ -5,8 +5,23 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 
+
+message WhiteListedDenomInOrion {
+  // option (gogoproto.goproto_stringer) = false;
+
+  string originName = 1 [(gogoproto.moretags) = "yaml:\"origin_name\""]; // Original denom name i.e. uatom
+  string onehopQuasar = 2  [(gogoproto.moretags) = "yaml:\"onehop_quasar\""]; // one hop ibc denom representation in quasar
+  string onehopOsmo = 3 [(gogoproto.moretags) = "yaml:\"onehop_osmo\""]; // one hop ibc denom representation in osmo
+  // Representation in the other chains can be added in the future.
+}
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
-  
+  string minOrionEpochDollarDeposit                = 1 [
+    (gogoproto.moretags)   = "yaml:\"min_orion_epoch_dollar_deposit\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  repeated WhiteListedDenomInOrion whiteListedDenomsInOrion = 2 
+  [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"whitelisted_denoms_in_orion\""];
 }
