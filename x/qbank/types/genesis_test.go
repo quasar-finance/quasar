@@ -30,11 +30,11 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid:    true,
 		},
 		{
-			desc:     "valid genesis state",
+			desc:     "invalid empty genesis state",
 			genState: &types.GenesisState{
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
-			valid: true,
+			valid: false, // Genesis params can not be nil
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {
