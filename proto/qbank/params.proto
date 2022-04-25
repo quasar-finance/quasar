@@ -17,7 +17,7 @@ message WhiteListedDenomInOrion {
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
-  string minOrionEpochDollarDeposit                = 1 [
+  string minOrionEpochDenomDollarDeposit                = 1 [
     (gogoproto.moretags)   = "yaml:\"min_orion_epoch_dollar_deposit\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false

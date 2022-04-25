@@ -93,3 +93,39 @@ func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
 	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
 	store.Delete(key)
 }
+
+// GetUserClaimedAmt get the current value of user's total claimed amount so far.
+// Key - types.UserClaimedKBP + {userAccount} + {":"} + {VaultID}
+func (k Keeper) GetUserClaimedAmt(ctx sdk.Context, uid, vaultID string) (val types.QCoins, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimedKBP)
+	b := store.Get(types.CreateUsersClaimKey(uid, vaultID, types.Sep))
+
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// AddUserClaimedRewards adds user's claimed amount in sdk.Coins, to maintain
+// users total aggregated claim amount
+// This method is called by message server claim method, when a successful claim is done.
+// key - types.UserClaimedKBP + {userAccount} + {":"} + {VaultID}
+func (k Keeper) AddUserClaimedRewards(ctx sdk.Context, uid, vaultID string, coins sdk.Coins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimedKBP)
+	key := types.CreateUsersClaimKey(uid, vaultID, types.Sep)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		qcoins.Coins = coins
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	} else {
+		k.cdc.MustUnmarshal(b, &qcoins)
+		for _, coin := range coins {
+			qcoins.Coins = qcoins.Coins.Add(coin)
+		}
+		value := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, value)
+	}
+}

@@ -8,7 +8,7 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.MinOrionEpochDollarDeposit(ctx),
+		k.MinOrionEpochDenomDollarDeposit(ctx),
 		k.WhiteListedDenomsInOrion(ctx),
 	)
 }
@@ -18,9 +18,9 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
 }
 
-// MinOrionEpochDollarDeposit returns the value of min epoch dollar deposit amount
-func (k Keeper) MinOrionEpochDollarDeposit(ctx sdk.Context) (res sdk.Dec) {
-	k.paramstore.Get(ctx, types.KeyMinOrionEpochDollarDeposit, &res)
+// MinOrionEpochDenomDollarDeposit returns the value of min epoch dollar deposit amount
+func (k Keeper) MinOrionEpochDenomDollarDeposit(ctx sdk.Context) (res sdk.Dec) {
+	k.paramstore.Get(ctx, types.KeyMinOrionEpochDenomDollarDeposit, &res)
 	return
 }
 

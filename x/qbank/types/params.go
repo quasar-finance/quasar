@@ -14,10 +14,10 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 var (
-	KeyMinOrionEpochDollarDeposit = []byte("MinOrionEpochDollarDeposit")
-	KeyWhiteListedDenomsInOrion   = []byte("WhiteListedDenomsInOrion")
+	KeyMinOrionEpochDenomDollarDeposit = []byte("MinOrionEpochDenomDollarDeposit")
+	KeyWhiteListedDenomsInOrion        = []byte("WhiteListedDenomsInOrion")
 
-	DefaultMinOrionEpochDollarDeposit sdk.Dec = sdk.NewDecWithPrec(100, 0) // 100.0 Dollar
+	DefaultMinOrionEpochDenomDollarDeposit sdk.Dec = sdk.NewDecWithPrec(100, 0) // 100.0 Dollar
 
 	// AUDIT NOTE - Below commented value are used for local testing -with different values of ibc hexh hash.
 	// And should be uncommented in the final production code.
@@ -37,22 +37,22 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(minOrionEpochDollarDeposit sdk.Dec,
+func NewParams(minOrionEpochDenomDollarDeposit sdk.Dec,
 	whiteListedDenomsInOrion []WhiteListedDenomInOrion) Params {
 	return Params{
-		MinOrionEpochDollarDeposit: minOrionEpochDollarDeposit,
-		WhiteListedDenomsInOrion:   whiteListedDenomsInOrion}
+		MinOrionEpochDenomDollarDeposit: minOrionEpochDenomDollarDeposit,
+		WhiteListedDenomsInOrion:        whiteListedDenomsInOrion}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultMinOrionEpochDollarDeposit, DefaultWhiteListedDenomsInOrion)
+	return NewParams(DefaultMinOrionEpochDenomDollarDeposit, DefaultWhiteListedDenomsInOrion)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyMinOrionEpochDollarDeposit, &p.MinOrionEpochDollarDeposit, validateMinOrionEpochDollarDeposit),
+		paramtypes.NewParamSetPair(KeyMinOrionEpochDenomDollarDeposit, &p.MinOrionEpochDenomDollarDeposit, validateMinOrionEpochDenomDollarDeposit),
 		paramtypes.NewParamSetPair(KeyWhiteListedDenomsInOrion, &p.WhiteListedDenomsInOrion, validateWhiteListedDenomsInOrion),
 	}
 }
@@ -60,7 +60,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 // Validate validates the set of params
 func (p Params) Validate() error {
 
-	if err := validateMinOrionEpochDollarDeposit(p.MinOrionEpochDollarDeposit); err != nil {
+	if err := validateMinOrionEpochDenomDollarDeposit(p.MinOrionEpochDenomDollarDeposit); err != nil {
 		return err
 	}
 
@@ -76,18 +76,18 @@ func (p Params) String() string {
 	return string(out)
 }
 
-// validateMinOrionEpochDollarDeposit validates the MinOrionEpochDollarDeposit param
-func validateMinOrionEpochDollarDeposit(i interface{}) error {
+// validateMinOrionEpochDenomDollarDeposit validates the MinOrionEpochDenomDollarDeposit param
+func validateMinOrionEpochDenomDollarDeposit(i interface{}) error {
 	v, ok := i.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
 	if v.IsNil() {
-		return fmt.Errorf("minOrionEpochDollarDeposit must be not nil")
+		return fmt.Errorf("minOrionEpochDenomDollarDeposit must be not nil")
 	}
 	if v.IsNegative() {
-		return fmt.Errorf("minOrionEpochDollarDeposit must be positive: %s", v)
+		return fmt.Errorf("minOrionEpochDenomDollarDeposit must be positive: %s", v)
 	}
 
 	return nil

@@ -189,3 +189,42 @@ func (k Keeper) EmptyActualWithdrawableAmt(ctx sdk.Context, uid, denom string) {
 	key := types.CreateWithdrawableKey(uid, denom, types.Sep)
 	store.Delete(key)
 }
+
+///////////////////////////////////////////////////////////////////////////////////
+////////////// Methods for the users withdraw amount //////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+// GetTotalWithdrawAmt fetch the total tokens withdraw so far from the previous deposits
+// Key = types.TotalWithdrawKeyKBP + {uid} + ":" + {vaultID}
+func (k Keeper) GetTotalWithdrawAmt(ctx sdk.Context, uid, vault string) (val types.QCoins, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.TotalWithdrawKeyKBP)
+	key := types.CreateTotalWithdrawKey(uid, vault, types.Sep)
+	b := store.Get(key)
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// AddTotalWithdrawAmt adds total tokens withdraw from to the store for a given user and vault.
+// Key = types.TotalWithdrawKeyKBP + {uid} + ":" + {vaultID}
+func (k Keeper) AddTotalWithdrawAmt(ctx sdk.Context, uid, vaultID string, coins sdk.Coins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.TotalWithdrawKeyKBP)
+	key := types.CreateTotalWithdrawKey(uid, vaultID, types.Sep)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		qcoins.Coins = coins
+		b := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, b)
+	} else {
+		var storedqcoins types.QCoins
+		k.cdc.MustUnmarshal(b, &storedqcoins)
+		for _, coin := range coins {
+			storedqcoins.Coins = append(storedqcoins.Coins, coin)
+		}
+		value := k.cdc.MustMarshal(&storedqcoins)
+		store.Set(key, value)
+	}
+}

@@ -58,6 +58,8 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 			return nil, err
 		}
 
+		k.AddTotalWithdrawAmt(ctx, depositor, vaultId, coins)
+
 	default:
 		return nil, types.ErrInvalidVaultId
 	}

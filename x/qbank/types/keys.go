@@ -47,7 +47,9 @@ var (
 	UserDepositKBP           = []byte{0x04}
 	WithdrawableKeyKBP       = []byte{0x05}
 	UserClaimKBP             = []byte{0x06}
-	ActualWithdrawableKeyKBP = []byte{0x07}
+	UserClaimedKBP           = []byte{0x07}
+	ActualWithdrawableKeyKBP = []byte{0x08}
+	TotalWithdrawKeyKBP      = []byte{0x09}
 
 	// TODO Vault level prefix to be used.
 )
@@ -188,6 +190,17 @@ func CreateWithdrawableKey(uid, denom, sep string) []byte {
 	return b.Bytes()
 }
 
+// CreateWithdrawableKey create key for the total withdraw KV store to fetch current
+// total value of coins that users have successfully withdraw
+// Key = {uid} + ":" + {vault}
+func CreateTotalWithdrawKey(uid, vault, sep string) []byte {
+	var b bytes.Buffer
+	b.WriteString(uid)
+	b.WriteString(sep)
+	b.WriteString(vault)
+	return b.Bytes()
+}
+
 // CreateWithdrawableKey create key for the lockup period based withdrawable KV store to fetch current
 // withdrawable amount by a given user, denom and lockup period
 // Key = {denom} + ":" + {uid} + ":" + {lockupPeriod}
@@ -210,8 +223,8 @@ func CreateWithdrawCountKey() []byte {
 	return createStoreKey(WithdrawCountKey)
 }
 
-// Claim key
-
+// CreateUsersClaimKey create keys for users claim/claimed amount
+// Key = {uid} + ":" + {vaultID}
 func CreateUsersClaimKey(uid, vaultID, sep string) []byte {
 	var b bytes.Buffer
 	b.WriteString(uid)

@@ -46,6 +46,9 @@ func TestClaimRewards(t *testing.T) {
 	eventtest.AssertEventEmitted(t, ctx, types.TypeEvtClaimRewards)
 
 	balance := setup.Keepers.BankKeeper.GetBalance(setup.Ctx, userAddr, "QSR")
+	totalClaimed, _ := k.GetUserClaimedAmt(setup.Ctx, userAddr.String(), "orion")
+
 	require.Equal(t, targetAmount, balance.Amount)
 	require.Equal(t, "QSR", balance.Denom)
+	require.Equal(t, sdk.NewCoins(sdk.NewCoin("QSR", targetAmount)), totalClaimed.Coins)
 }

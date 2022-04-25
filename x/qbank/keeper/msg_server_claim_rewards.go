@@ -38,6 +38,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 			}
 
 			k.ClaimAll(ctx, depositor, vaultId)
+			k.AddUserClaimedRewards(ctx, depositor, vaultId, qcoins.Coins)
 		}
 
 	default:
