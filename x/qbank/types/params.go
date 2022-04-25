@@ -101,20 +101,30 @@ func validateWhiteListedDenomsInOrion(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 	var is_invalid_denom bool
-	for _, v := range WhiteListedDenomsInOrion {
+	for _, d := range WhiteListedDenomsInOrion {
+
 		ibcPrefix := ibctransfertypes.DenomPrefix + "/"
-		if strings.HasPrefix(v.OnehopQuasar, ibcPrefix) {
-			hexHash := v.OnehopQuasar[len(ibcPrefix):]
-			_, err := ibctransfertypes.ParseHexHash(hexHash)
-			if err != nil {
+
+		if d.OriginName == "uqsar" {
+			// d.OnehopQuasar is native token of quasar chain.
+			if d.OriginName != d.OnehopQuasar {
 				is_invalid_denom = true
 			}
 		} else {
-			is_invalid_denom = true
+			// OnehopQuasar is ibc token transfered from other chain.
+			if strings.HasPrefix(d.OnehopQuasar, ibcPrefix) {
+				hexHash := d.OnehopQuasar[len(ibcPrefix):]
+				_, err := ibctransfertypes.ParseHexHash(hexHash)
+				if err != nil {
+					is_invalid_denom = true
+				}
+			} else {
+				is_invalid_denom = true
+			}
 		}
 
-		if strings.HasPrefix(v.OnehopOsmo, ibcPrefix) {
-			hexHash := v.OnehopQuasar[len(ibcPrefix):]
+		if strings.HasPrefix(d.OnehopOsmo, ibcPrefix) {
+			hexHash := d.OnehopOsmo[len(ibcPrefix):]
 			_, err := ibctransfertypes.ParseHexHash(hexHash)
 			if err != nil {
 				is_invalid_denom = true
@@ -126,7 +136,7 @@ func validateWhiteListedDenomsInOrion(v interface{}) error {
 	// This failure will indicates to lookinto the qbank params.
 	if is_invalid_denom {
 		return sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer,
-			"incorrect once hop ibc param is set")
+			"incorrect one hop ibc param is set")
 	}
 	return nil
 }
