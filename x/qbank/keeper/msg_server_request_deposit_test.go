@@ -15,6 +15,10 @@ import (
 func TestRequestDeposit(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	k := setup.Keepers.QbankKeeper
+	params := k.GetParams(setup.Ctx)
+	// Explicitly enable the qbank
+	params.Enabled = true
+	k.SetParams(setup.Ctx, params)
 	userAddr := sample.AccAddress()
 	mintAmount := sdk.NewInt(int64(1000000000))
 	initialBalance := sdk.NewInt(int64(50))

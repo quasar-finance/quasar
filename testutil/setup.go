@@ -71,7 +71,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper)
+	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper)
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, icaControllerKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper)
