@@ -12,13 +12,19 @@ import (
 // RequestDeposit process the deposit request transaction message and store in the KV store
 // With appropriate key and value combinations so the store can be used efficiently.
 func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDeposit) (*types.MsgRequestDepositResponse, error) {
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.Enabled(ctx) {
+		return nil, types.ErrQbankNotEnabled
+	}
 
 	depositor := msg.GetCreator()
 	coin := msg.GetCoin()
 	lockupPeriod := msg.GetLockupPeriod()
-	// TODO get current epoch
-	currentEpoch := uint64(ctx.BlockHeight())
+
+	currentEpoch := uint64(k.epochsKeeper.GetEpochInfo(ctx,
+		k.OrionEpochIdentifier(ctx)).CurrentEpoch)
 
 	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {

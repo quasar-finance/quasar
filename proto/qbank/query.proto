@@ -2,11 +2,8 @@ syntax = "proto3";
 package abag.quasarnode.qbank;
 
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
-import "qbank/params.proto";
-import "qbank/deposit.proto";
-import "qbank/withdraw.proto";
- import "qbank/common.proto";
+ import "qbank/params.proto";
+  import "qbank/common.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";

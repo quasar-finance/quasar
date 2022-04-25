@@ -454,6 +454,7 @@ func New(
 		keys[qbankmoduletypes.MemStoreKey],
 		app.GetSubspace(qbankmoduletypes.ModuleName),
 		app.BankKeeper,
+		*app.EpochsKeeper,
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
