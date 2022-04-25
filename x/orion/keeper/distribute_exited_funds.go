@@ -8,11 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Note - Managing the amount to exit is the strategy concerns. But orion should make sure that users
-// will get the same equivalent tokens of deposited tokens based on current market value.
-
-// AddEpochExitAmt adds exited amount from the osmosis pools on a given epochday.
-// Key - {types.ExitKBP} + {epochday} +  {":"} + {denom}
+// AddEpochExitAmt adds exited denom amount collection from osmosis pools on a
+// given epoch to the kv store
+// Key - {types.ExitKBP} + {epochday} +  {":"} + {denom}, Value = sdk.Coin
 func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochday uint64, coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
 	key := types.CreateEpochDenomKey(epochday, coin.Denom)
@@ -33,8 +31,8 @@ func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochday uint64, coin sdk.Coin)
 	}
 }
 
-// SubEpochExitAmt subs exited amount from the osmosis pools on a given epoch day
-// Key -  {types.ExitKBP} + {epochday} +  {":"} + {denom}
+// SubEpochExitAmt subs exited denom amount collection on a given epoch to the kv store
+// Key -  {types.ExitKBP} + {epochday} +  {":"} + {denom}, Value = sdk.Coin
 func (k Keeper) SubEpochExitAmt(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
 	key := types.CreateEpochDenomKey(epochday, coin.Denom)
@@ -51,7 +49,8 @@ func (k Keeper) SubEpochExitAmt(ctx sdk.Context, uid string, coin sdk.Coin, epoc
 	}
 }
 
-// GetEpochExitAmt returns the amount of exit positions on a given exit epoch day.
+// GetEpochExitAmt returns the denom amount of exited from on a given epoch day.
+// Key -  {types.ExitKBP} + {epochday} +  {":"} + {denom}, Value = sdk.Coin
 func (k Keeper) GetEpochExitAmt(ctx sdk.Context,
 	epochday uint64, denom string) sdk.Coin {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
@@ -66,24 +65,23 @@ func (k Keeper) GetEpochExitAmt(ctx sdk.Context,
 	return coin
 }
 
-// SendCoinFromCollectionToAccount transfer balance from account to lockup reward account
-// AUDIT  | Module account is the collection account for the deployed fund.
-func (k Keeper) SendCoinFromCollectionToAccount(ctx sdk.Context, userAcc string, amt sdk.Coins) error {
+// SendCoinFromExitCollectionToAccount transfer tokens from orion module account to user account.
+// Orion Module account is the exit collection account for the deployed fund.
+func (k Keeper) SendCoinFromExitCollectionToAccount(ctx sdk.Context, userAcc string, amt sdk.Coins) error {
 	userAccAddr, _ := sdk.AccAddressFromBech32(userAcc)
 	accName := types.ModuleName
 	return k.BankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAccAddr, amt)
 }
 
-// DistributeEpochLockupFunds distribute the exited funds to the dipositors.
+// DistributeEpochLockupFunds distribute the exited funds to the dipositors at the end of every epoch day.
 // Logic -
 // 0. Fetch the actual deposit day and lockup periods corresponding to the todays distributionDay.
-// 1. Calculate the total deposited funds on epochday for which today is the exit.
-// 2. Validate how much funds are we able to exit from the osmosis today.
-// 3. Check the difference between the exit funds and deposit funds for each denom.
-// 		3.1 Mint necessary quasar for the end users.
-//		3.2 OR Get it from the reserve.
-//		3.3 Swap from other tokens available to us.
-// AUDIT - TODO | Risk management for the multiple distribution calls need to be taken care.
+// 1. Calculate the total deposited funds on actual deposit day.
+// 2. Calculate the amount of funds exited from the osmosis today.
+// 3. Calculate the difference between the exit funds and deposit funds for each denom.
+// 	   3.1 To cover the refund diff exeucte the refund recovery logic.// AUDIT | TODO
+//	   3.2 Add the actual withdrawable amount in qbank kv store.
+//     3.3 Calculate the management fee and deduce
 func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 	distributionDay uint64) error {
 
@@ -206,9 +204,9 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 // Logic -
 // 1. Mint  Equivalent amount of quasar and Mint Equivalent amount of Orions at current market price.
 // 2. Lock the quasar token and use the orions to cover IL loss.
-// 3. This way we don't loose Orions circulation from the system, and it can be used for network security
-// to further enhance capital efficiency.
-// Note - This way allocation of orions will be there only when we observe IL loss.
+// 3. This way orion vault secure the orion receipt tokens using quasar which can be used for network security
+// to further enhance capital efficiency [ Phase #2]
+// Note - This way the actual allocation of orions is be done only when we observe IL loss.
 func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	orions := k.CalcReceipts(ctx, coin)
 	k.MintOrion(ctx, orions.Amount)
@@ -227,8 +225,7 @@ func (k Keeper) CalcQSR(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	return sdk.NewCoin("QSR", amt)
 }
 
-// GetQSRPrice gets the price of one denom in terms of QSR
-// AUDIT | TODO
+// GetQSRPrice gets the QSR price of one denom in terms of US dollar
 func (k Keeper) GetQSRPrice(ctx sdk.Context, denom string) sdk.Dec {
-	return sdk.OneDec() // Assuming one denom = 1 QSR
+	return k.GetStablePrice(ctx, denom)
 }
