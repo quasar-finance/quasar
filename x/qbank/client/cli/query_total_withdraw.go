@@ -28,7 +28,6 @@ func CmdTotalWithdraw() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryTotalWithdrawRequest{
-
 				UserAcc: reqUserAcc,
 				VaultID: reqVaultID,
 			}

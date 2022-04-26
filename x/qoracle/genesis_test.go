@@ -55,11 +55,10 @@ func TestGenesis(t *testing.T) {
 	setParams := keeper.GetParams(ctx)
 	require.Equal(t, genesisState.Params, setParams)
 	got := qoracle.ExportGenesis(ctx, keeper)
-	require.NotNil(t, got)
-
 	//nullify.Fill(&genesisState)
 	//nullify.Fill(got)
 
+	require.NotNil(t, got)
 	require.ElementsMatch(t, genesisState.PoolPositionList, got.PoolPositionList)
 	require.Equal(t, genesisState.PoolRanking, got.PoolRanking)
 	require.ElementsMatch(t, genesisState.PoolSpotPriceList, got.PoolSpotPriceList)

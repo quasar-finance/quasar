@@ -28,7 +28,6 @@ func CmdTotalClaimed() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryTotalClaimedRequest{
-
 				UserAcc: reqUserAcc,
 				VaultID: reqVaultID,
 			}
