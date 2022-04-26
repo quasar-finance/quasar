@@ -1,4 +1,6 @@
+GOMOD := $(shell go list -m)
 BUILD_DIR ?= $(CURDIR)/build
+MOCKS_DIR = $(CURDIR)/testutil/mock
 
 mkdirs = mkdir -p $(BUILD_DIR)
 
@@ -16,9 +18,17 @@ lint:
 build:
 	scripts/build
 
+.PHONY: go-mod lint build
+
 # Testing
 
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e")
+
+mocks: $(MOCKS_DIR)
+	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/testutil/mock ICAControllerKeeper
+
+$(MOCKS_DIR):
+	mkdir -p $(MOCKS_DIR)
 
 test:
 	go test -mod=readonly -v $(PACKAGES_UNIT)
@@ -30,6 +40,8 @@ test-cover:
 test-simulation:
 	ignite chain simulate -v
 
+.PHONY: mocks $(MOCKS_DIR) test test-cover test-simulation
+
 # Documentation
 
 docs-gen:
@@ -37,6 +49,8 @@ docs-gen:
 
 docs-serve:
 	scripts/serve_doc_docker
+
+.PHONY: docs-gen docs-serve
 
 # Run targets
 
@@ -46,4 +60,4 @@ run:
 run-silent:
 	scripts/run > q.log 2>&1
 
-.PHONY: go.mod build test test-simulation docs-gen docs-serve run run-silent
+.PHONY: run run-silent
