@@ -30,3 +30,8 @@ type BankKeeper interface {
 type EpochsKeeper interface {
 	GetEpochInfo(ctx sdk.Context, identifier string) epochtypes.EpochInfo
 }
+
+// QoracleKeeper defines the expected interface needed by Orion module from qoracle module
+type QoracleKeeper interface {
+	GetStablePrice(ctx sdk.Context, denom string) sdk.Dec
+}

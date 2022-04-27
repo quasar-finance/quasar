@@ -448,16 +448,6 @@ func New(
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
 
-	app.QbankKeeper = qbankmodulekeeper.NewKeeper(
-		appCodec,
-		keys[qbankmoduletypes.StoreKey],
-		keys[qbankmoduletypes.MemStoreKey],
-		app.GetSubspace(qbankmoduletypes.ModuleName),
-		app.BankKeeper,
-		*app.EpochsKeeper,
-	)
-	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.QoracleKeeper = *qoraclemodulekeeper.NewKeeper(
 		appCodec,
 		keys[qoraclemoduletypes.StoreKey],
@@ -465,6 +455,17 @@ func New(
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.QbankKeeper = qbankmodulekeeper.NewKeeper(
+		appCodec,
+		keys[qbankmoduletypes.StoreKey],
+		keys[qbankmoduletypes.MemStoreKey],
+		app.GetSubspace(qbankmoduletypes.ModuleName),
+		app.BankKeeper,
+		*app.EpochsKeeper,
+		app.QoracleKeeper,
+	)
+	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.OrionKeeper = *orionmodulekeeper.NewKeeper(
 		appCodec,

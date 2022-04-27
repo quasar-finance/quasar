@@ -4,6 +4,7 @@ import (
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	"github.com/abag/quasarnode/x/qbank/keeper"
 	"github.com/abag/quasarnode/x/qbank/types"
+	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -14,7 +15,8 @@ const QbankMaccName = types.ModuleName
 
 func (kf KeeperFactory) QbankKeeper(paramsKeeper paramskeeper.Keeper,
 	bankKeeper bankkeeper.Keeper,
-	epochsKeeper epochskeeper.Keeper) keeper.Keeper {
+	epochsKeeper epochskeeper.Keeper,
+	qoracleKeeper qoraclekeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
@@ -28,6 +30,7 @@ func (kf KeeperFactory) QbankKeeper(paramsKeeper paramskeeper.Keeper,
 		paramsSubspace,
 		bankKeeper,
 		epochsKeeper,
+		qoracleKeeper,
 	)
 
 	return k

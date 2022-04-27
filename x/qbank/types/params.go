@@ -137,7 +137,6 @@ func validateOrionEpochIdentifier(i interface{}) error {
 
 // validateWhiteListedDenomsInOrion validates the WhiteListedDenomsInOrion param
 func validateWhiteListedDenomsInOrion(v interface{}) error {
-
 	WhiteListedDenomsInOrion, ok := v.([]WhiteListedDenomInOrion)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
