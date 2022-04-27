@@ -22,10 +22,18 @@ func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) (sdk.Coin, erro
 // CalcReceipts calculates the amount of orion coin equivalent to the input sdk.Coin
 // Most updated value of US dollar value is the base for the orion token calculations.
 func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
-	spotPrice, found := k.GetStablePrice(ctx, coin.Denom)
+	denomPrice, found := k.GetStablePrice(ctx, coin.Denom)
 	if !found {
 		return sdk.Coin{}, errors.New("error: stable price not found")
 	}
+	orionPrice, found := k.GetStablePrice(ctx, types.ModuleName)
+	if !found {
+		return sdk.Coin{}, errors.New("error: stable price not found")
+	}
+	if orionPrice.IsZero() {
+		return sdk.Coin{}, errors.New("error: orion price is zero")
+	}
+	spotPrice := denomPrice.Quo(orionPrice)
 	OrionAmt := coin.Amount.ToDec().Mul(spotPrice).TruncateInt()
 	return sdk.NewCoin(types.ModuleName, OrionAmt), nil
 }

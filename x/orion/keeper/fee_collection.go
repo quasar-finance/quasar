@@ -25,7 +25,7 @@ func (k Keeper) GetBech32FeeCollectorAccAddress(feeCollectorName string) string 
 	return accStr
 }
 
-// GetFeeCollectorBalances gets the account balance of the inputed fee collector name.
+// GetFeeCollectorBalances gets the account balance of the inputted fee collector name.
 func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string) sdk.Coins {
 	balances := k.BankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
 	return balances
@@ -89,7 +89,7 @@ func (k Keeper) CalcMgmtFee(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 
 // CalcEntryFee calculate the entry fee every time when a user deposit coins
 // into vault. Return value will be deduced from the depositor account.
-// Note : This function maynot be used for some type of strategies.
+// Note : This function may not be used for some type of strategies.
 func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
 	// TODO - Factor value to be added in parameter.
 	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
@@ -97,7 +97,7 @@ func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
 	return sdk.NewCoin(depositAmt.GetDenom(), feeAmt)
 }
 
-// CalcExitFee, calculate the exit fee every time when a user withdwar coins
+// CalcExitFee calculate the exit fee every time when a user withdraw coins
 // from vault. Return value will be deduced from the depositor
 // account, who is exiting his positions.
 func (k Keeper) CalcExitFee(exitAmt sdk.Coin) sdk.Coin {
