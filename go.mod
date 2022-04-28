@@ -6,6 +6,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/ibc-go/v3 v3.0.0
 	github.com/gogo/protobuf v1.3.3
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.45.2
 	github.com/gorilla/mux v1.8.0
@@ -23,10 +24,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require (
-	github.com/golang/mock v1.6.0 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-)
+require golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
