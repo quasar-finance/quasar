@@ -15,12 +15,14 @@ func (kf KeeperFactory) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabi
 	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
 	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 
+	scopedKeeper := capabilityKeeper.ScopeToModule(types.ModuleName)
+
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
 		kf.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
-		capabilityKeeper.ScopeToModule(types.ModuleName),
+		scopedKeeper,
 		icaControllerKeeper,
 		paramsSubspace,
 	)

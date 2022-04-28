@@ -17,6 +17,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
@@ -68,6 +69,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	accountKeeper := factory.AccountKeeper(paramsKeeper, maccPerms)
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
+	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper)
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, icaControllerKeeperMock)
