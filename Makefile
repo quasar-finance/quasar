@@ -2,9 +2,11 @@ GOMOD := $(shell go list -m)
 BUILD_DIR ?= $(CURDIR)/build
 MOCKS_DIR = $(CURDIR)/testutil/mock
 
-mkdirs = mkdir -p $(BUILD_DIR)
-
 # Install & build
+
+mkdirs:
+	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(MOCKS_DIR)
 
 go-mod:
 	go mod tidy
@@ -15,32 +17,31 @@ lint:
 	@echo "SKIPPED"
 	#go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
 
-build:
+build: mkdirs
 	scripts/build
 
-.PHONY: go-mod lint build
+.PHONY: mkdirs go-mod lint build
 
 # Testing
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e")
+PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 
-mocks: $(MOCKS_DIR)
-	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/testutil/mock ICAControllerKeeper
-
-$(MOCKS_DIR):
-	mkdir -p $(MOCKS_DIR)
+mocks: mkdirs
+	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
 
 test:
 	go test -mod=readonly -v $(PACKAGES_UNIT)
 
-test-cover:
-	${mkdirs}
+test-path:
+	go test -mod=readonly -v $(path)
+
+test-cover: mkdirs
 	go test -mod=readonly -timeout 30m -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic $(PACKAGES_UNIT)
 
 test-simulation:
 	ignite chain simulate -v
 
-.PHONY: mocks $(MOCKS_DIR) test test-cover test-simulation
+.PHONY: mocks $(MOCKS_DIR) test test-path test-cover test-simulation
 
 # Documentation
 
