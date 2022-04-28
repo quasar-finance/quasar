@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -251,4 +252,71 @@ func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coin
 	}
 
 	return coins
+}
+
+// GetAllDepositInfos prepare a list of all deposit infos,
+// Method is used for export genesis.
+// Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
+func (k Keeper) GetAllDepositInfos(ctx sdk.Context) []types.DepositInfo {
+	bytePrefix := types.UserDenomDepositKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var depositInfos []types.DepositInfo
+	for ; iter.Valid(); iter.Next() {
+		// key = {epochday} + {:} + {$lockupperiods} + {:} + {userAcc} + {:} + {denom},
+		// value = sdk.Coin marshled
+		key, value := iter.Key(), iter.Value()
+		epochDay, lockupDayStr, userAccStr, _, _ := types.ParseEpochLockupUserDenomDepositKey(key)
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+
+		di := types.DepositInfo{VaultID: oriontypes.ModuleName,
+			EpochDay:            epochDay,
+			LockupPeriod:        types.LockupTypes(types.LockupTypes_value[lockupDayStr]),
+			DepositorAccAddress: userAccStr,
+			Coin:                coin}
+
+		depositInfos = append(depositInfos, di)
+		logger.Info("DepositInfo", di)
+
+	}
+
+	return depositInfos
+}
+
+// GetAllTotalDeposits prepare a list of total deposit info for each user
+// Method is used for export genesis.
+func (k Keeper) GetAllTotalDeposits(ctx sdk.Context) []types.UserBalanceInfo {
+	bytePrefix := types.UserDepositKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var totalDepositInfos []types.UserBalanceInfo
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		userAccStr := string(key)
+		var qcoins types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoins)
+
+		userTotalDeposit := types.UserBalanceInfo{Type: types.BalanceType_TOTAL_DEPOSIT,
+			VaultID:             oriontypes.ModuleName,
+			DepositorAccAddress: userAccStr,
+			Coins:               qcoins.Coins,
+		}
+		totalDepositInfos = append(totalDepositInfos, userTotalDeposit)
+	}
+
+	logger.Info("TotalDepositInfos", totalDepositInfos)
+	return totalDepositInfos
 }

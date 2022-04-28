@@ -1,16 +1,51 @@
 syntax = "proto3";
 package abag.quasarnode.qbank;
 
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "qbank/params.proto";
-
-// this line is used by starport scaffolding # genesis/proto/import
+import "qbank/deposit.proto";
+import "qbank/common.proto";
+  // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 
 // GenesisState defines the qbank module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-   
+  repeated DepositInfo depositInfos = 2 [(gogoproto.nullable) = false];
+  repeated UserBalanceInfo totalDeposits = 3 [(gogoproto.nullable) = false];
+  repeated UserBalanceInfo withdrawables = 4 [(gogoproto.nullable) = false];
+  repeated UserBalanceInfo totalWithdraws = 5 [(gogoproto.nullable) = false];
+  repeated UserBalanceInfo claimableRewards = 6 [(gogoproto.nullable) = false];
+  repeated UserBalanceInfo totalClaimedRewards = 7 [(gogoproto.nullable) = false];
+
    // this line is used by starport scaffolding # genesis/proto/state
+}
+
+// DepositInfo represents the state of a particular deposit
+message DepositInfo {
+  string vaultID = 1; 
+  uint64  epochDay = 2;  
+  LockupTypes lockupPeriod  = 3;
+  string depositorAccAddress = 4; 
+  cosmos.base.v1beta1.Coin coin = 5 [ (gogoproto.nullable) = false ];
+}
+
+// LockupTypes defines different types of locktypes to be used in the system for users deposit
+enum BalanceType {
+  TOTAL_DEPOSIT = 0;
+  WITHDRAWABLE = 1;
+  TOTAL_WITHDRAW = 2;
+  CLAIMABLE_REWARDS = 3;
+  TOTAL_CLAIMED_REWARDS = 4;
+}
+
+// UserBalanceInfo represents the state of a particular type of claim balance
+message  UserBalanceInfo {
+  BalanceType type = 1; 
+  string vaultID = 2; 
+  string depositorAccAddress = 3; 
+  repeated cosmos.base.v1beta1.Coin coins = 4
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }

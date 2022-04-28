@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -94,6 +95,43 @@ func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
 	store.Delete(key)
 }
 
+// GetAllClaimableRewards returns a list of all claimable tokens done so far for each users.
+func (k Keeper) GetAllClaimableRewards(ctx sdk.Context) []types.UserBalanceInfo {
+	bytePrefix := types.UserClaimKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllClaimableRewards|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var totalClaimableRewards []types.UserBalanceInfo
+
+	// key = {uid} + ":" + {vaultID}, value = types.QCoins
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := types.SplitKeyBytes(key)
+		userAccStr := string(splits[0])
+		var qcoin types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoin)
+
+		userClaimableReward := types.UserBalanceInfo{Type: types.BalanceType_CLAIMABLE_REWARDS,
+			VaultID:             oriontypes.ModuleName,
+			DepositorAccAddress: userAccStr,
+			Coins:               qcoin.Coins,
+		}
+		totalClaimableRewards = append(totalClaimableRewards, userClaimableReward)
+	}
+
+	logger.Info("TotalClaimableRewards", totalClaimableRewards)
+	return totalClaimableRewards
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+////////////// Methods for the users claimed reward  //////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
 // GetUserClaimedAmt get the current value of user's total claimed amount so far.
 // Key - types.UserClaimedKBP + {userAccount} + {":"} + {VaultID}
 func (k Keeper) GetUserClaimedAmt(ctx sdk.Context, uid, vaultID string) (val types.QCoins, found bool) {
@@ -128,4 +166,37 @@ func (k Keeper) AddUserClaimedRewards(ctx sdk.Context, uid, vaultID string, coin
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	}
+}
+
+// GetAllTotalClaimedRewards returns a list of all total withdraw tokens done so far for each users.
+func (k Keeper) GetAllTotalClaimedRewards(ctx sdk.Context) []types.UserBalanceInfo {
+	bytePrefix := types.UserClaimedKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllTotalClaimedRewards|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var totalClaimedRewards []types.UserBalanceInfo
+
+	// key = {uid} + ":" + {vaultID}, value = types.QCoins
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := types.SplitKeyBytes(key)
+		userAccStr := string(splits[0])
+		var qcoin types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoin)
+
+		userClaimedReward := types.UserBalanceInfo{Type: types.BalanceType_CLAIMABLE_REWARDS,
+			VaultID:             oriontypes.ModuleName,
+			DepositorAccAddress: userAccStr,
+			Coins:               qcoin.Coins,
+		}
+		totalClaimedRewards = append(totalClaimedRewards, userClaimedReward)
+	}
+
+	logger.Info("TotalClaimedRewards", totalClaimedRewards)
+	return totalClaimedRewards
 }

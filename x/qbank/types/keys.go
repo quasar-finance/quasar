@@ -40,7 +40,7 @@ const (
 
 var (
 	// KBP - short of KeyBytePrefix, Byte prfix for the key used in KV store
-	QbankGlobalKBP           = []byte{0x00} // Used for counts of deposit and withdraw
+	QbankGlobalKBP           = []byte{0x00}
 	DepositKBP               = []byte{0x01}
 	UserDenomDepositKBP      = []byte{0x02}
 	WithdrawKeyKBP           = []byte{0x03}
@@ -50,17 +50,19 @@ var (
 	UserClaimedKBP           = []byte{0x07}
 	ActualWithdrawableKeyKBP = []byte{0x08}
 	TotalWithdrawKeyKBP      = []byte{0x09}
-
-	// TODO Vault level prefix to be used.
 )
 
 var SepByte = []byte(":")
 
-// Common functions for deposit and withdraw
-// TODO - AUDIT | unit test case to be written
-func SplitKeyBytes(kb []byte) [][]byte {
+func SplitKeyBytesWithPrefix(kb []byte) [][]byte {
 	// First byte is used for the byte prefix
 	split := bytes.Split(kb[1:], SepByte)
+	return split
+}
+
+func SplitKeyBytes(kb []byte) [][]byte {
+	// First byte is used for the byte prefix
+	split := bytes.Split(kb, SepByte)
 	return split
 }
 

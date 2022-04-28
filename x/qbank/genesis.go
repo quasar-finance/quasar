@@ -8,7 +8,6 @@ import (
 
 // InitGenesis initializes the capability module's state from a provided genesis
 // state.
-// TODO | AUDIT | How to build the other KV stores? Probably set functions of all the other KV store
 // should be used. Genesis state should have all other KV stores informations.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 
@@ -21,6 +20,14 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
+
+	// Prepare the deposit info state
+	genesis.DepositInfos = k.GetAllDepositInfos(ctx)
+	genesis.TotalDeposits = k.GetAllTotalDeposits(ctx)
+	genesis.Withdrawables = k.GetAllActualWithdrawables(ctx)
+	genesis.TotalWithdraws = k.GetAllTotalWithdraws(ctx)
+	genesis.ClaimableRewards = k.GetAllClaimableRewards(ctx)
+	genesis.TotalClaimedRewards = k.GetAllTotalClaimedRewards(ctx)
 
 	// this line is used by starport scaffolding # genesis/module/export
 
