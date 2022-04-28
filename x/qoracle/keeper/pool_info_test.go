@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
@@ -13,23 +13,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createNPoolInfo(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolInfo {
+func createNPoolInfo(k *keeper.Keeper, ctx sdk.Context, n int) []types.PoolInfo {
 	items := make([]types.PoolInfo, n)
 	for i := range items {
 		items[i].Creator = sample.AccAddressStr()
 		items[i].PoolId = fmt.Sprintf("%d", i)
 		items[i].LastUpdatedTime = 1 + uint64(i)
 
-		keeper.SetPoolInfo(ctx, items[i])
+		k.SetPoolInfo(ctx, items[i])
 	}
 	return items
 }
 
 func TestPoolInfoGet(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolInfo(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolInfo(&k, ctx, 10)
 	for _, item := range items {
-		rst, found := keeper.GetPoolInfo(ctx,
+		rst, found := k.GetPoolInfo(ctx,
 			item.PoolId,
 		)
 		require.True(t, found)
@@ -40,13 +41,14 @@ func TestPoolInfoGet(t *testing.T) {
 	}
 }
 func TestPoolInfoRemove(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolInfo(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolInfo(&k, ctx, 10)
 	for _, item := range items {
-		keeper.RemovePoolInfo(ctx,
+		k.RemovePoolInfo(ctx,
 			item.PoolId,
 		)
-		_, found := keeper.GetPoolInfo(ctx,
+		_, found := k.GetPoolInfo(ctx,
 			item.PoolId,
 		)
 		require.False(t, found)
@@ -54,10 +56,11 @@ func TestPoolInfoRemove(t *testing.T) {
 }
 
 func TestPoolInfoGetAll(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolInfo(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolInfo(&k, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllPoolInfo(ctx)),
+		nullify.Fill(k.GetAllPoolInfo(ctx)),
 	)
 }

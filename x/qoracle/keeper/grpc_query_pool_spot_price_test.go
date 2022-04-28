@@ -9,15 +9,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
 func TestPoolSpotPriceQuerySingle(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolSpotPrice(&keeper, ctx, 2)
+	msgs := createNPoolSpotPrice(&k, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetPoolSpotPriceRequest
@@ -57,7 +58,7 @@ func TestPoolSpotPriceQuerySingle(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			response, err := keeper.PoolSpotPrice(wctx, tc.request)
+			response, err := k.PoolSpotPrice(wctx, tc.request)
 			if tc.err != nil {
 				require.ErrorIs(t, err, tc.err)
 			} else {
@@ -72,9 +73,10 @@ func TestPoolSpotPriceQuerySingle(t *testing.T) {
 }
 
 func TestPoolSpotPriceQueryPaginated(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPoolSpotPrice(&keeper, ctx, 5)
+	msgs := createNPoolSpotPrice(&k, ctx, 5)
 
 	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllPoolSpotPriceRequest {
 		return &types.QueryAllPoolSpotPriceRequest{
@@ -89,7 +91,7 @@ func TestPoolSpotPriceQueryPaginated(t *testing.T) {
 	t.Run("ByOffset", func(t *testing.T) {
 		step := 2
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.PoolSpotPriceAll(wctx, request(nil, uint64(i), uint64(step), false))
+			resp, err := k.PoolSpotPriceAll(wctx, request(nil, uint64(i), uint64(step), false))
 			require.NoError(t, err)
 			require.LessOrEqual(t, len(resp.PoolSpotPrice), step)
 			require.Subset(t,
@@ -102,7 +104,7 @@ func TestPoolSpotPriceQueryPaginated(t *testing.T) {
 		step := 2
 		var next []byte
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.PoolSpotPriceAll(wctx, request(next, 0, uint64(step), false))
+			resp, err := k.PoolSpotPriceAll(wctx, request(next, 0, uint64(step), false))
 			require.NoError(t, err)
 			require.LessOrEqual(t, len(resp.PoolSpotPrice), step)
 			require.Subset(t,
@@ -113,7 +115,7 @@ func TestPoolSpotPriceQueryPaginated(t *testing.T) {
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
-		resp, err := keeper.PoolSpotPriceAll(wctx, request(nil, 0, 0, true))
+		resp, err := k.PoolSpotPriceAll(wctx, request(nil, 0, 0, true))
 		require.NoError(t, err)
 		require.Equal(t, len(msgs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
@@ -122,7 +124,7 @@ func TestPoolSpotPriceQueryPaginated(t *testing.T) {
 		)
 	})
 	t.Run("InvalidRequest", func(t *testing.T) {
-		_, err := keeper.PoolSpotPriceAll(wctx, nil)
+		_, err := k.PoolSpotPriceAll(wctx, nil)
 		require.ErrorIs(t, err, status.Error(codes.InvalidArgument, "invalid request"))
 	})
 }

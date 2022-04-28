@@ -1,10 +1,11 @@
 package keeper_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/stretchr/testify/require"
+
+	"github.com/abag/quasarnode/testutil"
 	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
@@ -76,9 +77,10 @@ func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, keeper := keepertest.NewTestSetup(t).GetOrionKeeper()
-			stakeSampleTokens(&keeper, ctx, tt.lockupPeriod, tt.stakedCoins)
-			res := keeper.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, tt.lockupPeriod, tt.poolAssets)
+			setup := testutil.NewTestSetup(t)
+			ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
+			stakeSampleTokens(&k, ctx, tt.lockupPeriod, tt.stakedCoins)
+			res := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, tt.lockupPeriod, tt.poolAssets)
 			require.EqualValues(t, tt.want, res)
 		})
 	}

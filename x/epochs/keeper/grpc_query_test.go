@@ -5,22 +5,23 @@ import (
 
 	"time"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/epochs"
-	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
+	"github.com/abag/quasarnode/x/epochs/keeper"
 	"github.com/abag/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQueryEpochInfos(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetEpochsKeeper()
-	epochs.InitGenesis(ctx, keeper, *types.DefaultGenesis())
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.EpochsKeeper
+	epochs.InitGenesis(ctx, k, *types.DefaultGenesis())
 	goCtx := sdk.WrapSDKContext(ctx)
 
 	chainStartTime := ctx.BlockTime()
 
-	querier := epochskeeper.NewQuerier(keeper)
+	querier := keeper.NewQuerier(k)
 
 	// Invalid param
 	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})

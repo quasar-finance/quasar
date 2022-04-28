@@ -8,13 +8,14 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
 func TestPoolPositionMsgServerCreate(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	srv := keeper.NewMsgServerImpl(k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
@@ -98,7 +99,8 @@ func TestPoolPositionMsgServerUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			setup := testutil.NewTestSetup(t)
+			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolPosition{Creator: creator,
@@ -161,7 +163,8 @@ func TestPoolPositionMsgServerDelete(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			setup := testutil.NewTestSetup(t)
+			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 

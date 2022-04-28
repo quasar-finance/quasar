@@ -14,7 +14,6 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -27,7 +26,7 @@ type Keeper struct {
 	storeKey            sdk.StoreKey
 	memKey              sdk.StoreKey
 	scopedKeeper        capabilitykeeper.ScopedKeeper
-	icaControllerKeeper icacontrollerkeeper.Keeper
+	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
 }
 
@@ -36,7 +35,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
-	iaKeeper icacontrollerkeeper.Keeper,
+	iaKeeper types.ICAControllerKeeper,
 	ps paramtypes.Subspace,
 
 ) Keeper {

@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/orion/keeper"
@@ -25,7 +25,8 @@ func createTestUserLPInfo(keeper *keeper.Keeper, ctx sdk.Context, userAddr strin
 }
 
 func TestUserLPInfoGet(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	userAddr := sample.AccAddressStr()
 	item, epochDay, lpId := createTestUserLPInfo(&k, ctx, userAddr)
 	rst, found := k.GetUserLPInfo(ctx, epochDay, lpId, userAddr)
@@ -37,7 +38,8 @@ func TestUserLPInfoGet(t *testing.T) {
 }
 
 func TestUserLPInfoRemove(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	userAddr := sample.AccAddressStr()
 	_, epochDay, lpId := createTestUserLPInfo(&k, ctx, userAddr)
 	k.RemoveUserLPInfo(ctx, epochDay, lpId, userAddr)

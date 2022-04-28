@@ -8,16 +8,16 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func (i initializer) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
+func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
-	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, i.DB)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, kf.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		i.EncodingConfig.Marshaler,
+		kf.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
@@ -26,6 +26,6 @@ func (i initializer) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keep
 	return *k
 }
 
-func (i initializer) SetQoracleDefaultParams(k keeper.Keeper) {
-	k.SetParams(i.Ctx, types.DefaultParams())
+func (kf KeeperFactory) SetQoracleDefaultParams(k keeper.Keeper) {
+	k.SetParams(kf.Ctx, types.DefaultParams())
 }

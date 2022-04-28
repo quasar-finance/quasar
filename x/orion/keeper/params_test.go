@@ -3,14 +3,15 @@ package keeper_test
 import (
 	"testing"
 
-	testkeeper "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetParams(t *testing.T) {
-	ctx, k := testkeeper.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)

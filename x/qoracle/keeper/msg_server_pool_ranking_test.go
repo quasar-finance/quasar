@@ -7,13 +7,14 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
 func TestPoolRankingMsgServerCreate(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	srv := keeper.NewMsgServerImpl(k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
@@ -57,7 +58,8 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			setup := testutil.NewTestSetup(t)
+			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 			expected := &types.MsgCreatePoolRanking{Creator: creator}
@@ -99,7 +101,8 @@ func TestPoolRankingMsgServerDelete(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
+			setup := testutil.NewTestSetup(t)
+			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
 

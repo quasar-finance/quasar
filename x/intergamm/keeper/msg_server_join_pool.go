@@ -10,6 +10,7 @@ import (
 func (k msgServer) JoinPool(goCtx context.Context, msg *types.MsgJoinPool) (*types.MsgJoinPoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// TODO connectionId should come from a param
 	err := k.TransmitIbcJoinPool(ctx,
 		msg.Creator,
 		msg.ConnectionId,

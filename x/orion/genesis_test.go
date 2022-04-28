@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/orion"
 	"github.com/abag/quasarnode/x/orion/types"
@@ -41,7 +41,8 @@ func TestGenesis(t *testing.T) {
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	orion.InitGenesis(ctx, k, genesisState)
 	got := orion.ExportGenesis(ctx, k)
 	require.NotNil(t, got)

@@ -7,18 +7,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 )
 
-func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilityKeeper capabilitykeeper.Keeper, icaControllerKeeper icacontrollerkeeper.Keeper) keeper.Keeper {
+func (kf KeeperFactory) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilityKeeper capabilitykeeper.Keeper, icaControllerKeeper types.ICAControllerKeeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
-	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		i.EncodingConfig.Marshaler,
+		kf.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		capabilityKeeper.ScopeToModule(types.ModuleName),
@@ -29,6 +28,6 @@ func (i initializer) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilit
 	return k
 }
 
-func (i initializer) SetIntergammDefaultParams(k keeper.Keeper) {
-	k.SetParams(i.Ctx, types.DefaultParams())
+func (kf KeeperFactory) SetIntergammDefaultParams(k keeper.Keeper) {
+	k.SetParams(kf.Ctx, types.DefaultParams())
 }

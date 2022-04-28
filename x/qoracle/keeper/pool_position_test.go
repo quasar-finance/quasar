@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createNPoolPosition(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PoolPosition {
+func createNPoolPosition(k *keeper.Keeper, ctx sdk.Context, n int) []types.PoolPosition {
 	items := make([]types.PoolPosition, n)
 	for i := range items {
 		items[i].Creator = sample.AccAddressStr()
@@ -22,22 +22,23 @@ func createNPoolPosition(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.
 			HighestAPY: sdk.NewDec(int64(i)).String(),
 			TVL:        sdk.NewDecCoin("usd", sdk.NewInt(int64(i))).String(),
 			GaugeAPYs: []*types.GaugeAPY{
-				&types.GaugeAPY{GaugeId: 3*uint64(i) + 1, Duration: "1s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
-				&types.GaugeAPY{GaugeId: 3*uint64(i) + 2, Duration: "2s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
+				{GaugeId: 3*uint64(i) + 1, Duration: "1s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
+				{GaugeId: 3*uint64(i) + 2, Duration: "2s", APY: fmt.Sprintf("%f", 1+float32(i)+0.1)},
 			},
 		}
 		items[i].LastUpdatedTime = 1 + uint64(i)
 
-		keeper.SetPoolPosition(ctx, items[i])
+		k.SetPoolPosition(ctx, items[i])
 	}
 	return items
 }
 
 func TestPoolPositionGet(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolPosition(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolPosition(&k, ctx, 10)
 	for _, item := range items {
-		rst, found := keeper.GetPoolPosition(ctx,
+		rst, found := k.GetPoolPosition(ctx,
 			item.PoolId,
 		)
 		require.True(t, found)
@@ -49,13 +50,14 @@ func TestPoolPositionGet(t *testing.T) {
 }
 
 func TestPoolPositionRemove(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolPosition(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolPosition(&k, ctx, 10)
 	for _, item := range items {
-		keeper.RemovePoolPosition(ctx,
+		k.RemovePoolPosition(ctx,
 			item.PoolId,
 		)
-		_, found := keeper.GetPoolPosition(ctx,
+		_, found := k.GetPoolPosition(ctx,
 			item.PoolId,
 		)
 		require.False(t, found)
@@ -63,10 +65,11 @@ func TestPoolPositionRemove(t *testing.T) {
 }
 
 func TestPoolPositionGetAll(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	items := createNPoolPosition(&keeper, ctx, 10)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	items := createNPoolPosition(&k, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllPoolPosition(ctx)),
+		nullify.Fill(k.GetAllPoolPosition(ctx)),
 	)
 }
