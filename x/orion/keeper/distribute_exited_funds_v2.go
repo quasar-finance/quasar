@@ -85,6 +85,7 @@ func (k Keeper) MintDeficit(ctx sdk.Context, totalDeficit sdk.Coins) (orionsMint
 	return orionsMintedForEachDenom, nil
 }
 
+// AddWithdrawableCoins iterates over coins, and call AddActualWithdrawableAmt of qbank for each coin.
 func (k Keeper) AddWithdrawableCoins(ctx sdk.Context, addr string, coins sdk.Coins) {
 	for _, coin := range coins {
 		// TODO add similar function to QBank accepting sdk.Coins
@@ -92,7 +93,14 @@ func (k Keeper) AddWithdrawableCoins(ctx sdk.Context, addr string, coins sdk.Coi
 	}
 }
 
-func CalculateCoinAllocations(neededCoins, epochExitCoins, reserveCoins sdk.Coins) (fromEpochExit, fromReserve, excessEpochExit, totalDeficit sdk.Coins) {
+// CalculateCoinAllocations tries to allocate neededCoins first from epochExitCoins, and then from reserveCoins.
+// It will also return the possible deficit.
+// If epochExitCoins has more coins than the neededCoins, that will be returned too.
+func CalculateCoinAllocations(
+	neededCoins,
+	epochExitCoins,
+	reserveCoins sdk.Coins,
+) (fromEpochExit, fromReserve, excessEpochExit, totalDeficit sdk.Coins) {
 	fromEpochExit = neededCoins.Min(epochExitCoins)
 	excessEpochExit = epochExitCoins.Sub(fromEpochExit)
 	fromReserve = neededCoins.Sub(fromEpochExit).Min(reserveCoins)
@@ -100,6 +108,8 @@ func CalculateCoinAllocations(neededCoins, epochExitCoins, reserveCoins sdk.Coin
 	return
 }
 
+// CalculateUserCoinsAndFees calculates the share of a user from the availableCoins anf minted orions,
+// after deducting the management fees.
 func CalculateUserCoinsAndFees(
 	depositedDenom string,
 	depositorWeight sdk.Dec,
