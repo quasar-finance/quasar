@@ -3,7 +3,7 @@ package qoracle_test
 import (
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/qoracle"
 	"github.com/abag/quasarnode/x/qoracle/types"
@@ -50,9 +50,10 @@ func TestGenesis(t *testing.T) {
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	ctx, k := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	qoracle.InitGenesis(ctx, k, genesisState)
-	got := qoracle.ExportGenesis(ctx, k)
+	setup := testutil.NewTestSetup(t)
+	ctx, keeper := setup.Ctx, setup.Keepers.QoracleKeeper
+	qoracle.InitGenesis(ctx, keeper, genesisState)
+	got := qoracle.ExportGenesis(ctx, keeper)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

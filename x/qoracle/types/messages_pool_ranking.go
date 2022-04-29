@@ -38,13 +38,13 @@ func validatePoolIds(idsByAPY []string, idsByTVL []string) error {
 			return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "repeated id '%s' in PoolIdsSortedByTVL", id)
 		}
 	}
-	for id, _ := range countIdsByAPY {
+	for id := range countIdsByAPY {
 		if _, exist := countIdsByTVL[id]; !exist {
 			return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "id '%s' exist in PoolIdsSortedByAPY but not in PoolIdsSortedByTVL", id)
 		}
 		delete(countIdsByTVL, id)
 	}
-	for id, _ := range countIdsByTVL {
+	for id := range countIdsByTVL {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "id '%s' exist in PoolIdsSortedByTVL but not in PoolIdsSortedByAPY", id)
 	}
 	return nil

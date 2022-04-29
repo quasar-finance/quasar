@@ -3,13 +3,14 @@ package keeper_test
 import (
 	"testing"
 
-	testkeeper "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetParams(t *testing.T) {
-	ctx, k := testkeeper.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)

@@ -6,28 +6,29 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
-func createTestPoolRanking(keeper *keeper.Keeper, ctx sdk.Context) types.PoolRanking {
+func createTestPoolRanking(k *keeper.Keeper, ctx sdk.Context) types.PoolRanking {
 	item := types.PoolRanking{
 		Creator:            sample.AccAddressStr(),
 		PoolIdsSortedByAPY: []string{"1", "2", "3"},
 		PoolIdsSortedByTVL: []string{"2", "1", "3"},
 		LastUpdatedTime:    1,
 	}
-	keeper.SetPoolRanking(ctx, item)
+	k.SetPoolRanking(ctx, item)
 	return item
 }
 
 func TestPoolRankingGet(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	item := createTestPoolRanking(&keeper, ctx)
-	rst, found := keeper.GetPoolRanking(ctx)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	item := createTestPoolRanking(&k, ctx)
+	rst, found := k.GetPoolRanking(ctx)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
@@ -36,9 +37,10 @@ func TestPoolRankingGet(t *testing.T) {
 }
 
 func TestPoolRankingRemove(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
-	createTestPoolRanking(&keeper, ctx)
-	keeper.RemovePoolRanking(ctx)
-	_, found := keeper.GetPoolRanking(ctx)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
+	createTestPoolRanking(&k, ctx)
+	k.RemovePoolRanking(ctx)
+	_, found := k.GetPoolRanking(ctx)
 	require.False(t, found)
 }

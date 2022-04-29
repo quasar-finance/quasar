@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO perhaps name it withdraw?
 func (k msgServer) IbcTransfer(goCtx context.Context, msg *types.MsgIbcTransfer) (*types.MsgIbcTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 

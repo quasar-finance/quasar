@@ -1,11 +1,12 @@
 package keeper_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/stretchr/testify/require"
+
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
@@ -23,7 +24,8 @@ func createTestRewardCollection(keeper *keeper.Keeper, ctx sdk.Context) (types.R
 }
 
 func TestRewardCollection(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	item, epochDay := createTestRewardCollection(&k, ctx)
 	rst, found := k.GetRewardCollection(ctx, epochDay)
 	require.True(t, found)
@@ -34,7 +36,8 @@ func TestRewardCollection(t *testing.T) {
 }
 
 func TestRemoveRewardCollection(t *testing.T) {
-	ctx, k := keepertest.NewTestSetup(t).GetOrionKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 	_, epochDay := createTestRewardCollection(&k, ctx)
 	k.RemoveRewardCollection(ctx, epochDay)
 	_, found := k.GetRewardCollection(ctx, epochDay)

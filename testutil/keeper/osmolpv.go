@@ -13,7 +13,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func (i initializer) OrionKeeper(
+func (kf KeeperFactory) OrionKeeper(
 	paramsKeeper paramskeeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper,
 	bankKeeper bankkeeper.Keeper,
@@ -24,12 +24,12 @@ func (i initializer) OrionKeeper(
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
-	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, i.DB)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, kf.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		i.EncodingConfig.Marshaler,
+		kf.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
@@ -43,6 +43,6 @@ func (i initializer) OrionKeeper(
 	return *k
 }
 
-func (i initializer) SetOrionDefaultParams(k keeper.Keeper) {
-	k.SetParams(i.Ctx, types.DefaultParams())
+func (kf KeeperFactory) SetOrionDefaultParams(k keeper.Keeper) {
+	k.SetParams(kf.Ctx, types.DefaultParams())
 }

@@ -3,7 +3,7 @@ package intergamm_test
 import (
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/intergamm"
 	"github.com/abag/quasarnode/x/intergamm/types"
@@ -15,9 +15,10 @@ func TestGenesis(t *testing.T) {
 		Params: types.DefaultParams(),
 		// this line is used by starport scaffolding # genesis/test/state
 	}
-	ctx, keeper := keepertest.NewTestSetup(t).GetInterGammKeeper()
-	intergamm.InitGenesis(ctx, keeper, genesisState)
-	got := intergamm.ExportGenesis(ctx, keeper)
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+	intergamm.InitGenesis(ctx, k, genesisState)
+	got := intergamm.ExportGenesis(ctx, k)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

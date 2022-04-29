@@ -10,81 +10,81 @@ import (
 
 func createSamplePoolMetricsMap() map[string]*PoolMetrics {
 	return map[string]*PoolMetrics{
-		"valid": &PoolMetrics{
+		"valid": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"invalid HighestAPY": &PoolMetrics{
+		"invalid HighestAPY": {
 			HighestAPY: "a",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"negative HighestAPY": &PoolMetrics{
+		"negative HighestAPY": {
 			HighestAPY: "-10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"invalid TVL 1": &PoolMetrics{
+		"invalid TVL 1": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"invalid TVL 2": &PoolMetrics{
+		"invalid TVL 2": {
 			HighestAPY: "10.5",
 			TVL:        "usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"nil GaugeAPYs[0]": &PoolMetrics{
+		"nil GaugeAPYs[0]": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs:  []*GaugeAPY{nil},
 		},
-		"invalid Duration": &PoolMetrics{
+		"invalid Duration": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "s", APY: "1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"negative Duration": &PoolMetrics{
+		"negative Duration": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "-2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "1.1"},
+				{GaugeId: 2, Duration: "-2s", APY: "1.2"},
 			},
 		},
-		"invalid APY": &PoolMetrics{
+		"invalid APY": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "x"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "x"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
-		"negative APY": &PoolMetrics{
+		"negative APY": {
 			HighestAPY: "10.5",
 			TVL:        "1000.5usd",
 			GaugeAPYs: []*GaugeAPY{
-				&GaugeAPY{GaugeId: 1, Duration: "1s", APY: "-1.1"},
-				&GaugeAPY{GaugeId: 2, Duration: "2s", APY: "1.2"},
+				{GaugeId: 1, Duration: "1s", APY: "-1.1"},
+				{GaugeId: 2, Duration: "2s", APY: "1.2"},
 			},
 		},
 	}

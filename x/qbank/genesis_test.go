@@ -3,7 +3,7 @@ package qbank_test
 import (
 	"testing"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/qbank"
 	"github.com/abag/quasarnode/x/qbank/types"
@@ -11,14 +11,16 @@ import (
 )
 
 func TestGenesis(t *testing.T) {
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
+
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
-	ctx, keeper := keepertest.NewTestSetup(t).GetQbankKeeper()
-	qbank.InitGenesis(ctx, keeper, genesisState)
-	got := qbank.ExportGenesis(ctx, keeper)
+	qbank.InitGenesis(ctx, k, genesisState)
+	got := qbank.ExportGenesis(ctx, k)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

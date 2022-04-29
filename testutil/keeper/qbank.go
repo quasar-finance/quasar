@@ -11,24 +11,24 @@ import (
 
 const QbankMaccName = types.ModuleName
 
-func (i initializer) QbankKeeper(paramsKeeper paramskeeper.Keeper, bankKeeper bankkeeper.Keeper) keeper.Keeper {
+func (kf KeeperFactory) QbankKeeper(paramsKeeper paramskeeper.Keeper, bankKeeper bankkeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-	i.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, i.DB)
-	i.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
-	qbankKeeper := keeper.NewKeeper(
-		i.EncodingConfig.Marshaler,
+	k := keeper.NewKeeper(
+		kf.EncodingConfig.Marshaler,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
 		bankKeeper,
 	)
 
-	return qbankKeeper
+	return k
 }
 
-func (i initializer) SetQbankDefaultParams(k keeper.Keeper) {
-	k.SetParams(i.Ctx, types.DefaultParams())
+func (kf KeeperFactory) SetQbankDefaultParams(k keeper.Keeper) {
+	k.SetParams(kf.Ctx, types.DefaultParams())
 }

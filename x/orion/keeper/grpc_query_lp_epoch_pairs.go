@@ -16,8 +16,7 @@ func (k Keeper) LpEpochPairs(goCtx context.Context, req *types.QueryLpEpochPairs
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var leps []types.LpEpochPair
-	leps = k.GetAllLpEpochPairList(ctx)
+	leps := k.GetAllLpEpochPairList(ctx)
 
 	return &types.QueryLpEpochPairsResponse{LpEpochPairs: leps}, nil
 }

@@ -8,15 +8,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	keepertest "github.com/abag/quasarnode/testutil/keeper"
+	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/qoracle/types"
 )
 
 func TestPoolRankingQuery(t *testing.T) {
-	ctx, keeper := keepertest.NewTestSetup(t).GetQoracleKeeper()
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 	wctx := sdk.WrapSDKContext(ctx)
-	item := createTestPoolRanking(&keeper, ctx)
+	item := createTestPoolRanking(&k, ctx)
 	for _, tc := range []struct {
 		desc     string
 		request  *types.QueryGetPoolRankingRequest
@@ -34,7 +35,7 @@ func TestPoolRankingQuery(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			response, err := keeper.PoolRanking(wctx, tc.request)
+			response, err := k.PoolRanking(wctx, tc.request)
 			if tc.err != nil {
 				require.ErrorIs(t, err, tc.err)
 			} else {
