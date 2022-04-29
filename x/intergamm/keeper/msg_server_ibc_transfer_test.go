@@ -8,12 +8,23 @@ import (
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
+
+func icaPacket(t *testing.T, setup *testutil.TestSetup, msgs []sdk.Msg) icatypes.InterchainAccountPacketData {
+	data, err := icatypes.SerializeCosmosTx(setup.Cdc, msgs)
+	require.NoError(t, err)
+
+	return icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: data,
+	}
+}
 
 func TestIbcTransfer(t *testing.T) {
 	var err error
@@ -23,41 +34,60 @@ func TestIbcTransfer(t *testing.T) {
 	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
 	srv, srvCtx := setupMsgServer(ctx, k)
 
+	// Test data
 	sender := sample.AccAddress()
 	receiver := sample.AccAddress()
+	icaTestAddress := "icaTestAddress"
 	connectionId := "testConnectionId"
 	connectionTimeout := uint64(10)
 	portId := fmt.Sprintf("icacontroller-%s", sender.String())
 	channelId := "channel-0"
-
+	coin := sdk.NewCoin("qsr", sdk.NewInt(42))
+	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
+	transferTimeout := uint64(11)
 	msg := types.NewMsgIbcTransfer(
 		sender.String(),
 		connectionId,
 		connectionTimeout,
 		portId,
 		channelId,
-		sdk.NewCoin("qsr", sdk.NewInt(42)),
+		coin,
 		receiver.String(),
-		clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0},
-		uint64(10),
+		transferTimeoutHeight,
+		transferTimeout,
 	)
 
+	// Setup capability
 	capPath := host.ChannelCapabilityPath(portId, channelId)
-	cap, err := setup.Keepers.InterGammKeeper.ScopedKeeper.NewCapability(ctx, capPath)
+	cap, err := setup.Keepers.InterGammKeeper.NewCapability(ctx, capPath)
 	require.NoError(t, err)
-	setup.Keepers.InterGammKeeper.ClaimCapability(ctx, capabilitytypes.NewCapability(cap.GetIndex()), capPath)
 
 	// Expected mocks
 	gomock.InOrder(
 		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetInterchainAccountAddress(ctx, connectionId, portId).
-			Return("", true),
+			Return(icaTestAddress, true),
 
 		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetActiveChannelID(ctx, connectionId, portId).
 			Return(channelId, true),
 
-		// TODO expect a specific packet
-		setup.Mocks.ICAControllerKeeperMock.EXPECT().SendTx(ctx, gomock.Any(), connectionId, portId, gomock.Any(), connectionTimeout).
-			Return(uint64(42), nil),
+		setup.Mocks.ICAControllerKeeperMock.EXPECT().SendTx(
+			ctx,
+			cap,
+			connectionId,
+			portId,
+			icaPacket(t, setup, []sdk.Msg{
+				&ibctransfertypes.MsgTransfer{
+					SourcePort:       portId,
+					SourceChannel:    channelId,
+					Token:            coin,
+					Sender:           icaTestAddress,
+					Receiver:         receiver.String(),
+					TimeoutHeight:    transferTimeoutHeight,
+					TimeoutTimestamp: transferTimeout,
+				},
+			}),
+			connectionTimeout,
+		).Return(uint64(0), nil),
 	)
 
 	resp, err := srv.IbcTransfer(srvCtx, msg)

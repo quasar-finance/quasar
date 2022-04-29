@@ -11,6 +11,7 @@ import (
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -36,7 +37,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	logger := log.TestingLogger()
 	// Use nop logger if logging becomes too verbose for test output
 	// logger := log.NewNopLogger()
-	logger.Debug("initializing test keepers")
+	logger.Debug("creating test setup")
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -88,6 +89,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	return &TestSetup{
 		Ctx: ctx,
+		Cdc: encodingConfig.Marshaler,
 
 		Mocks: &testMocks{
 			ICAControllerKeeperMock: icaControllerKeeperMock,
@@ -109,6 +111,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 type TestSetup struct {
 	Ctx sdk.Context
+	Cdc codec.Codec
 
 	Keepers *testKeepers
 	Mocks   *testMocks

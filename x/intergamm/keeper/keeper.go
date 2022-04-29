@@ -25,7 +25,7 @@ type Keeper struct {
 	cdc                 codec.BinaryCodec
 	storeKey            sdk.StoreKey
 	memKey              sdk.StoreKey
-	ScopedKeeper        capabilitykeeper.ScopedKeeper
+	scopedKeeper        capabilitykeeper.ScopedKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
 }
@@ -34,7 +34,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey,
 	memKey sdk.StoreKey,
-	ScopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper capabilitykeeper.ScopedKeeper,
 	iaKeeper types.ICAControllerKeeper,
 	ps paramtypes.Subspace,
 
@@ -48,7 +48,7 @@ func NewKeeper(
 		cdc:                 cdc,
 		storeKey:            storeKey,
 		memKey:              memKey,
-		ScopedKeeper:        ScopedKeeper,
+		scopedKeeper:        scopedKeeper,
 		icaControllerKeeper: iaKeeper,
 		paramstore:          ps,
 	}
@@ -60,7 +60,11 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // ClaimCapability claims the channel capability passed via the OnOpenChanInit callback
 func (k *Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
-	return k.ScopedKeeper.ClaimCapability(ctx, cap, name)
+	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
+}
+
+func (k *Keeper) NewCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, error) {
+	return k.scopedKeeper.NewCapability(ctx, name)
 }
 
 func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error {
@@ -189,8 +193,7 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	if !found {
 		return sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
 	}
-	println(host.ChannelCapabilityPath(portID, channelID))
-	chanCap, found := k.ScopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
+	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !found {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
