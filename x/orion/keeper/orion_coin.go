@@ -7,16 +7,16 @@ import (
 )
 
 // GetTotalOrions calculates the total amount of orions for the input sdk.Coins
-func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) sdk.Coin {
+func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) (sdk.Coin, error) {
 	var orions sdk.Coin
 	for _, coin := range coins {
 		orion, err := k.CalcReceipts(ctx, coin)
 		if err != nil {
-			// TODO add error handling
+			return sdk.Coin{}, err
 		}
 		orions = orions.Add(orion)
 	}
-	return orions
+	return orions, nil
 }
 
 // CalcReceipts calculates the amount of orion coin equivalent to the input sdk.Coin
@@ -40,7 +40,7 @@ func (k Keeper) MintOrion(ctx sdk.Context, amt sdk.Int) error {
 	return k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(sdk.NewCoin(types.ModuleName, amt)))
 }
 
-// BurnOrion will mint orions from from the OrionReserveMaccName
+// BurnOrion will mint orions from the OrionReserveMaccName
 func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
 	return k.BankKeeper.BurnCoins(ctx, types.OrionReserveMaccName,
 		sdk.NewCoins(sdk.NewCoin(types.ModuleName, amt)))
@@ -50,14 +50,14 @@ func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
 // and total users deposit in the orion vault on the same epoch day.
 // Total orion = Users orion amounts + orion coin amount owned by the orion module
 // Users share = users equivalent orions / total equivalent deposited orions.
-func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context,
-	epochDay uint64, userAcc string) sdk.Dec {
+func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context, epochDay uint64, userAcc string) (sdk.Dec, error) {
 	coins := k.qbankKeeper.GetEpochUserDepositAmt(ctx, epochDay, userAcc)
 	usersOrion := sdk.NewCoin(types.ModuleName, sdk.ZeroInt())
 	for _, c := range coins {
 		orion, err := k.CalcReceipts(ctx, c)
 		if err != nil {
-			// TODO add error handling
+			// TODO recheck error handling
+			return sdk.Dec{}, err
 		}
 		usersOrion = usersOrion.Add(orion)
 	}
@@ -66,11 +66,12 @@ func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context,
 	for _, c := range allCoins {
 		orion, err := k.CalcReceipts(ctx, c)
 		if err != nil {
-			// TODO add error handling
+			// TODO recheck error handling
+			return sdk.Dec{}, err
 		}
 		totalOrions = totalOrions.Add(orion)
 	}
-	usershare := usersOrion.Amount.ToDec().QuoInt(totalOrions.Amount)
+	userShare := usersOrion.Amount.ToDec().QuoInt(totalOrions.Amount)
 
-	return usershare
+	return userShare, nil
 }

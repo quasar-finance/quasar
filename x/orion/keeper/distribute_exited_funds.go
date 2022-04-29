@@ -146,7 +146,7 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 				denomAmountFromReserve[denom] = r.Amount
 				orions, err := k.MintAndAllocateOrions(ctx, sdk.NewCoin(denom, denomRequiredAmtMap[denom]))
 				if err != nil {
-					// TODO add error handling
+					return err
 				}
 				if orion, ok := denomAmountFromReserve[orions.Denom]; ok {
 					denomAmountFromReserve[orions.Denom] = orion.Add(orions.Amount)
