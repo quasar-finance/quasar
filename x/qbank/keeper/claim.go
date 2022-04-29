@@ -189,7 +189,7 @@ func (k Keeper) GetAllTotalClaimedRewards(ctx sdk.Context) []types.UserBalanceIn
 		var qcoin types.QCoins
 		k.cdc.MustUnmarshal(value, &qcoin)
 
-		userClaimedReward := types.UserBalanceInfo{Type: types.BalanceType_CLAIMABLE_REWARDS,
+		userClaimedReward := types.UserBalanceInfo{Type: types.BalanceType_TOTAL_CLAIMED_REWARDS,
 			VaultID:             oriontypes.ModuleName,
 			DepositorAccAddress: userAccStr,
 			Coins:               qcoin.Coins,

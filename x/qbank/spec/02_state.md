@@ -48,7 +48,7 @@ Value = sdk.Coin [ Total denom deposit so far irrespective of the withdrawal ]
 #### Total epoch lockup denom deposit by a user - 
 This is to maintain the denom deposit done by a user on any given epoch day for any lockup periods. 
 ```
-Key = {UserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+Key = {EpochLockupUserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 Value = sdk.Coin 
 ```
 

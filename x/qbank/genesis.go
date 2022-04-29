@@ -10,7 +10,6 @@ import (
 // state.
 // should be used. Genesis state should have all other KV stores informations.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -19,9 +18,8 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 // TODO | AUDIT | Export genesis should export all other KV store info in an appropriate struct object.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
-	genesis.Params = k.GetParams(ctx)
 
-	// Prepare the deposit info state
+	genesis.Params = k.GetParams(ctx)
 	genesis.DepositInfos = k.GetAllDepositInfos(ctx)
 	genesis.TotalDeposits = k.GetAllTotalDeposits(ctx)
 	genesis.Withdrawables = k.GetAllActualWithdrawables(ctx)

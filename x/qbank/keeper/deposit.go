@@ -139,7 +139,7 @@ func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) 
 // with given epoch day and lockup period which is sdk.coin specifc to a given coin denom.
 func (k Keeper) GetEpochLockupUserDenomDepositAmt(ctx sdk.Context,
 	uid, denom string, epochday uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
 	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, denom, epochday, lockupPeriod)
 
 	b := store.Get(key)
@@ -152,9 +152,9 @@ func (k Keeper) GetEpochLockupUserDenomDepositAmt(ctx sdk.Context,
 }
 
 // AddEpochLockupUserDenomDeposit adds user's denom deposit amount with
-// Key - {UserDenomDepositKBP} +  ":" + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+// Key - {EpochLockupUserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
 	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, coin.GetDenom(), epochday, lockupPeriod)
 
 	k.Logger(ctx).Info(fmt.Sprintf("AddEpochLockupUserDenomDeposit|key=%s|%s|%s|%s\n",
@@ -174,9 +174,9 @@ func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin
 }
 
 // SubEpochLockupUserDenomDeposit subs user's denom deposit amount with
-// Key - {UserDenomDepositKBP} +  ":" + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+// Key - {EpochLockupUserDenomDepositKBP} +  ":" + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
 	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, coin.GetDenom(), epochday, lockupPeriod)
 	b := store.Get(key)
 	if b == nil {
@@ -195,7 +195,7 @@ func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin
 // as - {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:}
 // On iteration, key - {denom}, value = sdk.Coin. No. of iteration can be upto the number of lockup periods
 func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, userAcc string) sdk.Coins {
-	bytePrefix := types.UserDenomDepositKBP
+	bytePrefix := types.EpochLockupUserDenomDepositKBP
 	var prefixKey []byte
 	var coins sdk.Coins
 	for lockupStr := range types.LockupTypes_value {
@@ -226,9 +226,9 @@ func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, userAcc
 
 // GetTotalEpochDeposits calculates the total amount deposited on a given epoch day
 // Logic - Iterate with epoch day as prefix keys
-// Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
+// Full key -  EpochLockupUserDenomDepositKBP + {epochday} + {:}
 func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coins {
-	bytePrefix := types.UserDenomDepositKBP
+	bytePrefix := types.EpochLockupUserDenomDepositKBP
 	prefixKey := types.EpochDaySepKey(epochday, types.Sep)
 	prefixKey = append(bytePrefix, prefixKey...)
 	store := ctx.KVStore(k.storeKey)
@@ -258,7 +258,7 @@ func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coin
 // Method is used for export genesis.
 // Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
 func (k Keeper) GetAllDepositInfos(ctx sdk.Context) []types.DepositInfo {
-	bytePrefix := types.UserDenomDepositKBP
+	bytePrefix := types.EpochLockupUserDenomDepositKBP
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
 	defer iter.Close()
@@ -305,7 +305,7 @@ func (k Keeper) GetAllTotalDeposits(ctx sdk.Context) []types.UserBalanceInfo {
 	var totalDepositInfos []types.UserBalanceInfo
 	for ; iter.Valid(); iter.Next() {
 		key, value := iter.Key(), iter.Value()
-		userAccStr := string(key)
+		userAccStr := string(key[1:])
 		var qcoins types.QCoins
 		k.cdc.MustUnmarshal(value, &qcoins)
 

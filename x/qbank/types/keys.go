@@ -29,40 +29,25 @@ func KeyPrefix(p string) []byte {
 
 const (
 	Sep = ":" // Separater used in the keys
-
-	// Prefix keys
-	DepositKey                = "Deposit-value-"
-	DepositCountKey           = "Deposit-count-"
-	UserDenomDepositKeyPrefix = "User-denom-deposit-"
-	WithdrawKey               = "Withdraw-value-"
-	WithdrawCountKey          = "Withdraw-count-"
 )
 
 var (
 	// KBP - short of KeyBytePrefix, Byte prfix for the key used in KV store
-	QbankGlobalKBP           = []byte{0x00}
-	DepositKBP               = []byte{0x01}
-	UserDenomDepositKBP      = []byte{0x02}
-	WithdrawKeyKBP           = []byte{0x03}
-	UserDepositKBP           = []byte{0x04}
-	WithdrawableKeyKBP       = []byte{0x05}
-	UserClaimKBP             = []byte{0x06}
-	UserClaimedKBP           = []byte{0x07}
-	ActualWithdrawableKeyKBP = []byte{0x08}
-	TotalWithdrawKeyKBP      = []byte{0x09}
+	UserDenomDepositKBP            = []byte{0x01}
+	EpochLockupUserDenomDepositKBP = []byte{0x02}
+	UserDepositKBP                 = []byte{0x03}
+	WithdrawableKeyKBP             = []byte{0x04}
+	ActualWithdrawableKeyKBP       = []byte{0x05}
+	TotalWithdrawKeyKBP            = []byte{0x06}
+	UserClaimKBP                   = []byte{0x07}
+	UserClaimedKBP                 = []byte{0x08}
 )
 
 var SepByte = []byte(":")
 
-func SplitKeyBytesWithPrefix(kb []byte) [][]byte {
-	// First byte is used for the byte prefix
-	split := bytes.Split(kb[1:], SepByte)
-	return split
-}
-
 func SplitKeyBytes(kb []byte) [][]byte {
 	// First byte is used for the byte prefix
-	split := bytes.Split(kb, SepByte)
+	split := bytes.Split(kb[1:], SepByte)
 	return split
 }
 
@@ -85,11 +70,6 @@ func CreateIDFromByteKey(bzKey []byte) uint64 {
 }
 
 // Deposit specific function
-
-// CreateDepositCountKey create the prefix store key for deposit counts
-func CreateDepositCountKey() []byte {
-	return createStoreKey(DepositCountKey)
-}
 
 // CreateUserDenomDepositKey create the prefix store key for the user denom wise deposit storage
 func CreateUserDenomDepositKey(uid, sep, denom string) []byte {
@@ -219,11 +199,6 @@ func CreateLockupWithdrawableKey(denom, uid string, lockupPeriod LockupTypes, se
 }
 
 // Withdraw specific functions
-
-// set of key creation functions for withdraw objects
-func CreateWithdrawCountKey() []byte {
-	return createStoreKey(WithdrawCountKey)
-}
 
 // CreateUsersClaimKey create keys for users claim/claimed amount
 // Key = {uid} + ":" + {vaultID}

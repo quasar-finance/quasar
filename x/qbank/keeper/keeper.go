@@ -18,7 +18,7 @@ type (
 		memKey        sdk.StoreKey
 		paramstore    paramtypes.Subspace
 		bankKeeper    types.BankKeeper
-		epochsKeeper  types.EpochsKeeper
+		EpochsKeeper  types.EpochsKeeper
 		qoracleKeeper types.QoracleKeeper
 	}
 )
@@ -43,7 +43,7 @@ func NewKeeper(
 		memKey:        memKey,
 		paramstore:    ps,
 		bankKeeper:    bankKeeper,
-		epochsKeeper:  epochsKeeper,
+		EpochsKeeper:  epochsKeeper,
 		qoracleKeeper: qoraclekeeper,
 	}
 }

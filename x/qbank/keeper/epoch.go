@@ -10,6 +10,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 		k.Logger(ctx).Info("epoch ended",
 			"identifier", epochIdentifier,
 			"number", epochNumber,
-			"epochinfo", k.epochsKeeper.GetEpochInfo(ctx, epochIdentifier))
+			"epochinfo", k.EpochsKeeper.GetEpochInfo(ctx, epochIdentifier))
 	}
 }
