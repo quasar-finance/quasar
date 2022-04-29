@@ -22,6 +22,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, td := range genState.TotalDeposits {
 		for _, coin := range td.Coins {
 			k.AddUserDeposit(ctx, td.DepositorAccAddress, coin)
+			k.AddUserDenomDeposit(ctx, td.DepositorAccAddress, coin)
 		}
 	}
 
