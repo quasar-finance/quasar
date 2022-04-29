@@ -137,7 +137,10 @@ func (k Keeper) RewardDistribution(ctx sdk.Context,
 	// Fill the denomActualRewardMap
 	totalEquivalentReceipt := k.GetTotalOrions(ctx, totalLPV)
 	for denom, amt := range denomAmt {
-		equivalentReciept := k.CalcReceipts(ctx, sdk.NewCoin(denom, amt))
+		equivalentReciept, err := k.CalcReceipts(ctx, sdk.NewCoin(denom, amt))
+		if err != nil {
+			// TODO add error handling
+		}
 		weight := equivalentReciept.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
 		for _, rewardCoin := range rc.Coins {
 			reward := sdk.NewCoin(rewardCoin.Denom, rewardCoin.Amount.ToDec().Mul(weight).TruncateInt())

@@ -319,6 +319,7 @@ func (k Keeper) GetCurrentEpochDay(ctx sdk.Context) uint64 {
 // What is the denom weight contribution on a given epoch day?
 // This will be used to calculate the users denom contribution which will be further used
 // to calculate the users reward contribution for this denom
+
 // GetEpochDenomWeight calculates the denom contribution to LPing on a given day.
 // Logic -
 // 1. Calculate Each denoms amount.
@@ -332,7 +333,10 @@ func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.Ep
 	var totalOrionAmt sdk.Int
 	denomOrionMap := make(map[string]sdk.Coin)
 	for _, coin := range lps.TotalLPCoins {
-		denomOrions := k.CalcReceipts(ctx, coin)
+		denomOrions, err := k.CalcReceipts(ctx, coin)
+		if err != nil {
+			// TODO add error handling
+		}
 		totalOrionAmt = totalOrionAmt.Add(denomOrions.Amount)
 		denomOrionMap[coin.Denom] = denomOrions
 	}
