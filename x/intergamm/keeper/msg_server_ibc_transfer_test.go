@@ -25,39 +25,42 @@ func TestIbcTransfer(t *testing.T) {
 
 	sender := sample.AccAddress()
 	receiver := sample.AccAddress()
+	connectionId := "testConnectionId"
+	connectionTimeout := uint64(10)
+	portId := fmt.Sprintf("icacontroller-%s", sender.String())
+	channelId := "channel-0"
 
 	msg := types.NewMsgIbcTransfer(
 		sender.String(),
-		"testConnectionId",
-		uint64(10),
-		"transfer",
-		"channel-0",
+		connectionId,
+		connectionTimeout,
+		portId,
+		channelId,
 		sdk.NewCoin("qsr", sdk.NewInt(42)),
 		receiver.String(),
 		clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0},
 		uint64(10),
 	)
 
-	portId := fmt.Sprintf("icacontroller-%s", sender.String())
-
-	capPath := host.ChannelCapabilityPath(portId, "channel-0")
+	capPath := host.ChannelCapabilityPath(portId, channelId)
 	cap, err := setup.Keepers.InterGammKeeper.ScopedKeeper.NewCapability(ctx, capPath)
 	require.NoError(t, err)
 	setup.Keepers.InterGammKeeper.ClaimCapability(ctx, capabilitytypes.NewCapability(cap.GetIndex()), capPath)
 
 	// Expected mocks
 	gomock.InOrder(
-		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetInterchainAccountAddress(ctx, "testConnectionId", portId).
-			Return("bla1", true),
+		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetInterchainAccountAddress(ctx, connectionId, portId).
+			Return("", true),
 
-		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetActiveChannelID(ctx, "testConnectionId", portId).
-			Return("channel-0", true),
+		setup.Mocks.ICAControllerKeeperMock.EXPECT().GetActiveChannelID(ctx, connectionId, portId).
+			Return(channelId, true),
 
 		// TODO expect a specific packet
-		setup.Mocks.ICAControllerKeeperMock.EXPECT().SendTx(ctx, gomock.Any(), "testConnectionId", portId, gomock.Any(), uint64(10)).
+		setup.Mocks.ICAControllerKeeperMock.EXPECT().SendTx(ctx, gomock.Any(), connectionId, portId, gomock.Any(), connectionTimeout).
 			Return(uint64(42), nil),
 	)
 
-	_, err = srv.IbcTransfer(srvCtx, msg)
+	resp, err := srv.IbcTransfer(srvCtx, msg)
 	require.NoError(t, err)
+	require.Equal(t, types.MsgIbcTransferResponse{}, *resp)
 }
