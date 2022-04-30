@@ -193,7 +193,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	// Note that the actual withdrawable amount will be different from the expected withdrawable amount.
 	// It will be based on the Orion vault performance and market movement in destination dex (osmosis)
 	logger := k.Logger(ctx)
-	logger.Debug(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+	logger.Debug("blockheight", ctx.BlockHeight())
 
 	for lockupEnm, lockupStr := range types.LockupTypes_name {
 
@@ -206,8 +206,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 			key := types.CreateEpochLockupUserKey(depositDay, types.LockupTypes(lockupEnm), types.Sep)
 			keyPrefix := append(bytePrefix, key...)
 
-			logger.Debug(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
-				lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
+			logger.Debug("blockheight", ctx.BlockHeight(), "lockupEnm", lockupEnm, "byteprefix", string(keyPrefix))
 
 			// Process for the current expected withdrawable amount
 			k.ProcessWithdrawable(ctx, keyPrefix)

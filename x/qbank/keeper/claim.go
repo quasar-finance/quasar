@@ -103,8 +103,7 @@ func (k Keeper) GetAllClaimableRewards(ctx sdk.Context) []types.UserBalanceInfo 
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllClaimableRewards|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight, "bytePrefix", string(bytePrefix))
 
 	var totalClaimableRewards []types.UserBalanceInfo
 
@@ -124,7 +123,7 @@ func (k Keeper) GetAllClaimableRewards(ctx sdk.Context) []types.UserBalanceInfo 
 		totalClaimableRewards = append(totalClaimableRewards, userClaimableReward)
 	}
 
-	logger.Info("TotalClaimableRewards", totalClaimableRewards)
+	logger.Debug("TotalClaimableRewards", totalClaimableRewards)
 	return totalClaimableRewards
 }
 
@@ -176,8 +175,7 @@ func (k Keeper) GetAllTotalClaimedRewards(ctx sdk.Context) []types.UserBalanceIn
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllTotalClaimedRewards|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight, "bytePrefix", string(bytePrefix))
 
 	var totalClaimedRewards []types.UserBalanceInfo
 
@@ -197,6 +195,6 @@ func (k Keeper) GetAllTotalClaimedRewards(ctx sdk.Context) []types.UserBalanceIn
 		totalClaimedRewards = append(totalClaimedRewards, userClaimedReward)
 	}
 
-	logger.Info("TotalClaimedRewards", totalClaimedRewards)
+	logger.Debug("TotalClaimedRewards", totalClaimedRewards)
 	return totalClaimedRewards
 }

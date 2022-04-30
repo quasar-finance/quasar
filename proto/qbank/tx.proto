@@ -57,5 +57,5 @@ message MsgRequestWithdrawAll {
 
 message MsgRequestWithdrawAllResponse {
 }
-
 // this line is used by starport scaffolding # proto/tx/message
+
