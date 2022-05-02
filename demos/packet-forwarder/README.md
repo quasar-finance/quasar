@@ -3,10 +3,10 @@
 This demo tutorial demonstrates the working of multi-hop packet forwarding by using three chains from their latest source code in the local environment. The three chains used for the demo purpose are `quasar`, `cosmos-hub`, and `osmosis`.
 
 Repo links
-[quasar](https://github.com/quasar-finance/quasar)
-[cosmos-hub](https://github.com/quasar-finance/gaia)
-[osmosis](https://github.com/osmosis-labs/osmosis)
-[multi-hop packet forwarder](https://github.com/strangelove-ventures/packet-forward-middleware)
+1. [quasar](https://github.com/quasar-finance/quasar)
+2. [cosmos-hub](https://github.com/quasar-finance/gaia)
+3. [osmosis](https://github.com/osmosis-labs/osmosis)
+4. [multi-hop packet forwarder](https://github.com/strangelove-ventures/packet-forward-middleware)
 
 These 3 blockchains will be communicating for the purpose of demonstrating a token transfer from `cosmos` to `quasar`, then from `quasar` to osmosis, using the IBC packet forwarding feature.
 
@@ -149,7 +149,7 @@ osmosisd q bank balances $(osmosisd keys show -a alice --home run/osmosis/home) 
 
 This step is to verify that the final denom that reaches to osmosis via both the paths are same.
 
-Path #1 `quasar` (one hop atom hex hash ( `cosmos-hub` -> `quasar` ) -> `cosmos-hub` -> `osmosis`
-Path #2 `cosmos-hub` -> `osmosis`
+1. Path #1 `quasar` (one hop atom hex hash ( `cosmos-hub` -> `quasar` ) -> `cosmos-hub` -> `osmosis`
+2. Path #2 `cosmos-hub` -> `osmosis`
 
 This step should update the alice ibc hex hash atom balance to be increased by the sent amount.

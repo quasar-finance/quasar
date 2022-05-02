@@ -193,23 +193,20 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	// Note that the actual withdrawable amount will be different from the expected withdrawable amount.
 	// It will be based on the Orion vault performance and market movement in destination dex (osmosis)
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("Entered Qbank BeginBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
+	logger.Debug("blockheight", ctx.BlockHeight())
 
 	for lockupEnm, lockupStr := range types.LockupTypes_name {
 
-		bytePrefix := types.UserDenomDepositKBP
-		// AUDIT NOTE - TODO : Assume one block as one epoch day for now. Ex. Reduce 7 to get block last 7th block.
-		// We will need to integrate epoch module probably from osmosis as next priority.
-		// For the initial development testing,this assumtion of one block = one epoch day is sufficient.
-		// With that a 7 day deposit will become 7 block deposit.
+		bytePrefix := types.EpochLockupUserDenomDepositKBP
 		lockupdays := int64(types.Lockupdays[lockupStr])
-		depositDay := uint64(ctx.BlockHeight() - lockupdays)
+		currentEpoch := uint64(k.EpochsKeeper.GetEpochInfo(ctx,
+			k.OrionEpochIdentifier(ctx)).CurrentEpoch)
+		depositDay := currentEpoch - uint64(lockupdays)
 		if depositDay > 0 {
 			key := types.CreateEpochLockupUserKey(depositDay, types.LockupTypes(lockupEnm), types.Sep)
 			keyPrefix := append(bytePrefix, key...)
 
-			logger.Info(fmt.Sprintf("Qbank BeginBlocker LockupTypes_name|k=%d|v=%s|modulename=%s|blockheight=%d|prefix=%s",
-				lockupEnm, lockupStr, types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
+			logger.Debug("blockheight", ctx.BlockHeight(), "lockupEnm", lockupEnm, "byteprefix", string(keyPrefix))
 
 			// Process for the current expected withdrawable amount
 			k.ProcessWithdrawable(ctx, keyPrefix)

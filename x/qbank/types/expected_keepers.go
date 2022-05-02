@@ -1,6 +1,7 @@
 package types
 
 import (
+	epochtypes "github.com/abag/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -26,6 +27,11 @@ type BankKeeper interface {
 	) error
 }
 
-type OrionKeeper interface {
-	RequestWithdraw(ctx sdk.Context, depositorAddr string, coin sdk.Coin) error
+type EpochsKeeper interface {
+	GetEpochInfo(ctx sdk.Context, identifier string) epochtypes.EpochInfo
+}
+
+// QoracleKeeper defines the expected interface needed by Orion module from qoracle module
+type QoracleKeeper interface {
+	GetStablePrice(ctx sdk.Context, denom string) sdk.Dec
 }

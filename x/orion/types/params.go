@@ -17,8 +17,8 @@ var (
 	KeyEnabled                = []byte("Enabled")
 	DefaultPerfFeePer sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
 	DefaultMgmtFeePer sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
-	DefaultLpEpochId          = "minute"                 // AUDIT TODO - should be day. minute used for quick testing
-	DefaultEnabled            = true
+	DefaultLpEpochId          = "day"
+	DefaultEnabled            = false
 )
 
 // ParamKeyTable the param key table for launch module
@@ -48,12 +48,21 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
+
 	if err := validatePerfFeePer(p.PerfFeePer); err != nil {
 		return err
 	}
 	if err := validateMgmtFeePer(p.PerfFeePer); err != nil {
 		return err
 	}
+
+	if err := validateLpEpochId(p.LpEpochId); err != nil {
+		return err
+	}
+	if err := validateEnabled(p.Enabled); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -108,6 +117,7 @@ func validateLpEpochId(i interface{}) error {
 	}
 	return nil
 }
+
 func validateEnabled(i interface{}) error {
 	_, ok := i.(bool)
 	if !ok {

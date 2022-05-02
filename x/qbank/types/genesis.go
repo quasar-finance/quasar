@@ -15,6 +15,10 @@ func DefaultGenesis() *GenesisState {
 	}
 }
 
+func NewGenesisState() *GenesisState {
+	return &GenesisState{}
+}
+
 // Validate performs basic genesis state validation returning an error upon any
 // failure.
 // Note - This validation make sense to make sure no duplicate entry exist for any deposit object

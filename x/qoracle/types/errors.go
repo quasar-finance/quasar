@@ -8,5 +8,6 @@ import (
 
 // x/qoracle module sentinel errors
 var (
-	ErrSample = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrSample             = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrInvalidStablePrice = sdkerrors.Register(ModuleName, 200, "invalid stable price")
 )

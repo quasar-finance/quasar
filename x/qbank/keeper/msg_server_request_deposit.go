@@ -12,17 +12,33 @@ import (
 // RequestDeposit process the deposit request transaction message and store in the KV store
 // With appropriate key and value combinations so the store can be used efficiently.
 func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDeposit) (*types.MsgRequestDepositResponse, error) {
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.Enabled(ctx) {
+		return nil, types.ErrQbankNotEnabled
+	}
 
 	depositor := msg.GetCreator()
 	coin := msg.GetCoin()
 	lockupPeriod := msg.GetLockupPeriod()
-	// TODO get current epoch
-	currentEpoch := uint64(ctx.BlockHeight())
+	minDollarDepositValue := k.MinOrionEpochDenomDollarDeposit(ctx)
+	stablePrice := k.qoracleKeeper.GetStablePrice(ctx, coin.Denom)
+	currentEpoch := uint64(k.EpochsKeeper.GetEpochInfo(ctx,
+		k.OrionEpochIdentifier(ctx)).CurrentEpoch)
 
 	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		return nil, err
+	}
+
+	if stablePrice.IsZero() {
+		return nil, types.ErrStablePriceNotAvailable
+	}
+
+	dollarDepositValue := coin.Amount.ToDec().Mul(stablePrice)
+	if dollarDepositValue.LT(minDollarDepositValue) {
+		return nil, types.ErrInsufficientDollarDepositValue
 	}
 
 	// Transfer amount to vault from depositor
@@ -51,6 +67,9 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		"Coin", coin.String(),
 		"LockupPeriod", lockupPeriod.String(),
 		"Epoch", currentEpoch,
+		"stablePrice", stablePrice,
+		"minDollarDepositValue", minDollarDepositValue,
+		"dollarDepositValue", dollarDepositValue,
 	)
 
 	return &types.MsgRequestDepositResponse{}, nil

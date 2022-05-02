@@ -5,6 +5,8 @@ package types
 
 import (
 	fmt "fmt"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -23,9 +25,50 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// LockupTypes defines different types of locktypes to be used in the system for users deposit
+type BalanceType int32
+
+const (
+	BalanceType_TOTAL_DEPOSIT         BalanceType = 0
+	BalanceType_WITHDRAWABLE          BalanceType = 1
+	BalanceType_TOTAL_WITHDRAW        BalanceType = 2
+	BalanceType_CLAIMABLE_REWARDS     BalanceType = 3
+	BalanceType_TOTAL_CLAIMED_REWARDS BalanceType = 4
+)
+
+var BalanceType_name = map[int32]string{
+	0: "TOTAL_DEPOSIT",
+	1: "WITHDRAWABLE",
+	2: "TOTAL_WITHDRAW",
+	3: "CLAIMABLE_REWARDS",
+	4: "TOTAL_CLAIMED_REWARDS",
+}
+
+var BalanceType_value = map[string]int32{
+	"TOTAL_DEPOSIT":         0,
+	"WITHDRAWABLE":          1,
+	"TOTAL_WITHDRAW":        2,
+	"CLAIMABLE_REWARDS":     3,
+	"TOTAL_CLAIMED_REWARDS": 4,
+}
+
+func (x BalanceType) String() string {
+	return proto.EnumName(BalanceType_name, int32(x))
+}
+
+func (BalanceType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_f07a8d2c0f204875, []int{0}
+}
+
 // GenesisState defines the qbank module's genesis state.
 type GenesisState struct {
-	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	Params              Params            `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	DepositInfos        []DepositInfo     `protobuf:"bytes,2,rep,name=depositInfos,proto3" json:"depositInfos"`
+	TotalDeposits       []UserBalanceInfo `protobuf:"bytes,3,rep,name=totalDeposits,proto3" json:"totalDeposits"`
+	Withdrawables       []UserBalanceInfo `protobuf:"bytes,4,rep,name=withdrawables,proto3" json:"withdrawables"`
+	TotalWithdraws      []UserBalanceInfo `protobuf:"bytes,5,rep,name=totalWithdraws,proto3" json:"totalWithdraws"`
+	ClaimableRewards    []UserBalanceInfo `protobuf:"bytes,6,rep,name=claimableRewards,proto3" json:"claimableRewards"`
+	TotalClaimedRewards []UserBalanceInfo `protobuf:"bytes,7,rep,name=totalClaimedRewards,proto3" json:"totalClaimedRewards"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -68,27 +111,246 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
+func (m *GenesisState) GetDepositInfos() []DepositInfo {
+	if m != nil {
+		return m.DepositInfos
+	}
+	return nil
+}
+
+func (m *GenesisState) GetTotalDeposits() []UserBalanceInfo {
+	if m != nil {
+		return m.TotalDeposits
+	}
+	return nil
+}
+
+func (m *GenesisState) GetWithdrawables() []UserBalanceInfo {
+	if m != nil {
+		return m.Withdrawables
+	}
+	return nil
+}
+
+func (m *GenesisState) GetTotalWithdraws() []UserBalanceInfo {
+	if m != nil {
+		return m.TotalWithdraws
+	}
+	return nil
+}
+
+func (m *GenesisState) GetClaimableRewards() []UserBalanceInfo {
+	if m != nil {
+		return m.ClaimableRewards
+	}
+	return nil
+}
+
+func (m *GenesisState) GetTotalClaimedRewards() []UserBalanceInfo {
+	if m != nil {
+		return m.TotalClaimedRewards
+	}
+	return nil
+}
+
+// DepositInfo represents the state of a particular deposit
+type DepositInfo struct {
+	VaultID             string      `protobuf:"bytes,1,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
+	EpochDay            uint64      `protobuf:"varint,2,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
+	LockupPeriod        LockupTypes `protobuf:"varint,3,opt,name=lockupPeriod,proto3,enum=abag.quasarnode.qbank.LockupTypes" json:"lockupPeriod,omitempty"`
+	DepositorAccAddress string      `protobuf:"bytes,4,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
+	Coin                types.Coin  `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin"`
+}
+
+func (m *DepositInfo) Reset()         { *m = DepositInfo{} }
+func (m *DepositInfo) String() string { return proto.CompactTextString(m) }
+func (*DepositInfo) ProtoMessage()    {}
+func (*DepositInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f07a8d2c0f204875, []int{1}
+}
+func (m *DepositInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DepositInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DepositInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DepositInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DepositInfo.Merge(m, src)
+}
+func (m *DepositInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *DepositInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_DepositInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DepositInfo proto.InternalMessageInfo
+
+func (m *DepositInfo) GetVaultID() string {
+	if m != nil {
+		return m.VaultID
+	}
+	return ""
+}
+
+func (m *DepositInfo) GetEpochDay() uint64 {
+	if m != nil {
+		return m.EpochDay
+	}
+	return 0
+}
+
+func (m *DepositInfo) GetLockupPeriod() LockupTypes {
+	if m != nil {
+		return m.LockupPeriod
+	}
+	return LockupTypes_Invalid
+}
+
+func (m *DepositInfo) GetDepositorAccAddress() string {
+	if m != nil {
+		return m.DepositorAccAddress
+	}
+	return ""
+}
+
+func (m *DepositInfo) GetCoin() types.Coin {
+	if m != nil {
+		return m.Coin
+	}
+	return types.Coin{}
+}
+
+// UserBalanceInfo represents the state of a particular type of claim balance
+type UserBalanceInfo struct {
+	Type                BalanceType                              `protobuf:"varint,1,opt,name=type,proto3,enum=abag.quasarnode.qbank.BalanceType" json:"type,omitempty"`
+	VaultID             string                                   `protobuf:"bytes,2,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
+	DepositorAccAddress string                                   `protobuf:"bytes,3,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
+	Coins               github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,4,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
+}
+
+func (m *UserBalanceInfo) Reset()         { *m = UserBalanceInfo{} }
+func (m *UserBalanceInfo) String() string { return proto.CompactTextString(m) }
+func (*UserBalanceInfo) ProtoMessage()    {}
+func (*UserBalanceInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f07a8d2c0f204875, []int{2}
+}
+func (m *UserBalanceInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UserBalanceInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UserBalanceInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UserBalanceInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UserBalanceInfo.Merge(m, src)
+}
+func (m *UserBalanceInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *UserBalanceInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_UserBalanceInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UserBalanceInfo proto.InternalMessageInfo
+
+func (m *UserBalanceInfo) GetType() BalanceType {
+	if m != nil {
+		return m.Type
+	}
+	return BalanceType_TOTAL_DEPOSIT
+}
+
+func (m *UserBalanceInfo) GetVaultID() string {
+	if m != nil {
+		return m.VaultID
+	}
+	return ""
+}
+
+func (m *UserBalanceInfo) GetDepositorAccAddress() string {
+	if m != nil {
+		return m.DepositorAccAddress
+	}
+	return ""
+}
+
+func (m *UserBalanceInfo) GetCoins() github_com_cosmos_cosmos_sdk_types.Coins {
+	if m != nil {
+		return m.Coins
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterEnum("abag.quasarnode.qbank.BalanceType", BalanceType_name, BalanceType_value)
 	proto.RegisterType((*GenesisState)(nil), "abag.quasarnode.qbank.GenesisState")
+	proto.RegisterType((*DepositInfo)(nil), "abag.quasarnode.qbank.DepositInfo")
+	proto.RegisterType((*UserBalanceInfo)(nil), "abag.quasarnode.qbank.UserBalanceInfo")
 }
 
 func init() { proto.RegisterFile("qbank/genesis.proto", fileDescriptor_f07a8d2c0f204875) }
 
 var fileDescriptor_f07a8d2c0f204875 = []byte{
-	// 205 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2e, 0x4c, 0x4a, 0xcc,
-	0xcb, 0xd6, 0x4f, 0x4f, 0xcd, 0x4b, 0x2d, 0xce, 0x2c, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17,
-	0x12, 0x4d, 0x4c, 0x4a, 0x4c, 0xd7, 0x2b, 0x2c, 0x4d, 0x2c, 0x4e, 0x2c, 0xca, 0xcb, 0x4f, 0x49,
-	0xd5, 0x03, 0x2b, 0x92, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0xab, 0xd0, 0x07, 0xb1, 0x20, 0x8a,
-	0xa5, 0x84, 0x20, 0x26, 0x14, 0x24, 0x16, 0x25, 0xe6, 0x42, 0x0d, 0x90, 0x82, 0x9a, 0x9a, 0x92,
-	0x5a, 0x90, 0x5f, 0x9c, 0x59, 0x02, 0x11, 0x54, 0xf2, 0xe6, 0xe2, 0x71, 0x87, 0x58, 0x13, 0x5c,
-	0x92, 0x58, 0x92, 0x2a, 0x64, 0xcd, 0xc5, 0x06, 0xd1, 0x24, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x6d,
-	0x24, 0xab, 0x87, 0xd5, 0x5a, 0xbd, 0x00, 0xb0, 0x22, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82,
-	0xa0, 0x5a, 0x9c, 0x9c, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39,
-	0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x23,
-	0x3d, 0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x57, 0x1f, 0x64, 0xa0, 0x3e, 0xc2, 0x40,
-	0xfd, 0x0a, 0x7d, 0x88, 0xc3, 0x4a, 0x2a, 0x0b, 0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xee, 0x32, 0x06,
-	0x04, 0x00, 0x00, 0xff, 0xff, 0xe9, 0xc4, 0x8d, 0x38, 0x04, 0x01, 0x00, 0x00,
+	// 648 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x94, 0xcd, 0x6e, 0xd3, 0x4c,
+	0x14, 0x86, 0xe3, 0xc4, 0x6d, 0xbf, 0x6f, 0x92, 0x16, 0x77, 0x4a, 0x25, 0x37, 0x12, 0x6e, 0x94,
+	0x05, 0x8a, 0x90, 0xb0, 0xfb, 0x23, 0xb1, 0x61, 0xe5, 0xd4, 0x01, 0x22, 0x05, 0xb5, 0x72, 0x8d,
+	0x82, 0x58, 0x50, 0x8d, 0xed, 0x21, 0xb5, 0x6a, 0x7b, 0x5c, 0x8f, 0xd3, 0x9f, 0xbb, 0xe0, 0x3a,
+	0xb8, 0x92, 0x2e, 0xcb, 0x8e, 0x15, 0xa0, 0xf6, 0x0e, 0x58, 0xb1, 0x44, 0x33, 0x9e, 0xb4, 0x71,
+	0x89, 0x59, 0x64, 0x65, 0x7b, 0xe6, 0x3d, 0xcf, 0x39, 0xef, 0xf1, 0x9c, 0x01, 0x6b, 0xa7, 0x2e,
+	0x8a, 0x4f, 0x8c, 0x11, 0x8e, 0x31, 0x0d, 0xa8, 0x9e, 0xa4, 0x24, 0x23, 0x70, 0x1d, 0xb9, 0x68,
+	0xa4, 0x9f, 0x8e, 0x11, 0x45, 0x69, 0x4c, 0x7c, 0xac, 0x73, 0x51, 0x53, 0xf3, 0x08, 0x8d, 0x08,
+	0x35, 0x5c, 0x44, 0xb1, 0x71, 0xb6, 0xed, 0xe2, 0x0c, 0x6d, 0x1b, 0x1e, 0x09, 0xe2, 0x3c, 0xac,
+	0xf9, 0x78, 0x44, 0x46, 0x84, 0xbf, 0x1a, 0xec, 0x4d, 0xac, 0xc2, 0x3c, 0x43, 0x82, 0x52, 0x14,
+	0x89, 0x04, 0x4d, 0x91, 0xd5, 0xc7, 0x09, 0xa1, 0x41, 0x56, 0x14, 0x7a, 0x24, 0x8a, 0x88, 0x40,
+	0xb6, 0xbf, 0xca, 0xa0, 0xf1, 0x3a, 0xaf, 0xed, 0x30, 0x43, 0x19, 0x86, 0x2f, 0xc1, 0x62, 0x4e,
+	0x52, 0xa5, 0x96, 0xd4, 0xa9, 0xef, 0x3c, 0xd1, 0x67, 0xd6, 0xaa, 0x1f, 0x70, 0x51, 0x57, 0xbe,
+	0xfa, 0xbe, 0x59, 0xb1, 0x45, 0x08, 0x1c, 0x80, 0x86, 0x48, 0xd9, 0x8f, 0x3f, 0x11, 0xaa, 0x56,
+	0x5b, 0xb5, 0x4e, 0x7d, 0xa7, 0x5d, 0x82, 0xb0, 0xee, 0xa5, 0x82, 0x53, 0x88, 0x86, 0x36, 0x58,
+	0xce, 0x48, 0x86, 0x42, 0xa1, 0xa3, 0x6a, 0x8d, 0xe3, 0x9e, 0x96, 0xe0, 0xde, 0x51, 0x9c, 0x76,
+	0x51, 0x88, 0x62, 0x0f, 0x4f, 0x21, 0x8b, 0x08, 0xc6, 0x3c, 0x0f, 0xb2, 0x63, 0x3f, 0x45, 0xe7,
+	0xc8, 0x0d, 0x31, 0x55, 0xe5, 0x79, 0x98, 0x05, 0x04, 0x74, 0xc0, 0x0a, 0x4f, 0x32, 0x14, 0xab,
+	0x54, 0x5d, 0x98, 0x03, 0xfa, 0x80, 0x01, 0xdf, 0x03, 0xc5, 0x0b, 0x51, 0x10, 0xb1, 0x1c, 0x36,
+	0x3e, 0x47, 0xa9, 0x4f, 0xd5, 0xc5, 0x39, 0xb8, 0x7f, 0x51, 0xe0, 0x47, 0xb0, 0xc6, 0x73, 0xed,
+	0xb1, 0x0d, 0xec, 0x4f, 0xe0, 0x4b, 0x73, 0xc0, 0x67, 0x81, 0xda, 0xbf, 0x24, 0x50, 0x9f, 0xfa,
+	0xb7, 0x50, 0x05, 0x4b, 0x67, 0x68, 0x1c, 0x66, 0x7d, 0x8b, 0x9f, 0xa9, 0xff, 0xed, 0xc9, 0x27,
+	0x6c, 0x82, 0xff, 0x70, 0x42, 0xbc, 0x63, 0x0b, 0x5d, 0xaa, 0xd5, 0x96, 0xd4, 0x91, 0xed, 0xbb,
+	0x6f, 0xf8, 0x0a, 0x34, 0x42, 0xe2, 0x9d, 0x8c, 0x93, 0x03, 0x9c, 0x06, 0xc4, 0x57, 0x6b, 0x2d,
+	0xa9, 0xb3, 0x52, 0x7a, 0x96, 0x06, 0x5c, 0xea, 0x5c, 0x26, 0x98, 0xda, 0x85, 0x38, 0xb8, 0x05,
+	0xd6, 0xc4, 0xa9, 0x22, 0xa9, 0xe9, 0x79, 0xa6, 0xef, 0xa7, 0x98, 0xb2, 0xff, 0xce, 0x2a, 0x99,
+	0xb5, 0x05, 0x77, 0x81, 0xcc, 0x86, 0x4e, 0x5d, 0xe0, 0x03, 0xb0, 0xa1, 0xe7, 0x53, 0xa9, 0xb3,
+	0xa9, 0xd4, 0xc5, 0x54, 0xea, 0x7b, 0x24, 0x88, 0x45, 0x0f, 0xb8, 0xb8, 0xfd, 0x5b, 0x02, 0x8f,
+	0x1e, 0xf4, 0x08, 0xbe, 0x00, 0x72, 0x76, 0x99, 0x60, 0xee, 0xba, 0xbc, 0x74, 0x11, 0xc1, 0x6a,
+	0xb7, 0xb9, 0x7e, 0xba, 0x61, 0xd5, 0x62, 0xc3, 0x4a, 0xcc, 0xd4, 0xca, 0xcd, 0x20, 0xb0, 0xc0,
+	0xea, 0x9b, 0x1c, 0xf4, 0x7f, 0xb8, 0xd9, 0x62, 0x6e, 0xbe, 0xfc, 0xd8, 0xec, 0x8c, 0x82, 0xec,
+	0x78, 0xec, 0xea, 0x1e, 0x89, 0x0c, 0x71, 0x21, 0xe5, 0x8f, 0xe7, 0xd4, 0x3f, 0x31, 0x58, 0x81,
+	0x94, 0x07, 0x50, 0x3b, 0x27, 0x3f, 0xbb, 0x00, 0xf5, 0x29, 0x0f, 0x70, 0x15, 0x2c, 0x3b, 0xfb,
+	0x8e, 0x39, 0x38, 0xb2, 0x7a, 0x07, 0xfb, 0x87, 0x7d, 0x47, 0xa9, 0x40, 0x05, 0x34, 0x86, 0x7d,
+	0xe7, 0x8d, 0x65, 0x9b, 0x43, 0xb3, 0x3b, 0xe8, 0x29, 0x12, 0x84, 0x60, 0x25, 0x17, 0x4d, 0xd6,
+	0x95, 0x2a, 0x5c, 0x07, 0xab, 0x7b, 0x03, 0xb3, 0xff, 0x96, 0x49, 0x8e, 0xec, 0xde, 0xd0, 0xb4,
+	0xad, 0x43, 0xa5, 0x06, 0x37, 0xc0, 0x7a, 0x2e, 0xe5, 0x9b, 0x3d, 0xeb, 0x6e, 0x4b, 0xee, 0x76,
+	0xaf, 0x6e, 0x34, 0xe9, 0xfa, 0x46, 0x93, 0x7e, 0xde, 0x68, 0xd2, 0xe7, 0x5b, 0xad, 0x72, 0x7d,
+	0xab, 0x55, 0xbe, 0xdd, 0x6a, 0x95, 0x0f, 0xd3, 0x26, 0x58, 0xdb, 0x8d, 0xfb, 0xb6, 0x1b, 0x17,
+	0x46, 0x7e, 0x11, 0x72, 0x2b, 0xee, 0x22, 0xbf, 0x08, 0x77, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff,
+	0xe4, 0x82, 0xe4, 0xf4, 0xa9, 0x05, 0x00, 0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -111,6 +373,90 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.TotalClaimedRewards) > 0 {
+		for iNdEx := len(m.TotalClaimedRewards) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.TotalClaimedRewards[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.ClaimableRewards) > 0 {
+		for iNdEx := len(m.ClaimableRewards) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ClaimableRewards[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.TotalWithdraws) > 0 {
+		for iNdEx := len(m.TotalWithdraws) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.TotalWithdraws[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.Withdrawables) > 0 {
+		for iNdEx := len(m.Withdrawables) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Withdrawables[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.TotalDeposits) > 0 {
+		for iNdEx := len(m.TotalDeposits) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.TotalDeposits[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.DepositInfos) > 0 {
+		for iNdEx := len(m.DepositInfos) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DepositInfos[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -121,6 +467,119 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *DepositInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DepositInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DepositInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x2a
+	if len(m.DepositorAccAddress) > 0 {
+		i -= len(m.DepositorAccAddress)
+		copy(dAtA[i:], m.DepositorAccAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.DepositorAccAddress)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.LockupPeriod != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.LockupPeriod))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.EpochDay != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.EpochDay))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.VaultID) > 0 {
+		i -= len(m.VaultID)
+		copy(dAtA[i:], m.VaultID)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.VaultID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UserBalanceInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UserBalanceInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UserBalanceInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Coins) > 0 {
+		for iNdEx := len(m.Coins) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Coins[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.DepositorAccAddress) > 0 {
+		i -= len(m.DepositorAccAddress)
+		copy(dAtA[i:], m.DepositorAccAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.DepositorAccAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.VaultID) > 0 {
+		i -= len(m.VaultID)
+		copy(dAtA[i:], m.VaultID)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.VaultID)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Type != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -143,6 +602,93 @@ func (m *GenesisState) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.DepositInfos) > 0 {
+		for _, e := range m.DepositInfos {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.TotalDeposits) > 0 {
+		for _, e := range m.TotalDeposits {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.Withdrawables) > 0 {
+		for _, e := range m.Withdrawables {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.TotalWithdraws) > 0 {
+		for _, e := range m.TotalWithdraws {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ClaimableRewards) > 0 {
+		for _, e := range m.ClaimableRewards {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.TotalClaimedRewards) > 0 {
+		for _, e := range m.TotalClaimedRewards {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DepositInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.VaultID)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.EpochDay != 0 {
+		n += 1 + sovGenesis(uint64(m.EpochDay))
+	}
+	if m.LockupPeriod != 0 {
+		n += 1 + sovGenesis(uint64(m.LockupPeriod))
+	}
+	l = len(m.DepositorAccAddress)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = m.Coin.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *UserBalanceInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovGenesis(uint64(m.Type))
+	}
+	l = len(m.VaultID)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.DepositorAccAddress)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if len(m.Coins) > 0 {
+		for _, e := range m.Coins {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -211,6 +757,562 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DepositInfos", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DepositInfos = append(m.DepositInfos, DepositInfo{})
+			if err := m.DepositInfos[len(m.DepositInfos)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalDeposits", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TotalDeposits = append(m.TotalDeposits, UserBalanceInfo{})
+			if err := m.TotalDeposits[len(m.TotalDeposits)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Withdrawables", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Withdrawables = append(m.Withdrawables, UserBalanceInfo{})
+			if err := m.Withdrawables[len(m.Withdrawables)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalWithdraws", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TotalWithdraws = append(m.TotalWithdraws, UserBalanceInfo{})
+			if err := m.TotalWithdraws[len(m.TotalWithdraws)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClaimableRewards", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClaimableRewards = append(m.ClaimableRewards, UserBalanceInfo{})
+			if err := m.ClaimableRewards[len(m.ClaimableRewards)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalClaimedRewards", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TotalClaimedRewards = append(m.TotalClaimedRewards, UserBalanceInfo{})
+			if err := m.TotalClaimedRewards[len(m.TotalClaimedRewards)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DepositInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DepositInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DepositInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VaultID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VaultID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDay", wireType)
+			}
+			m.EpochDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LockupPeriod", wireType)
+			}
+			m.LockupPeriod = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LockupPeriod |= LockupTypes(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DepositorAccAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DepositorAccAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UserBalanceInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UserBalanceInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UserBalanceInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= BalanceType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VaultID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VaultID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DepositorAccAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DepositorAccAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Coins = append(m.Coins, types.Coin{})
+			if err := m.Coins[len(m.Coins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

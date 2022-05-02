@@ -15,6 +15,12 @@ import (
 func TestRequestDeposit(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	k := setup.Keepers.QbankKeeper
+	qoraclekeeper := setup.Keepers.QoracleKeeper
+	params := k.GetParams(setup.Ctx)
+
+	// Explicitly enable the qbank
+	params.Enabled = true
+	k.SetParams(setup.Ctx, params)
 	userAddr := sample.AccAddress()
 	mintAmount := sdk.NewInt(int64(1000000000))
 	initialBalance := sdk.NewInt(int64(50))
@@ -47,9 +53,16 @@ func TestRequestDeposit(t *testing.T) {
 		sdk.NewCoin("QSR", targetAmount),
 		types.LockupTypes_Days_21,
 	)
-	res, err := server.RequestDeposit(srvCtx, d)
-	require.NoError(t, err)
-	require.NotNil(t, res)
+
+	res1, err1 := server.RequestDeposit(srvCtx, d)
+	require.Error(t, err1)
+	require.Nil(t, res1)
+
+	// Setting QSR stable price to 10 dollar, so target dollar deposit amount to be greater than default min 100dollar
+	qoraclekeeper.SetStablePrice(setup.Ctx, "QSR", sdk.MustNewDecFromStr("10"))
+	res2, err2 := server.RequestDeposit(srvCtx, d)
+	require.NoError(t, err2)
+	require.NotNil(t, res2)
 
 	ctx := sdk.UnwrapSDKContext(srvCtx)
 	eventtest.AssertEventEmitted(t, ctx, types.TypeEvtDeposit)

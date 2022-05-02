@@ -26,13 +26,11 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Withdraw defines the withdraw object to be stored in the KV store.
 type Withdraw struct {
-	Id                  uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	RiskProfile         string `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`
-	VaultID             string `protobuf:"bytes,3,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
-	DepositorAccAddress string `protobuf:"bytes,4,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
-	//string amount = 5;
-	//string denom = 6;
-	Coin types.Coin `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin"`
+	Id                  uint64     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	RiskProfile         string     `protobuf:"bytes,2,opt,name=riskProfile,proto3" json:"riskProfile,omitempty"`
+	VaultID             string     `protobuf:"bytes,3,opt,name=vaultID,proto3" json:"vaultID,omitempty"`
+	DepositorAccAddress string     `protobuf:"bytes,4,opt,name=depositorAccAddress,proto3" json:"depositorAccAddress,omitempty"`
+	Coin                types.Coin `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin"`
 }
 
 func (m *Withdraw) Reset()         { *m = Withdraw{} }

@@ -2,11 +2,8 @@ syntax = "proto3";
 package abag.quasarnode.qbank;
 
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
-import "qbank/params.proto";
-import "qbank/deposit.proto";
-import "qbank/withdraw.proto";
- import "qbank/common.proto";
+ import "qbank/params.proto";
+  import "qbank/common.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -43,6 +40,16 @@ service Query {
 // Queries a list of Withdrawable items.
 	rpc Withdrawable(QueryWithdrawableRequest) returns (QueryWithdrawableResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/withdrawable/{userAccount}/{denom}";
+	}
+
+// Queries a list of TotalWithdraw items.
+	rpc TotalWithdraw(QueryTotalWithdrawRequest) returns (QueryTotalWithdrawResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/total_withdraw/{userAcc}/{vaultID}";
+	}
+
+// Queries a list of TotalClaimed items.
+	rpc TotalClaimed(QueryTotalClaimedRequest) returns (QueryTotalClaimedResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/total_claimed/{userAcc}/{vaultID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -94,6 +101,28 @@ message QueryWithdrawableRequest {
 
 message QueryWithdrawableResponse {
   cosmos.base.v1beta1.Coin coin = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTotalWithdrawRequest {
+  string userAcc = 1;
+  string vaultID = 2;
+}
+
+message QueryTotalWithdrawResponse {
+  QCoins coins  = 1
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"];
+
+}
+
+message QueryTotalClaimedRequest {
+  string userAcc = 1;
+  string vaultID = 2;
+}
+
+message QueryTotalClaimedResponse {
+	QCoins coins  = 1
+	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"];
+  
 }
 
 // this line is used by starport scaffolding # 3

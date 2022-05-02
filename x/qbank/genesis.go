@@ -7,20 +7,54 @@ import (
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis
-// state.
-// TODO | AUDIT | How to build the other KV stores? Probably set functions of all the other KV store
-// should be used. Genesis state should have all other KV stores informations.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
+
+	for _, di := range genState.DepositInfos {
+		k.AddEpochLockupUserDenomDeposit(ctx,
+			di.DepositorAccAddress,
+			di.Coin,
+			di.EpochDay,
+			di.LockupPeriod)
+	}
+
+	for _, td := range genState.TotalDeposits {
+		for _, coin := range td.Coins {
+			k.AddUserDeposit(ctx, td.DepositorAccAddress, coin)
+			k.AddUserDenomDeposit(ctx, td.DepositorAccAddress, coin)
+		}
+	}
+
+	for _, w := range genState.Withdrawables {
+		for _, coin := range w.Coins {
+			k.AddActualWithdrawableAmt(ctx, w.DepositorAccAddress, coin)
+		}
+	}
+
+	for _, tw := range genState.TotalWithdraws {
+		k.AddTotalWithdrawAmt(ctx, tw.DepositorAccAddress, tw.VaultID, tw.Coins)
+	}
+
+	for _, cr := range genState.ClaimableRewards {
+		k.AddUserClaimRewards(ctx, cr.DepositorAccAddress, cr.VaultID, cr.Coins)
+	}
+
+	for _, tcr := range genState.TotalClaimedRewards {
+		k.AddUserClaimedRewards(ctx, tcr.DepositorAccAddress, tcr.VaultID, tcr.Coins)
+	}
 }
 
 // ExportGenesis returns the capability module's exported genesis.
-// TODO | AUDIT | Export genesis should export all other KV store info in an appropriate struct object.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
-	genesis := types.DefaultGenesis()
+	genesis := &types.GenesisState{}
 	genesis.Params = k.GetParams(ctx)
+	genesis.DepositInfos = k.GetAllDepositInfos(ctx)
+	genesis.TotalDeposits = k.GetAllTotalDeposits(ctx)
+	genesis.Withdrawables = k.GetAllActualWithdrawables(ctx)
+	genesis.TotalWithdraws = k.GetAllTotalWithdraws(ctx)
+	genesis.ClaimableRewards = k.GetAllClaimableRewards(ctx)
+	genesis.TotalClaimedRewards = k.GetAllTotalClaimedRewards(ctx)
 
 	// this line is used by starport scaffolding # genesis/module/export
 

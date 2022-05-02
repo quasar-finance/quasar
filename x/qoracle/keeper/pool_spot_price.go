@@ -87,6 +87,9 @@ func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) sdk.Dec {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StablePriceKBP)
 	key := types.CreateStablePriceKey(denom)
 	b := store.Get(key)
+	if b == nil {
+		return sdk.ZeroDec()
+	}
 	var price sdk.Dec
 	err := (&price).Unmarshal(b)
 	if err != nil {

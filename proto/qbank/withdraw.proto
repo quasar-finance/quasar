@@ -11,8 +11,5 @@ message Withdraw {
   string riskProfile = 2; 
   string vaultID = 3; 
   string depositorAccAddress = 4; 
-  //string amount = 5; 
-  //string denom = 6;
   cosmos.base.v1beta1.Coin coin = 5 [ (gogoproto.nullable) = false ];
-  
 }

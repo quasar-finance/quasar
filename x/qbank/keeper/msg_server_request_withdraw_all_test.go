@@ -59,4 +59,11 @@ func TestRequestWithdrawAll(t *testing.T) {
 	balance2 := setup.Keepers.BankKeeper.GetBalance(setup.Ctx, userAddr, "FOO")
 	require.Equal(t, targetAmount, balance2.Amount)
 	require.Equal(t, "FOO", balance2.Denom)
+
+	totalWithdraw, _ := k.GetTotalWithdrawAmt(ctx, userAddr.String(), "orion")
+	require.Equal(t,
+		sdk.NewCoins(
+			sdk.NewCoin("QSR", targetAmount),
+			sdk.NewCoin("FOO", targetAmount)),
+		totalWithdraw.Coins)
 }

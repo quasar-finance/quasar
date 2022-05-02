@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -126,10 +127,8 @@ func (k Keeper) SubLockupWithdrawableAmt(ctx sdk.Context, uid string, coin sdk.C
 ////////////// Methods for the actual withdrawable amount ///////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////
 
-// NOTE - Below  Add[XYZ] method for the actual withdraw amount will be called from the Orion module.
 // GetActualWithdrawableAmt fetch the current withdrawable amount of a given user for a given denom
 // from the KV store.
-// Called for users actual withdrawable query and withdraw tx.
 func (k Keeper) GetActualWithdrawableAmt(ctx sdk.Context, uid, denom string) (coin sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
 	key := types.CreateWithdrawableKey(uid, denom, types.Sep)
@@ -188,4 +187,115 @@ func (k Keeper) EmptyActualWithdrawableAmt(ctx sdk.Context, uid, denom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
 	key := types.CreateWithdrawableKey(uid, denom, types.Sep)
 	store.Delete(key)
+}
+
+// GetAllActualWithdrawables returns a list of all actual withdrawables for each depositor
+func (k Keeper) GetAllActualWithdrawables(ctx sdk.Context) []types.UserBalanceInfo {
+	bytePrefix := types.ActualWithdrawableKeyKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var userWithdrawablesMap = make(map[string]sdk.Coins)
+	var totalWithdrawables []types.UserBalanceInfo
+
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := types.SplitKeyBytes(key)
+		userAccStr := string(splits[0])
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		if _, found := userWithdrawablesMap[userAccStr]; found {
+			userWithdrawablesMap[userAccStr] = userWithdrawablesMap[userAccStr].Add(coin)
+		} else {
+			userWithdrawablesMap[userAccStr] = sdk.NewCoins(coin)
+		}
+	}
+
+	for userAccStr, coins := range userWithdrawablesMap {
+		userWithdrawables := types.UserBalanceInfo{Type: types.BalanceType_WITHDRAWABLE,
+			VaultID:             oriontypes.ModuleName,
+			DepositorAccAddress: userAccStr,
+			Coins:               coins,
+		}
+		totalWithdrawables = append(totalWithdrawables, userWithdrawables)
+	}
+	logger.Info("TotalWithdrawables", totalWithdrawables)
+	return totalWithdrawables
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+////////////// Methods for the users withdraw amount //////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+// GetTotalWithdrawAmt fetch the total tokens withdraw so far from the previous deposits
+// Key = types.TotalWithdrawKeyKBP + {uid} + ":" + {vaultID}
+func (k Keeper) GetTotalWithdrawAmt(ctx sdk.Context, uid, vault string) (val types.QCoins, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.TotalWithdrawKeyKBP)
+	key := types.CreateTotalWithdrawKey(uid, vault, types.Sep)
+	b := store.Get(key)
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// AddTotalWithdrawAmt adds total tokens withdraw from to the store for a given user and vault.
+// Key = types.TotalWithdrawKeyKBP + {uid} + ":" + {vaultID}
+func (k Keeper) AddTotalWithdrawAmt(ctx sdk.Context, uid, vaultID string, coins sdk.Coins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.TotalWithdrawKeyKBP)
+	key := types.CreateTotalWithdrawKey(uid, vaultID, types.Sep)
+	b := store.Get(key)
+	var qcoins types.QCoins
+	if b == nil {
+		qcoins.Coins = coins
+		b := k.cdc.MustMarshal(&qcoins)
+		store.Set(key, b)
+	} else {
+		var storedqcoins types.QCoins
+		k.cdc.MustUnmarshal(b, &storedqcoins)
+		for _, coin := range coins {
+			storedqcoins.Coins = append(storedqcoins.Coins, coin)
+		}
+		value := k.cdc.MustMarshal(&storedqcoins)
+		store.Set(key, value)
+	}
+}
+
+// GetAllTotalWithdraws returns a list of all total withdraw tokens done so far for each users.
+func (k Keeper) GetAllTotalWithdraws(ctx sdk.Context) []types.UserBalanceInfo {
+	bytePrefix := types.TotalWithdrawKeyKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllWithdraw|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+
+	var totalWithdraws []types.UserBalanceInfo
+
+	// key = {uid} + ":" + {vaultID}, value = types.QCoins
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := types.SplitKeyBytes(key)
+		userAccStr := string(splits[0])
+		var qcoin types.QCoins
+		k.cdc.MustUnmarshal(value, &qcoin)
+
+		userWithdraw := types.UserBalanceInfo{Type: types.BalanceType_TOTAL_WITHDRAW,
+			VaultID:             oriontypes.ModuleName,
+			DepositorAccAddress: userAccStr,
+			Coins:               qcoin.Coins,
+		}
+		totalWithdraws = append(totalWithdraws, userWithdraw)
+	}
+
+	logger.Info("TotalWithdraws", totalWithdraws)
+	return totalWithdraws
 }

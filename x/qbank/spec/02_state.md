@@ -48,7 +48,7 @@ Value = sdk.Coin [ Total denom deposit so far irrespective of the withdrawal ]
 #### Total epoch lockup denom deposit by a user - 
 This is to maintain the denom deposit done by a user on any given epoch day for any lockup periods. 
 ```
-Key = {UserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+Key = {EpochLockupUserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
 Value = sdk.Coin 
 ```
 
@@ -73,6 +73,7 @@ message MsgRequestWithdraw {
 1. Balance in the Vault module account will be reduced by the withdrawal amount. 
 2. Balance of the user's account will be increased by the withdrawal amount.
 3. Withdrawal bookkeeping will be updated to reflect the current available withdrawal amount. If it is zero; the associated key will be deleted.
+4. Total withdraw amount will be increased by the withdraw amount in this transaction.
 
 ### Withdrawal KV store design - 
 ```
@@ -80,11 +81,18 @@ Key = types.ActualWithdrawableKeyKBP + {userAcc} + ":" + {denom}
 Value =  sdk.Coin [ Current withdrawal amount of given denom ] 
 ```
 
+### Total withdraw amount
+```
+Key = types.TotalWithdrawKeyKBP + {uid} + ":" + {vaultID}
+Value =  types.QCoins [ Wrapper of sdk.Coins ] 
+```
+
 ## Claim rewards
 
 1. Claim reward transaction allows users to claim all the accumulated rewards for the user.
 2. Orion Vault collects the rewards from osmosis dex and does the distribution calculation to add in the claim bookkeeping in the qbank kv store.
 3. On successfully processing the claim reward transaction message, the claim amount will be bank transferred to the depositor account. And claim kv store will become empty for the requested user.
+4. Total claimed amount also increased by the amount claimed in this transaction.
 
 ### Claim transaction message is defined as - 
 
@@ -104,3 +112,10 @@ message MsgClaimRewards {
 Key - types.UserClaimKBP + {userAccount} + {":"} + {VaultID}
 Value =  types.QCoins [ Wrapper of sdk.Coins ] 
 ```  
+
+### Total claimed amount 
+Total claimed amount represent the total token rewards claimed by the user so far.
+```
+Key - types.UserClaimedKBP + {userAccount} + {":"} + {VaultID}
+Value = types.QCoins [ Wrapper of sdk.Coins ]
+```
