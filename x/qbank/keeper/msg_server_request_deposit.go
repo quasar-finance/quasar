@@ -23,17 +23,16 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	coin := msg.GetCoin()
 	lockupPeriod := msg.GetLockupPeriod()
 	minDollarDepositValue := k.MinOrionEpochDenomDollarDeposit(ctx)
-	stablePrice := k.qoracleKeeper.GetStablePrice(ctx, coin.Denom)
+	stablePrice, found := k.qoracleKeeper.GetStablePrice(ctx, coin.Denom)
+	if !found {
+		return nil, types.ErrStablePriceNotAvailable
+	}
 	currentEpoch := uint64(k.EpochsKeeper.GetEpochInfo(ctx,
 		k.OrionEpochIdentifier(ctx)).CurrentEpoch)
 
 	depositorAddr, err := sdk.AccAddressFromBech32(depositor)
 	if err != nil {
 		return nil, err
-	}
-
-	if stablePrice.IsZero() {
-		return nil, types.ErrStablePriceNotAvailable
 	}
 
 	dollarDepositValue := coin.Amount.ToDec().Mul(stablePrice)
