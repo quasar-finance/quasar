@@ -35,6 +35,9 @@ test:
 test-path:
 	go test -mod=readonly -v $(path)
 
+test-ibc-transfer:
+	go test -mod=readonly -v -timeout 99999s demos/ibc-test-framework/ibc_transfer_test.go
+
 test-cover: mkdirs
 	go test -mod=readonly -timeout 30m -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic $(PACKAGES_UNIT)
 
