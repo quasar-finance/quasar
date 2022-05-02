@@ -33,5 +33,5 @@ type EpochsKeeper interface {
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module
 type QoracleKeeper interface {
-	GetStablePrice(ctx sdk.Context, denom string) sdk.Dec
+	GetStablePrice(ctx sdk.Context, denom string) (sdk.Dec, bool)
 }

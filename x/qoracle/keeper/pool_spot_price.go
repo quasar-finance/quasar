@@ -82,18 +82,17 @@ func (k Keeper) SetStablePrice(ctx sdk.Context, denom string, price sdk.Dec) {
 	store.Set(key, b)
 }
 
-// GetStablePrice get the stabe denom for the input denom
-func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) sdk.Dec {
+// GetStablePrice get the stable denom for the input denom
+func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) (price sdk.Dec, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StablePriceKBP)
 	key := types.CreateStablePriceKey(denom)
 	b := store.Get(key)
 	if b == nil {
-		return sdk.ZeroDec()
+		return price, false
 	}
-	var price sdk.Dec
 	err := (&price).Unmarshal(b)
 	if err != nil {
-		return sdk.ZeroDec()
+		return price, false
 	}
-	return price
+	return price, true
 }

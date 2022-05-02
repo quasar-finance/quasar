@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/abag/quasarnode/x/orion/types"
@@ -143,7 +144,10 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 				// All denom amount available in reserve will be used.
 				denomRequiredAmtMap[denom] = denomRequiredAmtMap[denom].Sub(r.Amount)
 				denomAmountFromReserve[denom] = r.Amount
-				orions := k.MintAndAllocateOrions(ctx, sdk.NewCoin(denom, denomRequiredAmtMap[denom]))
+				orions, err := k.MintAndAllocateOrions(ctx, sdk.NewCoin(denom, denomRequiredAmtMap[denom]))
+				if err != nil {
+					return err
+				}
 				if orion, ok := denomAmountFromReserve[orions.Denom]; ok {
 					denomAmountFromReserve[orions.Denom] = orion.Add(orions.Amount)
 				} else {
@@ -206,26 +210,35 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 // 2. Lock the quasar token and use the orions to cover IL loss.
 // 3. This way orion vault secure the orion receipt tokens using quasar which can be used for network security
 // to further enhance capital efficiency [ Phase #2]
-// Note - This way the actual allocation of orions is be done only when we observe IL loss.
-func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
-	orions := k.CalcReceipts(ctx, coin)
+// Note - This way the actual allocation of orions is being done only when we observe IL loss.
+func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
+	orions, err := k.CalcReceipts(ctx, coin)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
 	k.MintOrion(ctx, orions.Amount)
-	qsr := k.CalcQSR(ctx, coin)
+	qsr, err := k.CalcQSR(ctx, coin)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
 	// Note - As of now Mint in the orion module reserve acc . The QSR present in the orion module reserve
 	// should not be used for the users distribution. They are considered as locked in
 	// the module reserve account.
 	k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(qsr))
-	return orions
+	return orions, nil
 }
 
 // CalcQSR calculates the equivalent amount of quasar for the input sdk.coin
-func (k Keeper) CalcQSR(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
-	p := k.GetQSRPrice(ctx, coin.Denom)
+func (k Keeper) CalcQSR(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
+	p, found := k.GetQSRPrice(ctx, coin.Denom)
+	if !found {
+		return sdk.Coin{}, errors.New("error: price not found")
+	}
 	amt := coin.Amount.ToDec().Mul(p).TruncateInt()
-	return sdk.NewCoin("QSR", amt)
+	return sdk.NewCoin("QSR", amt), nil
 }
 
 // GetQSRPrice gets the QSR price of one denom in terms of US dollar
-func (k Keeper) GetQSRPrice(ctx sdk.Context, denom string) sdk.Dec {
+func (k Keeper) GetQSRPrice(ctx sdk.Context, denom string) (sdk.Dec, bool) {
 	return k.GetStablePrice(ctx, denom)
 }

@@ -319,20 +319,25 @@ func (k Keeper) GetCurrentEpochDay(ctx sdk.Context) uint64 {
 // What is the denom weight contribution on a given epoch day?
 // This will be used to calculate the users denom contribution which will be further used
 // to calculate the users reward contribution for this denom
+
 // GetEpochDenomWeight calculates the denom contribution to LPing on a given day.
 // Logic -
 // 1. Calculate Each denoms amount.
 // 2. Get the total equivalent osmos or usdt for each denom.
 // 3. Get total LP equivalent osmo/usdt/orions/share
 // 4. Calculate denom weight based on its equivalent osmo/usdt/orions/share
-func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.EpochDenomWeight {
+func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) ([]types.EpochDenomWeight, error) {
 
 	var edws []types.EpochDenomWeight
 	lps, _ := k.GetLpStat(ctx, epochday)
 	var totalOrionAmt sdk.Int
 	denomOrionMap := make(map[string]sdk.Coin)
 	for _, coin := range lps.TotalLPCoins {
-		denomOrions := k.CalcReceipts(ctx, coin)
+		denomOrions, err := k.CalcReceipts(ctx, coin)
+		if err != nil {
+			// TODO recheck error handling
+			return nil, err
+		}
 		totalOrionAmt = totalOrionAmt.Add(denomOrions.Amount)
 		denomOrionMap[coin.Denom] = denomOrions
 	}
@@ -343,10 +348,10 @@ func (k Keeper) GetEpochDenomWeight(ctx sdk.Context, epochday uint64) []types.Ep
 		dw := types.EpochDenomWeight{Denom: coin.Denom, Weight: weight}
 		edws = append(edws, dw)
 	}
-	return edws
+	return edws, nil
 }
 
-// This is used to iterate and create tuple of reward day, deposit day and lockup period.
+// SetDayMapping is used to iterate and create tuple of reward day, deposit day and lockup period.
 // To further calculate the denom weights and users weights.
 // Key = {DayMapKBP} +   {rewardday} + {":"} + {depositday} + {":"} + {lockupPeriod}
 // Reward is happening everyday - dueing thw whole periods.

@@ -95,7 +95,8 @@ func TestStablePrice(t *testing.T) {
 	inputDPS := []DenomPrice{inputDP1}
 
 	// Outputs
-	price1 := k.GetStablePrice(ctx, inputDP1.Denom)
+	price1, found := k.GetStablePrice(ctx, inputDP1.Denom)
+	require.True(t, found)
 	var outputDPS []DenomPrice
 	outputDPS = append(outputDPS, DenomPrice{Denom: inputDP1.Denom, Price: price1})
 	require.ElementsMatch(t,
