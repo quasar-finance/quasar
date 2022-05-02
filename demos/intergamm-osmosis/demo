@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
+this_dir="${project_dir}/demos/intergamm-osmosis"
+this_script="${this_dir}/$(basename "${0}")"
+run_dir="${this_dir}/run"
+reset_run="${RESET:-true}"
+
+fail() {
+  echo "$*"
+  false
+}
+
+cmd_exists() {
+  type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
+}
+
+env_subst() {
+  python -c '
+import os, sys
+data = sys.stdin.read(65536)
+for v in os.environ:
+  data = data.replace("$%s" % v, os.environ[v])
+  data = data.replace("${%s}" % v, os.environ[v])
+sys.stdout.write(data) ; sys.stdout.flush()
+'
+}
+
+# TODO make macos / darwin version of this
+run_in_terminal() {
+  gnome-terminal -- "$@"
+}
+
+run_chain() {
+  (
+    local name="$1" ; shift
+    local dir="$1"  ; shift
+
+    echo "running ${name} chain"
+
+    cd "$dir"
+
+    local chain_dir="${run_dir}/${name}"
+
+    if [ "$reset_run" == true ] ; then
+      rm -rf "$chain_dir"
+    fi
+
+    export home_dir="${chain_dir}/home"
+    mkdir -p "$home_dir"
+
+    cat "${this_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
+
+    ignite chain serve --config "${chain_dir}/config.yml" --reset-once -v
+  )
+}
+
+start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
+start_quasar()  { run_chain "quasar"  "${project_dir}"                        ; }
+
+start_all() {
+  if [ "$reset_run" == true ] ; then
+    rm -rf ~/.ignite/
+  fi
+
+  run_in_terminal "$this_script" start_osmosis
+  sleep 1
+  run_in_terminal "$this_script" start_quasar
+  sleep 1
+}
+
+init_relayer() {
+  ignite relayer configure \
+    --source-rpc "http://localhost:26659" \
+    --source-faucet "http://localhost:4500" \
+    --source-account default \
+    --source-gaslimit 300000 \
+    --source-gasprice 0.00025stake \
+    --source-prefix quasar \
+    \
+    --target-rpc "http://localhost:26559" \
+    --target-faucet "http://localhost:4501" \
+    --target-account default \
+    --target-gaslimit 300000 \
+    --target-gasprice 0.00025stake \
+    --target-prefix osmo
+
+  ignite relayer connect
+}
+
+quasar() {
+  local home_dir="${run_dir}/quasar/home"
+
+  quasarnoded \
+    --home "$home_dir" \
+    --node=http://localhost:26659 \
+    --chain-id quasar \
+    "$@"
+}
+
+quasarq() {
+  quasar query "$@"
+}
+
+quasartx() {
+  quasar tx --from alice "$@"
+}
+
+test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
+
+cmd_exists "osmosisd"
+cmd_exists "quasarnoded"
+
+"$@"

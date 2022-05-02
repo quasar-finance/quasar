@@ -34,7 +34,7 @@ cd demos/packet-forwarder
 
 A `demo` script is there to run all the demo steps.
 
-2. Start 3 blockchains locally
+2. Start the 3 blockchains locally
 
 ```bash
 ./demo start_all
