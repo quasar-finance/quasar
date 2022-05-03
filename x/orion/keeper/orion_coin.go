@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"github.com/abag/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -22,18 +21,10 @@ func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) (sdk.Coin, erro
 // CalcReceipts calculates the amount of orion coin equivalent to the input sdk.Coin
 // Most updated value of US dollar value is the base for the orion token calculations.
 func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
-	denomPrice, found := k.GetStablePrice(ctx, coin.Denom)
-	if !found {
-		return sdk.Coin{}, errors.New("error: stable price not found")
+	spotPrice, err := k.GetRelativeStablePrice(ctx, coin.Denom, types.ModuleName)
+	if err != nil {
+		return sdk.Coin{}, err
 	}
-	orionPrice, found := k.GetStablePrice(ctx, types.ModuleName)
-	if !found {
-		return sdk.Coin{}, errors.New("error: stable price not found")
-	}
-	if orionPrice.IsZero() {
-		return sdk.Coin{}, errors.New("error: orion price is zero")
-	}
-	spotPrice := denomPrice.Quo(orionPrice)
 	OrionAmt := coin.Amount.ToDec().Mul(spotPrice).TruncateInt()
 	return sdk.NewCoin(types.ModuleName, OrionAmt), nil
 }
@@ -41,6 +32,11 @@ func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 // GetStablePrice gets the amount of UST equivalent to the input one denom from the qoracle module
 func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) (price sdk.Dec, found bool) {
 	return k.qoracleKeeper.GetStablePrice(ctx, denom)
+}
+
+// GetRelativeStablePrice gets the amount of denomOut equivalent to one denomIn from the qoracle module
+func (k Keeper) GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string) (price sdk.Dec, err error) {
+	return k.qoracleKeeper.GetRelativeStablePrice(ctx, denomIn, denomOut)
 }
 
 // MintOrion mint orions tokens from the OrionReserveMaccName

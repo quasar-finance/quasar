@@ -10,31 +10,78 @@ import (
 
 func TestMintDeficit(t *testing.T) {
 	var tests = []struct {
-		name         string
-		totalDeficit sdk.Coins
-		mintedOrions map[string]sdk.Coin
+		name               string
+		storedStablePrices map[string]sdk.Dec
+		totalDeficit       sdk.Coins
+		mintedOrions       map[string]sdk.Coin
+		expectError        bool
 	}{
 		{
 			name:         "no deficit",
 			totalDeficit: sdk.NewCoins(),
 			mintedOrions: map[string]sdk.Coin{},
+			expectError:  false,
 		},
-		// TODO Add check for stable price existence and division by zero to fix the tests
-		/*{
-			name:         "single coin",
+		{
+			name:         "single coin, no price stored",
+			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+			expectError:  true,
+		},
+		{
+			name: "single coin, different price stored",
+			storedStablePrices: map[string]sdk.Dec{
+				"xyz": sdk.NewDecWithPrec(12, 1),
+			},
+			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+			expectError:  true,
+		},
+		{
+			name: "single coin, no orion price",
+			storedStablePrices: map[string]sdk.Dec{
+				"abc": sdk.NewDecWithPrec(12, 1),
+			},
+			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+			expectError:  true,
+		},
+		{
+			name: "single coin, no qsr price",
+			storedStablePrices: map[string]sdk.Dec{
+				"abc":   sdk.NewDecWithPrec(12, 1),
+				"orion": sdk.NewDecWithPrec(9, 1),
+			},
+			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+			expectError:  true,
+		},
+		{
+			name: "single coin, valid",
+			storedStablePrices: map[string]sdk.Dec{
+				"abc":   sdk.NewDecWithPrec(12, 1),
+				"orion": sdk.NewDecWithPrec(9, 1),
+				"QSR":   sdk.NewDecWithPrec(22, 1),
+			},
 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 			mintedOrions: map[string]sdk.Coin{
-				"abc": sdk.NewCoin("orion", sdk.NewInt(100)),
+				"abc": sdk.NewCoin("orion", sdk.NewInt(133)),
 			},
-		},*/
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {
-		setup := testutil.NewTestSetup(t)
-		ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
 		t.Run(tt.name, func(t *testing.T) {
-			mintedOrions := k.MintDeficit(ctx, tt.totalDeficit)
-			require.EqualValues(t, tt.mintedOrions, mintedOrions)
+			setup := testutil.NewTestSetup(t)
+			ctx, k, qoracleKeeper := setup.Ctx, setup.Keepers.OrionKeeper, setup.Keepers.QoracleKeeper
+			for denom, price := range tt.storedStablePrices {
+				qoracleKeeper.SetStablePrice(ctx, denom, price)
+			}
+			mintedOrions, err := k.MintDeficit(ctx, tt.totalDeficit)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				print(mintedOrions)
+				require.EqualValues(t, tt.mintedOrions, mintedOrions)
+			}
 		})
 	}
 }

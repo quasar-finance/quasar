@@ -19,14 +19,6 @@ type UserCoin struct {
 // Multiple object for the same user can be present in respective data structures
 type EpochUserDenomWeight struct {
 	UserAcc string
-	Denom   string
-	Weight  sdk.Dec
-	Amt     sdk.Int
-}
-
-// EpochUserDenomWeightV2 is the same as EpochUserDenomWeight with differing field types
-type EpochUserDenomWeightV2 struct {
-	UserAcc string
 	Weight  sdk.Dec
 	Coin    sdk.Coin
 }

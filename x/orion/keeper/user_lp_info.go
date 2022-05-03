@@ -65,10 +65,10 @@ func (k Keeper) PrepareEpochUsersRewards(ctx sdk.Context,
 	return nil
 }
 
-// AUDIT NOTE - This method could be redundant.
 // PrepareEpochUsersWeights prepares users denom weight on a given epoch based on
 // deposited tokens.
 // Return -  []types.EpochUserDenomWeight will be used to calculate the users rewards
+// AUDIT NOTE - This method could be redundant.
 func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 	epochDepositDay uint64, epochRewardDay uint64) []types.EpochUserDenomWeight {
 
@@ -110,7 +110,7 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 		denom := uc.Coin.Denom
 		totalDenomAmt := totalCoins.AmountOf(denom)
 		wieght := uc.Coin.Amount.ToDec().QuoInt(totalDenomAmt)
-		udw := types.EpochUserDenomWeight{UserAcc: uc.UserAcc, Denom: denom, Weight: wieght}
+		udw := types.EpochUserDenomWeight{UserAcc: uc.UserAcc, Coin: uc.Coin, Weight: wieght}
 		udws = append(udws, udw)
 	}
 
@@ -124,81 +124,15 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 // 2. In this method, we are iterating over the qbank module KV store.
 // This method should be called after GetDepositDayInfos at each EOD.
 // Return []types.EpochUserDenomWeight is used to calculate the users reward percentage for a given epoch day.
-func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
-	dlpairs []types.DepositDayLockupPair) []types.EpochUserDenomWeight {
-
-	totalDenomAmtMap := make(map[string]sdk.Int)
-	userCoinsMap := make(map[string]sdk.Coins)
-	var udws []types.EpochUserDenomWeight
-
-	for _, dl := range dlpairs {
-		// Prepare prefix key with epochDay and lockup period
-		bytePrefix := qbanktypes.UserDenomDepositKBP
-		prefixKey := qbanktypes.CreateEpochLockupUserKey(dl.EpochDay, dl.LockupPeriod, qbanktypes.Sep)
-		prefixKey = append(bytePrefix, prefixKey...)
-
-		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochday} + ":" + "lockupString" + ":"
-		store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
-		iter := sdk.KVStorePrefixIterator(store, prefixKey)
-		defer iter.Close()
-
-		logger := k.Logger(ctx)
-		logger.Info(fmt.Sprintf("ProcessDepositDayLockupPair|modulename=%s|blockheight=%d|prefixKey=%s",
-			types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
-
-		// Key = {userAcc} + {":"} + {Denom} , Value = sdk.Coin
-		for ; iter.Valid(); iter.Next() {
-			key, val := iter.Key(), iter.Value()
-			bsplits := qbanktypes.SplitKeyBytes(key)
-			uid := string(bsplits[1])
-			denom := string(bsplits[2])
-
-			var coin sdk.Coin
-			k.cdc.MustUnmarshal(val, &coin)
-
-			if amt, found := totalDenomAmtMap[denom]; found {
-				totalDenomAmtMap[denom] = amt.Add(coin.Amount)
-			} else {
-				totalDenomAmtMap[denom] = coin.Amount
-			}
-
-			if coins, found := userCoinsMap[uid]; found {
-				userCoinsMap[uid] = coins.Add(coin)
-			} else {
-				userCoinsMap[uid] = sdk.NewCoins(coin)
-			}
-		}
-
-	} // dlpairs for loop
-
-	// Process user coin map
-	for user, coins := range userCoinsMap {
-		for _, coin := range coins {
-			weight := coin.Amount.ToDec().QuoInt(totalDenomAmtMap[coin.Denom])
-			udw := types.EpochUserDenomWeight{UserAcc: user, Denom: coin.Denom, Weight: weight, Amt: coin.Amount}
-			udws = append(udws, udw)
-		}
-	}
-
-	return udws
-}
-
-// ProcessDepositDayLockupPairV2 process the list of pairs <deposit epoch day, lockup period>
-// Input param signifies the lockup period used on a given epoch day when users deposited their funds.
-// Note -
-// 1. This method is in connection with GetDepositDayInfos.
-// 2. In this method, we are iterating over the qbank module KV store.
-// This method should be called after GetDepositDayInfos at each EOD.
-// Return []types.EpochUserDenomWeightV2 is used to calculate the users reward percentage for a given epoch day.
 // TODO refactor and define more function to  break the function into smaller ones.
-func (k Keeper) ProcessDepositDayLockupPairV2(
+func (k Keeper) ProcessDepositDayLockupPair(
 	ctx sdk.Context,
 	dlpairs []types.DepositDayLockupPair,
-) ([]types.EpochUserDenomWeightV2, sdk.Coins) {
+) ([]types.EpochUserDenomWeight, sdk.Coins) {
 
 	totalCoins := sdk.NewCoins()
 	userCoinsMap := make(map[string]sdk.Coins)
-	var udws []types.EpochUserDenomWeightV2
+	var udws []types.EpochUserDenomWeight
 
 	for _, dl := range dlpairs {
 		// Prepare prefix key with epochday and lockup period
@@ -239,7 +173,7 @@ func (k Keeper) ProcessDepositDayLockupPairV2(
 	for user, coins := range userCoinsMap {
 		for _, coin := range coins {
 			weight := coin.Amount.ToDec().QuoInt(totalCoins.AmountOf(coin.Denom))
-			udw := types.EpochUserDenomWeightV2{UserAcc: user, Weight: weight, Coin: coin}
+			udw := types.EpochUserDenomWeight{UserAcc: user, Weight: weight, Coin: coin}
 			udws = append(udws, udw)
 		}
 	}
