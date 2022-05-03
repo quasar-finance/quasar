@@ -99,3 +99,9 @@ Now we can query the state of the registered account.
 ```bash
 ./demo quasarq intergamm interchain-account-from-address connection-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```
+
+It should return the account address created on osmosis side:
+
+```yaml
+interchain_account_address: osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy
+```

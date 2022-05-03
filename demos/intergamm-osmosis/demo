@@ -72,22 +72,19 @@ start_all() {
 }
 
 init_relayer() {
-  ignite relayer configure \
-    --source-rpc "http://localhost:26659" \
-    --source-faucet "http://localhost:4500" \
-    --source-account default \
-    --source-gaslimit 300000 \
-    --source-gasprice 0.00025stake \
-    --source-prefix quasar \
-    \
-    --target-rpc "http://localhost:26559" \
-    --target-faucet "http://localhost:4501" \
-    --target-account default \
-    --target-gaslimit 300000 \
-    --target-gasprice 0.00025stake \
-    --target-prefix osmo
+  (
+    cd "$this_dir"
 
-  ignite relayer connect
+    # Alice on quasar
+    hermes -c hermes.toml keys restore "quasar"  --name "testkey1" --mnemonic "edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"
+    # Alice on osmosis
+    hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "cruise scene law sea push expose scorpion wire trick repair wave quote task dose inner denial alpha favorite certain blouse motion flash split lunch"
+
+    hermes -c hermes.toml create connection "quasar" "osmosis"
+    hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+
+    hermes -c hermes.toml start
+  )
 }
 
 quasar() {
@@ -112,5 +109,6 @@ test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
 
 cmd_exists "osmosisd"
 cmd_exists "quasarnoded"
+cmd_exists "hermes"
 
 "$@"
