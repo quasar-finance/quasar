@@ -65,9 +65,9 @@ start_all() {
     rm -rf ~/.ignite/
   fi
 
-  run_in_terminal "$this_script" start_osmosis
-  sleep 1
   run_in_terminal "$this_script" start_quasar
+  sleep 1
+  run_in_terminal "$this_script" start_osmosis
   sleep 1
 }
 
@@ -76,9 +76,9 @@ init_relayer() {
     cd "$this_dir"
 
     # Alice on quasar
-    hermes -c hermes.toml keys restore "quasar"  --name "testkey1" --mnemonic "edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"
+    hermes -c hermes.toml keys restore "quasar"  --name "testkey1" --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter"
     # Alice on osmosis
-    hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "cruise scene law sea push expose scorpion wire trick repair wave quote task dose inner denial alpha favorite certain blouse motion flash split lunch"
+    hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
 
     hermes -c hermes.toml create connection "quasar" "osmosis"
     hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
