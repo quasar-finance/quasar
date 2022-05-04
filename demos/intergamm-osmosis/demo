@@ -105,6 +105,21 @@ quasartx() {
   quasar tx --from alice "$@"
 }
 
+osmosis() {
+  local home_dir="${run_dir}/osmosis/home"
+
+  osmosisd \
+    --home "$home_dir" \
+    --node=http://localhost:26559 \
+    --chain-id osmosis \
+    "$@"
+}
+
+osmosisq() {
+  osmosis query "$@"
+}
+
+
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
 
 cmd_exists "osmosisd"

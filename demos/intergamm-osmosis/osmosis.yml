@@ -9,6 +9,9 @@ accounts:
   - name: relayer_acc
     mnemonic: "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
     coins: ["10000stake"]
+  - name: ica
+    address: "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
+    coins: ["10000000000000uosmo", "10000000000000uatom", "10000000000000uakt", "2000000000stake"]
 validator:
   name: alice
   staked: "100000000stake"

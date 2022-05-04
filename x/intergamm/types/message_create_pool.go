@@ -1,6 +1,8 @@
 package types
 
 import (
+	gammpooltypes "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
+	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -9,9 +11,19 @@ const TypeMsgCreatePool = "create_pool"
 
 var _ sdk.Msg = &MsgCreatePool{}
 
-func NewMsgCreatePool(creator string) *MsgCreatePool {
+func NewMsgCreatePool(
+	creator string, connectionId string, timeoutTimestamp uint64,
+	poolParams *gammpooltypes.BalancerPoolParams,
+	poolAssets []gammtypes.PoolAsset,
+	futurePoolGovernor string,
+) *MsgCreatePool {
 	return &MsgCreatePool{
-		Creator: creator,
+		Creator:            creator,
+		ConnectionId:       connectionId,
+		TimeoutTimestamp:   timeoutTimestamp,
+		PoolParams:         poolParams,
+		PoolAssets:         poolAssets,
+		FuturePoolGovernor: futurePoolGovernor,
 	}
 }
 

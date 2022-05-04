@@ -105,3 +105,9 @@ It should return the account address created on osmosis side:
 ```yaml
 interchain_account_address: osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy
 ```
+
+## Create a pool on osmosis
+
+```bash
+./demo quasartx intergamm create-pool --data-file create-pool.json
+```
