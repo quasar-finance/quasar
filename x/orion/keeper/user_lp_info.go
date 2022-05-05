@@ -146,8 +146,9 @@ func (k Keeper) ProcessDepositDayLockupPair(
 		defer iter.Close()
 
 		logger := k.Logger(ctx)
-		logger.Info(fmt.Sprintf("ProcessDepositDayLockupPair|modulename=%s|blockheight=%d|prefixKey=%s",
-			types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+		logger.Debug("ProcessDepositDayLockupPair",
+			"BlockHeight", ctx.BlockHeight(),
+			"prefixKey", string(prefixKey))
 
 		// Key = {userAcc} + {":"} + {Denom} , Value = sdk.Coin
 		for ; iter.Valid(); iter.Next() {

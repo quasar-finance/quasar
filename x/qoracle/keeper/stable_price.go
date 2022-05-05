@@ -33,6 +33,7 @@ func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) (price sdk.Dec, fo
 	return price, true
 }
 
+// GetRelativeStablePrice calculates how many denomOut is equivalent to one denomIn.
 func (k Keeper) GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string) (sdk.Dec, error) {
 	priceIn, found := k.GetStablePrice(ctx, denomIn)
 	if !found {

@@ -15,7 +15,7 @@ func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochDay uint64, coin sdk.Coin)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
 	key := types.CreateEpochDenomKey(epochDay, coin.Denom)
 
-	k.Logger(ctx).Info("AddEpochExitAmt", "key", fmt.Sprintf("%s|%s", string(key), coin))
+	k.Logger(ctx).Debug("AddEpochExitAmt", "key", string(key), "coin", coin)
 
 	b := store.Get(key)
 	if b == nil {
@@ -116,14 +116,12 @@ func (k Keeper) DistributeEpochLockupFunds(
 		return err
 	}
 
-	k.Logger(ctx).Info(
-		fmt.Sprintf("DistributeEpochLockupFunds|epochDay=%v|totalNeededCoins=%s|"+
-			"excessCoins=%s|orionsMintedForEachDenom=%v|fromReserve=%s\n",
-			distributionDay,
-			totalNeededCoins.String(),
-			excessEpochExitCoins.String(),
-			orionsMintedForEachDenom,
-			fromReserve.String()))
+	k.Logger(ctx).Debug("DistributeEpochLockupFunds",
+		"distributionDay", distributionDay,
+		"totalNeededCoins", totalNeededCoins.String(),
+		"excessEpochExitCoins", excessEpochExitCoins.String(),
+		"orionsMintedForEachDenom", orionsMintedForEachDenom,
+		"fromReserve", fromReserve.String())
 
 	mgmtFeePercentage := k.MgmtFeePer(ctx)
 
