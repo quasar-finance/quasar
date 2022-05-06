@@ -2,7 +2,6 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	types1 "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	types2 "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
@@ -16,7 +15,7 @@ func NewMsgIbcTransfer(creator string,
 	timeoutTimestamp uint64,
 	transferPort string,
 	transferChannel string,
-	token types1.Coin,
+	token sdk.Coin,
 	receiver string,
 	transferTimeoutHeight types2.Height,
 	transferTimeoutTimestamp uint64) *MsgIbcTransfer {

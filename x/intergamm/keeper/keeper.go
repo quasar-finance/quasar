@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -206,7 +207,9 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
 	}
-	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutTimestamp)
+
+	t := time.Now().Add(time.Minute).UnixNano()
+	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, uint64(t))
 	if err != nil {
 		return err
 	}

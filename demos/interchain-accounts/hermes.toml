@@ -60,12 +60,12 @@ tx_confirmation = true
 
 
 [[chains]]
-id = 'quasar'
+id = 'intertx-1'
 rpc_addr = 'http://127.0.0.1:26659'
 grpc_addr = 'http://127.0.0.1:9095'
 websocket_addr = 'ws://127.0.0.1:26659/websocket'
 rpc_timeout = '10s'
-account_prefix = 'quasar'
+account_prefix = 'cosmos'
 key_name = 'testkey1'
 store_prefix = 'ibc'
 default_gas = 100000
@@ -81,12 +81,12 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
-id = 'osmosis'
+id = 'intertx-2'
 rpc_addr = 'http://127.0.0.1:26559'
 grpc_addr = 'http://127.0.0.1:9096'
 websocket_addr = 'ws://127.0.0.1:26559/websocket'
 rpc_timeout = '10s'
-account_prefix = 'osmosis'
+account_prefix = 'cosmos'
 key_name = 'testkey2'
 store_prefix = 'ibc'
 default_gas = 100000

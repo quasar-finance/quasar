@@ -57,8 +57,8 @@ run_chain() {
   )
 }
 
-start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
 start_quasar()  { run_chain "quasar"  "${project_dir}"                        ; }
+start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
 
 start_all() {
   if [ "$reset_run" == true ] ; then
@@ -92,7 +92,7 @@ quasar() {
 
   quasarnoded \
     --home "$home_dir" \
-    --node=http://localhost:26659 \
+    --node=http://localhost:26559 \
     --chain-id quasar \
     "$@"
 }
@@ -118,7 +118,6 @@ osmosis() {
 osmosisq() {
   osmosis query "$@"
 }
-
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
 

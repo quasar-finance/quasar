@@ -1,0 +1,9 @@
+{
+    "@type": "/cosmos.staking.v1beta1.MsgDelegate",
+    "delegator_address": "cosmos1prhhlqx4hsma6kl3wcvzkqhugs58s9jcpq985jpa6cr2ahewgxps2u0uds",
+    "validator_address": "cosmos1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vf9ptdj",
+    "amount": {
+        "denom": "stake",
+        "amount": "1000"
+    }
+}
