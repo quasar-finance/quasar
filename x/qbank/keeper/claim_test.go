@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil"
+	errortest "github.com/abag/quasarnode/testutil/error"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,7 +22,7 @@ func TestGetAddSubClaimAmt(t *testing.T) {
 	coin2 := sdk.NewCoin(denom2, sdk.NewInt(100))
 	coins := sdk.NewCoins(coin1, coin2)
 	var got types.QCoins
-	var found = false
+	var found bool
 
 	k.AddUserClaimReward(ctx, depositorAddr, vaultId, coin1)
 	k.AddUserClaimRewards(ctx, depositorAddr, vaultId, coins)
@@ -53,7 +54,7 @@ func TestGetClaimAmtInvalidKey(t *testing.T) {
 }
 
 func TestSubClaimAmtInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubUserClaimReward(ctx, "invalid", "orion", sdk.NewCoin("ABC", sdk.NewInt(100)))
@@ -68,7 +69,7 @@ func TestClaimAll(t *testing.T) {
 	denom1 := "ABC"
 	coin1 := sdk.NewCoin(denom1, sdk.NewInt(50))
 	var got types.QCoins
-	var found = false
+	var found bool
 
 	k.AddUserClaimReward(ctx, depositorAddr, vaultId, coin1)
 

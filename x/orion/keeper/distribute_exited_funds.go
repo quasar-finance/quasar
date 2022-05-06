@@ -16,8 +16,7 @@ func (k Keeper) AddEpochExitAmt(ctx sdk.Context, epochday uint64, coin sdk.Coin)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExitKBP)
 	key := types.CreateEpochDenomKey(epochday, coin.Denom)
 
-	k.Logger(ctx).Info(fmt.Sprintf("AddEpochExitAmt|key=%s|%s\n",
-		string(key), coin))
+	k.Logger(ctx).Info("AddEpochExitAmt", "key", fmt.Sprintf("%s|%s", string(key), coin))
 
 	b := store.Get(key)
 	if b == nil {
@@ -197,7 +196,10 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 		// AUDIT TODO - Need to check if the user has sufficient balance or should orion
 		// Deduce the balance from the module account. And adjust the AddActualWithdrawableAmt argument.
 		userAccAddr, _ := sdk.AccAddressFromBech32(v.UserAcc)
-		k.DeductAccFees(ctx, userAccAddr, types.MgmtFeeCollectorMaccName, mgmtFees)
+		err := k.DeductAccFees(ctx, userAccAddr, types.MgmtFeeCollectorMaccName, mgmtFees)
+		if err != nil {
+			return err
+		}
 
 	}
 	return nil
@@ -212,11 +214,17 @@ func (k Keeper) DistributeEpochLockupFunds(ctx sdk.Context,
 // to further enhance capital efficiency [ Phase #2]
 // Note - This way the actual allocation of orions is being done only when we observe IL loss.
 func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
+	var err error
 	orions, err := k.CalcReceipts(ctx, coin)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	k.MintOrion(ctx, orions.Amount)
+
+	err = k.MintOrion(ctx, orions.Amount)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+
 	qsr, err := k.CalcQSR(ctx, coin)
 	if err != nil {
 		return sdk.Coin{}, err
@@ -224,7 +232,11 @@ func (k Keeper) MintAndAllocateOrions(ctx sdk.Context, coin sdk.Coin) (sdk.Coin,
 	// Note - As of now Mint in the orion module reserve acc . The QSR present in the orion module reserve
 	// should not be used for the users distribution. They are considered as locked in
 	// the module reserve account.
-	k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(qsr))
+	err = k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(qsr))
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+
 	return orions, nil
 }
 

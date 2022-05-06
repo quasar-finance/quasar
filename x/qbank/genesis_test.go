@@ -60,53 +60,59 @@ func TestGenesis(t *testing.T) {
 	k.AddUserClaimRewards(ctx, depositorAddr, "orion", sdk.NewCoins(claimableCoins))
 	k.AddUserClaimedRewards(ctx, depositorAddr, "orion", sdk.NewCoins(claimedCoin))
 
-	got = qbank.ExportGenesis(ctx, k)
+	_ = qbank.ExportGenesis(ctx, k)
 
 	depositInfos := []types.DepositInfo{
-		types.DepositInfo{
+		{
 			VaultID:             "orion",
 			EpochDay:            10,
 			LockupPeriod:        lockupDay,
 			DepositorAccAddress: depositorAddr,
-			Coin:                depositCoins},
+			Coin:                depositCoins,
+		},
 	}
 
 	totalDeposits := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_DEPOSIT,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalDepositedCoin)},
+			Coins:               sdk.NewCoins(totalDepositedCoin),
+		},
 	}
 
 	withdrawables := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_WITHDRAWABLE,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalWithdrableCoin)},
+			Coins:               sdk.NewCoins(totalWithdrableCoin),
+		},
 	}
 
 	totalWithdraws := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_WITHDRAW,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalWithdrawsCoin)},
+			Coins:               sdk.NewCoins(totalWithdrawsCoin),
+		},
 	}
 	claimableRewards := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_CLAIMABLE_REWARDS,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(claimableCoins)},
+			Coins:               sdk.NewCoins(claimableCoins),
+		},
 	}
 	totalClaimedRewards := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_CLAIMED_REWARDS,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(claimedCoin)},
+			Coins:               sdk.NewCoins(claimedCoin),
+		},
 	}
 
 	expectedGenesis := types.GenesisState{
@@ -152,50 +158,56 @@ func TestInitGenesisForRestartedChain(t *testing.T) {
 	lockupDay := types.LockupTypes_Days_21
 
 	depositInfos := []types.DepositInfo{
-		types.DepositInfo{
+		{
 			VaultID:             "orion",
 			EpochDay:            currentEpoch,
 			LockupPeriod:        lockupDay,
 			DepositorAccAddress: depositorAddr,
-			Coin:                depositCoins},
+			Coin:                depositCoins,
+		},
 	}
 
 	totalDeposits := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_DEPOSIT,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalDepositedCoin)},
+			Coins:               sdk.NewCoins(totalDepositedCoin),
+		},
 	}
 
 	withdrawables := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_WITHDRAWABLE,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalWithdrableCoin)},
+			Coins:               sdk.NewCoins(totalWithdrableCoin),
+		},
 	}
 
 	totalWithdraws := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_WITHDRAW,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(totalWithdrawsCoin)},
+			Coins:               sdk.NewCoins(totalWithdrawsCoin),
+		},
 	}
 	claimableRewards := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_CLAIMABLE_REWARDS,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(claimableCoins)},
+			Coins:               sdk.NewCoins(claimableCoins),
+		},
 	}
 	totalClaimedRewards := []types.UserBalanceInfo{
-		types.UserBalanceInfo{
+		{
 			Type:                types.BalanceType_TOTAL_CLAIMED_REWARDS,
 			VaultID:             "orion",
 			DepositorAccAddress: depositorAddr,
-			Coins:               sdk.NewCoins(claimedCoin)},
+			Coins:               sdk.NewCoins(claimedCoin),
+		},
 	}
 
 	expectedGenesis := types.GenesisState{

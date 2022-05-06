@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil"
+	errortest "github.com/abag/quasarnode/testutil/error"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -51,7 +52,7 @@ func TestGetWithdrawalAmtInvalidKey(t *testing.T) {
 }
 
 func TestSubWithdrawalAmtInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubWithdrawableAmt(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))
@@ -99,7 +100,7 @@ func TestGetLockupWithdrawalAmtInvalidKey(t *testing.T) {
 }
 
 func TestSubLockupWithdrawalAmtInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubLockupWithdrawableAmt(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)), types.LockupTypes_Days_7)
@@ -147,7 +148,7 @@ func TestGetActualWithdrawalAmtInvalidKey(t *testing.T) {
 }
 
 func TestSubActualWithdrawalAmtInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubActualWithdrawableAmt(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))

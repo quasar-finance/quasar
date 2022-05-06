@@ -8,6 +8,7 @@ import (
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	// TODO get epoch identifier from params
 	logger := k.Logger(ctx)
+	var err error
 
 	if epochIdentifier == k.LpEpochId(ctx) {
 		logger.Info("epoch ended", "identifier", epochIdentifier,
@@ -15,7 +16,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			"blockheight", ctx.BlockHeight())
 
 		if k.Enabled(ctx) {
-
 			// Logic :
 			// 1. Get the list of meissa strategies registered.
 			// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.
@@ -31,14 +31,24 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 					"lockup", lockupStr)
 				if lockupStr != "Invalid" {
 					lockupPeriod := qbanktypes.LockupTypes(lockupEnm)
-					k.ExecuteMeissa(ctx, uint64(epochNumber), lockupPeriod)
+					err = k.ExecuteMeissa(ctx, uint64(epochNumber), lockupPeriod)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 
 			// Refund distribution
-			k.DistributeEpochLockupFunds(ctx, uint64(epochNumber))
+			err = k.DistributeEpochLockupFunds(ctx, uint64(epochNumber))
+			if err != nil {
+				panic(err)
+			}
+
 			// Reward distribution
-			k.RewardDistribution(ctx, uint64(epochNumber))
+			err = k.RewardDistribution(ctx, uint64(epochNumber))
+			if err != nil {
+				panic(err)
+			}
 		} // k.Enabled(ctx)
 	}
 }

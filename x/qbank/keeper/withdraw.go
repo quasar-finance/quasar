@@ -259,9 +259,7 @@ func (k Keeper) AddTotalWithdrawAmt(ctx sdk.Context, uid, vaultID string, coins 
 	} else {
 		var storedqcoins types.QCoins
 		k.cdc.MustUnmarshal(b, &storedqcoins)
-		for _, coin := range coins {
-			storedqcoins.Coins = append(storedqcoins.Coins, coin)
-		}
+		storedqcoins.Coins = append(storedqcoins.Coins, coins...)
 		value := k.cdc.MustMarshal(&storedqcoins)
 		store.Set(key, value)
 	}

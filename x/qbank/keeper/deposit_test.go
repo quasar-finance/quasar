@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil"
+	errortest "github.com/abag/quasarnode/testutil/error"
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/testutil/sample"
 	"github.com/abag/quasarnode/x/qbank/types"
@@ -71,7 +72,7 @@ func TestGetUserDepositInvalidKey(t *testing.T) {
 }
 
 func TestSubUserDepositInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubUserDeposit(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))
@@ -122,7 +123,7 @@ func TestGetUserDenomDepositInvalidKey(t *testing.T) {
 }
 
 func TestSubUserDenomDepositInvalidKey(t *testing.T) {
-	defer func() { recover() }()
+	defer errortest.RecoverExpectedPanic()
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.QbankKeeper
 	k.SubUserDenomDeposit(ctx, "invalid", sdk.NewCoin("ABC", sdk.NewInt(100)))

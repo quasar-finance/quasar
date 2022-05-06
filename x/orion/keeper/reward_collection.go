@@ -104,7 +104,11 @@ func (k Keeper) RewardDistribution(ctx sdk.Context,
 	}
 	// rc.Coins to be used for further reward distribution so needs to be substracted by perFees
 	rc.Coins = rc.Coins.Sub(perFees)
-	k.DeductVaultFees(ctx, types.CreateOrionRewardGloablMaccName(), types.PerfFeeCollectorMaccName, perFees)
+	err := k.DeductVaultFees(ctx, types.CreateOrionRewardGloablMaccName(), types.PerfFeeCollectorMaccName, perFees)
+	if err != nil {
+		// TODO recheck error handling
+		return err
+	}
 
 	denomExpReward := make(map[string]sdk.Coin)
 	denomActualReward := make(map[string]sdk.Coins) // AUDIT TODO
