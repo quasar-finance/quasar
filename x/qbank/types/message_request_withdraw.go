@@ -44,5 +44,18 @@ func (msg *MsgRequestWithdraw) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+
+	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
+		return ErrDepositInvalidRiskProfile
+	}
+
+	if msg.GetVaultID() == "" || !Contains(SupportedVaultTypes, msg.GetVaultID()) {
+		return ErrInvalidVaultId
+	}
+
+	if msg.GetCoin().IsZero() || !msg.GetCoin().IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "request withdraw amount %s", msg.Coin)
+	}
+
 	return nil
 }

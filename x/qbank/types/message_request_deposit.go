@@ -1,6 +1,7 @@
 package types
 
 import (
+	// oriontypes "github.com/abag/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -48,6 +49,19 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 
 	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
 		return ErrDepositInvalidRiskProfile
+	}
+
+	if msg.GetVaultID() == "" || !Contains(SupportedVaultTypes, msg.GetVaultID()) {
+		return ErrInvalidVaultId
+	}
+
+	if msg.GetCoin().IsZero() || !msg.GetCoin().IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "deposit amount %s", msg.Coin)
+	}
+
+	v := LockupTypes_name[int32(msg.GetLockupPeriod())]
+	if v == "" || v == "Invalid" {
+		return ErrInvalidLockupType
 	}
 
 	return nil
