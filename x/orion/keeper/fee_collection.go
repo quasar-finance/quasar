@@ -50,6 +50,22 @@ func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 	return nil
 }
 
+// DeductFeesFromModuleAccount deducts the management fee from the module account
+// before the rest is distributed to the user.
+func (k Keeper) DeductFeesFromModuleAccount(ctx sdk.Context, senderAddr string,
+	feeCollectorName string, fees sdk.Coins) error {
+
+	if !fees.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+	err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, senderAddr, feeCollectorName, fees)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
+	}
+
+	return nil
+}
+
 // DeductVaultFees deduce performance fees of type based of feeCollector name from the investor address
 // who deposited tokens in orion vault. There is one to one mapping between the type
 // of fee with the fee collector name. In this method, fee deduction is done from a module account managed

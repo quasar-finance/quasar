@@ -82,8 +82,7 @@ func (k Keeper) GetCorrespondingEpochExitCoins(
 // Orion Module account is the exit collection account for the deployed fund.
 func (k Keeper) SendCoinFromExitCollectionToAccount(ctx sdk.Context, userAcc string, amt sdk.Coins) error {
 	userAccAddr, _ := sdk.AccAddressFromBech32(userAcc)
-	accName := types.ModuleName
-	return k.BankKeeper.SendCoinsFromModuleToAccount(ctx, accName, userAccAddr, amt)
+	return k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, userAccAddr, amt)
 }
 
 // DistributeEpochLockupFunds distribute the exited funds to the depositors at the end of every epoch day.
@@ -107,11 +106,11 @@ func (k Keeper) DistributeEpochLockupFunds(
 
 	epochExitCoins := k.GetCorrespondingEpochExitCoins(ctx, distributionDay, totalNeededCoins)
 	reserveCoins := k.GetAllReserveBalances(ctx)
-	fromEpochExit, fromReserve, excessEpochExitCoins, totalDeficit :=
+	availableFromEpochExit, availableFromReserve, excessEpochExitCoins, totalDeficit :=
 		CalculateCoinAllocations(totalNeededCoins, epochExitCoins, reserveCoins)
-	availableCoins := fromEpochExit.Add(fromReserve...)
+	availableCoins := availableFromEpochExit.Add(availableFromReserve...)
 
-	orionsMintedForEachDenom, err := k.MintDeficit(ctx, totalDeficit)
+	orionsMintedForEachDenom, totalMinted, err := k.MintDeficit(ctx, totalDeficit)
 	if err != nil {
 		return err
 	}
@@ -121,21 +120,32 @@ func (k Keeper) DistributeEpochLockupFunds(
 		"totalNeededCoins", totalNeededCoins.String(),
 		"excessEpochExitCoins", excessEpochExitCoins.String(),
 		"orionsMintedForEachDenom", orionsMintedForEachDenom,
-		"fromReserve", fromReserve.String())
+		"fromReserve", availableFromReserve.String())
 
+	// move the fromReserve funds and minted orions from reserve account to module account
+	totalFromReserve := availableFromReserve.Add(totalMinted...)
+	err = k.BankKeeper.SendCoinsFromModuleToModule(ctx,
+		types.OrionReserveMaccName,
+		types.ModuleName,
+		totalFromReserve)
+	if err != nil {
+		panic(err)
+	}
+
+	// deduct the management fees
 	mgmtFeePercentage := k.MgmtFeePer(ctx)
+	totalToBeDistributed := availableFromEpochExit.Add(totalFromReserve...)
+	totalMgmtFee, _ /*mgmtFeeChange*/ := sdk.NewDecCoinsFromCoins(totalToBeDistributed...).MulDec(mgmtFeePercentage).TruncateDecimal()
+	err = k.DeductFeesFromModuleAccount(ctx, types.ModuleName, types.MgmtFeeCollectorMaccName, totalMgmtFee)
+	if err != nil {
+		panic(err)
+	}
 
 	for _, v := range epochUserInfo {
 		denom := v.Coin.Denom
-		userCoins, mgmtFees := CalculateUserCoinsAndFees(denom, v.Weight, availableCoins, orionsMintedForEachDenom, mgmtFeePercentage)
+		userCoins, _ := CalculateUserCoinsAndFees(denom, v.Weight, availableCoins, orionsMintedForEachDenom, mgmtFeePercentage)
 
 		k.AddWithdrawableCoins(ctx, v.UserAcc, userCoins)
-
-		userAccAddr, _ := sdk.AccAddressFromBech32(v.UserAcc)
-		err := k.DeductAccFees(ctx, userAccAddr, types.MgmtFeeCollectorMaccName, mgmtFees)
-		if err != nil {
-			// TODO add error handling (probably non-fatal)
-		}
 	}
 	return nil
 }
@@ -186,15 +196,18 @@ func (k Keeper) GetQSRPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
 // MintDeficit mints (equivalent value of) orions to cover the deficits.
 // Since all minted coins have the same denominations, a map is used (rather than sdk.Coins),
 // to keep track of how much orions is minted for each denomination.
-func (k Keeper) MintDeficit(ctx sdk.Context, totalDeficit sdk.Coins) (orionsMintedForEachDenom map[string]sdk.Coin, err error) {
-	orionsMintedForEachDenom = make(map[string]sdk.Coin)
+func (k Keeper) MintDeficit(ctx sdk.Context, totalDeficit sdk.Coins) (map[string]sdk.Coin, sdk.Coins, error) {
+	orionsMintedForEachDenom := make(map[string]sdk.Coin)
+	totalMinted := sdk.NewCoins()
 	for _, c := range totalDeficit {
-		orionsMintedForEachDenom[c.Denom], err = k.MintAndAllocateOrions(ctx, c)
+		minted, err := k.MintAndAllocateOrions(ctx, c)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		orionsMintedForEachDenom[c.Denom] = minted
+		totalMinted = totalMinted.Add(minted)
 	}
-	return orionsMintedForEachDenom, nil
+	return orionsMintedForEachDenom, totalMinted, nil
 }
 
 // AddWithdrawableCoins iterates over coins, and call AddActualWithdrawableAmt of qbank for each coin.
@@ -237,7 +250,7 @@ func CalculateUserCoinsAndFees(
 
 	userDecCoins = userDecCoins.MulDec(depositorWeight)
 
-	mgmtFeesDecCoins := userDecCoins.MulDecTruncate(mgmtFeePercentage)
+	mgmtFeesDecCoins := userDecCoins.MulDec(mgmtFeePercentage)
 	userDecCoins = userDecCoins.Sub(mgmtFeesDecCoins)
 
 	// TODO get the change into a public spending pool

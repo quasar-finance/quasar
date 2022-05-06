@@ -13,14 +13,16 @@ func TestMintDeficit(t *testing.T) {
 		name               string
 		storedStablePrices map[string]sdk.Dec
 		totalDeficit       sdk.Coins
-		mintedOrions       map[string]sdk.Coin
 		expectError        bool
+		mintedOrions       map[string]sdk.Coin
+		totalMinted        sdk.Coins
 	}{
 		{
 			name:         "no deficit",
 			totalDeficit: sdk.NewCoins(),
-			mintedOrions: map[string]sdk.Coin{},
 			expectError:  false,
+			mintedOrions: map[string]sdk.Coin{},
+			totalMinted:  sdk.NewCoins(),
 		},
 		{
 			name:         "single coin, no price stored",
@@ -60,10 +62,30 @@ func TestMintDeficit(t *testing.T) {
 				"QSR":   sdk.NewDecWithPrec(22, 1),
 			},
 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+			expectError:  false,
 			mintedOrions: map[string]sdk.Coin{
 				"abc": sdk.NewCoin("orion", sdk.NewInt(133)),
 			},
+			totalMinted: sdk.NewCoins(sdk.NewCoin("orion", sdk.NewInt(133))),
+		},
+		{
+			name: "two coins, valid",
+			storedStablePrices: map[string]sdk.Dec{
+				"abc":   sdk.NewDecWithPrec(12, 1),
+				"def":   sdk.NewDecWithPrec(14, 1),
+				"orion": sdk.NewDecWithPrec(9, 1),
+				"QSR":   sdk.NewDecWithPrec(22, 1),
+			},
+			totalDeficit: sdk.NewCoins(
+				sdk.NewCoin("abc", sdk.NewInt(100)),
+				sdk.NewCoin("def", sdk.NewInt(90)),
+			),
 			expectError: false,
+			mintedOrions: map[string]sdk.Coin{
+				"abc": sdk.NewCoin("orion", sdk.NewInt(133)),
+				"def": sdk.NewCoin("orion", sdk.NewInt(140)),
+			},
+			totalMinted: sdk.NewCoins(sdk.NewCoin("orion", sdk.NewInt(273))),
 		},
 	}
 
@@ -74,13 +96,13 @@ func TestMintDeficit(t *testing.T) {
 			for denom, price := range tt.storedStablePrices {
 				qoracleKeeper.SetStablePrice(ctx, denom, price)
 			}
-			mintedOrions, err := k.MintDeficit(ctx, tt.totalDeficit)
+			mintedOrions, totalMinted, err := k.MintDeficit(ctx, tt.totalDeficit)
 			if tt.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				print(mintedOrions)
 				require.EqualValues(t, tt.mintedOrions, mintedOrions)
+				require.True(t, tt.totalMinted.IsEqual(totalMinted))
 			}
 		})
 	}
