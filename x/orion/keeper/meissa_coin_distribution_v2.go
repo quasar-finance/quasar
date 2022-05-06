@@ -29,7 +29,7 @@ import (
 //// Go to the next pool and repeat [3 - 12]
 // NOTE - At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of
 // denoms for which we don't have pool pairs.
-func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) {
+func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
 	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaCoinDistribution|epochDay=%v|lockupType=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
@@ -63,15 +63,21 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 		if err != nil {
 			continue
 		}
-		k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
 
+		err = k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
+		if err != nil {
+			return err
+		}
 		// TODO | AUDIT
 		//  1. Call Intergamm IBC token transfer from  OrionStakingMaccName
 		//  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
 
 		if shareOutAmount.IsPositive() {
 			// Call Intergamm Add Liquidity Method
-			k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
+			err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
+			if err != nil {
+				return err
+			}
 
 			// TODO : Lock the LP tokens and receive lockId.
 			// TODO : Update orion vault staking amount.
@@ -91,6 +97,8 @@ func (k Keeper) MeissaCoinDistributionV2(ctx sdk.Context, epochDay uint64, locku
 			k.AddNewLPPosition(ctx, lp)
 		}
 	}
+
+	return nil
 }
 
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms

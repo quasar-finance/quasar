@@ -17,7 +17,6 @@ var _ = strconv.Itoa(0)
 
 const (
 	flagPacketTimeoutHeight = "packet-timeout-height"
-	flagAbsoluteTimeouts    = "absolute-timeouts"
 )
 
 func CmdIbcTransfer() *cobra.Command {
