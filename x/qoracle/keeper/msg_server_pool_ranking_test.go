@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/abag/quasarnode/testutil"
@@ -18,6 +17,9 @@ func TestPoolRankingMsgServerCreate(t *testing.T) {
 	srv := keeper.NewMsgServerImpl(k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
+	p := k.GetParams(ctx)
+	p.OracleAccounts = "A"
+	k.SetParams(ctx, p)
 	expected := &types.MsgCreatePoolRanking{
 		Creator:            creator,
 		PoolIdsSortedByAPY: []string{"1", "2", "3"},
@@ -54,7 +56,7 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 		{
 			desc:    "Unauthorized",
 			request: &types.MsgUpdatePoolRanking{Creator: "B"},
-			err:     sdkerrors.ErrUnauthorized,
+			err:     types.ErrUnAuthorizedOracleClient,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -62,6 +64,9 @@ func TestPoolRankingMsgServerUpdate(t *testing.T) {
 			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
+			p := k.GetParams(ctx)
+			p.OracleAccounts = "A"
+			k.SetParams(ctx, p)
 			expected := &types.MsgCreatePoolRanking{Creator: creator}
 			_, err := srv.CreatePoolRanking(wctx, expected)
 			require.NoError(t, err)
@@ -97,7 +102,7 @@ func TestPoolRankingMsgServerDelete(t *testing.T) {
 		{
 			desc:    "Unauthorized",
 			request: &types.MsgDeletePoolRanking{Creator: "B"},
-			err:     sdkerrors.ErrUnauthorized,
+			err:     types.ErrUnAuthorizedOracleClient,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -105,7 +110,9 @@ func TestPoolRankingMsgServerDelete(t *testing.T) {
 			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
-
+			p := k.GetParams(ctx)
+			p.OracleAccounts = "A"
+			k.SetParams(ctx, p)
 			_, err := srv.CreatePoolRanking(wctx, &types.MsgCreatePoolRanking{Creator: creator})
 			require.NoError(t, err)
 			_, err = srv.DeletePoolRanking(wctx, tc.request)
