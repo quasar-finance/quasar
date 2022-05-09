@@ -52,13 +52,13 @@ func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 
 // DeductFeesFromModuleAccount deducts the management fee from the module account
 // before the rest is distributed to the user.
-func (k Keeper) DeductFeesFromModuleAccount(ctx sdk.Context, senderAddr string,
+func (k Keeper) DeductFeesFromModuleAccount(ctx sdk.Context, senderAccName string,
 	feeCollectorName string, fees sdk.Coins) error {
 
 	if !fees.IsValid() {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
 	}
-	err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, senderAddr, feeCollectorName, fees)
+	err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, senderAccName, feeCollectorName, fees)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
 	}

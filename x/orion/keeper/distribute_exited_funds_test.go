@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/orion/keeper"
+	"github.com/abag/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -48,8 +49,8 @@ func TestMintDeficit(t *testing.T) {
 		{
 			name: "single coin, no qsr price",
 			storedStablePrices: map[string]sdk.Dec{
-				"abc":   sdk.NewDecWithPrec(12, 1),
-				"orion": sdk.NewDecWithPrec(9, 1),
+				"abc":            sdk.NewDecWithPrec(12, 1),
+				types.OrionDenom: sdk.NewDecWithPrec(9, 1),
 			},
 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 			expectError:  true,
@@ -57,24 +58,24 @@ func TestMintDeficit(t *testing.T) {
 		{
 			name: "single coin, valid",
 			storedStablePrices: map[string]sdk.Dec{
-				"abc":   sdk.NewDecWithPrec(12, 1),
-				"orion": sdk.NewDecWithPrec(9, 1),
-				"QSR":   sdk.NewDecWithPrec(22, 1),
+				"abc":             sdk.NewDecWithPrec(12, 1),
+				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
+				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
 			},
 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 			expectError:  false,
 			mintedOrions: map[string]sdk.Coin{
-				"abc": sdk.NewCoin("orion", sdk.NewInt(133)),
+				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
 			},
-			totalMinted: sdk.NewCoins(sdk.NewCoin("orion", sdk.NewInt(133))),
+			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(133))),
 		},
 		{
 			name: "two coins, valid",
 			storedStablePrices: map[string]sdk.Dec{
-				"abc":   sdk.NewDecWithPrec(12, 1),
-				"def":   sdk.NewDecWithPrec(14, 1),
-				"orion": sdk.NewDecWithPrec(9, 1),
-				"QSR":   sdk.NewDecWithPrec(22, 1),
+				"abc":             sdk.NewDecWithPrec(12, 1),
+				"def":             sdk.NewDecWithPrec(14, 1),
+				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
+				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
 			},
 			totalDeficit: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(100)),
@@ -82,10 +83,10 @@ func TestMintDeficit(t *testing.T) {
 			),
 			expectError: false,
 			mintedOrions: map[string]sdk.Coin{
-				"abc": sdk.NewCoin("orion", sdk.NewInt(133)),
-				"def": sdk.NewCoin("orion", sdk.NewInt(140)),
+				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
+				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(140)),
 			},
-			totalMinted: sdk.NewCoins(sdk.NewCoin("orion", sdk.NewInt(273))),
+			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(273))),
 		},
 	}
 
@@ -321,7 +322,7 @@ func TestCalculateUserCoinsAndFees(t *testing.T) {
 				sdk.NewCoin("def", sdk.NewInt(500)),
 			),
 			orionsMintedForEachDenom: map[string]sdk.Coin{
-				"def": sdk.NewCoin("orion", sdk.NewInt(1500)),
+				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(1500)),
 			},
 			mgmtFeePercentage: sdk.NewDecWithPrec(15, 2),
 			userCoins:         sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(85))),
@@ -336,17 +337,17 @@ func TestCalculateUserCoinsAndFees(t *testing.T) {
 				sdk.NewCoin("def", sdk.NewInt(500)),
 			),
 			orionsMintedForEachDenom: map[string]sdk.Coin{
-				"abc": sdk.NewCoin("orion", sdk.NewInt(2000)),
-				"def": sdk.NewCoin("orion", sdk.NewInt(1500)),
+				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(2000)),
+				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(1500)),
 			},
 			mgmtFeePercentage: sdk.NewDecWithPrec(15, 2),
 			userCoins: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(85)),
-				sdk.NewCoin("orion", sdk.NewInt(170)),
+				sdk.NewCoin(types.OrionDenom, sdk.NewInt(170)),
 			),
 			mgmtFees: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(15)),
-				sdk.NewCoin("orion", sdk.NewInt(30)),
+				sdk.NewCoin(types.OrionDenom, sdk.NewInt(30)),
 			),
 		},
 		{
@@ -358,17 +359,17 @@ func TestCalculateUserCoinsAndFees(t *testing.T) {
 				sdk.NewCoin("def", sdk.NewInt(5050)),
 			),
 			orionsMintedForEachDenom: map[string]sdk.Coin{
-				"abc": sdk.NewCoin("orion", sdk.NewInt(20050)),
-				"def": sdk.NewCoin("orion", sdk.NewInt(15050)),
+				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(20050)),
+				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(15050)),
 			},
 			mgmtFeePercentage: sdk.NewDecWithPrec(15, 2),
 			userCoins: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(85)),
-				sdk.NewCoin("orion", sdk.NewInt(170)),
+				sdk.NewCoin(types.OrionDenom, sdk.NewInt(170)),
 			),
 			mgmtFees: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(15)),
-				sdk.NewCoin("orion", sdk.NewInt(30)),
+				sdk.NewCoin(types.OrionDenom, sdk.NewInt(30)),
 			),
 		},
 	}

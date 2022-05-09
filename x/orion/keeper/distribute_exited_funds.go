@@ -185,12 +185,12 @@ func (k Keeper) CalcQSR(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 		return sdk.Coin{}, err
 	}
 	amt := coin.Amount.ToDec().Mul(p).TruncateInt()
-	return sdk.NewCoin("QSR", amt), nil
+	return sdk.NewCoin(types.QuasarDenom, amt), nil
 }
 
 // GetQSRPrice gets the QSR price of one denom in terms of US dollar
 func (k Keeper) GetQSRPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
-	return k.GetRelativeStablePrice(ctx, denom, "QSR")
+	return k.GetRelativeStablePrice(ctx, denom, types.QuasarDenom)
 }
 
 // MintDeficit mints (equivalent value of) orions to cover the deficits.
