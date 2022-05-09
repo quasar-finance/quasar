@@ -26,5 +26,10 @@ host:
   dev-ui: ":12352"
 genesis:
   chain_id: "intertx-2"
+  app_state:
+    interchainaccounts:
+      host_genesis_state:
+        params:
+          allow_messages: ["/cosmos.bank.v1beta1.MsgSend", "/cosmos.staking.v1beta1.MsgDelegate"]
 init:
   home: "${home_dir}"

@@ -46,11 +46,8 @@ Send some stake from Alice
 ./demo intertx_2_tx bank send alice cosmos1prhhlqx4hsma6kl3wcvzkqhugs58s9jcpq985jpa6cr2ahewgxps2u0uds 10000stake
 ```
 
-Check the balance of the ICA address again, it should have the 10000stake.
+Check the balance of the ICA address again for the ICA account, it should have the 10000stake.
 
-```bash
-./demo intertx_2_q bank balances cosmos1prhhlqx4hsma6kl3wcvzkqhugs58s9jcpq985jpa6cr2ahewgxps2u0uds
-```
 
 ## Send a tx to host chain
 
@@ -65,3 +62,5 @@ Now we tell the controller chain to instruct a bank transfer via the ICA account
 ```bash
 ./demo intertx_1_tx intertx submit transfer.raw.json --connection-id connection-0
 ```
+
+Check the balance of the ICA address again for Bob, it should have the extra 42stake.

@@ -77,7 +77,7 @@ quasarnoded q bank balances $(quasarnoded keys show -a alice --home run/quasar/h
 ./demo tx_bob_cosmos_to_alice_quasar
 ```
 
-Now the new ATOM transferred to alice on `quasar` should be visibile:
+Now the new ATOM transferred to alice on `quasar` should be visible:
 
 ```bash
 curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
