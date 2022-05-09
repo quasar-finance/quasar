@@ -92,7 +92,7 @@ quasar() {
 
   quasarnoded \
     --home "$home_dir" \
-    --node=http://localhost:26559 \
+    --node=http://localhost:26659 \
     --chain-id quasar \
     "$@"
 }

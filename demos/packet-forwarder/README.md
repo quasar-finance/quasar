@@ -132,10 +132,10 @@ It should display the 1000 IBC denom for the original ATOM.
 4. Send 1000 uatom (one hop ibc transfer) from cosmos-hub to osmosis using alice as sender and receiver.
 
 ```bash
-/demo tx_alice_cosmos_to_alice_osmosis
+./demo tx_alice_cosmos_to_alice_osmosis
 ```
 
-and then verify the balance:
+Then verify the balance, it should be 2000:
 
 ```bash
 curl http://localhost:1312/bank/balances/osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq

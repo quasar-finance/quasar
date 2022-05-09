@@ -16,10 +16,13 @@ go-mod:
 lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
 
+proto-gen:
+	@ignite generate proto-go
+
 build: mkdirs
 	scripts/build
 
-.PHONY: mkdirs go-mod lint build
+.PHONY: mkdirs go-mod lint build proto-gen
 
 # Testing
 
@@ -47,13 +50,13 @@ test-simulation:
 
 # Documentation
 
-docs-gen:
+doc-gen:
 	scripts/gen_grpc_doc
 
-docs-serve:
+doc-serve:
 	scripts/serve_doc_docker
 
-.PHONY: docs-gen docs-serve
+.PHONY: doc-gen doc-serve
 
 # Run targets
 

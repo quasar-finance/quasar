@@ -30,6 +30,11 @@ host:
   dev-ui: ":12352"
 genesis:
   chain_id: "osmosis"
+  app_state:
+    interchainaccounts:
+      host_genesis_state:
+        params:
+          allow_messages: ["osmosis.gamm.v1beta1.MsgCreateBalancerPool"]
 init:
   home: "${home_dir}"
 build:
