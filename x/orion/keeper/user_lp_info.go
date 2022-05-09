@@ -11,18 +11,18 @@ import (
 
 // AUDIT NOTE - This method could be redundant.
 // SetUserLPInfo set userLPInfo in the store
-func (k Keeper) SetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
+func (k Keeper) SetUserLPInfo(ctx sdk.Context, epochDay uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
-	key := types.CreateEpochLPUserInfo(epochday, lpID, userAcc)
+	key := types.CreateEpochLPUserInfo(epochDay, lpID, userAcc)
 	value := k.cdc.MustMarshal(&userLPInfo)
 	store.Set(key, value)
 }
 
 // AUDIT NOTE - This method could be redundant.
 // GetUserLPInfo returns userLPInfo
-func (k Keeper) GetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string) (val types.UserLPInfo, found bool) {
+func (k Keeper) GetUserLPInfo(ctx sdk.Context, epochDay uint64, lpID uint64, userAcc string) (val types.UserLPInfo, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
-	key := types.CreateEpochLPUserInfo(epochday, lpID, userAcc)
+	key := types.CreateEpochLPUserInfo(epochDay, lpID, userAcc)
 	b := store.Get(key)
 	if b == nil {
 		return val, false
@@ -33,18 +33,18 @@ func (k Keeper) GetUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, use
 
 // AUDIT NOTE - This method could be redundant.
 // RemoveUserLPInfo removes userLPInfo from the store
-func (k Keeper) RemoveUserLPInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string) {
+func (k Keeper) RemoveUserLPInfo(ctx sdk.Context, epochDay uint64, lpID uint64, userAcc string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
-	key := types.CreateEpochLPUserInfo(epochday, lpID, userAcc)
+	key := types.CreateEpochLPUserInfo(epochDay, lpID, userAcc)
 	store.Delete(key)
 }
 
 // AUDIT NOTE - This method could be redundant.
-// AddEpochLPUser add kv store with key = {epochday} + {":"} + {lpID} + {":"} + {userAccount}
+// AddEpochLPUser add kv store with key = {epochDay} + {":"} + {lpID} + {":"} + {userAccount}
 // value = UserLPInfo. This method is to be used for once time only
-func (k Keeper) AddEpochLPUserInfo(ctx sdk.Context, epochday uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
+func (k Keeper) AddEpochLPUserInfo(ctx sdk.Context, epochDay uint64, lpID uint64, userAcc string, userLPInfo types.UserLPInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPUserInfoKBP)
-	key := types.CreateEpochLPUserInfo(epochday, lpID, userAcc)
+	key := types.CreateEpochLPUserInfo(epochDay, lpID, userAcc)
 	value := k.cdc.MustMarshal(&userLPInfo)
 	store.Set(key, value)
 
@@ -65,10 +65,10 @@ func (k Keeper) PrepareEpochUsersRewards(ctx sdk.Context,
 	return nil
 }
 
-// AUDIT NOTE - This method could be redundant.
 // PrepareEpochUsersWeights prepares users denom weight on a given epoch based on
 // deposited tokens.
-// Return -  []types.EpochUserDenomWeight will be be used to calculate the users rewards
+// Return -  []types.EpochUserDenomWeight will be used to calculate the users rewards
+// AUDIT NOTE - This method could be redundant.
 func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 	epochDepositDay uint64, epochRewardDay uint64) []types.EpochUserDenomWeight {
 
@@ -110,7 +110,7 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 		denom := uc.Coin.Denom
 		totalDenomAmt := totalCoins.AmountOf(denom)
 		wieght := uc.Coin.Amount.ToDec().QuoInt(totalDenomAmt)
-		udw := types.EpochUserDenomWeight{UserAcc: uc.UserAcc, Denom: denom, Weight: wieght}
+		udw := types.EpochUserDenomWeight{UserAcc: uc.UserAcc, Coin: uc.Coin, Weight: wieght}
 		udws = append(udws, udw)
 	}
 
@@ -118,49 +118,48 @@ func (k Keeper) PrepareEpochUsersWeights(ctx sdk.Context,
 }
 
 // ProcessDepositDayLockupPair process the list of pairs <deposit epoch day, lockup period>
-// Input param signifies the lockup period used on a given epoch day where users deopisted their funds.
+// Input param signifies the lockup period used on a given epoch day when users deposited their funds.
 // Note -
 // 1. This method is in connection with GetDepositDayInfos.
 // 2. In this method, we are iterating over the qbank module KV store.
 // This method should be called after GetDepositDayInfos at each EOD.
 // Return []types.EpochUserDenomWeight is used to calculate the users reward percentage for a given epoch day.
-func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
-	dlpairs []types.DepositDayLockupPair) []types.EpochUserDenomWeight {
+// TODO refactor and define more function to  break the function into smaller ones.
+func (k Keeper) ProcessDepositDayLockupPair(
+	ctx sdk.Context,
+	dlpairs []types.DepositDayLockupPair,
+) ([]types.EpochUserDenomWeight, sdk.Coins) {
 
-	totalDenomAmtMap := make(map[string]sdk.Int)
+	totalCoins := sdk.NewCoins()
 	userCoinsMap := make(map[string]sdk.Coins)
 	var udws []types.EpochUserDenomWeight
 
 	for _, dl := range dlpairs {
 		// Prepare prefix key with epochday and lockup period
 		bytePrefix := qbanktypes.UserDenomDepositKBP
-		prefixKey := qbanktypes.CreateEpochLockupUserKey(dl.Epochday, dl.LockupPeriod, qbanktypes.Sep)
+		prefixKey := qbanktypes.CreateEpochLockupUserKey(dl.EpochDay, dl.LockupPeriod, qbanktypes.Sep)
 		prefixKey = append(bytePrefix, prefixKey...)
 
-		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochday} + ":" + "lockupString" + ":"
+		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochDay} + ":" + "lockupString" + ":"
 		store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
 		iter := sdk.KVStorePrefixIterator(store, prefixKey)
 		defer iter.Close()
 
 		logger := k.Logger(ctx)
-		logger.Info(fmt.Sprintf("ProcessDepositDayLockupPair|modulename=%s|blockheight=%d|prefixKey=%s",
-			types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+		logger.Debug("ProcessDepositDayLockupPair",
+			"BlockHeight", ctx.BlockHeight(),
+			"prefixKey", string(prefixKey))
 
 		// Key = {userAcc} + {":"} + {Denom} , Value = sdk.Coin
 		for ; iter.Valid(); iter.Next() {
 			key, val := iter.Key(), iter.Value()
 			bsplits := qbanktypes.SplitKeyBytes(key)
 			uid := string(bsplits[1])
-			denom := string(bsplits[2])
 
 			var coin sdk.Coin
 			k.cdc.MustUnmarshal(val, &coin)
 
-			if amt, found := totalDenomAmtMap[denom]; found {
-				totalDenomAmtMap[denom] = amt.Add(coin.Amount)
-			} else {
-				totalDenomAmtMap[denom] = coin.Amount
-			}
+			totalCoins = totalCoins.Add(coin)
 
 			if coins, found := userCoinsMap[uid]; found {
 				userCoinsMap[uid] = coins.Add(coin)
@@ -174,11 +173,11 @@ func (k Keeper) ProcessDepositDayLockupPair(ctx sdk.Context,
 	// Process user coin map
 	for user, coins := range userCoinsMap {
 		for _, coin := range coins {
-			weight := coin.Amount.ToDec().QuoInt(totalDenomAmtMap[coin.Denom])
-			udw := types.EpochUserDenomWeight{UserAcc: user, Denom: coin.Denom, Weight: weight, Amt: coin.Amount}
+			weight := coin.Amount.ToDec().QuoInt(totalCoins.AmountOf(coin.Denom))
+			udw := types.EpochUserDenomWeight{UserAcc: user, Weight: weight, Coin: coin}
 			udws = append(udws, udw)
 		}
 	}
 
-	return udws
+	return udws, totalCoins
 }

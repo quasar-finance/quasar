@@ -70,29 +70,3 @@ func (k Keeper) GetAllPoolSpotPrice(ctx sdk.Context) (list []types.PoolSpotPrice
 
 	return
 }
-
-// SetStablePrice set the stable price for the input denom
-func (k Keeper) SetStablePrice(ctx sdk.Context, denom string, price sdk.Dec) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StablePriceKBP)
-	key := types.CreateStablePriceKey(denom)
-	b, err := price.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	store.Set(key, b)
-}
-
-// GetStablePrice get the stable denom for the input denom
-func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) (price sdk.Dec, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StablePriceKBP)
-	key := types.CreateStablePriceKey(denom)
-	b := store.Get(key)
-	if b == nil {
-		return price, false
-	}
-	err := (&price).Unmarshal(b)
-	if err != nil {
-		return price, false
-	}
-	return price, true
-}

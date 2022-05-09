@@ -5,13 +5,13 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// There are two types of fee collectors to collect fees for each type of fee
-// management fee, vault performance fee
+// There are two types of fee collectors to collect fees for each type of fee:
+// management fee, and vault performance fee.
 // Fee collectors are implemented as module account facility from cosmos sdk x/auth module.
 // Perf Fee = A set percentage to be taken from the reward collection.
 // Mgmt Fee = A set percentage to be taken from the users deposit amount.
 
-// GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human readable name.
+// GetFeeCollectorAccAddress gets the fee collector account address in sdk.AccAddress type from human-readable name.
 func (k Keeper) GetFeeCollectorAccAddress(feeCollectorName string) sdk.AccAddress {
 	return k.accountKeeper.GetModuleAddress(feeCollectorName)
 }
@@ -25,7 +25,7 @@ func (k Keeper) GetBech32FeeCollectorAccAddress(feeCollectorName string) string 
 	return accStr
 }
 
-// GetFeeCollectorBalances gets the account balance of the inputed fee collector name.
+// GetFeeCollectorBalances gets the account balance of the inputted fee collector name.
 func (k Keeper) GetFeeCollectorBalances(ctx sdk.Context, feeCollectorName string) sdk.Coins {
 	balances := k.BankKeeper.GetAllBalances(ctx, k.GetFeeCollectorAccAddress(feeCollectorName))
 	return balances
@@ -43,6 +43,22 @@ func (k Keeper) DeductAccFees(ctx sdk.Context, senderAddr sdk.AccAddress,
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
 	}
 	err := k.BankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, feeCollectorName, fees)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
+	}
+
+	return nil
+}
+
+// DeductFeesFromModuleAccount deducts the management fee from the module account
+// before the rest is distributed to the user.
+func (k Keeper) DeductFeesFromModuleAccount(ctx sdk.Context, senderAccName string,
+	feeCollectorName string, fees sdk.Coins) error {
+
+	if !fees.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+	err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, senderAccName, feeCollectorName, fees)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
 	}
@@ -74,35 +90,15 @@ func (k Keeper) DeductVaultFees(ctx sdk.Context, sourceMacc string,
 // CalcPerFee is called by vault at the end of every profit collection round.
 // CalcPerFee calculate vault performance fee.
 func (k Keeper) CalcPerFee(ctx sdk.Context, profit sdk.Coin) sdk.Coin {
-	var factor sdk.Dec = k.PerfFeePer(ctx)
+	factor := k.PerfFeePer(ctx)
 	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
 	return sdk.NewCoin(profit.GetDenom(), feeAmt)
 }
 
 // CalcMgmtFee Calculate the management fee.
 func (k Keeper) CalcMgmtFee(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
-	var factor sdk.Dec = k.MgmtFeePer(ctx)
+	factor := k.MgmtFeePer(ctx)
 	feeAmt := coin.Amount.ToDec().Mul(factor).RoundInt()
 	return sdk.NewCoin(coin.GetDenom(), feeAmt)
 
-}
-
-// CalcEntryFee calculate the entry fee every time when a user deposit coins
-// into vault. Return value will be deduced from the depositor account.
-// Note : This function maynot be used for some type of strategies.
-func (k Keeper) CalcEntryFee(depositAmt sdk.Coin) sdk.Coin {
-	// TODO - Factor value to be added in parameter.
-	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
-	feeAmt := depositAmt.Amount.ToDec().Mul(factor).RoundInt()
-	return sdk.NewCoin(depositAmt.GetDenom(), feeAmt)
-}
-
-// CalcExitFee, calculate the exit fee every time when a user withdwar coins
-// from vault. Return value will be deduced from the depositor
-// account, who is exiting his positions.
-func (k Keeper) CalcExitFee(exitAmt sdk.Coin) sdk.Coin {
-	// TODO - Factor value to be added in parameter.
-	var factor sdk.Dec = sdk.MustNewDecFromStr("0.01")
-	feeAmt := exitAmt.Amount.ToDec().Mul(factor).RoundInt()
-	return sdk.NewCoin(exitAmt.GetDenom(), feeAmt)
 }

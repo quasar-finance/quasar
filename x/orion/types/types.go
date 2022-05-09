@@ -19,9 +19,8 @@ type UserCoin struct {
 // Multiple object for the same user can be present in respective data structures
 type EpochUserDenomWeight struct {
 	UserAcc string
-	Denom   string
 	Weight  sdk.Dec
-	Amt     sdk.Int
+	Coin    sdk.Coin
 }
 
 // EpochDenomWeight is used to create a pair of denom and its weight on a particular epoch day
@@ -30,13 +29,13 @@ type EpochDenomWeight struct {
 	Weight sdk.Dec
 }
 
-// EpochUserRewards is used to pair user account and associated reward coins on a particular epoch day
+// EpochUsersReward is used to pair user account and associated reward coins on a particular epoch day
 type EpochUsersReward struct {
 	UserAcc string
 	Rewards sdk.Coins
 }
 
-// EpochDenomReward is used to create pair of denom and its associated rewards
+// EpochDenomReward is used to create a pair of denom and its associated rewards
 type EpochDenomReward struct {
 	Denom   string
 	Rewards sdk.Coins
@@ -44,7 +43,7 @@ type EpochDenomReward struct {
 
 // DepositDayLockupPair is used to create pairs of deposit day and lockup period done on that day.
 type DepositDayLockupPair struct {
-	Epochday     uint64
+	EpochDay     uint64
 	LockupPeriod qbanktypes.LockupTypes
 }
 
@@ -63,5 +62,5 @@ type UserInfo struct {
 	TotalReward sdk.Coins
 }
 
-// A map of user account to UserInfo
+// UserInfoMap is a map of user account to UserInfo
 type UserInfoMap map[string]UserInfo

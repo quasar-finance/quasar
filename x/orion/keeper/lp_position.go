@@ -389,7 +389,7 @@ func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.De
 		depositday, _ := strconv.ParseUint(depositdayStr, 10, 64)
 		lockupPeriod := qbanktypes.LockupTypes_value[string(bsplits[1])]
 		dl := types.DepositDayLockupPair{
-			Epochday:     depositday,
+			EpochDay:     depositday,
 			LockupPeriod: qbanktypes.LockupTypes(lockupPeriod)}
 		dls = append(dls, dl)
 
