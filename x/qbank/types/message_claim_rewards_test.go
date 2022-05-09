@@ -21,9 +21,18 @@ func TestMsgClaimRewards_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "invalid vault",
 			msg: MsgClaimRewards{
 				Creator: sample.AccAddressStr(),
+				VaultID: "xyz",
+			},
+			err: ErrInvalidVaultId,
+		},
+		{
+			name: "valid address and vault",
+			msg: MsgClaimRewards{
+				Creator: sample.AccAddressStr(),
+				VaultID: "orion",
 			},
 		},
 	}

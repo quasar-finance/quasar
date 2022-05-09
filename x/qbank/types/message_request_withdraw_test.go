@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil/sample"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +22,38 @@ func TestMsgRequestWithdraw_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "empty RiskProfile",
 			msg: MsgRequestWithdraw{
 				Creator: sample.AccAddressStr(),
 			},
+			err: ErrDepositInvalidRiskProfile,
+		}, {
+			name: "invalid risk profile",
+			msg: MsgRequestWithdraw{
+				Creator:     sample.AccAddressStr(),
+				RiskProfile: "XYZ",
+			},
+			err: ErrDepositInvalidRiskProfile,
+		},
+		{
+			name: "invalid vault profile",
+			msg: MsgRequestWithdraw{
+				Creator:     sample.AccAddressStr(),
+				RiskProfile: "HIGH",
+				VaultID:     "xyz",
+				Coin:        sdk.NewCoin("QSR", sdk.NewInt(1000)),
+			},
+			err: ErrInvalidVaultId,
+		},
+		{
+			name: "invalid risk profile",
+			msg: MsgRequestWithdraw{
+				Creator:     sample.AccAddressStr(),
+				RiskProfile: "HIGH",
+				VaultID:     "orion",
+				Coin:        sdk.NewCoin("QSR", sdk.NewInt(1000)),
+			},
+			err: nil,
 		},
 	}
 	for _, tt := range tests {

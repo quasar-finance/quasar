@@ -42,5 +42,9 @@ func (msg *MsgRequestWithdrawAll) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+
+	if msg.GetVaultID() == "" || !Contains(SupportedVaultTypes, msg.GetVaultID()) {
+		return ErrInvalidVaultId
+	}
 	return nil
 }

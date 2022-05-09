@@ -21,10 +21,19 @@ func TestMsgRequestWithdrawAll_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid address and vault",
 			msg: MsgRequestWithdrawAll{
 				Creator: sample.AccAddressStr(),
+				VaultID: "orion",
 			},
+		},
+		{
+			name: "invalid vault",
+			msg: MsgRequestWithdrawAll{
+				Creator: sample.AccAddressStr(),
+				VaultID: "xyz",
+			},
+			err: ErrInvalidVaultId,
 		},
 	}
 	for _, tt := range tests {

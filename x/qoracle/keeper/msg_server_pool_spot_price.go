@@ -11,6 +11,10 @@ import (
 func (k msgServer) CreatePoolSpotPrice(goCtx context.Context, msg *types.MsgCreatePoolSpotPrice) (*types.MsgCreatePoolSpotPriceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if msg.Creator != k.OracleAccounts(ctx) {
+		return nil, types.ErrUnAuthorizedOracleClient
+	}
+
 	// Check if the value already exists
 	_, isFound := k.GetPoolSpotPrice(
 		ctx,
@@ -63,7 +67,9 @@ func (k msgServer) CreatePoolSpotPrice(goCtx context.Context, msg *types.MsgCrea
 
 func (k msgServer) UpdatePoolSpotPrice(goCtx context.Context, msg *types.MsgUpdatePoolSpotPrice) (*types.MsgUpdatePoolSpotPriceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	if msg.Creator != k.OracleAccounts(ctx) {
+		return nil, types.ErrUnAuthorizedOracleClient
+	}
 	// Check if the value exists
 	valFound, isFound := k.GetPoolSpotPrice(
 		ctx,
@@ -96,7 +102,9 @@ func (k msgServer) UpdatePoolSpotPrice(goCtx context.Context, msg *types.MsgUpda
 
 func (k msgServer) DeletePoolSpotPrice(goCtx context.Context, msg *types.MsgDeletePoolSpotPrice) (*types.MsgDeletePoolSpotPriceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	if msg.Creator != k.OracleAccounts(ctx) {
+		return nil, types.ErrUnAuthorizedOracleClient
+	}
 	// Check if the value exists
 	valFound, isFound := k.GetPoolSpotPrice(
 		ctx,

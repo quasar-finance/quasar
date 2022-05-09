@@ -15,6 +15,10 @@ func (k msgServer) StablePrice(goCtx context.Context, msg *types.MsgStablePrice)
 		return nil, err
 	}
 
+	if msg.Creator != k.OracleAccounts(ctx) {
+		return nil, types.ErrUnAuthorizedOracleClient
+	}
+
 	price := sdk.MustNewDecFromStr(msg.Price)
 	if price.IsNil() || price.IsNegative() {
 		return nil, types.ErrInvalidStablePrice

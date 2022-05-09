@@ -8,6 +8,7 @@ import (
 
 // x/qoracle module sentinel errors
 var (
-	ErrSample             = sdkerrors.Register(ModuleName, 1100, "sample error")
-	ErrInvalidStablePrice = sdkerrors.Register(ModuleName, 200, "invalid stable price")
+	ErrSample                   = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrInvalidStablePrice       = sdkerrors.Register(ModuleName, 200, "invalid stable price")
+	ErrUnAuthorizedOracleClient = sdkerrors.Register(ModuleName, 201, "unauthorized oracle client")
 )

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil/sample"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -31,8 +32,11 @@ func TestMsgRequestDeposit_ValidateBasic(t *testing.T) {
 		}, {
 			name: "valid address",
 			msg: MsgRequestDeposit{
-				Creator:     sample.AccAddressStr(),
-				RiskProfile: "HIGH",
+				Creator:      sample.AccAddressStr(),
+				RiskProfile:  "HIGH",
+				VaultID:      "orion",
+				Coin:         sdk.NewCoin("abc", sdk.NewInt(100)),
+				LockupPeriod: 1,
 			},
 		},
 	}

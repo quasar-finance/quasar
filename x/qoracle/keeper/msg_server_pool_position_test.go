@@ -19,6 +19,9 @@ func TestPoolPositionMsgServerCreate(t *testing.T) {
 	srv := keeper.NewMsgServerImpl(k)
 	wctx := sdk.WrapSDKContext(ctx)
 	creator := "A"
+	p := k.GetParams(ctx)
+	p.OracleAccounts = "A"
+	k.SetParams(ctx, p)
 	for i := 0; i < 5; i++ {
 		expected := &types.MsgCreatePoolPosition{Creator: creator,
 			PoolId: fmt.Sprintf("%d", i),
@@ -79,7 +82,7 @@ func TestPoolPositionMsgServerUpdate(t *testing.T) {
 				},
 				LastUpdatedTime: 2,
 			},
-			err: sdkerrors.ErrUnauthorized,
+			err: types.ErrUnAuthorizedOracleClient,
 		},
 		{
 			desc: "KeyNotFound",
@@ -103,6 +106,9 @@ func TestPoolPositionMsgServerUpdate(t *testing.T) {
 			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
+			p := k.GetParams(ctx)
+			p.OracleAccounts = "A"
+			k.SetParams(ctx, p)
 			expected := &types.MsgCreatePoolPosition{Creator: creator,
 				PoolId: "1",
 				Metrics: &types.PoolMetrics{
@@ -152,7 +158,7 @@ func TestPoolPositionMsgServerDelete(t *testing.T) {
 			request: &types.MsgDeletePoolPosition{Creator: "B",
 				PoolId: "1",
 			},
-			err: sdkerrors.ErrUnauthorized,
+			err: types.ErrUnAuthorizedOracleClient,
 		},
 		{
 			desc: "KeyNotFound",
@@ -167,7 +173,9 @@ func TestPoolPositionMsgServerDelete(t *testing.T) {
 			ctx, k := setup.Ctx, setup.Keepers.QoracleKeeper
 			srv := keeper.NewMsgServerImpl(k)
 			wctx := sdk.WrapSDKContext(ctx)
-
+			p := k.GetParams(ctx)
+			p.OracleAccounts = "A"
+			k.SetParams(ctx, p)
 			_, err := srv.CreatePoolPosition(wctx, &types.MsgCreatePoolPosition{Creator: creator,
 				PoolId: "1",
 			})
