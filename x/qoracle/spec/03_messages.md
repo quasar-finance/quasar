@@ -60,7 +60,7 @@ message BalancerPool {
   ];
   // These are assumed to be sorted by denomiation.
   // They contain the pool asset and the information about the weight
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 6 [
+  repeated osmosis.gamm.PoolAsset poolAssets = 6 [
     (gogoproto.moretags) = "yaml:\"pool_assets\"",
     (gogoproto.nullable) = false
   ];
@@ -131,7 +131,7 @@ message SmoothWeightChangeParams {
   // The amount PoolAsset.token.amount field is ignored if present,
   // future type refactorings should just have a type with the denom & weight
   // here.
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset initialPoolWeights = 3 [
+  repeated osmosis.gamm.PoolAsset initialPoolWeights = 3 [
     (gogoproto.moretags) = "yaml:\"initial_pool_weights\"",
     (gogoproto.nullable) = false
   ];
@@ -139,7 +139,7 @@ message SmoothWeightChangeParams {
   // to time between start_time, and start_time + duration. The amount
   // PoolAsset.token.amount field is ignored if present, future type
   // refactorings should just have a type with the denom & weight here.
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset targetPoolWeights = 4 [
+  repeated osmosis.gamm.PoolAsset targetPoolWeights = 4 [
     (gogoproto.moretags) = "yaml:\"target_pool_weights\"",
     (gogoproto.nullable) = false
   ];

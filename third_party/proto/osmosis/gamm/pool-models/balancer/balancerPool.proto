@@ -1,6 +1,6 @@
 syntax = "proto3";
-// package osmosis.gamm.poolmodels;
-package abag.quasarnode.osmosis.gamm.poolmodels;
+// this is a temporary package setup, needs migration logic
+package osmosis.gamm.v1beta1;
 
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
@@ -13,10 +13,7 @@ import "cosmos/base/v1beta1/coin.proto";
 
 import "osmosis/gamm/v1beta1/pool.proto";
 
-option go_package = "github.com/abag/quasarnode/x/gamm/pool-models/balancer";
-
-//option go_package = "github.com/abag/quasarnode/x/gamm/pool-models/balancer";
-// option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer";
 
 // Parameters for changing the weights in a balancer pool smoothly from
 // a start weight and end weight over a period of time.
@@ -50,7 +47,7 @@ message SmoothWeightChangeParams {
   // The amount PoolAsset.token.amount field is ignored if present,
   // future type refactorings should just have a type with the denom & weight
   // here.
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset initialPoolWeights = 3 [
+  repeated osmosis.gamm.v1beta1.PoolAsset initialPoolWeights = 3 [
     (gogoproto.moretags) = "yaml:\"initial_pool_weights\"",
     (gogoproto.nullable) = false
   ];
@@ -58,7 +55,7 @@ message SmoothWeightChangeParams {
   // to time between start_time, and start_time + duration. The amount
   // PoolAsset.token.amount field is ignored if present, future type
   // refactorings should just have a type with the denom & weight here.
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset targetPoolWeights = 4 [
+  repeated osmosis.gamm.v1beta1.PoolAsset targetPoolWeights = 4 [
     (gogoproto.moretags) = "yaml:\"target_pool_weights\"",
     (gogoproto.nullable) = false
   ];
@@ -71,11 +68,11 @@ message SmoothWeightChangeParams {
   // ];
 }
 
-// BalancerPoolParams defined the parameters that will be managed by the pool
+// PoolParams defined the parameters that will be managed by the pool
 // governance in the future. This params are not managed by the chain
 // governance. Instead they will be managed by the token holders of the pool.
 // The pool's token holders are specified in future_pool_governor.
-message BalancerPoolParams {
+message PoolParams {
   string swapFee = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.moretags) = "yaml:\"swap_fee\"",
@@ -92,15 +89,15 @@ message BalancerPoolParams {
   ];
 }
 
-message BalancerPool {
-  // option (gogoproto.goproto_getters) = false;
-  // option (gogoproto.goproto_stringer) = false;
-  // option (cosmos_proto.implements_interface) = "PoolI";
+message Pool {
+  option (gogoproto.goproto_getters) = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (cosmos_proto.implements_interface) = "PoolI";
 
   string address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   uint64 id = 2;
 
-  BalancerPoolParams poolParams = 3 [
+  PoolParams poolParams = 3 [
     (gogoproto.moretags) = "yaml:\"balancer_pool_params\"",
     (gogoproto.nullable) = false
   ];
@@ -123,7 +120,7 @@ message BalancerPool {
   ];
   // These are assumed to be sorted by denomiation.
   // They contain the pool asset and the information about the weight
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 6 [
+  repeated osmosis.gamm.v1beta1.PoolAsset poolAssets = 6 [
     (gogoproto.moretags) = "yaml:\"pool_assets\"",
     (gogoproto.nullable) = false
   ];

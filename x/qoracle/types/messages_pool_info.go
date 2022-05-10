@@ -1,9 +1,9 @@
 package types
 
 import (
-	balancer "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	balancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 )
 
 const (
@@ -17,7 +17,7 @@ var _ sdk.Msg = &MsgCreatePoolInfo{}
 func NewMsgCreatePoolInfo(
 	creator string,
 	poolId string,
-	info *balancer.BalancerPool,
+	info *balancer.Pool,
 	lastUpdatedTime uint64,
 
 ) *MsgCreatePoolInfo {

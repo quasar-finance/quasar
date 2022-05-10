@@ -32,8 +32,8 @@ message MsgCreatePool {
   string creator = 1;
   string connectionId = 2;
   uint64 timeoutTimestamp = 3;
-  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPoolParams poolParams = 4;
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 5
+  osmosis.gamm.v1beta1.PoolParams poolParams = 4;
+  repeated osmosis.gamm.v1beta1.PoolAsset poolAssets = 5
      [ (gogoproto.nullable) = false ];
   string future_pool_governor = 6;
 }

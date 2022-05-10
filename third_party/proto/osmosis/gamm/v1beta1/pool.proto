@@ -1,16 +1,12 @@
 syntax = "proto3";
-//package osmosis.gamm.v1beta1;
-
-package abag.quasarnode.osmosis.gamm;
+package osmosis.gamm.v1beta1;
 
 import "gogoproto/gogo.proto";
 
 import "cosmos/base/v1beta1/coin.proto";
 
-option go_package = "github.com/abag/quasarnode/x/gamm/types";
+option go_package = "github.com/osmosis-labs/osmosis/v7/x/gamm/types";
 
-// option go_package = "github.com/abag/quasarnode/x/gamm/types";
-// github.com/abag/quasarnode/x
 message PoolAsset {
   // Coins we are talking about,
   // the denomination must be unique amongst all PoolAssets for this pool.

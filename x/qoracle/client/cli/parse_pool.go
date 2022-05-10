@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/abag/quasarnode/x/gamm/pool-models/balancer"
+	"github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 )
 
 func parseBalancerPoolFile(poolFile string) (*balancer.BalancerPool, error) {

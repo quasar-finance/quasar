@@ -5,8 +5,6 @@ import (
 
 	"github.com/tendermint/tendermint/libs/log"
 
-	gammbalancer "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
-	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,6 +17,8 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 type Keeper struct {
@@ -76,7 +76,7 @@ func (k Keeper) TransmitIbcCreatePool(
 	owner string,
 	connectionId string,
 	timeoutTimestamp uint64,
-	poolParams *gammbalancer.BalancerPoolParams,
+	poolParams *gammbalancer.PoolParams,
 	poolAssets []gammtypes.PoolAsset,
 	futurePoolGovernor string) error {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{

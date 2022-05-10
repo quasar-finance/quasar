@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil/sample"
-	balancer "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
-	gamm_types "github.com/abag/quasarnode/x/gamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	balancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gamm_types "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/stretchr/testify/require"
 )
 
