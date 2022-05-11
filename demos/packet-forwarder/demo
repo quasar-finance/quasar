@@ -53,7 +53,7 @@ run_chain() {
 
     cat "${this_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
 
-    ignite chain serve --config "${chain_dir}/config.yml"
+    ignite chain serve --config "${chain_dir}/config.yml" -v
   )
 }
 
