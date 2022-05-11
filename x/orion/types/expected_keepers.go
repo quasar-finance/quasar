@@ -59,7 +59,7 @@ type IntergammKeeper interface {
 		owner string,
 		connectionId string,
 		timeoutTimestamp uint64,
-		poolParams *gammbalancer.BalancerPoolParams,
+		poolParams *gammbalancer.PoolParams,
 		poolAssets []gammtypes.PoolAsset,
 		futurePoolGovernor string) error
 
