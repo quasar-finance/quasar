@@ -29,7 +29,7 @@ require (
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
-	github.com/osmosis-labs/osmosis/v7 => ../contrib/osmosis-ica
+	github.com/osmosis-labs/osmosis => github.com/schnetzlerjoe/osmosis v1.0.3
 // google.golang.org/grpc => google.golang.org/grpc v1.33.2
 // github.com/strangelove-ventures/ibc-test-framework => ../contrib/ibc-test-framework
 )
