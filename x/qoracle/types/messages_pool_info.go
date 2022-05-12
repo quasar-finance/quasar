@@ -119,9 +119,6 @@ func (msg *MsgUpdatePoolInfo) ValidateBasic() error {
 	if msg.Info == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
 	}
-	// if err := msg.Info.Validate(); err != nil {
-	// 	return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
-	// }
 	if msg.LastUpdatedTime == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
 	}

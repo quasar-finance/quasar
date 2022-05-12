@@ -4,6 +4,7 @@
 tmp/
 *.tmp
 *.log
+__debug_bin
 
 release/
 build/

@@ -53,7 +53,8 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 				Creator: "invalid_address",
 			},
 			err: sdkerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
 			name: "valid",
 			msg: MsgCreatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -61,7 +62,8 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 				Info:            &validPool,
 				LastUpdatedTime: 1,
 			},
-		}, {
+		},
+		{
 			name: "empty PoolId",
 			msg: MsgCreatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -69,7 +71,8 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 				LastUpdatedTime: 1,
 			},
 			err: sdkerrors.ErrInvalidRequest,
-		}, {
+		},
+		{
 			name: "nil Info",
 			msg: MsgCreatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -77,16 +80,8 @@ func TestMsgCreatePoolInfo_ValidateBasic(t *testing.T) {
 				LastUpdatedTime: 1,
 			},
 			err: sdkerrors.ErrInvalidRequest,
-		}, {
-			name: "empty Pool",
-			msg: MsgCreatePoolInfo{
-				Creator:         sample.AccAddressStr(),
-				PoolId:          "1",
-				Info:            &gammbalancer.Pool{},
-				LastUpdatedTime: 1,
-			},
-			err: sdkerrors.ErrInvalidRequest,
-		}, {
+		},
+		{
 			name: "zero LastUpdatedTime",
 			msg: MsgCreatePoolInfo{
 				Creator: sample.AccAddressStr(),
@@ -122,7 +117,8 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 				Creator: "invalid_address",
 			},
 			err: sdkerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
 			name: "valid",
 			msg: MsgUpdatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -130,7 +126,8 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 				Info:            &validPool,
 				LastUpdatedTime: 1,
 			},
-		}, {
+		},
+		{
 			name: "empty PoolId",
 			msg: MsgUpdatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -138,7 +135,8 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 				LastUpdatedTime: 1,
 			},
 			err: sdkerrors.ErrInvalidRequest,
-		}, {
+		},
+		{
 			name: "nil Info",
 			msg: MsgUpdatePoolInfo{
 				Creator:         sample.AccAddressStr(),
@@ -146,16 +144,8 @@ func TestMsgUpdatePoolInfo_ValidateBasic(t *testing.T) {
 				LastUpdatedTime: 1,
 			},
 			err: sdkerrors.ErrInvalidRequest,
-		}, {
-			name: "empty Pool",
-			msg: MsgUpdatePoolInfo{
-				Creator:         sample.AccAddressStr(),
-				PoolId:          "1",
-				Info:            &gammbalancer.Pool{},
-				LastUpdatedTime: 1,
-			},
-			err: sdkerrors.ErrInvalidRequest,
-		}, {
+		},
+		{
 			name: "zero LastUpdatedTime",
 			msg: MsgUpdatePoolInfo{
 				Creator: sample.AccAddressStr(),
