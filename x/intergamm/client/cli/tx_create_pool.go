@@ -194,6 +194,9 @@ func inputDataToMessage(sender string, inputData *InputData) (*types.MsgCreatePo
 	}
 
 	timeout, err := strconv.ParseUint(inputData.TimeoutTimestamp, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 
 	msg := types.NewMsgCreatePool(
 		sender,
