@@ -11,9 +11,7 @@ require (
 	github.com/golangci/golangci-lint v1.46.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0 // indirect
 	github.com/osmosis-labs/osmosis/v7 v7.3.0
-	github.com/regen-network/cosmos-proto v0.3.1 // indirect
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
@@ -31,6 +29,7 @@ require (
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
+	github.com/osmosis-labs/osmosis/v7 => ../contrib/osmosis-ica
 // google.golang.org/grpc => google.golang.org/grpc v1.33.2
 // github.com/strangelove-ventures/ibc-test-framework => ../contrib/ibc-test-framework
 )

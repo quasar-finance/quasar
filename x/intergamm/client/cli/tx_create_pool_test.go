@@ -13,8 +13,8 @@ func TestParseInputData(t *testing.T) {
 {
 	"connection_id": "connection-0",
 	"timeout_timestamp": "42",
-	"weights": "4uatom,4osmo,2uakt",
-	"initial_deposit": "100uatom,5osmo,20uakt",
+	"weights": "1000uatom,500uosmo,200uakt",
+	"initial_deposit": "100000uatom,50000uosmo,20000uakt",
 	"swap_fee": "0.01",
 	"exit_fee": "0.01",
 	"future_governor": "168h"

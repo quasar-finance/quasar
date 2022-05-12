@@ -87,6 +87,12 @@ init_relayer() {
   )
 }
 
+fund_host_ica() {
+  for denom in 1000atom 1000osmo 1000akt ; do
+    ./demo osmosistx bank send osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy "$denom" -y
+  done
+}
+
 quasar() {
   local home_dir="${run_dir}/quasar/home"
 
@@ -117,6 +123,10 @@ osmosis() {
 
 osmosisq() {
   osmosis query "$@"
+}
+
+osmosistx() {
+  osmosis tx --from alice "$@"
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"

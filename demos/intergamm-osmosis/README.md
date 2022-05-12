@@ -66,7 +66,7 @@ If the connection_id field is an empty string it probably that the 2 chains are 
 Now we can issue the ICA register account transaction.
 
 ```bash
-./demo quasartx intergamm register-account connection-0
+./demo quasartx intergamm register-account connection-0 -y
 ```
 
 If successful, the following tx events should be returned:
@@ -106,8 +106,34 @@ It should return the account address created on osmosis side:
 interchain_account_address: osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy
 ```
 
-## Create a pool on osmosis
+## Fund interchain account
+
+Let's fund the newly registered ICA with the necessary balances to be able to create a pool later on.
 
 ```bash
-./demo quasartx intergamm create-pool --data-file create-pool.json
+./demo fund_host_ica
+```
+
+Check the balance:
+
+```bash
+curl http://localhost:1312/bank/balances/osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy
+```
+
+## Create a pool on osmosis
+
+First make sure there is indeed no pool yet on Osmosis:
+
+```bash
+./demo osmosisq gamm pools
+```
+
+```bash
+./demo quasartx intergamm create-pool --data-file create-pool.json -y
+```
+
+Then check the newly created pool:
+
+```bash
+./demo osmosisq gamm pools
 ```

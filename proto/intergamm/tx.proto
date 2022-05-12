@@ -2,7 +2,6 @@ syntax = "proto3";
 package abag.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
-import "google/protobuf/any.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "ibc/core/client/v1/client.proto";
 import "osmosis/gamm/v1beta1/pool.proto";
@@ -18,7 +17,6 @@ service Msg {
   rpc JoinPool(MsgJoinPool) returns (MsgJoinPoolResponse);
   rpc ExitPool(MsgExitPool) returns (MsgExitPoolResponse);
   rpc IbcTransfer(MsgIbcTransfer) returns (MsgIbcTransferResponse);
-  rpc SubmitTx(MsgSubmitTx) returns (MsgSubmitTxResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -97,18 +95,5 @@ message MsgIbcTransfer {
 
 message MsgIbcTransferResponse {
 }
-
-// MsgSubmitTx defines the payload for Msg/SubmitTx
-message MsgSubmitTx {
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
-
-  string owner                       = 1;
-  string connection_id = 2 [(gogoproto.moretags) = "yaml:\"connection_id\""];
-  google.protobuf.Any msg            = 3;
-}
-
-// MsgSubmitTxResponse defines the response for Msg/SubmitTx
-message MsgSubmitTxResponse {}
 
 // this line is used by starport scaffolding # proto/tx/message

@@ -8,13 +8,13 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	gammpooltypes "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
-	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gammpooltypes "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/spf13/cobra"
 	pflag "github.com/spf13/pflag"
 )
@@ -188,7 +188,7 @@ func inputDataToMessage(sender string, inputData *InputData) (*types.MsgCreatePo
 		})
 	}
 
-	poolParams := &gammpooltypes.BalancerPoolParams{
+	poolParams := &gammpooltypes.PoolParams{
 		SwapFee: swapFee,
 		ExitFee: exitFee,
 	}

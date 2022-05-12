@@ -1,10 +1,10 @@
 package types
 
 import (
-	gammpooltypes "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
-	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	gammpooltypes "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 const TypeMsgCreatePool = "create_pool"
@@ -13,7 +13,7 @@ var _ sdk.Msg = &MsgCreatePool{}
 
 func NewMsgCreatePool(
 	creator string, connectionId string, timeoutTimestamp uint64,
-	poolParams *gammpooltypes.BalancerPoolParams,
+	poolParams *gammpooltypes.PoolParams,
 	poolAssets []gammtypes.PoolAsset,
 	futurePoolGovernor string,
 ) *MsgCreatePool {
