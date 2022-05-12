@@ -34,13 +34,6 @@ func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.Po
 	return poolInfo.Info.PoolAssets
 }
 
-// Get pool assets from pool ID
-func (k Keeper) getPoolTotalWeight(ctx sdk.Context, poolID uint64) sdk.Int {
-	poolIDStr := strconv.FormatUint(poolID, 10)
-	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
-	return poolInfo.Info.TotalWeight
-}
-
 // Get APY ranked pool list
 // func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
 // TODO : Store the uint64 values inside the KV store
