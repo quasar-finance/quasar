@@ -27,7 +27,7 @@ sudo apt-get install gnome-terminal
 
 ## Setup
 
-1. Go to the `quasar` cloned directory, and cd `intergamm-osmosis`. All steps below will be run from this directory.
+1. Go to the `quasar` repo directory, and cd `intergamm-osmosis`. All steps below will be run from this directory.
 
 ```bash
 cd demos/intergamm-osmosis
