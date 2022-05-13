@@ -106,6 +106,8 @@ It should return the account address created on osmosis side:
 interchain_account_address: osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy
 ```
 
+Note that it might take a few seconds for the transaction on osmosis to be committed.
+
 ## Fund interchain account
 
 Let's fund the newly registered ICA with the necessary balances to be able to create a pool later on.

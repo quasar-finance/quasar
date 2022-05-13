@@ -1,8 +1,8 @@
 {
     "connection_id": "connection-0",
     "timeout_timestamp": "99999999999999",
-    "weights": "1000uatom,500uosmo,200uakt",
-    "initial_deposit": "100000uatom,50000uosmo,20000uakt",
+    "weights": "100uatom,100uosmo,100uakt",
+    "initial_deposit": "10000uatom,10000uosmo,10000uakt",
     "swap_fee": "0.01",
     "exit_fee": "0.01",
     "future_governor": "168h"
