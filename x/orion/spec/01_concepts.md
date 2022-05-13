@@ -1,6 +1,6 @@
 # Concepts 
 
-Orion vault is first vault in the quasar chain which is specifically design 
+Orion vault is first vault in the quasar chain which is specifically designed 
 for doing Lping activity and yield aggregation in the osmosis dex. Orion module will collect the funds deposited by the users in the qbank and execute the defined strategies.
 
 Orion has majorly three parts internally. 
@@ -16,21 +16,21 @@ Orion module will have multiple strategies implemented within it. At the moment 
 
 Meissa strategy is one of the strategies available in the Quasar Orion vault. Meissa is a lockup-based strategy specifically designed to do LPing on Osmosis dex. Meissa aims to Lp in osmosis pools for a period based on the lockup interval mentioned by depositors and will also lock the LP tokens with the pool. 
 
-## Algotithm
-The high level algotithm of the meissa strategy can be summarized as below steps.
+## Algorithm
+The high level algorithm of the meissa strategy can be summarized as below steps.
 - Get the list of pools with APY ranks from the oracle module. 
 - Iterate apy_ranked_pools with highest apy pool picked first
 - Get the list of denoms from the current pool - Denom1, Denom2, and pool denom ratio.
 - Collect the max possible amount from both denom 1 and denom 2 from the Orion module staking pool.
 - Do the IBC token transfer using IBC call to osmosis from the quasar using multihop operations via denom source chains.
 - Provide liquidity to osmosis via IBC Interchain Account for this pool.
-- Upon positive acknowlegement, update chain state to reduce staking pool amount for both the denom.
+- Upon positive acknowledgement, update chain state to reduce staking pool amount for both the denom.
 - Update the amount deployed on osmosis in the appropriate KV store. 
 - Go to the next pool and repeat.
 
 
 # Reward Distribution 
-Reward distribution is done by the Orion module based on the users weighted contribution on a particular denom. The algorithm collect the rewards every day at the end of epochday. And calculates the reward associated with each of the denom contribution. And then it takes the weight of each users on the particular denom deposit amounts. 
+Reward distribution is done by the Orion module based on the users weighted contribution for a particular denom. The algorithm collect the rewards every day at the end of epochDay. And calculates the reward associated with each of the denom contribution. And then it takes the weight of each user on the particular denom deposit amounts. 
 
 # Refund Distribution and assurance mechanism using Orion vault token
 
@@ -44,12 +44,12 @@ Orion native token will be used to cover the difference between the deposited an
 
 Before the withdrawal, allocated orions are not transferred to the depositors. They exist in a form of bookkeeping. It will be minted and transferred only during the withdrawal activity when there is a difference between the deposit and withdrawable. Once transferred it will be owned by the users as sdk.Coin with “Orion” denom. 
 
-Allocated and Owned Orion shares will also represent the Orion governance power in the Orion module decision-making.  Governace will be implemented in future.
+Allocated and Owned Orion shares will also represent the Orion governance power in the Orion module decision-making.  Governance will be implemented in future.
 
 Owned Orions are ibc enabled like any other sdk.Coin. 
 At some point of time in the future when Orion Treasury collects a sufficient amount in the treasury of other tokens, it can decide to mint “Orion” shares as sdk.Coin from the treasury for other purposes based on the community decisions. 
 
-## The assurance gurantee is provided by the below example logic -
+## The assurance guarantee is provided by the below example logic -
 
 - Orion calculate the current market value of the diff ( Withdrawable - Deposit ) 
 - Mint and Lock equivalent Quasar native tokens in the Orion Module.

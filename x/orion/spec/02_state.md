@@ -17,19 +17,19 @@ On successful exit from the pool orion module will add the collected exited amou
   
 Note - Also look into the concept section for the detail mechanism of refund calculation logic.
 
-When the actual refund is done on withdrable amount the state of the balance changed based on the amount of tokens refunded. This happens when users explicitly request for the withdraw to qbank. 
+When the actual refund is done on withdrawable amount the state of the balance changed based on the amount of tokens refunded. This happens when users explicitly request the fund withdrawal to qbank. 
 
 - Balance of the orion module account reduced by the refunded tokens.
 - Balance of the users increases by the amount of tokens refunded.
   
 ## Distribution of refund 
-At the end of epoch day; it will run its refund logic `DistributeEpochLockupFunds` method which calculate the refund tokens for every depositors. And add the book keeping of calculation in the qbank Withdrawable KV store using qbanks `AddActualWithdrawableAmt`.
+At the end of epoch day; it will run its refund logic `DistributeEpochLockupFunds` method which calculate the refund tokens for every depositor. And add the bookkeeping of calculation in the qbank Withdrawable KV store using qbanks `AddActualWithdrawableAmt`.
 
 - Balance of the module account Orion reserve account `types.OrionReserveMaccName` increased by the minted Quasar native tokens.
 - Balance of the management fee collector account `types.MgmtFeeCollectorMaccName` increased by the fee amount charged. 
 
 Note - Also look into the qbank concept and state section for the details. 
-As a result of the distribution logic - below state change happends in the Orion module.
+As a result of the distribution logic - below state change happens in the Orion module.
 
 
 ## Reward Distribution 
@@ -38,7 +38,7 @@ Similar to the refund, reward distribution is done at the end of every epoch.
 
 - All the reward collected will first be added to the Orion global reward collector account `types.CreateOrionRewardGloablMaccName()`  during the claim from osmosis  dex.
 
-- They will be added in the KV store or book keeping. 
+- They will be added in the KV store or bookkeeping. 
 ```
 Key = types.RewardCollectionKBP + {epoch day}
 Value = types.RewardCollection 
