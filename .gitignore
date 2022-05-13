@@ -12,5 +12,6 @@ run/
 
 node_modules/
 vue/
+target/
 
 local_testnet_run-*nodes/
