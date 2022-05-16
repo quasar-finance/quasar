@@ -6,7 +6,7 @@ import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 
 message PoolInfo {
   string poolId = 1; 
-  osmosis.gamm.poolmodels.BalancerPool info = 2; 
+  osmosis.gamm.v1beta1.Pool info = 2; 
   uint64 lastUpdatedTime = 3; 
   string creator = 4;
 }

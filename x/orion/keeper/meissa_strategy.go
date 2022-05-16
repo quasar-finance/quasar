@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"

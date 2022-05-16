@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/abag/quasarnode/testutil"
-	gammtypes "github.com/abag/quasarnode/x/gamm/types"
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 func createSampleValidPoolAssetsSlice() []gammtypes.PoolAsset {

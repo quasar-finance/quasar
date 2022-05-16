@@ -1,9 +1,9 @@
 package types
 
 import (
-	balancer "github.com/abag/quasarnode/x/gamm/pool-models/balancer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 )
 
 const (
@@ -17,7 +17,7 @@ var _ sdk.Msg = &MsgCreatePoolInfo{}
 func NewMsgCreatePoolInfo(
 	creator string,
 	poolId string,
-	info *balancer.BalancerPool,
+	info *gammbalancer.Pool,
 	lastUpdatedTime uint64,
 
 ) *MsgCreatePoolInfo {
@@ -61,9 +61,10 @@ func (msg *MsgCreatePoolInfo) ValidateBasic() error {
 	if msg.Info == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
 	}
-	if err := msg.Info.Validate(); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
-	}
+	// TODO: Update this with latest osmosis APIs
+	// if err := msg.Info.Validate(); err != nil {
+	// 	return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
+	// }
 	if msg.LastUpdatedTime == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")
 	}
@@ -75,7 +76,7 @@ var _ sdk.Msg = &MsgUpdatePoolInfo{}
 func NewMsgUpdatePoolInfo(
 	creator string,
 	poolId string,
-	info *balancer.BalancerPool,
+	info *gammbalancer.Pool,
 	lastUpdatedTime uint64,
 
 ) *MsgUpdatePoolInfo {
@@ -118,9 +119,6 @@ func (msg *MsgUpdatePoolInfo) ValidateBasic() error {
 	}
 	if msg.Info == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
-	}
-	if err := msg.Info.Validate(); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
 	}
 	if msg.LastUpdatedTime == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "LastUpdatedTime is zero")

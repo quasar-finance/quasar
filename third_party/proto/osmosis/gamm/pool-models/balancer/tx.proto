@@ -1,11 +1,11 @@
 syntax = "proto3";
-package abag.quasarnode.intergamm;
+package osmosis.gamm.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 import "osmosis/gamm/v1beta1/pool.proto";
 
-option go_package = "github.com/abag/quasarnode/x/gamm/pool-models/balancer";
+option go_package = "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer";
 
 service Msg {
   rpc CreateBalancerPool(MsgCreateBalancerPool)
@@ -16,10 +16,9 @@ service Msg {
 message MsgCreateBalancerPool {
   string sender = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
 
-  abag.quasarnode.osmosis.gamm.poolmodels.BalancerPoolParams poolParams = 2
-      [ (gogoproto.moretags) = "yaml:\"pool_params\"" ];
+  PoolParams poolParams = 2 [ (gogoproto.moretags) = "yaml:\"pool_params\"" ];
 
-  repeated abag.quasarnode.osmosis.gamm.PoolAsset poolAssets = 3
+  repeated osmosis.gamm.v1beta1.PoolAsset poolAssets = 3
       [ (gogoproto.nullable) = false ];
 
   string future_pool_governor = 4

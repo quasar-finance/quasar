@@ -108,7 +108,7 @@ message MsgCreatePoolInfo {
   string creator = 1;
   string poolId = 2;
 
-  osmosis.gamm.poolmodels.BalancerPool info = 3;
+  osmosis.gamm.v1beta1.Pool info = 3;
   uint64 lastUpdatedTime = 4;
 }
 message MsgCreatePoolInfoResponse {}
@@ -117,7 +117,7 @@ message MsgUpdatePoolInfo {
   string creator = 1;
   string poolId = 2;
 
-  osmosis.gamm.poolmodels.BalancerPool info = 3;
+  osmosis.gamm.v1beta1.Pool info = 3;
   uint64 lastUpdatedTime = 4;
 }
 message MsgUpdatePoolInfoResponse {}
