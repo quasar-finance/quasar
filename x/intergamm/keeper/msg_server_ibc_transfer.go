@@ -11,7 +11,7 @@ import (
 func (s msgServer) IbcTransfer(goCtx context.Context, msg *types.MsgIbcTransfer) (*types.MsgIbcTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := s.k.TransmitIbcTransfer(ctx,
+	_, err := s.k.TransmitIbcTransfer(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

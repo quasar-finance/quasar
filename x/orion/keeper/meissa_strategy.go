@@ -347,7 +347,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 	connectionId := ""
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 
-	err := k.intergammKeeper.TransmitIbcJoinPool(
+	_, err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
 		owner,
 		connectionId,
@@ -368,7 +368,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 	connectionId := ""
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 
-	err := k.intergammKeeper.TransmitIbcExitPool(
+	_, err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
 		owner,
 		connectionId,
@@ -392,7 +392,7 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, c
 	transferChannel := "channel-1"
 	token := sdk.NewCoin("uatom", sdk.NewInt(10))
 
-	err := k.intergammKeeper.TransmitIbcTransfer(
+	_, err := k.intergammKeeper.TransmitIbcTransfer(
 		ctx,
 		owner,
 		connectionId,

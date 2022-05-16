@@ -10,7 +10,7 @@ import (
 func (s msgServer) ForwardIbcTransfer(goCtx context.Context, msg *types.MsgForwardIbcTransfer) (*types.MsgForwardIbcTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := s.k.TransmitForwardIbcTransfer(ctx,
+	_, err := s.k.TransmitForwardIbcTransfer(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,
