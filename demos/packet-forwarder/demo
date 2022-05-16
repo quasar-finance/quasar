@@ -3,9 +3,9 @@
 set -Cue -o pipefail
 
 project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
-pf_dir="${project_dir}/demos/packet-forwarder"
-this_script="${pf_dir}/$(basename "${0}")"
-run_dir="${pf_dir}/run"
+this_dir="${project_dir}/demos/packet-forwarder"
+this_script="${this_dir}/$(basename "${0}")"
+run_dir="${this_dir}/run"
 reset_run="${RESET:-true}"
 
 fail() {
@@ -18,7 +18,6 @@ cmd_exists() {
 }
 
 env_subst() {
-  # shellcheck disable=SC2016
   python -c '
 import os, sys
 data = sys.stdin.read(65536)
@@ -30,8 +29,8 @@ sys.stdout.write(data) ; sys.stdout.flush()
 }
 
 # TODO make macos / darwin version of this
-run_in_terminal_bg() {
-  gnome-terminal -- "$@" &
+run_in_terminal() {
+  gnome-terminal -- "$@"
 }
 
 run_chain() {
@@ -52,9 +51,9 @@ run_chain() {
     export home_dir="${chain_dir}/home"
     mkdir -p "$home_dir"
 
-    cat "${pf_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
+    cat "${this_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
 
-    ignite chain serve --config "${chain_dir}/config.yml" --reset-once
+    ignite chain serve --config "${chain_dir}/config.yml" -v
   )
 }
 
@@ -63,15 +62,16 @@ start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis" ; }
 start_quasar()  { run_chain "quasar"  "${project_dir}"                    ; }
 
 start_all() {
-  rm -rf ~/.ignite/
+  if [ "$reset_run" == true ] ; then
+    rm -rf ~/.ignite/
+  fi
 
-  run_in_terminal_bg "$this_script" start_osmosis
+  run_in_terminal "$this_script" start_osmosis
   sleep 1
-  run_in_terminal_bg "$this_script" start_quasar
+  run_in_terminal "$this_script" start_quasar
   sleep 1
-  run_in_terminal_bg "$this_script" start_cosmos
-
-  wait
+  run_in_terminal "$this_script" start_cosmos
+  sleep 1
 }
 
 init_relayer() {
@@ -148,7 +148,7 @@ tx_alice_quasar_to_alice_osmosis_via_cosmos() {
     ibc-transfer transfer \
     transfer channel-1 \
     "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs|transfer/channel-1:osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" \
-    1000ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9
+    1ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9
 }
 
 tx_alice_cosmos_to_alice_osmosis() {

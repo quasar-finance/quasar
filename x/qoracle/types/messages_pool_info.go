@@ -19,7 +19,6 @@ func NewMsgCreatePoolInfo(
 	poolId string,
 	info *gammbalancer.Pool,
 	lastUpdatedTime uint64,
-
 ) *MsgCreatePoolInfo {
 	return &MsgCreatePoolInfo{
 		Creator:         creator,

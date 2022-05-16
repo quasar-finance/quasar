@@ -14,6 +14,7 @@ require (
 	github.com/osmosis-labs/osmosis/v7 v7.3.0
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.4.0
+	github.com/spf13/pflag v1.0.5
 	github.com/strangelove-ventures/ibc-test-framework v0.0.0-20220429080124-bbff765486be
 	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/starport v0.19.3
@@ -28,6 +29,7 @@ require (
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
+	github.com/osmosis-labs/osmosis => github.com/schnetzlerjoe/osmosis v1.0.3
 // google.golang.org/grpc => google.golang.org/grpc v1.33.2
 // github.com/strangelove-ventures/ibc-test-framework => ../contrib/ibc-test-framework
 )

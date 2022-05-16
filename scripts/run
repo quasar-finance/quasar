@@ -2,4 +2,10 @@
 
 set -Cue -o pipefail
 
-ignite chain serve -c config.yml --reset-once -v
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+
+(
+  cd "$project_dir"
+
+  ignite chain serve -c config.yml --reset-once -v
+)

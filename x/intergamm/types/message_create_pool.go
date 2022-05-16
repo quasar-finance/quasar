@@ -3,15 +3,27 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	gammpooltypes "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 const TypeMsgCreatePool = "create_pool"
 
 var _ sdk.Msg = &MsgCreatePool{}
 
-func NewMsgCreatePool(creator string) *MsgCreatePool {
+func NewMsgCreatePool(
+	creator string, connectionId string, timeoutTimestamp uint64,
+	poolParams *gammpooltypes.PoolParams,
+	poolAssets []gammtypes.PoolAsset,
+	futurePoolGovernor string,
+) *MsgCreatePool {
 	return &MsgCreatePool{
-		Creator: creator,
+		Creator:            creator,
+		ConnectionId:       connectionId,
+		TimeoutTimestamp:   timeoutTimestamp,
+		PoolParams:         poolParams,
+		PoolAssets:         poolAssets,
+		FuturePoolGovernor: futurePoolGovernor,
 	}
 }
 

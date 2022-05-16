@@ -21,6 +21,11 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
+var (
+	// Timeout timestamp following Transfer timestamp default
+	DefaultSendTxRelativeTimeoutTimestamp = ibctransfertypes.DefaultRelativePacketTimeoutTimestamp
+)
+
 type Keeper struct {
 	cdc                 codec.BinaryCodec
 	storeKey            sdk.StoreKey
@@ -206,7 +211,9 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
 	}
-	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutTimestamp)
+
+	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
+	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/testutil/sample"
+	"github.com/abag/quasarnode/x/intergamm/keeper"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
@@ -39,12 +40,12 @@ func TestIbcTransfer(t *testing.T) {
 	receiver := sample.AccAddress()
 	icaTestAddress := "icaTestAddress"
 	connectionId := "testConnectionId"
-	connectionTimeout := uint64(10)
+	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + keeper.DefaultSendTxRelativeTimeoutTimestamp
 	portId := fmt.Sprintf("icacontroller-%s", sender.String())
 	channelId := "channel-0"
 	coin := sdk.NewCoin("qsr", sdk.NewInt(42))
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	transferTimeout := uint64(11)
+	transferTimeout := connectionTimeout
 	msg := types.NewMsgIbcTransfer(
 		sender.String(),
 		connectionId,

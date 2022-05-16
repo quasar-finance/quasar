@@ -1,0 +1,30 @@
+accounts:
+  - name: alice
+    mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
+    coins: ["20000000atom", "2000000000stake"]
+  - name: bob
+    mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
+    coins: ["10000000atom", "1000000000stake"]
+  - name: relayer_acc
+    mnemonic: "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter"
+    coins: ["10000stake"]
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4500"
+  name: bob
+  coins: ["1000000atom", "100000000stake"]
+host:
+  rpc: ":26659"
+  p2p: ":26661"
+  prof: ":6061"
+  grpc: ":9095"
+  grpc-web: ":8091"
+  api: ":1311"
+  frontend: ":8081"
+  dev-ui: ":12351"
+genesis:
+  chain_id: "intertx-1"
+init:
+  home: "${home_dir}"

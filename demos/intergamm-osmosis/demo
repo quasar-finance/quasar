@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
+this_dir="${project_dir}/demos/intergamm-osmosis"
+this_script="${this_dir}/$(basename "${0}")"
+run_dir="${this_dir}/run"
+reset_run="${RESET:-true}"
+
+fail() {
+  echo "$*"
+  false
+}
+
+cmd_exists() {
+  type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
+}
+
+env_subst() {
+  python -c '
+import os, sys
+data = sys.stdin.read(65536)
+for v in os.environ:
+  data = data.replace("$%s" % v, os.environ[v])
+  data = data.replace("${%s}" % v, os.environ[v])
+sys.stdout.write(data) ; sys.stdout.flush()
+'
+}
+
+# TODO make macos / darwin version of this
+run_in_terminal() {
+  gnome-terminal -- "$@"
+}
+
+run_chain() {
+  (
+    local name="$1" ; shift
+    local dir="$1"  ; shift
+
+    echo "running ${name} chain"
+
+    cd "$dir"
+
+    local chain_dir="${run_dir}/${name}"
+
+    if [ "$reset_run" == true ] ; then
+      rm -rf "$chain_dir"
+    fi
+
+    export home_dir="${chain_dir}/home"
+    mkdir -p "$home_dir"
+
+    cat "${this_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
+
+    ignite chain serve --config "${chain_dir}/config.yml" -v
+  )
+}
+
+start_quasar()  { run_chain "quasar"  "${project_dir}"                        ; }
+start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
+
+start_all() {
+  if [ "$reset_run" == true ] ; then
+    rm -rf ~/.ignite/
+  fi
+
+  run_in_terminal "$this_script" start_quasar
+  sleep 1
+  run_in_terminal "$this_script" start_osmosis
+  sleep 1
+}
+
+init_relayer() {
+  (
+    cd "$this_dir"
+
+    # Alice on quasar
+    hermes -c hermes.toml keys restore "quasar"  --name "testkey1" --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter"
+    # Alice on osmosis
+    hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
+
+    hermes -c hermes.toml create connection "quasar" "osmosis"
+    hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+
+    hermes -c hermes.toml start
+  )
+}
+
+fund_host_ica() {
+  for denom_amount in 10000000000uatom 10000000000uosmo 10000000000uakt ; do
+    ./demo osmosistx bank send osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy "$denom_amount" -y
+  done
+}
+
+quasar() {
+  local home_dir="${run_dir}/quasar/home"
+
+  quasarnoded \
+    --home "$home_dir" \
+    --node=http://localhost:26659 \
+    --chain-id quasar \
+    "$@"
+}
+
+quasarq() {
+  quasar query "$@"
+}
+
+quasartx() {
+  quasar tx --from alice "$@"
+}
+
+osmosis() {
+  local home_dir="${run_dir}/osmosis/home"
+
+  osmosisd \
+    --home "$home_dir" \
+    --node=http://localhost:26559 \
+    --chain-id osmosis \
+    "$@"
+}
+
+osmosisq() {
+  osmosis query "$@"
+}
+
+osmosistx() {
+  osmosis tx --from alice "$@"
+}
+
+test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
+
+cmd_exists "osmosisd"
+cmd_exists "quasarnoded"
+cmd_exists "hermes"
+
+"$@"
