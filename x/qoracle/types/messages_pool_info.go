@@ -61,6 +61,7 @@ func (msg *MsgCreatePoolInfo) ValidateBasic() error {
 	if msg.Info == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "nil Info")
 	}
+	// TODO: Update this with latest osmosis APIs
 	// if err := msg.Info.Validate(); err != nil {
 	// 	return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid Info (%s)", err)
 	// }
