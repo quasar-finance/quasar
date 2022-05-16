@@ -1,15 +1,20 @@
-# CW20 Basic
+# CW-4626 - CW20 Base
 
+Built on the [CW20 Base](https://github.com/CosmWasm/cw-plus/tree/main/contracts/cw20-base) contract, this contract 
+is a basic implementation of [eip-4626](https://eips.ethereum.org/EIPS/eip-4626).
 This is a basic implementation of a cw20 contract. It implements
 the [CW20 spec](quasar-finance/quasar/contracts/cw-plus/packages/cw20/README.md) and is designed to
 be deployed as is, or imported into other contracts to easily build
 cw20-compatible tokens with custom logic.
 
 Implements:
-
+    
 - [x] CW20 Base
 - [x] Mintable extension
 - [x] Allowances extension
+- [ ] EIP-4626 implementation
+- [ ] Multi-Asset Deposit
+- [ ] Multi-Asset Withdrawal
 
 ## Running this contract
 
