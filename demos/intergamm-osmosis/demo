@@ -6,6 +6,7 @@ project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project d
 this_dir="${project_dir}/demos/intergamm-osmosis"
 this_script="${this_dir}/$(basename "${0}")"
 run_dir="${this_dir}/run"
+relayer_out_file="${run_dir}/relayer.out"
 reset_run="${RESET:-true}"
 
 fail() {
@@ -89,7 +90,13 @@ init_relayer() {
     do_until_success hermes -c hermes.toml create connection "quasar" "osmosis"
     do_until_success hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
     do_until_success hermes -c hermes.toml start
-  )
+  ) 2>&1 | tee "$relayer_out_file"
+}
+
+ensure_relayer_started() {
+  while ! cat "$relayer_out_file" | grep "Hermes has started" ; do
+    sleep 1
+  done
 }
 
 fund_host_ica() {
@@ -141,9 +148,11 @@ run_all() {
 
   run_in_terminal "$this_script" init_relayer
 
-  sleep 15
+  sleep 2
 
-  do_until_success quasartx intergamm register-account connection-0
+  ensure_relayer_started
+
+  do_until_success quasartx intergamm register-account connection-0 -y
 
   do_until_success quasarq intergamm interchain-account-from-address connection-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
@@ -151,7 +160,7 @@ run_all() {
 
   sleep 2
 
-  quasartx intergamm create-pool --data-file create-pool.json -y
+  quasartx intergamm create-pool --data-file create-pool.json
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"

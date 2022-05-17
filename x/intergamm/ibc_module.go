@@ -1,7 +1,6 @@
 package intergamm
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/abag/quasarnode/x/intergamm/keeper"
@@ -14,7 +13,6 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -116,21 +114,8 @@ func (im IBCModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("OnAcknowledgementPacket")
-	fmt.Printf("seq: %d\n", packet.Sequence)
-	fmt.Printf("ack: %s\n", string(acknowledgement))
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-
 	var err error
-	packetDataHash := crypto.Sha256(packet.GetData())
-	packetDataHashStr := hex.EncodeToString(packetDataHash)
-
-	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", packetDataHashStr, "seq", packet.GetSequence())
+	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", types.HashPacketDataStr(packet.GetData()), "seq", packet.GetSequence())
 
 	icaPacket := icatypes.InterchainAccountPacketData{}
 	err = icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
@@ -159,15 +144,7 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("OnTimeoutPacket")
-	fmt.Printf("seq: %d\n", packet.Sequence)
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-
+	// TODO
 	return nil
 }
 

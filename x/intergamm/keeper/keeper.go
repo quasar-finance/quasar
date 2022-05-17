@@ -6,6 +6,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/abag/quasarnode/x/intergamm/types/osmosis"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -33,7 +34,8 @@ type Keeper struct {
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
-	hooks               []types.IntergammHooks
+
+	hooks_Osmosis_MsgCreateBalancerPool []osmosis.Hooks_MsgCreateBalancerPool
 }
 
 func NewKeeper(
@@ -255,53 +257,7 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 		return err
 	}
 
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("sendTx")
-	fmt.Printf("seq: %d\n", seq)
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-
-	return nil
-}
-
-// Set the hooks.
-func (k *Keeper) AddHook(ih types.IntergammHooks) {
-	k.hooks = append(k.hooks, ih)
-
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("ADD HOOK")
-	fmt.Println(k.hooks)
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-}
-
-func (k *Keeper) HandleIcaAcknowledgement(
-	ctx sdk.Context,
-	sequence uint64,
-	icaPacket icatypes.InterchainAccountPacketData,
-	ack channeltypes.Acknowledgement,
-) error {
-	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
-	if err != nil {
-		return err
-	}
-
-	if len(msgs) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "invalid message data found")
-	}
-
-	msg := msgs[0]
-	switch sdk.MsgTypeURL(msg) {
-	case sdk.MsgTypeURL(&gammbalancer.MsgCreateBalancerPool{}):
-		for _, h := range k.hooks {
-			h.OnIcaAcknowledgement(ctx)
-		}
-	}
+	k.Logger(ctx).Info("sendTx over ICA", "seq", seq)
 
 	return nil
 }
