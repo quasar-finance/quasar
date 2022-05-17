@@ -19,7 +19,7 @@ func (kf KeeperFactory) OrionKeeper(
 	bankKeeper bankkeeper.Keeper,
 	qbankKeeper qbankkeeper.Keeper,
 	qoracleKeeper qoraclekeeper.Keeper,
-	intergammKeeper intergammkeeper.Keeper,
+	intergammKeeper *intergammkeeper.Keeper,
 ) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)

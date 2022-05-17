@@ -33,6 +33,7 @@ type Keeper struct {
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
+	hooks               []types.IntergammHooks
 }
 
 func NewKeeper(
@@ -42,14 +43,13 @@ func NewKeeper(
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	iaKeeper types.ICAControllerKeeper,
 	ps paramtypes.Subspace,
-
-) Keeper {
+) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	return &Keeper{
 		cdc:                 cdc,
 		storeKey:            storeKey,
 		memKey:              memKey,
@@ -250,9 +250,57 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	}
 
 	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
-	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
+	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
 		return err
+	}
+
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("sendTx")
+	fmt.Printf("seq: %d\n", seq)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+
+	return nil
+}
+
+// Set the hooks.
+func (k *Keeper) AddHook(ih types.IntergammHooks) {
+	k.hooks = append(k.hooks, ih)
+
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("ADD HOOK")
+	fmt.Println(k.hooks)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+}
+
+func (k *Keeper) HandleIcaAcknowledgement(
+	ctx sdk.Context,
+	sequence uint64,
+	icaPacket icatypes.InterchainAccountPacketData,
+	ack channeltypes.Acknowledgement,
+) error {
+	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
+	if err != nil {
+		return err
+	}
+
+	if len(msgs) != 1 {
+		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "invalid message data found")
+	}
+
+	msg := msgs[0]
+	switch sdk.MsgTypeURL(msg) {
+	case sdk.MsgTypeURL(&gammbalancer.MsgCreateBalancerPool{}):
+		for _, h := range k.hooks {
+			h.OnIcaAcknowledgement(ctx)
+		}
 	}
 
 	return nil

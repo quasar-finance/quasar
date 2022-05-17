@@ -1,24 +1,32 @@
 package intergamm
 
 import (
+	"encoding/hex"
+	"fmt"
+
 	"github.com/abag/quasarnode/x/intergamm/keeper"
+	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 var _ porttypes.IBCModule = IBCModule{}
 
 // IBCModule implements the ICS26 interface for interchain accounts controller chains
 type IBCModule struct {
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // NewIBCModule creates a new IBCModule given the keeper
-func NewIBCModule(k keeper.Keeper) IBCModule {
+func NewIBCModule(k *keeper.Keeper) IBCModule {
 	return IBCModule{
 		keeper: k,
 	}
@@ -108,7 +116,41 @@ func (im IBCModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	return nil
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("OnAcknowledgementPacket")
+	fmt.Printf("seq: %d\n", packet.Sequence)
+	fmt.Printf("ack: %s\n", string(acknowledgement))
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+
+	var err error
+	packetDataHash := crypto.Sha256(packet.GetData())
+	packetDataHashStr := hex.EncodeToString(packetDataHash)
+
+	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", packetDataHashStr, "seq", packet.GetSequence())
+
+	icaPacket := icatypes.InterchainAccountPacketData{}
+	err = icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
+	if err != nil {
+		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
+		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+	}
+
+	if icaPacket.Type != icatypes.EXECUTE_TX {
+		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
+		return sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
+	}
+
+	ack := channeltypes.Acknowledgement{}
+	err = icatypes.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
+	if err != nil {
+		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal IBC acknowledgement")
+	}
+
+	return im.keeper.HandleIcaAcknowledgement(ctx, packet.GetSequence(), icaPacket, ack)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
@@ -117,6 +159,15 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("OnTimeoutPacket")
+	fmt.Printf("seq: %d\n", packet.Sequence)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+
 	return nil
 }
 
@@ -130,4 +181,8 @@ func (im IBCModule) NegotiateAppVersion(
 	proposedVersion string,
 ) (string, error) {
 	return "", nil
+}
+
+func (im IBCModule) logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

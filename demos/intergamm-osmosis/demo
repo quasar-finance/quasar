@@ -28,6 +28,12 @@ sys.stdout.write(data) ; sys.stdout.flush()
 '
 }
 
+do_until_success() {
+  while ! "$@" ; do
+    sleep 1
+  done
+}
+
 # TODO make macos / darwin version of this
 run_in_terminal() {
   gnome-terminal -- "$@"
@@ -80,10 +86,9 @@ init_relayer() {
     # Alice on osmosis
     hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
 
-    hermes -c hermes.toml create connection "quasar" "osmosis"
-    hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
-
-    hermes -c hermes.toml start
+    do_until_success hermes -c hermes.toml create connection "quasar" "osmosis"
+    do_until_success hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+    do_until_success hermes -c hermes.toml start
   )
 }
 
@@ -127,6 +132,26 @@ osmosisq() {
 
 osmosistx() {
   osmosis tx --from alice "$@"
+}
+
+run_all() {
+  start_all
+
+  sleep 20
+
+  run_in_terminal "$this_script" init_relayer
+
+  sleep 15
+
+  do_until_success quasartx intergamm register-account connection-0
+
+  do_until_success quasarq intergamm interchain-account-from-address connection-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+
+  fund_host_ica
+
+  sleep 2
+
+  quasartx intergamm create-pool --data-file create-pool.json -y
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"

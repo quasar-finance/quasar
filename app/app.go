@@ -270,7 +270,7 @@ type App struct {
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	IntergammKeeper     intergammmodulekeeper.Keeper
+	IntergammKeeper     *intergammmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -484,10 +484,16 @@ func New(
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			// TODO insert epoch hooks receivers here
-			app.QbankKeeper.Hooks(),
-			app.OrionKeeper.Hooks(),
+			app.QbankKeeper.EpochHooks(),
+			app.OrionKeeper.EpochHooks(),
 		),
+	)
+
+	// Set Intergamm hooks
+	app.IntergammKeeper.AddHook(
+		// intergammmoduletypes.NewMultiIntergammHooks(
+		app.OrionKeeper,
+		// ),
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

@@ -6,22 +6,22 @@ import (
 )
 
 // Hooks wrapper struct for incentives keeper.
-type Hooks struct {
+type EpochHooks struct {
 	k Keeper
 }
 
-var _ epochstypes.EpochHooks = Hooks{}
+var _ epochstypes.EpochHooks = EpochHooks{}
 
 // Return the wrapper struct.
-func (k Keeper) Hooks() Hooks {
-	return Hooks{k}
+func (k Keeper) EpochHooks() EpochHooks {
+	return EpochHooks{k}
 }
 
 // epochs hooks
 // Don't do anything pre epoch start.
-func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
+func (h EpochHooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 }
 
-func (h Hooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
+func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	h.k.AfterEpochEnd(ctx, epochIdentifier, epochNumber)
 }
