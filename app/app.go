@@ -490,8 +490,17 @@ func New(
 	)
 
 	// Set Intergamm hooks
+	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgTransfer(
+		app.OrionKeeper.HandleMsgTransfer,
+	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgCreateBalancerPool(
 		app.OrionKeeper.HandleMsgCreateBalancerPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgJoinPool(
+		app.OrionKeeper.HandleMsgJoinPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgExitPool(
+		app.OrionKeeper.HandleMsgExitPool,
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

@@ -1,4 +1,4 @@
-package types
+package keeper
 
 import (
 	"encoding/base64"
@@ -16,13 +16,13 @@ func TestParseAck(t *testing.T) {
 	var bytes []byte
 
 	ack = channeltypes.NewResultAcknowledgement([]byte("test"))
-	err = ParseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{})
+	err = parseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{})
 	require.Error(t, err)
 
 	bytes, _ = base64.StdEncoding.DecodeString("Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w=")
 	ack = channeltypes.NewResultAcknowledgement(bytes)
 	resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-	err = ParseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, resp)
+	err = parseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, resp)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
