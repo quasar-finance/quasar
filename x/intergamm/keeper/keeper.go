@@ -6,7 +6,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
-	"github.com/abag/quasarnode/x/intergamm/types/osmosis"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -35,7 +34,7 @@ type Keeper struct {
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
 
-	hooks_Osmosis_MsgCreateBalancerPool []osmosis.Hooks_MsgCreateBalancerPool
+	hooksOsmosisMsgCreateBalancerPool []types.HooksOsmosisMsgCreateBalancerPool
 }
 
 func NewKeeper(

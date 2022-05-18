@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/intergamm/types/osmosis"
+	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
@@ -17,27 +17,28 @@ func (k *Keeper) HandleIcaAcknowledgement(
 ) error {
 	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
 	if err != nil {
-		return err
+		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserilize packet data")
 	}
 
 	if len(msgs) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "invalid message data found")
+		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
 	}
 
 	msg := msgs[0]
 	switch msg := msg.(type) {
 	case *gammbalancer.MsgCreateBalancerPool:
-
-		res, err := osmosis.ParseAck(ack, &gammbalancer.MsgCreateBalancerPoolResponse{})
-
-		ex := osmosis.Exchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
+		res, err := types.ParseAck[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse](ack, msg)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.Exchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
 			Sequence: sequence,
 			Error:    err,
 			Request:  msg,
 			Response: res,
 		}
-		for _, h := range k.hooks_Osmosis_MsgCreateBalancerPool {
-			h.Handle_MsgCreateBalancerPool(ctx, ex)
+		for _, h := range k.hooksOsmosisMsgCreateBalancerPool {
+			h.HandleMsgCreateBalancerPool(ctx, ex)
 		}
 	}
 

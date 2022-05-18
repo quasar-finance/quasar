@@ -490,7 +490,7 @@ func New(
 	)
 
 	// Set Intergamm hooks
-	app.IntergammKeeper.AddHook_Osmosis_MsgCreateBalancerPool(
+	app.IntergammKeeper.AddHookOsmosisMsgCreateBalancerPool(
 		app.OrionKeeper,
 	)
 

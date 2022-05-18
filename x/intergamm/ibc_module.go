@@ -115,7 +115,8 @@ func (im IBCModule) OnAcknowledgementPacket(
 	relayer sdk.AccAddress,
 ) error {
 	var err error
-	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", types.HashPacketDataStr(packet.GetData()), "seq", packet.GetSequence())
+
+	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", types.HashPacketStr(packet), "seq", packet.GetSequence())
 
 	icaPacket := icatypes.InterchainAccountPacketData{}
 	err = icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
