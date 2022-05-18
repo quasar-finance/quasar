@@ -118,16 +118,9 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", types.HashPacketStr(packet), "seq", packet.GetSequence())
 
-	icaPacket := icatypes.InterchainAccountPacketData{}
-	err = icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
+	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
-		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
-		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
-	}
-
-	if icaPacket.Type != icatypes.EXECUTE_TX {
-		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
-		return sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
+		return err
 	}
 
 	ack := channeltypes.Acknowledgement{}
@@ -146,7 +139,12 @@ func (im IBCModule) OnTimeoutPacket(
 	relayer sdk.AccAddress,
 ) error {
 	// TODO
-	return nil
+	icaPacket, err := parseIcaPacket(packet)
+	if err != nil {
+		return err
+	}
+
+	return im.keeper.HandleIcaTimeout(ctx, packet.GetSequence(), icaPacket)
 }
 
 // NegotiateAppVersion implements the IBCModule interface
@@ -163,4 +161,20 @@ func (im IBCModule) NegotiateAppVersion(
 
 func (im IBCModule) logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacketData, error) {
+	icaPacket := icatypes.InterchainAccountPacketData{}
+	err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
+	if err != nil {
+		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
+		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+	}
+
+	if icaPacket.Type != icatypes.EXECUTE_TX {
+		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
+		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
+	}
+
+	return icaPacket, nil
 }

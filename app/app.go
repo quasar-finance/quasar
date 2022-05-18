@@ -489,18 +489,32 @@ func New(
 		),
 	)
 
-	// Set Intergamm hooks
-	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgTransfer(
-		app.OrionKeeper.HandleMsgTransfer,
+	// Set Intergamm ack hooks
+	app.IntergammKeeper.Hooks.Osmosis.AddHookAckMsgTransfer(
+		app.OrionKeeper.HandleAckMsgTransfer,
 	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgCreateBalancerPool(
-		app.OrionKeeper.HandleMsgCreateBalancerPool,
+	app.IntergammKeeper.Hooks.Osmosis.AddHookAckMsgCreateBalancerPool(
+		app.OrionKeeper.HandleAckMsgCreateBalancerPool,
 	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgJoinPool(
-		app.OrionKeeper.HandleMsgJoinPool,
+	app.IntergammKeeper.Hooks.Osmosis.AddHookAckMsgJoinPool(
+		app.OrionKeeper.HandleAckMsgJoinPool,
 	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHookMsgExitPool(
-		app.OrionKeeper.HandleMsgExitPool,
+	app.IntergammKeeper.Hooks.Osmosis.AddHookAckMsgExitPool(
+		app.OrionKeeper.HandleAckMsgExitPool,
+	)
+
+	// Set Intergamm timeout hooks
+	app.IntergammKeeper.Hooks.Osmosis.AddHookTimeoutMsgTransfer(
+		app.OrionKeeper.HandleTimeoutMsgTransfer,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHookTimeoutMsgCreateBalancerPool(
+		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHookTimeoutMsgJoinPool(
+		app.OrionKeeper.HandleTimeoutMsgJoinPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHookTimeoutMsgExitPool(
+		app.OrionKeeper.HandleTimeoutMsgExitPool,
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

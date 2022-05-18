@@ -20,13 +20,18 @@ type exchangeResponse interface {
 	*ibctransfertypes.MsgTransferResponse | *gammbalancer.MsgCreateBalancerPoolResponse | *gammtypes.MsgJoinPoolResponse | *gammtypes.MsgExitPoolResponse
 }
 
-type Exchange[REQ exchangeRequest, RES exchangeResponse] struct {
+type AckExchange[REQ exchangeRequest, RES exchangeResponse] struct {
 	Sequence uint64
 	Error    string
 	Request  REQ
 	Response RES
 }
 
-func (e Exchange[REQ, RES]) HasError() bool {
+func (e AckExchange[REQ, RES]) HasError() bool {
 	return e.Error != ""
+}
+
+type TimeoutExchange[REQ exchangeRequest] struct {
+	Sequence uint64
+	Request  REQ
 }

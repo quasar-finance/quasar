@@ -36,13 +36,13 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
-		ex := types.Exchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]{
+		ex := types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]{
 			Sequence: sequence,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.hooksMsgTransfer {
+		for _, h := range k.Hooks.Osmosis.ackMsgTransfer {
 			h(ctx, ex)
 		}
 
@@ -52,13 +52,13 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
-		ex := types.Exchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
+		ex := types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
 			Sequence: sequence,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.hooksMsgCreateBalancerPool {
+		for _, h := range k.Hooks.Osmosis.ackMsgCreateBalancerPool {
 			h(ctx, ex)
 		}
 
@@ -68,13 +68,13 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
-		ex := types.Exchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]{
+		ex := types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]{
 			Sequence: sequence,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.hooksMsgJoinPool {
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinPool {
 			h(ctx, ex)
 		}
 
@@ -84,13 +84,72 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
-		ex := types.Exchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
+		ex := types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
 			Sequence: sequence,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.hooksMsgExitPool {
+		for _, h := range k.Hooks.Osmosis.ackMsgExitPool {
+			h(ctx, ex)
+		}
+
+	default:
+		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
+	}
+
+	return nil
+}
+
+func (k *Keeper) HandleIcaTimeout(
+	ctx sdk.Context,
+	sequence uint64,
+	icaPacket icatypes.InterchainAccountPacketData,
+) error {
+	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
+	if err != nil {
+		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
+	}
+
+	if len(msgs) != 1 {
+		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
+	}
+
+	msg := msgs[0]
+	switch req := msg.(type) {
+	case *ibctransfertypes.MsgTransfer:
+		ex := types.TimeoutExchange[*ibctransfertypes.MsgTransfer]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgTransfer {
+			h(ctx, ex)
+		}
+
+	case *gammbalancer.MsgCreateBalancerPool:
+		ex := types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgCreateBalancerPool {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinPool:
+		ex := types.TimeoutExchange[*gammtypes.MsgJoinPool]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPool {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitPool:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitPool]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
 			h(ctx, ex)
 		}
 
