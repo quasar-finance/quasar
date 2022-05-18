@@ -14,15 +14,15 @@ func TestParseAck(t *testing.T) {
 	var err error
 	var ack channeltypes.Acknowledgement
 	var bytes []byte
-	var resp *gammbalancer.MsgCreateBalancerPoolResponse
 
 	ack = channeltypes.NewResultAcknowledgement([]byte("test"))
-	_, err = ParseAck[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse](ack, &gammbalancer.MsgCreateBalancerPool{})
+	err = ParseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{})
 	require.Error(t, err)
 
 	bytes, _ = base64.StdEncoding.DecodeString("Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w=")
 	ack = channeltypes.NewResultAcknowledgement(bytes)
-	resp, err = ParseAck[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse](ack, &gammbalancer.MsgCreateBalancerPool{})
+	resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
+	err = ParseAck(ack, &gammbalancer.MsgCreateBalancerPool{}, resp)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }

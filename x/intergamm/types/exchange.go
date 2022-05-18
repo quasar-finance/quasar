@@ -5,79 +5,66 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/pkg/errors"
 )
 
 type exchangeRequest interface {
 	sdk.Msg
 
-	*gammbalancer.MsgCreateBalancerPool
+	*gammbalancer.MsgCreateBalancerPool | *gammtypes.MsgJoinPool
 }
 
 type exchangeResponse interface {
 	proto.Message
 
-	*gammbalancer.MsgCreateBalancerPoolResponse
+	*gammbalancer.MsgCreateBalancerPoolResponse | *gammtypes.MsgJoinPoolResponse
 }
 
 type Exchange[REQ exchangeRequest, RES exchangeResponse] struct {
 	Sequence uint64
-	Error    error
+	Error    string
 	Request  REQ
 	Response RES
 }
 
 func (e Exchange[REQ, RES]) HasError() bool {
-	return e.Error != nil
-}
-
-func mappings[RES exchangeResponse](requestType string) (RES, error) {
-	switch requestType {
-	case sdk.MsgTypeURL(&gammbalancer.MsgCreateBalancerPool{}):
-		return &gammbalancer.MsgCreateBalancerPoolResponse{}, nil
-	default:
-		return nil, errors.New("unsupported acknowledgement mapping")
-	}
+	return e.Error != ""
 }
 
 // Spec doc:
 // https://github.com/cosmos/ibc-go/blob/main/docs/apps/interchain-accounts/auth-modules.md#onacknowledgementpacket
-func ParseAck[REQ exchangeRequest, RES exchangeResponse](ack channeltypes.Acknowledgement, req REQ) (RES, error) {
+func ParseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
 	if ack.GetError() != "" {
-		return nil, errors.New(ack.GetError())
+		return nil
 	}
 
 	txMsgData := &sdk.TxMsgData{}
 	if err := proto.Unmarshal(ack.GetResult(), txMsgData); err != nil {
-		return nil, errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
+		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 
 	switch len(txMsgData.Data) {
 	case 0:
 		// see documentation below for SDK 0.46.x or greater
-		return nil, errors.New("unsupported operation")
+		return errors.New("currently unsupported operation")
 	default:
 		if len(txMsgData.Data) != 1 {
-			return nil, errors.New("only single msg acks are supported")
+			return errors.New("only single msg acks are supported")
 		}
 
 		msgData := txMsgData.Data[0]
 		msgType := msgData.GetMsgType()
 
-		if msgType != sdk.MsgTypeURL(req) {
-			return nil, errors.New("ack response does not match request")
+		if msgType != sdk.MsgTypeURL(request) {
+			return errors.New("ack response does not match request")
 		}
 
-		dst, err := mappings(msgType)
+		err := proto.Unmarshal(msgData.Data, response)
 		if err != nil {
-			return nil, errors.Wrap(err, "unknown ack mapping")
+			return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 		}
 
-		err = proto.Unmarshal(msgData.Data, dst)
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
-		}
-
-		return dst, nil
+		return nil
 	}
 }

@@ -26,6 +26,10 @@ var (
 	DefaultSendTxRelativeTimeoutTimestamp = ibctransfertypes.DefaultRelativePacketTimeoutTimestamp
 )
 
+type GammHooks struct {
+	Osmosis OsmosisHooks
+}
+
 type Keeper struct {
 	cdc                 codec.BinaryCodec
 	storeKey            sdk.StoreKey
@@ -34,7 +38,7 @@ type Keeper struct {
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
 
-	hooksOsmosisMsgCreateBalancerPool []types.HooksOsmosisMsgCreateBalancerPool
+	Hooks GammHooks
 }
 
 func NewKeeper(
@@ -57,6 +61,10 @@ func NewKeeper(
 		scopedKeeper:        scopedKeeper,
 		icaControllerKeeper: iaKeeper,
 		paramstore:          ps,
+
+		Hooks: GammHooks{
+			Osmosis: OsmosisHooks{},
+		},
 	}
 }
 

@@ -17,7 +17,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 ) error {
 	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
 	if err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserilize packet data")
+		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
 	}
 
 	if len(msgs) != 1 {
@@ -25,20 +25,21 @@ func (k *Keeper) HandleIcaAcknowledgement(
 	}
 
 	msg := msgs[0]
-	switch msg := msg.(type) {
+	switch req := msg.(type) {
 	case *gammbalancer.MsgCreateBalancerPool:
-		res, err := types.ParseAck[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse](ack, msg)
+		resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
+		err := types.ParseAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.Exchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
 			Sequence: sequence,
-			Error:    err,
-			Request:  msg,
-			Response: res,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
 		}
-		for _, h := range k.hooksOsmosisMsgCreateBalancerPool {
-			h.HandleMsgCreateBalancerPool(ctx, ex)
+		for _, h := range k.Hooks.Osmosis.hooksMsgCreateBalancerPool {
+			h(ctx, ex)
 		}
 	}
 
