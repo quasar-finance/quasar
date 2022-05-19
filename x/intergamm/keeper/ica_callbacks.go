@@ -32,7 +32,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 	switch req := msg.(type) {
 	case *ibctransfertypes.MsgTransfer:
 		resp := &ibctransfertypes.MsgTransferResponse{}
-		err := parseAck(ack, req, resp)
+		err := ParseAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -48,7 +48,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	case *gammbalancer.MsgCreateBalancerPool:
 		resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-		err := parseAck(ack, req, resp)
+		err := ParseAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -64,7 +64,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	case *gammtypes.MsgJoinPool:
 		resp := &gammtypes.MsgJoinPoolResponse{}
-		err := parseAck(ack, req, resp)
+		err := ParseAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -80,7 +80,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	case *gammtypes.MsgExitPool:
 		resp := &gammtypes.MsgExitPoolResponse{}
-		err := parseAck(ack, req, resp)
+		err := ParseAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -162,7 +162,7 @@ func (k *Keeper) HandleIcaTimeout(
 
 // Spec doc:
 // https://github.com/cosmos/ibc-go/blob/main/docs/apps/interchain-accounts/auth-modules.md#onacknowledgementpacket
-func parseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
+func ParseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
 	if ack.GetError() != "" {
 		return nil
 	}

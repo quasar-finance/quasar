@@ -1,9 +1,12 @@
-package keeper
+package keeper_test
 
 import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/abag/quasarnode/testutil"
+	"github.com/abag/quasarnode/x/intergamm/keeper"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	"github.com/stretchr/testify/require"
@@ -43,7 +46,7 @@ func TestParseAck(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ack := channeltypes.NewResultAcknowledgement(tc.ackBytes)
 			resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-			err := parseAck(ack, tc.req, resp)
+			err := keeper.ParseAck(ack, tc.req, resp)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)
@@ -54,4 +57,31 @@ func TestParseAck(t *testing.T) {
 			require.Equal(t, tc.resp, resp)
 		})
 	}
+}
+
+func TestHandleIcaAcknowledgement(t *testing.T) {
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+
+	seq := uint64(1)
+	icaPacket := icatypes.InterchainAccountPacketData{}
+	ack := channeltypes.Acknowledgement{}
+	errorStr := "expected single message in packet"
+
+	err := k.HandleIcaAcknowledgement(ctx, seq, icaPacket, ack)
+
+	require.ErrorContains(t, err, errorStr)
+}
+
+func TestHandleIcaTimeout(t *testing.T) {
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+
+	seq := uint64(1)
+	icaPacket := icatypes.InterchainAccountPacketData{}
+	errorStr := "expected single message in packet"
+
+	err := k.HandleIcaTimeout(ctx, seq, icaPacket)
+
+	require.ErrorContains(t, err, errorStr)
 }
