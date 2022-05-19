@@ -20,7 +20,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw20-base";
+const CONTRACT_NAME: &str = "crates.io:cw20-base"; // TODO change contract name
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const LOGO_SIZE_CAP: usize = 5 * 1024;
@@ -201,7 +201,12 @@ pub fn execute(
             spender,
             amount,
             expires,
+
         } => execute_increase_allowance(deps, env, info, spender, amount, expires),
+        ExecuteMsg::Receive { .. } => {todo!()},
+        ExecuteMsg::Deposit { .. } => {todo!()},
+        ExecuteMsg::MintShares { .. } => {todo!()},
+        ExecuteMsg::Withdraw { .. } => {todo!()},
         ExecuteMsg::DecreaseAllowance {
             spender,
             amount,
@@ -484,6 +489,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
+        QueryMsg::Asset { .. } => {todo!()}
+        QueryMsg::TotalAssets { .. } => {todo!()}
+        QueryMsg::ConvertToShares { .. } => {todo!()}
+        QueryMsg::ConvertToAssets { .. } => {todo!()}
+        QueryMsg::MaxDeposit { .. } => {todo!()}
+        QueryMsg::PreviewDeposit { .. } => {todo!()}
+        QueryMsg::MaxMint { .. } => {todo!()}
+        QueryMsg::PreviewMint { .. } => {todo!()}
+        QueryMsg::MaxWithdraw { .. } => {todo!()}
+        QueryMsg::PreviewWithdraw { .. } => {todo!()}
+        QueryMsg::MaxRedeem { .. } => {todo!()}
+        QueryMsg::PreviewRedeem { .. } => {todo!()}
     }
 }
 
