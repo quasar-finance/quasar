@@ -1,9 +1,9 @@
-use cosmwasm_std::{StdError, StdResult, Uint128};
+use cosmwasm_std::{Binary, StdError, StdResult, Uint128, Uint256};
 use cw20::{Cw20Coin, Logo, MinterResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cw_utils::Expiration;
 
-pub use cw20::Cw20ExecuteMsg as ExecuteMsg;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMarketingInfo {
@@ -71,9 +71,43 @@ fn is_valid_symbol(symbol: &str) -> bool {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Returns the current balance of the given address, 0 if unset.
+    /// Returns the address of the vaults underlying token
+    /// Return type: TODO
+    Asset { },
+    /// Returns the total amount of underlying assets that is managed by the vault
+    /// Return type: TODO
+    TotalAssets {},
+    /// Returns the current balance of shares of the given address, 0 if unset.
     /// Return type: BalanceResponse.
     Balance { address: String },
+    /// Returns the amount of shares the vault would exchange for the underlying asset, in the ideal scenario
+    /// Return type: TODO
+    ConvertToShares{ assets: Uint256},
+    /// Returns the amount of assets the vault would exchange for the amount of shares, in the ideal scenario
+    /// Return type: TODO
+    ConvertToAssets{ shares: Uint256},
+    /// Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver, through a deposit call.
+    /// Return type: TODO
+    MaxDeposit{ receiver: String },
+    /// Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given current on-chain conditions.
+    /// Return type: TODO
+    PreviewDeposit{ assets: Uint256},
+    /// Return the maximum amount of shares that can be minted from the vault for the receiver, through a mint call
+    /// Return type: TODO
+    MaxMint{ receiver: String },
+    /// Allows an on-chain or off-chain user to simulate the effects of their mint at the current block, given current on-chain conditions.
+    /// Return type: TODO
+    PreviewMint{ shares: Uint256},
+    /// Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the Vault, through a withdraw call.
+    /// Return type: TODO
+    MaxWithdraw { owner: String },
+    /// Allows an on-chain or off-chain user to simulate the effects of their withdrawal at the current block, given current on-chain conditions.
+    /// Return type: TODO
+    PreviewWithdraw { assets: Uint256 },
+    /// Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault, through a redeem call.
+    MaxRedeem{ owner: String },
+    /// Allows an on-chain or off-chain user to simulate the effects of their redeemption at the current block, given current on-chain conditions.
+    PreviewRedeem{ shares: Uint256 },
     /// Returns metadata on the contract - name, decimals, supply, etc.
     /// Return type: TokenInfoResponse.
     TokenInfo {},
@@ -110,4 +144,85 @@ pub enum QueryMsg {
     /// contract.
     /// Return type: DownloadLogoResponse.
     DownloadLogo {},
+}
+
+// we give our own ExecuteMsg instead of the cw-20 executeMsg so we can easily extend it
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecuteMsg {
+    /// Transfer is a base message to move tokens to another account without triggering actions
+    Transfer { recipient: String, amount: Uint128 },
+    /// Burn is a base message to destroy tokens forever
+    Burn { amount: Uint128 },
+    /// Send is a base message to transfer tokens to a contract and trigger an action
+    /// on the receiving contract.
+    Send {
+        contract: String,
+        amount: Uint128,
+        msg: Binary,
+    },
+    /// Receive is a base message to receive tokens from another contract and trigger an action on
+    /// this contract. the address of the contract is stored in env.sender. Sender should match the
+    /// contract we expect to handle. Sender is the original account moving the tokens.
+    Receive {
+        sender: String,
+        amount: Uint128,
+        msg: Binary,
+    },
+    /// Only with "approval" extension. Allows spender to access an additional amount tokens
+    /// from the owner's (env.sender) account. If expires is Some(), overwrites current allowance
+    /// expiration with this one.
+    IncreaseAllowance {
+        spender: String,
+        amount: Uint128,
+        expires: Option<Expiration>,
+    },
+    /// Only with "approval" extension. Lowers the spender's access of tokens
+    /// from the owner's (env.sender) account by amount. If expires is Some(), overwrites current
+    /// allowance expiration with this one.
+    DecreaseAllowance {
+        spender: String,
+        amount: Uint128,
+        expires: Option<Expiration>,
+    },
+    /// Only with "approval" extension. Transfers amount tokens from owner -> recipient
+    /// if `env.sender` has sufficient pre-approval.
+    TransferFrom {
+        owner: String,
+        recipient: String,
+        amount: Uint128,
+    },
+    /// Only with "approval" extension. Sends amount tokens from owner -> contract
+    /// if `env.sender` has sufficient pre-approval.
+    SendFrom {
+        owner: String,
+        contract: String,
+        amount: Uint128,
+        msg: Binary,
+    },
+    /// Only with "approval" extension. Destroys tokens forever
+    BurnFrom { owner: String, amount: Uint128 },
+    /// Only with the "mintable" extension. If authorized, creates amount new tokens
+    /// and adds to the recipient balance.
+    Mint { recipient: String, amount: Uint128 },
+    // TODO add message fields once we decide on the token approach
+    Deposit {},
+    // TODO add message fields once we decide on the token approach
+    /// Mints exactly shares Vault shares to receiver by depositing amount of underlying tokens.
+    MintShares {},
+    /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
+    Withdraw {},
+    /// Only with the "marketing" extension. If authorized, updates marketing metadata.
+    /// Setting None/null for any of these will leave it unchanged.
+    /// Setting Some("") will clear this field on the contract storage
+    UpdateMarketing {
+        /// A URL pointing to the project behind this token.
+        project: Option<String>,
+        /// A longer description of the token and it's utility. Designed for tooltips or such
+        description: Option<String>,
+        /// The address (if any) who can update this data structure
+        marketing: Option<String>,
+    },
+    /// If set as the "marketing" role on the contract, upload a new URL, SVG, or PNG for the token
+    UploadLogo(Logo),
 }
