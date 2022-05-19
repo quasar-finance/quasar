@@ -13,6 +13,8 @@ Implements:
 - [x] Mintable extension
 - [x] Allowances extension
 - [ ] EIP-4626 implementation
+  - [ ] Change CW-20 asset to vault share
+  - [ ] implement EIP-4626 interface
 - [ ] Multi-Asset Deposit
 - [ ] Multi-Asset Withdrawal
 
