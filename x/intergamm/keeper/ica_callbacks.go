@@ -168,7 +168,8 @@ func ParseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.
 	}
 
 	txMsgData := &sdk.TxMsgData{}
-	if err := proto.Unmarshal(ack.GetResult(), txMsgData); err != nil {
+	err := proto.Unmarshal(ack.GetResult(), txMsgData)
+	if err != nil {
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 

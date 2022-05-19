@@ -1,42 +1,80 @@
 package keeper_test
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/intergamm/keeper"
+	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	"github.com/stretchr/testify/require"
 )
 
-func mustB64DecodeString(t *testing.T, str string) []byte {
-	b, err := base64.StdEncoding.DecodeString("Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w=")
+// func mustB64DecodeString(t *testing.T, str string) []byte {
+// 	b, err := base64.StdEncoding.DecodeString("Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w=")
+// 	require.NoError(t, err)
+
+// 	return b
+// }
+
+func _makeIcaPacket(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
+	return func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
+		data, err := icatypes.SerializeCosmosTx(cdc, []sdk.Msg{msg})
+		require.NoError(t, err)
+
+		return icatypes.InterchainAccountPacketData{
+			Type: icatypes.EXECUTE_TX,
+			Data: data,
+		}
+	}
+}
+
+func makeAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
+	resData, err := proto.Marshal(res)
 	require.NoError(t, err)
 
-	return b
+	txMsgData := &sdk.TxMsgData{
+		Data: []*sdk.MsgData{
+			{
+				MsgType: sdk.MsgTypeURL(req),
+				Data:    resData,
+			},
+		},
+	}
+	ackData, err := proto.Marshal(txMsgData)
+	require.NoError(t, err)
+
+	return channeltypes.NewResultAcknowledgement(ackData)
 }
+
+// func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
+// 	return channeltypes.NewErrorAcknowledgement(errorStr)
+// }
 
 func TestParseAck(t *testing.T) {
 	testCases := []struct {
 		name     string
-		ackBytes []byte
+		ack      channeltypes.Acknowledgement
 		req      *gammbalancer.MsgCreateBalancerPool
 		resp     *gammbalancer.MsgCreateBalancerPoolResponse
 		errorStr string
 	}{
 		{
-			name:     "valid",
-			ackBytes: mustB64DecodeString(t, "Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w="),
+			name: "valid",
+			ack:  makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			// ack: mustB64DecodeString(t, "Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w="),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "",
 		},
 		{
 			name:     "invalid ack bytes",
-			ackBytes: []byte("test"),
+			ack:      channeltypes.NewResultAcknowledgement([]byte("test")),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "cannot unmarshall ICA acknowledgement",
@@ -44,9 +82,8 @@ func TestParseAck(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ack := channeltypes.NewResultAcknowledgement(tc.ackBytes)
 			resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-			err := keeper.ParseAck(ack, tc.req, resp)
+			err := keeper.ParseAck(tc.ack, tc.req, resp)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)
@@ -62,15 +99,53 @@ func TestParseAck(t *testing.T) {
 func TestHandleIcaAcknowledgement(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+	makeIcaPacket := _makeIcaPacket(t, setup.Cdc)
 
-	seq := uint64(1)
-	icaPacket := icatypes.InterchainAccountPacketData{}
-	ack := channeltypes.Acknowledgement{}
-	errorStr := "expected single message in packet"
+	var called bool
+	testCases := []struct {
+		name      string
+		seq       uint64
+		icaPacket icatypes.InterchainAccountPacketData
+		ack       channeltypes.Acknowledgement
+		setup     func()
+		errorStr  string
+	}{
+		{
+			name:      "valid",
+			seq:       uint64(42),
+			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
+			ack:       makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			setup: func() {
+				called = false
+				k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
+					called = true
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "invalid acknowledgement",
+			seq:       uint64(42),
+			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
+			ack:       channeltypes.NewResultAcknowledgement([]byte("test")),
+			setup:     func() {},
+			errorStr:  "cannot parse acknowledgement",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setup()
+			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.icaPacket, tc.ack)
 
-	err := k.HandleIcaAcknowledgement(ctx, seq, icaPacket, ack)
+			if tc.errorStr != "" {
+				require.ErrorContains(t, err, tc.errorStr)
+				return
+			}
 
-	require.ErrorContains(t, err, errorStr)
+			require.NoError(t, err)
+			require.True(t, called)
+		})
+	}
 }
 
 func TestHandleIcaTimeout(t *testing.T) {
