@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, Order, StdResult};
+use cosmwasm_std::{Deps, Order, StdResult, Addr};
 use cw20::{AllAccountsResponse, AllAllowancesResponse, AllowanceInfo};
 
 use crate::state::{ALLOWANCES, BALANCES};
@@ -67,6 +67,7 @@ mod tests {
             name: "Auto Gen".to_string(),
             symbol: "AUTO".to_string(),
             decimals: 3,
+            whitelisted_tokens: vec![Addr::unchecked("some_token")],
             initial_balances: vec![Cw20Coin {
                 address: addr.into(),
                 amount,

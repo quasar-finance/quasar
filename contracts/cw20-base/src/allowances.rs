@@ -264,6 +264,7 @@ mod tests {
             name: "Auto Gen".to_string(),
             symbol: "AUTO".to_string(),
             decimals: 3,
+            whitelisted_tokens: vec![Addr::unchecked("some_token")],
             initial_balances: vec![Cw20Coin {
                 address: addr.into(),
                 amount,
