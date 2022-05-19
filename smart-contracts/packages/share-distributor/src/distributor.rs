@@ -4,9 +4,12 @@ use quasar_traits::{ShareDistributor};
 use cw20::Cw20Coin;
 use std::collections::HashSet;
 
-pub struct Distributor{}
+/// The DumbDistributor is a simple implementation of the ShareDistributor trait, it returns 1 share
+/// per cw20 coin. This should probably not be used in any production environment, but is useful for
+/// testing and demonstration purposes.
+pub struct DumbDistributor {}
 
-impl quasar_traits::traits::ShareDistributor for Distributor {
+impl quasar_traits::traits::ShareDistributor for DumbDistributor {
     fn distribute_shares(&self, deposit: Vec<Cw20Coin>, state: Vec<Cw20Coin>) -> Result<Uint128, StdError> {
         if deposit.len() != state.len() {
             return Err("deposit and state must be the same length".into());
@@ -20,7 +23,9 @@ impl quasar_traits::traits::ShareDistributor for Distributor {
         if eq_token(&deposit, &state) {
             return Err("deposit and state must contain same tokens".into());
         }
-        todo!()
+        Ok(deposit.iter().fold(Uint128::zero(), |acc, coin| {
+            acc + Uint128::from(coin.amount)
+        }))
     }
 }
 
