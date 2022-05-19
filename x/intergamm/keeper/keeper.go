@@ -189,6 +189,43 @@ func (k Keeper) TransmitIbcTransfer(
 	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
 }
 
+// TransmitForwardIbcTransfer sends a special case of ibc transfer message that will be forwarded to the destination chain through a middle chain.
+// fwdTransferPort and fwdTransferChannel are the port and channel to destination chain on the middle chain and intermidateReceiver this an account at the middle chain
+// that receives the token temporarily which then sends the token to receiver on destination chain via another ibc transfer packet.
+// Note that the middle chain must support packet forward wrapper module (https://github.com/strangelove-ventures/packet-forward-middleware).
+func (k Keeper) TransmitForwardIbcTransfer(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	transferPort, transferChannel string,
+	token sdk.Coin,
+	fwdTransferPort, fwdTransferChannel string,
+	intermediateReceiver string,
+	receiver string,
+	transferTimeoutHeight ibcclienttypes.Height,
+	transferTimeoutTimestamp uint64) error {
+	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+
+	return k.TransmitIbcTransfer(
+		ctx,
+		owner,
+		connectionId,
+		timeoutTimestamp,
+		transferPort, transferChannel,
+		token,
+		fwdReceiver,
+		transferTimeoutHeight,
+		transferTimeoutTimestamp,
+	)
+}
+
+// buildPacketForwardReceiver builds the receiver address for packet forward transfer based on the format below:
+// {intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
+func buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver string) string {
+	return fmt.Sprintf("%s|%s/%s:%s", intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+}
+
 func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) error {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
