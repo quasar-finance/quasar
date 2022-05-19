@@ -116,7 +116,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 ) error {
 	var err error
 
-	im.logger(ctx).Info("Received OnAcknowledgementPacket", "hash", types.HashPacketStr(packet), "seq", packet.GetSequence())
+	im.logger(ctx).Info("received OnAcknowledgementPacket", "seq", packet.GetSequence())
 
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
@@ -138,7 +138,8 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// TODO
+	im.logger(ctx).Info("received OnTimeoutPacket", "seq", packet.GetSequence())
+
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
 		return err
@@ -159,10 +160,6 @@ func (im IBCModule) NegotiateAppVersion(
 	return "", nil
 }
 
-func (im IBCModule) logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
-}
-
 func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacketData, error) {
 	icaPacket := icatypes.InterchainAccountPacketData{}
 	err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
@@ -177,4 +174,8 @@ func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacke
 	}
 
 	return icaPacket, nil
+}
+
+func (im IBCModule) logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

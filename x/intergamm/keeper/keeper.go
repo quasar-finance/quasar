@@ -253,6 +253,7 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	if err != nil {
 		return err
 	}
+
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
@@ -264,7 +265,7 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 		return err
 	}
 
-	k.Logger(ctx).Info("sendTx over ICA", "seq", seq)
+	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
 	return nil
 }
