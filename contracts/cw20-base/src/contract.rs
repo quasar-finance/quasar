@@ -16,8 +16,8 @@ use crate::allowances::{
 };
 use crate::enumerable::{query_all_accounts, query_all_allowances};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse};
+use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO, VaultInfo, VAULT_INFO};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw20-base"; // TODO change contract name
@@ -112,6 +112,10 @@ pub fn instantiate(
         }),
         None => None,
     };
+
+    // set cw-20 token whitelist
+    let vault_whitelist = msg.whitelisted_tokens;
+    VAULT_INFO.save(deps.storage, &VaultInfo { vault_whitelist })?;
 
     // store token info
     let data = TokenInfo {
@@ -501,6 +505,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PreviewWithdraw { .. } => {todo!()}
         QueryMsg::MaxRedeem { .. } => {todo!()}
         QueryMsg::PreviewRedeem { .. } => {todo!()}
+        QueryMsg::VaultInfo { .. } => {to_binary(&query_vault_info(deps)?)}
     }
 }
 
@@ -519,6 +524,14 @@ pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
         symbol: info.symbol,
         decimals: info.decimals,
         total_supply: info.total_supply,
+    };
+    Ok(res)
+}
+
+pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
+    let info = VAULT_INFO.load(deps.storage)?;
+    let res = VaultInfoResponse {
+        vault_whitelist: info.vault_whitelist,
     };
     Ok(res)
 }
@@ -603,6 +616,7 @@ mod tests {
             name: "Auto Gen".to_string(),
             symbol: "AUTO".to_string(),
             decimals: 3,
+            whitelisted_tokens: vec![Addr::unchecked("some_token")],
             initial_balances: vec![Cw20Coin {
                 address: addr.to_string(),
                 amount,
@@ -643,6 +657,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![Cw20Coin {
                     address: String::from("addr0000"),
                     amount,
@@ -680,6 +695,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![Cw20Coin {
                     address: "addr0000".into(),
                     amount,
@@ -727,6 +743,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![Cw20Coin {
                     address: String::from("addr0000"),
                     amount,
@@ -756,6 +773,7 @@ mod tests {
                     name: "Cash Token".to_string(),
                     symbol: "CASH".to_string(),
                     decimals: 9,
+                    whitelisted_tokens: vec![Addr::unchecked("some_token")],
                     initial_balances: vec![],
                     mint: None,
                     marketing: Some(InstantiateMarketingInfo {
@@ -796,6 +814,7 @@ mod tests {
                     name: "Cash Token".to_string(),
                     symbol: "CASH".to_string(),
                     decimals: 9,
+                    whitelisted_tokens: vec![Addr::unchecked("some_token")],
                     initial_balances: vec![],
                     mint: None,
                     marketing: Some(InstantiateMarketingInfo {
@@ -918,6 +937,7 @@ mod tests {
             name: "Bash Shell".to_string(),
             symbol: "BASH".to_string(),
             decimals: 6,
+            whitelisted_tokens: vec![Addr::unchecked("some_token")],
             initial_balances: vec![
                 Cw20Coin {
                     address: addr1.clone(),
@@ -939,6 +959,7 @@ mod tests {
         let instantiate_msg = InstantiateMsg {
             name: "Bash Shell".to_string(),
             symbol: "BASH".to_string(),
+            whitelisted_tokens: vec![Addr::unchecked("some_token")],
             decimals: 6,
             initial_balances: vec![
                 Cw20Coin {
@@ -964,6 +985,9 @@ mod tests {
                 total_supply: amount1 + amount2,
             }
         );
+        assert_eq!(query_vault_info(deps.as_ref()).unwrap(), VaultInfoResponse {
+            vault_whitelist: vec![Addr::unchecked("some_token")],
+        });
         assert_eq!(get_balance(deps.as_ref(), addr1), amount1);
         assert_eq!(get_balance(deps.as_ref(), addr2), amount2);
     }
@@ -1198,6 +1222,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1252,6 +1277,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1305,6 +1331,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1358,6 +1385,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1411,6 +1439,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1464,6 +1493,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1517,6 +1547,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1574,6 +1605,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1627,6 +1659,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1676,6 +1709,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1726,6 +1760,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1777,6 +1812,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1827,6 +1863,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1884,6 +1921,7 @@ mod tests {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
                 decimals: 9,
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 initial_balances: vec![],
                 mint: None,
                 marketing: Some(InstantiateMarketingInfo {
@@ -1933,6 +1971,7 @@ mod tests {
             let instantiate_msg = InstantiateMsg {
                 name: "Cash Token".to_string(),
                 symbol: "CASH".to_string(),
+                whitelisted_tokens: vec![Addr::unchecked("some_token")],
                 decimals: 9,
                 initial_balances: vec![],
                 mint: None,

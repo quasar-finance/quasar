@@ -14,9 +14,15 @@ Implements:
 - [x] Allowances extension
 - [ ] EIP-4626 implementation
   - [ ] Change CW-20 asset to vault share
-  - [ ] implement EIP-4626 interface
+  - [ ] implement EIP-4626 interface for cosmwasm
+    - [x] Implement token whitelist
+    - [ ] Add share minting logic
+    - [ ] Add share burning logic
+    - [ ] Add support for all queries
+    - [ ] Add support for all execute messages
 - [ ] Multi-Asset Deposit
 - [ ] Multi-Asset Withdrawal
+- [ ] Strategy trait
 
 ## Running this contract
 

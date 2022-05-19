@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, StdError, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, Binary, StdError, StdResult, Uint128, Uint256};
 use cw20::{Cw20Coin, Logo, MinterResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -17,6 +17,8 @@ pub struct InstantiateMarketingInfo {
 pub struct InstantiateMsg {
     pub name: String,
     pub symbol: String,
+    // the list of tokens accepted by the contract
+    pub whitelisted_tokens: Vec<Addr>,
     pub decimals: u8,
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
@@ -39,6 +41,9 @@ impl InstantiateMsg {
             return Err(StdError::generic_err(
                 "Ticker symbol is not in expected format [a-zA-Z\\-]{3,12}",
             ));
+        }
+        if self.whitelisted_tokens.is_empty() {
+            return Err(StdError::generic_err("No whitelisted tokens"));
         }
         if self.decimals > 18 {
             return Err(StdError::generic_err("Decimals must not exceed 18"));
@@ -111,6 +116,9 @@ pub enum QueryMsg {
     /// Returns metadata on the contract - name, decimals, supply, etc.
     /// Return type: TokenInfoResponse.
     TokenInfo {},
+    /// Returns the metadata on the vault - whitelist, etc.
+    /// Return type: VaultInfoResponse.
+    VaultInfo {},
     /// Only with "mintable" extension.
     /// Returns who can mint and the hard cap on maximum tokens after minting.
     /// Return type: MinterResponse.
@@ -144,6 +152,12 @@ pub enum QueryMsg {
     /// contract.
     /// Return type: DownloadLogoResponse.
     DownloadLogo {},
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct VaultInfoResponse {
+    pub(crate) vault_whitelist: Vec<Addr>,
 }
 
 // we give our own ExecuteMsg instead of the cw-20 executeMsg so we can easily extend it
