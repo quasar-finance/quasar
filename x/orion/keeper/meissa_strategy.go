@@ -111,8 +111,11 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolIds=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
-		// TODO | Refactoring | Change the qoracle pool ID storage to uint64
+
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
+		poolInfo := k.getPoolInfo(ctx, poolID)
+		poolShareDenom := poolInfo.Info.TotalShares.Denom
+
 		poolAssets := k.getPoolAssets(ctx, poolID)
 		if len(poolAssets) != 2 {
 			// Initially strategy want to LP only in the pool with 2 assets
@@ -124,6 +127,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, poolAssets))
 
 		maxAvailableTokens := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, poolAssets)
+		// calculate shareout amount based on the max available tokens
 		shareOutAmount, err := ComputeShareOutAmount(poolTotalShare.Amount, poolAssets, maxAvailableTokens)
 		if err != nil {
 			continue
@@ -131,7 +135,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v\n",
 			shareOutAmount))
 
-		// Transfer fund to the strategy global account.
+		// Compute needed coins for the calculated shareout amount
 		coins, err := ComputeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
 		if err != nil {
 			continue
@@ -147,31 +151,95 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 
 		if shareOutAmount.IsPositive() {
 			// Call Intergamm Add Liquidity Method
-			err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
+			packetSeq, err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
 			if err != nil {
 				return err
 			}
 
-			// TODO : Lock the LP tokens and receive lockId.
-			// TODO : Update orion vault staking amount.
-			// Most probably not needed as balance in the orion vault is already updated.
-
-			// coins := sdk.NewCoins(coin1, coin2)
+			// This should be called on ack
 			k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
 
 			bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
 			bondingStartEpochDay := epochDay
 			unbondingStartEpochDay := bondingStartEpochDay + bonding
-			var lockupID uint64   // TODO : To be received from osmosis
-			var lpTokens sdk.Coin // TODO : To be received from osmosis
-			lp := NewLP(lockupID, bondingStartEpochDay, bonding,
-				unbondingStartEpochDay, unbonding, poolID, lpTokens, coins)
-
+			var lockupID uint64
+			lpTokens := sdk.NewCoin(poolShareDenom, shareOutAmount)
+			lp := k.NewLP(lockupID, bondingStartEpochDay, bonding,
+				unbondingStartEpochDay, unbonding, poolID,
+				types.LpState_JOINING, lpTokens, coins)
+			lp.SeqNo = packetSeq
 			k.AddNewLPPosition(ctx, lp)
 		}
 	}
 
 	return nil
+}
+
+func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
+	key := types.CreateSeqKey(seqNo)
+	value := k.cdc.MustMarshal(&coin)
+	store.Set(key, value)
+}
+
+func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin sdk.Coin, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
+	key := types.CreateSeqKey(seqNo)
+	b := store.Get(key)
+	if b == nil {
+		return coin, false
+	}
+	k.cdc.MustUnmarshal(b, &coin)
+	return coin, true
+}
+
+func (k Keeper) AddAvailableInterchainFund(ctx sdk.Context, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AvailableInterchainFundKBP)
+	key := types.CreateInterchainFundKey()
+	b := store.Get(key)
+	if b == nil {
+		value := k.cdc.MustMarshal(&coin)
+		store.Set(key, value)
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Add(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+}
+
+func (k Keeper) SubAvailableInterchainFund(ctx sdk.Context, coin sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AvailableInterchainFundKBP)
+	key := types.CreateInterchainFundKey()
+	b := store.Get(key)
+	if b == nil {
+		panic(fmt.Sprintf("method SubAvailableInterchainFund | kv store does not have key=%v", string(key)))
+	} else {
+		var storedCoin sdk.Coin
+		k.cdc.MustUnmarshal(b, &storedCoin)
+		storedCoin = storedCoin.Sub(coin)
+		value := k.cdc.MustMarshal(&storedCoin)
+		store.Set(key, value)
+	}
+}
+
+// IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.
+// Returns the packet sequence number of the outgoing packet.
+func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) {
+	var seqNo uint64
+	// TODO - Call intergamm token transfer method
+	// seqNo, err := k.intergammKeeper.TransmitIbcTransfer(...)
+	k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
+}
+
+func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool) {
+	if ok {
+		coin, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
+		if found {
+			k.AddAvailableInterchainFund(ctx, coin)
+		}
+	}
 }
 
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
@@ -339,7 +407,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 }
 
 // Intergamm module method wrappers
-func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) error {
+func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) (uint64, error) {
 	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
 		poolID, shareOutAmount, tokenInMaxs))
 
@@ -347,7 +415,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 	connectionId := ""
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 
-	_, err := k.intergammKeeper.TransmitIbcJoinPool(
+	packetSeq, err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
 		owner,
 		connectionId,
@@ -357,7 +425,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		tokenInMaxs,
 	)
 
-	return err
+	return packetSeq, err
 }
 
 func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {

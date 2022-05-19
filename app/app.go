@@ -508,7 +508,7 @@ func New(
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.QbankKeeper = qbankmodulekeeper.NewKeeper(
+	qbankkeeper := qbankmodulekeeper.NewKeeper(
 		appCodec,
 		keys[qbankmoduletypes.StoreKey],
 		keys[qbankmoduletypes.MemStoreKey],
@@ -517,7 +517,6 @@ func New(
 		*app.EpochsKeeper,
 		app.QoracleKeeper,
 	)
-	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.OrionKeeper = *orionmodulekeeper.NewKeeper(
 		appCodec,
@@ -532,6 +531,13 @@ func New(
 	)
 
 	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.QbankKeeper = *qbankkeeper.SetDepositHooks(
+		qbankmoduletypes.NewMultiDepositHooks(
+			app.OrionKeeper.Hooks(),
+		),
+	)
+	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
@@ -864,7 +870,6 @@ func New(
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
-
 	return app
 }
 

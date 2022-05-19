@@ -14,11 +14,11 @@ import (
 
 // NewLP create a new LPPosition object with input arguments.
 // Zero Value of LpID, lockid means invalid values.
-func NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
-	unbondingDuration, poolID uint64, lpToken sdk.Coin, coins sdk.Coins) types.LpPosition {
+func (k Keeper) NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
+	unbondingDuration, poolID uint64, state types.LpState, lpToken sdk.Coin, coins sdk.Coins) types.LpPosition {
 	lp := types.LpPosition{LpID: 0,
 		LockID:                 lockid,
-		IsActive:               false,
+		State:                  state,
 		StartTime:              time.Now(),
 		BondingStartEpochDay:   bondingStartEpochday,
 		BondDuration:           bondDuration,
@@ -56,6 +56,14 @@ func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 	store.Set(byteKey, bz)
 }
 
+func (k Keeper) SetSeqNumber(ctx sdk.Context, seqNumber uint64, lpId uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LpSeqKBP)
+	byteKey := types.CreateSeqKey(seqNumber)
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, lpId)
+	store.Set(byteKey, bz)
+}
+
 // AddNewLPPosition update the LP ID of the newly created lp and set the position data in the KV store.
 func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	count := k.GetLPCount(ctx)
@@ -76,6 +84,7 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 		k.SetEpochDenom(ctx, lpPosition.BondingStartEpochDay, coin.Denom)
 	}
 	k.setLPCount(ctx, lpPosition.LpID)
+	k.SetSeqNumber(ctx, lpPosition.SeqNo, lpPosition.LpID)
 }
 
 // SetLpPosition set lpPosition created by the strategy in a given epochday in the

@@ -37,27 +37,38 @@ message GaugeLockInfo {
   ];
 }
 
+enum LpState {
+  INIT = 0;
+  JOINING = 1;
+  JOIN_FAILED = 2;
+  JOINING_TIMEOUT = 3;
+  EXITING = 4;
+  EXIT_FAILED = 5;
+  EXITING_TIMEOUT = 6;
+  SETTLED = 7;
+}
 // LpPosition is used by the strategy during the the Lping activity. 
 // Whenever orion module creates an LP position; an object of LpPosition will be created 
 // for book keeping in the KV store.
 message LpPosition {
-  uint64 lpID = 1; 
-  uint64 lockID = 2; 
-  bool isActive = 3;
-  google.protobuf.Timestamp startTime = 4 [
+  uint64 seqNo = 1;
+  uint64 lpID = 2;
+  uint64 lockID = 3;
+  LpState state = 4;
+  google.protobuf.Timestamp startTime = 5 [
     (gogoproto.stdtime) = true,
     (gogoproto.nullable) = false,
     (gogoproto.moretags) = "yaml:\"startTime\""
   ];
-  uint64 bondingStartEpochDay = 5; 
-  uint64 bondDuration = 6; 
-  uint64 unbondingStartEpochDay = 7; 
-  uint64 unbondingDuration = 8; 
-  uint64 poolID = 9; 
-  cosmos.base.v1beta1.Coin lptoken = 10 [(gogoproto.nullable) = false];
+  uint64 bondingStartEpochDay = 6;
+  uint64 bondDuration = 7;
+  uint64 unbondingStartEpochDay = 8;
+  uint64 unbondingDuration = 9;
+  uint64 poolID = 10;
+  cosmos.base.v1beta1.Coin lptoken = 11 [(gogoproto.nullable) = false];
   
-  repeated cosmos.base.v1beta1.Coin coins = 11 
+  repeated cosmos.base.v1beta1.Coin coins = 12
   [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
-  repeated GaugeLockInfo gaugelocks  = 12;
+  repeated GaugeLockInfo gaugelocks  = 13;
   
 }
