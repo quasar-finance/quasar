@@ -263,11 +263,89 @@ func TestHandleIcaTimeout(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
 
-	seq := uint64(1)
-	icaPacket := icatypes.InterchainAccountPacketData{}
-	errorStr := "expected single message in packet"
+	makeIcaPacket := makeIcaPacketPartial(t, setup.Cdc)
+	makeEmptyIcaPacket := makeEmptyIcaPacketPartial(t, setup.Cdc)
+	tstSeq := uint64(42)
 
-	err := k.HandleIcaTimeout(ctx, seq, icaPacket)
+	var called bool
+	testCases := []struct {
+		name      string
+		seq       uint64
+		icaPacket icatypes.InterchainAccountPacketData
+		setup     func()
+		errorStr  string
+	}{
+		{
+			name:      "valid MsgTransfer",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.MsgTransfer]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgCreateBalancerPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(func(c sdk.Context, e types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "invalid ica packet",
+			seq:       tstSeq,
+			icaPacket: makeInvalidIcaPacket(),
+			setup:     func() {},
+			errorStr:  "cannot deserialize packet data",
+		},
+		{
+			name:      "empty ica packet",
+			seq:       tstSeq,
+			icaPacket: makeEmptyIcaPacket(),
+			setup:     func() {},
+			errorStr:  "expected single message in packet",
+		},
+		{
+			name:      "unsupported packet type",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
+			setup:     func() {},
+			errorStr:  "unsupported packet type",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			called = false
+			tc.setup()
+			err := k.HandleIcaTimeout(ctx, tc.seq, tc.icaPacket)
 
-	require.ErrorContains(t, err, errorStr)
+			if tc.errorStr != "" {
+				require.ErrorContains(t, err, tc.errorStr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.True(t, called)
+		})
+	}
 }
