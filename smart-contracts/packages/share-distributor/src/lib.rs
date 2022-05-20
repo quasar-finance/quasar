@@ -1,1 +1,1 @@
-pub mod dumbdistributor;
+mod dumbdistributor;
