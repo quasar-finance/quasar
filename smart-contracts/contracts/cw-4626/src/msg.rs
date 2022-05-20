@@ -87,9 +87,9 @@ pub enum QueryMsg {
     Balance { address: String },
     /// Returns the amount of shares the vault would exchange for the underlying asset, in the ideal scenario
     /// Return type: TODO
-    ConvertToShares{ assets: Uint256},
+    ConvertToShares{ assets: Vec<Cw20Coin>},
     /// Returns the amount of assets the vault would exchange for the amount of shares, in the ideal scenario
-    /// Return type: TODO
+    /// Return type: ConvertToSharesResponse
     ConvertToAssets{ shares: Uint256},
     /// Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver, through a deposit call.
     /// Return type: TODO
@@ -154,10 +154,14 @@ pub enum QueryMsg {
     DownloadLogo {},
 }
 
+pub struct ConvertToSharesResponse {
+    pub amount: Uint128
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct VaultInfoResponse {
-    pub(crate) vault_whitelist: Vec<Addr>,
+    pub vault_whitelist: Vec<Addr>,
 }
 
 // we give our own ExecuteMsg instead of the cw-20 executeMsg so we can easily extend it
