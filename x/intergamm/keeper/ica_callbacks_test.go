@@ -6,23 +6,19 @@ import (
 	"github.com/abag/quasarnode/testutil"
 	"github.com/abag/quasarnode/x/intergamm/keeper"
 	"github.com/abag/quasarnode/x/intergamm/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/stretchr/testify/require"
 )
 
-// func mustB64DecodeString(t *testing.T, str string) []byte {
-// 	b, err := base64.StdEncoding.DecodeString("Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w=")
-// 	require.NoError(t, err)
-
-// 	return b
-// }
-
-func _makeIcaPacket(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
+func makeIcaPacketPartial(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
 	return func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
 		data, err := icatypes.SerializeCosmosTx(cdc, []sdk.Msg{msg})
 		require.NoError(t, err)
@@ -31,6 +27,25 @@ func _makeIcaPacket(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icatypes.In
 			Type: icatypes.EXECUTE_TX,
 			Data: data,
 		}
+	}
+}
+
+func makeEmptyIcaPacketPartial(t *testing.T, cdc codec.Codec) func() icatypes.InterchainAccountPacketData {
+	return func() icatypes.InterchainAccountPacketData {
+		data, err := icatypes.SerializeCosmosTx(cdc, []sdk.Msg{})
+		require.NoError(t, err)
+
+		return icatypes.InterchainAccountPacketData{
+			Type: icatypes.EXECUTE_TX,
+			Data: data,
+		}
+	}
+}
+
+func makeInvalidIcaPacket() icatypes.InterchainAccountPacketData {
+	return icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: []byte("invalid"),
 	}
 }
 
@@ -56,6 +71,10 @@ func makeAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowle
 // 	return channeltypes.NewErrorAcknowledgement(errorStr)
 // }
 
+func makeInvalidAck() channeltypes.Acknowledgement {
+	return channeltypes.NewResultAcknowledgement([]byte("invalid"))
+}
+
 func TestParseAck(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -65,16 +84,15 @@ func TestParseAck(t *testing.T) {
 		errorStr string
 	}{
 		{
-			name: "valid",
-			ack:  makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
-			// ack: mustB64DecodeString(t, "Ci0KKy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dDcmVhdGVCYWxhbmNlclBvb2w="),
+			name:     "valid",
+			ack:      makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "",
 		},
 		{
 			name:     "invalid ack bytes",
-			ack:      channeltypes.NewResultAcknowledgement([]byte("test")),
+			ack:      makeInvalidAck(),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "cannot unmarshall ICA acknowledgement",
@@ -99,7 +117,9 @@ func TestParseAck(t *testing.T) {
 func TestHandleIcaAcknowledgement(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
-	makeIcaPacket := _makeIcaPacket(t, setup.Cdc)
+	makeIcaPacket := makeIcaPacketPartial(t, setup.Cdc)
+	makeEmptyIcaPacket := makeEmptyIcaPacketPartial(t, setup.Cdc)
+	tstSeq := uint64(42)
 
 	var called bool
 	testCases := []struct {
@@ -111,29 +131,80 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		errorStr  string
 	}{
 		{
-			name:      "valid",
-			seq:       uint64(42),
-			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
-			ack:       makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			name:      "valid MsgTransfer",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
+			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup: func() {
-				called = false
-				k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
+				k.Hooks.Osmosis.AddHooksAckMsgTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) {
 					called = true
+					require.Equal(t, tstSeq, e.Sequence)
 				})
 			},
 			errorStr: "",
 		},
 		{
-			name:      "invalid acknowledgement",
-			seq:       uint64(42),
+			name:      "valid MsgCreateBalancerPool",
+			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
-			ack:       channeltypes.NewResultAcknowledgement([]byte("test")),
+			ack:       makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(c sdk.Context, e types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
+			ack:       makeAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "invalid ica packet",
+			seq:       tstSeq,
+			icaPacket: makeInvalidIcaPacket(),
+			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			setup:     func() {},
+			errorStr:  "cannot deserialize packet data",
+		},
+		{
+			name:      "empty ica packet",
+			seq:       tstSeq,
+			icaPacket: makeEmptyIcaPacket(),
+			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			setup:     func() {},
+			errorStr:  "expected single message in packet",
+		},
+		{
+			name:      "invalid ack bytes",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
+			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "cannot parse acknowledgement",
+		},
+		{
+			name:      "unsupported packet type",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
+			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			setup:     func() {},
+			errorStr:  "unsupported packet type",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			called = false
 			tc.setup()
 			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.icaPacket, tc.ack)
 
