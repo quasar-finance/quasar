@@ -49,27 +49,38 @@ func makeInvalidIcaPacket() icatypes.InterchainAccountPacketData {
 	}
 }
 
-func makeAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
-	resData, err := proto.Marshal(res)
-	require.NoError(t, err)
+func makeAckRawData(t *testing.T, req sdk.Msg, raw []byte) channeltypes.Acknowledgement {
+	var msgData *sdk.TxMsgData
 
-	txMsgData := &sdk.TxMsgData{
-		Data: []*sdk.MsgData{
-			{
-				MsgType: sdk.MsgTypeURL(req),
-				Data:    resData,
+	if raw == nil {
+		msgData = &sdk.TxMsgData{}
+	} else {
+		msgData = &sdk.TxMsgData{
+			Data: []*sdk.MsgData{
+				{
+					MsgType: sdk.MsgTypeURL(req),
+					Data:    raw,
+				},
 			},
-		},
+		}
 	}
-	ackData, err := proto.Marshal(txMsgData)
+
+	ackData, err := proto.Marshal(msgData)
 	require.NoError(t, err)
 
 	return channeltypes.NewResultAcknowledgement(ackData)
 }
 
-// func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
-// 	return channeltypes.NewErrorAcknowledgement(errorStr)
-// }
+func makeAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
+	resData, err := proto.Marshal(res)
+	require.NoError(t, err)
+
+	return makeAckRawData(t, req, resData)
+}
+
+func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
+	return channeltypes.NewErrorAcknowledgement(errorStr)
+}
 
 func makeInvalidAck() channeltypes.Acknowledgement {
 	return channeltypes.NewResultAcknowledgement([]byte("invalid"))
@@ -96,6 +107,20 @@ func TestParseAck(t *testing.T) {
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "cannot unmarshall ICA acknowledgement",
+		},
+		{
+			name:     "invalid ack message bytes",
+			ack:      makeAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, []byte("invalid")),
+			req:      &gammbalancer.MsgCreateBalancerPool{},
+			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
+			errorStr: "cannot unmarshall ICA acknowledgement",
+		},
+		{
+			name:     "invalid ack no message",
+			ack:      makeAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, nil),
+			req:      &gammbalancer.MsgCreateBalancerPool{},
+			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
+			errorStr: "only single msg acks are supported",
 		},
 	}
 	for _, tc := range testCases {
@@ -139,6 +164,21 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 				k.Hooks.Osmosis.AddHooksAckMsgTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgTransfer with error ack",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
+			ack:       makeErrorAck(t, "test error"),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+					require.Equal(t, "test error", e.Error)
+					require.True(t, e.HasError())
 				})
 			},
 			errorStr: "",

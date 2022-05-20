@@ -163,37 +163,34 @@ func (k *Keeper) HandleIcaTimeout(
 // Spec doc:
 // https://github.com/cosmos/ibc-go/blob/main/docs/apps/interchain-accounts/auth-modules.md#onacknowledgementpacket
 func ParseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
+	var err error
+
 	if ack.GetError() != "" {
 		return nil
 	}
 
 	txMsgData := &sdk.TxMsgData{}
-	err := proto.Unmarshal(ack.GetResult(), txMsgData)
+	err = proto.Unmarshal(ack.GetResult(), txMsgData)
 	if err != nil {
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 
-	switch len(txMsgData.Data) {
-	case 0:
-		// see documentation below for SDK 0.46.x or greater
-		return errors.New("currently unsupported operation")
-	default:
-		if len(txMsgData.Data) != 1 {
-			return errors.New("only single msg acks are supported")
-		}
-
-		msgData := txMsgData.Data[0]
-		msgType := msgData.GetMsgType()
-
-		if msgType != sdk.MsgTypeURL(request) {
-			return errors.New("ack response does not match request")
-		}
-
-		err := proto.Unmarshal(msgData.Data, response)
-		if err != nil {
-			return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
-		}
-
-		return nil
+	// see documentation below for SDK 0.46.x or greater as Data will MsgData will be empty (new field added)
+	if len(txMsgData.Data) != 1 {
+		return errors.New("only single msg acks are supported")
 	}
+
+	msgData := txMsgData.Data[0]
+	msgType := msgData.GetMsgType()
+
+	if msgType != sdk.MsgTypeURL(request) {
+		return errors.New("ack response does not match request")
+	}
+
+	err = proto.Unmarshal(msgData.Data, response)
+	if err != nil {
+		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
+	}
+
+	return nil
 }
