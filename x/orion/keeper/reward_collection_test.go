@@ -81,7 +81,10 @@ func TestDeductPerformanceFee(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setup := testutil.NewTestSetup(t)
 			ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
-			k.BankKeeper.MintCoins(ctx, types.CreateOrionRewardGloablMaccName(), tt.profits)
+			mintErr := k.BankKeeper.MintCoins(ctx, types.CreateOrionRewardGloablMaccName(), tt.profits)
+			if mintErr != nil {
+				panic(mintErr)
+			}
 			oldRewardBalance := k.GetAllGlobalRewardBalances(ctx)
 			oldPerfFeeBalance := k.GetFeeCollectorBalances(ctx, types.PerfFeeCollectorMaccName)
 			fee, err := k.DeductPerformanceFee(ctx, tt.profits)
