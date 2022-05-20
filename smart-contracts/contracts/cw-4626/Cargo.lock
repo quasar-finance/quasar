@@ -203,8 +203,10 @@ dependencies = [
  "cw-utils",
  "cw2",
  "cw20",
+ "quasar-traits",
  "schemars",
  "serde",
+ "share-distributor",
  "thiserror",
 ]
 
@@ -404,6 +406,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quasar-traits"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw20",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -546,6 +556,15 @@ dependencies = [
  "cpufeatures",
  "digest",
  "opaque-debug",
+]
+
+[[package]]
+name = "share-distributor"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw20",
+ "quasar-traits",
 ]
 
 [[package]]

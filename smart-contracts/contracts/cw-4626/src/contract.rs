@@ -10,17 +10,19 @@ use cw20::{
     MarketingInfoResponse, MinterResponse, TokenInfoResponse,
 };
 
+use share_distributor::single_token::SingleToken;
+
 use crate::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
 use crate::enumerable::{query_all_accounts, query_all_allowances};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse};
-use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO, VaultInfo, VAULT_INFO};
+use crate::msg::{ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse};
+use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO, VaultInfo, VAULT_INFO, VAULT_DISTRIBUTOR};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw20-base"; // TODO change contract name
+const CONTRACT_NAME: &str = "crates.io:cw-4626"; // TODO change contract name
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const LOGO_SIZE_CAP: usize = 5 * 1024;
@@ -115,7 +117,11 @@ pub fn instantiate(
 
     // set cw-20 token whitelist
     let vault_whitelist = msg.whitelisted_tokens;
-    VAULT_INFO.save(deps.storage, &VaultInfo { vault_whitelist })?;
+    // set the share distributor of the vault to the single token distributor
+    let vault_distributor = SingleToken;
+    VAULT_INFO.save(deps.storage, &VaultInfo { vault_whitelist, vault_distributor })?;
+
+
 
     // store token info
     let data = TokenInfo {
@@ -495,7 +501,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
         QueryMsg::Asset { .. } => {todo!()}
         QueryMsg::TotalAssets { .. } => {todo!()}
-        QueryMsg::ConvertToShares { .. } => {todo!()}
+        QueryMsg::ConvertToShares { assets } => {&query_convert_to_shares(assets)}
         QueryMsg::ConvertToAssets { .. } => {todo!()}
         QueryMsg::MaxDeposit { .. } => {todo!()}
         QueryMsg::PreviewDeposit { .. } => {todo!()}
@@ -515,6 +521,14 @@ pub fn query_balance(deps: Deps, address: String) -> StdResult<BalanceResponse> 
         .may_load(deps.storage, &address)?
         .unwrap_or_default();
     Ok(BalanceResponse { balance })
+}
+
+pub fn query_convert_to_shares(deps: Deps, assets: Vec<Cw20Coin>) -> StdResult<ConvertToSharesResponse> {
+    // get the distributor from the state
+    let dist = VAULT_INFO.load(deps.storage)?.vault_distributor;
+    // decide on how many shares one would get
+    // TODO get the current amount of assets from the state
+    dist.deposit_funds(assets, )
 }
 
 pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
