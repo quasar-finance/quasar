@@ -94,7 +94,7 @@ mod tests {
         // Here we see why this is a bad implementation, we can deposit funds at some state, and not
         // get the same amount of shares when we withdraw funds at that same state
         let shares = dist.deposit_funds(&funds, &state).unwrap();
-        assert_eq!(shares, Uint128::new(200));
+        assert_eq!(shares, Uint128::new(201));
         let withdraw = dist.withdraw_funds(&shares, &state).unwrap();
         assert_ne!(withdraw, funds)
     }
