@@ -74,51 +74,82 @@ func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) (sdk.Coins, error
 
 // RewardDistribution implements the reward distribution to users
 func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
-	lpIds := k.GetActiveLpIDList(ctx, epochDay)
 	rc, found := k.GetRewardCollection(ctx, epochDay)
 
 	if !found {
 		return fmt.Errorf("rewards not yet collected for epoch day %v", epochDay)
 	}
 
-	// Deduce the performance fees for each denom
-	var perFees sdk.Coins
-	for _, c := range rc.Coins {
-		perFees = perFees.Add(k.CalcPerFee(ctx, c))
-	}
-	// rc.Coins to be used for further reward distribution so needs to be subtracted by perFees
-	rc.Coins = rc.Coins.Sub(perFees)
-	err := k.DeductVaultFees(ctx, types.CreateOrionRewardGloablMaccName(), types.PerfFeeCollectorMaccName, perFees)
+	perFees, err := k.DeductPerformanceFee(ctx, rc.Coins)
 	if err != nil {
 		// TODO recheck error handling
 		return err
 	}
+	// rc.Coins to be used for further reward distribution so needs to be subtracted by perFees
+	rc.Coins = rc.Coins.Sub(perFees)
 
-	denomActualReward := make(map[string]sdk.Coins) // AUDIT TODO
-	totalLPV := sdk.NewCoins()                      // Total LP in deployment
+	totalLPV := k.CalculateTotalLPV(ctx, epochDay) // Total LP in deployment
 
+	denomActualReward, err := k.CalculateActualRewardForEachDenom(ctx, totalLPV, rc.Coins)
+	if err != nil {
+		return err
+	}
+
+	uim := k.CalculateUserRewards(ctx, totalLPV, denomActualReward)
+
+	for userAcc, ui := range uim {
+		k.qbankKeeper.AddUserClaimRewards(ctx, userAcc, types.ModuleName, ui.TotalReward)
+	}
+
+	return nil
+}
+
+// DeductPerformanceFee calculates the performance fee and deducts it from the profits.
+func (k Keeper) DeductPerformanceFee(ctx sdk.Context, profits sdk.Coins) (sdk.Coins, error) {
+	perFees := k.CalculatePerformanceFeeForCoins(ctx, profits)
+	err := k.DeductVaultFees(ctx, types.CreateOrionRewardGloablMaccName(), types.PerfFeeCollectorMaccName, perFees)
+	return perFees, err
+}
+
+// CalculateTotalLPV calculates the total liquidity provided to the vault that are active on the given epochDay.
+func (k Keeper) CalculateTotalLPV(ctx sdk.Context, epochDay uint64) sdk.Coins {
+	lpIds := k.GetActiveLpIDList(ctx, epochDay)
+	totalLPV := sdk.NewCoins() // Total LP in deployment
 	// Preparing totalLPV
 	for _, lpId := range lpIds {
 		lpDay, _ := k.GetLPEpochDay(ctx, lpId)
 		lp, _ := k.GetLpPosition(ctx, lpDay, lpId)
 		totalLPV = totalLPV.Add(lp.Coins...)
 	} // lpIds loop
+	return totalLPV
+}
 
+// CalculateActualRewardForEachDenom calculates the share of each denom from the rewards.
+// The share of each denom from the rewards is the same as its share of fiat value from the totalLPV.
+// Fiat value is computed for the present time.
+// The totalLPV is the the total liquidity provided to the vault that are active on the given epochDay.
+func (k Keeper) CalculateActualRewardForEachDenom(ctx sdk.Context, totalLPV, netRewards sdk.Coins) (map[string]sdk.Coins, error) {
+	denomActualReward := make(map[string]sdk.Coins)
 	// Fill the denomActualRewardMap
 	totalEquivalentReceipt, err := k.GetTotalOrions(ctx, totalLPV)
 	if err != nil {
-		// TODO recheck error handling
-		return err
+		return denomActualReward, err
 	}
 	for _, coin := range totalLPV {
 		equivalentReceipt, err := k.CalcReceipts(ctx, coin)
 		if err != nil {
-			// TODO recheck error handling
-			return err
+			return denomActualReward, err
 		}
 		weight := equivalentReceipt.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
-		denomActualReward[coin.Denom], _ = sdk.NewDecCoinsFromCoins(rc.Coins...).MulDec(weight).TruncateDecimal()
+		denomActualReward[coin.Denom], _ = sdk.NewDecCoinsFromCoins(netRewards...).MulDec(weight).TruncateDecimal()
 	}
+	return denomActualReward, nil
+}
+
+// CalculateUserRewards calculates the rewards for each user.
+// It uses a map of denoms denoting the total rewards for each denom and multiplies that by the
+// user's share of that denom (relative to totalLPV).
+func (k Keeper) CalculateUserRewards(ctx sdk.Context, totalLPV sdk.Coins, denomActualReward map[string]sdk.Coins) types.UserInfoMap {
 	//////////////////////////////
 	// Get users denom reward
 	// Note - This iteration is happening qbank module keeper.
@@ -157,10 +188,5 @@ func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
 		elem.DenomMap[denom] = udi
 		uim[userAcc] = elem
 	}
-
-	for userAcc, ui := range uim {
-		k.qbankKeeper.AddUserClaimRewards(ctx, userAcc, types.ModuleName, ui.TotalReward)
-	}
-
-	return nil
+	return uim
 }

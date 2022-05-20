@@ -95,6 +95,14 @@ func (k Keeper) CalcPerFee(ctx sdk.Context, profit sdk.Coin) sdk.Coin {
 	return sdk.NewCoin(profit.GetDenom(), feeAmt)
 }
 
+// CalculatePerformanceFeeForCoins is called by RewardDistribution.
+// It calculates vault performance fee.
+func (k Keeper) CalculatePerformanceFeeForCoins(ctx sdk.Context, profit sdk.Coins) sdk.Coins {
+	factor := k.PerfFeePer(ctx)
+	feeAmt, _ := sdk.NewDecCoinsFromCoins(profit...).MulDec(factor).TruncateDecimal()
+	return feeAmt
+}
+
 // CalcMgmtFee Calculate the management fee.
 func (k Keeper) CalcMgmtFee(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	factor := k.MgmtFeePer(ctx)
