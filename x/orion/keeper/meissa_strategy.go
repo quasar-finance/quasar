@@ -242,6 +242,27 @@ func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool
 	}
 }
 
+// OnJoinPoolAck -
+// 1. Get LP position from input seq number
+// 2. If ack has err then
+// 	  set the status as failed.
+//    and failed lp will be handled in the audit method
+// 3. If ack is successful then
+//    set the status as JOINED
+func (k Keeper) OnJoinPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
+
+	if err != nil {
+	}
+}
+
+// OnJoinPoolTimeout
+// 1. Get LP position from input seq number
+// 2. set the status as timedout.
+//    and timedout lp will be handled in the audit method
+func (k Keeper) OnJoinPoolTimeout(ctx sdk.Context, packetSeq uint64) {
+
+}
+
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
 // that are in the poolAssets as a sdk.Coins object
 func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, poolAssets []gammtypes.PoolAsset) (res sdk.Coins) {

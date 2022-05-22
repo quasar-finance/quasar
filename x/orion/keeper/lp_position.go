@@ -56,6 +56,8 @@ func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 	store.Set(byteKey, bz)
 }
 
+// SetSeqNumber sets the mapping of seq number and lpID.
+// Assumtion - A fixed value of channel and port will be used.
 func (k Keeper) SetSeqNumber(ctx sdk.Context, seqNumber uint64, lpId uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LpSeqKBP)
 	byteKey := types.CreateSeqKey(seqNumber)
