@@ -15,6 +15,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -240,6 +241,39 @@ func (k Keeper) TransmitForwardIbcTransfer(
 // {intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
 func buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver string) string {
 	return fmt.Sprintf("%s|%s/%s:%s", intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+}
+
+// Send method determin the routing logic for the coin from the caller.
+// Routing logic is based on the denom and destination chain.
+// Ex.
+// 1. If denom is ibc atom and dest chain is osmosis, multihop token xfer to osmosis via cosmos-hub.
+// 2. If denom is ibc osmos and dest chain is osmosis, do ibc token xfer to osmosis
+// It will get the details from the params for each whitelisted denoms
+// Send method also need to calculate the intermediate address
+func (k Keeper) Send(ctx sdk.Context,
+	coin sdk.Coin,
+	destinationChain string,
+	owner string,
+	destinationAddress string) (uint64, error) {
+
+	// TODO - Routing logic to be written here
+	// Assuming that it is ibc atom
+	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
+	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
+	return k.TransmitForwardIbcTransfer(ctx,
+		owner,
+		"connection-0",
+		connectionTimeout,
+		"transfer",
+		"channel-0",
+		coin,
+		"transfer",
+		"channel-0",
+		"cosmos<TODO>", // maybe we can have a dedicated cosmos-hub interchain account for orion.
+		destinationAddress,
+		transferTimeoutHeight,
+		connectionTimeout,
+	)
 }
 
 func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {

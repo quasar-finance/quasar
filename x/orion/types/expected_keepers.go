@@ -55,6 +55,12 @@ type QoracleKeeper interface {
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 
+	Send(ctx sdk.Context,
+		coin sdk.Coin,
+		destinationChain string,
+		owner string,
+		destinationAddress string) (uint64, error)
+
 	TransmitIbcCreatePool(
 		ctx sdk.Context,
 		owner string,
