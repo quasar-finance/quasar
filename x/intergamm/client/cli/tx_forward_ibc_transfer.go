@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +27,14 @@ func CmdForwardIbcTransfer() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			connectionId := args[0]
+			transferPort := args[1]
+			transferChannel := args[2]
+			fwdTransferPort := args[4]
+			fwdTransferChannel := args[5]
+			intermediateReceiver := args[6]
+			receiver := args[7]
 
 			coin, err := sdk.ParseCoinNormalized(args[3])
 			if err != nil {
@@ -49,15 +58,15 @@ func CmdForwardIbcTransfer() *cobra.Command {
 
 			msg := types.NewMsgForwardIbcTransfer(
 				clientCtx.GetFromAddress().String(),
-				args[0],
+				connectionId,
 				uint64(time.Now().Add(time.Hour).UnixNano()),
-				args[1],
-				args[2],
+				transferPort,
+				transferChannel,
 				coin,
-				args[4],
-				args[5],
-				args[6],
-				args[7],
+				fwdTransferPort,
+				fwdTransferChannel,
+				intermediateReceiver,
+				receiver,
 				timeoutHeight,
 				timeoutTimestamp,
 			)
@@ -68,8 +77,8 @@ func CmdForwardIbcTransfer() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flagPacketTimeoutHeight, "0-0", "Packet timeout block height. The timeout is disabled when set to 0-0.")
-	cmd.Flags().Uint64(flagPacketTimeoutTimestamp, uint64(time.Minute)*10, "Packet timeout timestamp in nanoseconds from now. Default is 10 minutes. The timeout is disabled when set to 0.")
+	cmd.Flags().String(flagPacketTimeoutHeight, transfertypes.DefaultRelativePacketTimeoutHeight, "Packet timeout block height. The timeout is disabled when set to 0-0.")
+	cmd.Flags().Uint64(flagPacketTimeoutTimestamp, transfertypes.DefaultRelativePacketTimeoutTimestamp, "Packet timeout timestamp in nanoseconds from now. Default is 10 minutes. The timeout is disabled when set to 0.")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

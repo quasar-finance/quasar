@@ -52,6 +52,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgTransferIbcTokens int = 100
 
+	opWeightMsgForwardTransferIbcTokens = "op_weight_msg_forward_transfer_ibc_tokens"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgForwardTransferIbcTokens int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -160,6 +164,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgTransferIbcTokens,
 		intergammsimulation.SimulateMsgTransferIbcTokens(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgForwardTransferIbcTokens int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgForwardTransferIbcTokens, &weightMsgForwardTransferIbcTokens, nil,
+		func(_ *rand.Rand) {
+			weightMsgForwardTransferIbcTokens = defaultWeightMsgForwardTransferIbcTokens
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgForwardTransferIbcTokens,
+		intergammsimulation.SimulateMsgForwardTransferIbcTokens(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

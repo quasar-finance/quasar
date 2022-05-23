@@ -275,13 +275,12 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 
 func (k Keeper) TransferIbcTokens(
 	ctx sdk.Context,
-	timeoutTimestamp uint64,
 	srcPort, srcChannel string,
 	token sdk.Coin,
 	sender sdk.AccAddress,
 	receiver string,
-	transferTimeoutHeight ibcclienttypes.Height,
-	transferTimeoutTimestamp uint64,
+	timeoutHeight ibcclienttypes.Height,
+	timeoutTimestamp uint64,
 ) error {
 	return k.ibcTransferKeeper.SendTransfer(
 		ctx,
@@ -290,7 +289,32 @@ func (k Keeper) TransferIbcTokens(
 		token,
 		sender,
 		receiver,
-		transferTimeoutHeight,
-		transferTimeoutTimestamp,
+		timeoutHeight,
+		timeoutTimestamp,
+	)
+}
+
+func (k Keeper) ForwardTransferIbcTokens(
+	ctx sdk.Context,
+	srcPort, srcChannel string,
+	token sdk.Coin,
+	sender sdk.AccAddress,
+	fwdTransferPort, fwdTransferChannel string,
+	intermediateReceiver string,
+	receiver string,
+	timeoutHeight ibcclienttypes.Height,
+	timeoutTimestamp uint64,
+) error {
+	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+
+	return k.ibcTransferKeeper.SendTransfer(
+		ctx,
+		srcPort,
+		srcChannel,
+		token,
+		sender,
+		fwdReceiver,
+		timeoutHeight,
+		timeoutTimestamp,
 	)
 }

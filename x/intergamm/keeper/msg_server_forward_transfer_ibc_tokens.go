@@ -7,15 +7,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (s msgServer) TransferIbcTokens(goCtx context.Context, msg *types.MsgTransferIbcTokens) (*types.MsgTransferIbcTokensResponse, error) {
+func (s msgServer) ForwardTransferIbcTokens(goCtx context.Context, msg *types.MsgForwardTransferIbcTokens) (*types.MsgForwardTransferIbcTokensResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if err := s.k.TransferIbcTokens(
+	if err := s.k.ForwardTransferIbcTokens(
 		ctx,
 		msg.SourcePort,
 		msg.SourceChannel,
 		msg.Token,
 		sdk.AccAddress(msg.Creator),
+		msg.ForwardTransferPort,
+		msg.ForwardTransferChannel,
+		msg.IntermediateReceiver,
 		msg.Receiver,
 		msg.TimeoutHeight,
 		msg.TimeoutTimestamp,
@@ -23,5 +26,5 @@ func (s msgServer) TransferIbcTokens(goCtx context.Context, msg *types.MsgTransf
 		return nil, err
 	}
 
-	return &types.MsgTransferIbcTokensResponse{}, nil
+	return &types.MsgForwardTransferIbcTokensResponse{}, nil
 }

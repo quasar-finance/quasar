@@ -17,6 +17,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgIbcTransfer{}, "intergamm/IbcTransfer", nil)
 	cdc.RegisterConcrete(&MsgForwardIbcTransfer{}, "intergamm/ForwardIbcTransfer", nil)
 	cdc.RegisterConcrete(&MsgTransferIbcTokens{}, "intergamm/TransferIbcTokens", nil)
+	cdc.RegisterConcrete(&MsgForwardTransferIbcTokens{}, "intergamm/ForwardTransferIbcTokens", nil)
 	// this line is used by starport scaffolding # 2
 
 	//
@@ -45,6 +46,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgTransferIbcTokens{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgForwardTransferIbcTokens{},
 	)
 	// this line is used by starport scaffolding # 3
 
