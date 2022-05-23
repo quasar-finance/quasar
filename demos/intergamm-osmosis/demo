@@ -94,7 +94,7 @@ init_relayer() {
 }
 
 ensure_relayer_started() {
-  while ! cat "$relayer_out_file" | grep "Hermes has started" ; do
+  while ! cat "$relayer_out_file" | grep "Hermes has started" >/dev/null 2>&1 ; do
     sleep 1
   done
 }
@@ -140,6 +140,19 @@ osmosisq() {
 osmosistx() {
   osmosis tx --from alice "$@"
 }
+
+ensure_all_started() {
+  start_all
+
+  sleep 20
+
+  run_in_terminal "$this_script" init_relayer
+
+  sleep 2
+
+  ensure_relayer_started
+}
+
 
 run_all() {
   start_all
