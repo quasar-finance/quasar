@@ -437,6 +437,7 @@ func New(
 		keys[intergammmoduletypes.MemStoreKey],
 		scopedIntergammKeeper,
 		app.ICAControllerKeeper,
+		app.TransferKeeper,
 		app.GetSubspace(intergammmoduletypes.ModuleName),
 	)
 	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)

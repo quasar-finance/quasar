@@ -30,6 +30,7 @@ PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x
 
 mocks: mkdirs
 	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
+	mockgen -package=mock -destination=./testutil/mock/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
 
 test:
 	go test -mod=readonly -v $(PACKAGES_UNIT)

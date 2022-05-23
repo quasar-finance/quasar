@@ -7,10 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k msgServer) ForwardIbcTransfer(goCtx context.Context, msg *types.MsgForwardIbcTransfer) (*types.MsgForwardIbcTransferResponse, error) {
+func (s msgServer) ForwardIbcTransfer(goCtx context.Context, msg *types.MsgForwardIbcTransfer) (*types.MsgForwardIbcTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.TransmitForwardIbcTransfer(ctx,
+	err := s.k.TransmitForwardIbcTransfer(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

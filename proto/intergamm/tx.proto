@@ -18,6 +18,7 @@ service Msg {
   rpc ExitPool(MsgExitPool) returns (MsgExitPoolResponse);
   rpc IbcTransfer(MsgIbcTransfer) returns (MsgIbcTransferResponse);
   rpc ForwardIbcTransfer(MsgForwardIbcTransfer) returns (MsgForwardIbcTransferResponse);
+  rpc TransferIbcTokens(MsgTransferIbcTokens) returns (MsgTransferIbcTokensResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -114,6 +115,20 @@ message MsgForwardIbcTransfer {
 }
 
 message MsgForwardIbcTransferResponse {
+}
+
+message MsgTransferIbcTokens {
+  string creator = 1;
+  string source_port = 2 [(gogoproto.moretags) = "yaml:\"source_port\""];
+  string source_channel = 3 [(gogoproto.moretags) = "yaml:\"source_channel\""];
+  cosmos.base.v1beta1.Coin token = 4 [(gogoproto.nullable) = false];
+  string receiver = 5;
+  ibc.core.client.v1.Height timeout_height = 6
+      [(gogoproto.moretags) = "yaml:\"timeout_height\"", (gogoproto.nullable) = false];
+  uint64 timeout_timestamp = 7 [(gogoproto.moretags) = "yaml:\"timeout_timestamp\""];
+}
+
+message MsgTransferIbcTokensResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

@@ -9,7 +9,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func (kf KeeperFactory) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilityKeeper capabilitykeeper.Keeper, icaControllerKeeper types.ICAControllerKeeper) *keeper.Keeper {
+func (kf KeeperFactory) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabilityKeeper capabilitykeeper.Keeper, icaControllerKeeper types.ICAControllerKeeper, transferKeeper types.IBCTransferKeeper) *keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
@@ -24,6 +24,7 @@ func (kf KeeperFactory) IntergammKeeper(paramsKeeper paramskeeper.Keeper, capabi
 		memStoreKey,
 		scopedKeeper,
 		icaControllerKeeper,
+		transferKeeper,
 		paramsSubspace,
 	)
 

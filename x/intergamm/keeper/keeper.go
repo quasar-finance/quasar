@@ -36,6 +36,7 @@ type Keeper struct {
 	memKey              sdk.StoreKey
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 	icaControllerKeeper types.ICAControllerKeeper
+	ibcTransferKeeper   types.IBCTransferKeeper
 	paramstore          paramtypes.Subspace
 
 	Hooks GammHooks
@@ -47,6 +48,7 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	iaKeeper types.ICAControllerKeeper,
+	transferKeeper types.IBCTransferKeeper,
 	ps paramtypes.Subspace,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -60,6 +62,7 @@ func NewKeeper(
 		memKey:              memKey,
 		scopedKeeper:        scopedKeeper,
 		icaControllerKeeper: iaKeeper,
+		ibcTransferKeeper:   transferKeeper,
 		paramstore:          ps,
 
 		Hooks: GammHooks{
@@ -268,4 +271,26 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
 	return nil
+}
+
+func (k Keeper) TransferIbcTokens(
+	ctx sdk.Context,
+	timeoutTimestamp uint64,
+	srcPort, srcChannel string,
+	token sdk.Coin,
+	sender sdk.AccAddress,
+	receiver string,
+	transferTimeoutHeight ibcclienttypes.Height,
+	transferTimeoutTimestamp uint64,
+) error {
+	return k.ibcTransferKeeper.SendTransfer(
+		ctx,
+		srcPort,
+		srcChannel,
+		token,
+		sender,
+		receiver,
+		transferTimeoutHeight,
+		transferTimeoutTimestamp,
+	)
 }
