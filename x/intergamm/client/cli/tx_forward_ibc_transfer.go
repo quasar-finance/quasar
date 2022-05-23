@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -61,6 +62,7 @@ func CmdForwardIbcTransfer() *cobra.Command {
 				timeoutHeight,
 				timeoutTimestamp,
 			)
+			fmt.Println(msg.String())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

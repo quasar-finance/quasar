@@ -90,7 +90,7 @@ host = '127.0.0.1'
 port = 3001
 
 [[chains]]
-id = 'quasar1'
+id = 'quasar'
 rpc_addr = 'http://127.0.0.1:26659'
 grpc_addr = 'http://127.0.0.1:9095'
 websocket_addr = 'ws://127.0.0.1:26659/websocket'
@@ -111,12 +111,12 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
-id = 'quasar2'
+id = 'cosmos'
 rpc_addr = 'http://127.0.0.1:26559'
 grpc_addr = 'http://127.0.0.1:9096'
 websocket_addr = 'ws://127.0.0.1:26559/websocket'
 rpc_timeout = '10s'
-account_prefix = 'quasar'
+account_prefix = 'cosmos'
 key_name = 'testkey2'
 store_prefix = 'ibc'
 default_gas = 100000
@@ -132,7 +132,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
-id = 'quasar3'
+id = 'osmosis'
 rpc_addr = 'http://127.0.0.1:26669'
 grpc_addr = 'http://127.0.0.1:9097'
 websocket_addr = 'ws://127.0.0.1:26669/websocket'
