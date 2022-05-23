@@ -197,7 +197,7 @@ func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response pro
 		return errors.New("ack response does not match request")
 	}
 
-	err = proto.Unmarshal(msgData.Data, response)
+	err = proto.Unmarshal(msgData.GetData(), response)
 	if err != nil {
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
