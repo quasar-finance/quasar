@@ -1,3 +1,5 @@
+//go:build !prod
+
 package cli
 
 import (
@@ -19,12 +21,16 @@ import (
 
 var _ = strconv.Itoa(0)
 
+func init() {
+	addCommand(CmdTestScenario())
+}
+
 func CmdTestScenario() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "test",
 		Short:   "Test an intergamm scenario",
 		Long:    `Must provide scenario name (--scenario)`,
-		Example: `test_1`,
+		Example: `testBasics`,
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
@@ -87,7 +93,6 @@ func CmdTestScenario() *cobra.Command {
 					return err
 				}
 
-				fmt.Println(res.GetExitCode())
 				fmt.Println(res.GetResult())
 
 				if res.GetExitCode() != 0 {

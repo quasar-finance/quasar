@@ -13,6 +13,23 @@ const (
 	flagPacketTimeoutTimestamp = "packet-timeout-timestamp"
 )
 
+var cmds []*cobra.Command
+
+func addCommand(cmd *cobra.Command) {
+	cmds = append(cmds, cmd)
+}
+
+func init() {
+	addCommand(CmdRegisterAccount())
+	addCommand(CmdCreatePool())
+	addCommand(CmdJoinPool())
+	addCommand(CmdExitPool())
+	addCommand(CmdIbcTransfer())
+	addCommand(CmdForwardIbcTransfer())
+	addCommand(CmdTransferIbcTokens())
+	addCommand(CmdForwardTransferIbcTokens())
+}
+
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,16 +39,7 @@ func GetTxCmd() *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
-
-	cmd.AddCommand(CmdTestScenario())
-	cmd.AddCommand(CmdRegisterAccount())
-	cmd.AddCommand(CmdCreatePool())
-	cmd.AddCommand(CmdJoinPool())
-	cmd.AddCommand(CmdExitPool())
-	cmd.AddCommand(CmdIbcTransfer())
-	cmd.AddCommand(CmdForwardIbcTransfer())
-	cmd.AddCommand(CmdTransferIbcTokens())
-	cmd.AddCommand(CmdForwardTransferIbcTokens())
+	cmd.AddCommand(cmds...)
 	// this line is used by starport scaffolding # 1
 
 	return cmd
