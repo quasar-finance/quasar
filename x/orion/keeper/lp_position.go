@@ -66,8 +66,23 @@ func (k Keeper) SetSeqNumber(ctx sdk.Context, seqNumber uint64, lpId uint64) {
 	store.Set(byteKey, bz)
 }
 
+func (k *Keeper) GetLpPositionFromSeqNumber(ctx sdk.Context, seqNumber uint64) (types.LpPosition, error) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LpSeqKBP)
+	byteKey := types.CreateSeqKey(seqNumber)
+	bz := store.Get(byteKey)
+	if bz == nil {
+		return types.LpPosition{}, fmt.Errorf("seq number %d not found", seqNumber)
+	}
+	lpID := binary.BigEndian.Uint64(bz)
+	lp, ok := k.GetLpIdPosition(ctx, lpID)
+	if !ok {
+		return types.LpPosition{}, fmt.Errorf("lpID %d not found in kv store for seq number %d", lpID, seqNumber)
+	}
+	return lp, nil
+}
+
 // AddNewLPPosition update the LP ID of the newly created lp and set the position data in the KV store.
-func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
+func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) uint64 {
 	count := k.GetLPCount(ctx)
 	lps, _ := k.GetLpStat(ctx, lpPosition.BondingStartEpochDay)
 	lpPosition.LpID = count + 1   // Global count
@@ -86,7 +101,7 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 		k.SetEpochDenom(ctx, lpPosition.BondingStartEpochDay, coin.Denom)
 	}
 	k.setLPCount(ctx, lpPosition.LpID)
-	k.SetSeqNumber(ctx, lpPosition.SeqNo, lpPosition.LpID)
+	return lpPosition.LpID
 }
 
 // SetLpPosition set lpPosition created by the strategy in a given epochday in the

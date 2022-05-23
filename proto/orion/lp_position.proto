@@ -40,12 +40,14 @@ message GaugeLockInfo {
 enum LpState {
   INIT = 0;
   JOINING = 1;
-  JOIN_FAILED = 2;
-  JOINING_TIMEOUT = 3;
-  EXITING = 4;
-  EXIT_FAILED = 5;
-  EXITING_TIMEOUT = 6;
-  SETTLED = 7;
+  JOINED = 2;
+  JOIN_FAILED = 3;
+  JOINING_TIMEOUT = 4;
+  EXITING = 5;
+  EXITED = 6;
+  EXIT_FAILED = 7;
+  EXITING_TIMEOUT = 8;
+  SETTLED = 9;
 }
 // LpPosition is used by the strategy during the the Lping activity. 
 // Whenever orion module creates an LP position; an object of LpPosition will be created 

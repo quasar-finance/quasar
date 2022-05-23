@@ -11,6 +11,9 @@ import (
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
+	// For initial testing use alice address -
+	return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
+
 	accAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	accStr, err := sdk.Bech32ifyAddressBytes("quasar", accAddr)
 	if err != nil {
@@ -22,7 +25,8 @@ func (k Keeper) getOwnerAccStr() string {
 func (k Keeper) getDestinationAccStr() string {
 
 	// TODO - Call interchain account getter from the intergamm module
-	return "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
+	return "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" // alice on osmosis
+	// return "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
@@ -41,10 +45,8 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		poolID, shareOutAmount, tokenInMaxs))
 
 	owner := k.getOwnerAccStr()
-
 	connectionId := k.getConnectionId("osmosis")
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-
 	packetSeq, err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
 		owner,
@@ -54,7 +56,6 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		shareOutAmount,
 		tokenInMaxs,
 	)
-
 	return packetSeq, err
 }
 
@@ -65,7 +66,6 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 	owner := k.getOwnerAccStr()
 	connectionId := k.getConnectionId("osmosis")
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-
 	_, err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
 		owner,
@@ -75,7 +75,6 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 		shareInAmount,
 		tokenOutMins,
 	)
-
 	return err
 }
 
@@ -97,7 +96,6 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) {
 		"osmosis",
 		owner,
 		destAccStr)
-
 	k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
 }
 

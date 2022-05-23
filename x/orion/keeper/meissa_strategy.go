@@ -107,72 +107,73 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
 	poolIDs := k.getAPYRankedPools(ctx)
-
 	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolIds=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
-
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
 		poolInfo := k.getPoolInfo(ctx, poolID)
 		poolShareDenom := poolInfo.Info.TotalShares.Denom
-
 		poolAssets := k.getPoolAssets(ctx, poolID)
+
 		if len(poolAssets) != 2 {
 			// Initially strategy want to LP only in the pool with 2 assets
 			continue
 		}
 
 		poolTotalShare := k.getTotalShare(ctx, poolID)
+
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
 			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, poolAssets))
 
 		maxAvailableTokens := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, poolAssets)
-		// calculate shareout amount based on the max available tokens
 		shareOutAmount, err := ComputeShareOutAmount(poolTotalShare.Amount, poolAssets, maxAvailableTokens)
 		if err != nil {
 			continue
 		}
+
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v\n",
 			shareOutAmount))
 
-		// Compute needed coins for the calculated shareout amount
 		coins, err := ComputeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
 		if err != nil {
 			continue
 		}
 
-		err = k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
-		if err != nil {
-			return err
-		}
-		// TODO | AUDIT
-		//  1. Call Intergamm IBC token transfer from  OrionStakingMaccName
-		//  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
+		// AUDIT TODO - Cross validation if funds are available in AvailableInterchainFundKBP
 
 		if shareOutAmount.IsPositive() {
-			// Call Intergamm Add Liquidity Method
 			packetSeq, err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
 			if err != nil {
 				return err
 			}
-
-			// This should be called on ack
-			k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
-
-			bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
-			bondingStartEpochDay := epochDay
-			unbondingStartEpochDay := bondingStartEpochDay + bonding
-			var lockupID uint64
-			lpTokens := sdk.NewCoin(poolShareDenom, shareOutAmount)
-			lp := k.NewLP(lockupID, bondingStartEpochDay, bonding,
-				unbondingStartEpochDay, unbonding, poolID,
-				types.LpState_JOINING, lpTokens, coins)
-			lp.SeqNo = packetSeq
-			k.AddNewLPPosition(ctx, lp)
+			k.OnJoinSend(ctx, packetSeq, epochDay, poolID, poolShareDenom, coins, shareOutAmount, lockupType)
+			k.SubAvailableInterchainFund(ctx, coins)
 		}
 	}
-
 	return nil
+}
+
+func (k Keeper) OnJoinSend(ctx sdk.Context,
+	packetSeq uint64,
+	epochDay uint64,
+	poolID uint64,
+	poolShareDenom string,
+	coins sdk.Coins,
+	shareOutAmount sdk.Int,
+	lockupType qbanktypes.LockupTypes) {
+	k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
+
+	bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
+	bondingStartEpochDay := epochDay
+	unbondingStartEpochDay := bondingStartEpochDay + bonding
+	var lockupID uint64
+	lpTokens := sdk.NewCoin(poolShareDenom, shareOutAmount)
+	lp := k.NewLP(lockupID, bondingStartEpochDay, bonding,
+		unbondingStartEpochDay, unbonding, poolID,
+		types.LpState_JOINING, lpTokens, coins)
+	lp.SeqNo = packetSeq
+	lpID := k.AddNewLPPosition(ctx, lp)
+	k.SetSeqNumber(ctx, lp.SeqNo, lpID)
 }
 
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
@@ -213,15 +214,6 @@ func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []
 		res = res.Add(sdk.NewCoin(asset.Token.GetDenom(), shareOutAmount.Mul(asset.Token.Amount).Quo(totalSharesAmount)))
 	}
 	return res, nil
-}
-
-// CalcUsersLPWeight calculate users deposited coin1 and coin2 amount for this epochday.
-// Calculate percentage of users weight
-// Logic -
-// 1. Get the list of users and their deposited fund on the given epochday from bank module kv store.
-// 2.
-func (k Keeper) CalcUsersLPWeight(lp types.LpPosition) {
-
 }
 
 // GetLPBondingUnbondingPeriod does the Lockup period to LP bonding-unbonding logic.

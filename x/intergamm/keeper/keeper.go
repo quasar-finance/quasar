@@ -269,7 +269,7 @@ func (k Keeper) Send(ctx sdk.Context,
 		coin,
 		"transfer",
 		"channel-0",
-		"cosmos<TODO>", // maybe we can have a dedicated cosmos-hub interchain account for orion.
+		"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // alice on hub, maybe we can have a dedicated cosmos-hub interchain account for orion.
 		destinationAddress,
 		transferTimeoutHeight,
 		connectionTimeout,
