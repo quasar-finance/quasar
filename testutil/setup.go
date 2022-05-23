@@ -129,6 +129,6 @@ type testKeepers struct {
 	CapabilityKeeper capabilitykeeper.Keeper
 	QbankKeeper      qbankkeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
-	InterGammKeeper  intergammkeeper.Keeper
+	InterGammKeeper  *intergammkeeper.Keeper
 	OrionKeeper      orionkeeper.Keeper
 }

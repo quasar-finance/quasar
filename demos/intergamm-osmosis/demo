@@ -6,6 +6,7 @@ project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project d
 this_dir="${project_dir}/demos/intergamm-osmosis"
 this_script="${this_dir}/$(basename "${0}")"
 run_dir="${this_dir}/run"
+relayer_out_file="${run_dir}/relayer.out"
 reset_run="${RESET:-true}"
 
 fail() {
@@ -26,6 +27,12 @@ for v in os.environ:
   data = data.replace("${%s}" % v, os.environ[v])
 sys.stdout.write(data) ; sys.stdout.flush()
 '
+}
+
+do_until_success() {
+  while ! "$@" ; do
+    sleep 1
+  done
 }
 
 # TODO make macos / darwin version of this
@@ -80,11 +87,16 @@ init_relayer() {
     # Alice on osmosis
     hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
 
-    hermes -c hermes.toml create connection "quasar" "osmosis"
-    hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+    do_until_success hermes -c hermes.toml create connection "quasar" "osmosis"
+    do_until_success hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+    do_until_success hermes -c hermes.toml start
+  ) 2>&1 | tee "$relayer_out_file"
+}
 
-    hermes -c hermes.toml start
-  )
+ensure_relayer_started() {
+  while ! cat "$relayer_out_file" | grep "Hermes has started" ; do
+    sleep 1
+  done
 }
 
 fund_host_ica() {
@@ -127,6 +139,28 @@ osmosisq() {
 
 osmosistx() {
   osmosis tx --from alice "$@"
+}
+
+run_all() {
+  start_all
+
+  sleep 20
+
+  run_in_terminal "$this_script" init_relayer
+
+  sleep 2
+
+  ensure_relayer_started
+
+  do_until_success quasartx intergamm register-account connection-0 -y
+
+  do_until_success quasarq intergamm interchain-account-from-address connection-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+
+  fund_host_ica
+
+  sleep 2
+
+  quasartx intergamm create-pool --data-file create-pool.json
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"

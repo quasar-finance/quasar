@@ -270,7 +270,7 @@ type App struct {
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	IntergammKeeper     intergammmodulekeeper.Keeper
+	IntergammKeeper     *intergammmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -484,10 +484,37 @@ func New(
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			// TODO insert epoch hooks receivers here
-			app.QbankKeeper.Hooks(),
-			app.OrionKeeper.Hooks(),
+			app.QbankKeeper.EpochHooks(),
+			app.OrionKeeper.EpochHooks(),
 		),
+	)
+
+	// Set Intergamm ack hooks
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgTransfer(
+		app.OrionKeeper.HandleAckMsgTransfer,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(
+		app.OrionKeeper.HandleAckMsgCreateBalancerPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinPool(
+		app.OrionKeeper.HandleAckMsgJoinPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
+		app.OrionKeeper.HandleAckMsgExitPool,
+	)
+
+	// Set Intergamm timeout hooks
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgTransfer(
+		app.OrionKeeper.HandleTimeoutMsgTransfer,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
+		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(
+		app.OrionKeeper.HandleTimeoutMsgJoinPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(
+		app.OrionKeeper.HandleTimeoutMsgExitPool,
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

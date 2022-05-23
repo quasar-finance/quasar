@@ -8,6 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func setupMsgServer(ctx sdk.Context, k keeper.Keeper) (types.MsgServer, context.Context) {
+func setupMsgServer(ctx sdk.Context, k *keeper.Keeper) (types.MsgServer, context.Context) {
 	return keeper.NewMsgServerImpl(k), sdk.WrapSDKContext(ctx)
 }

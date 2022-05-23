@@ -26,6 +26,10 @@ var (
 	DefaultSendTxRelativeTimeoutTimestamp = ibctransfertypes.DefaultRelativePacketTimeoutTimestamp
 )
 
+type GammHooks struct {
+	Osmosis OsmosisHooks
+}
+
 type Keeper struct {
 	cdc                 codec.BinaryCodec
 	storeKey            sdk.StoreKey
@@ -33,6 +37,8 @@ type Keeper struct {
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	paramstore          paramtypes.Subspace
+
+	Hooks GammHooks
 }
 
 func NewKeeper(
@@ -42,20 +48,23 @@ func NewKeeper(
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	iaKeeper types.ICAControllerKeeper,
 	ps paramtypes.Subspace,
-
-) Keeper {
+) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	return &Keeper{
 		cdc:                 cdc,
 		storeKey:            storeKey,
 		memKey:              memKey,
 		scopedKeeper:        scopedKeeper,
 		icaControllerKeeper: iaKeeper,
 		paramstore:          ps,
+
+		Hooks: GammHooks{
+			Osmosis: OsmosisHooks{},
+		},
 	}
 }
 
@@ -244,16 +253,19 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	if err != nil {
 		return err
 	}
+
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
 	}
 
 	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
-	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
+	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
 		return err
 	}
+
+	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
 	return nil
 }
