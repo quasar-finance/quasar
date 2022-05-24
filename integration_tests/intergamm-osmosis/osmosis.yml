@@ -1,0 +1,43 @@
+version: 1
+accounts:
+  - name: alice
+    mnemonic: cruise scene law sea push expose scorpion wire trick repair wave quote task dose inner denial alpha favorite certain blouse motion flash split lunch
+    coins: ["100000000000000uosmo", "10000000stake", "100000000000000uakt", "100000000000000uatom"]
+  - name: bob
+    mnemonic: lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool
+    coins: ["100000000000000uosmo", "10000000stake"]
+  - name: relayer_acc
+    mnemonic: "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
+    coins: ["10000000stake"]
+validator:
+  name: alice
+  staked: "10000000stake"
+faucet:
+  host: ":4501"
+  name: bob
+  coins: ["100000000000000uosmo", "10000000stake"]
+host:
+  rpc: ":26559"
+  p2p: ":26662"
+  prof: ":6062"
+  grpc: ":9096"
+  grpc-web: ":8092"
+  api: ":1312"
+  frontend: ":8082"
+  dev-ui: ":12352"
+genesis:
+  chain_id: "osmosis"
+  app_state:
+    interchainaccounts:
+      host_genesis_state:
+        params:
+          allow_messages: [
+            "/ibc.applications.transfer.v1.MsgTransfer",
+            "/osmosis.gamm.v1beta1.MsgCreateBalancerPool",
+            "/osmosis.gamm.v1beta1.MsgJoinPool",
+            "/osmosis.gamm.v1beta1.MsgExitPool",
+          ]
+init:
+  home: "${home_dir}"
+build:
+  main: "cmd/osmosisd"
