@@ -86,9 +86,7 @@ func (k msgServer) ensureIcaRegistered(ctx sdk.Context, owner string, connection
 
 func (k msgServer) testRegisterIca(ctx sdk.Context) func(t *testing.T) {
 	return func(t *testing.T) {
-		var err error
-
-		err = k.ensureIcaRegistered(ctx, owner, connectionId)
+		err := k.ensureIcaRegistered(ctx, owner, connectionId)
 		require.NoError(t, err)
 	}
 }
@@ -258,12 +256,93 @@ func (k msgServer) testJoinPoolTimeoutChecks(ctx sdk.Context) func(t *testing.T)
 	}
 }
 
+func (k msgServer) testExitPool(ctx sdk.Context) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+			testHooksState["testExitPool_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+			testHooksState["testExitPool_hook2"] = true
+		})
+
+		poolId := uint64(1)
+		timestamp := uint64(99999999999999)
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
+		testCoins := joinPoolTestCoins()
+		require.True(t, ok)
+
+		err = k.TransmitIbcExitPool(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			shares,
+			testCoins,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func (k msgServer) testExitPoolChecks(ctx sdk.Context) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testExitPool_hook1"])
+		require.True(t, testHooksState["testExitPool_hook2"])
+	}
+}
+
+func (k msgServer) testExitPoolTimeout(ctx sdk.Context) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+			testHooksState["testExitPoolTimeout_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+			testHooksState["testExitPoolTimeout_hook2"] = true
+		})
+
+		poolId := uint64(1)
+		timestamp := uint64(99999999999999)
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
+		testCoins := joinPoolTestCoins()
+		require.True(t, ok)
+
+		// Replace timeout to trigger timeout hooks
+		tmpDefaultSendTxRelativeTimeoutTimestamp := DefaultSendTxRelativeTimeoutTimestamp
+		DefaultSendTxRelativeTimeoutTimestamp = uint64((time.Duration(200) * time.Millisecond).Nanoseconds())
+		defer func() {
+			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
+		}()
+
+		err = k.TransmitIbcExitPool(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			shares,
+			testCoins,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func (k msgServer) testExitPoolTimeoutChecks(ctx sdk.Context) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testExitPoolTimeout_hook1"])
+		require.True(t, testHooksState["testExitPoolTimeout_hook2"])
+	}
+}
+
 func (k msgServer) TestScenario(goCtx context.Context, msg *types.MsgTestScenario) (*types.MsgTestScenarioResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	ctx.Logger().Info("")
 	ctx.Logger().Info("Running test scenario", "scenario", msg.Scenario)
-	ctx.Logger().Info("")
 
 	f, ok := map[string]func(*testing.T){
 		"registerIca":             k.testRegisterIca(ctx),
@@ -275,6 +354,10 @@ func (k msgServer) TestScenario(goCtx context.Context, msg *types.MsgTestScenari
 		"joinPoolChecks":          k.testJoinPoolChecks(ctx),
 		"joinPoolTimeout":         k.testJoinPoolTimeout(ctx),
 		"joinPoolTimeoutChecks":   k.testJoinPoolTimeoutChecks(ctx),
+		"exitPool":                k.testExitPool(ctx),
+		"exitPoolChecks":          k.testExitPoolChecks(ctx),
+		"exitPoolTimeout":         k.testExitPoolTimeout(ctx),
+		"exitPoolTimeoutChecks":   k.testExitPoolTimeoutChecks(ctx),
 	}[msg.Scenario]
 
 	if !ok {

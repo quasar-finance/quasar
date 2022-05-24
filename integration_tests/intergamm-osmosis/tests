@@ -173,42 +173,62 @@ run() {
 
   # Create pool
 
-  echo "scenario: createPool"
+  echo "> scenario: createPool"
   quasartx intergamm test --scenario createPool -y
-  sleep 10
+  sleep 8
 
-  echo "scenario: createPoolChecks"
+  echo "> scenario: createPoolChecks"
   quasartx intergamm test --scenario createPoolChecks -y
 
-  echo "scenario: createPoolTimeout"
+  echo "> scenario: createPoolTimeout"
   quasartx intergamm test --scenario setup -y
-  sleep 10
+  sleep 8
   quasartx intergamm test --scenario createPoolTimeout -y
-  sleep 10
+  sleep 8
 
-  echo "scenario: createPoolTimeoutChecks"
+  echo "> scenario: createPoolTimeoutChecks"
   quasartx intergamm test --scenario createPoolTimeoutChecks -y
 
 
   # Join pool
 
-  echo "scenario: joinPool"
+  echo "> scenario: joinPool"
   quasartx intergamm test --scenario setup -y
-  sleep 10
+  sleep 8
   quasartx intergamm test --scenario joinPool -y
-  sleep 10
+  sleep 8
 
-  echo "scenario: joinPoolChecks"
+  echo "> scenario: joinPoolChecks"
   quasartx intergamm test --scenario joinPoolChecks -y
 
-  echo "scenario: joinPoolTimeout"
+  echo "> scenario: joinPoolTimeout"
   quasartx intergamm test --scenario setup -y
-  sleep 10
+  sleep 8
   quasartx intergamm test --scenario joinPoolTimeout -y
-  sleep 10
+  sleep 8
 
-  echo "scenario: joinPoolTimeoutChecks"
+  echo "> scenario: joinPoolTimeoutChecks"
   quasartx intergamm test --scenario joinPoolTimeoutChecks -y
+
+  # Exit pool
+
+  echo "> scenario: exitPool"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitPool -y
+  sleep 8
+
+  echo "> scenario: exitPoolChecks"
+  quasartx intergamm test --scenario exitPoolChecks -y
+
+  echo "> scenario: exitPoolTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitPoolTimeout -y
+  sleep 8
+
+  echo "> scenario: exitPoolTimeoutChecks"
+  quasartx intergamm test --scenario exitPoolTimeoutChecks -y
 }
 
 "$@"

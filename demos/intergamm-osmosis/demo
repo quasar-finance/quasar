@@ -155,15 +155,7 @@ ensure_all_started() {
 
 
 run_all() {
-  start_all
-
-  sleep 20
-
-  run_in_terminal "$this_script" init_relayer
-
-  sleep 2
-
-  ensure_relayer_started
+  ensure_all_started
 
   do_until_success quasartx intergamm register-account connection-0 -y
 

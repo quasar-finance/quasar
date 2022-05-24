@@ -66,6 +66,21 @@ func (mr *MockICAControllerKeeperMockRecorder) GetInterchainAccountAddress(arg0,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInterchainAccountAddress", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetInterchainAccountAddress), arg0, arg1, arg2)
 }
 
+// GetOpenActiveChannel mocks base method.
+func (m *MockICAControllerKeeper) GetOpenActiveChannel(arg0 types.Context, arg1, arg2 string) (string, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOpenActiveChannel", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetOpenActiveChannel indicates an expected call of GetOpenActiveChannel.
+func (mr *MockICAControllerKeeperMockRecorder) GetOpenActiveChannel(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOpenActiveChannel", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetOpenActiveChannel), arg0, arg1, arg2)
+}
+
 // RegisterInterchainAccount mocks base method.
 func (m *MockICAControllerKeeper) RegisterInterchainAccount(arg0 types.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
