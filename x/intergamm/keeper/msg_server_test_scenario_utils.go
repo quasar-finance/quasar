@@ -1,3 +1,5 @@
+//go:build !prod
+
 package keeper
 
 import (
@@ -52,7 +54,10 @@ func captureTestOutput(f func() int) (string, int) {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, err := io.Copy(&buf, r)
+		if err != nil {
+			panic(err)
+		}
 		outC <- buf.String()
 	}()
 
