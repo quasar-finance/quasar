@@ -534,7 +534,7 @@ func New(
 
 	app.QbankKeeper = *qbankkeeper.SetDepositHooks(
 		qbankmoduletypes.NewMultiDepositHooks(
-			app.OrionKeeper.Hooks(),
+			app.OrionKeeper.QBankHooks(),
 		),
 	)
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
