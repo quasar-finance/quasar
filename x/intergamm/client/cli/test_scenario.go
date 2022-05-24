@@ -169,7 +169,7 @@ func CmdTestScenario() *cobra.Command {
 		Use:     "test",
 		Short:   "Test an intergamm scenario",
 		Long:    `Must provide scenario name (--scenario)`,
-		Example: `testBasics`,
+		Example: `createPool`,
 		Args:    cobra.ExactArgs(0),
 		RunE:    runCommand,
 	}
