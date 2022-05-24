@@ -8,14 +8,25 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
-// Intergamm Acknowledgement callbacks
+// Intergamm callbacks
 
-func (k Keeper) HandleAckMsgTransfer(
+// IBC
+
+func (k Keeper) HandleAckIbcTransfer(
 	ctx sdk.Context,
-	ex intergammtypes.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse],
+	ex intergammtypes.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *intergammtypes.MsgEmptyIbcResponse],
 ) {
-	k.Logger(ctx).Info("HandleAckMsgTransfer hook called", "error", ex.Error, "seq", ex.Sequence)
+	k.Logger(ctx).Info("HandleAckIbcTransfer hook called", "error", ex.Error, "seq", ex.Sequence)
 }
+
+func (k Keeper) HandleTimeoutIbcTransfer(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData],
+) {
+	k.Logger(ctx).Info("HandleTimeoutIbcTransfer hook called", "seq", ex.Sequence)
+}
+
+// ICA Osmosis
 
 func (k Keeper) HandleAckMsgCreateBalancerPool(
 	ctx sdk.Context,
@@ -36,15 +47,6 @@ func (k Keeper) HandleAckMsgExitPool(
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse],
 ) {
 	k.Logger(ctx).Info("HandleAckMsgExitPool hook called", "error", ex.Error, "seq", ex.Sequence)
-}
-
-// Intergamm Timeout callbacks
-
-func (k Keeper) HandleTimeoutMsgTransfer(
-	ctx sdk.Context,
-	ex intergammtypes.TimeoutExchange[*ibctransfertypes.MsgTransfer],
-) {
-	k.Logger(ctx).Info("HandleTimeoutMsgTransfer hook called", "seq", ex.Sequence)
 }
 
 func (k Keeper) HandleTimeoutMsgCreateBalancerPool(

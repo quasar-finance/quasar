@@ -30,25 +30,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	msg := msgs[0]
 	switch req := msg.(type) {
-	case *ibctransfertypes.MsgTransfer:
-		resp := &ibctransfertypes.MsgTransferResponse{}
-		err := ParseAck(ack, req, resp)
-		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
-		}
-		ex := types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]{
-			Sequence: sequence,
-			Error:    ack.GetError(),
-			Request:  req,
-			Response: resp,
-		}
-		for _, h := range k.Hooks.Osmosis.ackMsgTransfer {
-			h(ctx, ex)
-		}
-
 	case *gammbalancer.MsgCreateBalancerPool:
 		resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-		err := ParseAck(ack, req, resp)
+		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -64,7 +48,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	case *gammtypes.MsgJoinPool:
 		resp := &gammtypes.MsgJoinPoolResponse{}
-		err := ParseAck(ack, req, resp)
+		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -80,7 +64,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 
 	case *gammtypes.MsgExitPool:
 		resp := &gammtypes.MsgExitPoolResponse{}
-		err := ParseAck(ack, req, resp)
+		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
@@ -117,15 +101,6 @@ func (k *Keeper) HandleIcaTimeout(
 
 	msg := msgs[0]
 	switch req := msg.(type) {
-	case *ibctransfertypes.MsgTransfer:
-		ex := types.TimeoutExchange[*ibctransfertypes.MsgTransfer]{
-			Sequence: sequence,
-			Request:  req,
-		}
-		for _, h := range k.Hooks.Osmosis.timeoutMsgTransfer {
-			h(ctx, ex)
-		}
-
 	case *gammbalancer.MsgCreateBalancerPool:
 		ex := types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]{
 			Sequence: sequence,
@@ -160,9 +135,44 @@ func (k *Keeper) HandleIcaTimeout(
 	return nil
 }
 
+func (k *Keeper) HandleIbcTransferAcknowledgement(
+	ctx sdk.Context,
+	sequence uint64,
+	transferPacket ibctransfertypes.FungibleTokenPacketData,
+	ack channeltypes.Acknowledgement,
+) error {
+	ex := types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]{
+		Sequence: sequence,
+		Error:    ack.GetError(),
+		Request:  &transferPacket,
+		Response: &types.MsgEmptyIbcResponse{},
+	}
+	for _, h := range k.Hooks.Ibc.ackIbcTransfer {
+		h(ctx, ex)
+	}
+
+	return nil
+}
+
+func (k *Keeper) HandleIbcTransferTimeout(
+	ctx sdk.Context,
+	sequence uint64,
+	transferPacket ibctransfertypes.FungibleTokenPacketData,
+) error {
+	ex := types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]{
+		Sequence: sequence,
+		Request:  &transferPacket,
+	}
+	for _, h := range k.Hooks.Ibc.timeoutIbcTransfer {
+		h(ctx, ex)
+	}
+
+	return nil
+}
+
 // Spec doc:
 // https://github.com/cosmos/ibc-go/blob/main/docs/apps/interchain-accounts/auth-modules.md#onacknowledgementpacket
-func ParseAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
+func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response proto.Message) error {
 	var err error
 
 	if ack.GetError() != "" {

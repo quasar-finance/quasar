@@ -8,30 +8,33 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/tendermint/tendermint/libs/log"
+
+	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 )
 
 var _ porttypes.IBCModule = IBCModule{}
 
 // IBCModule implements the ICS26 interface for interchain accounts controller chains
-type IBCModule struct {
-	keeper *keeper.Keeper
+type IBCTransferModuleDecorator struct {
+	m *ibctransfer.IBCModule
+	k *keeper.Keeper
 }
 
 // NewIBCModule creates a new IBCModule given the keeper
-func NewIBCModule(k *keeper.Keeper) IBCModule {
-	return IBCModule{
-		keeper: k,
+func NewIBCModuleDecorator(m *ibctransfer.IBCModule, k *keeper.Keeper) IBCTransferModuleDecorator {
+	return IBCTransferModuleDecorator{
+		m: m,
+		k: k,
 	}
 }
 
 // OnChanOpenInit implements the IBCModule interface
-func (im IBCModule) OnChanOpenInit(
+func (im IBCTransferModuleDecorator) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -41,11 +44,11 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))
+	return im.m.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
 }
 
 // OnChanOpenTry implements the IBCModule interface
-func (im IBCModule) OnChanOpenTry(
+func (im IBCTransferModuleDecorator) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -55,60 +58,60 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	return "", nil
+	return im.m.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
 }
 
 // OnChanOpenAck implements the IBCModule interface
-func (im IBCModule) OnChanOpenAck(
+func (im IBCTransferModuleDecorator) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	return nil
+	return im.m.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 }
 
 // OnChanOpenConfirm implements the IBCModule interface
-func (im IBCModule) OnChanOpenConfirm(
+func (im IBCTransferModuleDecorator) OnChanOpenConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
-	return nil
+	return im.m.OnChanOpenConfirm(ctx, portID, channelID)
 }
 
 // OnChanCloseInit implements the IBCModule interface
-func (im IBCModule) OnChanCloseInit(
+func (im IBCTransferModuleDecorator) OnChanCloseInit(
 	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
-	return nil
+	return im.m.OnChanCloseInit(ctx, portID, channelID)
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
-func (im IBCModule) OnChanCloseConfirm(
+func (im IBCTransferModuleDecorator) OnChanCloseConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
-	return nil
+	return im.m.OnChanCloseConfirm(ctx, portID, channelID)
 }
 
 // OnRecvPacket implements the IBCModule interface. A successful acknowledgement
 // is returned if the packet data is succesfully decoded and the receive application
 // logic returns without error.
-func (im IBCModule) OnRecvPacket(
+func (im IBCTransferModuleDecorator) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	return channeltypes.NewErrorAcknowledgement("cannot receive packet via interchain accounts authentication module")
+	return im.m.OnRecvPacket(ctx, packet, relayer)
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface
-func (im IBCModule) OnAcknowledgementPacket(
+func (im IBCTransferModuleDecorator) OnAcknowledgementPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
@@ -118,62 +121,51 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	im.logger(ctx).Info("received OnAcknowledgementPacket", "seq", packet.GetSequence())
 
-	icaPacket, err := parseIcaPacket(packet)
+	err = im.m.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
+		return err
 	}
 
-	ack := channeltypes.Acknowledgement{}
-	err = icatypes.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
+	transferPacket, err := parseTransferPacket(packet)
 	if err != nil {
-		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal IBC acknowledgement")
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	return im.keeper.HandleIcaAcknowledgement(ctx, packet.GetSequence(), icaPacket, ack)
+	var ack channeltypes.Acknowledgement
+	err = types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet acknowledgement: %v", err)
+	}
+
+	return im.k.HandleIbcTransferAcknowledgement(ctx, packet.GetSequence(), transferPacket, ack)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
-func (im IBCModule) OnTimeoutPacket(
+func (im IBCTransferModuleDecorator) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
 	im.logger(ctx).Info("received OnTimeoutPacket", "seq", packet.GetSequence())
 
-	icaPacket, err := parseIcaPacket(packet)
+	transferPacket, err := parseTransferPacket(packet)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	return im.keeper.HandleIcaTimeout(ctx, packet.GetSequence(), icaPacket)
+	return im.k.HandleIbcTransferTimeout(ctx, packet.GetSequence(), transferPacket)
 }
 
-// NegotiateAppVersion implements the IBCModule interface
-func (im IBCModule) NegotiateAppVersion(
-	ctx sdk.Context,
-	order channeltypes.Order,
-	connectionID string,
-	portID string,
-	counterparty channeltypes.Counterparty,
-	proposedVersion string,
-) (string, error) {
-	return "", nil
-}
-
-func (im IBCModule) logger(ctx sdk.Context) log.Logger {
+func (im IBCTransferModuleDecorator) logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacketData, error) {
-	var icaPacket icatypes.InterchainAccountPacketData
-	err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
+func parseTransferPacket(packet channeltypes.Packet) (ibctransfertypes.FungibleTokenPacketData, error) {
+	var transferPacket ibctransfertypes.FungibleTokenPacketData
+	err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &transferPacket)
 	if err != nil {
-		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+		return transferPacket, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	if icaPacket.Type != icatypes.EXECUTE_TX {
-		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
-	}
-
-	return icaPacket, nil
+	return transferPacket, nil
 }
