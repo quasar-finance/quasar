@@ -55,12 +55,56 @@ type UserDenomInfo struct {
 	Reward sdk.Coins
 }
 
+// IsEqual returns true if the two UserDenomInfo have the same values.
+func (lhs UserDenomInfo) IsEqual(rhs UserDenomInfo) bool {
+	return lhs.Denom == rhs.Denom && lhs.Weight.Equal(rhs.Weight) &&
+		lhs.Amt.Equal(rhs.Amt) && lhs.Reward.IsEqual(rhs.Reward)
+}
+
+type UserDenomInfoMap map[string]UserDenomInfo
+
+// IsEqual returns true if the two UserDenomInfoMap have the same values.
+func (lhs UserDenomInfoMap) IsEqual(rhs UserDenomInfoMap) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+	for k, v := range lhs {
+		if vv, exist := rhs[k]; !exist {
+			return false
+		} else if !v.IsEqual(vv) {
+			return false
+		}
+	}
+	return true
+}
+
 // UserInfo is used to hold denom level info and total rewards for a particular user
 type UserInfo struct {
 	UserAcc     string
-	DenomMap    map[string]UserDenomInfo
+	DenomMap    UserDenomInfoMap
 	TotalReward sdk.Coins
+}
+
+// IsEqual returns true if the two UserInfo have the same values.
+func (lhs UserInfo) IsEqual(rhs UserInfo) bool {
+	return lhs.UserAcc == rhs.UserAcc && lhs.DenomMap.IsEqual(rhs.DenomMap) &&
+		lhs.TotalReward.IsEqual(rhs.TotalReward)
 }
 
 // UserInfoMap is a map of user account to UserInfo
 type UserInfoMap map[string]UserInfo
+
+// IsEqual returns true if the two UserInfoMap have the same values.
+func (lhs UserInfoMap) IsEqual(rhs UserInfoMap) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+	for k, v := range lhs {
+		if vv, exist := rhs[k]; !exist {
+			return false
+		} else if !v.IsEqual(vv) {
+			return false
+		}
+	}
+	return true
+}

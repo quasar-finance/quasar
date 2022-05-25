@@ -89,12 +89,17 @@ func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
 
 	totalLPV := k.CalculateTotalLPV(ctx, epochDay-1) // Total LP in deployment
 
-	denomActualReward, err := k.CalculateActualRewardForEachDenom(ctx, totalLPV, rc.Coins)
+	denomWeights, err := k.CalculateDenomLPWeights(ctx, totalLPV)
+	if err != nil {
+		return err
+	}
+	denomActualReward, err := CalculateActualRewardForEachDenom(rc.Coins, denomWeights)
 	if err != nil {
 		return err
 	}
 
-	uim := k.CalculateUserRewards(ctx, epochDay, totalLPV, denomActualReward)
+	activeUserDepositsMap := k.qbankKeeper.GetAllActiveUserDeposits(ctx, epochDay)
+	uim := CalculateUserRewards(activeUserDepositsMap, totalLPV, denomActualReward)
 
 	for userAcc, ui := range uim {
 		k.qbankKeeper.AddUserClaimRewards(ctx, userAcc, types.ModuleName, ui.TotalReward)
@@ -123,24 +128,39 @@ func (k Keeper) CalculateTotalLPV(ctx sdk.Context, epochDay uint64) sdk.Coins {
 	return totalLPV
 }
 
-// CalculateActualRewardForEachDenom calculates the share of each denom from the rewards.
-// The share of each denom from the rewards is the same as its share of fiat value from the totalLPV.
+// CalculateDenomLPWeights calculates the share of the fiat value of each denom from the total fiat value of totalLPV.
 // Fiat value is computed for the present time.
-// The totalLPV is the the total liquidity provided to the vault that are active on the given epochDay.
-func (k Keeper) CalculateActualRewardForEachDenom(ctx sdk.Context, totalLPV, netRewards sdk.Coins) (map[string]sdk.Coins, error) {
-	denomActualReward := make(map[string]sdk.Coins)
-	// Fill the denomActualRewardMap
+// The weights are later used to calculate the share of rewards for each denom.
+func (k Keeper) CalculateDenomLPWeights(ctx sdk.Context, totalLPV sdk.Coins) (map[string]sdk.Dec, error) {
+	weights := make(map[string]sdk.Dec)
 	totalEquivalentReceipt, err := k.GetTotalOrions(ctx, totalLPV)
 	if err != nil {
-		return denomActualReward, err
+		return weights, err
 	}
 	for _, coin := range totalLPV {
 		equivalentReceipt, err := k.CalcReceipts(ctx, coin)
 		if err != nil {
-			return denomActualReward, err
+			return weights, err
 		}
-		weight := equivalentReceipt.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
-		denomActualReward[coin.Denom], _ = sdk.NewDecCoinsFromCoins(netRewards...).MulDec(weight).TruncateDecimal()
+		weights[coin.Denom] = equivalentReceipt.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
+	}
+	return weights, nil
+}
+
+// CalculateActualRewardForEachDenom calculates the share of each denom from the rewards according to weights.
+func CalculateActualRewardForEachDenom(netRewards sdk.Coins, weights map[string]sdk.Dec) (map[string]sdk.Coins, error) {
+	// Validate weights
+	sumWeights := sdk.ZeroDec()
+	for _, w := range weights {
+		sumWeights = sumWeights.Add(w)
+	}
+	if sumWeights.GT(sdk.NewDec(1)) {
+		return nil, errors.New("error: sum of weights should not be greater than 1")
+	}
+	denomActualReward := make(map[string]sdk.Coins)
+	// Fill the denomActualRewardMap
+	for denom, weight := range weights {
+		denomActualReward[denom], _ = sdk.NewDecCoinsFromCoins(netRewards...).MulDec(weight).TruncateDecimal()
 	}
 	return denomActualReward, nil
 }
@@ -148,12 +168,11 @@ func (k Keeper) CalculateActualRewardForEachDenom(ctx sdk.Context, totalLPV, net
 // CalculateUserRewards calculates the rewards for each user.
 // It uses a map of denoms denoting the total rewards for each denom and multiplies that by the
 // user's share of that denom (relative to totalLPV).
-func (k Keeper) CalculateUserRewards(ctx sdk.Context, epochDay uint64, totalLPV sdk.Coins, denomActualReward map[string]sdk.Coins) types.UserInfoMap {
+func CalculateUserRewards(activeUserDepositsMap map[string]sdk.Coins, totalLPV sdk.Coins, denomActualReward map[string]sdk.Coins) types.UserInfoMap {
 	//////////////////////////////
 	// Get users denom reward
-	// Note - This iteration is happening qbank module keeper.
 	uim := make(types.UserInfoMap)
-	for depositorAccAddress, totalActiveDeposits := range k.qbankKeeper.GetAllActiveUserDeposits(ctx, epochDay) {
+	for depositorAccAddress, totalActiveDeposits := range activeUserDepositsMap {
 		totalReward := sdk.NewCoins()
 		userDenomInfoMap := make(map[string]types.UserDenomInfo)
 		for _, coin := range totalActiveDeposits {
