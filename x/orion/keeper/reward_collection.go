@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/abag/quasarnode/x/orion/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -88,14 +87,14 @@ func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
 	// rc.Coins to be used for further reward distribution so needs to be subtracted by perFees
 	rc.Coins = rc.Coins.Sub(perFees)
 
-	totalLPV := k.CalculateTotalLPV(ctx, epochDay) // Total LP in deployment
+	totalLPV := k.CalculateTotalLPV(ctx, epochDay-1) // Total LP in deployment
 
 	denomActualReward, err := k.CalculateActualRewardForEachDenom(ctx, totalLPV, rc.Coins)
 	if err != nil {
 		return err
 	}
 
-	uim := k.CalculateUserRewards(ctx, totalLPV, denomActualReward)
+	uim := k.CalculateUserRewards(ctx, epochDay, totalLPV, denomActualReward)
 
 	for userAcc, ui := range uim {
 		k.qbankKeeper.AddUserClaimRewards(ctx, userAcc, types.ModuleName, ui.TotalReward)
@@ -149,44 +148,31 @@ func (k Keeper) CalculateActualRewardForEachDenom(ctx sdk.Context, totalLPV, net
 // CalculateUserRewards calculates the rewards for each user.
 // It uses a map of denoms denoting the total rewards for each denom and multiplies that by the
 // user's share of that denom (relative to totalLPV).
-func (k Keeper) CalculateUserRewards(ctx sdk.Context, totalLPV sdk.Coins, denomActualReward map[string]sdk.Coins) types.UserInfoMap {
+func (k Keeper) CalculateUserRewards(ctx sdk.Context, epochDay uint64, totalLPV sdk.Coins, denomActualReward map[string]sdk.Coins) types.UserInfoMap {
 	//////////////////////////////
 	// Get users denom reward
 	// Note - This iteration is happening qbank module keeper.
 	uim := make(types.UserInfoMap)
-	bytePrefix := qbanktypes.UserDenomDepositKBP
-	store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
-	defer iter.Close()
-	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetUserRewardDistribution2|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
-
-	// Key = "{uid}" + {":"} + "{denom}", value = sdk.Coin
-	for ; iter.Valid(); iter.Next() {
-		var udi types.UserDenomInfo
-		key, value := iter.Key(), iter.Value()
-		splits := qbanktypes.SplitKeyBytes(key)
-		userAcc := string(splits[0])
-		denom := string(splits[1])
-		var coin sdk.Coin
-		k.cdc.MustUnmarshal(value, &coin)
-		udi.Denom = denom
-		udi.Amt = coin.Amount
-		udi.Weight = udi.Amt.ToDec().QuoInt(totalLPV.AmountOf(denom))
-		udi.Reward, _ = sdk.NewDecCoinsFromCoins(denomActualReward[denom]...).MulDec(udi.Weight).TruncateDecimal()
-
-		if _, exist := uim[userAcc]; !exist {
-			uim[userAcc] = types.UserInfo{
-				UserAcc:     userAcc,
-				DenomMap:    map[string]types.UserDenomInfo{},
-				TotalReward: sdk.NewCoins(),
+	for depositorAccAddress, totalActiveDeposits := range k.qbankKeeper.GetAllActiveUserDeposits(ctx, epochDay) {
+		totalReward := sdk.NewCoins()
+		userDenomInfoMap := make(map[string]types.UserDenomInfo)
+		for _, coin := range totalActiveDeposits {
+			denom := coin.Denom
+			weight := coin.Amount.ToDec().QuoInt(totalLPV.AmountOf(denom))
+			reward, _ := sdk.NewDecCoinsFromCoins(denomActualReward[denom]...).MulDec(weight).TruncateDecimal()
+			totalReward = totalReward.Add(reward...)
+			userDenomInfoMap[denom] = types.UserDenomInfo{
+				Denom:  denom,
+				Weight: weight,
+				Amt:    coin.Amount,
+				Reward: reward,
 			}
 		}
-		elem := uim[userAcc]
-		elem.TotalReward = elem.TotalReward.Add(udi.Reward...)
-		elem.DenomMap[denom] = udi
-		uim[userAcc] = elem
+		uim[depositorAccAddress] = types.UserInfo{
+			UserAcc:     depositorAccAddress,
+			DenomMap:    userDenomInfoMap,
+			TotalReward: totalReward,
+		}
 	}
 	return uim
 }

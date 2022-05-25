@@ -36,6 +36,7 @@ type QbankKeeper interface {
 	GetUserDepositAmt(ctx sdk.Context, uid string) (val qbanktypes.QCoins, found bool)
 	GetTotalDeposits(ctx sdk.Context) sdk.Coins
 	GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coins
+	GetAllActiveUserDeposits(ctx sdk.Context, todayEpochDay uint64) map[string]sdk.Coins
 	GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, uid string) sdk.Coins
 	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
 	AddActualWithdrawableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
