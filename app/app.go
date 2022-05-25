@@ -435,7 +435,7 @@ func New(
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	originTransferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
-	transferIBCModule := intergammmodule.NewIBCModuleDecorator(
+	transferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
 		&originTransferIbcModule,
 		app.IntergammKeeper,
 	)

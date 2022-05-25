@@ -26,7 +26,7 @@ type IBCTransferModuleDecorator struct {
 }
 
 // NewIBCModule creates a new IBCModule given the keeper
-func NewIBCModuleDecorator(m *ibctransfer.IBCModule, k *keeper.Keeper) IBCTransferModuleDecorator {
+func NewIBCTransferModuleDecorator(m *ibctransfer.IBCModule, k *keeper.Keeper) IBCTransferModuleDecorator {
 	return IBCTransferModuleDecorator{
 		m: m,
 		k: k,
