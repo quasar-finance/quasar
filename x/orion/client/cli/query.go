@@ -24,7 +24,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdQueryParams())
 	cmd.AddCommand(CmdReserveBalance())
 	cmd.AddCommand(CmdShowLpPosition())
-	cmd.AddCommand(CmdShowEpochLPInfo())
+	// cmd.AddCommand(CmdShowEpochLPInfo())
 	cmd.AddCommand(CmdShowRewardCollection())
 	cmd.AddCommand(CmdShowLpStat())
 	cmd.AddCommand(CmdReserveBalanceAll())

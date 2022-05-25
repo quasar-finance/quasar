@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/abag/quasarnode/x/orion/types"
@@ -35,40 +34,6 @@ func (k Keeper) RemoveRewardCollection(ctx sdk.Context, epochDay uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.RewardCollectionKBP)
 	key := types.CreateEpochRewardKey(epochDay)
 	store.Delete(key)
-}
-
-// LPPositionReward calculate the reward associated with a particular LP position on a given epochDay
-// Param - epochDay is the day on which users deposited fund. lpID is unique id for the LP position
-func (k Keeper) LPPositionReward(ctx sdk.Context, epochDay uint64, lpID uint64) (sdk.Coins, error) {
-	lp, _ := k.GetLpPosition(ctx, epochDay, lpID)
-	expectedRewardCollectionDay := epochDay + lp.BondDuration + lp.UnbondingDuration + 2
-	totalReward, found := k.GetRewardCollection(ctx, expectedRewardCollectionDay)
-	if !found {
-		return nil, fmt.Errorf("reward not found for collection epoch day %v", expectedRewardCollectionDay)
-	}
-	w, err := k.CalculateLPWeight(ctx, epochDay, lpID)
-	if err != nil {
-		return nil, err
-	}
-	result, _ := sdk.NewDecCoinsFromCoins(totalReward.Coins...).MulDec(w).TruncateDecimal()
-	return result, nil
-}
-
-// LPExpectedReward calculate per day (today's) expected reward based on current values of gauge and apy.
-// Valid for the active LP position. This will be useful for loss analytics from the expected reward.
-func (k Keeper) LPExpectedReward(ctx sdk.Context, lpID uint64) (sdk.Coins, error) {
-	epochDay, found := k.GetLPEpochDay(ctx, lpID)
-	if !found {
-		return nil, errors.New("error: LP epochDay not found")
-	}
-	lp, found := k.GetLpPosition(ctx, epochDay, lpID)
-	if !found {
-		return nil, errors.New("error: LP position not found")
-	}
-	g := k.GetCurrentActiveGauge(ctx, epochDay, lpID)
-	RewardMultiplier := g.ExpectedApy.QuoInt64(types.NumDaysPerYear)
-	reward, _ /*change*/ := sdk.NewDecCoinsFromCoins(lp.Coins...).MulDec(RewardMultiplier).TruncateDecimal()
-	return reward, nil
 }
 
 // RewardDistribution implements the reward distribution to users
