@@ -9,3 +9,5 @@ edition = "2021"
 cw20 = "0.13.2"
 cosmwasm-std = { version = "1.0.0-beta8" }
 quasar-traits = { version = "0.1.0", path = "../quasar-traits" }
+schemars = "0.8.1"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
