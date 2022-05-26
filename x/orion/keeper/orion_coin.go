@@ -7,7 +7,7 @@ import (
 
 // GetTotalOrions calculates the total amount of orions for the input sdk.Coins
 func (k Keeper) GetTotalOrions(ctx sdk.Context, coins sdk.Coins) (sdk.Coin, error) {
-	var orions sdk.Coin
+	orions := sdk.NewCoin(types.OrionDenom, sdk.ZeroInt())
 	for _, coin := range coins {
 		orion, err := k.CalcReceipts(ctx, coin)
 		if err != nil {

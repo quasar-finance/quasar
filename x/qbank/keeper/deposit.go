@@ -290,6 +290,22 @@ func (k Keeper) GetAllDepositInfos(ctx sdk.Context) []types.DepositInfo {
 	return depositInfos
 }
 
+// GetAllActiveUserDeposits returns a map of total deposited coins currently in lockup per user.
+func (k Keeper) GetAllActiveUserDeposits(ctx sdk.Context, todayEpochDay uint64) map[string]sdk.Coins {
+	res := make(map[string]sdk.Coins)
+	for _, depositInfo := range k.GetAllDepositInfos(ctx) {
+		if !depositInfo.IsActiveOn(todayEpochDay) {
+			continue
+		}
+		if deposits, exist := res[depositInfo.DepositorAccAddress]; exist {
+			res[depositInfo.DepositorAccAddress] = deposits.Add(depositInfo.Coin)
+		} else {
+			res[depositInfo.DepositorAccAddress] = sdk.NewCoins(depositInfo.Coin)
+		}
+	}
+	return res
+}
+
 // GetAllTotalDeposits prepare a list of total deposit info for each user
 // Method is used for export genesis.
 func (k Keeper) GetAllTotalDeposits(ctx sdk.Context) []types.UserBalanceInfo {
