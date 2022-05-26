@@ -2,7 +2,9 @@ package keeper
 
 import (
 	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/abag/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
@@ -44,7 +46,12 @@ func (k Keeper) HandleAckMsgJoinPool(
 	ex intergammtypes.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse],
 ) error {
 	k.Logger(ctx).Info("HandleAckMsgJoinPool hook called", "error", ex.Error, "seq", ex.Sequence)
-	return nil
+	var err error
+	if ex.HasError() {
+		err = sdkerrors.Wrapf(types.ErrIcaMessageFailedInHost, ex.Error)
+	}
+	k.OnJoinPoolAck(ctx, ex.Sequence, err)
+	return err
 }
 
 func (k Keeper) HandleAckMsgExitPool(
@@ -52,7 +59,12 @@ func (k Keeper) HandleAckMsgExitPool(
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse],
 ) error {
 	k.Logger(ctx).Info("HandleAckMsgExitPool hook called", "error", ex.Error, "seq", ex.Sequence)
-	return nil
+	var err error
+	if ex.HasError() {
+		err = sdkerrors.Wrapf(types.ErrIcaMessageFailedInHost, ex.Error)
+	}
+	k.OnExitPoolAck(ctx, ex.Sequence, err)
+	return err
 }
 
 func (k Keeper) HandleAckMsgJoinSwapExternAmountIn(

@@ -59,14 +59,14 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 	return packetSeq, err
 }
 
-func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {
+func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) (uint64, error) {
 	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
 		poolID, shareInAmount, tokenOutMins))
 
 	owner := k.getOwnerAccStr()
 	connectionId := k.getConnectionId("osmosis")
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	_, err := k.intergammKeeper.TransmitIbcExitPool(
+	seq, err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
 		owner,
 		connectionId,
@@ -75,7 +75,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 		shareInAmount,
 		tokenOutMins,
 	)
-	return err
+	return seq, err
 }
 
 // IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.

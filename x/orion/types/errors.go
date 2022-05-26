@@ -8,5 +8,6 @@ import (
 
 // x/orion module sentinel errors
 var (
-	ErrSample = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrSample                 = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrIcaMessageFailedInHost = sdkerrors.Register(ModuleName, 2000, "ica message failed in host")
 )

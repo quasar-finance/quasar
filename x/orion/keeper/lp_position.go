@@ -59,15 +59,15 @@ func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 // SetSeqNumber sets the mapping of seq number and lpID.
 // Assumtion - A fixed value of channel and port will be used.
 func (k Keeper) SetSeqNumber(ctx sdk.Context, seqNumber uint64, lpId uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LpSeqKBP)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.JoinPoolKBP)
 	byteKey := types.CreateSeqKey(seqNumber)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, lpId)
 	store.Set(byteKey, bz)
 }
 
-func (k *Keeper) GetLpPositionFromSeqNumber(ctx sdk.Context, seqNumber uint64) (types.LpPosition, error) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LpSeqKBP)
+func (k Keeper) GetLpPositionFromSeqNumber(ctx sdk.Context, seqNumber uint64) (types.LpPosition, error) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.JoinPoolKBP)
 	byteKey := types.CreateSeqKey(seqNumber)
 	bz := store.Get(byteKey)
 	if bz == nil {
@@ -218,15 +218,15 @@ func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 	for ; iter.Valid(); iter.Next() {
 		key, _ := iter.Key(), iter.Value()
 		splits := qbanktypes.SplitKeyBytes(key)
-		epochdayStr := string(splits[0])
-		epochday, _ := strconv.ParseUint(epochdayStr, 10, 64)
+		lpEpochDayStr := string(splits[0])
+		lpEpochDay, _ := strconv.ParseUint(lpEpochDayStr, 10, 64)
 		lpIDStr := string(splits[1])
 		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
 
 		// Cross check for active
-		lp, _ := k.GetLpPosition(ctx, epochday, lpID)
+		lp, _ := k.GetLpPosition(ctx, lpEpochDay, lpID)
 		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
-		if lp.BondingStartEpochDay <= epochday && epochday <= lpEndDay {
+		if lp.BondingStartEpochDay <= epochDay && epochDay <= lpEndDay {
 			// Active LP
 			lpIDs = append(lpIDs, lpID)
 		}

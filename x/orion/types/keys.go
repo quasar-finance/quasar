@@ -74,8 +74,8 @@ var (
 	LPStatKBP                  = []byte{0x14}
 	LPEpochDenomKBP            = []byte{0x15}
 	DayMapKBP                  = []byte{0x16}
-	ExitKBP                    = []byte{0x17}
-	LpSeqKBP                   = []byte{0x18}
+	ExitPoolKBP                = []byte{0x17}
+	JoinPoolKBP                = []byte{0x18}
 	IBCTokenTransferKBP        = []byte{0x19}
 	AvailableInterchainFundKBP = []byte{0x20}
 )

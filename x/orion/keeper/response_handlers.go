@@ -23,7 +23,9 @@ func (k Keeper) OnJoinPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 			"error", err,
 			"new lp State", lp.State)
 		k.AddAvailableInterchainFund(ctx, lp.Coins)
+		return
 	}
+
 	lp.State = types.LpState_JOINED
 	k.setLpPosition(ctx, lp)
 
@@ -63,6 +65,7 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 	}
 	lp.State = types.LpState_EXITED
 	k.setLpPosition(ctx, lp)
+	// Calculate expected - Exit funds based on current state of pool.
 }
 
 func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool) {

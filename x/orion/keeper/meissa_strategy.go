@@ -253,29 +253,37 @@ func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (
 // Use the [ currentday - lockupPeriodDays ] as key for epoch
 // Get the pool ids and sdk.coins.
 // Calls exit for the pools.
-func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qbanktypes.LockupTypes) error {
-	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", currEpochday, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
-	// TODO : We can use a different KV store and cache for the list of Currently active pools.
-	// Currently active pool are those in which orion has LPing positions.
-	poolIDs := k.getAPYRankedPools(ctx)
-	offsetEpochDay := currEpochday - uint64(lockupType)
-	for _, poolIDStr := range poolIDs {
-		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
-		coins := k.GetMeissaEpochLockupPoolPosition(ctx, offsetEpochDay, lockupType, poolID)
-		k.Logger(ctx).Debug("MeissaExit", "currEpochday", currEpochday, "offsetEpochDay", offsetEpochDay, "poolID", poolID, "coins", coins)
-		poolTotalShare := k.getTotalShare(ctx, poolID)
-		assets := k.getPoolAssets(ctx, poolID)
-		var shareInAmount sdk.Int
-		var tokenOutMins []sdk.Coin // TODO | AUDIT | Zero value
-		for _, asset := range assets {
+// Logic -
+// 1. Iterate over all active pool positions
+// 2. if current lp exit condition matched then calculate the tokenOutMins based on shareInAmount
+// 3. Call Intergamm exit.
+// 4. TODO - Future. To be more precise do ibc query to determine current balance of interchain fund.
+// 5. One idea is to use new interchain account for each new lp position. That will help proper accounting of lp positions and pnl.
 
-			shareInAmount = poolTotalShare.Amount.Quo(asset.Token.Amount)
-			break
-		}
+func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
+	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", epochDay, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
+	var lpIDs []uint64
+	bytePrefix := types.LPPositionKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
 
-		if shareInAmount.IsPositive() {
-			// Call intergamm exit pool method
-			err := k.ExitPool(ctx, poolID, shareInAmount, tokenOutMins)
+	// key - {epochday} + {":"} + {LPID}
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		splits := qbanktypes.SplitKeyBytes(key)
+		lpEpochDayStr := string(splits[0])
+		lpEpochDay, _ := strconv.ParseUint(lpEpochDayStr, 10, 64)
+		lpIDStr := string(splits[1])
+		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
+		lp, _ := k.GetLpPosition(ctx, lpEpochDay, lpID)
+		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
+		shareInAmount := lp.Lptoken.Amount
+		var tokenOutMins []sdk.Coin // Can be empty
+		if epochDay > lpEndDay {
+			// Need to exit today
+			lpIDs = append(lpIDs, lpID)
+			seq, err := k.ExitPool(ctx, lp.PoolID, shareInAmount, tokenOutMins)
 			if err != nil {
 				return err
 			}
