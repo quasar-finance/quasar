@@ -1,11 +1,13 @@
 use cosmwasm_std::{StdError, Uint128};
 use quasar_traits::traits::ShareDistributor;
 use cw20::Cw20Coin;
-
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
 /// DumbDistributor is a simple implementation of the ShareDistributor trait, it returns 1 share
 /// per cw20 coin. This should probably not be used in any production environment, but is useful for
 /// demonstration purposes.
 /// The test distributor_does_not_work_uneven_amounts() demonstrates what is wrong with this implementation.
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct DumbDistributor {}
 
 impl ShareDistributor for DumbDistributor {

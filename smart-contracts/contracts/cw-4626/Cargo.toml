@@ -1,5 +1,5 @@
 [package]
-name = "cw20-base"
+name = "cw4626"
 version = "0.13.2"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2018"
