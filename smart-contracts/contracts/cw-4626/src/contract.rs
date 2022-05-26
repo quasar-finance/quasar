@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Order};
+use quasar_traits::traits::ShareDistributor;
 
 use cw2::set_contract_version;
 use cw20::{
@@ -19,10 +18,10 @@ use crate::allowances::{
 use crate::enumerable::{query_all_accounts, query_all_allowances};
 use crate::error::ContractError;
 use crate::msg::{ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse};
-use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO, VaultInfo, VAULT_INFO, VAULT_DISTRIBUTOR};
+use crate::state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO, VaultInfo, VAULT_INFO, VAULT_BALANCES, VAULT_DISTRIBUTOR, Distributor};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw-4626"; // TODO change contract name
+const CONTRACT_NAME: &str = "crates.io:cw-4626";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const LOGO_SIZE_CAP: usize = 5 * 1024;
@@ -116,11 +115,18 @@ pub fn instantiate(
     };
 
     // set cw-20 token whitelist
+    // since whitelisted_tokens is a user input, we need to validate it
+    for t in msg.whitelisted_tokens {
+        deps.api.addr_validate(t.as_str())?;
+    }
     let vault_whitelist = msg.whitelisted_tokens;
     // set the share distributor of the vault to the single token distributor
-    let vault_distributor = SingleToken;
-    VAULT_INFO.save(deps.storage, &VaultInfo { vault_whitelist, vault_distributor })?;
+    VAULT_INFO.save(deps.storage, &VaultInfo { vault_whitelist })?;
 
+    // TODO see if we want to add some logic to differentiate between single and multiple token vaults
+    // set the share distributor of the vault to the single token distributor
+    let vault_distributor = Distributor{ dist: SingleToken{}, phantom: Default::default() };
+    VAULT_DISTRIBUTOR.save(deps.storage, &vault_distributor)?;
 
 
     // store token info
@@ -501,7 +507,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
         QueryMsg::Asset { .. } => {todo!()}
         QueryMsg::TotalAssets { .. } => {todo!()}
-        QueryMsg::ConvertToShares { assets } => {&query_convert_to_shares(assets)}
+        QueryMsg::ConvertToShares { assets } => {to_binary(&query_convert_to_shares(deps, assets)?)}
         QueryMsg::ConvertToAssets { .. } => {todo!()}
         QueryMsg::MaxDeposit { .. } => {todo!()}
         QueryMsg::PreviewDeposit { .. } => {todo!()}
@@ -523,12 +529,26 @@ pub fn query_balance(deps: Deps, address: String) -> StdResult<BalanceResponse> 
     Ok(BalanceResponse { balance })
 }
 
+// TODO write a test for this
 pub fn query_convert_to_shares(deps: Deps, assets: Vec<Cw20Coin>) -> StdResult<ConvertToSharesResponse> {
     // get the distributor from the state
-    let dist = VAULT_INFO.load(deps.storage)?.vault_distributor;
+    let mut dist = VAULT_DISTRIBUTOR.load(deps.storage)?;
+    let mut state: Vec<Cw20Coin>  = vec![];
+    for token in VAULT_BALANCES.range(deps.storage, None, None, Order::Ascending) {
+        // now we want to aggregate the balance per token
+        let (token, token_balance) = token?;
+        let mut total = Uint128::zero();
+        for (_, amount) in token_balance.range(deps.storage, None, None, Order::Ascending) {
+            total += amount;
+        }
+        state.push(Cw20Coin {
+            address: token.to_string(),
+            amount: total,
+        });
+    }
     // decide on how many shares one would get
-    // TODO get the current amount of assets from the state
-    dist.deposit_funds(assets, )
+    let amount = dist.deposit_funds(&assets, &state)?;
+    Ok(ConvertToSharesResponse { amount })
 }
 
 pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
