@@ -7,6 +7,7 @@ import (
 	"github.com/abag/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
@@ -23,10 +24,14 @@ func (k Keeper) getOwnerAccStr() string {
 }
 
 func (k Keeper) getDestinationAccStr() string {
-
 	// TODO - Call interchain account getter from the intergamm module
 	return "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" // alice on osmosis
 	// return "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
+}
+
+// TODO :  should be a parameter
+func (k Keeper) getIntermediateReceiver() string {
+	return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
@@ -78,6 +83,36 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 	return seq, err
 }
 
+func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
+	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
+	owner := k.getOwnerAccStr()
+	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
+	connectionId := k.getConnectionId("osmosis")
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
+	transferPort := "transfer"        // TODO - should be a param
+	transferChannel := "channel-1"    // TODO - should be a param
+	fwdTransferPort := "transfer"     // TODO - should be a param
+	fwdTransferChannel := "channel-1" // TODO - should be a param
+	intermediateReceiver := k.getIntermediateReceiver()
+
+	_, err := k.intergammKeeper.TransmitForwardIbcTransfer(
+		ctx,
+		owner,
+		connectionId,
+		uint64(timeoutTimestamp),
+		transferPort,
+		transferChannel,
+		coin,
+		fwdTransferPort,
+		fwdTransferChannel,
+		intermediateReceiver,
+		receiverAddr,
+		ibcclienttypes.ZeroHeight(),
+		uint64(timeoutTimestamp),
+	)
+	return err
+}
+
 // IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.
 // Returns the packet sequence number of the outgoing packet.
 // Logic - if denom is ibc atom then fwd it via cosmos-hub, and so on.
@@ -91,6 +126,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) {
 	destAccStr := k.getDestinationAccStr()
 	owner := k.getOwnerAccStr()
+	// TODO - Send should be replaced with upcoming ibc token transfer method.
 	seqNo, _ := k.intergammKeeper.Send(ctx,
 		coin,
 		"osmosis",

@@ -98,4 +98,17 @@ type IntergammKeeper interface {
 		receiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
 		transferTimeoutTimestamp uint64) (uint64, error)
+
+	TransmitForwardIbcTransfer(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		transferPort, transferChannel string,
+		token sdk.Coin,
+		fwdTransferPort, fwdTransferChannel string,
+		intermediateReceiver string,
+		receiver string,
+		transferTimeoutHeight ibcclienttypes.Height,
+		transferTimeoutTimestamp uint64) (uint64, error)
 }

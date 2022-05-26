@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"time"
 
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
@@ -14,7 +13,6 @@ import (
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls
@@ -287,8 +285,8 @@ func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktyp
 			if err != nil {
 				return err
 			}
+			k.SetSeqNumber(ctx, seq, lpID)
 		}
-
 	}
 
 	return nil
@@ -339,30 +337,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	return qcoins.Coins
 }
 
-func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, coins []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
-		receiverAddr, coins))
-
-	owner := ""
-	connectionId := ""
-	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	transferPort := "transfer"
-	transferChannel := "channel-1"
-	token := sdk.NewCoin("uatom", sdk.NewInt(10))
-
-	_, err := k.intergammKeeper.TransmitIbcTransfer(
-		ctx,
-		owner,
-		connectionId,
-		uint64(timeoutTimestamp),
-		transferPort,
-		transferChannel,
-		token,
-		receiverAddr,
-		ibcclienttypes.ZeroHeight(),
-		uint64(timeoutTimestamp),
-	)
-
-	return err
-
+func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, poolID uint64) sdk.Coins {
+	// TODO
+	return sdk.NewCoins()
 }

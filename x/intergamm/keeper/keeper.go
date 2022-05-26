@@ -243,6 +243,7 @@ func buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransf
 	return fmt.Sprintf("%s|%s/%s:%s", intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 }
 
+// TODO - TO be replaced with upcoming token transfer wrapper.
 // Send method determin the routing logic for the coin from the caller.
 // Routing logic is based on the denom and destination chain.
 // Ex.

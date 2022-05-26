@@ -65,7 +65,12 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 	}
 	lp.State = types.LpState_EXITED
 	k.setLpPosition(ctx, lp)
-	// Calculate expected - Exit funds based on current state of pool.
+	tokensOut := k.computeTokenOutAmount(ctx, lp.Lptoken.Amount, lp.PoolID)
+	for _, coin := range tokensOut {
+		expectedExitDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration + 1
+		k.AddEpochExitAmt(ctx, expectedExitDay, coin)
+		k.TokenWithdrawFromOsmosis(ctx, coin)
+	}
 }
 
 func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool) {
