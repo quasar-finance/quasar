@@ -125,7 +125,7 @@ pub fn instantiate(
 
     // TODO see if we want to add some logic to differentiate between single and multiple token vaults
     // set the share distributor of the vault to the single token distributor
-    let vault_distributor = Distributor{ dist: SingleToken{}, phantom: Default::default() };
+    let vault_distributor = Distributor{ dist: SingleToken{}};
     VAULT_DISTRIBUTOR.save(deps.storage, &vault_distributor)?;
 
 
