@@ -154,6 +154,7 @@ pub enum QueryMsg {
     DownloadLogo {},
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ConvertToSharesResponse {
     pub amount: Uint128
 }

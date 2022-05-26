@@ -1,8 +1,10 @@
-use std::f32::consts::E;
 use cosmwasm_std::{OverflowError, OverflowOperation, StdError, Uint128};
 use cw20::Cw20Coin;
 use quasar_traits::traits::ShareDistributor;
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct SingleToken {}
 
 impl ShareDistributor for SingleToken {

@@ -1,11 +1,16 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::marker::PhantomData;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Order, StdResult, Uint128};
+use cosmwasm_std::{Addr, Order, StdResult, Storage, Uint128};
 use quasar_traits::traits::ShareDistributor;
 use cw_storage_plus::{Bound, Item, Map};
 
-use cw20::{AllowanceResponse, Cw20Coin, Logo, MarketingInfoResponse};
+use cw20::{AllowanceResponse, Balance, Cw20Coin, Logo, MarketingInfoResponse};
+use serde::de::DeserializeOwned;
+use share_distributor::single_token::SingleToken;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -21,21 +26,8 @@ pub struct TokenInfo {
 #[serde(rename_all = "snake_case")]
 pub struct VaultInfo {
     pub vault_whitelist: Vec<Addr>,
-    pub vault_distributor: dyn ShareDistributor,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct  VaultBalance<'a> {
-    balance: Map < 'a, & 'a Addr, Map < 'a, & 'a Addr, Uint128>>
-}
-
-impl VaultBalance<> {
-    pub fn get_state(&self) -> Vec<Cw20Coin> {
-        // iterate over them all
-        self.balance
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct MinterData {
@@ -50,10 +42,24 @@ impl TokenInfo {
     }
 }
 
+// we wrap our generic share distributor trait in a struct. This way, people writing their own
+// distributor either do some large changes, or implement their own version of the ShareDistributor
+// trait and get all the "code hints" we leave along the way
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(bound = "")]
+pub struct Distributor<'a, T: ShareDistributor + Serialize + Deserialize<'a> + Clone + PartialEq + JsonSchema + Debug>
+{
+    #[serde(bound = "T: Deserialize"<'a> + Serialize)]
+    pub dist: T,
+    pub phantom: PhantomData<&'a T>,
+}
+
 pub const TOKEN_INFO: Item<TokenInfo> = Item::new("token_info");
 pub const VAULT_INFO: Item<VaultInfo> = Item::new("vault_info");
-pub const VAULT_DISTRIBUTOR: Item<dyn ShareDistributor> = Item::new("vault_distributor");
-pub const VAULT_BALANCES: Map<&Addr, Map<&Addr, Uint128>> = Map::new("vault_balances");
+pub const VAULT_DISTRIBUTOR: Item<Distributor<SingleToken>> = Item::new("vault_distributor");
+// TODO change this to accept native tokens
+pub const VAULT_BALANCES: Map<&Addr, String> = Map::new("vault_balances");
 pub const MARKETING_INFO: Item<MarketingInfoResponse> = Item::new("marketing_info");
 pub const LOGO: Item<Logo> = Item::new("logo");
 pub const BALANCES: Map<&Addr, Uint128> = Map::new("balance");
