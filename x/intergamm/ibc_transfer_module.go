@@ -146,7 +146,14 @@ func (im IBCTransferModuleDecorator) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
+	var err error
+
 	im.logger(ctx).Info("received OnTimeoutPacket", "seq", packet.GetSequence())
+
+	err = im.m.OnTimeoutPacket(ctx, packet, relayer)
+	if err != nil {
+		return err
+	}
 
 	transferPacket, err := parseTransferPacket(packet)
 	if err != nil {
