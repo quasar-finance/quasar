@@ -47,12 +47,9 @@ impl TokenInfo {
 // trait and get all the "code hints" we leave along the way
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-#[serde(bound = "")]
-pub struct Distributor<'a, T: ShareDistributor + Serialize + Deserialize<'a> + Clone + PartialEq + JsonSchema + Debug>
+pub struct Distributor<T: ShareDistributor +  Clone + PartialEq + JsonSchema + Debug>
 {
-    #[serde(bound = "T: Deserialize"<'a> + Serialize)]
     pub dist: T,
-    pub phantom: PhantomData<&'a T>,
 }
 
 pub const TOKEN_INFO: Item<TokenInfo> = Item::new("token_info");
