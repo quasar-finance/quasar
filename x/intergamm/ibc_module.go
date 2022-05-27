@@ -120,7 +120,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
-		return err
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
 	}
 
 	ack := channeltypes.Acknowledgement{}
@@ -142,7 +142,7 @@ func (im IBCModule) OnTimeoutPacket(
 
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
-		return err
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
 	}
 
 	return im.keeper.HandleIcaTimeout(ctx, packet.GetSequence(), icaPacket)
@@ -160,22 +160,20 @@ func (im IBCModule) NegotiateAppVersion(
 	return "", nil
 }
 
+func (im IBCModule) logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
 func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacketData, error) {
-	icaPacket := icatypes.InterchainAccountPacketData{}
+	var icaPacket icatypes.InterchainAccountPacketData
 	err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
 	if err != nil {
-		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
 		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
 	}
 
 	if icaPacket.Type != icatypes.EXECUTE_TX {
-		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
 		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
 	}
 
 	return icaPacket, nil
-}
-
-func (im IBCModule) logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

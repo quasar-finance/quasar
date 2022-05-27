@@ -23,6 +23,19 @@ service Msg {
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
+message MsgEmptyIbcResponse {
+}
+
+message MsgTestScenario {
+  string creator = 1;
+  string scenario = 2;
+}
+
+message MsgTestScenarioResponse {
+  string result = 1;
+  int64 exitCode = 2;
+}
+
 message MsgRegisterAccount {
   string creator = 1;
   string connectionId = 2;

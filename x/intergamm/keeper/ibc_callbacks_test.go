@@ -49,7 +49,7 @@ func makeInvalidIcaPacket() icatypes.InterchainAccountPacketData {
 	}
 }
 
-func makeAckRawData(t *testing.T, req sdk.Msg, raw []byte) channeltypes.Acknowledgement {
+func makeIcaAckRawData(t *testing.T, req sdk.Msg, raw []byte) channeltypes.Acknowledgement {
 	var msgData *sdk.TxMsgData
 
 	if raw == nil {
@@ -71,11 +71,15 @@ func makeAckRawData(t *testing.T, req sdk.Msg, raw []byte) channeltypes.Acknowle
 	return channeltypes.NewResultAcknowledgement(ackData)
 }
 
-func makeAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
+func makeIbcAck() channeltypes.Acknowledgement {
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+}
+
+func makeIcaAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
 	resData, err := proto.Marshal(res)
 	require.NoError(t, err)
 
-	return makeAckRawData(t, req, resData)
+	return makeIcaAckRawData(t, req, resData)
 }
 
 func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
@@ -86,7 +90,7 @@ func makeInvalidAck() channeltypes.Acknowledgement {
 	return channeltypes.NewResultAcknowledgement([]byte("invalid"))
 }
 
-func TestParseAck(t *testing.T) {
+func TestParseIcaAck(t *testing.T) {
 	testCases := []struct {
 		name     string
 		ack      channeltypes.Acknowledgement
@@ -96,7 +100,7 @@ func TestParseAck(t *testing.T) {
 	}{
 		{
 			name:     "valid",
-			ack:      makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			ack:      makeIcaAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "",
@@ -110,14 +114,14 @@ func TestParseAck(t *testing.T) {
 		},
 		{
 			name:     "invalid ack message bytes",
-			ack:      makeAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, []byte("invalid")),
+			ack:      makeIcaAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, []byte("invalid")),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "cannot unmarshall ICA acknowledgement",
 		},
 		{
 			name:     "invalid ack no message",
-			ack:      makeAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, nil),
+			ack:      makeIcaAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, nil),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "only single msg acks are supported",
@@ -126,7 +130,7 @@ func TestParseAck(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
-			err := keeper.ParseAck(tc.ack, tc.req, resp)
+			err := keeper.ParseIcaAck(tc.ack, tc.req, resp)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)
@@ -156,38 +160,10 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		errorStr  string
 	}{
 		{
-			name:      "valid MsgTransfer",
-			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
-			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
-			setup: func() {
-				k.Hooks.Osmosis.AddHooksAckMsgTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) {
-					called = true
-					require.Equal(t, tstSeq, e.Sequence)
-				})
-			},
-			errorStr: "",
-		},
-		{
-			name:      "valid MsgTransfer with error ack",
-			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
-			ack:       makeErrorAck(t, "test error"),
-			setup: func() {
-				k.Hooks.Osmosis.AddHooksAckMsgTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) {
-					called = true
-					require.Equal(t, tstSeq, e.Sequence)
-					require.Equal(t, "test error", e.Error)
-					require.True(t, e.HasError())
-				})
-			},
-			errorStr: "",
-		},
-		{
 			name:      "valid MsgCreateBalancerPool",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
-			ack:       makeAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
+			ack:       makeIcaAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
 			setup: func() {
 				k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(c sdk.Context, e types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
 					called = true
@@ -200,7 +176,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			name:      "valid MsgExitPool",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
-			ack:       makeAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
 			setup: func() {
 				k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
 					called = true
@@ -213,7 +189,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			name:      "invalid ica packet",
 			seq:       tstSeq,
 			icaPacket: makeInvalidIcaPacket(),
-			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "cannot deserialize packet data",
 		},
@@ -221,7 +197,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			name:      "empty ica packet",
 			seq:       tstSeq,
 			icaPacket: makeEmptyIcaPacket(),
-			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "expected single message in packet",
 		},
@@ -229,7 +205,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			name:      "invalid ack bytes",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
-			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "cannot parse acknowledgement",
 		},
@@ -237,7 +213,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			name:      "unsupported packet type",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
-			ack:       makeAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "unsupported packet type",
 		},
@@ -245,6 +221,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
+			k.Hooks.Osmosis.ClearAckHooks()
 			tc.setup()
 			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.icaPacket, tc.ack)
 
@@ -275,18 +252,6 @@ func TestHandleIcaTimeout(t *testing.T) {
 		setup     func()
 		errorStr  string
 	}{
-		{
-			name:      "valid MsgTransfer",
-			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
-			setup: func() {
-				k.Hooks.Osmosis.AddHooksTimeoutMsgTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.MsgTransfer]) {
-					called = true
-					require.Equal(t, tstSeq, e.Sequence)
-				})
-			},
-			errorStr: "",
-		},
 		{
 			name:      "valid MsgCreateBalancerPool",
 			seq:       tstSeq,
@@ -336,8 +301,122 @@ func TestHandleIcaTimeout(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
+			k.Hooks.Osmosis.ClearTimeoutHooks()
 			tc.setup()
 			err := k.HandleIcaTimeout(ctx, tc.seq, tc.icaPacket)
+
+			if tc.errorStr != "" {
+				require.ErrorContains(t, err, tc.errorStr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.True(t, called)
+		})
+	}
+}
+
+func TestHandleIbcTransferAcknowledgement(t *testing.T) {
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+	tstSeq := uint64(42)
+	tstDenom := "testDenom"
+
+	var called bool
+	testCases := []struct {
+		name           string
+		seq            uint64
+		transferPacket ibctransfertypes.FungibleTokenPacketData
+		ack            channeltypes.Acknowledgement
+		setup          func()
+		errorStr       string
+	}{
+		{
+			name: "valid FungibleTokenPacketData",
+			seq:  tstSeq,
+			transferPacket: ibctransfertypes.FungibleTokenPacketData{
+				Denom: tstDenom,
+			},
+			ack: makeIbcAck(),
+			setup: func() {
+				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+					require.Equal(t, tstDenom, e.Request.Denom)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:           "valid FungibleTokenPacketData with error ack",
+			seq:            tstSeq,
+			transferPacket: ibctransfertypes.FungibleTokenPacketData{},
+			ack:            makeErrorAck(t, "test error"),
+			setup: func() {
+				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+					require.Equal(t, "test error", e.Error)
+					require.True(t, e.HasError())
+				})
+			},
+			errorStr: "",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			called = false
+			k.Hooks.IbcTransfer.ClearAckHooks()
+			tc.setup()
+			err := k.HandleIbcTransferAcknowledgement(ctx, tc.seq, tc.transferPacket, tc.ack)
+
+			if tc.errorStr != "" {
+				require.ErrorContains(t, err, tc.errorStr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.True(t, called)
+		})
+	}
+}
+
+func TestHandleIbcTimeout(t *testing.T) {
+	setup := testutil.NewTestSetup(t)
+	ctx, k := setup.Ctx, setup.Keepers.InterGammKeeper
+	tstSeq := uint64(42)
+	tstDenom := "testDenom"
+
+	var called bool
+	testCases := []struct {
+		name           string
+		seq            uint64
+		transferPacket ibctransfertypes.FungibleTokenPacketData
+		setup          func()
+		errorStr       string
+	}{
+		{
+			name: "valid FungibleTokenPacketData",
+			seq:  tstSeq,
+			transferPacket: ibctransfertypes.FungibleTokenPacketData{
+				Denom: tstDenom,
+			},
+			setup: func() {
+				k.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+					require.Equal(t, tstDenom, e.Request.Denom)
+				})
+			},
+			errorStr: "",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			called = false
+			k.Hooks.IbcTransfer.ClearTimeoutHooks()
+			tc.setup()
+			err := k.HandleIbcTransferTimeout(ctx, tc.seq, tc.transferPacket)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)

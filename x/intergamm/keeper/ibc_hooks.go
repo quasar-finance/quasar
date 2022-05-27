@@ -8,20 +8,47 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
+type IbcTransferHooks struct {
+	ackIbcTransfer     []func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse])
+	timeoutIbcTransfer []func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData])
+}
+
 type OsmosisHooks struct {
-	ackMsgTransfer           []func(sdk.Context, types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse])
 	ackMsgCreateBalancerPool []func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse])
 	ackMsgJoinPool           []func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse])
 	ackMsgExitPool           []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse])
 
-	timeoutMsgTransfer           []func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.MsgTransfer])
 	timeoutMsgCreateBalancerPool []func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool])
 	timeoutMsgJoinPool           []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinPool])
 	timeoutMsgExitPool           []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool])
 }
 
-func (oh *OsmosisHooks) AddHooksAckMsgTransfer(hs ...func(sdk.Context, types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse])) {
-	oh.ackMsgTransfer = append(oh.ackMsgTransfer, hs...)
+func (ih *IbcTransferHooks) ClearAckHooks() {
+	ih.ackIbcTransfer = nil
+}
+
+func (ih *IbcTransferHooks) ClearTimeoutHooks() {
+	ih.timeoutIbcTransfer = nil
+}
+
+func (ih *OsmosisHooks) ClearAckHooks() {
+	ih.ackMsgCreateBalancerPool = nil
+	ih.ackMsgJoinPool = nil
+	ih.ackMsgExitPool = nil
+}
+
+func (ih *OsmosisHooks) ClearTimeoutHooks() {
+	ih.timeoutMsgCreateBalancerPool = nil
+	ih.timeoutMsgJoinPool = nil
+	ih.timeoutMsgExitPool = nil
+}
+
+func (ih *IbcTransferHooks) AddHooksAckIbcTransfer(hs ...func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse])) {
+	ih.ackIbcTransfer = append(ih.ackIbcTransfer, hs...)
+}
+
+func (ih *IbcTransferHooks) AddHooksTimeoutIbcTransfer(hs ...func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData])) {
+	ih.timeoutIbcTransfer = append(ih.timeoutIbcTransfer, hs...)
 }
 
 func (oh *OsmosisHooks) AddHooksAckMsgCreateBalancerPool(hs ...func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse])) {
@@ -34,10 +61,6 @@ func (oh *OsmosisHooks) AddHooksAckMsgJoinPool(hs ...func(sdk.Context, types.Ack
 
 func (oh *OsmosisHooks) AddHooksAckMsgExitPool(hs ...func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse])) {
 	oh.ackMsgExitPool = append(oh.ackMsgExitPool, hs...)
-}
-
-func (oh *OsmosisHooks) AddHooksTimeoutMsgTransfer(hs ...func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.MsgTransfer])) {
-	oh.timeoutMsgTransfer = append(oh.timeoutMsgTransfer, hs...)
 }
 
 func (oh *OsmosisHooks) AddHooksTimeoutMsgCreateBalancerPool(hs ...func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool])) {

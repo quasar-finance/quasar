@@ -27,7 +27,8 @@ var (
 )
 
 type GammHooks struct {
-	Osmosis OsmosisHooks
+	IbcTransfer IbcTransferHooks
+	Osmosis     OsmosisHooks
 }
 
 type Keeper struct {
@@ -66,7 +67,8 @@ func NewKeeper(
 		paramstore:          ps,
 
 		Hooks: GammHooks{
-			Osmosis: OsmosisHooks{},
+			IbcTransfer: IbcTransferHooks{},
+			Osmosis:     OsmosisHooks{},
 		},
 	}
 }

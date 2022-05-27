@@ -397,28 +397,9 @@ func New(
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	// TODO AUDIT Above lines
-	// Create Transfer Keepers
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
 
-	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
-	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
-	)
-	// If evidence needs to be handled for the app, set routes in router here and seal
-	app.EvidenceKeeper = *evidenceKeeper
+	// IBC Modules & Keepers
 
-	app.GovKeeper = govkeeper.NewKeeper(
-		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
-		&stakingKeeper, govRouter,
-	)
-
-	// Create the Keeper for each submodule
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
 		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
@@ -445,6 +426,31 @@ func New(
 
 	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+	)
+
+	transferModule := transfer.NewAppModule(app.TransferKeeper)
+	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
+		&transferIbcModule,
+		app.IntergammKeeper,
+	)
+
+	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
+	evidenceKeeper := evidencekeeper.NewKeeper(
+		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
+	)
+	// If evidence needs to be handled for the app, set routes in router here and seal
+	app.EvidenceKeeper = *evidenceKeeper
+
+	app.GovKeeper = govkeeper.NewKeeper(
+		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
+		&stakingKeeper, govRouter,
+	)
 
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
@@ -490,10 +496,19 @@ func New(
 		),
 	)
 
-	// Set Intergamm ack hooks
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgTransfer(
-		app.OrionKeeper.HandleAckMsgTransfer,
+	// Set Intergamm hooks
+
+	// IBC
+
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIbcTransfer(
+		app.OrionKeeper.HandleAckIbcTransfer,
 	)
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(
+		app.OrionKeeper.HandleTimeoutIbcTransfer,
+	)
+
+	// Osmosis
+
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(
 		app.OrionKeeper.HandleAckMsgCreateBalancerPool,
 	)
@@ -502,11 +517,6 @@ func New(
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
 		app.OrionKeeper.HandleAckMsgExitPool,
-	)
-
-	// Set Intergamm timeout hooks
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgTransfer(
-		app.OrionKeeper.HandleTimeoutMsgTransfer,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
 		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
@@ -526,7 +536,7 @@ func New(
 	// Register host and authentication routes
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
