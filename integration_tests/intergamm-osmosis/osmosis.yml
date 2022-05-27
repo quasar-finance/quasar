@@ -35,6 +35,7 @@ genesis:
             "/osmosis.gamm.v1beta1.MsgCreateBalancerPool",
             "/osmosis.gamm.v1beta1.MsgJoinPool",
             "/osmosis.gamm.v1beta1.MsgExitPool",
+            "/osmosis.lockup.MsgLockTokens",
           ]
 init:
   home: "${home_dir}"

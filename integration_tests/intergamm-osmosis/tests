@@ -189,7 +189,6 @@ run() {
   echo "> scenario: createPoolTimeoutChecks"
   quasartx intergamm test --scenario createPoolTimeoutChecks -y
 
-
   # Join pool
 
   echo "> scenario: joinPool"
@@ -209,6 +208,26 @@ run() {
 
   echo "> scenario: joinPoolTimeoutChecks"
   quasartx intergamm test --scenario joinPoolTimeoutChecks -y
+
+  # Lock tokens
+
+  echo "> scenario: lockTokens"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario lockTokens -y
+  sleep 8
+
+  echo "> scenario: lockTokensChecks"
+  quasartx intergamm test --scenario lockTokensChecks -y
+
+  echo "> scenario: lockTokensTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario lockTokensTimeout -y
+  sleep 8
+
+  echo "> scenario: lockTokensTimeoutChecks"
+  quasartx intergamm test --scenario lockTokensTimeoutChecks -y
 
   # Exit pool
 

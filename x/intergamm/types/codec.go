@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	osmosiscdc1 "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	osmosiscdc2 "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	osmosiscdc3 "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
@@ -23,6 +24,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	//
 	osmosiscdc1.RegisterLegacyAminoCodec(cdc)
 	osmosiscdc2.RegisterLegacyAminoCodec(cdc)
+	osmosiscdc3.RegisterCodec(cdc)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -57,6 +59,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	//
 	osmosiscdc1.RegisterInterfaces(registry)
 	osmosiscdc2.RegisterInterfaces(registry)
+	osmosiscdc3.RegisterInterfaces(registry)
 }
 
 var (

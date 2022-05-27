@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -19,6 +20,7 @@ import (
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 var (
@@ -319,4 +321,31 @@ func (k Keeper) ForwardTransferIbcTokens(
 		timeoutHeight,
 		timeoutTimestamp,
 	)
+}
+
+func (k Keeper) TransmitLockTokens(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	duration time.Duration,
+	coins sdk.Coins,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&lockuptypes.MsgLockTokens{
+			Owner:    iaResp.InterchainAccountAddress,
+			Duration: duration,
+			Coins:    coins,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
 }

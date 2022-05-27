@@ -12,6 +12,7 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,6 +41,10 @@ func init() {
 	scenarios["exitPoolChecks"] = testExitPoolChecks
 	scenarios["exitPoolTimeout"] = testExitPoolTimeout
 	scenarios["exitPoolTimeoutChecks"] = testExitPoolTimeoutChecks
+	scenarios["lockTokens"] = testLockTokens
+	scenarios["lockTokensChecks"] = testLockTokensChecks
+	scenarios["lockTokensTimeout"] = testLockTokensTimeout
+	scenarios["lockTokensTimeoutChecks"] = testLockTokensTimeoutChecks
 }
 
 func createTestPoolParams() *gammbalancer.PoolParams {
@@ -76,6 +81,12 @@ func joinPoolTestCoins() []sdk.Coin {
 	return []sdk.Coin{
 		sdk.NewCoin("uatom", sdk.NewInt(1000)),
 		sdk.NewCoin("uosmo", sdk.NewInt(1000)),
+	}
+}
+
+func lockTokensTestCoins() []sdk.Coin {
+	return []sdk.Coin{
+		sdk.NewCoin("gamm/pool/1", sdk.NewInt(42000)),
 	}
 }
 
@@ -201,8 +212,8 @@ func testJoinPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		testCoins := joinPoolTestCoins()
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
 
 		err = k.TransmitIbcJoinPool(
@@ -239,8 +250,8 @@ func testJoinPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		testCoins := joinPoolTestCoins()
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
 
 		// Replace timeout to trigger timeout hooks
@@ -284,8 +295,8 @@ func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		testCoins := joinPoolTestCoins()
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
 
 		err = k.TransmitIbcExitPool(
@@ -322,8 +333,8 @@ func testExitPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		testCoins := joinPoolTestCoins()
+		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
 
 		// Replace timeout to trigger timeout hooks
@@ -350,5 +361,82 @@ func testExitPoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		require.True(t, testHooksState["testExitPoolTimeout_hook1"])
 		require.True(t, testHooksState["testExitPoolTimeout_hook2"])
+	}
+}
+
+func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
+			testHooksState["testLockTokens_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
+			testHooksState["testLockTokens_hook2"] = true
+		})
+
+		timestamp := uint64(99999999999999)
+		lockupPeriod := 1 * time.Hour
+		testCoins := lockTokensTestCoins()
+
+		err = k.TransmitLockTokens(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			lockupPeriod,
+			testCoins,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testLockTokensChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testLockTokens_hook1"])
+		require.True(t, testHooksState["testLockTokens_hook2"])
+	}
+}
+
+func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
+			testHooksState["testLockTokensTimeout_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
+			testHooksState["testLockTokensTimeout_hook2"] = true
+		})
+
+		timestamp := uint64(99999999999999)
+		lockupPeriod := 1 * time.Hour
+		testCoins := lockTokensTestCoins()
+
+		// Replace timeout to trigger timeout hooks
+		tmpDefaultSendTxRelativeTimeoutTimestamp := DefaultSendTxRelativeTimeoutTimestamp
+		DefaultSendTxRelativeTimeoutTimestamp = uint64((time.Duration(200) * time.Millisecond).Nanoseconds())
+		defer func() {
+			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
+		}()
+
+		err = k.TransmitLockTokens(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			lockupPeriod,
+			testCoins,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testLockTokensTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testLockTokensTimeout_hook1"])
+		require.True(t, testHooksState["testLockTokensTimeout_hook2"])
 	}
 }

@@ -6,6 +6,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 type IbcTransferHooks struct {
@@ -17,10 +18,12 @@ type OsmosisHooks struct {
 	ackMsgCreateBalancerPool []func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse])
 	ackMsgJoinPool           []func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse])
 	ackMsgExitPool           []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse])
+	ackMsgLockTokens         []func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse])
 
 	timeoutMsgCreateBalancerPool []func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool])
 	timeoutMsgJoinPool           []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinPool])
 	timeoutMsgExitPool           []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool])
+	timeoutMsgLockTokens         []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens])
 }
 
 func (ih *IbcTransferHooks) ClearAckHooks() {
@@ -63,6 +66,10 @@ func (oh *OsmosisHooks) AddHooksAckMsgExitPool(hs ...func(sdk.Context, types.Ack
 	oh.ackMsgExitPool = append(oh.ackMsgExitPool, hs...)
 }
 
+func (oh *OsmosisHooks) AddHooksAckMsgLockTokens(hs ...func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse])) {
+	oh.ackMsgLockTokens = append(oh.ackMsgLockTokens, hs...)
+}
+
 func (oh *OsmosisHooks) AddHooksTimeoutMsgCreateBalancerPool(hs ...func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool])) {
 	oh.timeoutMsgCreateBalancerPool = append(oh.timeoutMsgCreateBalancerPool, hs...)
 }
@@ -73,4 +80,8 @@ func (oh *OsmosisHooks) AddHooksTimeoutMsgJoinPool(hs ...func(sdk.Context, types
 
 func (oh *OsmosisHooks) AddHooksTimeoutMsgExitPool(hs ...func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool])) {
 	oh.timeoutMsgExitPool = append(oh.timeoutMsgExitPool, hs...)
+}
+
+func (oh *OsmosisHooks) AddHooksTimeoutMsgLockTokens(hs ...func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens])) {
+	oh.timeoutMsgLockTokens = append(oh.timeoutMsgLockTokens, hs...)
 }

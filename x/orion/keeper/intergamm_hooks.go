@@ -6,6 +6,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 // Intergamm callbacks
@@ -49,6 +50,13 @@ func (k Keeper) HandleAckMsgExitPool(
 	k.Logger(ctx).Info("HandleAckMsgExitPool hook called", "error", ex.Error, "seq", ex.Sequence)
 }
 
+func (k Keeper) HandleAckMsgLockTokens(
+	ctx sdk.Context,
+	ex intergammtypes.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse],
+) {
+	k.Logger(ctx).Info("HandleAckMsgLockTokens hook called", "error", ex.Error, "seq", ex.Sequence)
+}
+
 func (k Keeper) HandleTimeoutMsgCreateBalancerPool(
 	ctx sdk.Context,
 	ex intergammtypes.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool],
@@ -68,4 +76,11 @@ func (k Keeper) HandleTimeoutMsgExitPool(
 	ex intergammtypes.TimeoutExchange[*gammtypes.MsgExitPool],
 ) {
 	k.Logger(ctx).Info("HandleTimeoutMsgExitPool hook called", "seq", ex.Sequence)
+}
+
+func (k Keeper) HandleTimeoutMsgLockTokens(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*lockuptypes.MsgLockTokens],
+) {
+	k.Logger(ctx).Info("HandleTimeoutMsgLockTokens hook called", "seq", ex.Sequence)
 }

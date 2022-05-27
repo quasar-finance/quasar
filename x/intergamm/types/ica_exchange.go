@@ -5,18 +5,19 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 type ibcExchangeRequest interface {
 	proto.Message
 
-	*ibctransfertypes.FungibleTokenPacketData | *gammbalancer.MsgCreateBalancerPool | *gammtypes.MsgJoinPool | *gammtypes.MsgExitPool
+	*ibctransfertypes.FungibleTokenPacketData | *gammbalancer.MsgCreateBalancerPool | *gammtypes.MsgJoinPool | *gammtypes.MsgExitPool | *lockuptypes.MsgLockTokens
 }
 
 type ibcExchangeResponse interface {
 	proto.Message
 
-	*MsgEmptyIbcResponse | *gammbalancer.MsgCreateBalancerPoolResponse | *gammtypes.MsgJoinPoolResponse | *gammtypes.MsgExitPoolResponse
+	*MsgEmptyIbcResponse | *gammbalancer.MsgCreateBalancerPoolResponse | *gammtypes.MsgJoinPoolResponse | *gammtypes.MsgExitPoolResponse | *lockuptypes.MsgLockTokensResponse
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {
