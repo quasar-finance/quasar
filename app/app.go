@@ -434,9 +434,9 @@ func New(
 	)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	originTransferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
-	transferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
-		&originTransferIbcModule,
+	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
+		&transferIbcModule,
 		app.IntergammKeeper,
 	)
 
@@ -500,10 +500,10 @@ func New(
 
 	// IBC
 
-	app.IntergammKeeper.Hooks.Ibc.AddHooksAckIbcTransfer(
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIbcTransfer(
 		app.OrionKeeper.HandleAckIbcTransfer,
 	)
-	app.IntergammKeeper.Hooks.Ibc.AddHooksTimeoutIbcTransfer(
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(
 		app.OrionKeeper.HandleTimeoutIbcTransfer,
 	)
 
@@ -536,7 +536,7 @@ func New(
 	// Register host and authentication routes
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 

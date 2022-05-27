@@ -339,7 +339,7 @@ func TestHandleIbcTransferAcknowledgement(t *testing.T) {
 			},
 			ack: makeIbcAck(),
 			setup: func() {
-				k.Hooks.Ibc.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
+				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 					require.Equal(t, tstDenom, e.Request.Denom)
@@ -353,7 +353,7 @@ func TestHandleIbcTransferAcknowledgement(t *testing.T) {
 			transferPacket: ibctransfertypes.FungibleTokenPacketData{},
 			ack:            makeErrorAck(t, "test error"),
 			setup: func() {
-				k.Hooks.Ibc.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
+				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 					require.Equal(t, "test error", e.Error)
@@ -366,7 +366,7 @@ func TestHandleIbcTransferAcknowledgement(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
-			k.Hooks.Ibc.ClearAckHooks()
+			k.Hooks.IbcTransfer.ClearAckHooks()
 			tc.setup()
 			err := k.HandleIbcTransferAcknowledgement(ctx, tc.seq, tc.transferPacket, tc.ack)
 
@@ -402,7 +402,7 @@ func TestHandleIbcTimeout(t *testing.T) {
 				Denom: tstDenom,
 			},
 			setup: func() {
-				k.Hooks.Ibc.AddHooksTimeoutIbcTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]) {
+				k.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 					require.Equal(t, tstDenom, e.Request.Denom)
@@ -414,7 +414,7 @@ func TestHandleIbcTimeout(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
-			k.Hooks.Ibc.ClearTimeoutHooks()
+			k.Hooks.IbcTransfer.ClearTimeoutHooks()
 			tc.setup()
 			err := k.HandleIbcTransferTimeout(ctx, tc.seq, tc.transferPacket)
 

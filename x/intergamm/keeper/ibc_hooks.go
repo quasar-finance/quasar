@@ -8,7 +8,7 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
-type IbcHooks struct {
+type IbcTransferHooks struct {
 	ackIbcTransfer     []func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse])
 	timeoutIbcTransfer []func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData])
 }
@@ -23,11 +23,11 @@ type OsmosisHooks struct {
 	timeoutMsgExitPool           []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool])
 }
 
-func (ih *IbcHooks) ClearAckHooks() {
+func (ih *IbcTransferHooks) ClearAckHooks() {
 	ih.ackIbcTransfer = nil
 }
 
-func (ih *IbcHooks) ClearTimeoutHooks() {
+func (ih *IbcTransferHooks) ClearTimeoutHooks() {
 	ih.timeoutIbcTransfer = nil
 }
 
@@ -43,11 +43,11 @@ func (ih *OsmosisHooks) ClearTimeoutHooks() {
 	ih.timeoutMsgExitPool = nil
 }
 
-func (ih *IbcHooks) AddHooksAckIbcTransfer(hs ...func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse])) {
+func (ih *IbcTransferHooks) AddHooksAckIbcTransfer(hs ...func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse])) {
 	ih.ackIbcTransfer = append(ih.ackIbcTransfer, hs...)
 }
 
-func (ih *IbcHooks) AddHooksTimeoutIbcTransfer(hs ...func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData])) {
+func (ih *IbcTransferHooks) AddHooksTimeoutIbcTransfer(hs ...func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData])) {
 	ih.timeoutIbcTransfer = append(ih.timeoutIbcTransfer, hs...)
 }
 

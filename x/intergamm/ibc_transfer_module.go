@@ -17,7 +17,7 @@ import (
 	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 )
 
-var _ porttypes.IBCModule = IBCModule{}
+var _ porttypes.IBCModule = IBCTransferModuleDecorator{}
 
 // IBCModule implements the ICS26 interface for interchain accounts controller chains
 type IBCTransferModuleDecorator struct {

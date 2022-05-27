@@ -147,7 +147,7 @@ func (k *Keeper) HandleIbcTransferAcknowledgement(
 		Request:  &transferPacket,
 		Response: &types.MsgEmptyIbcResponse{},
 	}
-	for _, h := range k.Hooks.Ibc.ackIbcTransfer {
+	for _, h := range k.Hooks.IbcTransfer.ackIbcTransfer {
 		h(ctx, ex)
 	}
 
@@ -163,7 +163,7 @@ func (k *Keeper) HandleIbcTransferTimeout(
 		Sequence: sequence,
 		Request:  &transferPacket,
 	}
-	for _, h := range k.Hooks.Ibc.timeoutIbcTransfer {
+	for _, h := range k.Hooks.IbcTransfer.timeoutIbcTransfer {
 		h(ctx, ex)
 	}
 

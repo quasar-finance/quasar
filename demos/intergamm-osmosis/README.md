@@ -142,10 +142,10 @@ Then check the newly created pool:
 
 ## IBC transfer
 
-IBC transfers are also available, for instance, 10 uqsr cant be sent across to Osmosis:
+IBC transfers are also available, for instance, 10 uqsr can be sent across to Osmosis:
 
 ```bash
-./demo quasartx ibc-oransfer transfer transfer channel-0 osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy 10uqsr
+./demo quasartx ibc-transfer transfer transfer channel-0 osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy 10uqsr
 ```
 
 Check balance:
