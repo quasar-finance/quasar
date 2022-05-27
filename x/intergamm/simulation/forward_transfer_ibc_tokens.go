@@ -10,7 +10,7 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
-func SimulateMsgForwardIbcTransfer(
+func SimulateMsgForwardTransferIbcTokens(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
 	k *keeper.Keeper,
@@ -18,12 +18,12 @@ func SimulateMsgForwardIbcTransfer(
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
-		msg := &types.MsgForwardIbcTransfer{
+		msg := &types.MsgForwardTransferIbcTokens{
 			Creator: simAccount.Address.String(),
 		}
 
-		// TODO: Handling the ForwardIbcTransfer simulation
+		// TODO: Handling the ForwardTransferIbcTokens simulation
 
-		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "ForwardIbcTransfer simulation not implemented"), nil, nil
+		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "ForwardTransferIbcTokens simulation not implemented"), nil, nil
 	}
 }

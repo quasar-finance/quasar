@@ -7,10 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k msgServer) ExitPool(goCtx context.Context, msg *types.MsgExitPool) (*types.MsgExitPoolResponse, error) {
+func (s msgServer) ExitPool(goCtx context.Context, msg *types.MsgExitPool) (*types.MsgExitPoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.TransmitIbcExitPool(ctx,
+	err := s.k.TransmitIbcExitPool(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

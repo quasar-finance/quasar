@@ -7,11 +7,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k msgServer) JoinPool(goCtx context.Context, msg *types.MsgJoinPool) (*types.MsgJoinPoolResponse, error) {
+func (s msgServer) JoinPool(goCtx context.Context, msg *types.MsgJoinPool) (*types.MsgJoinPoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO connectionId should come from a param
-	err := k.TransmitIbcJoinPool(ctx,
+	err := s.k.TransmitIbcJoinPool(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

@@ -779,6 +779,286 @@ func (m *MsgForwardIbcTransferResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgForwardIbcTransferResponse proto.InternalMessageInfo
 
+type MsgTransferIbcTokens struct {
+	Creator          string        `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	SourcePort       string        `protobuf:"bytes,2,opt,name=sourcePort,proto3" json:"sourcePort,omitempty" yaml:"source_port"`
+	SourceChannel    string        `protobuf:"bytes,3,opt,name=sourceChannel,proto3" json:"sourceChannel,omitempty" yaml:"source_channel"`
+	Token            types1.Coin   `protobuf:"bytes,4,opt,name=token,proto3" json:"token"`
+	Receiver         string        `protobuf:"bytes,5,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	TimeoutHeight    types2.Height `protobuf:"bytes,6,opt,name=timeoutHeight,proto3" json:"timeoutHeight" yaml:"timeout_height"`
+	TimeoutTimestamp uint64        `protobuf:"varint,7,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty" yaml:"timeout_timestamp"`
+}
+
+func (m *MsgTransferIbcTokens) Reset()         { *m = MsgTransferIbcTokens{} }
+func (m *MsgTransferIbcTokens) String() string { return proto.CompactTextString(m) }
+func (*MsgTransferIbcTokens) ProtoMessage()    {}
+func (*MsgTransferIbcTokens) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{12}
+}
+func (m *MsgTransferIbcTokens) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransferIbcTokens) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransferIbcTokens.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransferIbcTokens) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransferIbcTokens.Merge(m, src)
+}
+func (m *MsgTransferIbcTokens) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransferIbcTokens) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransferIbcTokens.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransferIbcTokens proto.InternalMessageInfo
+
+func (m *MsgTransferIbcTokens) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgTransferIbcTokens) GetSourcePort() string {
+	if m != nil {
+		return m.SourcePort
+	}
+	return ""
+}
+
+func (m *MsgTransferIbcTokens) GetSourceChannel() string {
+	if m != nil {
+		return m.SourceChannel
+	}
+	return ""
+}
+
+func (m *MsgTransferIbcTokens) GetToken() types1.Coin {
+	if m != nil {
+		return m.Token
+	}
+	return types1.Coin{}
+}
+
+func (m *MsgTransferIbcTokens) GetReceiver() string {
+	if m != nil {
+		return m.Receiver
+	}
+	return ""
+}
+
+func (m *MsgTransferIbcTokens) GetTimeoutHeight() types2.Height {
+	if m != nil {
+		return m.TimeoutHeight
+	}
+	return types2.Height{}
+}
+
+func (m *MsgTransferIbcTokens) GetTimeoutTimestamp() uint64 {
+	if m != nil {
+		return m.TimeoutTimestamp
+	}
+	return 0
+}
+
+type MsgTransferIbcTokensResponse struct {
+}
+
+func (m *MsgTransferIbcTokensResponse) Reset()         { *m = MsgTransferIbcTokensResponse{} }
+func (m *MsgTransferIbcTokensResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgTransferIbcTokensResponse) ProtoMessage()    {}
+func (*MsgTransferIbcTokensResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{13}
+}
+func (m *MsgTransferIbcTokensResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransferIbcTokensResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransferIbcTokensResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransferIbcTokensResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransferIbcTokensResponse.Merge(m, src)
+}
+func (m *MsgTransferIbcTokensResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransferIbcTokensResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransferIbcTokensResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransferIbcTokensResponse proto.InternalMessageInfo
+
+type MsgForwardTransferIbcTokens struct {
+	Creator                string        `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	SourcePort             string        `protobuf:"bytes,2,opt,name=sourcePort,proto3" json:"sourcePort,omitempty" yaml:"source_port"`
+	SourceChannel          string        `protobuf:"bytes,3,opt,name=sourceChannel,proto3" json:"sourceChannel,omitempty" yaml:"source_channel"`
+	Token                  types1.Coin   `protobuf:"bytes,4,opt,name=token,proto3" json:"token"`
+	ForwardTransferPort    string        `protobuf:"bytes,5,opt,name=forwardTransferPort,proto3" json:"forwardTransferPort,omitempty"`
+	ForwardTransferChannel string        `protobuf:"bytes,6,opt,name=forwardTransferChannel,proto3" json:"forwardTransferChannel,omitempty"`
+	IntermediateReceiver   string        `protobuf:"bytes,7,opt,name=intermediateReceiver,proto3" json:"intermediateReceiver,omitempty"`
+	Receiver               string        `protobuf:"bytes,8,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	TimeoutHeight          types2.Height `protobuf:"bytes,9,opt,name=timeoutHeight,proto3" json:"timeoutHeight" yaml:"timeout_height"`
+	TimeoutTimestamp       uint64        `protobuf:"varint,10,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty" yaml:"timeout_timestamp"`
+}
+
+func (m *MsgForwardTransferIbcTokens) Reset()         { *m = MsgForwardTransferIbcTokens{} }
+func (m *MsgForwardTransferIbcTokens) String() string { return proto.CompactTextString(m) }
+func (*MsgForwardTransferIbcTokens) ProtoMessage()    {}
+func (*MsgForwardTransferIbcTokens) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{14}
+}
+func (m *MsgForwardTransferIbcTokens) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgForwardTransferIbcTokens) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgForwardTransferIbcTokens.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgForwardTransferIbcTokens) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgForwardTransferIbcTokens.Merge(m, src)
+}
+func (m *MsgForwardTransferIbcTokens) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgForwardTransferIbcTokens) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgForwardTransferIbcTokens.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgForwardTransferIbcTokens proto.InternalMessageInfo
+
+func (m *MsgForwardTransferIbcTokens) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetSourcePort() string {
+	if m != nil {
+		return m.SourcePort
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetSourceChannel() string {
+	if m != nil {
+		return m.SourceChannel
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetToken() types1.Coin {
+	if m != nil {
+		return m.Token
+	}
+	return types1.Coin{}
+}
+
+func (m *MsgForwardTransferIbcTokens) GetForwardTransferPort() string {
+	if m != nil {
+		return m.ForwardTransferPort
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetForwardTransferChannel() string {
+	if m != nil {
+		return m.ForwardTransferChannel
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetIntermediateReceiver() string {
+	if m != nil {
+		return m.IntermediateReceiver
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetReceiver() string {
+	if m != nil {
+		return m.Receiver
+	}
+	return ""
+}
+
+func (m *MsgForwardTransferIbcTokens) GetTimeoutHeight() types2.Height {
+	if m != nil {
+		return m.TimeoutHeight
+	}
+	return types2.Height{}
+}
+
+func (m *MsgForwardTransferIbcTokens) GetTimeoutTimestamp() uint64 {
+	if m != nil {
+		return m.TimeoutTimestamp
+	}
+	return 0
+}
+
+type MsgForwardTransferIbcTokensResponse struct {
+}
+
+func (m *MsgForwardTransferIbcTokensResponse) Reset()         { *m = MsgForwardTransferIbcTokensResponse{} }
+func (m *MsgForwardTransferIbcTokensResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgForwardTransferIbcTokensResponse) ProtoMessage()    {}
+func (*MsgForwardTransferIbcTokensResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{15}
+}
+func (m *MsgForwardTransferIbcTokensResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgForwardTransferIbcTokensResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgForwardTransferIbcTokensResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgForwardTransferIbcTokensResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgForwardTransferIbcTokensResponse.Merge(m, src)
+}
+func (m *MsgForwardTransferIbcTokensResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgForwardTransferIbcTokensResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgForwardTransferIbcTokensResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgForwardTransferIbcTokensResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgRegisterAccount)(nil), "abag.quasarnode.intergamm.MsgRegisterAccount")
 	proto.RegisterType((*MsgRegisterAccountResponse)(nil), "abag.quasarnode.intergamm.MsgRegisterAccountResponse")
@@ -792,75 +1072,91 @@ func init() {
 	proto.RegisterType((*MsgIbcTransferResponse)(nil), "abag.quasarnode.intergamm.MsgIbcTransferResponse")
 	proto.RegisterType((*MsgForwardIbcTransfer)(nil), "abag.quasarnode.intergamm.MsgForwardIbcTransfer")
 	proto.RegisterType((*MsgForwardIbcTransferResponse)(nil), "abag.quasarnode.intergamm.MsgForwardIbcTransferResponse")
+	proto.RegisterType((*MsgTransferIbcTokens)(nil), "abag.quasarnode.intergamm.MsgTransferIbcTokens")
+	proto.RegisterType((*MsgTransferIbcTokensResponse)(nil), "abag.quasarnode.intergamm.MsgTransferIbcTokensResponse")
+	proto.RegisterType((*MsgForwardTransferIbcTokens)(nil), "abag.quasarnode.intergamm.MsgForwardTransferIbcTokens")
+	proto.RegisterType((*MsgForwardTransferIbcTokensResponse)(nil), "abag.quasarnode.intergamm.MsgForwardTransferIbcTokensResponse")
 }
 
 func init() { proto.RegisterFile("intergamm/tx.proto", fileDescriptor_a78c651f644a1267) }
 
 var fileDescriptor_a78c651f644a1267 = []byte{
-	// 1003 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe4, 0x57, 0xcd, 0x6e, 0xdb, 0x46,
-	0x17, 0xb5, 0x6c, 0xd9, 0xb1, 0xaf, 0x1c, 0xe7, 0xc3, 0xc4, 0xf6, 0xc7, 0xb0, 0x89, 0x24, 0xb0,
-	0x45, 0xa0, 0x06, 0x35, 0x69, 0xb9, 0x4d, 0x51, 0x64, 0x55, 0xcb, 0x48, 0x1a, 0x15, 0x10, 0x62,
-	0x10, 0x5e, 0x75, 0xa3, 0x8e, 0xa8, 0x31, 0x35, 0xb0, 0x38, 0xa3, 0xce, 0x0c, 0x15, 0x65, 0xd7,
-	0x47, 0xe8, 0x23, 0xf4, 0x21, 0xfa, 0x10, 0x5e, 0x66, 0x59, 0x74, 0x21, 0x14, 0xf6, 0xba, 0x1b,
-	0x6f, 0xda, 0x65, 0xc1, 0xe1, 0x8f, 0x29, 0x59, 0xb6, 0x15, 0xb4, 0x48, 0x0b, 0x74, 0x65, 0x72,
-	0xee, 0xb9, 0xe7, 0x5e, 0x9e, 0x73, 0x3d, 0x33, 0x02, 0x44, 0x99, 0x22, 0xc2, 0xc7, 0x41, 0xe0,
-	0xa8, 0x91, 0x3d, 0x10, 0x5c, 0x71, 0xf4, 0x00, 0x77, 0xb0, 0x6f, 0x7f, 0x17, 0x62, 0x89, 0x05,
-	0xe3, 0x5d, 0x62, 0x67, 0x18, 0x73, 0xd3, 0xe7, 0x3e, 0xd7, 0x28, 0x27, 0x7a, 0x8a, 0x13, 0xcc,
-	0xb2, 0xc7, 0x65, 0xc0, 0xa5, 0xd3, 0xc1, 0x92, 0x38, 0xc3, 0x7a, 0x87, 0x28, 0x5c, 0x77, 0x3c,
-	0x4e, 0x59, 0x12, 0xaf, 0xd0, 0x8e, 0xe7, 0x78, 0x5c, 0x10, 0xc7, 0xeb, 0x53, 0xc2, 0x94, 0x33,
-	0xac, 0x27, 0x4f, 0x29, 0x40, 0xe7, 0x53, 0xe9, 0xe8, 0x46, 0x52, 0x86, 0x01, 0xe7, 0xfd, 0x04,
-	0xf0, 0xd9, 0x04, 0x20, 0x0a, 0xec, 0x04, 0xbc, 0x4b, 0xfa, 0x51, 0xcd, 0x3e, 0x66, 0x1e, 0x11,
-	0xd9, 0xc3, 0x61, 0x96, 0x65, 0xb9, 0x80, 0x5a, 0xd2, 0x77, 0x89, 0x4f, 0xa5, 0x22, 0x62, 0xdf,
-	0xf3, 0x78, 0xc8, 0x14, 0x32, 0xe0, 0x8e, 0x27, 0x08, 0x56, 0x5c, 0x18, 0x85, 0x6a, 0xa1, 0xb6,
-	0xe6, 0xa6, 0xaf, 0xc8, 0x82, 0x75, 0x8f, 0x33, 0x46, 0x3c, 0x45, 0x39, 0x6b, 0x76, 0x8d, 0x45,
-	0x1d, 0x9e, 0x58, 0xb3, 0x1e, 0x82, 0x79, 0x95, 0xd3, 0x25, 0x72, 0xc0, 0x99, 0x24, 0xd6, 0x4f,
-	0x8b, 0x70, 0xb7, 0x25, 0xfd, 0x83, 0x88, 0x90, 0x44, 0x9d, 0xfc, 0xb5, 0x6a, 0xe8, 0x09, 0xfc,
-	0x4f, 0xd1, 0x80, 0xf0, 0x50, 0x1d, 0xd1, 0x80, 0x48, 0x85, 0x83, 0x81, 0xb1, 0x54, 0x2d, 0xd4,
-	0x8a, 0xee, 0x95, 0x75, 0xf4, 0x25, 0x40, 0x24, 0xcc, 0x21, 0x16, 0x38, 0x90, 0x46, 0xb1, 0x5a,
-	0xa8, 0x95, 0xf6, 0xaa, 0x76, 0x22, 0x9c, 0x1d, 0x09, 0x67, 0x27, 0xca, 0xda, 0x87, 0x19, 0xce,
-	0xcd, 0xe5, 0xa0, 0xe7, 0x31, 0xc3, 0xbe, 0x94, 0x44, 0x49, 0x63, 0xb9, 0xba, 0x54, 0x2b, 0xed,
-	0x55, 0xae, 0x67, 0xd0, 0xb8, 0x46, 0xf1, 0x74, 0x5c, 0x59, 0x70, 0x73, 0x89, 0x68, 0x17, 0x36,
-	0x8f, 0x43, 0x15, 0x0a, 0xd2, 0x8e, 0x16, 0xdb, 0x3e, 0x1f, 0x12, 0xc1, 0xb8, 0x30, 0x56, 0xf4,
-	0x07, 0xa2, 0x38, 0x16, 0x11, 0x7c, 0x95, 0x44, 0xac, 0xff, 0xc3, 0xd6, 0x84, 0x6a, 0x99, 0x9e,
-	0xbf, 0x2f, 0x42, 0xa9, 0x25, 0xfd, 0xaf, 0x39, 0x65, 0xef, 0x59, 0xcd, 0x27, 0xb0, 0x12, 0x75,
-	0xdf, 0xec, 0x6a, 0x25, 0x8b, 0x0d, 0x74, 0x31, 0xae, 0x6c, 0xbc, 0xc1, 0x41, 0xff, 0x99, 0xa5,
-	0xbf, 0x8a, 0x76, 0x2d, 0x37, 0x41, 0xa0, 0x01, 0x6c, 0xc8, 0x1e, 0x16, 0xe4, 0x55, 0xa8, 0xf6,
-	0x83, 0x68, 0x1e, 0x8c, 0xe5, 0xa8, 0x7a, 0xe3, 0x65, 0x24, 0xcd, 0x2f, 0xe3, 0xca, 0x63, 0x9f,
-	0xaa, 0x5e, 0xd8, 0xb1, 0x3d, 0x1e, 0x38, 0xc9, 0xbf, 0x4a, 0xfc, 0x67, 0x47, 0x76, 0x4f, 0x1c,
-	0xf5, 0x66, 0x40, 0xa4, 0xdd, 0x64, 0xea, 0x62, 0x5c, 0xd9, 0xce, 0x55, 0xc0, 0x9a, 0xaa, 0xcd,
-	0x43, 0x65, 0xb9, 0x53, 0xfc, 0xe8, 0x5b, 0x28, 0x29, 0x7e, 0x42, 0x58, 0x93, 0xb5, 0xf0, 0x48,
-	0x1a, 0x2b, 0xda, 0xaa, 0x07, 0x76, 0xcc, 0x6a, 0x47, 0xff, 0x87, 0x99, 0x53, 0x07, 0x9c, 0xb2,
-	0xc6, 0x87, 0x51, 0x27, 0x17, 0xe3, 0xca, 0x07, 0x31, 0xbf, 0xce, 0x6d, 0x53, 0xd6, 0x0e, 0xf0,
-	0x28, 0xa9, 0x23, 0x2d, 0x37, 0x4f, 0x69, 0x6d, 0xc1, 0xfd, 0x9c, 0xf0, 0x99, 0x21, 0x7f, 0xc4,
-	0x86, 0x3c, 0x1f, 0x51, 0xf5, 0x2f, 0x36, 0x84, 0xc1, 0x5d, 0x2d, 0x58, 0x93, 0xfd, 0x3d, 0x7e,
-	0x68, 0xb2, 0x48, 0xaf, 0x58, 0x2b, 0xcb, 0x9d, 0xa4, 0x47, 0x1e, 0xac, 0x6b, 0xed, 0x5e, 0x85,
-	0xaa, 0x45, 0xd9, 0x1c, 0x7e, 0x7c, 0x94, 0xf8, 0xf1, 0x30, 0xef, 0x07, 0x0f, 0x55, 0x3b, 0xc8,
-	0x8a, 0x48, 0xcb, 0x9d, 0x20, 0x4d, 0x1c, 0x49, 0x95, 0xcf, 0x1c, 0x39, 0x5d, 0x82, 0x8d, 0x96,
-	0xf4, 0x9b, 0x1d, 0xef, 0x48, 0x60, 0x26, 0x8f, 0x89, 0x78, 0x8f, 0xa6, 0x58, 0xb0, 0xae, 0x92,
-	0xaa, 0x87, 0x5c, 0x28, 0x6d, 0xcd, 0x9a, 0x3b, 0xb1, 0x86, 0x6a, 0x70, 0x2f, 0x7d, 0x3f, 0xe8,
-	0x61, 0xc6, 0x48, 0x3f, 0xb6, 0xc3, 0x9d, 0x5e, 0x46, 0x4f, 0x61, 0x59, 0x7f, 0xb1, 0xde, 0x29,
-	0x6e, 0xd4, 0x2f, 0xde, 0x74, 0x62, 0x34, 0x32, 0x61, 0x55, 0x10, 0x8f, 0xd0, 0x21, 0x11, 0xc6,
-	0x1d, 0xcd, 0x9c, 0xbd, 0x23, 0x0e, 0x5b, 0x69, 0x95, 0xa3, 0xb8, 0xf9, 0x97, 0x84, 0xfa, 0x3d,
-	0x65, 0xac, 0xea, 0x12, 0xa6, 0x4d, 0x3b, 0x9e, 0x1d, 0x1d, 0x4d, 0x76, 0x72, 0x20, 0x0d, 0xeb,
-	0x76, 0x8c, 0x68, 0x3c, 0x4a, 0x3c, 0xda, 0x4a, 0x3c, 0x8a, 0xd3, 0xdb, 0x3d, 0x1d, 0xb5, 0xdc,
-	0xd9, 0xbc, 0xe8, 0x19, 0x18, 0x53, 0x81, 0x4b, 0x15, 0xd7, 0xb4, 0x8a, 0xd7, 0xc6, 0x2d, 0x03,
-	0xb6, 0x27, 0x9d, 0xcc, 0x4c, 0xfe, 0xad, 0xa8, 0x77, 0xc8, 0x17, 0x5c, 0xbc, 0xc6, 0xa2, 0xfb,
-	0x1f, 0xf6, 0x7a, 0x17, 0xee, 0x1f, 0xc7, 0x22, 0x1c, 0xe5, 0x7b, 0x89, 0x6d, 0x9f, 0x15, 0x42,
-	0x9f, 0xc3, 0xf6, 0xd4, 0x72, 0xda, 0xd9, 0xaa, 0x4e, 0xba, 0x26, 0x8a, 0xf6, 0x60, 0x53, 0xdf,
-	0x7b, 0x02, 0xd2, 0xa5, 0x58, 0x11, 0x37, 0x9d, 0xb0, 0x35, 0x9d, 0x35, 0x33, 0x36, 0x31, 0x89,
-	0x30, 0xef, 0x24, 0x96, 0xfe, 0x81, 0x49, 0x5c, 0xbf, 0x65, 0x12, 0x2b, 0xf0, 0x68, 0xe6, 0xb8,
-	0xa5, 0x03, 0xb9, 0xf7, 0xe3, 0x32, 0x2c, 0xb5, 0xa4, 0x8f, 0x5e, 0xc3, 0xbd, 0xe9, 0xfb, 0xd5,
-	0x8e, 0x7d, 0xed, 0xfd, 0xd1, 0xbe, 0x7a, 0x75, 0x32, 0x9f, 0xbe, 0x13, 0x3c, 0x6d, 0x00, 0xf5,
-	0x00, 0x72, 0xb7, 0xac, 0xda, 0xcd, 0x24, 0x97, 0x48, 0x73, 0x77, 0x5e, 0x64, 0x56, 0xa9, 0x03,
-	0xab, 0xd9, 0xfd, 0xe3, 0xf1, 0xcd, 0xd9, 0x29, 0xce, 0xb4, 0xe7, 0xc3, 0xe5, 0x6b, 0x64, 0x47,
-	0xea, 0x2d, 0x35, 0x52, 0xdc, 0x6d, 0x35, 0xa6, 0x0f, 0x0a, 0x74, 0x02, 0xa5, 0xfc, 0xc6, 0xf1,
-	0xf1, 0xcd, 0xe9, 0x39, 0xa8, 0x59, 0x9f, 0x1b, 0x9a, 0x15, 0xfb, 0xbe, 0x00, 0x68, 0xc6, 0x6e,
-	0x75, 0x8b, 0xfa, 0x57, 0x33, 0xcc, 0x2f, 0xde, 0x35, 0x23, 0x6d, 0xa1, 0xf1, 0xe2, 0xf4, 0xac,
-	0x5c, 0x78, 0x7b, 0x56, 0x2e, 0xfc, 0x7a, 0x56, 0x2e, 0xfc, 0x70, 0x5e, 0x5e, 0x78, 0x7b, 0x5e,
-	0x5e, 0xf8, 0xf9, 0xbc, 0xbc, 0xf0, 0xcd, 0x27, 0xb9, 0xf3, 0x3f, 0x62, 0x77, 0x2e, 0xd9, 0x9d,
-	0x91, 0x93, 0xfb, 0x45, 0x14, 0xdd, 0x04, 0x3a, 0x2b, 0xfa, 0xc7, 0xc4, 0xa7, 0x7f, 0x06, 0x00,
-	0x00, 0xff, 0xff, 0xbe, 0xc2, 0xb1, 0x56, 0x2b, 0x0d, 0x00, 0x00,
+	// 1199 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe4, 0x58, 0x4d, 0x4f, 0xe3, 0xc6,
+	0x1b, 0x27, 0x9b, 0x10, 0xe0, 0x09, 0xb0, 0xff, 0xff, 0x2c, 0x50, 0x93, 0x65, 0x13, 0xe4, 0x6d,
+	0x57, 0xe9, 0xaa, 0xd8, 0x40, 0xbb, 0xb4, 0xda, 0x43, 0x5b, 0x82, 0x76, 0x4b, 0x2a, 0x45, 0x8b,
+	0x2c, 0x4e, 0xbd, 0xa4, 0x8e, 0x33, 0x38, 0x16, 0xf1, 0x4c, 0xea, 0x99, 0xb0, 0xec, 0xa1, 0x52,
+	0x3f, 0x42, 0xd5, 0x2f, 0xd1, 0x2f, 0xb0, 0x1f, 0x82, 0x43, 0x0f, 0x7b, 0xac, 0x7a, 0x88, 0x2a,
+	0x38, 0xf7, 0xc2, 0xa5, 0x3d, 0x56, 0x33, 0x7e, 0x89, 0x9d, 0x37, 0x02, 0x5b, 0xd1, 0xaa, 0x3d,
+	0xc5, 0x9e, 0xe7, 0xf7, 0xbc, 0xf8, 0xf7, 0x7b, 0xfc, 0x78, 0x26, 0x80, 0x1c, 0xc2, 0xb1, 0x67,
+	0x9b, 0xae, 0xab, 0xf3, 0x53, 0xad, 0xed, 0x51, 0x4e, 0xd1, 0xaa, 0x59, 0x37, 0x6d, 0xed, 0x9b,
+	0x8e, 0xc9, 0x4c, 0x8f, 0xd0, 0x06, 0xd6, 0x22, 0x4c, 0x7e, 0xc9, 0xa6, 0x36, 0x95, 0x28, 0x5d,
+	0x5c, 0xf9, 0x0e, 0xf9, 0x82, 0x45, 0x99, 0x4b, 0x99, 0x5e, 0x37, 0x19, 0xd6, 0x4f, 0xb6, 0xea,
+	0x98, 0x9b, 0x5b, 0xba, 0x45, 0x1d, 0x12, 0xd8, 0x8b, 0x4e, 0xdd, 0xd2, 0x2d, 0xea, 0x61, 0xdd,
+	0x6a, 0x39, 0x98, 0x70, 0xfd, 0x64, 0x2b, 0xb8, 0x0a, 0x01, 0xd2, 0xdf, 0x61, 0xba, 0x2c, 0x24,
+	0x8c, 0xd0, 0xa6, 0xb4, 0x15, 0x00, 0x3e, 0x4a, 0x00, 0x84, 0x61, 0xc3, 0xa5, 0x0d, 0xdc, 0x12,
+	0x39, 0x5b, 0x26, 0xb1, 0xb0, 0x17, 0x5d, 0x1c, 0x44, 0x5e, 0xaa, 0x01, 0xa8, 0xca, 0x6c, 0x03,
+	0xdb, 0x0e, 0xe3, 0xd8, 0xdb, 0xb5, 0x2c, 0xda, 0x21, 0x1c, 0x29, 0x30, 0x63, 0x79, 0xd8, 0xe4,
+	0xd4, 0x53, 0x52, 0xeb, 0xa9, 0xd2, 0x9c, 0x11, 0xde, 0x22, 0x15, 0xe6, 0x2d, 0x4a, 0x08, 0xb6,
+	0xb8, 0x43, 0x49, 0xa5, 0xa1, 0xdc, 0x91, 0xe6, 0xc4, 0x9a, 0xba, 0x06, 0xf9, 0xc1, 0x98, 0x06,
+	0x66, 0x6d, 0x4a, 0x18, 0x56, 0x5f, 0xdf, 0x81, 0x85, 0x2a, 0xb3, 0xf7, 0x44, 0x40, 0x2c, 0x2a,
+	0x79, 0xbb, 0x6c, 0xe8, 0x31, 0xfc, 0x8f, 0x3b, 0x2e, 0xa6, 0x1d, 0x7e, 0xe8, 0xb8, 0x98, 0x71,
+	0xd3, 0x6d, 0x2b, 0xe9, 0xf5, 0x54, 0x29, 0x63, 0x0c, 0xac, 0xa3, 0xcf, 0x01, 0x04, 0x31, 0x07,
+	0xa6, 0x67, 0xba, 0x4c, 0xc9, 0xac, 0xa7, 0x4a, 0xb9, 0xed, 0x75, 0x2d, 0x20, 0x4e, 0x13, 0xc4,
+	0x69, 0x01, 0xb3, 0xda, 0x41, 0x84, 0x33, 0x62, 0x3e, 0xe8, 0x99, 0x1f, 0x61, 0x97, 0x31, 0xcc,
+	0x99, 0x32, 0xbd, 0x9e, 0x2e, 0xe5, 0xb6, 0x8b, 0xa3, 0x23, 0x48, 0x5c, 0x39, 0x73, 0xd6, 0x2d,
+	0x4e, 0x19, 0x31, 0x47, 0xb4, 0x09, 0x4b, 0x47, 0x1d, 0xde, 0xf1, 0x70, 0x4d, 0x2c, 0xd6, 0x6c,
+	0x7a, 0x82, 0x3d, 0x42, 0x3d, 0x25, 0x2b, 0x1f, 0x10, 0xf9, 0x36, 0x11, 0xe0, 0x8b, 0xc0, 0xa2,
+	0xbe, 0x03, 0xcb, 0x09, 0xd6, 0x22, 0x3e, 0x7f, 0xbf, 0x03, 0xb9, 0x2a, 0xb3, 0xbf, 0xa4, 0x0e,
+	0xb9, 0x65, 0x36, 0x1f, 0x43, 0x56, 0x54, 0x5f, 0x69, 0x48, 0x26, 0x33, 0x65, 0x74, 0xd9, 0x2d,
+	0x2e, 0xbe, 0x32, 0xdd, 0xd6, 0x53, 0x55, 0x3e, 0x95, 0xd3, 0x50, 0x8d, 0x00, 0x81, 0xda, 0xb0,
+	0xc8, 0x9a, 0xa6, 0x87, 0x5f, 0x74, 0xf8, 0xae, 0x2b, 0xfa, 0x41, 0x99, 0x16, 0xd9, 0xcb, 0xfb,
+	0x82, 0x9a, 0x5f, 0xba, 0xc5, 0x47, 0xb6, 0xc3, 0x9b, 0x9d, 0xba, 0x66, 0x51, 0x57, 0x0f, 0x5e,
+	0x15, 0xff, 0x67, 0x83, 0x35, 0x8e, 0x75, 0xfe, 0xaa, 0x8d, 0x99, 0x56, 0x21, 0xfc, 0xb2, 0x5b,
+	0x5c, 0x89, 0x65, 0x30, 0x65, 0xa8, 0x1a, 0xed, 0x70, 0xd5, 0xe8, 0x8b, 0x8f, 0xbe, 0x86, 0x1c,
+	0xa7, 0xc7, 0x98, 0x54, 0x48, 0xd5, 0x3c, 0x65, 0x4a, 0x56, 0x4a, 0xb5, 0xaa, 0xf9, 0x51, 0x35,
+	0xf1, 0x1e, 0x46, 0x4a, 0xed, 0x51, 0x87, 0x94, 0x1f, 0x8a, 0x4a, 0x2e, 0xbb, 0xc5, 0xfb, 0x7e,
+	0x7c, 0xe9, 0x5b, 0x73, 0x48, 0xcd, 0x35, 0x4f, 0x83, 0x3c, 0x4c, 0x35, 0xe2, 0x21, 0xd5, 0x65,
+	0xb8, 0x17, 0x23, 0x3e, 0x12, 0xe4, 0x0f, 0x5f, 0x90, 0x67, 0xa7, 0x0e, 0xff, 0x07, 0x0b, 0x42,
+	0x60, 0x41, 0x12, 0x56, 0x21, 0x7f, 0x8d, 0x1e, 0x32, 0x98, 0xe0, 0xcb, 0xe7, 0x4a, 0x35, 0x92,
+	0xe1, 0x91, 0x05, 0xf3, 0x92, 0xbb, 0x17, 0x1d, 0x5e, 0x75, 0xc8, 0x04, 0x7a, 0xbc, 0x1b, 0xe8,
+	0xb1, 0x16, 0xd7, 0x83, 0x76, 0x78, 0xcd, 0x8d, 0x92, 0x30, 0xd5, 0x48, 0x04, 0x0d, 0x14, 0x09,
+	0x99, 0x8f, 0x14, 0x39, 0x4b, 0xc3, 0x62, 0x95, 0xd9, 0x95, 0xba, 0x75, 0xe8, 0x99, 0x84, 0x1d,
+	0x61, 0xef, 0x16, 0x45, 0x51, 0x61, 0x9e, 0x07, 0x59, 0x0f, 0xa8, 0xc7, 0xa5, 0x34, 0x73, 0x46,
+	0x62, 0x0d, 0x95, 0xe0, 0x6e, 0x78, 0xbf, 0xd7, 0x34, 0x09, 0xc1, 0x2d, 0x5f, 0x0e, 0xa3, 0x7f,
+	0x19, 0x3d, 0x81, 0x69, 0xf9, 0xc4, 0x72, 0x52, 0x8c, 0xe5, 0xcf, 0x1f, 0x3a, 0x3e, 0x1a, 0xe5,
+	0x61, 0xd6, 0xc3, 0x16, 0x76, 0x4e, 0xb0, 0xa7, 0xcc, 0xc8, 0xc8, 0xd1, 0x3d, 0xa2, 0xb0, 0x1c,
+	0x66, 0x39, 0xf4, 0x8b, 0xdf, 0xc7, 0x8e, 0xdd, 0xe4, 0xca, 0xac, 0x4c, 0x91, 0xd7, 0x9c, 0xba,
+	0xa5, 0x89, 0x4f, 0x93, 0x16, 0x7c, 0x90, 0x4e, 0xb6, 0x34, 0x1f, 0x51, 0x7e, 0x10, 0x68, 0xb4,
+	0x1c, 0x68, 0xe4, 0xbb, 0xd7, 0x9a, 0xd2, 0xaa, 0x1a, 0xc3, 0xe3, 0xa2, 0xa7, 0xa0, 0xf4, 0x19,
+	0x7a, 0x2c, 0xce, 0x49, 0x16, 0x47, 0xda, 0x55, 0x05, 0x56, 0x92, 0x4a, 0x46, 0x22, 0xff, 0x96,
+	0x91, 0x13, 0xf2, 0x39, 0xf5, 0x5e, 0x9a, 0x5e, 0xe3, 0x3f, 0xac, 0xf5, 0x26, 0xdc, 0x3b, 0xf2,
+	0x49, 0x38, 0x8c, 0xd7, 0xe2, 0xcb, 0x3e, 0xcc, 0x84, 0x76, 0x60, 0xa5, 0x6f, 0x39, 0xac, 0x6c,
+	0x56, 0x3a, 0x8d, 0xb0, 0xa2, 0x6d, 0x58, 0x92, 0xfb, 0x1e, 0x17, 0x37, 0x1c, 0x93, 0x63, 0x23,
+	0xec, 0xb0, 0x39, 0xe9, 0x35, 0xd4, 0x96, 0xe8, 0x44, 0x98, 0xb4, 0x13, 0x73, 0x7f, 0x43, 0x27,
+	0xce, 0x5f, 0xd1, 0x89, 0x45, 0x78, 0x30, 0xb4, 0xdd, 0xa2, 0x86, 0xfc, 0x31, 0x0d, 0x4b, 0x55,
+	0x66, 0x87, 0xeb, 0x02, 0x22, 0xf4, 0x61, 0x63, 0xfa, 0x71, 0x07, 0x80, 0xd1, 0x8e, 0x67, 0x61,
+	0xa9, 0x98, 0xec, 0xc6, 0xf2, 0xca, 0x65, 0xb7, 0x88, 0x82, 0x19, 0x2b, 0x6d, 0xb5, 0x36, 0xf5,
+	0xb8, 0x6a, 0xc4, 0x90, 0xe8, 0x33, 0x58, 0xf0, 0xef, 0x42, 0xdd, 0xd2, 0xd2, 0x75, 0xb5, 0x47,
+	0x48, 0xe0, 0x6a, 0xf9, 0x76, 0x31, 0x9d, 0xe3, 0xf8, 0x5e, 0xab, 0x65, 0x6e, 0x3c, 0x56, 0xa6,
+	0xfb, 0xc4, 0xac, 0xc1, 0x02, 0x4f, 0x88, 0x98, 0x7d, 0x5b, 0x11, 0x93, 0xf1, 0xd0, 0xfe, 0x90,
+	0x17, 0x73, 0x46, 0x7e, 0xf7, 0xd6, 0x2e, 0xbb, 0x45, 0x25, 0x19, 0x83, 0x47, 0xba, 0x0d, 0xbe,
+	0xb6, 0x6a, 0x01, 0xd6, 0x86, 0x09, 0x15, 0x29, 0xf9, 0x53, 0x06, 0xee, 0xf7, 0xb4, 0xfe, 0x37,
+	0x0b, 0x3a, 0x62, 0x76, 0x4c, 0xdf, 0x64, 0x76, 0x64, 0x6f, 0x34, 0x3b, 0x66, 0x26, 0x9c, 0x1d,
+	0xb3, 0x57, 0xb5, 0xdb, 0xdc, 0x2d, 0xb4, 0x1b, 0xdc, 0xa8, 0xdd, 0xde, 0x83, 0x87, 0x63, 0xba,
+	0x29, 0xec, 0xba, 0xed, 0xd7, 0x33, 0x90, 0xae, 0x32, 0x1b, 0xbd, 0x84, 0xbb, 0xfd, 0xe7, 0xb3,
+	0x0d, 0x6d, 0xe4, 0xf9, 0x53, 0x1b, 0x3c, 0x7a, 0xe5, 0x9f, 0x5c, 0x0b, 0x1e, 0x16, 0x80, 0x9a,
+	0x00, 0xb1, 0x53, 0x5a, 0x69, 0x7c, 0x90, 0x1e, 0x32, 0xbf, 0x39, 0x29, 0x32, 0xca, 0x54, 0x87,
+	0xd9, 0xe8, 0xfc, 0xf2, 0x68, 0xbc, 0x77, 0x88, 0xcb, 0x6b, 0x93, 0xe1, 0xe2, 0x39, 0xa2, 0x2d,
+	0xf9, 0x15, 0x39, 0x42, 0xdc, 0x55, 0x39, 0xfa, 0x37, 0x9a, 0xe8, 0x18, 0x72, 0xf1, 0x8d, 0xc7,
+	0xfb, 0xe3, 0xdd, 0x63, 0xd0, 0xfc, 0xd6, 0xc4, 0xd0, 0x28, 0xd9, 0x77, 0x29, 0x40, 0x43, 0x76,
+	0x3b, 0x57, 0xb0, 0x3f, 0xe8, 0x91, 0xff, 0xe4, 0xba, 0x1e, 0x51, 0x09, 0xdf, 0xc2, 0xff, 0x07,
+	0xa7, 0xa1, 0x3e, 0x3e, 0xdc, 0x80, 0x43, 0xfe, 0xe3, 0x6b, 0x3a, 0x44, 0xe9, 0x7f, 0x48, 0x81,
+	0x32, 0x72, 0x28, 0xef, 0x4c, 0xf4, 0x54, 0x83, 0xd5, 0x7c, 0x7a, 0x33, 0xbf, 0xb0, 0xa8, 0xf2,
+	0xf3, 0xb3, 0xf3, 0x42, 0xea, 0xcd, 0x79, 0x21, 0xf5, 0xeb, 0x79, 0x21, 0xf5, 0xfd, 0x45, 0x61,
+	0xea, 0xcd, 0x45, 0x61, 0xea, 0xe7, 0x8b, 0xc2, 0xd4, 0x57, 0x1f, 0xc4, 0xce, 0x54, 0x22, 0x87,
+	0xde, 0xcb, 0xa1, 0x9f, 0xea, 0xb1, 0x7f, 0x99, 0xc4, 0xe9, 0xaa, 0x9e, 0x95, 0x7f, 0xd0, 0x7c,
+	0xf8, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa1, 0x1c, 0x23, 0x47, 0x7f, 0x12, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -881,6 +1177,8 @@ type MsgClient interface {
 	ExitPool(ctx context.Context, in *MsgExitPool, opts ...grpc.CallOption) (*MsgExitPoolResponse, error)
 	IbcTransfer(ctx context.Context, in *MsgIbcTransfer, opts ...grpc.CallOption) (*MsgIbcTransferResponse, error)
 	ForwardIbcTransfer(ctx context.Context, in *MsgForwardIbcTransfer, opts ...grpc.CallOption) (*MsgForwardIbcTransferResponse, error)
+	TransferIbcTokens(ctx context.Context, in *MsgTransferIbcTokens, opts ...grpc.CallOption) (*MsgTransferIbcTokensResponse, error)
+	ForwardTransferIbcTokens(ctx context.Context, in *MsgForwardTransferIbcTokens, opts ...grpc.CallOption) (*MsgForwardTransferIbcTokensResponse, error)
 }
 
 type msgClient struct {
@@ -945,6 +1243,24 @@ func (c *msgClient) ForwardIbcTransfer(ctx context.Context, in *MsgForwardIbcTra
 	return out, nil
 }
 
+func (c *msgClient) TransferIbcTokens(ctx context.Context, in *MsgTransferIbcTokens, opts ...grpc.CallOption) (*MsgTransferIbcTokensResponse, error) {
+	out := new(MsgTransferIbcTokensResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.intergamm.Msg/TransferIbcTokens", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) ForwardTransferIbcTokens(ctx context.Context, in *MsgForwardTransferIbcTokens, opts ...grpc.CallOption) (*MsgForwardTransferIbcTokensResponse, error) {
+	out := new(MsgForwardTransferIbcTokensResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.intergamm.Msg/ForwardTransferIbcTokens", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	RegisterAccount(context.Context, *MsgRegisterAccount) (*MsgRegisterAccountResponse, error)
@@ -953,6 +1269,8 @@ type MsgServer interface {
 	ExitPool(context.Context, *MsgExitPool) (*MsgExitPoolResponse, error)
 	IbcTransfer(context.Context, *MsgIbcTransfer) (*MsgIbcTransferResponse, error)
 	ForwardIbcTransfer(context.Context, *MsgForwardIbcTransfer) (*MsgForwardIbcTransferResponse, error)
+	TransferIbcTokens(context.Context, *MsgTransferIbcTokens) (*MsgTransferIbcTokensResponse, error)
+	ForwardTransferIbcTokens(context.Context, *MsgForwardTransferIbcTokens) (*MsgForwardTransferIbcTokensResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -976,6 +1294,12 @@ func (*UnimplementedMsgServer) IbcTransfer(ctx context.Context, req *MsgIbcTrans
 }
 func (*UnimplementedMsgServer) ForwardIbcTransfer(ctx context.Context, req *MsgForwardIbcTransfer) (*MsgForwardIbcTransferResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ForwardIbcTransfer not implemented")
+}
+func (*UnimplementedMsgServer) TransferIbcTokens(ctx context.Context, req *MsgTransferIbcTokens) (*MsgTransferIbcTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransferIbcTokens not implemented")
+}
+func (*UnimplementedMsgServer) ForwardTransferIbcTokens(ctx context.Context, req *MsgForwardTransferIbcTokens) (*MsgForwardTransferIbcTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardTransferIbcTokens not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -1090,6 +1414,42 @@ func _Msg_ForwardIbcTransfer_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_TransferIbcTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgTransferIbcTokens)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).TransferIbcTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.intergamm.Msg/TransferIbcTokens",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).TransferIbcTokens(ctx, req.(*MsgTransferIbcTokens))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_ForwardTransferIbcTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgForwardTransferIbcTokens)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).ForwardTransferIbcTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.intergamm.Msg/ForwardTransferIbcTokens",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).ForwardTransferIbcTokens(ctx, req.(*MsgForwardTransferIbcTokens))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "abag.quasarnode.intergamm.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -1117,6 +1477,14 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ForwardIbcTransfer",
 			Handler:    _Msg_ForwardIbcTransfer_Handler,
+		},
+		{
+			MethodName: "TransferIbcTokens",
+			Handler:    _Msg_TransferIbcTokens_Handler,
+		},
+		{
+			MethodName: "ForwardTransferIbcTokens",
+			Handler:    _Msg_ForwardTransferIbcTokens_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1712,6 +2080,225 @@ func (m *MsgForwardIbcTransferResponse) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgTransferIbcTokens) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransferIbcTokens) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransferIbcTokens) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.TimeoutTimestamp != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.TimeoutTimestamp))
+		i--
+		dAtA[i] = 0x38
+	}
+	{
+		size, err := m.TimeoutHeight.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x32
+	if len(m.Receiver) > 0 {
+		i -= len(m.Receiver)
+		copy(dAtA[i:], m.Receiver)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Receiver)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	{
+		size, err := m.Token.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if len(m.SourceChannel) > 0 {
+		i -= len(m.SourceChannel)
+		copy(dAtA[i:], m.SourceChannel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.SourceChannel)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SourcePort) > 0 {
+		i -= len(m.SourcePort)
+		copy(dAtA[i:], m.SourcePort)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.SourcePort)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgTransferIbcTokensResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransferIbcTokensResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransferIbcTokensResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgForwardTransferIbcTokens) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgForwardTransferIbcTokens) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgForwardTransferIbcTokens) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.TimeoutTimestamp != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.TimeoutTimestamp))
+		i--
+		dAtA[i] = 0x50
+	}
+	{
+		size, err := m.TimeoutHeight.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x4a
+	if len(m.Receiver) > 0 {
+		i -= len(m.Receiver)
+		copy(dAtA[i:], m.Receiver)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Receiver)))
+		i--
+		dAtA[i] = 0x42
+	}
+	if len(m.IntermediateReceiver) > 0 {
+		i -= len(m.IntermediateReceiver)
+		copy(dAtA[i:], m.IntermediateReceiver)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.IntermediateReceiver)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.ForwardTransferChannel) > 0 {
+		i -= len(m.ForwardTransferChannel)
+		copy(dAtA[i:], m.ForwardTransferChannel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ForwardTransferChannel)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.ForwardTransferPort) > 0 {
+		i -= len(m.ForwardTransferPort)
+		copy(dAtA[i:], m.ForwardTransferPort)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ForwardTransferPort)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	{
+		size, err := m.Token.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if len(m.SourceChannel) > 0 {
+		i -= len(m.SourceChannel)
+		copy(dAtA[i:], m.SourceChannel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.SourceChannel)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SourcePort) > 0 {
+		i -= len(m.SourcePort)
+		copy(dAtA[i:], m.SourcePort)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.SourcePort)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgForwardTransferIbcTokensResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgForwardTransferIbcTokensResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgForwardTransferIbcTokensResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -1972,6 +2559,100 @@ func (m *MsgForwardIbcTransfer) Size() (n int) {
 }
 
 func (m *MsgForwardIbcTransferResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgTransferIbcTokens) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.SourcePort)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.SourceChannel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Token.Size()
+	n += 1 + l + sovTx(uint64(l))
+	l = len(m.Receiver)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.TimeoutHeight.Size()
+	n += 1 + l + sovTx(uint64(l))
+	if m.TimeoutTimestamp != 0 {
+		n += 1 + sovTx(uint64(m.TimeoutTimestamp))
+	}
+	return n
+}
+
+func (m *MsgTransferIbcTokensResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgForwardTransferIbcTokens) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.SourcePort)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.SourceChannel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Token.Size()
+	n += 1 + l + sovTx(uint64(l))
+	l = len(m.ForwardTransferPort)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ForwardTransferChannel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.IntermediateReceiver)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Receiver)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.TimeoutHeight.Size()
+	n += 1 + l + sovTx(uint64(l))
+	if m.TimeoutTimestamp != 0 {
+		n += 1 + sovTx(uint64(m.TimeoutTimestamp))
+	}
+	return n
+}
+
+func (m *MsgForwardTransferIbcTokensResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -3776,6 +4457,728 @@ func (m *MsgForwardIbcTransferResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgForwardIbcTransferResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransferIbcTokens) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransferIbcTokens: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransferIbcTokens: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourcePort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourcePort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Token.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Receiver", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Receiver = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutHeight", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.TimeoutHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutTimestamp", wireType)
+			}
+			m.TimeoutTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TimeoutTimestamp |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransferIbcTokensResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransferIbcTokensResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransferIbcTokensResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgForwardTransferIbcTokens) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgForwardTransferIbcTokens: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgForwardTransferIbcTokens: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourcePort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourcePort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Token.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ForwardTransferPort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ForwardTransferPort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ForwardTransferChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ForwardTransferChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IntermediateReceiver", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IntermediateReceiver = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Receiver", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Receiver = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutHeight", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.TimeoutHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutTimestamp", wireType)
+			}
+			m.TimeoutTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TimeoutTimestamp |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgForwardTransferIbcTokensResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgForwardTransferIbcTokensResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgForwardTransferIbcTokensResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
