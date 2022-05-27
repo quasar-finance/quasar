@@ -37,6 +37,10 @@ func init() {
 	scenarios["joinPoolChecks"] = testJoinPoolChecks
 	scenarios["joinPoolTimeout"] = testJoinPoolTimeout
 	scenarios["joinPoolTimeoutChecks"] = testJoinPoolTimeoutChecks
+	scenarios["joinPoolSingleDenom"] = testJoinPoolSingleDenom
+	scenarios["joinPoolSingleDenomChecks"] = testJoinPoolSingleDenomChecks
+	scenarios["joinPoolSingleDenomTimeout"] = testJoinPoolSingleDenomTimeout
+	scenarios["joinPoolSingleDenomTimeoutChecks"] = testJoinPoolSingleDenomTimeoutChecks
 	scenarios["exitPool"] = testExitPool
 	scenarios["exitPoolChecks"] = testExitPoolChecks
 	scenarios["exitPoolTimeout"] = testExitPoolTimeout
@@ -82,6 +86,10 @@ func joinPoolTestCoins() []sdk.Coin {
 		sdk.NewCoin("uatom", sdk.NewInt(1000)),
 		sdk.NewCoin("uosmo", sdk.NewInt(1000)),
 	}
+}
+
+func joinPoolSingleDenomTestCoin() sdk.Coin {
+	return sdk.NewCoin("uatom", sdk.NewInt(1000))
 }
 
 func lockTokensTestCoins() []sdk.Coin {
@@ -281,6 +289,89 @@ func testJoinPoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	}
 }
 
+func testJoinPoolSingleDenom(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksAckMsgJoinPoolSingleDenom(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+			testHooksState["testJoinPoolSingleDenom_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksAckMsgJoinPoolSingleDenom(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+			testHooksState["testJoinPoolSingleDenom_hook2"] = true
+		})
+
+		poolId := uint64(1)
+		timestamp := uint64(99999999999999)
+		testCoin := joinPoolSingleDenomTestCoin()
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		err = k.TransmitIbcJoinSwapExternAmountIn(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testCoin,
+			shares,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testJoinPoolSingleDenomChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testJoinPoolSingleDenom_hook1"])
+		require.True(t, testHooksState["testJoinPoolSingleDenom_hook2"])
+	}
+}
+
+func testJoinPoolSingleDenomTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hooks
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPoolSingleDenom(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+			testHooksState["testJoinPoolSingleDenomTimeout_hook1"] = true
+		})
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPoolSingleDenom(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+			testHooksState["testJoinPoolSingleDenomTimeout_hook2"] = true
+		})
+
+		poolId := uint64(1)
+		timestamp := uint64(99999999999999)
+		testCoin := joinPoolSingleDenomTestCoin()
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		// Replace timeout to trigger timeout hooks
+		tmpDefaultSendTxRelativeTimeoutTimestamp := DefaultSendTxRelativeTimeoutTimestamp
+		DefaultSendTxRelativeTimeoutTimestamp = uint64((time.Duration(200) * time.Millisecond).Nanoseconds())
+		defer func() {
+			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
+		}()
+
+		err = k.TransmitIbcJoinSwapExternAmountIn(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testCoin,
+			shares,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testJoinPoolSingleDenomTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testJoinPoolSingleDenomTimeout_hook1"])
+		require.True(t, testHooksState["testJoinPoolSingleDenomTimeout_hook2"])
+	}
+}
+
 func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		var err error
@@ -380,7 +471,7 @@ func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		lockupPeriod := 1 * time.Hour
 		testCoins := lockTokensTestCoins()
 
-		err = k.TransmitLockTokens(
+		err = k.TransmitIbcLockTokens(
 			ctx,
 			owner,
 			connectionId,
@@ -422,7 +513,7 @@ func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
 		}()
 
-		err = k.TransmitLockTokens(
+		err = k.TransmitIbcLockTokens(
 			ctx,
 			owner,
 			connectionId,

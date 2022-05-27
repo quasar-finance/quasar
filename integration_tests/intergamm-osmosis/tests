@@ -191,6 +191,26 @@ run() {
 
   # Join pool
 
+  echo "> scenario: joinPoolSingleDenom"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinPoolSingleDenom -y
+  sleep 8
+
+  echo "> scenario: joinPoolSingleDenomChecks"
+  quasartx intergamm test --scenario joinPoolSingleDenomChecks -y
+
+  echo "> scenario: joinPoolSingleDenomTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinPoolSingleDenomTimeout -y
+  sleep 8
+
+  echo "> scenario: joinPoolSingleDenomTimeoutChecks"
+  quasartx intergamm test --scenario joinPoolSingleDenomTimeoutChecks -y
+
+  # Join pool single denom
+
   echo "> scenario: joinPool"
   quasartx intergamm test --scenario setup -y
   sleep 8

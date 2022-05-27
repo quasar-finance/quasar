@@ -323,7 +323,36 @@ func (k Keeper) ForwardTransferIbcTokens(
 	)
 }
 
-func (k Keeper) TransmitLockTokens(
+func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenIn sdk.Coin,
+	shareOutMinAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgJoinSwapExternAmountIn{
+			Sender:            iaResp.InterchainAccountAddress,
+			PoolId:            poolId,
+			TokenIn:           tokenIn,
+			ShareOutMinAmount: shareOutMinAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcLockTokens(
 	ctx sdk.Context,
 	owner string,
 	connectionId string,

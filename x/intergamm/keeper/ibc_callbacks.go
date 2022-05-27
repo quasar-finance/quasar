@@ -63,6 +63,22 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			h(ctx, ex)
 		}
 
+	case *gammtypes.MsgJoinSwapExternAmountIn:
+		resp := &gammtypes.MsgJoinSwapExternAmountInResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinPoolSingleDenom {
+			h(ctx, ex)
+		}
+
 	case *gammtypes.MsgExitPool:
 		resp := &gammtypes.MsgExitPoolResponse{}
 		err := ParseIcaAck(ack, req, resp)
@@ -133,6 +149,15 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPool {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinSwapExternAmountIn:
+		ex := types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPoolSingleDenom {
 			h(ctx, ex)
 		}
 
