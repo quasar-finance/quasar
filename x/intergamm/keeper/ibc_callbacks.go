@@ -75,7 +75,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.ackMsgJoinPoolSingleDenom {
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapExternAmountIn {
 			h(ctx, ex)
 		}
 
@@ -157,7 +157,7 @@ func (k *Keeper) HandleIcaTimeout(
 			Sequence: sequence,
 			Request:  req,
 		}
-		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPoolSingleDenom {
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapExternAmountIn {
 			h(ctx, ex)
 		}
 

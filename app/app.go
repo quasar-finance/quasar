@@ -560,6 +560,9 @@ func New(
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinPool(
 		app.OrionKeeper.HandleAckMsgJoinPool,
 	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(
+		app.OrionKeeper.HandleAckMsgJoinSwapExternAmountIn,
+	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
 		app.OrionKeeper.HandleAckMsgExitPool,
 	)
@@ -571,6 +574,9 @@ func New(
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(
 		app.OrionKeeper.HandleTimeoutMsgJoinPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(
+		app.OrionKeeper.HandleTimeoutMsgJoinSwapExternAmountIn,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(
 		app.OrionKeeper.HandleTimeoutMsgExitPool,

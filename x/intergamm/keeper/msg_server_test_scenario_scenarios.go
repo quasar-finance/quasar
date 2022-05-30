@@ -37,10 +37,10 @@ func init() {
 	scenarios["joinPoolChecks"] = testJoinPoolChecks
 	scenarios["joinPoolTimeout"] = testJoinPoolTimeout
 	scenarios["joinPoolTimeoutChecks"] = testJoinPoolTimeoutChecks
-	scenarios["joinPoolSingleDenom"] = testJoinPoolSingleDenom
-	scenarios["joinPoolSingleDenomChecks"] = testJoinPoolSingleDenomChecks
-	scenarios["joinPoolSingleDenomTimeout"] = testJoinPoolSingleDenomTimeout
-	scenarios["joinPoolSingleDenomTimeoutChecks"] = testJoinPoolSingleDenomTimeoutChecks
+	scenarios["joinSwapExternAmountIn"] = testJoinSwapExternAmountIn
+	scenarios["joinSwapExternAmountInChecks"] = testJoinSwapExternAmountInChecks
+	scenarios["joinSwapExternAmountInTimeout"] = testJoinSwapExternAmountInTimeout
+	scenarios["joinSwapExternAmountInTimeoutChecks"] = testJoinSwapExternAmountInTimeoutChecks
 	scenarios["exitPool"] = testExitPool
 	scenarios["exitPoolChecks"] = testExitPoolChecks
 	scenarios["exitPoolTimeout"] = testExitPoolTimeout
@@ -88,7 +88,7 @@ func joinPoolTestCoins() []sdk.Coin {
 	}
 }
 
-func joinPoolSingleDenomTestCoin() sdk.Coin {
+func joinSwapExternAmountInTestCoin() sdk.Coin {
 	return sdk.NewCoin("uatom", sdk.NewInt(1000))
 }
 
@@ -273,18 +273,18 @@ func testJoinPoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	}
 }
 
-func testJoinPoolSingleDenom(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+func testJoinSwapExternAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgJoinPoolSingleDenom(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
-			testHooksState["testJoinPoolSingleDenom_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+			testHooksState["testJoinSwapExternAmountIn_hook"] = true
 		})
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		testCoin := joinPoolSingleDenomTestCoin()
+		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
 
@@ -301,24 +301,24 @@ func testJoinPoolSingleDenom(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	}
 }
 
-func testJoinPoolSingleDenomChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+func testJoinSwapExternAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinPoolSingleDenom_hook"])
+		require.True(t, testHooksState["testJoinSwapExternAmountIn_hook"])
 	}
 }
 
-func testJoinPoolSingleDenomTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+func testJoinSwapExternAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPoolSingleDenom(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
-			testHooksState["testJoinPoolSingleDenomTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+			testHooksState["testJoinSwapExternAmountInTimeout_hook"] = true
 		})
 
 		poolId := uint64(1)
 		timestamp := uint64(99999999999999)
-		testCoin := joinPoolSingleDenomTestCoin()
+		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
 
@@ -342,9 +342,9 @@ func testJoinPoolSingleDenomTimeout(ctx sdk.Context, k *Keeper) func(t *testing.
 	}
 }
 
-func testJoinPoolSingleDenomTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+func testJoinSwapExternAmountInTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinPoolSingleDenomTimeout_hook"])
+		require.True(t, testHooksState["testJoinSwapExternAmountInTimeout_hook"])
 	}
 }
 

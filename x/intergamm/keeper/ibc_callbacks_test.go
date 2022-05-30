@@ -192,7 +192,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgJoinSwapExternAmountIn{}, &gammtypes.MsgJoinSwapExternAmountInResponse{}),
 			setup: func() {
-				k.Hooks.Osmosis.AddHooksAckMsgJoinPoolSingleDenom(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+				k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})
@@ -321,7 +321,7 @@ func TestHandleIcaTimeout(t *testing.T) {
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
 			setup: func() {
-				k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPoolSingleDenom(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})

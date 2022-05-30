@@ -43,6 +43,13 @@ func (k Keeper) HandleAckMsgJoinPool(
 	k.Logger(ctx).Info("HandleAckMsgJoinPool hook called", "error", ex.Error, "seq", ex.Sequence)
 }
 
+func (k Keeper) HandleAckMsgJoinSwapExternAmountIn(
+	ctx sdk.Context,
+	ex intergammtypes.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse],
+) {
+	k.Logger(ctx).Info("HandleAckMsgJoinSwapExternAmountIn hook called", "error", ex.Error, "seq", ex.Sequence)
+}
+
 func (k Keeper) HandleAckMsgExitPool(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse],
@@ -69,6 +76,13 @@ func (k Keeper) HandleTimeoutMsgJoinPool(
 	ex intergammtypes.TimeoutExchange[*gammtypes.MsgJoinPool],
 ) {
 	k.Logger(ctx).Info("HandleTimeoutMsgJoinPool hook called", "seq", ex.Sequence)
+}
+
+func (k Keeper) HandleTimeoutMsgJoinSwapExternAmountIn(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn],
+) {
+	k.Logger(ctx).Info("HandleTimeoutMsgJoinSwapExternAmountIn hook called", "seq", ex.Sequence)
 }
 
 func (k Keeper) HandleTimeoutMsgExitPool(
