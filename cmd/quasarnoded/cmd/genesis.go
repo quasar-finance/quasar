@@ -42,9 +42,9 @@ Examples include:
 	- Setting module initial params
 	- Setting denom metadata
 Example:
-	quasarnoded prepare-genesis mainnet osmosis-1
+	quasarnoded prepare-genesis mainnet quasar-1
 	- Check input genesis:
-		file is at ~/.osmosisd/config/genesis.json
+		file is at ~/.quasarnoded/config/genesis.json
 `,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -76,7 +76,7 @@ Example:
 			chainID := args[1]
 
 			// run Prepare Genesis
-			appState, genDoc, err = PrepareGenesis(clientCtx, appState, genDoc, genesisParams, chainID)
+			appState, genDoc, _ = PrepareGenesis(clientCtx, appState, genDoc, genesisParams, chainID)
 
 			// validate genesis state
 			if err = mbm.ValidateGenesis(cdc, clientCtx.TxConfig, appState); err != nil {
@@ -181,18 +181,27 @@ func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessag
 	orionGenState := oriontypes.DefaultGenesis()
 	orionGenState.Params = genesisParams.OrionParams
 	orionGenStateBz, err := cdc.MarshalJSON(orionGenState)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal orion genesis state: %w", err)
+	}
 	appState[oriontypes.ModuleName] = orionGenStateBz
 
 	// orion module genesis
 	qBankGenState := qbanktypes.DefaultGenesis()
 	qBankGenState.Params = genesisParams.QBankParams
 	qBankGenStateBz, err := cdc.MarshalJSON(qBankGenState)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal qbank genesis state: %w", err)
+	}
 	appState[qbanktypes.ModuleName] = qBankGenStateBz
 
 	// orion module genesis
 	qOracleGenState := qoracletypes.DefaultGenesis()
 	qOracleGenState.Params = genesisParams.QOracleParams
 	qOracleGenStateBz, err := cdc.MarshalJSON(qOracleGenState)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal qoracle genesis state: %w", err)
+	}
 	appState[qoracletypes.ModuleName] = qOracleGenStateBz
 
 	// return appState and genDoc
@@ -242,7 +251,7 @@ func MainnetGenesisParams() GenesisParams {
 				},
 				{
 					Denom:    appParams.HumanCoinUnit,
-					Exponent: appParams.OsmoExponent,
+					Exponent: appParams.QsrExponent,
 					Aliases:  nil,
 				},
 			},

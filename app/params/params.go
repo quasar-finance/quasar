@@ -3,7 +3,7 @@ package params
 const (
 	HumanCoinUnit = "qsr"
 	BaseCoinUnit  = "uqsr"
-	OsmoExponent  = 6
+	QsrExponent   = 6
 
 	DefaultBondDenom = BaseCoinUnit
 
