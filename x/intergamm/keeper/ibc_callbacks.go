@@ -111,6 +111,38 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			h(ctx, ex)
 		}
 
+	case *gammtypes.MsgJoinSwapShareAmountOut:
+		resp := &gammtypes.MsgJoinSwapShareAmountOutResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapShareAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapShareAmountIn:
+		resp := &gammtypes.MsgExitSwapShareAmountInResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapShareAmountIn {
+			h(ctx, ex)
+		}
+
 	case *lockuptypes.MsgLockTokens:
 		resp := &lockuptypes.MsgLockTokensResponse{}
 		err := ParseIcaAck(ack, req, resp)
@@ -192,6 +224,24 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapExternAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinSwapShareAmountOut:
+		ex := types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapShareAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapShareAmountIn:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapShareAmountIn {
 			h(ctx, ex)
 		}
 

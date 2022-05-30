@@ -17,6 +17,8 @@ type ibcExchangeRequest interface {
 		*gammtypes.MsgExitPool |
 		*gammtypes.MsgJoinSwapExternAmountIn |
 		*gammtypes.MsgExitSwapExternAmountOut |
+		*gammtypes.MsgJoinSwapShareAmountOut |
+		*gammtypes.MsgExitSwapShareAmountIn |
 		*lockuptypes.MsgLockTokens
 }
 
@@ -29,6 +31,8 @@ type ibcExchangeResponse interface {
 		*gammtypes.MsgExitPoolResponse |
 		*gammtypes.MsgJoinSwapExternAmountInResponse |
 		*gammtypes.MsgExitSwapExternAmountOutResponse |
+		*gammtypes.MsgJoinSwapShareAmountOutResponse |
+		*gammtypes.MsgExitSwapShareAmountInResponse |
 		*lockuptypes.MsgLockTokensResponse
 }
 

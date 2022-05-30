@@ -381,6 +381,68 @@ func (k Keeper) TransmitIbcExitSwapExternAmountOut(
 	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
 }
 
+func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenInDenom string,
+	shareOutAmount sdk.Int,
+	tokenInMaxAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgJoinSwapShareAmountOut{
+			Sender:           iaResp.InterchainAccountAddress,
+			PoolId:           poolId,
+			TokenInDenom:     tokenInDenom,
+			ShareOutAmount:   shareOutAmount,
+			TokenInMaxAmount: tokenInMaxAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcExitSwapShareAmountIn(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenOutDenom string,
+	shareInAmount sdk.Int,
+	tokenOutMinAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgExitSwapShareAmountIn{
+			Sender:            iaResp.InterchainAccountAddress,
+			PoolId:            poolId,
+			TokenOutDenom:     tokenOutDenom,
+			ShareInAmount:     shareInAmount,
+			TokenOutMinAmount: tokenOutMinAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
 func (k Keeper) TransmitIbcLockTokens(
 	ctx sdk.Context,
 	owner string,

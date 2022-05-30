@@ -20,6 +20,8 @@ type OsmosisHooks struct {
 	ackMsgExitPool                []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse])
 	ackMsgJoinSwapExternAmountIn  []func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse])
 	ackMsgExitSwapExternAmountOut []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse])
+	ackMsgJoinSwapShareAmountOut  []func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse])
+	ackMsgExitSwapShareAmountIn   []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse])
 	ackMsgLockTokens              []func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse])
 
 	timeoutMsgCreateBalancerPool      []func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool])
@@ -27,6 +29,8 @@ type OsmosisHooks struct {
 	timeoutMsgExitPool                []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool])
 	timeoutMsgJoinSwapExternAmountIn  []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn])
 	timeoutMsgExitSwapExternAmountOut []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut])
+	timeoutMsgJoinSwapShareAmountOut  []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut])
+	timeoutMsgExitSwapShareAmountIn   []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn])
 	timeoutMsgLockTokens              []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens])
 }
 
@@ -44,6 +48,8 @@ func (ih *OsmosisHooks) ClearAckHooks() {
 	ih.ackMsgExitPool = nil
 	ih.ackMsgJoinSwapExternAmountIn = nil
 	ih.ackMsgExitSwapExternAmountOut = nil
+	ih.ackMsgJoinSwapShareAmountOut = nil
+	ih.ackMsgExitSwapShareAmountIn = nil
 	ih.ackMsgLockTokens = nil
 }
 
@@ -53,6 +59,8 @@ func (ih *OsmosisHooks) ClearTimeoutHooks() {
 	ih.timeoutMsgExitPool = nil
 	ih.timeoutMsgJoinSwapExternAmountIn = nil
 	ih.timeoutMsgExitSwapExternAmountOut = nil
+	ih.timeoutMsgJoinSwapShareAmountOut = nil
+	ih.timeoutMsgExitSwapShareAmountIn = nil
 	ih.timeoutMsgLockTokens = nil
 }
 
@@ -84,6 +92,14 @@ func (oh *OsmosisHooks) AddHooksAckMsgExitSwapExternAmountOut(hs ...func(sdk.Con
 	oh.ackMsgExitSwapExternAmountOut = append(oh.ackMsgExitSwapExternAmountOut, hs...)
 }
 
+func (oh *OsmosisHooks) AddHooksAckMsgJoinSwapShareAmountOut(hs ...func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse])) {
+	oh.ackMsgJoinSwapShareAmountOut = append(oh.ackMsgJoinSwapShareAmountOut, hs...)
+}
+
+func (oh *OsmosisHooks) AddHooksAckMsgExitSwapShareAmountIn(hs ...func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse])) {
+	oh.ackMsgExitSwapShareAmountIn = append(oh.ackMsgExitSwapShareAmountIn, hs...)
+}
+
 func (oh *OsmosisHooks) AddHooksAckMsgLockTokens(hs ...func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse])) {
 	oh.ackMsgLockTokens = append(oh.ackMsgLockTokens, hs...)
 }
@@ -106,6 +122,14 @@ func (oh *OsmosisHooks) AddHooksTimeoutMsgJoinSwapExternAmountIn(hs ...func(sdk.
 
 func (oh *OsmosisHooks) AddHooksTimeoutMsgExitSwapExternAmountOut(hs ...func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut])) {
 	oh.timeoutMsgExitSwapExternAmountOut = append(oh.timeoutMsgExitSwapExternAmountOut, hs...)
+}
+
+func (oh *OsmosisHooks) AddHooksTimeoutMsgJoinSwapShareAmountOut(hs ...func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut])) {
+	oh.timeoutMsgJoinSwapShareAmountOut = append(oh.timeoutMsgJoinSwapShareAmountOut, hs...)
+}
+
+func (oh *OsmosisHooks) AddHooksTimeoutMsgExitSwapShareAmountIn(hs ...func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn])) {
+	oh.timeoutMsgExitSwapShareAmountIn = append(oh.timeoutMsgExitSwapShareAmountIn, hs...)
 }
 
 func (oh *OsmosisHooks) AddHooksTimeoutMsgLockTokens(hs ...func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens])) {

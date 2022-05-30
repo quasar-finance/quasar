@@ -21,6 +21,8 @@ import (
 const (
 	owner        string = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
 	connectionId string = "connection-0"
+	poolId              = uint64(1)
+	timestamp           = uint64(99999999999999)
 )
 
 var testHooksState map[string]bool
@@ -49,6 +51,14 @@ func init() {
 	scenarios["exitSwapExternAmountOutChecks"] = testExitSwapExternAmountOutChecks
 	scenarios["exitSwapExternAmountOutTimeout"] = testExitSwapExternAmountOutTimeout
 	scenarios["exitSwapExternAmountOutTimeoutChecks"] = testExitSwapExternAmountOutTimeoutChecks
+	scenarios["joinSwapShareAmountOut"] = testJoinSwapShareAmountOut
+	scenarios["joinSwapShareAmountOutChecks"] = testJoinSwapShareAmountOutChecks
+	scenarios["joinSwapShareAmountOutTimeout"] = testJoinSwapShareAmountOutTimeout
+	scenarios["joinSwapShareAmountOutTimeoutChecks"] = testJoinSwapShareAmountOutTimeoutChecks
+	scenarios["exitSwapShareAmountIn"] = testExitSwapShareAmountIn
+	scenarios["exitSwapShareAmountInChecks"] = testExitSwapShareAmountInChecks
+	scenarios["exitSwapShareAmountInTimeout"] = testExitSwapShareAmountInTimeout
+	scenarios["exitSwapShareAmountInTimeoutChecks"] = testExitSwapShareAmountInTimeoutChecks
 	scenarios["lockTokens"] = testLockTokens
 	scenarios["lockTokensChecks"] = testLockTokensChecks
 	scenarios["lockTokensTimeout"] = testLockTokensTimeout
@@ -137,7 +147,6 @@ func testCreatePool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testCreatePool_hook"] = true
 		})
 
-		timestamp := uint64(99999999999999)
 		futureGovernor := "168h"
 		poolParams := createTestPoolParams()
 		poolAssets := createTestPoolAssets()
@@ -170,7 +179,6 @@ func testCreatePoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testCreatePoolTimeout_hook"] = true
 		})
 
-		timestamp := uint64(99999999999999)
 		futureGovernor := "168h"
 
 		poolParams := createTestPoolParams()
@@ -211,8 +219,6 @@ func testJoinPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testJoinPool_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoins := joinPoolTestCoins()
 		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
@@ -245,8 +251,6 @@ func testJoinPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testJoinPoolTimeout_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoins := joinPoolTestCoins()
 		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
@@ -286,8 +290,6 @@ func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testExitPool_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoins := joinPoolTestCoins()
 		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
@@ -320,8 +322,6 @@ func testExitPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testExitPoolTimeout_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoins := joinPoolTestCoins()
 		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
@@ -361,8 +361,6 @@ func testJoinSwapExternAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testJoinSwapExternAmountIn_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
@@ -395,8 +393,6 @@ func testJoinSwapExternAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testi
 			testHooksState["testJoinSwapExternAmountInTimeout_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
@@ -436,8 +432,6 @@ func testExitSwapExternAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) 
 			testHooksState["testExitSwapExternAmountOut_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
@@ -470,8 +464,6 @@ func testExitSwapExternAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *test
 			testHooksState["testExitSwapExternAmountOutTimeout_hook"] = true
 		})
 
-		poolId := uint64(1)
-		timestamp := uint64(99999999999999)
 		testCoin := joinSwapExternAmountInTestCoin()
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
@@ -502,6 +494,156 @@ func testExitSwapExternAmountOutTimeoutChecks(ctx sdk.Context, k *Keeper) func(t
 	}
 }
 
+func testJoinSwapShareAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hook
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) {
+			testHooksState["testJoinSwapShareAmountOut_hook"] = true
+		})
+
+		testDenom := "uatom"
+		testCoinAmount := sdk.NewInt(1000)
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		err = k.TransmitIbcJoinSwapShareAmountOut(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testDenom,
+			shares,
+			testCoinAmount,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testJoinSwapShareAmountOutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testJoinSwapShareAmountOut_hook"])
+	}
+}
+
+func testJoinSwapShareAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hook
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) {
+			testHooksState["testJoinSwapShareAmountOutTimeout_hook"] = true
+		})
+
+		testDenom := "uatom"
+		testCoinAmount := sdk.NewInt(1000)
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		// Replace timeout to trigger timeout hooks
+		tmpDefaultSendTxRelativeTimeoutTimestamp := DefaultSendTxRelativeTimeoutTimestamp
+		DefaultSendTxRelativeTimeoutTimestamp = uint64((time.Duration(200) * time.Millisecond).Nanoseconds())
+		defer func() {
+			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
+		}()
+
+		err = k.TransmitIbcJoinSwapShareAmountOut(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testDenom,
+			shares,
+			testCoinAmount,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testJoinSwapShareAmountOutTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testJoinSwapShareAmountOutTimeout_hook"])
+	}
+}
+
+func testExitSwapShareAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hook
+		k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) {
+			testHooksState["testExitSwapShareAmountIn_hook"] = true
+		})
+
+		testDenom := "uatom"
+		testCoinAmount := sdk.NewInt(1000)
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		err = k.TransmitIbcExitSwapShareAmountIn(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testDenom,
+			shares,
+			testCoinAmount,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testExitSwapShareAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testExitSwapShareAmountIn_hook"])
+	}
+}
+
+func testExitSwapShareAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		var err error
+
+		// Setup hook
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) {
+			testHooksState["testExitSwapShareAmountInTimeout_hook"] = true
+		})
+
+		testDenom := "uatom"
+		testCoinAmount := sdk.NewInt(1000)
+		shares, ok := sdk.NewIntFromString("500000000000000000")
+		require.True(t, ok)
+
+		// Replace timeout to trigger timeout hooks
+		tmpDefaultSendTxRelativeTimeoutTimestamp := DefaultSendTxRelativeTimeoutTimestamp
+		DefaultSendTxRelativeTimeoutTimestamp = uint64((time.Duration(200) * time.Millisecond).Nanoseconds())
+		defer func() {
+			DefaultSendTxRelativeTimeoutTimestamp = tmpDefaultSendTxRelativeTimeoutTimestamp
+		}()
+
+		err = k.TransmitIbcExitSwapShareAmountIn(
+			ctx,
+			owner,
+			connectionId,
+			timestamp,
+			poolId,
+			testDenom,
+			shares,
+			testCoinAmount,
+		)
+		require.NoError(t, err)
+	}
+}
+
+func testExitSwapShareAmountInTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testExitSwapShareAmountInTimeout_hook"])
+	}
+}
+
 func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		var err error
@@ -511,7 +653,6 @@ func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testLockTokens_hook"] = true
 		})
 
-		timestamp := uint64(99999999999999)
 		lockupPeriod := 1 * time.Hour
 		testCoins := lockTokensTestCoins()
 
@@ -542,7 +683,6 @@ func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			testHooksState["testLockTokensTimeout_hook"] = true
 		})
 
-		timestamp := uint64(99999999999999)
 		lockupPeriod := 1 * time.Hour
 		testCoins := lockTokensTestCoins()
 

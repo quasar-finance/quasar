@@ -64,6 +64,20 @@ func (k Keeper) HandleAckMsgExitSwapExternAmountOut(
 	k.Logger(ctx).Info("HandleAckMsgExitSwapExternAmountOut hook called", "error", ex.Error, "seq", ex.Sequence)
 }
 
+func (k Keeper) HandleAckMsgJoinSwapShareAmountOut(
+	ctx sdk.Context,
+	ex intergammtypes.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse],
+) {
+	k.Logger(ctx).Info("HandleAckMsgJoinSwapShareAmountOut hook called", "error", ex.Error, "seq", ex.Sequence)
+}
+
+func (k Keeper) HandleAckMsgExitSwapShareAmountIn(
+	ctx sdk.Context,
+	ex intergammtypes.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse],
+) {
+	k.Logger(ctx).Info("HandleAckMsgExitSwapShareAmountIn hook called", "error", ex.Error, "seq", ex.Sequence)
+}
+
 func (k Keeper) HandleAckMsgLockTokens(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse],
@@ -104,6 +118,20 @@ func (k Keeper) HandleTimeoutMsgExitSwapExternAmountOut(
 	ex intergammtypes.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut],
 ) {
 	k.Logger(ctx).Info("HandleTimeoutMsgExitSwapExternAmountOut hook called", "seq", ex.Sequence)
+}
+
+func (k Keeper) HandleTimeoutMsgJoinSwapShareAmountOut(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut],
+) {
+	k.Logger(ctx).Info("HandleTimeoutMsgJoinSwapShareAmountOut hook called", "seq", ex.Sequence)
+}
+
+func (k Keeper) HandleTimeoutMsgExitSwapShareAmountIn(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn],
+) {
+	k.Logger(ctx).Info("HandleTimeoutMsgExitSwapShareAmountIn hook called", "seq", ex.Sequence)
 }
 
 func (k Keeper) HandleTimeoutMsgLockTokens(

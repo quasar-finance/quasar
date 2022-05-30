@@ -289,6 +289,45 @@ run() {
   echo "> scenario: exitSwapExternAmountOutTimeoutChecks"
   quasartx intergamm test --scenario exitSwapExternAmountOutTimeoutChecks -y
 
+  # Join pool single denom 2
+
+  echo "> scenario: joinSwapShareAmountOut"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapShareAmountOut -y
+  sleep 8
+
+  echo "> scenario: joinSwapShareAmountOutChecks"
+  quasartx intergamm test --scenario joinSwapShareAmountOutChecks -y
+
+  echo "> scenario: joinSwapShareAmountOutTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapShareAmountOutTimeout -y
+  sleep 8
+
+  echo "> scenario: joinSwapShareAmountOutTimeoutChecks"
+  quasartx intergamm test --scenario joinSwapShareAmountOutTimeoutChecks -y
+
+  # Exit pool single denom 2
+
+  echo "> scenario: exitSwapShareAmountIn"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapShareAmountIn -y
+  sleep 8
+
+  echo "> scenario: exitSwapShareAmountInChecks"
+  quasartx intergamm test --scenario exitSwapShareAmountInChecks -y
+
+  echo "> scenario: exitSwapShareAmountInTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapShareAmountInTimeout -y
+  sleep 8
+
+  echo "> scenario: exitSwapShareAmountInTimeoutChecks"
+  quasartx intergamm test --scenario exitSwapShareAmountInTimeoutChecks -y
 }
 
 "$@"
