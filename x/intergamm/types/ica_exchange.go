@@ -11,13 +11,25 @@ import (
 type ibcExchangeRequest interface {
 	proto.Message
 
-	*ibctransfertypes.FungibleTokenPacketData | *gammbalancer.MsgCreateBalancerPool | *gammtypes.MsgJoinPool | *gammtypes.MsgJoinSwapExternAmountIn | *gammtypes.MsgExitPool | *lockuptypes.MsgLockTokens
+	*ibctransfertypes.FungibleTokenPacketData |
+		*gammbalancer.MsgCreateBalancerPool |
+		*gammtypes.MsgJoinPool |
+		*gammtypes.MsgExitPool |
+		*gammtypes.MsgJoinSwapExternAmountIn |
+		*gammtypes.MsgExitSwapExternAmountOut |
+		*lockuptypes.MsgLockTokens
 }
 
 type ibcExchangeResponse interface {
 	proto.Message
 
-	*MsgEmptyIbcResponse | *gammbalancer.MsgCreateBalancerPoolResponse | *gammtypes.MsgJoinPoolResponse | *gammtypes.MsgJoinSwapExternAmountInResponse | *gammtypes.MsgExitPoolResponse | *lockuptypes.MsgLockTokensResponse
+	*MsgEmptyIbcResponse |
+		*gammbalancer.MsgCreateBalancerPoolResponse |
+		*gammtypes.MsgJoinPoolResponse |
+		*gammtypes.MsgExitPoolResponse |
+		*gammtypes.MsgJoinSwapExternAmountInResponse |
+		*gammtypes.MsgExitSwapExternAmountOutResponse |
+		*lockuptypes.MsgLockTokensResponse
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {

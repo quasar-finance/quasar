@@ -187,6 +187,19 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid MsgExitPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "valid MsgJoinSwapExternAmountIn",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
@@ -200,12 +213,12 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr: "",
 		},
 		{
-			name:      "valid MsgExitPool",
+			name:      "valid MsgExitSwapExternAmountOut",
 			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
-			ack:       makeIcaAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapExternAmountOut{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgExitSwapExternAmountOut{}, &gammtypes.MsgExitSwapExternAmountOutResponse{}),
 			setup: func() {
-				k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+				k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})
@@ -317,6 +330,18 @@ func TestHandleIcaTimeout(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid MsgExitPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "valid MsgJoinSwapExternAmountIn",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
@@ -329,11 +354,11 @@ func TestHandleIcaTimeout(t *testing.T) {
 			errorStr: "",
 		},
 		{
-			name:      "valid MsgExitPool",
+			name:      "valid MsgExitSwapExternAmountOut",
 			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapExternAmountOut{}),
 			setup: func() {
-				k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})

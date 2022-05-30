@@ -191,26 +191,6 @@ run() {
 
   # Join pool
 
-  echo "> scenario: joinPoolSingleDenom"
-  quasartx intergamm test --scenario setup -y
-  sleep 8
-  quasartx intergamm test --scenario joinPoolSingleDenom -y
-  sleep 8
-
-  echo "> scenario: joinPoolSingleDenomChecks"
-  quasartx intergamm test --scenario joinPoolSingleDenomChecks -y
-
-  echo "> scenario: joinPoolSingleDenomTimeout"
-  quasartx intergamm test --scenario setup -y
-  sleep 8
-  quasartx intergamm test --scenario joinPoolSingleDenomTimeout -y
-  sleep 8
-
-  echo "> scenario: joinPoolSingleDenomTimeoutChecks"
-  quasartx intergamm test --scenario joinPoolSingleDenomTimeoutChecks -y
-
-  # Join pool single denom
-
   echo "> scenario: joinPool"
   quasartx intergamm test --scenario setup -y
   sleep 8
@@ -268,6 +248,47 @@ run() {
 
   echo "> scenario: exitPoolTimeoutChecks"
   quasartx intergamm test --scenario exitPoolTimeoutChecks -y
+
+  # Join pool single denom 1
+
+  echo "> scenario: joinSwapExternAmountIn"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapExternAmountIn -y
+  sleep 8
+
+  echo "> scenario: joinSwapExternAmountInChecks"
+  quasartx intergamm test --scenario joinSwapExternAmountInChecks -y
+
+  echo "> scenario: joinSwapExternAmountInTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapExternAmountInTimeout -y
+  sleep 8
+
+  echo "> scenario: joinSwapExternAmountInTimeoutChecks"
+  quasartx intergamm test --scenario joinSwapExternAmountInTimeoutChecks -y
+
+  # Exit pool single denom 1
+
+  echo "> scenario: exitSwapExternAmountOut"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapExternAmountOut -y
+  sleep 8
+
+  echo "> scenario: exitSwapExternAmountOutChecks"
+  quasartx intergamm test --scenario exitSwapExternAmountOutChecks -y
+
+  echo "> scenario: exitSwapExternAmountOutTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapExternAmountOutTimeout -y
+  sleep 8
+
+  echo "> scenario: exitSwapExternAmountOutTimeoutChecks"
+  quasartx intergamm test --scenario exitSwapExternAmountOutTimeoutChecks -y
+
 }
 
 "$@"

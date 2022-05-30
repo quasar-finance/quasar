@@ -63,6 +63,22 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			h(ctx, ex)
 		}
 
+	case *gammtypes.MsgExitPool:
+		resp := &gammtypes.MsgExitPoolResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgExitPool {
+			h(ctx, ex)
+		}
+
 	case *gammtypes.MsgJoinSwapExternAmountIn:
 		resp := &gammtypes.MsgJoinSwapExternAmountInResponse{}
 		err := ParseIcaAck(ack, req, resp)
@@ -79,19 +95,19 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			h(ctx, ex)
 		}
 
-	case *gammtypes.MsgExitPool:
-		resp := &gammtypes.MsgExitPoolResponse{}
+	case *gammtypes.MsgExitSwapExternAmountOut:
+		resp := &gammtypes.MsgExitSwapExternAmountOutResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
 			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
-		ex := types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
+		ex := types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]{
 			Sequence: sequence,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
 		}
-		for _, h := range k.Hooks.Osmosis.ackMsgExitPool {
+		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapExternAmountOut {
 			h(ctx, ex)
 		}
 
@@ -152,6 +168,15 @@ func (k *Keeper) HandleIcaTimeout(
 			h(ctx, ex)
 		}
 
+	case *gammtypes.MsgExitPool:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitPool]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
+			h(ctx, ex)
+		}
+
 	case *gammtypes.MsgJoinSwapExternAmountIn:
 		ex := types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]{
 			Sequence: sequence,
@@ -161,12 +186,12 @@ func (k *Keeper) HandleIcaTimeout(
 			h(ctx, ex)
 		}
 
-	case *gammtypes.MsgExitPool:
-		ex := types.TimeoutExchange[*gammtypes.MsgExitPool]{
+	case *gammtypes.MsgExitSwapExternAmountOut:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]{
 			Sequence: sequence,
 			Request:  req,
 		}
-		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapExternAmountOut {
 			h(ctx, ex)
 		}
 
