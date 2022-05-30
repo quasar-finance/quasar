@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/app"
+	appParams "github.com/abag/quasarnode/app/params"
 	"github.com/abag/quasarnode/testutil/keeper"
 	"github.com/abag/quasarnode/testutil/mock"
 	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
@@ -28,7 +29,7 @@ import (
 )
 
 func init() {
-	cosmoscmd.SetPrefixes(app.AccountAddressPrefix)
+	cosmoscmd.SetPrefixes(appParams.AccountAddressPrefix)
 }
 
 func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
