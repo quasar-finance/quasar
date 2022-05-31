@@ -237,7 +237,7 @@ type GenesisParams struct {
 func MainnetGenesisParams() GenesisParams {
 	genParams := GenesisParams{}
 
-	genParams.AirdropSupply = sdk.NewIntWithDecimal(5, 13)                // 5*10^13 uqsr, 5*10^7 (50 million) qsr
+	genParams.AirdropSupply = sdk.NewIntWithDecimal(5, 13)                // 5*10^13 uqsar, 5*10^7 (50 million) qsar
 	genParams.GenesisTime = time.Date(2021, 6, 18, 17, 0, 0, 0, time.UTC) // Jun 18, 2021 - 17:00 UTC
 
 	genParams.NativeCoinMetadatas = []banktypes.Metadata{
@@ -348,8 +348,8 @@ func MainnetGenesisParams() GenesisParams {
 			OnehopOsmo:   "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
 		},
 		{
-			OriginName:   "uqsr",
-			OnehopQuasar: "uqsr",
+			OriginName:   "uqsar",
+			OnehopQuasar: "uqsar",
 			OnehopOsmo:   "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
 		},
 	}

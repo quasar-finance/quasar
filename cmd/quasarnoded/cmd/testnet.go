@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"net"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ var (
 func TestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
-		Short: "Initialize files for a simapp testnet",
+		Short: "Initialize files for a testnet",
 		Long: `testnet will create "v" number of directories and populate each with
 necessary files (private validator, genesis, config, etc.).
 
@@ -101,7 +102,7 @@ Example:
 
 const nodeDirPerm = 0o755
 
-// Initialize the testnet.
+// InitTestnet initializes the testnet.
 func InitTestnet(
 	clientCtx client.Context,
 	cmd *cobra.Command,
@@ -197,8 +198,8 @@ func InitTestnet(
 			return err
 		}
 
-		accTokens := sdk.TokensFromConsensusPower(1000, sdk.NewInt(1))
-		accStakingTokens := sdk.TokensFromConsensusPower(500, sdk.NewInt(1))
+		accTokens := sdk.TokensFromConsensusPower(1_000_000_000, sdk.NewInt(1))
+		accStakingTokens := sdk.TokensFromConsensusPower(500_000_000, sdk.NewInt(1))
 		coins := sdk.Coins{
 			sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), accTokens),
 			sdk.NewCoin(genesisParams.NativeCoinMetadatas[0].Base, accStakingTokens),
@@ -207,7 +208,7 @@ func InitTestnet(
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
-		valTokens := sdk.TokensFromConsensusPower(100, sdk.NewInt(1))
+		valTokens := sdk.TokensFromConsensusPower(100_000_000, sdk.NewInt(1))
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
@@ -262,6 +263,19 @@ func InitTestnet(
 		clientCtx, nodeConfig, chainID, nodeIDs, valPubKeys, numValidators,
 		outputDir, nodeDirPrefix, nodeDaemonHome, genBalIterator,
 	)
+	if err != nil {
+		return err
+	}
+
+	dockerCompose, err := prepareDockerComposeFile(outputDir, startingIPAddress, numValidators)
+	if err != nil {
+		return err
+	}
+	dockerComposeBz, err := yaml.Marshal(dockerCompose)
+	if err != nil {
+		return err
+	}
+	err = writeFile("docker-compose.yml", outputDir, dockerComposeBz)
 	if err != nil {
 		return err
 	}
@@ -405,4 +419,101 @@ func writeFile(name string, dir string, contents []byte) error {
 	}
 
 	return nil
+}
+
+type ipam struct {
+	Driver string              `yaml:"driver"`
+	Config []map[string]string `yaml:"config"`
+}
+
+type network struct {
+	Driver string `yaml:"driver"`
+	IPAM   ipam   `yaml:"ipam"`
+}
+
+type service struct {
+	ContainerName string                       `yaml:"container_name"`
+	Image         string                       `yaml:"image"`
+	Ports         []string                     `yaml:"ports"`
+	Environment   []string                     `yaml:"environment"`
+	Volumes       []string                     `yaml:"volumes"`
+	Networks      map[string]map[string]string `yaml:"networks"`
+}
+
+type DockerComposeFileContent struct {
+	Version  string             `yaml:"version"`
+	Networks map[string]network `yaml:"networks"`
+	Services map[string]service `yaml:"services"`
+}
+
+const (
+	dockerComposeNetworkName = "localnet"
+	dockerComposeImageName   = "quasar-labs/quasarnoded-env"
+
+	p2pPort  = 26656
+	rpcPort  = 26657
+	apiPort  = 1317
+	grpcPort = 9090
+)
+
+func calculateSubnet(startingIPAddress string) string {
+	ipv4 := net.ParseIP(startingIPAddress).To4()
+	mask := net.CIDRMask(16, 32)
+	ipNet := net.IPNet{
+		IP:   ipv4,
+		Mask: mask,
+	}
+	return ipNet.String()
+}
+
+func calculatePortMappings(i int) []string {
+	return []string{
+		fmt.Sprintf("%d:%d", p2pPort+i*4, p2pPort),
+		fmt.Sprintf("%d:%d", rpcPort+i*4, rpcPort),
+		fmt.Sprintf("%d:%d", apiPort+i, apiPort),
+		fmt.Sprintf("%d:%d", grpcPort+i, grpcPort),
+	}
+}
+
+func prepareDockerComposeFile(outputDir, startingIPAddress string, numValidators int) (DockerComposeFileContent, error) {
+	services := make(map[string]service)
+	for i := 0; i < numValidators; i++ {
+		serviceName := fmt.Sprintf("quasarnode%d", i)
+		ipAddress, err := calculateIP(startingIPAddress, i)
+		if err != nil {
+			return DockerComposeFileContent{}, err
+		}
+		services[serviceName] = service{
+			ContainerName: serviceName,
+			Image:         dockerComposeImageName,
+			Ports:         calculatePortMappings(i),
+			Environment: []string{
+				fmt.Sprintf("ID=%d", i),
+				"LOG=${LOG:-quasarnoded.log}",
+			},
+			Volumes: []string{fmt.Sprintf("%s/:/quasarnoded:z", outputDir)},
+			Networks: map[string]map[string]string{
+				dockerComposeNetworkName: {
+					"ipv4_address": ipAddress,
+				},
+			},
+		}
+	}
+	return DockerComposeFileContent{
+		Version: "3",
+		Networks: map[string]network{
+			dockerComposeNetworkName: {
+				Driver: "bridge",
+				IPAM: ipam{
+					Driver: "default",
+					Config: []map[string]string{
+						{
+							"subnet": calculateSubnet(startingIPAddress),
+						},
+					},
+				},
+			},
+		},
+		Services: services,
+	}, nil
 }
