@@ -25,10 +25,15 @@ const (
 	timestamp           = uint64(99999999999999)
 )
 
-var testHooksState map[string]bool
+type HookState struct {
+	Called bool
+	Error  string
+}
+
+var testHooksState map[string]HookState
 
 func init() {
-	testHooksState = make(map[string]bool)
+	testHooksState = make(map[string]HookState)
 
 	scenarios["registerIca"] = testRegisterIca
 	scenarios["createPool"] = testCreatePool
@@ -143,8 +148,10 @@ func testCreatePool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
-			testHooksState["testCreatePool_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(ctx sdk.Context, ex types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
+			testHooksState["testCreatePool_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		futureGovernor := "168h"
@@ -166,7 +173,8 @@ func testCreatePool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testCreatePoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testCreatePool_hook"])
+		require.True(t, testHooksState["testCreatePool_hook"].Called)
+		require.Empty(t, testHooksState["testCreatePool_hook"].Error)
 	}
 }
 
@@ -175,8 +183,10 @@ func testCreatePoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) {
-			testHooksState["testCreatePoolTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) {
+			testHooksState["testCreatePoolTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		futureGovernor := "168h"
@@ -206,7 +216,7 @@ func testCreatePoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testCreatePoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testCreatePoolTimeout_hook"])
+		require.True(t, testHooksState["testCreatePoolTimeout_hook"].Called)
 	}
 }
 
@@ -215,8 +225,11 @@ func testJoinPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgJoinPool(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]) {
-			testHooksState["testJoinPool_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgJoinPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]) {
+			testHooksState["testJoinPool_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
 		testCoins := joinPoolTestCoins()
@@ -238,7 +251,8 @@ func testJoinPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testJoinPoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinPool_hook"])
+		require.True(t, testHooksState["testJoinPool_hook"].Called)
+		require.Empty(t, testHooksState["testJoinPool_hook"].Error)
 	}
 }
 
@@ -247,8 +261,10 @@ func testJoinPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinPool]) {
-			testHooksState["testJoinPoolTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinPool]) {
+			testHooksState["testJoinPoolTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		testCoins := joinPoolTestCoins()
@@ -277,7 +293,7 @@ func testJoinPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testJoinPoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinPoolTimeout_hook"])
+		require.True(t, testHooksState["testJoinPoolTimeout_hook"].Called)
 	}
 }
 
@@ -286,11 +302,14 @@ func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
-			testHooksState["testExitPool_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+			testHooksState["testExitPool_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
-		testCoins := joinPoolTestCoins()
+		testCoins := []sdk.Coin{}
 		shares, ok := sdk.NewIntFromString("1000000000000000000")
 		require.True(t, ok)
 
@@ -309,7 +328,8 @@ func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testExitPoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitPool_hook"])
+		require.True(t, testHooksState["testExitPool_hook"].Called)
+		require.Empty(t, testHooksState["testExitPool_hook"].Error)
 	}
 }
 
@@ -318,8 +338,10 @@ func testExitPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitPool]) {
-			testHooksState["testExitPoolTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+			testHooksState["testExitPoolTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		testCoins := joinPoolTestCoins()
@@ -348,7 +370,7 @@ func testExitPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testExitPoolTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitPoolTimeout_hook"])
+		require.True(t, testHooksState["testExitPoolTimeout_hook"].Called)
 	}
 }
 
@@ -357,8 +379,11 @@ func testJoinSwapExternAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
-			testHooksState["testJoinSwapExternAmountIn_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+			testHooksState["testJoinSwapExternAmountIn_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
 		testCoin := joinSwapExternAmountInTestCoin()
@@ -380,7 +405,8 @@ func testJoinSwapExternAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testJoinSwapExternAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinSwapExternAmountIn_hook"])
+		require.True(t, testHooksState["testJoinSwapExternAmountIn_hook"].Called)
+		require.Empty(t, testHooksState["testJoinSwapExternAmountIn_hook"].Error)
 	}
 }
 
@@ -389,8 +415,10 @@ func testJoinSwapExternAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testi
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
-			testHooksState["testJoinSwapExternAmountInTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+			testHooksState["testJoinSwapExternAmountInTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		testCoin := joinSwapExternAmountInTestCoin()
@@ -419,7 +447,7 @@ func testJoinSwapExternAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testi
 
 func testJoinSwapExternAmountInTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinSwapExternAmountInTimeout_hook"])
+		require.True(t, testHooksState["testJoinSwapExternAmountInTimeout_hook"].Called)
 	}
 }
 
@@ -428,12 +456,15 @@ func testExitSwapExternAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) 
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) {
-			testHooksState["testExitSwapExternAmountOut_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) {
+			testHooksState["testExitSwapExternAmountOut_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
-		testCoin := joinSwapExternAmountInTestCoin()
-		shares, ok := sdk.NewIntFromString("500000000000000000")
+		testCoin := sdk.NewCoin("uatom", sdk.NewInt(1))
+		shares, ok := sdk.NewIntFromString("10000000000000000")
 		require.True(t, ok)
 
 		err = k.TransmitIbcExitSwapExternAmountOut(
@@ -451,7 +482,8 @@ func testExitSwapExternAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) 
 
 func testExitSwapExternAmountOutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitSwapExternAmountOut_hook"])
+		require.True(t, testHooksState["testExitSwapExternAmountOut_hook"].Called)
+		require.Empty(t, testHooksState["testExitSwapExternAmountOut_hook"].Error)
 	}
 }
 
@@ -460,11 +492,13 @@ func testExitSwapExternAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *test
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) {
-			testHooksState["testExitSwapExternAmountOutTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) {
+			testHooksState["testExitSwapExternAmountOutTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
-		testCoin := joinSwapExternAmountInTestCoin()
+		testCoin := sdk.Coin{}
 		shares, ok := sdk.NewIntFromString("500000000000000000")
 		require.True(t, ok)
 
@@ -490,7 +524,7 @@ func testExitSwapExternAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *test
 
 func testExitSwapExternAmountOutTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitSwapExternAmountOutTimeout_hook"])
+		require.True(t, testHooksState["testExitSwapExternAmountOutTimeout_hook"].Called)
 	}
 }
 
@@ -499,8 +533,11 @@ func testJoinSwapShareAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) {
-			testHooksState["testJoinSwapShareAmountOut_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) {
+			testHooksState["testJoinSwapShareAmountOut_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
 		testDenom := "uatom"
@@ -524,7 +561,8 @@ func testJoinSwapShareAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testJoinSwapShareAmountOutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinSwapShareAmountOut_hook"])
+		require.True(t, testHooksState["testJoinSwapShareAmountOut_hook"].Called)
+		require.Empty(t, testHooksState["testJoinSwapShareAmountOut_hook"].Error)
 	}
 }
 
@@ -533,8 +571,10 @@ func testJoinSwapShareAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *testi
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) {
-			testHooksState["testJoinSwapShareAmountOutTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) {
+			testHooksState["testJoinSwapShareAmountOutTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		testDenom := "uatom"
@@ -565,7 +605,7 @@ func testJoinSwapShareAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *testi
 
 func testJoinSwapShareAmountOutTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testJoinSwapShareAmountOutTimeout_hook"])
+		require.True(t, testHooksState["testJoinSwapShareAmountOutTimeout_hook"].Called)
 	}
 }
 
@@ -574,13 +614,16 @@ func testExitSwapShareAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) {
-			testHooksState["testExitSwapShareAmountIn_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) {
+			testHooksState["testExitSwapShareAmountIn_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
 		testDenom := "uatom"
-		testCoinAmount := sdk.NewInt(1000)
-		shares, ok := sdk.NewIntFromString("500000000000000000")
+		testCoinAmount := sdk.NewInt(1)
+		shares, ok := sdk.NewIntFromString("10000000000000000")
 		require.True(t, ok)
 
 		err = k.TransmitIbcExitSwapShareAmountIn(
@@ -599,7 +642,8 @@ func testExitSwapShareAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testExitSwapShareAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitSwapShareAmountIn_hook"])
+		require.True(t, testHooksState["testExitSwapShareAmountIn_hook"].Called)
+		require.Empty(t, testHooksState["testExitSwapShareAmountIn_hook"].Error)
 	}
 }
 
@@ -608,8 +652,10 @@ func testExitSwapShareAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testin
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) {
-			testHooksState["testExitSwapShareAmountInTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) {
+			testHooksState["testExitSwapShareAmountInTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		testDenom := "uatom"
@@ -640,7 +686,7 @@ func testExitSwapShareAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testin
 
 func testExitSwapShareAmountInTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testExitSwapShareAmountInTimeout_hook"])
+		require.True(t, testHooksState["testExitSwapShareAmountInTimeout_hook"].Called)
 	}
 }
 
@@ -649,8 +695,11 @@ func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
-			testHooksState["testLockTokens_hook"] = true
+		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(ctx sdk.Context, ex types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
+			testHooksState["testLockTokens_hook"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
 		})
 
 		lockupPeriod := 1 * time.Hour
@@ -670,7 +719,8 @@ func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testLockTokensChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testLockTokens_hook"])
+		require.True(t, testHooksState["testLockTokens_hook"].Called)
+		require.Empty(t, testHooksState["testLockTokens_hook"].Error)
 	}
 }
 
@@ -679,8 +729,10 @@ func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 		var err error
 
 		// Setup hook
-		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
-			testHooksState["testLockTokensTimeout_hook"] = true
+		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(ctx sdk.Context, ex types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
+			testHooksState["testLockTokensTimeout_hook"] = HookState{
+				Called: true,
+			}
 		})
 
 		lockupPeriod := 1 * time.Hour
@@ -707,6 +759,6 @@ func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testLockTokensTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		require.True(t, testHooksState["testLockTokensTimeout_hook"])
+		require.True(t, testHooksState["testLockTokensTimeout_hook"].Called)
 	}
 }
