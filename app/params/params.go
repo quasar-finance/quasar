@@ -1,8 +1,8 @@
 package params
 
 const (
-	HumanCoinUnit = "qsr"
-	BaseCoinUnit  = "uqsr"
+	HumanCoinUnit = "qsar"
+	BaseCoinUnit  = "uqsar"
 	QsrExponent   = 6
 
 	DefaultBondDenom = BaseCoinUnit
