@@ -3,7 +3,7 @@
 set -Cue -o pipefail
 
 project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
-this_dir="${project_dir}/demos/intergamm-osmosis"
+this_dir="${project_dir}/integration_tests/intergamm-osmosis"
 this_script="${this_dir}/$(basename "${0}")"
 run_dir="${this_dir}/run"
 relayer_out_file="${run_dir}/relayer.out"
@@ -100,8 +100,8 @@ ensure_relayer_started() {
 }
 
 fund_host_ica() {
-  for denom_amount in 10000000000uatom 10000000000uosmo 10000000000uakt ; do
-    ./demo osmosistx bank send osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy "$denom_amount" -y
+  for denom_amount in 10000000000uatom 10000000000uosmo ; do
+    osmosistx bank send osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy "$denom_amount" -y
   done
 }
 
@@ -154,18 +154,12 @@ ensure_all_started() {
 }
 
 
-run_all() {
+ready_all() {
   ensure_all_started
 
-  do_until_success quasartx intergamm register-account connection-0 -y
-
-  do_until_success quasarq intergamm interchain-account-from-address connection-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+  quasartx intergamm test --scenario setup -y
 
   fund_host_ica
-
-  sleep 2
-
-  quasartx intergamm create-pool --data-file create-pool.json
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
@@ -173,5 +167,68 @@ test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
 cmd_exists "osmosisd"
 cmd_exists "quasarnoded"
 cmd_exists "hermes"
+
+run() {
+  ready_all
+
+  # Create pool
+
+  echo "> scenario: createPool"
+  quasartx intergamm test --scenario createPool -y
+  sleep 8
+
+  echo "> scenario: createPoolChecks"
+  quasartx intergamm test --scenario createPoolChecks -y
+
+  echo "> scenario: createPoolTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario createPoolTimeout -y
+  sleep 8
+
+  echo "> scenario: createPoolTimeoutChecks"
+  quasartx intergamm test --scenario createPoolTimeoutChecks -y
+
+
+  # Join pool
+
+  echo "> scenario: joinPool"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinPool -y
+  sleep 8
+
+  echo "> scenario: joinPoolChecks"
+  quasartx intergamm test --scenario joinPoolChecks -y
+
+  echo "> scenario: joinPoolTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinPoolTimeout -y
+  sleep 8
+
+  echo "> scenario: joinPoolTimeoutChecks"
+  quasartx intergamm test --scenario joinPoolTimeoutChecks -y
+
+  # Exit pool
+
+  echo "> scenario: exitPool"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitPool -y
+  sleep 8
+
+  echo "> scenario: exitPoolChecks"
+  quasartx intergamm test --scenario exitPoolChecks -y
+
+  echo "> scenario: exitPoolTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitPoolTimeout -y
+  sleep 8
+
+  echo "> scenario: exitPoolTimeoutChecks"
+  quasartx intergamm test --scenario exitPoolTimeoutChecks -y
+}
 
 "$@"

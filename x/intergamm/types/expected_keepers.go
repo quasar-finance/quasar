@@ -25,6 +25,7 @@ type ICAControllerKeeper interface {
 	GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool)
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 	GetActiveChannelID(ctx sdk.Context, connectionID, portID string) (string, bool)
+	GetOpenActiveChannel(ctx sdk.Context, connectionID, portID string) (string, bool)
 	SendTx(ctx sdk.Context, chanCap *capabilitytypes.Capability, connectionID, portID string, icaPacketData icatypes.InterchainAccountPacketData, timeoutTimestamp uint64) (uint64, error)
 }
 
