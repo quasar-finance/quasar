@@ -366,13 +366,13 @@ func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
 	poolId uint64,
 	tokenIn sdk.Coin,
 	shareOutMinAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -395,13 +395,13 @@ func (k Keeper) TransmitIbcExitSwapExternAmountOut(
 	poolId uint64,
 	tokenOut sdk.Coin,
 	shareInMaxAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -425,13 +425,13 @@ func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
 	tokenInDenom string,
 	shareOutAmount sdk.Int,
 	tokenInMaxAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -456,13 +456,13 @@ func (k Keeper) TransmitIbcExitSwapShareAmountIn(
 	tokenOutDenom string,
 	shareInAmount sdk.Int,
 	tokenOutMinAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -485,13 +485,13 @@ func (k Keeper) TransmitIbcLockTokens(
 	timeoutTimestamp uint64,
 	duration time.Duration,
 	coins sdk.Coins,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
