@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -46,7 +45,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgCreateBalancerPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -64,7 +63,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -82,7 +81,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -100,7 +99,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapExternAmountIn {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -118,7 +117,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapExternAmountOut {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -136,7 +135,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapShareAmountOut {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -154,7 +153,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapShareAmountIn {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -172,7 +171,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgLockTokens {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrAcknowledgementHookFailed(req)
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -206,7 +205,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgCreateBalancerPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -217,7 +216,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -228,7 +227,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -239,7 +238,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapExternAmountIn {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -250,7 +249,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapExternAmountOut {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -261,7 +260,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapShareAmountOut {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -272,7 +271,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapShareAmountIn {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -283,7 +282,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgLockTokens {
 			if err := h(ctx, ex); err != nil {
-				return types.NewErrTimeoutHookFailed(req)
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}
 		}
 
@@ -308,7 +307,7 @@ func (k *Keeper) HandleIbcTransferAcknowledgement(
 	}
 	for _, h := range k.Hooks.IbcTransfer.ackIbcTransfer {
 		if err := h(ctx, ex); err != nil {
-			return sdkerrors.Wrap(types.ErrTimeoutHookFailed, fmt.Sprintf("%s", err))
+			return types.NewErrAcknowledgementHookFailed("FungibleTokenPacketData")
 		}
 	}
 
@@ -326,7 +325,7 @@ func (k *Keeper) HandleIbcTransferTimeout(
 	}
 	for _, h := range k.Hooks.IbcTransfer.timeoutIbcTransfer {
 		if err := h(ctx, ex); err != nil {
-			return sdkerrors.Wrap(types.ErrTimeoutHookFailed, fmt.Sprintf("%s", err))
+			return types.NewErrTimeoutHookFailed("FungibleTokenPacketData")
 		}
 	}
 
