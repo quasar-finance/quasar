@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
+import "qbank/genesis.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qbank/types";
 
@@ -50,6 +51,11 @@ service Query {
 // Queries a list of TotalClaimed items.
 	rpc TotalClaimed(QueryTotalClaimedRequest) returns (QueryTotalClaimedResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qbank/total_claimed/{userAcc}/{vaultID}";
+	}
+
+// Queries a list of GetAllDepsoitInfos items.
+	rpc GetAllDepsoitInfos(QueryGetAllDepsoitInfosRequest) returns (QueryGetAllDepsoitInfosResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qbank/get_all_depsoit_infos/{vaultID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -123,6 +129,15 @@ message QueryTotalClaimedResponse {
 	QCoins coins  = 1
 	[(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/abag/quasarnode/x/qbank/types.QCoins"];
   
+}
+
+message QueryGetAllDepsoitInfosRequest {
+  string vaultID = 1;
+}
+
+message QueryGetAllDepsoitInfosResponse {
+	repeated DepositInfo depositInfos = 1[(gogoproto.nullable) = false];
+
 }
 
 // this line is used by starport scaffolding # 3
