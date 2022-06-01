@@ -45,10 +45,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			}
 
 			// Reward distribution
-			err = k.RewardDistribution(ctx, uint64(epochNumber))
-			if err != nil {
-				panic(err)
-			}
+			k.RewardDistribution(ctx, uint64(epochNumber))
+
 		} // k.Enabled(ctx)
 	}
 }
