@@ -44,7 +44,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgCreateBalancerPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinPool:
@@ -60,7 +62,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitPool:
@@ -76,7 +80,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinSwapExternAmountIn:
@@ -92,7 +98,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapExternAmountIn {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitSwapExternAmountOut:
@@ -108,7 +116,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapExternAmountOut {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinSwapShareAmountOut:
@@ -124,7 +134,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapShareAmountOut {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitSwapShareAmountIn:
@@ -140,7 +152,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapShareAmountIn {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	case *lockuptypes.MsgLockTokens:
@@ -156,7 +170,9 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			Response: resp,
 		}
 		for _, h := range k.Hooks.Osmosis.ackMsgLockTokens {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(req)
+			}
 		}
 
 	default:
@@ -188,7 +204,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgCreateBalancerPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinPool:
@@ -197,7 +215,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitPool:
@@ -206,7 +226,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinSwapExternAmountIn:
@@ -215,7 +237,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapExternAmountIn {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitSwapExternAmountOut:
@@ -224,7 +248,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapExternAmountOut {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgJoinSwapShareAmountOut:
@@ -233,7 +259,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapShareAmountOut {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *gammtypes.MsgExitSwapShareAmountIn:
@@ -242,7 +270,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapShareAmountIn {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	case *lockuptypes.MsgLockTokens:
@@ -251,7 +281,9 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgLockTokens {
-			h(ctx, ex)
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(req)
+			}
 		}
 
 	default:
