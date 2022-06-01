@@ -159,10 +159,11 @@ func createPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testCreatePool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(ctx sdk.Context, ex types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(func(ctx sdk.Context, ex types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) error {
 			testHooksState["testCreatePool"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		createPool(t, ctx, k)
@@ -178,10 +179,11 @@ func testCreatePoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testCreatePoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) error {
 			testHooksState["testCreatePoolTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -224,11 +226,12 @@ func joinPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testJoinPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgJoinPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgJoinPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]) error {
 			testHooksState["testJoinPool"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		joinPool(t, ctx, k)
@@ -244,10 +247,11 @@ func testJoinPoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testJoinPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinPool]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinPool]) error {
 			testHooksState["testJoinPoolTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -283,11 +287,12 @@ func exitPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testExitPool(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) error {
 			testHooksState["testExitPool"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		exitPool(t, ctx, k)
@@ -303,10 +308,11 @@ func testExitPoolChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testExitPoolTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitPool]) error {
 			testHooksState["testExitPoolTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -346,11 +352,12 @@ func joinSwapExternAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testJoinSwapExternAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) error {
 			testHooksState["testJoinSwapExternAmountIn"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		joinSwapExternAmountIn(t, ctx, k)
@@ -366,10 +373,11 @@ func testJoinSwapExternAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testin
 
 func testJoinSwapExternAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) error {
 			testHooksState["testJoinSwapExternAmountInTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -405,11 +413,12 @@ func exitSwapExternAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testExitSwapExternAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) error {
 			testHooksState["testExitSwapExternAmountOut"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		exitSwapExternAmountOut(t, ctx, k)
@@ -425,10 +434,11 @@ func testExitSwapExternAmountOutChecks(ctx sdk.Context, k *Keeper) func(t *testi
 
 func testExitSwapExternAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) error {
 			testHooksState["testExitSwapExternAmountOutTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -466,11 +476,12 @@ func joinSwapShareAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testJoinSwapShareAmountOut(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) error {
 			testHooksState["testJoinSwapShareAmountOut"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		joinSwapShareAmountOut(t, ctx, k)
@@ -486,10 +497,11 @@ func testJoinSwapShareAmountOutChecks(ctx sdk.Context, k *Keeper) func(t *testin
 
 func testJoinSwapShareAmountOutTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) error {
 			testHooksState["testJoinSwapShareAmountOutTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -527,11 +539,12 @@ func exitSwapShareAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testExitSwapShareAmountIn(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) error {
 			testHooksState["testExitSwapShareAmountIn"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		exitSwapShareAmountIn(t, ctx, k)
@@ -547,10 +560,11 @@ func testExitSwapShareAmountInChecks(ctx sdk.Context, k *Keeper) func(t *testing
 
 func testExitSwapShareAmountInTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(ctx sdk.Context, ex types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) error {
 			testHooksState["testExitSwapShareAmountInTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
@@ -590,11 +604,12 @@ func lockTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 func testLockTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(ctx sdk.Context, ex types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
+		k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(ctx sdk.Context, ex types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) error {
 			testHooksState["testLockTokens"] = HookState{
 				Called: true,
 				Error:  ex.Error,
 			}
+			return nil
 		})
 
 		lockTokens(t, ctx, k)
@@ -610,10 +625,11 @@ func testLockTokensChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
-		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(ctx sdk.Context, ex types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(ctx sdk.Context, ex types.TimeoutExchange[*lockuptypes.MsgLockTokens]) error {
 			testHooksState["testLockTokensTimeout"] = HookState{
 				Called: true,
 			}
+			return nil
 		})
 
 		defer swapTimeout()()
