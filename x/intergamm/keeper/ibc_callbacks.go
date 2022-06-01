@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -306,7 +307,9 @@ func (k *Keeper) HandleIbcTransferAcknowledgement(
 		Response: &types.MsgEmptyIbcResponse{},
 	}
 	for _, h := range k.Hooks.IbcTransfer.ackIbcTransfer {
-		h(ctx, ex)
+		if err := h(ctx, ex); err != nil {
+			return sdkerrors.Wrap(types.ErrTimeoutHookFailed, fmt.Sprintf("%s", err))
+		}
 	}
 
 	return nil
@@ -322,7 +325,9 @@ func (k *Keeper) HandleIbcTransferTimeout(
 		Request:  &transferPacket,
 	}
 	for _, h := range k.Hooks.IbcTransfer.timeoutIbcTransfer {
-		h(ctx, ex)
+		if err := h(ctx, ex); err != nil {
+			return sdkerrors.Wrap(types.ErrTimeoutHookFailed, fmt.Sprintf("%s", err))
+		}
 	}
 
 	return nil
