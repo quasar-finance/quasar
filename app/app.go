@@ -563,6 +563,21 @@ func New(
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
 		app.OrionKeeper.HandleAckMsgExitPool,
 	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(
+		app.OrionKeeper.HandleAckMsgJoinSwapExternAmountIn,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(
+		app.OrionKeeper.HandleAckMsgExitSwapExternAmountOut,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(
+		app.OrionKeeper.HandleAckMsgJoinSwapShareAmountOut,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(
+		app.OrionKeeper.HandleAckMsgExitSwapShareAmountIn,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgLockTokens(
+		app.OrionKeeper.HandleAckMsgLockTokens,
+	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
 		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
 	)
@@ -571,6 +586,21 @@ func New(
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(
 		app.OrionKeeper.HandleTimeoutMsgExitPool,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(
+		app.OrionKeeper.HandleTimeoutMsgJoinSwapExternAmountIn,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(
+		app.OrionKeeper.HandleTimeoutMsgExitSwapExternAmountOut,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(
+		app.OrionKeeper.HandleTimeoutMsgJoinSwapShareAmountOut,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(
+		app.OrionKeeper.HandleTimeoutMsgExitSwapShareAmountIn,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(
+		app.OrionKeeper.HandleTimeoutMsgLockTokens,
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

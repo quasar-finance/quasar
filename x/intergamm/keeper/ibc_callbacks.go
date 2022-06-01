@@ -10,6 +10,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 	"github.com/pkg/errors"
 )
 
@@ -78,6 +79,86 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			h(ctx, ex)
 		}
 
+	case *gammtypes.MsgJoinSwapExternAmountIn:
+		resp := &gammtypes.MsgJoinSwapExternAmountInResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapExternAmountIn {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapExternAmountOut:
+		resp := &gammtypes.MsgExitSwapExternAmountOutResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapExternAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinSwapShareAmountOut:
+		resp := &gammtypes.MsgJoinSwapShareAmountOutResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgJoinSwapShareAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapShareAmountIn:
+		resp := &gammtypes.MsgExitSwapShareAmountInResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgExitSwapShareAmountIn {
+			h(ctx, ex)
+		}
+
+	case *lockuptypes.MsgLockTokens:
+		resp := &lockuptypes.MsgLockTokensResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgLockTokens {
+			h(ctx, ex)
+		}
+
 	default:
 		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
 	}
@@ -125,6 +206,51 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgExitPool {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinSwapExternAmountIn:
+		ex := types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapExternAmountIn {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapExternAmountOut:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapExternAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgJoinSwapShareAmountOut:
+		ex := types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgJoinSwapShareAmountOut {
+			h(ctx, ex)
+		}
+
+	case *gammtypes.MsgExitSwapShareAmountIn:
+		ex := types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgExitSwapShareAmountIn {
+			h(ctx, ex)
+		}
+
+	case *lockuptypes.MsgLockTokens:
+		ex := types.TimeoutExchange[*lockuptypes.MsgLockTokens]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgLockTokens {
 			h(ctx, ex)
 		}
 

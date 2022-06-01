@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -19,6 +20,7 @@ import (
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 var (
@@ -319,4 +321,151 @@ func (k Keeper) ForwardTransferIbcTokens(
 		timeoutHeight,
 		timeoutTimestamp,
 	)
+}
+
+func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenIn sdk.Coin,
+	shareOutMinAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgJoinSwapExternAmountIn{
+			Sender:            iaResp.InterchainAccountAddress,
+			PoolId:            poolId,
+			TokenIn:           tokenIn,
+			ShareOutMinAmount: shareOutMinAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcExitSwapExternAmountOut(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenOut sdk.Coin,
+	shareInMaxAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgExitSwapExternAmountOut{
+			Sender:           iaResp.InterchainAccountAddress,
+			PoolId:           poolId,
+			TokenOut:         tokenOut,
+			ShareInMaxAmount: shareInMaxAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenInDenom string,
+	shareOutAmount sdk.Int,
+	tokenInMaxAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgJoinSwapShareAmountOut{
+			Sender:           iaResp.InterchainAccountAddress,
+			PoolId:           poolId,
+			TokenInDenom:     tokenInDenom,
+			ShareOutAmount:   shareOutAmount,
+			TokenInMaxAmount: tokenInMaxAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcExitSwapShareAmountIn(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	poolId uint64,
+	tokenOutDenom string,
+	shareInAmount sdk.Int,
+	tokenOutMinAmount sdk.Int,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&gammtypes.MsgExitSwapShareAmountIn{
+			Sender:            iaResp.InterchainAccountAddress,
+			PoolId:            poolId,
+			TokenOutDenom:     tokenOutDenom,
+			ShareInAmount:     shareInAmount,
+			TokenOutMinAmount: tokenOutMinAmount,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}
+
+func (k Keeper) TransmitIbcLockTokens(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	duration time.Duration,
+	coins sdk.Coins,
+) error {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return err
+	}
+
+	msgs := []sdk.Msg{
+		&lockuptypes.MsgLockTokens{
+			Owner:    iaResp.InterchainAccountAddress,
+			Duration: duration,
+			Coins:    coins,
+		},
+	}
+
+	return k.sendTx(ctx, owner, connectionId, msgs, timeoutTimestamp)
 }

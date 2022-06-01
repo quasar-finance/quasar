@@ -15,6 +15,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -173,12 +174,90 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid MsgJoinPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinPool{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgJoinPool{}, &gammtypes.MsgJoinPoolResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgJoinPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "valid MsgExitPool",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
 			setup: func() {
 				k.Hooks.Osmosis.AddHooksAckMsgExitPool(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgJoinSwapExternAmountIn",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgJoinSwapExternAmountIn{}, &gammtypes.MsgJoinSwapExternAmountInResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitSwapExternAmountOut",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapExternAmountOut{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgExitSwapExternAmountOut{}, &gammtypes.MsgExitSwapExternAmountOutResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgJoinSwapShareAmountOut",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapShareAmountOut{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgJoinSwapShareAmountOut{}, &gammtypes.MsgJoinSwapShareAmountOutResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitSwapShareAmountIn",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapShareAmountIn{}),
+			ack:       makeIcaAck(t, &gammtypes.MsgExitSwapShareAmountIn{}, &gammtypes.MsgExitSwapShareAmountInResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(func(c sdk.Context, e types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgLockTokens",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
+			ack:       makeIcaAck(t, &lockuptypes.MsgLockTokens{}, &lockuptypes.MsgLockTokensResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgLockTokens(func(c sdk.Context, e types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})
@@ -265,11 +344,83 @@ func TestHandleIcaTimeout(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid MsgJoinPool",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinPool{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgJoinPool]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "valid MsgExitPool",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
 			setup: func() {
 				k.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitPool]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgJoinSwapExternAmountIn",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgJoinSwapExternAmountIn]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitSwapExternAmountOut",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapExternAmountOut{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitSwapExternAmountOut]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgJoinSwapShareAmountOut",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapShareAmountOut{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgExitSwapShareAmountIn",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapShareAmountIn{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(func(c sdk.Context, e types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgLockTokens",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(c sdk.Context, e types.TimeoutExchange[*lockuptypes.MsgLockTokens]) {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 				})

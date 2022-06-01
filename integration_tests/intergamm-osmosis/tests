@@ -189,7 +189,6 @@ run() {
   echo "> scenario: createPoolTimeoutChecks"
   quasartx intergamm test --scenario createPoolTimeoutChecks -y
 
-
   # Join pool
 
   echo "> scenario: joinPool"
@@ -210,6 +209,26 @@ run() {
   echo "> scenario: joinPoolTimeoutChecks"
   quasartx intergamm test --scenario joinPoolTimeoutChecks -y
 
+  # Lock tokens
+
+  # echo "> scenario: lockTokens"
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
+  # quasartx intergamm test --scenario lockTokens -y
+  # sleep 8
+
+  # echo "> scenario: lockTokensChecks"
+  # quasartx intergamm test --scenario lockTokensChecks -y
+
+  # echo "> scenario: lockTokensTimeout"
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
+  # quasartx intergamm test --scenario lockTokensTimeout -y
+  # sleep 8
+
+  # echo "> scenario: lockTokensTimeoutChecks"
+  # quasartx intergamm test --scenario lockTokensTimeoutChecks -y
+
   # Exit pool
 
   echo "> scenario: exitPool"
@@ -229,6 +248,86 @@ run() {
 
   echo "> scenario: exitPoolTimeoutChecks"
   quasartx intergamm test --scenario exitPoolTimeoutChecks -y
+
+  # Join pool single denom 1
+
+  echo "> scenario: joinSwapExternAmountIn"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapExternAmountIn -y
+  sleep 8
+
+  echo "> scenario: joinSwapExternAmountInChecks"
+  quasartx intergamm test --scenario joinSwapExternAmountInChecks -y
+
+  echo "> scenario: joinSwapExternAmountInTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapExternAmountInTimeout -y
+  sleep 8
+
+  echo "> scenario: joinSwapExternAmountInTimeoutChecks"
+  quasartx intergamm test --scenario joinSwapExternAmountInTimeoutChecks -y
+
+  # Exit pool single denom 1
+
+  echo "> scenario: exitSwapExternAmountOut"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapExternAmountOut -y
+  sleep 8
+
+  echo "> scenario: exitSwapExternAmountOutChecks"
+  quasartx intergamm test --scenario exitSwapExternAmountOutChecks -y
+
+  echo "> scenario: exitSwapExternAmountOutTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapExternAmountOutTimeout -y
+  sleep 8
+
+  echo "> scenario: exitSwapExternAmountOutTimeoutChecks"
+  quasartx intergamm test --scenario exitSwapExternAmountOutTimeoutChecks -y
+
+  # Join pool single denom 2
+
+  echo "> scenario: joinSwapShareAmountOut"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapShareAmountOut -y
+  sleep 8
+
+  echo "> scenario: joinSwapShareAmountOutChecks"
+  quasartx intergamm test --scenario joinSwapShareAmountOutChecks -y
+
+  echo "> scenario: joinSwapShareAmountOutTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario joinSwapShareAmountOutTimeout -y
+  sleep 8
+
+  echo "> scenario: joinSwapShareAmountOutTimeoutChecks"
+  quasartx intergamm test --scenario joinSwapShareAmountOutTimeoutChecks -y
+
+  # Exit pool single denom 2
+
+  echo "> scenario: exitSwapShareAmountIn"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapShareAmountIn -y
+  sleep 8
+
+  echo "> scenario: exitSwapShareAmountInChecks"
+  quasartx intergamm test --scenario exitSwapShareAmountInChecks -y
+
+  echo "> scenario: exitSwapShareAmountInTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario exitSwapShareAmountInTimeout -y
+  sleep 8
+
+  echo "> scenario: exitSwapShareAmountInTimeoutChecks"
+  quasartx intergamm test --scenario exitSwapShareAmountInTimeoutChecks -y
 }
 
 "$@"
