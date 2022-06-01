@@ -63,7 +63,7 @@ func (k Keeper) HandleAckMsgExitPool(
 	if ex.HasError() {
 		err = sdkerrors.Wrapf(types.ErrIcaMessageFailedInHost, ex.Error)
 	}
-	k.OnExitPoolAck(ctx, ex.Sequence, err)
+	err = k.OnExitPoolAck(ctx, ex.Sequence, err)
 	return err
 }
 

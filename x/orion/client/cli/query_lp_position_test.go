@@ -27,7 +27,6 @@ func networkWithLpPositionObjects(t *testing.T) (*network.Network, types.LpPosit
 	lpPosition := &types.LpPosition{
 		LpID:                   42,
 		LockID:                 24,
-		IsActive:               false,
 		StartTime:              time.Now().UTC(),
 		BondingStartEpochDay:   2,
 		BondDuration:           5,

@@ -13,7 +13,8 @@ import (
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
 	// For initial testing use alice address -
-	return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
+	// TODO AUDIT here (which return?)
+	//return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
 
 	accAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	accStr, err := sdk.Bech32ifyAddressBytes("quasar", accAddr)

@@ -7,12 +7,12 @@ import (
 
 // OnJoinPoolAck handles the join pool acknowledgement
 func (k Keeper) OnJoinPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
-	lp, lperr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
-	if lperr != nil {
+	lp, lpErr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
+	if lpErr != nil {
 		k.Logger(ctx).Info("OnJoinPoolAck",
 			"packetSeq", packetSeq,
 			"error", err,
-			"internal_error", lperr)
+			"internal_error", lpErr)
 		return
 	}
 
@@ -33,11 +33,11 @@ func (k Keeper) OnJoinPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 
 // OnJoinPoolTimeout handles the timeout condition for join pool requests
 func (k Keeper) OnJoinPoolTimeout(ctx sdk.Context, packetSeq uint64) {
-	lp, lperr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
-	if lperr != nil {
+	lp, lpErr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
+	if lpErr != nil {
 		k.Logger(ctx).Info("OnJoinPoolTimeout",
 			"packetSeq", packetSeq,
-			"internal_error", lperr)
+			"internal_error", lpErr)
 		return
 	}
 	lp.State = types.LpState_JOINING_TIMEOUT
@@ -46,14 +46,14 @@ func (k Keeper) OnJoinPoolTimeout(ctx sdk.Context, packetSeq uint64) {
 	k.AddAvailableInterchainFund(ctx, lp.Coins)
 }
 
-func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
-	lp, lperr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
-	if lperr != nil {
+func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) error {
+	lp, lpErr := k.GetLpPositionFromSeqNumber(ctx, packetSeq)
+	if lpErr != nil {
 		k.Logger(ctx).Info("OnExitPoolAck",
 			"packetSeq", packetSeq,
 			"error", err,
-			"internal_error", lperr)
-		return
+			"internal_error", lpErr)
+		return lpErr
 	}
 
 	if err != nil {
@@ -62,6 +62,7 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 			"packetSeq", packetSeq,
 			"error", err,
 			"new lp State", lp.State)
+		return err
 	}
 	lp.State = types.LpState_EXITED
 	k.setLpPosition(ctx, lp)
@@ -69,19 +70,23 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) {
 	for _, coin := range tokensOut {
 		expectedExitDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration + 1
 		k.AddEpochExitAmt(ctx, expectedExitDay, coin)
-		k.TokenWithdrawFromOsmosis(ctx, coin)
+		err = k.TokenWithdrawFromOsmosis(ctx, coin)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool) {
-	if ok {
-		coin, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
-		if found {
-			k.AddAvailableInterchainFund(ctx, sdk.NewCoins(coin))
-			k.DeleteIBCTokenTransferRecord(ctx, packetSeq)
-		}
-	} else {
-
+	// TODO review this (appears to be unused function)
+	if !ok {
+		return
+	}
+	coin, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
+	if found {
+		k.AddAvailableInterchainFund(ctx, sdk.NewCoins(coin))
+		k.DeleteIBCTokenTransferRecord(ctx, packetSeq)
 	}
 }
 
