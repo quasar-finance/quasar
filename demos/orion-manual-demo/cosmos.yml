@@ -5,6 +5,9 @@ accounts:
   - name: bob
     mnemonic: lucky surface version conduct ketchup cash unfair rival shoulder example demand upset deny tilt very clinic tribe rather renew skirt naive sweet box chicken
     coins: ["10000000uatom", "1000000000stake"]
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: cosmos14ahzv9ldtfn7ktgnd0m8k70d6l080lvdlrrsth
 validator:
   name: alice
   staked: "100000000stake"

@@ -5,10 +5,14 @@ accounts:
   - name: bob
     mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
     coins: ["10000token", "100000000stake", "1000000000uqsar"]
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg
 validator:
   name: alice
   staked: "100000000stake"
 genesis:
+  chain_id: "quasar"
   app_state:
     staking:
       params:

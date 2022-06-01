@@ -55,12 +55,48 @@ ignite chain serve -c  ~/quasar-demo/quasar/demos/orion-manual-demo/cosmos.yml  
 ```
 You can `tail -f cosmos.log` in a separate terminal to continusly check the logs. 
 
+## Hermes Key restore 
+```
+hermes keys restore --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter" quasar
+```
+
+2022-06-01T06:24:07.459912Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
+Success: Restored key 'testkey1' (quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg) on chain quasar
+
+``` 
+hermes keys restore --mnemonic "blade trap agent boy note critic jazz nuclear eight lion pipe fresh tourist make broken inquiry close agree usual human stock move remain swim" cosmos
+```
+2022-06-01T06:24:15.776985Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
+Success: Restored key 'testkey2' (cosmos14ahzv9ldtfn7ktgnd0m8k70d6l080lvdlrrsth) on chain cosmos
+
+```
+hermes keys restore --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner" osmosis
+```
+
+2022-06-01T06:24:30.371926Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
+Success: Restored key 'testkey3' (osmo139njd402zqj368sk65y753ppp4hxr9268w7wdp) on chain osmosis
+
 ## Connecting the chains
 
 ### Connect quasar and cosmos 
-
+`
+hermes create connection quasar cosmos
+`
 ### Connect quasar and osmosis
-
+`
+hermes create connection quasar osmosis
+`
 ### Connect osmosis and cosmos hub
+`
+hermes create connection osmosis cosmos
+`
 
+## Start hermes
 
+```
+hermes start
+```
+
+## Check the connections between chains
+- Hermes commands
+- Chain  commands

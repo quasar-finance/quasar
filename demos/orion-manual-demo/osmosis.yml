@@ -6,6 +6,9 @@ accounts:
   - name: bob
     mnemonic: lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool
     coins: ["10000000000000uosmo", "1000000000stake"]
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: osmo139njd402zqj368sk65y753ppp4hxr9268w7wdp
 validator:
   name: alice
   staked: "100000000stake"
