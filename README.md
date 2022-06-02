@@ -1,21 +1,17 @@
 # Quasar
 
-This repository is for building yield aggregator and capital management cosmos chain project.
+This is the official Quasar Labs repository. Quasar is building decentralized vaults for creating custom and sovereign investment vehicles in the Cosmos ecosystem and beyond.
 
-Quasar is highly focused in utlising the latest ibc features of cosmos.
+Quasar is focused in utilizing the latest and contributing to building IBC features including:
 IBC features that we are developing on:
-1. Intechain accounts.
+1. Interchain Accounts (ICA).
 2. Multihop ibc token transfer
-3. IBC cross chain Lping via ICA.
+3. Interchain Queriees (ICQ).
 
-Quasar initial MVP includes Lping on osmosis dex via IBC messages/ICA. Quasar will provide the one stop for end users to come with their IBC enabled tokens for investment in to the cosmos ecosystem. And that too via just one place.
-Quasar is implemeting strategies to aggregate users deposited fund to optimally Lping on osmosis dex.
+Quasar is working hard to simplfy and add ease to collaborative investment with digital assets. We are creating a decentralized platform for creating custom, soverign vaults that can be molded into any imaginable investment financial instrument from ETFs, mutual fund, SPAC, or whatever. The galaxy is the limit (or maybe the gas fee is 😅)  Our flagship product is a vault that implements optimal LPing into pools on Osmosis DEX.
 
-## Notes
-
-1. Quasar is under rapid development phase, and current code base have a lot of testing, experimental redundant code, and info level logs; Which will be removed from the code base in near future based on our testing, and experiments.
-2. Current state of the repo ca not be used directly for a live production as there are many parallel moving developments in different branches.
-3. Task management is happening via clickup project mangement internally. So we will not create any github task, till it is in good situation.
+## DISCLAIMER
+The current codebase is experimental and undergoing testing and auditing - no code is guarunteed to be ready for production environments at this time. 
 
 ## Quasar Node
 
