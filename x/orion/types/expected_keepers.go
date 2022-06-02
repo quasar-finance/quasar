@@ -55,6 +55,12 @@ type QoracleKeeper interface {
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 
+	Send(ctx sdk.Context,
+		coin sdk.Coin,
+		destinationChain string,
+		owner string,
+		destinationAddress string) (uint64, error)
+
 	TransmitIbcCreatePool(
 		ctx sdk.Context,
 		owner string,
@@ -62,7 +68,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolParams *gammbalancer.PoolParams,
 		poolAssets []gammtypes.PoolAsset,
-		futurePoolGovernor string) error
+		futurePoolGovernor string) (uint64, error)
 
 	TransmitIbcJoinPool(
 		ctx sdk.Context,
@@ -71,7 +77,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareOutAmount sdk.Int,
-		tokenInMaxs []sdk.Coin) error
+		tokenInMaxs []sdk.Coin) (uint64, error)
 
 	TransmitIbcExitPool(
 		ctx sdk.Context,
@@ -80,7 +86,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareInAmount sdk.Int,
-		tokenOutMins []sdk.Coin) error
+		tokenOutMins []sdk.Coin) (uint64, error)
 
 	TransmitIbcTransfer(
 		ctx sdk.Context,
@@ -91,5 +97,18 @@ type IntergammKeeper interface {
 		token sdk.Coin,
 		receiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
-		transferTimeoutTimestamp uint64) error
+		transferTimeoutTimestamp uint64) (uint64, error)
+
+	TransmitForwardIbcTransfer(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		transferPort, transferChannel string,
+		token sdk.Coin,
+		fwdTransferPort, fwdTransferChannel string,
+		intermediateReceiver string,
+		receiver string,
+		transferTimeoutHeight ibcclienttypes.Height,
+		transferTimeoutTimestamp uint64) (uint64, error)
 }

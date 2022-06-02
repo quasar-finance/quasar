@@ -8,11 +8,11 @@ const DefaultIndex uint64 = 1
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		LpPosition:       nil,
-		EpochLPInfo:      nil,
+		LpPosition: nil,
+		//EpochLPInfo:      nil,
 		RewardCollection: nil,
-		UserLPInfo:       nil,
-		LpStat:           nil,
+		//UserLPInfo:       nil,
+		LpStat: nil,
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/abag/quasarnode/x/orion/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,15 +32,8 @@ func TestGenesisState_Validate(t *testing.T) {
 					UnbondingDuration:      41,
 					PoolID:                 6,
 				},
-				EpochLPInfo: &types.EpochLPInfo{
-					EpochDay: 19,
-					TotalLps: 39,
-				},
 				RewardCollection: &types.RewardCollection{
 					TimeCollected: time.Time{},
-				},
-				UserLPInfo: &types.UserLPInfo{
-					PositionShare: sdk.NewDec(22),
 				},
 				LpStat: &types.LpStat{
 					LpCount: 18,

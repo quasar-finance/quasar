@@ -71,5 +71,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		"dollarDepositValue", dollarDepositValue,
 	)
 
+	k.OnDeposit(ctx, msg.VaultID, coin) // Callback to vault OnDeposit method
+
 	return &types.MsgRequestDepositResponse{}, nil
 }

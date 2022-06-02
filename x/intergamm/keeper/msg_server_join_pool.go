@@ -11,7 +11,7 @@ func (s msgServer) JoinPool(goCtx context.Context, msg *types.MsgJoinPool) (*typ
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO connectionId should come from a param
-	err := s.k.TransmitIbcJoinPool(ctx,
+	_, err := s.k.TransmitIbcJoinPool(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

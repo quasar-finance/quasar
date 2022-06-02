@@ -145,7 +145,7 @@ func createPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	poolParams := createTestPoolParams()
 	poolAssets := createTestPoolAssets()
 
-	err := k.TransmitIbcCreatePool(
+	_, err := k.TransmitIbcCreatePool(
 		ctx,
 		owner,
 		connectionId,
@@ -212,7 +212,7 @@ func joinPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("1000000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcJoinPool(
+	_, err := k.TransmitIbcJoinPool(
 		ctx,
 		owner,
 		connectionId,
@@ -273,7 +273,7 @@ func exitPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("1000000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcExitPool(
+	_, err := k.TransmitIbcExitPool(
 		ctx,
 		owner,
 		connectionId,
@@ -338,7 +338,7 @@ func joinSwapExternAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("500000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcJoinSwapExternAmountIn(
+	_, err := k.TransmitIbcJoinSwapExternAmountIn(
 		ctx,
 		owner,
 		connectionId,
@@ -399,7 +399,7 @@ func exitSwapExternAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("10000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcExitSwapExternAmountOut(
+	_, err := k.TransmitIbcExitSwapExternAmountOut(
 		ctx,
 		owner,
 		connectionId,
@@ -461,7 +461,7 @@ func joinSwapShareAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("500000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcJoinSwapShareAmountOut(
+	_, err := k.TransmitIbcJoinSwapShareAmountOut(
 		ctx,
 		owner,
 		connectionId,
@@ -524,7 +524,7 @@ func exitSwapShareAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("10000000000000000")
 	require.True(t, ok)
 
-	err := k.TransmitIbcExitSwapShareAmountIn(
+	_, err := k.TransmitIbcExitSwapShareAmountIn(
 		ctx,
 		owner,
 		connectionId,
@@ -591,7 +591,7 @@ func lockTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	lockupPeriod := 1 * time.Hour
 	testCoins := lockTokensTestCoins()
 
-	err := k.TransmitIbcLockTokens(
+	_, err := k.TransmitIbcLockTokens(
 		ctx,
 		owner,
 		connectionId,

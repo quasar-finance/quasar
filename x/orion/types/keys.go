@@ -58,23 +58,26 @@ func KeyPrefix(p string) []byte {
 }
 
 var (
-	UserReceiptCoinsKBP      = []byte{0x01}
-	StrategyKBP              = []byte{0x02}
-	MeissaStrategyKBP        = []byte{0x03}
-	MeissaStrategyPoolPosKBP = []byte{0x04}
-	LPPositionKBP            = []byte{0x05}
-	RewardCollectionKBP      = []byte{0x06}
-	LastRewardCollectionKBP  = []byte{0x07}
-	EpochLPUserKBP           = []byte{0x08}
-	LPUserInfoKBP            = []byte{0x09}
-	LPEpochKBP               = []byte{0x10}
-	EpochLPInfoKBP           = []byte{0x11}
-	EpochDayInfoKBP          = []byte{0x12}
-	LPCountKBP               = []byte{0x13}
-	LPStatKBP                = []byte{0x14}
-	LPEpochDenomKBP          = []byte{0x15}
-	DayMapKBP                = []byte{0x16}
-	ExitKBP                  = []byte{0x17}
+	UserReceiptCoinsKBP        = []byte{0x01}
+	StrategyKBP                = []byte{0x02}
+	MeissaStrategyKBP          = []byte{0x03}
+	MeissaStrategyPoolPosKBP   = []byte{0x04}
+	LPPositionKBP              = []byte{0x05}
+	RewardCollectionKBP        = []byte{0x06}
+	LastRewardCollectionKBP    = []byte{0x07}
+	EpochLPUserKBP             = []byte{0x08}
+	LPUserInfoKBP              = []byte{0x09}
+	LPEpochKBP                 = []byte{0x10}
+	EpochLPInfoKBP             = []byte{0x11}
+	EpochDayInfoKBP            = []byte{0x12}
+	LPCountKBP                 = []byte{0x13}
+	LPStatKBP                  = []byte{0x14}
+	LPEpochDenomKBP            = []byte{0x15}
+	DayMapKBP                  = []byte{0x16}
+	ExitKBP                    = []byte{0x17}
+	JoinPoolKBP                = []byte{0x18}
+	IBCTokenTransferKBP        = []byte{0x19}
+	AvailableInterchainFundKBP = []byte{0x20}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -82,8 +85,9 @@ func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
 }
 
 const (
-	FeeDataKey = "FeeData-value-"
-	LPCount    = "lpcount-"
+	FeeDataKey     = "FeeData-value-"
+	LPCount        = "lpcount-"
+	InterchainFund = "interchainfund-"
 )
 
 func CreateLPCountKey() []byte {
@@ -205,6 +209,19 @@ func EpochDayKey(epochday uint64) []byte {
 	strEpochday := strconv.FormatUint(epochday, 10)
 	b.WriteString(strEpochday)
 	return b.Bytes()
+}
+
+//CreateSeqKey creates key for the sequence number to Lp mapping
+func CreateSeqKey(seqNo uint64) []byte {
+	var b bytes.Buffer
+	strSeqNo := strconv.FormatUint(seqNo, 10)
+	b.WriteString(strSeqNo)
+	return b.Bytes()
+}
+
+// TODO - {seqNo} + {:} + {lockupPeriod} And also {lockupPeriod} + {:} + {seqNo}
+func CreateInterchainFundKey() []byte {
+	return []byte(InterchainFund)
 }
 
 // CreateLPIDKey create key for the LP ID

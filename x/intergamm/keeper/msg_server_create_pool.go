@@ -10,7 +10,7 @@ import (
 func (s msgServer) CreatePool(goCtx context.Context, msg *types.MsgCreatePool) (*types.MsgCreatePoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := s.k.TransmitIbcCreatePool(ctx,
+	_, err := s.k.TransmitIbcCreatePool(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

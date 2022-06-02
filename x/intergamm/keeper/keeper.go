@@ -15,6 +15,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -99,13 +100,13 @@ func (k Keeper) TransmitIbcCreatePool(
 	timeoutTimestamp uint64,
 	poolParams *gammbalancer.PoolParams,
 	poolAssets []gammtypes.PoolAsset,
-	futurePoolGovernor string) error {
+	futurePoolGovernor string) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -126,13 +127,13 @@ func (k Keeper) TransmitIbcJoinPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareOutAmount sdk.Int,
-	tokenInMaxs []sdk.Coin) error {
+	tokenInMaxs []sdk.Coin) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -153,13 +154,13 @@ func (k Keeper) TransmitIbcExitPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareInAmount sdk.Int,
-	tokenOutMins []sdk.Coin) error {
+	tokenOutMins []sdk.Coin) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -182,13 +183,13 @@ func (k Keeper) TransmitIbcTransfer(
 	token sdk.Coin,
 	receiver string,
 	transferTimeoutHeight ibcclienttypes.Height,
-	transferTimeoutTimestamp uint64) error {
+	transferTimeoutTimestamp uint64) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -220,9 +221,9 @@ func (k Keeper) TransmitForwardIbcTransfer(
 	intermediateReceiver string,
 	receiver string,
 	transferTimeoutHeight ibcclienttypes.Height,
-	transferTimeoutTimestamp uint64) error {
-	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+	transferTimeoutTimestamp uint64) (uint64, error) {
 
+	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 	return k.TransmitIbcTransfer(
 		ctx,
 		owner,
@@ -242,23 +243,57 @@ func buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransf
 	return fmt.Sprintf("%s|%s/%s:%s", intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 }
 
-func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) error {
+// TODO - TO be replaced with upcoming token transfer wrapper.
+// Send method determin the routing logic for the coin from the caller.
+// Routing logic is based on the denom and destination chain.
+// Ex.
+// 1. If denom is ibc atom and dest chain is osmosis, multihop token xfer to osmosis via cosmos-hub.
+// 2. If denom is ibc osmos and dest chain is osmosis, do ibc token xfer to osmosis
+// It will get the details from the params for each whitelisted denoms
+// Send method also need to calculate the intermediate address
+func (k Keeper) Send(ctx sdk.Context,
+	coin sdk.Coin,
+	destinationChain string,
+	owner string,
+	destinationAddress string) (uint64, error) {
+
+	// TODO - Routing logic to be written here
+	// Assuming that it is ibc atom
+	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
+	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
+	return k.TransmitForwardIbcTransfer(ctx,
+		owner,
+		"connection-0",
+		connectionTimeout,
+		"transfer",
+		"channel-0",
+		coin,
+		"transfer",
+		"channel-0",
+		"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // alice on hub, maybe we can have a dedicated cosmos-hub interchain account for orion.
+		destinationAddress,
+		transferTimeoutHeight,
+		connectionTimeout,
+	)
+}
+
+func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	channelID, found := k.icaControllerKeeper.GetActiveChannelID(ctx, connectionId, portID)
 	if !found {
-		return sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
+		return 0, sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
 	}
 	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !found {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return 0, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
 	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	packetData := icatypes.InterchainAccountPacketData{
@@ -269,12 +304,12 @@ func (k Keeper) sendTx(ctx sdk.Context, owner, connectionId string, msgs []sdk.M
 	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
-	return nil
+	return seq, nil
 }
 
 func (k Keeper) TransferIbcTokens(
@@ -331,13 +366,13 @@ func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
 	poolId uint64,
 	tokenIn sdk.Coin,
 	shareOutMinAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -360,13 +395,13 @@ func (k Keeper) TransmitIbcExitSwapExternAmountOut(
 	poolId uint64,
 	tokenOut sdk.Coin,
 	shareInMaxAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -390,13 +425,13 @@ func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
 	tokenInDenom string,
 	shareOutAmount sdk.Int,
 	tokenInMaxAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -421,13 +456,13 @@ func (k Keeper) TransmitIbcExitSwapShareAmountIn(
 	tokenOutDenom string,
 	shareInAmount sdk.Int,
 	tokenOutMinAmount sdk.Int,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{
@@ -450,13 +485,13 @@ func (k Keeper) TransmitIbcLockTokens(
 	timeoutTimestamp uint64,
 	duration time.Duration,
 	coins sdk.Coins,
-) error {
+) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	msgs := []sdk.Msg{

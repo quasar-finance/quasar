@@ -20,9 +20,11 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		}
 	*/
 	// Set if defined
-	if genState.EpochLPInfo != nil {
-		k.SetEpochLPInfo(ctx, *genState.EpochLPInfo)
-	}
+	/*
+		if genState.EpochLPInfo != nil {
+			k.SetEpochLPInfo(ctx, *genState.EpochLPInfo)
+		}
+	*/
 	// Set if defined
 	// TODO | AUDIT | Genesis state is to be defined
 	/*

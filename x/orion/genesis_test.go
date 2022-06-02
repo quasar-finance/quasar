@@ -8,7 +8,6 @@ import (
 	"github.com/abag/quasarnode/testutil/nullify"
 	"github.com/abag/quasarnode/x/orion"
 	"github.com/abag/quasarnode/x/orion/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,15 +24,8 @@ func TestGenesis(t *testing.T) {
 			UnbondingDuration:      83,
 			PoolID:                 48,
 		},
-		EpochLPInfo: &types.EpochLPInfo{
-			EpochDay: 16,
-			TotalLps: 87,
-		},
 		RewardCollection: &types.RewardCollection{
 			TimeCollected: time.Time{},
-		},
-		UserLPInfo: &types.UserLPInfo{
-			PositionShare: sdk.NewDec(5),
 		},
 		LpStat: &types.LpStat{
 			LpCount: 90,
@@ -52,9 +44,7 @@ func TestGenesis(t *testing.T) {
 
 	require.Equal(t, genesisState.Params, got.Params)
 	require.Equal(t, genesisState.LpPosition, got.LpPosition)
-	require.Equal(t, genesisState.EpochLPInfo, got.EpochLPInfo)
 	require.Equal(t, genesisState.RewardCollection, got.RewardCollection)
-	require.Equal(t, genesisState.UserLPInfo, got.UserLPInfo)
 	require.Equal(t, genesisState.LpStat, got.LpStat)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

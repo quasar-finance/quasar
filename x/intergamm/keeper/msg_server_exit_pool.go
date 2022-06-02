@@ -10,7 +10,7 @@ import (
 func (s msgServer) ExitPool(goCtx context.Context, msg *types.MsgExitPool) (*types.MsgExitPoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := s.k.TransmitIbcExitPool(ctx,
+	_, err := s.k.TransmitIbcExitPool(ctx,
 		msg.Creator,
 		msg.ConnectionId,
 		msg.TimeoutTimestamp,

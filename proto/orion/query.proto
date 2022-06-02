@@ -3,12 +3,12 @@ package abag.quasarnode.orion;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
+// import "cosmos/base/query/v1beta1/pagination.proto";
 import "orion/params.proto";
 import "orion/lp_position.proto";
-import "orion/epoch_lp_info.proto";
+// import "orion/epoch_lp_info.proto";
 import "orion/reward_collection.proto";
-import "orion/user_lp_info.proto";
+// import "orion/user_lp_info.proto";
 import "orion/lp_stat.proto";
 import "orion/account_info.proto";
 // this line is used by starport scaffolding # 1
@@ -30,10 +30,7 @@ service Query {
 	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_position";
 	}
-// Queries a EpochLPInfo by index.
-	rpc EpochLPInfo(QueryGetEpochLPInfoRequest) returns (QueryGetEpochLPInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/orion/epoch_lp_info";
-	}
+ 
 // Queries a RewardCollection by index.
 	rpc RewardCollection(QueryGetRewardCollectionRequest) returns (QueryGetRewardCollectionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/reward_collection";
@@ -80,13 +77,8 @@ message QueryGetLpPositionRequest {
 message QueryGetLpPositionResponse {
 	LpPosition LpPosition = 1 [(gogoproto.nullable) = false];
 }
-message QueryGetEpochLPInfoRequest {
-	uint64 epochDay = 1;
-}
+ 
 
-message QueryGetEpochLPInfoResponse {
-	EpochLPInfo EpochLPInfo = 1 [(gogoproto.nullable) = false];
-}
 message QueryGetRewardCollectionRequest {
 	uint64 epochDay = 1;
 }

@@ -7,6 +7,7 @@ import (
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	// TODO get epoch identifier from params
+	// TODO review error handling of this function
 	logger := k.Logger(ctx)
 	var err error
 
@@ -45,10 +46,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			}
 
 			// Reward distribution
-			err = k.RewardDistribution(ctx, uint64(epochNumber))
-			if err != nil {
-				panic(err)
-			}
+			_ = k.RewardDistribution(ctx, uint64(epochNumber))
+			// TODO proper error handling for RewardDistribution once its issues are fixed
 		} // k.Enabled(ctx)
 	}
 }

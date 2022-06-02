@@ -20,6 +20,7 @@ type (
 		bankKeeper    types.BankKeeper
 		EpochsKeeper  types.EpochsKeeper
 		qoracleKeeper types.QoracleKeeper
+		DepositHooks  types.DepositHooks
 	}
 )
 
@@ -57,6 +58,16 @@ func (k Keeper) GetCdc() codec.BinaryCodec {
 }
 func (k Keeper) GetStoreKey() sdk.StoreKey {
 	return k.storeKey
+}
+
+func (k *Keeper) SetDepositHooks(dh types.DepositHooks) *Keeper {
+	if k.DepositHooks != nil {
+		panic("cannot set deposit hooks twice")
+	}
+
+	k.DepositHooks = dh
+
+	return k
 }
 
 // ProcessWithdrawable implemtns the logic for the current expected withdrawable amount based on

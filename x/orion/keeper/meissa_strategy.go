@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"time"
 
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
@@ -14,7 +13,6 @@ import (
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls
@@ -107,19 +105,21 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
 	poolIDs := k.getAPYRankedPools(ctx)
-
 	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolIds=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
 	for _, poolIDStr := range poolIDs {
-		// TODO | Refactoring | Change the qoracle pool ID storage to uint64
 		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
+		poolInfo := k.getPoolInfo(ctx, poolID)
+		poolShareDenom := poolInfo.Info.TotalShares.Denom
 		poolAssets := k.getPoolAssets(ctx, poolID)
+
 		if len(poolAssets) != 2 {
 			// Initially strategy want to LP only in the pool with 2 assets
 			continue
 		}
 
 		poolTotalShare := k.getTotalShare(ctx, poolID)
+
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
 			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, poolAssets))
 
@@ -128,50 +128,50 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		if err != nil {
 			continue
 		}
+
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v\n",
 			shareOutAmount))
 
-		// Transfer fund to the strategy global account.
 		coins, err := ComputeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
 		if err != nil {
 			continue
 		}
 
-		err = k.SendCoinsFromModuleToMeissa(ctx, types.CreateOrionStakingMaccName(lockupType), coins)
-		if err != nil {
-			return err
-		}
-		// TODO | AUDIT
-		//  1. Call Intergamm IBC token transfer from  OrionStakingMaccName
-		//  2. New Multihop IBC token transfer to be used via token coin1, and coin2 origin chain
+		// AUDIT TODO - Cross validation if funds are available in AvailableInterchainFundKBP
 
 		if shareOutAmount.IsPositive() {
-			// Call Intergamm Add Liquidity Method
-			err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
+			packetSeq, err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
 			if err != nil {
 				return err
 			}
-
-			// TODO : Lock the LP tokens and receive lockId.
-			// TODO : Update orion vault staking amount.
-			// Most probably not needed as balance in the orion vault is already updated.
-
-			// coins := sdk.NewCoins(coin1, coin2)
-			k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
-
-			bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
-			bondingStartEpochDay := epochDay
-			unbondingStartEpochDay := bondingStartEpochDay + bonding
-			var lockupID uint64   // TODO : To be received from osmosis
-			var lpTokens sdk.Coin // TODO : To be received from osmosis
-			lp := NewLP(lockupID, bondingStartEpochDay, bonding,
-				unbondingStartEpochDay, unbonding, poolID, lpTokens, coins)
-
-			k.AddNewLPPosition(ctx, lp)
+			k.OnJoinSend(ctx, packetSeq, epochDay, poolID, poolShareDenom, coins, shareOutAmount, lockupType)
+			k.SubAvailableInterchainFund(ctx, coins)
 		}
 	}
-
 	return nil
+}
+
+func (k Keeper) OnJoinSend(ctx sdk.Context,
+	packetSeq uint64,
+	epochDay uint64,
+	poolID uint64,
+	poolShareDenom string,
+	coins sdk.Coins,
+	shareOutAmount sdk.Int,
+	lockupType qbanktypes.LockupTypes) {
+	k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
+
+	bonding, unbonding := k.GetLPBondingUnbondingPeriod(lockupType)
+	bondingStartEpochDay := epochDay
+	unbondingStartEpochDay := bondingStartEpochDay + bonding
+	var lockupID uint64
+	lpTokens := sdk.NewCoin(poolShareDenom, shareOutAmount)
+	lp := k.NewLP(lockupID, bondingStartEpochDay, bonding,
+		unbondingStartEpochDay, unbonding, poolID,
+		types.LpState_JOINING, lpTokens, coins)
+	lp.SeqNo = packetSeq
+	lpID := k.AddNewLPPosition(ctx, lp)
+	k.SetSeqNumber(ctx, lp.SeqNo, lpID)
 }
 
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
@@ -214,15 +214,6 @@ func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []
 	return res, nil
 }
 
-// CalcUsersLPWeight calculate users deposited coin1 and coin2 amount for this epochday.
-// Calculate percentage of users weight
-// Logic -
-// 1. Get the list of users and their deposited fund on the given epochday from bank module kv store.
-// 2.
-func (k Keeper) CalcUsersLPWeight(lp types.LpPosition) {
-
-}
-
 // GetLPBondingUnbondingPeriod does the Lockup period to LP bonding-unbonding logic.
 // Logic
 // 7 Day Lockup ->
@@ -260,34 +251,42 @@ func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (
 // Use the [ currentday - lockupPeriodDays ] as key for epoch
 // Get the pool ids and sdk.coins.
 // Calls exit for the pools.
-func (k Keeper) MeissaExit(ctx sdk.Context, currEpochday uint64, lockupType qbanktypes.LockupTypes) error {
-	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", currEpochday, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
-	// TODO : We can use a different KV store and cache for the list of Currently active pools.
-	// Currently active pool are those in which orion has LPing positions.
-	poolIDs := k.getAPYRankedPools(ctx)
-	offsetEpochDay := currEpochday - uint64(lockupType)
-	for _, poolIDStr := range poolIDs {
-		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
-		coins := k.GetMeissaEpochLockupPoolPosition(ctx, offsetEpochDay, lockupType, poolID)
-		k.Logger(ctx).Debug("MeissaExit", "currEpochday", currEpochday, "offsetEpochDay", offsetEpochDay, "poolID", poolID, "coins", coins)
-		poolTotalShare := k.getTotalShare(ctx, poolID)
-		assets := k.getPoolAssets(ctx, poolID)
-		var shareInAmount sdk.Int
-		var tokenOutMins []sdk.Coin // TODO | AUDIT | Zero value
-		for _, asset := range assets {
+// Logic -
+// 1. Iterate over all active pool positions
+// 2. if current lp exit condition matched then calculate the tokenOutMins based on shareInAmount
+// 3. Call Intergamm exit.
+// 4. TODO - Future. To be more precise do ibc query to determine current balance of interchain fund.
+// 5. One idea is to use new interchain account for each new lp position. That will help proper accounting of lp positions and pnl.
 
-			shareInAmount = poolTotalShare.Amount.Quo(asset.Token.Amount)
-			break
-		}
+func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
+	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", epochDay, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
+	//var lpIDs []uint64
+	bytePrefix := types.LPPositionKBP
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	defer iter.Close()
 
-		if shareInAmount.IsPositive() {
-			// Call intergamm exit pool method
-			err := k.ExitPool(ctx, poolID, shareInAmount, tokenOutMins)
+	// key - {epochday} + {":"} + {LPID}
+	for ; iter.Valid(); iter.Next() {
+		key, _ := iter.Key(), iter.Value()
+		splits := qbanktypes.SplitKeyBytes(key)
+		lpEpochDayStr := string(splits[0])
+		lpEpochDay, _ := strconv.ParseUint(lpEpochDayStr, 10, 64)
+		lpIDStr := string(splits[1])
+		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
+		lp, _ := k.GetLpPosition(ctx, lpEpochDay, lpID)
+		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
+		shareInAmount := lp.Lptoken.Amount
+		var tokenOutMins []sdk.Coin // Can be empty
+		if epochDay > lpEndDay {
+			// Need to exit today
+			//lpIDs = append(lpIDs, lpID)
+			seq, err := k.ExitPool(ctx, lp.PoolID, shareInAmount, tokenOutMins)
 			if err != nil {
 				return err
 			}
+			k.SetSeqNumber(ctx, seq, lpID)
 		}
-
 	}
 
 	return nil
@@ -338,73 +337,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	return qcoins.Coins
 }
 
-// Intergamm module method wrappers
-func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
-		poolID, shareOutAmount, tokenInMaxs))
-
-	owner := ""
-	connectionId := ""
-	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-
-	err := k.intergammKeeper.TransmitIbcJoinPool(
-		ctx,
-		owner,
-		connectionId,
-		uint64(timeoutTimestamp),
-		poolID,
-		shareOutAmount,
-		tokenInMaxs,
-	)
-
-	return err
-}
-
-func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
-		poolID, shareInAmount, tokenOutMins))
-
-	owner := ""
-	connectionId := ""
-	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-
-	err := k.intergammKeeper.TransmitIbcExitPool(
-		ctx,
-		owner,
-		connectionId,
-		uint64(timeoutTimestamp),
-		poolID,
-		shareInAmount,
-		tokenOutMins,
-	)
-
-	return err
-}
-
-func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, receiverAddr string, coins []sdk.Coin) error {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|receiverAddr=%v|coins=%v\n",
-		receiverAddr, coins))
-
-	owner := ""
-	connectionId := ""
-	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	transferPort := "transfer"
-	transferChannel := "channel-1"
-	token := sdk.NewCoin("uatom", sdk.NewInt(10))
-
-	err := k.intergammKeeper.TransmitIbcTransfer(
-		ctx,
-		owner,
-		connectionId,
-		uint64(timeoutTimestamp),
-		transferPort,
-		transferChannel,
-		token,
-		receiverAddr,
-		ibcclienttypes.ZeroHeight(),
-		uint64(timeoutTimestamp),
-	)
-
-	return err
-
+func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, poolID uint64) sdk.Coins {
+	// TODO
+	return sdk.NewCoins()
 }
