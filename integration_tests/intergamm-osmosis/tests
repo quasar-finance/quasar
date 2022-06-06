@@ -78,8 +78,8 @@ start_relayer_cmd() {
   do_until_success hermes -c "$hermes_cfg" start
 }
 
-start_quasar()  { start_chain_bg "quasar"  "${project_dir}"                        ; }
-start_osmosis() { start_chain_bg "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
+start_quasar()  { start_chain_bg "quasar"  "${project_dir}"                    ; }
+start_osmosis() { start_chain_bg "osmosis" "${project_dir}/../contrib/osmosis" ; }
 
 start_relayer() {
   "$this_script" start_relayer_cmd >| "$relayer_out_file" 2>&1 &
@@ -180,7 +180,7 @@ ensure_all_started() {
   ensure_relayer_started
 }
 
-test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
+test -d "${project_dir}/../contrib/osmosis" || fail "osmosis dir not found"
 
 cmd_exists "osmosisd"
 cmd_exists "quasarnoded"
@@ -207,20 +207,20 @@ run() {
   echo "> scenario: createPoolChecks"
   quasartx intergamm test --scenario createPoolChecks -y
 
-  echo "> scenario: createPoolTimeout"
-  quasartx intergamm test --scenario setup -y
-  sleep 8
-  quasartx intergamm test --scenario createPoolTimeout -y
-  sleep 8
+  # echo "> scenario: createPoolTimeout"
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
+  # quasartx intergamm test --scenario createPoolTimeout -y
+  # sleep 8
 
-  echo "> scenario: createPoolTimeoutChecks"
-  quasartx intergamm test --scenario createPoolTimeoutChecks -y
+  # echo "> scenario: createPoolTimeoutChecks"
+  # quasartx intergamm test --scenario createPoolTimeoutChecks -y
 
   # Join pool
 
   echo "> scenario: joinPool"
-  quasartx intergamm test --scenario setup -y
-  sleep 8
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
   quasartx intergamm test --scenario joinPool -y
   sleep 8
 
@@ -228,24 +228,24 @@ run() {
   quasartx intergamm test --scenario joinPoolChecks -y
 
   echo "> scenario: joinPoolTimeout"
-  quasartx intergamm test --scenario setup -y
-  sleep 8
-  quasartx intergamm test --scenario joinPoolTimeout -y
-  sleep 8
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
+  # quasartx intergamm test --scenario joinPoolTimeout -y
+  # sleep 8
 
-  echo "> scenario: joinPoolTimeoutChecks"
-  quasartx intergamm test --scenario joinPoolTimeoutChecks -y
+  # echo "> scenario: joinPoolTimeoutChecks"
+  # quasartx intergamm test --scenario joinPoolTimeoutChecks -y
 
   # Lock tokens
 
-  # echo "> scenario: lockTokens"
+  echo "> scenario: lockTokens"
   # quasartx intergamm test --scenario setup -y
   # sleep 8
-  # quasartx intergamm test --scenario lockTokens -y
-  # sleep 8
+  quasartx intergamm test --scenario lockTokens -y
+  sleep 8
 
-  # echo "> scenario: lockTokensChecks"
-  # quasartx intergamm test --scenario lockTokensChecks -y
+  echo "> scenario: lockTokensChecks"
+  quasartx intergamm test --scenario lockTokensChecks -y
 
   # echo "> scenario: lockTokensTimeout"
   # quasartx intergamm test --scenario setup -y
