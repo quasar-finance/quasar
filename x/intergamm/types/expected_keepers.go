@@ -21,6 +21,10 @@ type BankKeeper interface {
 	// Methods imported from bank should be defined here
 }
 
+type ChannelKeeper interface {
+	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
+}
+
 type ICAControllerKeeper interface {
 	GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool)
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error

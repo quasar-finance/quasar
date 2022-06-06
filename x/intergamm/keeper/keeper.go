@@ -39,6 +39,7 @@ type Keeper struct {
 	storeKey            sdk.StoreKey
 	memKey              sdk.StoreKey
 	scopedKeeper        capabilitykeeper.ScopedKeeper
+	channelKeeper       types.ChannelKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	ibcTransferKeeper   types.IBCTransferKeeper
 	paramstore          paramtypes.Subspace
@@ -222,8 +223,8 @@ func (k Keeper) TransmitForwardIbcTransfer(
 	receiver string,
 	transferTimeoutHeight ibcclienttypes.Height,
 	transferTimeoutTimestamp uint64) (uint64, error) {
-
 	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+
 	return k.TransmitIbcTransfer(
 		ctx,
 		owner,
@@ -320,8 +321,16 @@ func (k Keeper) TransferIbcTokens(
 	receiver string,
 	timeoutHeight ibcclienttypes.Height,
 	timeoutTimestamp uint64,
-) error {
-	return k.ibcTransferKeeper.SendTransfer(
+) (uint64, error) {
+	seq, found := k.channelKeeper.GetNextSequenceSend(ctx, srcPort, srcChannel)
+	if !found {
+		return 0, sdkerrors.Wrapf(
+			channeltypes.ErrSequenceSendNotFound,
+			"source port: %s, source channel: %s", srcPort, srcChannel,
+		)
+	}
+
+	err := k.ibcTransferKeeper.SendTransfer(
 		ctx,
 		srcPort,
 		srcChannel,
@@ -331,6 +340,10 @@ func (k Keeper) TransferIbcTokens(
 		timeoutHeight,
 		timeoutTimestamp,
 	)
+	if err != nil {
+		return 0, err
+	}
+	return seq, nil
 }
 
 func (k Keeper) ForwardTransferIbcTokens(
@@ -343,13 +356,12 @@ func (k Keeper) ForwardTransferIbcTokens(
 	receiver string,
 	timeoutHeight ibcclienttypes.Height,
 	timeoutTimestamp uint64,
-) error {
+) (uint64, error) {
 	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 
-	return k.ibcTransferKeeper.SendTransfer(
+	return k.TransferIbcTokens(
 		ctx,
-		srcPort,
-		srcChannel,
+		srcPort, srcChannel,
 		token,
 		sender,
 		fwdReceiver,
