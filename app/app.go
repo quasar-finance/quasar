@@ -2,12 +2,13 @@ package app
 
 import (
 	"fmt"
-	appParams "github.com/abag/quasarnode/app/params"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	appParams "github.com/abag/quasarnode/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -462,6 +463,7 @@ func New(
 		keys[intergammmoduletypes.StoreKey],
 		keys[intergammmoduletypes.MemStoreKey],
 		scopedIntergammKeeper,
+		app.IBCKeeper.ChannelKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
 		app.GetSubspace(intergammmoduletypes.ModuleName),
