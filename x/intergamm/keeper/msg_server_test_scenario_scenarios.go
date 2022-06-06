@@ -31,7 +31,8 @@ const (
 )
 
 var (
-	timeoutHeight = clienttypes.NewHeight(0, 0)
+	transferTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
+	transferTimeoutHeight    = clienttypes.NewHeight(0, 0)
 )
 
 type HookState struct {
@@ -79,6 +80,7 @@ func init() {
 	scenarios["lockTokensTimeout"] = testLockTokensTimeout
 	scenarios["lockTokensTimeoutChecks"] = testLockTokensTimeoutChecks
 	scenarios["transferIbcTokens"] = testTransferIbcTokens
+	scenarios["transferIbcTokensChecks"] = testTransferIbcTokensChecks
 }
 
 // Replace timeout to trigger timeout hooks in test
@@ -677,10 +679,11 @@ func transferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 		testCoin,
 		sender,
 		osmosisAddress,
-		timeoutHeight,
-		timestamp,
+		transferTimeoutHeight,
+		uint64(time.Now().UnixNano())+transferTimeoutTimestamp,
 	)
 	require.NoError(t, err)
+	require.NotZero(t, seq)
 
 	transferIbcTokensLastSequence = seq
 }
