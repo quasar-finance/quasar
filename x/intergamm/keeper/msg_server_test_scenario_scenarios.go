@@ -103,6 +103,10 @@ func ensureIcaRegistered(ctx sdk.Context, k *Keeper, owner string, connectionId 
 
 func testRegisterIca(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
+		k.Hooks.IbcTransfer.ClearAckHooks()
+		k.Hooks.IbcTransfer.ClearTimeoutHooks()
+		k.Hooks.Osmosis.ClearAckHooks()
+		k.Hooks.Osmosis.ClearTimeoutHooks()
 		err := ensureIcaRegistered(ctx, k, owner, connectionId)
 		require.NoError(t, err)
 	}

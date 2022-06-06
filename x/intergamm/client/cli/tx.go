@@ -9,25 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 )
 
-const (
-	flagPacketTimeoutTimestamp = "packet-timeout-timestamp"
-)
-
 var cmds []*cobra.Command
 
 func addCommand(cmd *cobra.Command) {
 	cmds = append(cmds, cmd)
-}
-
-func init() {
-	addCommand(CmdRegisterAccount())
-	addCommand(CmdCreatePool())
-	addCommand(CmdJoinPool())
-	addCommand(CmdExitPool())
-	addCommand(CmdIbcTransfer())
-	addCommand(CmdForwardIbcTransfer())
-	addCommand(CmdTransferIbcTokens())
-	addCommand(CmdForwardTransferIbcTokens())
 }
 
 // GetTxCmd returns the transaction commands for this module

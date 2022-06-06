@@ -7,7 +7,9 @@ this_dir="${project_dir}/integration_tests/intergamm-osmosis"
 this_script="${this_dir}/$(basename "${0}")"
 run_dir="${this_dir}/run"
 relayer_out_file="${run_dir}/relayer.out"
+relayer_pid_file="${run_dir}/relayer.pid"
 reset_run="${RESET:-true}"
+stop_after_script="${STOP:-false}"
 
 fail() {
   echo "$*"
@@ -35,23 +37,18 @@ do_until_success() {
   done
 }
 
-# TODO make macos / darwin version of this
-run_in_terminal() {
-  gnome-terminal -- "$@"
-}
-
-run_chain() {
+start_chain_bg() {
   (
     local name="$1" ; shift
     local dir="$1"  ; shift
 
-    echo "running ${name} chain"
+    echo "starting ${name} chain"
 
     cd "$dir"
 
     local chain_dir="${run_dir}/${name}"
 
-    if [ "$reset_run" == true ] ; then
+    if [ "$reset_run" == "true" ] ; then
       rm -rf "$chain_dir"
     fi
 
@@ -60,43 +57,77 @@ run_chain() {
 
     cat "${this_dir}/${name}.yml" | env_subst >| "${chain_dir}/config.yml"
 
-    ignite chain serve --config "${chain_dir}/config.yml" -v
+    ignite chain serve --config "${chain_dir}/config.yml" -v >| "${chain_dir}/${name}.out" 2>&1 &
+    echo "$!" >| "${chain_dir}/${name}.pid"
   )
 }
 
-start_quasar()  { run_chain "quasar"  "${project_dir}"                        ; }
-start_osmosis() { run_chain "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
+start_relayer_cmd() {
+  local hermes_cfg="${this_dir}/hermes.toml"
 
-start_all() {
-  if [ "$reset_run" == true ] ; then
-    rm -rf ~/.ignite/
-  fi
+  # Alice on quasar
+  hermes -c "$hermes_cfg" keys restore "quasar"  --name "testkey1" --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter"
+  # Alice on osmosis
+  hermes -c "$hermes_cfg" keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
 
-  run_in_terminal "$this_script" start_quasar
-  sleep 1
-  run_in_terminal "$this_script" start_osmosis
-  sleep 1
+  echo "starting hermes relayer"
+
+  do_until_success hermes -c "$hermes_cfg" create connection "quasar" "osmosis"
+  do_until_success hermes -c "$hermes_cfg" create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
+
+  do_until_success hermes -c "$hermes_cfg" start
 }
 
-init_relayer() {
-  (
-    cd "$this_dir"
+start_quasar()  { start_chain_bg "quasar"  "${project_dir}"                        ; }
+start_osmosis() { start_chain_bg "osmosis" "${project_dir}/../contrib/osmosis-ica" ; }
 
-    # Alice on quasar
-    hermes -c hermes.toml keys restore "quasar"  --name "testkey1" --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter"
-    # Alice on osmosis
-    hermes -c hermes.toml keys restore "osmosis" --name "testkey2" --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner"
-
-    do_until_success hermes -c hermes.toml create connection "quasar" "osmosis"
-    do_until_success hermes -c hermes.toml create channel    "quasar" "connection-0" --port-a "transfer" --port-b "transfer"
-    do_until_success hermes -c hermes.toml start
-  ) 2>&1 | tee "$relayer_out_file"
+start_relayer() {
+  "$this_script" start_relayer_cmd >| "$relayer_out_file" 2>&1 &
+  echo "$!" >| "$relayer_pid_file"
 }
 
 ensure_relayer_started() {
   while ! cat "$relayer_out_file" | grep "Hermes has started" >/dev/null 2>&1 ; do
     sleep 1
   done
+}
+
+stop_chain() {
+  local name="$1" ; shift
+  local chain_dir="${run_dir}/${name}"
+  local pid_file="${chain_dir}/${name}.pid"
+
+  kill -9 "$(cat "${pid_file}")" || true
+}
+
+stop_relayer() {
+  kill -9 "$(cat "${relayer_pid_file}")" || true
+  pkill -9 -f "hermes" || true
+}
+stop_quasar() {
+  stop_chain "quasar"
+  pkill -9 -f "quasarnoded" || true
+}
+
+stop_osmosis() {
+  stop_chain "osmosis"
+  pkill -9 -f "osmosisd" || true
+}
+
+start_all() {
+  if [ "$reset_run" == true ] ; then
+    rm -rf ~/.ignite/
+  fi
+
+  start_quasar
+  start_osmosis
+  start_relayer
+}
+
+stop_all() {
+  stop_quasar  || true
+  stop_osmosis || true
+  stop_relayer || true
 }
 
 fund_host_ica() {
@@ -146,20 +177,7 @@ ensure_all_started() {
 
   sleep 20
 
-  run_in_terminal "$this_script" init_relayer
-
-  sleep 2
-
   ensure_relayer_started
-}
-
-
-ready_all() {
-  ensure_all_started
-
-  quasartx intergamm test --scenario setup -y
-
-  fund_host_ica
 }
 
 test -d "${project_dir}/../contrib/osmosis-ica" || fail "osmosis dir not found"
@@ -169,7 +187,16 @@ cmd_exists "quasarnoded"
 cmd_exists "hermes"
 
 run() {
-  ready_all
+  # Make sure everything is stopped at the end of script
+  if [ "$stop_after_script" == "true" ] ; then
+    trap stop_all 0
+  fi
+
+  ensure_all_started
+
+  quasartx intergamm test --scenario setup -y
+
+  fund_host_ica
 
   # Create pool
 

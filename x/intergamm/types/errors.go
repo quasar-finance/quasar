@@ -3,7 +3,6 @@ package types
 import (
 	fmt "fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -13,10 +12,10 @@ var (
 	ErrTimeoutHookFailed         = sdkerrors.Register(ModuleName, 3, "timeout hook failed")
 )
 
-func NewErrAcknowledgementHookFailed(msg sdk.Msg) error {
-	return sdkerrors.Wrap(ErrAcknowledgementHookFailed, fmt.Sprintf("handling msg %s", sdk.MsgTypeURL(msg)))
+func NewErrAcknowledgementHookFailed(msg string) error {
+	return sdkerrors.Wrap(ErrAcknowledgementHookFailed, fmt.Sprintf("handling msg %s", msg))
 }
 
-func NewErrTimeoutHookFailed(msg sdk.Msg) error {
-	return sdkerrors.Wrap(ErrTimeoutHookFailed, fmt.Sprintf("handling msg %s", sdk.MsgTypeURL(msg)))
+func NewErrTimeoutHookFailed(msg string) error {
+	return sdkerrors.Wrap(ErrTimeoutHookFailed, fmt.Sprintf("handling msg %s", msg))
 }
