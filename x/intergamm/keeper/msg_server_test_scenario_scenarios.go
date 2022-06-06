@@ -21,13 +21,16 @@ import (
 )
 
 const (
-	owner             string = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
-	osmosisAddress    string = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
-	connectionId      string = "connection-0"
-	transferPortId    string = "transfer"
-	transferChannelId string = "channel-0"
-	poolId                   = uint64(1)
-	timestamp                = uint64(99999999999999)
+	owner              string = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
+	osmosisAddress     string = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
+	cosmosAddress             = "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs"
+	connectionId       string = "connection-0"
+	transferPortId     string = "transfer"
+	transferChannelId  string = "channel-0"
+	fwdTransferPort    string = "transfer"
+	fwdTransferChannel string = "channel-1"
+	poolId                    = uint64(1)
+	timestamp                 = uint64(99999999999999)
 )
 
 var (
@@ -81,6 +84,8 @@ func init() {
 	scenarios["lockTokensTimeoutChecks"] = testLockTokensTimeoutChecks
 	scenarios["transferIbcTokens"] = testTransferIbcTokens
 	scenarios["transferIbcTokensChecks"] = testTransferIbcTokensChecks
+	scenarios["forwardTransferIbcTokens"] = testForwardTransferIbcTokens
+	scenarios["forwardTransferIbcTokensChecks"] = testForwardTransferIbcTokensChecks
 }
 
 // Replace timeout to trigger timeout hooks in test
@@ -708,5 +713,52 @@ func testTransferIbcTokensChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) 
 		require.True(t, testHooksState["testTransferIbcTokens"].Called)
 		require.Empty(t, testHooksState["testTransferIbcTokens"].Error)
 		require.Equal(t, transferIbcTokensLastSequence, testHooksState["testTransferIbcTokens"].LastSequence)
+	}
+}
+
+func forwardTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
+	testCoin := transferIbcTokensTestCoin()
+	sender, err := sdk.AccAddressFromBech32(owner)
+	require.NoError(t, err)
+
+	seq, err := k.ForwardTransferIbcTokens(
+		ctx,
+		transferPortId,
+		transferChannelId,
+		testCoin,
+		sender,
+		fwdTransferPort,
+		fwdTransferChannel,
+		cosmosAddress,
+		osmosisAddress,
+		transferTimeoutHeight,
+		uint64(time.Now().UnixNano())+transferTimeoutTimestamp,
+	)
+	require.NoError(t, err)
+	require.NotZero(t, seq)
+
+	transferIbcTokensLastSequence = seq
+}
+
+func testForwardTransferIbcTokens(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(ctx sdk.Context, ex types.AckExchange[*transfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) error {
+			testHooksState["testForwardTransferIbcTokens"] = HookState{
+				Called:       true,
+				Error:        ex.Error,
+				LastSequence: ex.Sequence,
+			}
+			return nil
+		})
+
+		forwardTransferIbcTokens(t, ctx, k)
+	}
+}
+
+func testForwardTransferIbcTokensChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testForwardTransferIbcTokens"].Called)
+		require.Empty(t, testHooksState["testForwardTransferIbcTokens"].Error)
+		require.Equal(t, transferIbcTokensLastSequence, testHooksState["testForwardTransferIbcTokens"].LastSequence)
 	}
 }
