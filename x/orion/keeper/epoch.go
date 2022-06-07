@@ -11,6 +11,44 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	logger := k.Logger(ctx)
 	var err error
 
+	// For testing purposes - Param should be used then.
+	// Send tokens to destination chain.
+	if epochIdentifier == "minute" {
+
+		if !k.Enabled(ctx) {
+			return
+		}
+
+		// ei := k.epochsKeeper.GetEpochInfo(ctx, "day")
+		ei := k.epochsKeeper.GetEpochInfo(ctx, k.LpEpochId(ctx))
+		currEpochDay := ei.CurrentEpoch
+
+		logger.Info("AfterEpochEnd", "minutes identifier", epochIdentifier,
+			"number", epochNumber,
+			"blockheight", ctx.BlockHeight(),
+			"ei", ei)
+
+		totalEpochDeposits := k.qbankKeeper.GetTotalEpochDeposits(ctx, uint64(currEpochDay))
+		totalEpochTransferred := k.GetTotalEpochTransffered(ctx, uint64(currEpochDay))
+		diffCoins := totalEpochDeposits.Sub(totalEpochTransferred)
+		logger.Info("AfterEpochEnd",
+			"totalEpochDeposits", totalEpochDeposits,
+			"totalEpochTransferred", totalEpochTransferred,
+			"diffCoins", diffCoins,
+		)
+
+		for _, c := range diffCoins {
+			seqNo, err := k.IBCTokenTransfer(ctx, c)
+			logger.Info("AfterEpochEnd",
+				"seqNo", seqNo,
+				"err", err,
+				"coin", c,
+			)
+			k.SetIBCTokenTransferRecord(ctx, seqNo, c)
+		}
+
+	}
+
 	if epochIdentifier == k.LpEpochId(ctx) {
 		logger.Info("epoch ended", "identifier", epochIdentifier,
 			"number", epochNumber,

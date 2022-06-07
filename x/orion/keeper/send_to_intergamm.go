@@ -11,6 +11,11 @@ import (
 )
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
+func (k Keeper) getOwnerAcc() sdk.AccAddress {
+	return k.accountKeeper.GetModuleAddress(types.ModuleName)
+}
+
+// getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
 	// For initial testing use alice address -
 	// TODO AUDIT here (which return?)
@@ -124,16 +129,16 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 // in case of failure.
 // Can we actually query or determine if ibc token transfer call was successful. And if it failed; tokens
 // are returned.
-func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) {
+func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error) {
+	logger := k.Logger(ctx)
+	logger.Info("IBCTokenTransfer",
+		"coin", coin,
+	)
 	destAccStr := k.getDestinationAccStr()
-	owner := k.getOwnerAccStr()
-	// TODO - Send should be replaced with upcoming ibc token transfer method.
-	seqNo, _ := k.intergammKeeper.Send(ctx,
-		coin,
-		"osmosis",
-		owner,
-		destAccStr)
-	k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
+	owner := k.getOwnerAcc()
+	return k.intergammKeeper.SendToken(ctx, "osmosis", owner, destAccStr, coin)
+
+	// k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
 }
 
 // It should also have State Tx logic.
@@ -161,4 +166,8 @@ func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin s
 	}
 	k.cdc.MustUnmarshal(b, &coin)
 	return coin, true
+}
+
+func (k Keeper) GetTotalEpochTransffered(ctx sdk.Context, epochNumber uint64) sdk.Coins {
+	return nil
 }

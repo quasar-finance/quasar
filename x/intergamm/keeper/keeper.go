@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -14,6 +15,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 )
@@ -123,4 +125,60 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
 	return seq, nil
+}
+
+// SendToken will send token to the destination chain ( assuming it is only osmosis in the beggining)
+// TODO - Hardcoded values of port, channel, and connection to be determined by routing logic or config
+// Vault should send validated values of address, and coin
+// Current version support only uqsr as native non ibc token denom
+// NOTE - This method to be used till automated routing logic is in place.
+func (k Keeper) SendToken(ctx sdk.Context,
+	destinationChain string, // TODO - To be used for cross validation
+	sender sdk.AccAddress,
+	receiver string,
+	coin sdk.Coin) (uint64, error) {
+
+	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
+	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
+	if coin.Denom == "uqsr" { // Native gov token
+		// Support for all non-ibc tokens should be added here in future so to support
+		// other vaults native tokens with cosmwasm.
+		return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
+			sender, receiver, transferTimeoutHeight, connectionTimeout)
+	}
+
+	// IBC denom validations in case vaults are giving wrong arguments
+	ibcPrefix := ibctransfertypes.DenomPrefix + "/"
+	if strings.HasPrefix(coin.Denom, ibcPrefix) {
+		hexHash := coin.Denom[len(ibcPrefix):]
+		hash, err := ibctransfertypes.ParseHexHash(hexHash)
+		if err != nil {
+			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, err.Error())
+		}
+
+		denomTrace, ok := k.ibcTransferKeeper.GetDenomTrace(ctx, hash)
+		if !ok {
+			return 0, sdkerrors.Wrap(ibctransfertypes.ErrTraceNotFound, hexHash)
+		}
+
+		// TODO - Automated mapping from base denom, and destination chain to <port, channel, connection, middle address>
+		// to be determined. Either using some config or other ways.
+		// NOTE - Automated Routing PR for intergamm is in progress.
+		switch denomTrace.BaseDenom {
+		case "uosmo": // no middle chain involves
+			return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
+				sender, receiver, transferTimeoutHeight, connectionTimeout)
+
+		case "uatom": // middlechain is comsos-hub
+			// TODO - Get the middle chain intermediate address
+			return k.ForwardTransferIbcTokens(ctx, "transfer", "channel-0", coin,
+				sender, "transfer", "channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
+				receiver, transferTimeoutHeight, connectionTimeout)
+
+		default:
+			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, hexHash)
+		}
+	}
+
+	return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, "unrecognized ibc denom")
 }
