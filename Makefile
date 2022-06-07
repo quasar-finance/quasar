@@ -31,6 +31,7 @@ $(BUILD_DIR)/quasarnoded: mkdirs
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 
 mocks: mkdirs
+	mockgen -package=mock -destination=./testutil/mock/ibc_channel_mocks.go $(GOMOD)/x/intergamm/types ChannelKeeper
 	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
 	mockgen -package=mock -destination=./testutil/mock/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
 

@@ -56,6 +56,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	default:
 		ctl = controller[0]
 	}
+	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
 	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
 
@@ -75,7 +76,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
-	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, icaControllerKeeperMock, ibcTransferKeeperMock)
+	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
