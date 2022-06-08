@@ -1,9 +1,7 @@
 package keeper
 
 import (
-	"bytes"
 	"fmt"
-
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -175,22 +173,26 @@ func (k Keeper) GetEpochLockupDepositAllUsersAllDenoms(ctx sdk.Context,
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
 
-	k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
 		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
 	userCoins := make(map[string]sdk.Coins)
 	for ; iter.Valid(); iter.Next() {
 		key, value := iter.Key(), iter.Value()
-		splits := bytes.Split(key, types.SepByte)
-		uid := string(splits[0])
+		_, _, userAccStr, _, err := types.ParseEpochLockupUserDenomDepositKey(key)
+		if err != nil {
+			logger.Info("GetEpochLockupDepositAllUsersAllDenoms", "key", key, "error", err.Error())
+			continue
+		}
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
-		if coins, exist := userCoins[uid]; exist {
-			userCoins[uid] = coins.Add(coin)
+		if coins, exist := userCoins[userAccStr]; exist {
+			userCoins[userAccStr] = coins.Add(coin)
 		} else {
-			userCoins[uid] = sdk.NewCoins(coin)
+			userCoins[userAccStr] = sdk.NewCoins(coin)
 		}
-		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+		logger.Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
 			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
 	}
 	return userCoins

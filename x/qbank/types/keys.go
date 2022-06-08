@@ -46,9 +46,7 @@ var (
 var SepByte = []byte(":")
 
 func SplitKeyBytes(kb []byte) [][]byte {
-	// First byte is used for the byte prefix
-	split := bytes.Split(kb, SepByte)
-	return split
+	return bytes.Split(kb, SepByte)
 }
 
 // store key use the byte as key
