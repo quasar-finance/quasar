@@ -13,14 +13,14 @@ import (
 )
 
 // NewLP create a new LPPosition object with input arguments.
-// Zero Value of LpID, lockid means invalid values.
-func (k Keeper) NewLP(lockid, bondingStartEpochday, bondDuration, unbondingStartEpochDay,
+// Zero Value of LpID, lockId means invalid values.
+func (k Keeper) NewLP(lockId, bondingStartEpochDay, bondDuration, unbondingStartEpochDay,
 	unbondingDuration, poolID uint64, state types.LpState, lpToken sdk.Coin, coins sdk.Coins) types.LpPosition {
 	lp := types.LpPosition{LpID: 0,
-		LockID:                 lockid,
+		LockID:                 lockId,
 		State:                  state,
 		StartTime:              time.Now(),
-		BondingStartEpochDay:   bondingStartEpochday,
+		BondingStartEpochDay:   bondingStartEpochDay,
 		BondDuration:           bondDuration,
 		UnbondingStartEpochDay: unbondingDuration,
 		UnbondingDuration:      unbondingDuration,
@@ -57,7 +57,7 @@ func (k Keeper) setLPCount(ctx sdk.Context, count uint64) {
 }
 
 // SetSeqNumber sets the mapping of seq number and lpID.
-// Assumtion - A fixed value of channel and port will be used.
+// Assumption - A fixed value of channel and port will be used.
 func (k Keeper) SetSeqNumber(ctx sdk.Context, seqNumber uint64, lpId uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.JoinPoolKBP)
 	byteKey := types.CreateSeqKey(seqNumber)
@@ -104,9 +104,9 @@ func (k Keeper) AddNewLPPosition(ctx sdk.Context, lpPosition types.LpPosition) u
 	return lpPosition.LpID
 }
 
-// SetLpPosition set lpPosition created by the strategy in a given epochday in the
+// SetLpPosition set lpPosition created by the strategy in a given epochDay in the
 // prefixed kv store with key formed using epoch day and lpID.
-// key = types.LPPositionKBP + {epochday} + {":"} + {lpID}
+// key = types.LPPositionKBP + {epochDay} + {":"} + {lpID}
 // Value = types.LpPosition
 func (k Keeper) setLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
@@ -115,53 +115,51 @@ func (k Keeper) setLpPosition(ctx sdk.Context, lpPosition types.LpPosition) {
 	store.Set(key, b)
 }
 
-// SetLpEpochPosition set is used to store reverse mapping lpID and epochday as part of key.
+// SetLpEpochPosition set is used to store reverse mapping lpID and epochDay as part of key.
 // Note - Ideally every entry in this should be an Active LP, Expired Lps should be removed from the system.
 // key = types.LPEpochKBP + {lpID} + {":"} + {epochDay}
-func (k Keeper) setLpEpochPosition(ctx sdk.Context, lpID uint64, epochday uint64) {
+func (k Keeper) setLpEpochPosition(ctx sdk.Context, lpID uint64, epochDay uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochKBP)
-	key := types.CreateLPEpochKey(lpID, epochday)
+	key := types.CreateLPEpochKey(lpID, epochDay)
 	store.Set(key, []byte{0x00})
 }
 
-// SetEpochDenom set is used to store  mapping epochday and denom as part of key.
-// key = types.LPEpochDenomKBP + {epochday} + {":"} + {denom}
-func (k Keeper) SetEpochDenom(ctx sdk.Context, epochday uint64, denom string) {
+// SetEpochDenom set is used to store  mapping epochDay and denom as part of key.
+// key = types.LPEpochDenomKBP + {epochDay} + {":"} + {denom}
+func (k Keeper) SetEpochDenom(ctx sdk.Context, epochDay uint64, denom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochDenomKBP)
-	key := types.CreateEpochDenomKey(epochday, denom)
+	key := types.CreateEpochDenomKey(epochDay, denom)
 	store.Set(key, []byte{0x00})
 }
 
-// GetLPEpochDay fetch the epochday of an lp position on which the position was created.
-func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochday uint64, found bool) {
-	bytePrefix := types.LPEpochKBP
+// GetLPEpochDay fetch the epochDay of an lp position on which the position was created.
+func (k Keeper) GetLPEpochDay(ctx sdk.Context, lpID uint64) (epochDay uint64, found bool) {
 	prefixKey := types.CreateLPIDKey(lpID)
-	prefixKey = append(bytePrefix, prefixKey...)
 	prefixKey = append(prefixKey, qbanktypes.SepByte...)
 
 	// prefixKey => types.LPEpochKBP + {lpID} + {":"}
-	store := ctx.KVStore(k.storeKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPEpochKBP)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
 	// Note : Only one entry;  iteration will have maximum one loop
 	for ; iter.Valid(); iter.Next() {
 		key, _ := iter.Key(), iter.Value()
 		epochStr := string(key)
-		epochday, _ = strconv.ParseUint(epochStr, 10, 64)
+		epochDay, _ = strconv.ParseUint(epochStr, 10, 64)
 		found = true
 	}
-	return epochday, found
+	return epochDay, found
 }
 
-func (k Keeper) GetLpIdPosition(ctx sdk.Context, lpid uint64) (val types.LpPosition, found bool) {
-	epochday, found := k.GetLPEpochDay(ctx, lpid)
+func (k Keeper) GetLpIdPosition(ctx sdk.Context, lpId uint64) (val types.LpPosition, found bool) {
+	epochDay, found := k.GetLPEpochDay(ctx, lpId)
 	if found {
-		return k.GetLpPosition(ctx, epochday, lpid)
+		return k.GetLpPosition(ctx, epochDay, lpId)
 	}
 	return
 }
 
-// GetLpPosition fetch the lpPosition based on the epochday and lpID input
+// GetLpPosition fetch the lpPosition based on the epochDay and lpID input
 func (k Keeper) GetLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) (val types.LpPosition, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
 	key := types.EpochLPIDKey(epochDay, lpID)
@@ -180,16 +178,14 @@ func (k Keeper) RemoveLpPosition(ctx sdk.Context, epochDay uint64, lpID uint64) 
 	store.Delete(key)
 }
 
-// GetLPIDList fetch the list of lp position lpid created on a given epoch day
-func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
+// GetLPIDList fetch the list of lp position lpId created on a given epoch day
+func (k Keeper) GetLPIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 	var lpIDs []uint64
-	bytePrefix := types.LPPositionKBP
-	prefixKey := types.EpochDayKey(epochday)
-	prefixKey = append(bytePrefix, prefixKey...)
+	prefixKey := types.EpochDayKey(epochDay)
 	prefixKey = append(prefixKey, qbanktypes.SepByte...)
 
-	// prefixKey = types.LPPositionKBP + {epochday} + {":"}
-	store := ctx.KVStore(k.storeKey)
+	// prefixKey = types.LPPositionKBP + {epochDay} + {":"}
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
 
@@ -202,19 +198,18 @@ func (k Keeper) GetLPIDList(ctx sdk.Context, epochday uint64) []uint64 {
 	return lpIDs
 }
 
-// GetActiveLpIDList get the list of currently active lpIDs on a given epochday
+// GetActiveLpIDList get the list of currently active lpIDs on a given epochDay
 // Ideally every entry present in this types.LPPositionKBP byte prefix corresponds
-// to the active lpID, all other expired should be either removed or moved to the separate
+// to the active lpIDs, expired ones should be either removed or moved to the separate
 // expired KV stores.
 func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 
 	var lpIDs []uint64
-	bytePrefix := types.LPPositionKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
-	// key - {epochday} + {":"} + {LPID}
+	// key - {epochDay} + {":"} + {LPID}
 	for ; iter.Valid(); iter.Next() {
 		key, _ := iter.Key(), iter.Value()
 		splits := qbanktypes.SplitKeyBytes(key)
@@ -223,7 +218,7 @@ func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 		lpIDStr := string(splits[1])
 		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
 
-		// Cross check for active
+		// Cross-check for active
 		lp, _ := k.GetLpPosition(ctx, lpEpochDay, lpID)
 		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
 		if lp.BondingStartEpochDay <= epochDay && epochDay <= lpEndDay {
@@ -237,29 +232,28 @@ func (k Keeper) GetActiveLpIDList(ctx sdk.Context, epochDay uint64) []uint64 {
 
 // GetAllLpIdList returns all the LpEpochPair present in the KV store.
 func (k Keeper) GetAllLpEpochPairList(ctx sdk.Context) []types.LpEpochPair {
-	var lpepochs []types.LpEpochPair
-	bytePrefix := types.LPPositionKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	var lpEpochs []types.LpEpochPair
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
-	// key - {epochday} + {":"} + {LPID}
+	// key - {epochDay} + {":"} + {LPID}
 	for ; iter.Valid(); iter.Next() {
 		key, _ := iter.Key(), iter.Value()
 		splits := qbanktypes.SplitKeyBytes(key)
-		epochdayStr := string(splits[0])
-		epochday, _ := strconv.ParseUint(epochdayStr, 10, 64)
+		epochDayStr := string(splits[0])
+		epochDay, _ := strconv.ParseUint(epochDayStr, 10, 64)
 		lpIDStr := string(splits[1])
 		lpID, _ := strconv.ParseUint(lpIDStr, 10, 64)
-		lpepochs = append(lpepochs, types.LpEpochPair{LpId: lpID, EpochDay: epochday})
+		lpEpochs = append(lpEpochs, types.LpEpochPair{LpId: lpID, EpochDay: epochDay})
 	}
-	return lpepochs
+	return lpEpochs
 }
 
 // SetDayMapping is used to iterate and create tuple of reward day, deposit day and lockup period.
 // To further calculate the denom weights and users weights.
-// Key = {DayMapKBP} +   {rewardday} + {":"} + {depositday} + {":"} + {lockupPeriod}
-// Reward is happening everyday - dueing thw whole periods.
+// Key = {DayMapKBP} +   {rewardDay} + {":"} + {depositDay} + {":"} + {lockupPeriod}
+// Reward is happening every day - during thw whole periods.
 // This map is also used for distribution of exited funds. reward day/distribution day is same.
 func (k Keeper) SetDayMapping(ctx sdk.Context, rewardDay uint64,
 	depositDay uint64, lockupPeriod qbanktypes.LockupTypes) {
@@ -269,14 +263,11 @@ func (k Keeper) SetDayMapping(ctx sdk.Context, rewardDay uint64,
 }
 
 // GetDepositDayInfos gets the list of deposit day and lockup period for further processing.
-// This method should be called every EOD with today epochday = rewardday.
+// This method should be called every EOD with today epochDay = rewardDay.
 func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.DepositDayLockupPair {
-
-	bytePrefix := types.DayMapKBP
 	prefixKey := types.EpochDayKey(rewardDay)
-	prefixKey = append(bytePrefix, prefixKey...)
 	prefixKey = append(prefixKey, qbanktypes.SepByte...)
-	store := ctx.KVStore(k.storeKey)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DayMapKBP)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
 
@@ -286,15 +277,15 @@ func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.De
 	logger.Info(fmt.Sprintf("GetDepositDayInfos|modulename=%s|blockheight=%d|prefixKey=%s",
 		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
-	// key = {depositday} + {":"} + {lockupPeriod}
+	// key = {depositDay} + {":"} + {lockupPeriod}
 	for ; iter.Valid(); iter.Next() {
 		key, _ := iter.Key(), iter.Value()
 		bsplits := qbanktypes.SplitKeyBytes(key)
-		depositdayStr := string(bsplits[0])
-		depositday, _ := strconv.ParseUint(depositdayStr, 10, 64)
+		depositDayStr := string(bsplits[0])
+		depositDay, _ := strconv.ParseUint(depositDayStr, 10, 64)
 		lockupPeriod := qbanktypes.LockupTypes_value[string(bsplits[1])]
 		dl := types.DepositDayLockupPair{
-			EpochDay:     depositday,
+			EpochDay:     depositDay,
 			LockupPeriod: qbanktypes.LockupTypes(lockupPeriod)}
 		dls = append(dls, dl)
 
@@ -307,19 +298,19 @@ func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.De
 //////////////////// LP STATS KV STORE METHODS ////////////////////
 ///////////////////////////////////////////////////////////////////
 
-// SetLpStat set lpStat in the store with given epochday and types.LpStat.
+// SetLpStat set lpStat in the store with given epochDay and types.LpStat.
 // This allows us to set the total ibc enabled sdk.Coin in an epoch
-func (k Keeper) SetLpStat(ctx sdk.Context, epochday uint64, lpStat types.LpStat) {
+func (k Keeper) SetLpStat(ctx sdk.Context, epochDay uint64, lpStat types.LpStat) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPStatKBP)
-	byteKey := types.EpochDayKey(epochday)
+	byteKey := types.EpochDayKey(epochDay)
 	b := k.cdc.MustMarshal(&lpStat)
 	store.Set(byteKey, b)
 }
 
-// GetLpStat returns lpStat of a given epochday
-func (k Keeper) GetLpStat(ctx sdk.Context, epochday uint64) (val types.LpStat, found bool) {
+// GetLpStat returns lpStat of a given epochDay
+func (k Keeper) GetLpStat(ctx sdk.Context, epochDay uint64) (val types.LpStat, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPStatKBP)
-	byteKey := types.EpochDayKey(epochday)
+	byteKey := types.EpochDayKey(epochDay)
 	b := store.Get(byteKey)
 	if b == nil {
 		return val, false
@@ -329,9 +320,9 @@ func (k Keeper) GetLpStat(ctx sdk.Context, epochday uint64) (val types.LpStat, f
 	return val, true
 }
 
-// RemoveLpStat removes lpStat from the store of a given epochday
-func (k Keeper) RemoveLpStat(ctx sdk.Context, epochday uint64) {
+// RemoveLpStat removes lpStat from the store of a given epochDay
+func (k Keeper) RemoveLpStat(ctx sdk.Context, epochDay uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPStatKBP)
-	byteKey := types.EpochDayKey(epochday)
+	byteKey := types.EpochDayKey(epochDay)
 	store.Delete(byteKey)
 }

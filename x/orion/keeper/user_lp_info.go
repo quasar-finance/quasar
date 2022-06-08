@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/orion/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -24,39 +23,16 @@ func (k Keeper) ProcessDepositDayLockupPair(
 	var udws []types.EpochUserDenomWeight
 
 	for _, dl := range dlpairs {
-		// Prepare prefix key with epochday and lockup period
-		bytePrefix := qbanktypes.UserDenomDepositKBP
-		prefixKey := qbanktypes.CreateEpochLockupUserKey(dl.EpochDay, dl.LockupPeriod, qbanktypes.Sep)
-		prefixKey = append(bytePrefix, prefixKey...)
+		userDeposits := k.qbankKeeper.GetEpochLockupDepositAllUsersAllDenoms(ctx, dl.EpochDay, dl.LockupPeriod)
 
-		// prefixKey = qbanktypes.UserDenomDepositKBP + {epochDay} + ":" + "lockupString" + ":"
-		store := ctx.KVStore(k.qbankKeeper.GetStoreKey())
-		iter := sdk.KVStorePrefixIterator(store, prefixKey)
-		defer iter.Close()
-
-		logger := k.Logger(ctx)
-		logger.Debug("ProcessDepositDayLockupPair",
-			"BlockHeight", ctx.BlockHeight(),
-			"prefixKey", string(prefixKey))
-
-		// Key = {userAcc} + {":"} + {Denom} , Value = sdk.Coin
-		for ; iter.Valid(); iter.Next() {
-			key, val := iter.Key(), iter.Value()
-			bsplits := qbanktypes.SplitKeyBytes(key)
-			uid := string(bsplits[1])
-
-			var coin sdk.Coin
-			k.cdc.MustUnmarshal(val, &coin)
-
-			totalCoins = totalCoins.Add(coin)
-
-			if coins, found := userCoinsMap[uid]; found {
-				userCoinsMap[uid] = coins.Add(coin)
+		for uid, deposit := range userDeposits {
+			totalCoins = totalCoins.Add(deposit...)
+			if totalUserCoins, exist := userCoinsMap[uid]; exist {
+				userCoinsMap[uid] = totalUserCoins.Add(deposit...)
 			} else {
-				userCoinsMap[uid] = sdk.NewCoins(coin)
+				userCoinsMap[uid] = deposit
 			}
 		}
-
 	} // dlpairs for loop
 
 	// Process user coin map

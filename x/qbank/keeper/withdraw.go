@@ -191,14 +191,13 @@ func (k Keeper) EmptyActualWithdrawableAmt(ctx sdk.Context, uid, denom string) {
 
 // GetAllActualWithdrawables returns a list of all actual withdrawables for each depositor
 func (k Keeper) GetAllActualWithdrawables(ctx sdk.Context) []types.UserBalanceInfo {
-	bytePrefix := types.ActualWithdrawableKeyKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d",
+		types.ModuleName, ctx.BlockHeight()))
 
 	var userWithdrawablesMap = make(map[string]sdk.Coins)
 	var totalWithdrawables []types.UserBalanceInfo
@@ -267,14 +266,13 @@ func (k Keeper) AddTotalWithdrawAmt(ctx sdk.Context, uid, vaultID string, coins 
 
 // GetAllTotalWithdraws returns a list of all total withdraw tokens done so far for each users.
 func (k Keeper) GetAllTotalWithdraws(ctx sdk.Context) []types.UserBalanceInfo {
-	bytePrefix := types.TotalWithdrawKeyKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.TotalWithdrawKeyKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllWithdraw|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+	logger.Info(fmt.Sprintf("GetAllWithdraw|modulename=%s|blockheight=%d",
+		types.ModuleName, ctx.BlockHeight()))
 
 	var totalWithdraws []types.UserBalanceInfo
 

@@ -261,9 +261,8 @@ func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (
 func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
 	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", epochDay, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
 	//var lpIDs []uint64
-	bytePrefix := types.LPPositionKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	// key - {epochday} + {":"} + {LPID}

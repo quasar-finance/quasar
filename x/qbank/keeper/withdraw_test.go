@@ -24,7 +24,7 @@ func TestGetAddSubWithdrawableAmt(t *testing.T) {
 	k.AddWithdrawableAmt(ctx, depositorAddr, coin1)
 	k.AddWithdrawableAmt(ctx, depositorAddr, coin2)
 	// Add same denom
-	k.AddWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(1)))
+	k.AddWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.OneInt()))
 
 	got = k.GetWithdrawableAmt(ctx, depositorAddr, denom1)
 	require.Equal(t, coin1, got)
@@ -72,7 +72,7 @@ func TestGetAddSubLockupWithdrawableAmt(t *testing.T) {
 	k.AddLockupWithdrawableAmt(ctx, depositorAddr, coin1, types.LockupTypes_Days_7)
 	k.AddLockupWithdrawableAmt(ctx, depositorAddr, coin2, types.LockupTypes_Months_1)
 	// Add same denom / lockup
-	k.AddLockupWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(1)), types.LockupTypes_Months_1)
+	k.AddLockupWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.OneInt()), types.LockupTypes_Months_1)
 
 	got = k.GetLockupWithdrawableAmt(ctx, depositorAddr, denom1, types.LockupTypes_Days_7)
 	require.Equal(t, coin1, got)
@@ -120,7 +120,7 @@ func TestGetAddSubActualWithdrawableAmt(t *testing.T) {
 	k.AddActualWithdrawableAmt(ctx, depositorAddr, coin1)
 	k.AddActualWithdrawableAmt(ctx, depositorAddr, coin2)
 	// Add same denom
-	k.AddActualWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.NewInt(1)))
+	k.AddActualWithdrawableAmt(ctx, depositorAddr, sdk.NewCoin(denom2, sdk.OneInt()))
 
 	got = k.GetActualWithdrawableAmt(ctx, depositorAddr, denom1)
 	require.Equal(t, coin1, got)

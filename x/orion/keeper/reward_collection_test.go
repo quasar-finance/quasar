@@ -146,7 +146,7 @@ func TestCalculateDenomLPWeights(t *testing.T) {
 			},
 			expectError: false,
 			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDec(1),
+				"abc": sdk.OneDec(),
 			},
 		},
 		{
@@ -158,7 +158,7 @@ func TestCalculateDenomLPWeights(t *testing.T) {
 			},
 			expectError: false,
 			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDec(1),
+				"abc": sdk.OneDec(),
 			},
 		},
 		{
@@ -219,7 +219,7 @@ func TestCalculateDenomLPWeights(t *testing.T) {
 				sdk.NewCoin("def", sdk.NewInt(70)),
 			),
 			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(1),
+				types.OrionDenom: sdk.OneDec(),
 				"abc":            sdk.NewDecWithPrec(35, 1),
 				"def":            sdk.NewDecWithPrec(15, 1),
 			},
@@ -236,7 +236,7 @@ func TestCalculateDenomLPWeights(t *testing.T) {
 				sdk.NewCoin("def", sdk.NewInt(100)),
 			),
 			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(1),
+				types.OrionDenom: sdk.OneDec(),
 				"abc":            sdk.NewDecWithPrec(35, 1),
 				"def":            sdk.NewDecWithPrec(15, 1),
 			},
@@ -266,7 +266,7 @@ func TestCalculateDenomLPWeights(t *testing.T) {
 					require.True(t, w.GTE(sdk.ZeroDec()))
 					totalWeight = totalWeight.Add(w)
 				}
-				require.True(t, totalWeight.LTE(sdk.NewDec(1)))
+				require.True(t, totalWeight.LTE(sdk.OneDec()))
 			}
 		})
 	}
@@ -283,7 +283,7 @@ func TestCalculateActualRewardForEachDenom(t *testing.T) {
 		{
 			name:         "single weight (sum 1), no rewards",
 			netRewards:   sdk.NewCoins(),
-			weights:      map[string]sdk.Dec{"abc": sdk.NewDec(1)},
+			weights:      map[string]sdk.Dec{"abc": sdk.OneDec()},
 			expectError:  false,
 			denomRewards: map[string]sdk.Coins{"abc": sdk.NewCoins()},
 		},
@@ -305,7 +305,7 @@ func TestCalculateActualRewardForEachDenom(t *testing.T) {
 			netRewards: sdk.NewCoins(
 				sdk.NewCoin("osmo", sdk.NewInt(100)),
 			),
-			weights:     map[string]sdk.Dec{"abc": sdk.NewDec(1)},
+			weights:     map[string]sdk.Dec{"abc": sdk.OneDec()},
 			expectError: false,
 			denomRewards: map[string]sdk.Coins{
 				"abc": sdk.NewCoins(sdk.NewCoin("osmo", sdk.NewInt(100))),
@@ -317,7 +317,7 @@ func TestCalculateActualRewardForEachDenom(t *testing.T) {
 				sdk.NewCoin("osmo", sdk.NewInt(100)),
 				sdk.NewCoin("xyz1", sdk.NewInt(150)),
 			),
-			weights:     map[string]sdk.Dec{"abc": sdk.NewDec(1)},
+			weights:     map[string]sdk.Dec{"abc": sdk.OneDec()},
 			expectError: false,
 			denomRewards: map[string]sdk.Coins{
 				"abc": sdk.NewCoins(
@@ -429,7 +429,7 @@ func TestCalculateUserRewards(t *testing.T) {
 					DenomMap: map[string]types.UserDenomInfo{
 						"abc": types.UserDenomInfo{
 							Denom:  "abc",
-							Weight: sdk.NewDec(1),
+							Weight: sdk.OneDec(),
 							Amt:    sdk.NewInt(100),
 							Reward: sdk.NewCoins(),
 						},
@@ -453,7 +453,7 @@ func TestCalculateUserRewards(t *testing.T) {
 					DenomMap: map[string]types.UserDenomInfo{
 						"abc": types.UserDenomInfo{
 							Denom:  "abc",
-							Weight: sdk.NewDec(1),
+							Weight: sdk.OneDec(),
 							Amt:    sdk.NewInt(100),
 							Reward: sdk.NewCoins(sdk.NewCoin("osmo", sdk.NewInt(50))),
 						},
@@ -481,7 +481,7 @@ func TestCalculateUserRewards(t *testing.T) {
 					DenomMap: map[string]types.UserDenomInfo{
 						"abc": types.UserDenomInfo{
 							Denom:  "abc",
-							Weight: sdk.NewDec(1),
+							Weight: sdk.OneDec(),
 							Amt:    sdk.NewInt(100),
 							Reward: sdk.NewCoins(
 								sdk.NewCoin("osmo", sdk.NewInt(50)),
@@ -527,7 +527,7 @@ func TestCalculateUserRewards(t *testing.T) {
 					DenomMap: map[string]types.UserDenomInfo{
 						"abc": types.UserDenomInfo{
 							Denom:  "abc",
-							Weight: sdk.NewDec(1),
+							Weight: sdk.OneDec(),
 							Amt:    sdk.NewInt(100),
 							Reward: sdk.NewCoins(
 								sdk.NewCoin("osmo", sdk.NewInt(50)),
@@ -537,7 +537,7 @@ func TestCalculateUserRewards(t *testing.T) {
 						},
 						"def": types.UserDenomInfo{
 							Denom:  "def",
-							Weight: sdk.NewDec(1),
+							Weight: sdk.OneDec(),
 							Amt:    sdk.NewInt(200),
 							Reward: sdk.NewCoins(
 								sdk.NewCoin("xyz2", sdk.NewInt(80)),

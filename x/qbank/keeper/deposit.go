@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"fmt"
 
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
@@ -9,8 +10,16 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// SetUserDepositAmt set the current value of user's total deposit amount.
+// Key - types.UserDepositKBP + {userAccount}
+func (k Keeper) SetUserDepositAmt(ctx sdk.Context, uid string, val types.QCoins) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
+	b := k.cdc.MustMarshal(&val)
+	store.Set(types.CreateUserDepositKey(uid), b)
+}
+
 // GetUserDepositAmt get the current value of user's total deposit amount.
-// Key - types.UserDepositKBP + {useraccount}
+// Key - types.UserDepositKBP + {userAccount}
 func (k Keeper) GetUserDepositAmt(ctx sdk.Context, uid string) (val types.QCoins, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
 	b := store.Get(types.CreateUserDepositKey(uid))
@@ -22,73 +31,76 @@ func (k Keeper) GetUserDepositAmt(ctx sdk.Context, uid string) (val types.QCoins
 	return val, true
 }
 
-// GetTotalDeposits calculates the current total active deposits.
+// GetAllDeposits returns a map denoting all deposits of user
 // Logic -
-// Iterate over { types.UserDepositKBP } => CreateUserDepositKey }
+// Iterate over { types.UserDepositKBP } => { CreateUserDepositKey }
+func (k Keeper) GetAllDeposits(ctx sdk.Context) map[string]sdk.Coins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iter.Close()
+
+	k.Logger(ctx).Info(fmt.Sprintf("GetTotalDeposits|modulename=%s|blockheight=%d",
+		types.ModuleName, ctx.BlockHeight()))
+
+	allDeposits := make(map[string]sdk.Coins)
+	for ; iter.Valid(); iter.Next() {
+		userAcc := string(iter.Key())
+		value := iter.Value()
+		var qCoins types.QCoins
+		k.cdc.MustUnmarshal(value, &qCoins)
+		if deposit, exist := allDeposits[userAcc]; exist {
+			allDeposits[userAcc] = deposit.Add(qCoins.Coins...)
+		} else {
+			allDeposits[userAcc] = qCoins.Coins
+		}
+	}
+	return allDeposits
+}
+
+// GetTotalDeposits calculates the current total active deposits.
 // Note - We need to guarantee actual deposit returns to the users irrespective of IL loss.
 func (k Keeper) GetTotalDeposits(ctx sdk.Context) sdk.Coins {
 	allCoins := sdk.NewCoins()
-	bytePrefix := types.UserDepositKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
-	defer iter.Close()
-
-	k.Logger(ctx).Info(fmt.Sprintf("GetTotalDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
-
-	for ; iter.Valid(); iter.Next() {
-		_, value := iter.Key(), iter.Value()
-		var qcoins types.QCoins
-		k.cdc.MustUnmarshal(value, &qcoins)
-		for _, c := range qcoins.Coins {
-			allCoins = allCoins.Add(c)
-		}
+	for _, deposit := range k.GetAllDeposits(ctx) {
+		allCoins = allCoins.Add(deposit...)
 	}
 	return allCoins
 }
 
 // AddUserDeposit adds user's deposit amount with key - types.UserDepositKBP + {uid} ,
-// and will aggregate the total depsoited amount so far.
+// and will aggregate the total deposited amount so far.
 func (k Keeper) AddUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
-	key := types.CreateUserDepositKey(uid)
-	b := store.Get(key)
-	var qcoins types.QCoins
-	if b == nil {
-		qcoins.Coins = qcoins.Coins.Add(coin)
-		value := k.cdc.MustMarshal(&qcoins)
-		store.Set(key, value)
+	deposit, found := k.GetUserDepositAmt(ctx, uid)
+	if found {
+		deposit.Coins = deposit.Coins.Add(coin)
 	} else {
-		k.cdc.MustUnmarshal(b, &qcoins)
-		// Make sure that the stored coin set is in sorted order.
-		// As the single coin element is always sorted, so the Add will never panic
-		qcoins.Coins = qcoins.Coins.Add(coin)
-		value := k.cdc.MustMarshal(&qcoins)
-		store.Set(key, value)
+		deposit.Coins = sdk.NewCoins(coin)
 	}
+	k.SetUserDepositAmt(ctx, uid, deposit)
 }
 
 // SubUserDeposit subs user's deposit amount with key - types.UserDepositKBP + {uid},
 // and reduce the amount deposited so far.
 func (k Keeper) SubUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDepositKBP)
-	key := types.CreateUserDepositKey(uid)
-	b := store.Get(key)
-	if b == nil {
-		panic(fmt.Sprintf("method SubUserDeposit |kv store does not have key=%v", string(key)))
+	deposit, found := k.GetUserDepositAmt(ctx, uid)
+	if found {
+		deposit.Coins = deposit.Coins.Sub(sdk.NewCoins(coin))
+	} else {
+		panic(fmt.Sprintf("method SubUserDeposit |kv store does not have uid=%s", uid))
 	}
-
-	var qcoins types.QCoins
-	k.cdc.MustUnmarshal(b, &qcoins)
-	// Make sure that the stored coin set is in sorted order.
-	// As the single coin element is always sorted, so the Add will never panic
-	qcoins.Coins = qcoins.Coins.Sub(sdk.NewCoins(coin))
-	value := k.cdc.MustMarshal(&qcoins)
-	store.Set(key, value)
+	k.SetUserDepositAmt(ctx, uid, deposit)
 }
 
-// GetUserDenomDepositAmt get user's denom deposit amount.
-// Key - types.UserDenomDepositKBP + {useraccount} + {":"} + {denom}
+// SetUserDenomDepositAmt sets user's denom deposit amount.
+// Key - types.UserDenomDepositKBP + {userAccount} + {":"} + {denom}
+func (k Keeper) SetUserDenomDepositAmt(ctx sdk.Context, uid, denom string, val sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
+	b := k.cdc.MustMarshal(&val)
+	store.Set(types.CreateUserDenomDepositKey(uid, types.Sep, denom), b)
+}
+
+// GetUserDenomDepositAmt gets user's denom deposit amount.
+// Key - types.UserDenomDepositKBP + {userAccount} + {":"} + {denom}
 func (k Keeper) GetUserDenomDepositAmt(ctx sdk.Context, uid, denom string) (val sdk.Coin, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
 	b := store.Get(types.CreateUserDenomDepositKey(uid, types.Sep, denom))
@@ -103,44 +115,46 @@ func (k Keeper) GetUserDenomDepositAmt(ctx sdk.Context, uid, denom string) (val 
 // AddUserDenomDeposit adds user's denom deposit amount with
 // key - types.UserDenomDepositKBP + {uid} + {":"} + {denom}
 func (k Keeper) AddUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
-	key := types.CreateUserDenomDepositKey(uid, types.Sep, coin.GetDenom())
-	b := store.Get(key)
-	if b == nil {
-		value := k.cdc.MustMarshal(&coin)
-		store.Set(key, value)
+	denom := coin.GetDenom()
+	deposit, found := k.GetUserDenomDepositAmt(ctx, uid, denom)
+	if found {
+		deposit = deposit.Add(coin)
 	} else {
-		var storedCoin sdk.Coin
-		k.cdc.MustUnmarshal(b, &storedCoin)
-		storedCoin = storedCoin.Add(coin)
-		value := k.cdc.MustMarshal(&storedCoin)
-		store.Set(key, value)
+		deposit = coin
 	}
+	k.SetUserDenomDepositAmt(ctx, uid, denom, deposit)
 }
 
 // SubUserDenomDeposit subs user's denom deposit amount with
 // key - types.UserDenomDepositKBP + {uid} + {":"} + {denom}
 func (k Keeper) SubUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserDenomDepositKBP)
-	key := types.CreateUserDenomDepositKey(uid, types.Sep, coin.GetDenom())
-	b := store.Get(key)
-	if b == nil {
-		panic(fmt.Sprintf("method SubUserDenomDeposit |kv store does not have key=%v", string(key)))
+	denom := coin.GetDenom()
+	deposit, found := k.GetUserDenomDepositAmt(ctx, uid, denom)
+	if found {
+		deposit = deposit.Sub(coin)
+	} else {
+		panic(fmt.Sprintf("method SubUserDenomDeposit |kv store does not have uid=%s, denom=%s", uid, denom))
 	}
-
-	var storedCoin sdk.Coin
-	k.cdc.MustUnmarshal(b, &storedCoin)
-	storedCoin = storedCoin.Sub(coin)
-	value := k.cdc.MustMarshal(&storedCoin)
-	store.Set(key, value)
+	k.SetUserDenomDepositAmt(ctx, uid, denom, deposit)
 }
 
-// GetEpochLockupUserDenomDepositAmt get the current value of user's denom deposit amount
-// with given epoch day and lockup period which is sdk.coin specifc to a given coin denom.
-func (k Keeper) GetEpochLockupUserDenomDepositAmt(ctx sdk.Context,
-	uid, denom string, epochday uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
+// SetEpochLockupUserDenomDeposit sets the current value of user's denom deposit amount
+// with given epoch day and lockup period which is sdk.coin specific to a given coin denom.
+func (k Keeper) SetEpochLockupUserDenomDeposit(ctx sdk.Context,
+	uid, denom string, epochDay uint64, lockupPeriod types.LockupTypes, val sdk.Coin) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
-	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, denom, epochday, lockupPeriod)
+	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, denom, epochDay, lockupPeriod)
+
+	b := k.cdc.MustMarshal(&val)
+	store.Set(key, b)
+}
+
+// GetEpochLockupUserDenomDeposit get the current value of user's denom deposit amount
+// with given epoch day and lockup period which is sdk.coin specific to a given coin denom.
+func (k Keeper) GetEpochLockupUserDenomDeposit(ctx sdk.Context,
+	uid, denom string, epochDay uint64, lockupPeriod types.LockupTypes) (val sdk.Coin, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
+	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, denom, epochDay, lockupPeriod)
 
 	b := store.Get(key)
 	if b == nil {
@@ -151,87 +165,113 @@ func (k Keeper) GetEpochLockupUserDenomDepositAmt(ctx sdk.Context,
 	return val, true
 }
 
-// AddEpochLockupUserDenomDeposit adds user's denom deposit amount with
-// Key - {EpochLockupUserDenomDepositKBP} + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
-func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
+// GetEpochLockupDepositAllUsersAllDenoms get the current value of all users deposit amount
+// with given epoch day and lockup period.
+func (k Keeper) GetEpochLockupDepositAllUsersAllDenoms(ctx sdk.Context,
+	epochDay uint64, lockupPeriod types.LockupTypes) map[string]sdk.Coins {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
-	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, coin.GetDenom(), epochday, lockupPeriod)
+	prefixKey := types.CreateEpochLockupUserKey(epochDay, lockupPeriod, types.Sep)
 
-	k.Logger(ctx).Info(fmt.Sprintf("AddEpochLockupUserDenomDeposit|key=%s|%s|%s|%s\n",
-		string(key), uid, coin.Denom, types.LockupTypes_name[int32(lockupPeriod)]))
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
 
-	b := store.Get(key)
-	if b == nil {
-		value := k.cdc.MustMarshal(&coin)
-		store.Set(key, value)
-	} else {
-		var storedCoin sdk.Coin
-		k.cdc.MustUnmarshal(b, &storedCoin)
-		storedCoin = storedCoin.Add(coin)
-		value := k.cdc.MustMarshal(&storedCoin)
-		store.Set(key, value)
+	k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+
+	userCoins := make(map[string]sdk.Coins)
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := bytes.Split(key, types.SepByte)
+		uid := string(splits[0])
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		if coins, exist := userCoins[uid]; exist {
+			userCoins[uid] = coins.Add(coin)
+		} else {
+			userCoins[uid] = sdk.NewCoins(coin)
+		}
+		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
 	}
+	return userCoins
+}
+
+// GetEpochLockupUserDepositAllDenoms get the current value of user's deposit amount
+// with given epoch day and lockup period.
+func (k Keeper) GetEpochLockupUserDepositAllDenoms(ctx sdk.Context,
+	uid string, epochDay uint64, lockupPeriod types.LockupTypes) sdk.Coins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
+	lockupStr := types.LockupTypes_name[int32(lockupPeriod)]
+	prefixKey := types.CreateEpochLockupUserSepKey(epochDay, lockupStr, uid, types.Sep)
+
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+
+	coins := sdk.NewCoins()
+	for ; iter.Valid(); iter.Next() {
+		value := iter.Value()
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		coins = coins.Add(coin)
+		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
+			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
+	}
+	return coins
+}
+
+// AddEpochLockupUserDenomDeposit adds user's denom deposit amount with
+// Key - {EpochLockupUserDenomDepositKBP} + {epochDay} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+func (k Keeper) AddEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochDay uint64, lockupPeriod types.LockupTypes) {
+	deposit, found := k.GetEpochLockupUserDenomDeposit(ctx, uid, coin.GetDenom(), epochDay, lockupPeriod)
+	if found {
+		deposit = deposit.Add(coin)
+	} else {
+		deposit = coin
+	}
+	k.SetEpochLockupUserDenomDeposit(ctx, uid, coin.GetDenom(), epochDay, lockupPeriod, deposit)
 }
 
 // SubEpochLockupUserDenomDeposit subs user's denom deposit amount with
-// Key - {EpochLockupUserDenomDepositKBP} +  ":" + {epochday} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
-func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochday uint64, lockupPeriod types.LockupTypes) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
-	key := types.CreateEpochLockupUserDenomDepositKey(uid, types.Sep, coin.GetDenom(), epochday, lockupPeriod)
-	b := store.Get(key)
-	if b == nil {
-		panic(fmt.Sprintf("method SubEpochLockupUserDenomDeposit |kv store does not have key=%v", string(key)))
+// Key - {EpochLockupUserDenomDepositKBP} +  ":" + {epochDay} + ":" + {lockupString} + ":" + {uid} + ":" + {denom}
+func (k Keeper) SubEpochLockupUserDenomDeposit(ctx sdk.Context, uid string, coin sdk.Coin, epochDay uint64, lockupPeriod types.LockupTypes) {
+	denom := coin.Denom
+	deposit, found := k.GetEpochLockupUserDenomDeposit(ctx, uid, denom, epochDay, lockupPeriod)
+	if found {
+		deposit = deposit.Sub(coin)
+	} else {
+		panic(fmt.Sprintf("method SubEpochLockupUserDenomDeposit |kv store does not have uid=%v, denom=%s, epochDay=%v, lockupPeriod=%v", uid, denom, epochDay, lockupPeriod))
 	}
-
-	var storedCoin sdk.Coin
-	k.cdc.MustUnmarshal(b, &storedCoin)
-	storedCoin = storedCoin.Sub(coin)
-	value := k.cdc.MustMarshal(&storedCoin)
-	store.Set(key, value)
+	k.SetEpochLockupUserDenomDeposit(ctx, uid, denom, epochDay, lockupPeriod, deposit)
 }
 
-// GetEpochUserDepositAmt calculates the total deposit amount of the given users on a given day
-// Iterate over all lockup periods, and prepare prefix key
-// as - {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:}
+// GetEpochUserDepositAmt calculates the total deposit amount of the given user on a given day
+// Iterate over all lockup periods
 // On iteration, key - {denom}, value = sdk.Coin. No. of iteration can be upto the number of lockup periods
-func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context, epochday uint64, userAcc string) sdk.Coins {
-	bytePrefix := types.EpochLockupUserDenomDepositKBP
-	var prefixKey []byte
-	var coins sdk.Coins
-	for lockupStr := range types.LockupTypes_value {
-		prefixKey = types.CreateEpochLockupUserSepKey(epochday, lockupStr, userAcc, types.Sep)
-
-		prefixKey = append(bytePrefix, prefixKey...)
-		store := ctx.KVStore(k.storeKey)
-		iter := sdk.KVStorePrefixIterator(store, prefixKey)
-		defer iter.Close()
-
-		k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s",
-			types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
-
-		for ; iter.Valid(); iter.Next() {
-			// key = denom string byte, value = sdk.Coin marshled
-			_, value := iter.Key(), iter.Value()
-			var coin sdk.Coin
-			k.cdc.MustUnmarshal(value, &coin)
-			coins = coins.Add(coin)
-			k.Logger(ctx).Info(fmt.Sprintf("GetEpochUserDepositAmt|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
-				types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
-
-		}
+func (k Keeper) GetEpochUserDepositAmt(ctx sdk.Context, epochDay uint64, userAcc string) sdk.Coins {
+	allCoins := sdk.NewCoins()
+	validLockupTypes := []types.LockupTypes{
+		types.LockupTypes_Days_7,
+		types.LockupTypes_Days_21,
+		types.LockupTypes_Months_1,
+		types.LockupTypes_Months_3,
 	}
-
-	return coins
+	for _, lockup := range validLockupTypes {
+		coins := k.GetEpochLockupUserDepositAllDenoms(ctx, userAcc, epochDay, lockup)
+		allCoins = allCoins.Add(coins...)
+	}
+	return allCoins
 }
 
 // GetTotalEpochDeposits calculates the total amount deposited on a given epoch day
 // Logic - Iterate with epoch day as prefix keys
-// Full key -  EpochLockupUserDenomDepositKBP + {epochday} + {:}
-func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coins {
-	bytePrefix := types.EpochLockupUserDenomDepositKBP
-	prefixKey := types.EpochDaySepKey(epochday, types.Sep)
-	prefixKey = append(bytePrefix, prefixKey...)
-	store := ctx.KVStore(k.storeKey)
+// Full key -  EpochLockupUserDenomDepositKBP + {epochDay} + {:}
+func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochDay uint64) sdk.Coins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
+	prefixKey := types.EpochDaySepKey(epochDay, types.Sep)
+
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)
 	defer iter.Close()
 
@@ -239,16 +279,14 @@ func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coin
 	logger.Info(fmt.Sprintf("GetTotalEpochDeposits|modulename=%s|blockheight=%d|prefixKey=%s",
 		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
 
-	var coins sdk.Coins
+	coins := sdk.NewCoins()
 	for ; iter.Valid(); iter.Next() {
-		// key = {$lockupperiods} + {:} + {userAcc} + {:} + {denom}, value = sdk.Coin marshled
-		_, value := iter.Key(), iter.Value()
+		value := iter.Value()
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 		coins = coins.Add(coin)
 		logger.Info(fmt.Sprintf("GetTotalEpochDeposits|modulename=%s|blockheight=%d|prefixKey=%s|coin=%v",
 			types.ModuleName, ctx.BlockHeight(), string(prefixKey), coin))
-
 	}
 
 	return coins
@@ -256,23 +294,27 @@ func (k Keeper) GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coin
 
 // GetAllDepositInfos prepare a list of all deposit infos,
 // Method is used for export genesis.
-// Full key -  {epochday} + {:}+ {$lockupperiods} + {:} + {userAcc} + {:} + {denom}
+// Full key -  {epochDay} + {:}+ {$lockupPeriods} + {:} + {userAcc} + {:} + {denom}
 func (k Keeper) GetAllDepositInfos(ctx sdk.Context) []types.DepositInfo {
-	bytePrefix := types.EpochLockupUserDenomDepositKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
+
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
+	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d",
+		types.ModuleName, ctx.BlockHeight()))
 
 	var depositInfos []types.DepositInfo
 	for ; iter.Valid(); iter.Next() {
-		// key = {epochday} + {:} + {$lockupperiods} + {:} + {userAcc} + {:} + {denom},
-		// value = sdk.Coin marshled
+		// key = {epochDay} + {:} + {$lockupPeriods} + {:} + {userAcc} + {:} + {denom},
+		// value = sdk.Coin marshaled
 		key, value := iter.Key(), iter.Value()
-		epochDay, lockupDayStr, userAccStr, _, _ := types.ParseEpochLockupUserDenomDepositKey(key)
+		epochDay, lockupDayStr, userAccStr, _, err := types.ParseEpochLockupUserDenomDepositKey(key)
+		if err != nil {
+			logger.Info("GetAllDepositInfos", "key", key, "error", err.Error())
+			continue
+		}
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)
 
@@ -284,7 +326,6 @@ func (k Keeper) GetAllDepositInfos(ctx sdk.Context) []types.DepositInfo {
 
 		depositInfos = append(depositInfos, di)
 		logger.Info("DepositInfo", di)
-
 	}
 
 	return depositInfos
@@ -309,30 +350,17 @@ func (k Keeper) GetAllActiveUserDeposits(ctx sdk.Context, todayEpochDay uint64) 
 // GetAllTotalDeposits prepare a list of total deposit info for each user
 // Method is used for export genesis.
 func (k Keeper) GetAllTotalDeposits(ctx sdk.Context) []types.UserBalanceInfo {
-	bytePrefix := types.UserDepositKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
-	defer iter.Close()
-
-	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("GetAllDepositInfos|modulename=%s|blockheight=%d|prefixKey=%s",
-		types.ModuleName, ctx.BlockHeight(), string(bytePrefix)))
-
 	var totalDepositInfos []types.UserBalanceInfo
-	for ; iter.Valid(); iter.Next() {
-		key, value := iter.Key(), iter.Value()
-		userAccStr := string(key[1:])
-		var qcoins types.QCoins
-		k.cdc.MustUnmarshal(value, &qcoins)
-
+	for userAccStr, deposit := range k.GetAllDeposits(ctx) {
 		userTotalDeposit := types.UserBalanceInfo{Type: types.BalanceType_TOTAL_DEPOSIT,
 			VaultID:             oriontypes.ModuleName,
 			DepositorAccAddress: userAccStr,
-			Coins:               qcoins.Coins,
+			Coins:               deposit,
 		}
 		totalDepositInfos = append(totalDepositInfos, userTotalDeposit)
 	}
 
-	logger.Info("TotalDepositInfos", totalDepositInfos)
+	logger := k.Logger(ctx)
+	logger.Info("GetAllTotalDeposits", "TotalDepositInfos", totalDepositInfos)
 	return totalDepositInfos
 }

@@ -2,13 +2,14 @@ package keeper
 
 import (
 	"context"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// RequestWithdrawAll process the withdraw transaction message for all denom withdraw in one transaction.
+// RequestWithdrawAll process the withdrawal transaction message for all denom withdraw in one transaction.
 func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgRequestWithdrawAll) (*types.MsgRequestWithdrawAllResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -22,13 +23,11 @@ func (k msgServer) RequestWithdrawAll(goCtx context.Context, msg *types.MsgReque
 
 	switch vaultId {
 	case oriontypes.ModuleName:
+		store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ActualWithdrawableKeyKBP)
 		// Iterate over types.ActualWithdrawableKeyKBP + {userAcc} + {":"}
-		bytePrefix := types.ActualWithdrawableKeyKBP
 		prefixKey := []byte(depositor)
-		prefixKey = append(bytePrefix, prefixKey...)
 		prefixKey = append(prefixKey, types.SepByte...)
 
-		store := ctx.KVStore(k.storeKey)
 		iter := sdk.KVStorePrefixIterator(store, prefixKey)
 		defer iter.Close()
 
