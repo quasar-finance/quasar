@@ -3,6 +3,7 @@ package types
 import (
 	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
 	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,6 +16,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 
 	gammtypes.RegisterLegacyAminoCodec(cdc)
 	gammbalancer.RegisterLegacyAminoCodec(cdc)
+	lockuptypes.RegisterCodec(cdc)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -27,6 +29,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 
 	gammtypes.RegisterInterfaces(registry)
 	gammbalancer.RegisterInterfaces(registry)
+	lockuptypes.RegisterInterfaces(registry)
 }
 
 var (

@@ -17,7 +17,7 @@ lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
 
 proto-gen:
-	@ignite generate proto-go
+	scripts/gen_proto
 
 build: $(BUILD_DIR)/quasarnoded
 
@@ -64,7 +64,7 @@ doc-serve:
 
 # Run targets
 
-run:
+run: proto-gen
 	scripts/run
 
 run-silent:
