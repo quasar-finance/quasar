@@ -1,13 +1,12 @@
 package types
 
 import (
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -68,7 +67,7 @@ type IntergammKeeper interface {
 		connectionId string,
 		timeoutTimestamp uint64,
 		poolParams *gammbalancer.PoolParams,
-		poolAssets []gammtypes.PoolAsset,
+		poolAssets []gammbalancer.PoolAsset,
 		futurePoolGovernor string) (uint64, error)
 
 	TransmitIbcJoinPool(

@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
-	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 func (k Keeper) TransmitIbcCreatePool(
@@ -16,7 +16,7 @@ func (k Keeper) TransmitIbcCreatePool(
 	connectionId string,
 	timeoutTimestamp uint64,
 	poolParams *gammbalancer.PoolParams,
-	poolAssets []gammtypes.PoolAsset,
+	poolAssets []gammbalancer.PoolAsset,
 	futurePoolGovernor string) (uint64, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,

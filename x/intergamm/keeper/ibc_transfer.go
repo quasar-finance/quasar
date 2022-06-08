@@ -54,10 +54,10 @@ func (k Keeper) ForwardTransferIbcTokens(
 	receiver string,
 	timeoutHeight ibcclienttypes.Height,
 	timeoutTimestamp uint64,
-) error {
+) (uint64, error) {
 	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 
-	return k.ibcTransferKeeper.SendTransfer(
+	return k.TransferIbcTokens(
 		ctx,
 		srcPort,
 		srcChannel,

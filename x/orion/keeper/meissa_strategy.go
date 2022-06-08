@@ -6,9 +6,9 @@ import (
 	"math"
 	"strconv"
 
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -26,7 +26,7 @@ func (k Keeper) getPoolInfo(ctx sdk.Context, poolID uint64) qoracletypes.PoolInf
 }
 
 // Get pool assets from pool ID
-func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammtypes.PoolAsset) {
+func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammbalancer.PoolAsset) {
 	poolIDStr := strconv.FormatUint(poolID, 10)
 	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
 	return poolInfo.Info.PoolAssets
@@ -176,7 +176,7 @@ func (k Keeper) OnJoinSend(ctx sdk.Context,
 
 // GetMaxAvailableTokensCorrespondingToPoolAssets gets the max available amount (in Orion staking account) of all denoms
 // that are in the poolAssets as a sdk.Coins object
-func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, poolAssets []gammtypes.PoolAsset) (res sdk.Coins) {
+func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, poolAssets []gammbalancer.PoolAsset) (res sdk.Coins) {
 	for _, asset := range poolAssets {
 		denom := asset.Token.GetDenom()
 		res = res.Add(sdk.NewCoin(denom, k.getMaxAvailableAmount(ctx, lockupPeriod, denom)))
@@ -185,7 +185,7 @@ func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, 
 }
 
 // ComputeShareOutAmount computes the max number of shares that can be obtained given the maxAvailableTokens (in all-asset deposit mode)
-func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammtypes.PoolAsset, maxAvailableTokens sdk.Coins) (sdk.Int, error) {
+func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammbalancer.PoolAsset, maxAvailableTokens sdk.Coins) (sdk.Int, error) {
 	if len(poolAssets) == 0 {
 		return sdk.ZeroInt(), errors.New("error: empty pool assets")
 	}
@@ -203,7 +203,7 @@ func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammtypes.PoolAs
 }
 
 // ComputeNeededCoins computes the coins needed to obtain shareOutAmount
-func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gammtypes.PoolAsset) (sdk.Coins, error) {
+func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gammbalancer.PoolAsset) (sdk.Coins, error) {
 	res := sdk.NewCoins()
 	if totalSharesAmount.IsZero() && len(poolAssets) > 0 {
 		return res, errors.New("error: zero totalSharesAmount and non-empty poolAssets are illogical")

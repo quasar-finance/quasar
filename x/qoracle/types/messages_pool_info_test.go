@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil/sample"
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,17 +20,17 @@ func sampleBalancerPool() (res gammbalancer.Pool) {
 	}
 	res.FuturePoolGovernor = "24h"
 	res.TotalShares = sdk.NewCoin(gammtypes.GetPoolShareDenom(res.Id), sdk.ZeroInt())
-	res.PoolAssets = []gammtypes.PoolAsset{
+	res.PoolAssets = []gammbalancer.PoolAsset{
 		{
-			Weight: sdk.NewInt(100).MulRaw(gammtypes.GuaranteedWeightPrecision),
+			Weight: sdk.NewInt(100).MulRaw(gammbalancer.GuaranteedWeightPrecision),
 			Token:  sdk.NewCoin("test", sdk.NewInt(100)),
 		},
 		{
-			Weight: sdk.NewInt(100).MulRaw(gammtypes.GuaranteedWeightPrecision),
+			Weight: sdk.NewInt(100).MulRaw(gammbalancer.GuaranteedWeightPrecision),
 			Token:  sdk.NewCoin("test2", sdk.NewInt(100)),
 		},
 	}
-	gammtypes.SortPoolAssetsByDenom(res.PoolAssets)
+	gammbalancer.SortPoolAssetsByDenom(res.PoolAssets)
 	res.TotalWeight = sdk.ZeroInt()
 	for _, asset := range res.PoolAssets {
 		res.TotalWeight = res.TotalWeight.Add(asset.Weight)
