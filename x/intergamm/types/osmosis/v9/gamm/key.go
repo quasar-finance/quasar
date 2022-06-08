@@ -28,6 +28,7 @@ var (
 )
 
 func MustGetPoolIdFromShareDenom(denom string) uint64 {
+	//nolint:staticcheck // SA1024
 	numberStr := strings.TrimLeft(denom, "gamm/pool/")
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
@@ -37,6 +38,7 @@ func MustGetPoolIdFromShareDenom(denom string) uint64 {
 }
 
 func ValidatePoolShareDenom(denom string) error {
+	//nolint:staticcheck // SA1024
 	numberStr := strings.TrimLeft(denom, "gamm/pool/")
 	_, err := strconv.Atoi(numberStr)
 	if err != nil {
