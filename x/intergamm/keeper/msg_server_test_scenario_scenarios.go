@@ -20,16 +20,16 @@ import (
 )
 
 const (
-	owner              string = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
-	osmosisAddress     string = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
-	cosmosAddress             = "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs"
-	connectionId       string = "connection-0"
-	transferPortId     string = "transfer"
-	transferChannelId  string = "channel-0"
-	fwdTransferPort    string = "transfer"
-	fwdTransferChannel string = "channel-1"
-	poolId                    = uint64(1)
-	timestamp                 = uint64(99999999999999)
+	owner              = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
+	osmosisAddress     = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
+	cosmosAddress      = "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs"
+	connectionId       = "connection-0"
+	transferPortId     = "transfer"
+	transferChannelId  = "channel-0"
+	fwdTransferPort    = "transfer"
+	fwdTransferChannel = "channel-1"
+	poolId             = uint64(1)
+	timestamp          = uint64(99999999999999)
 )
 
 var (
