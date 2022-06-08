@@ -1,23 +1,20 @@
 package types
 
 import (
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	osmosiscdc1 "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	osmosiscdc2 "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
-	osmosiscdc3 "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgTestScenario{}, "intergamm/TestScenario", nil)
 	// this line is used by starport scaffolding # 2
 
-	//
-	osmosiscdc1.RegisterLegacyAminoCodec(cdc)
-	osmosiscdc2.RegisterLegacyAminoCodec(cdc)
-	osmosiscdc3.RegisterCodec(cdc)
+	gammtypes.RegisterLegacyAminoCodec(cdc)
+	gammbalancer.RegisterLegacyAminoCodec(cdc)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -28,9 +25,8 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 
-	osmosiscdc1.RegisterInterfaces(registry)
-	osmosiscdc2.RegisterInterfaces(registry)
-	osmosiscdc3.RegisterInterfaces(registry)
+	gammtypes.RegisterInterfaces(registry)
+	gammbalancer.RegisterInterfaces(registry)
 }
 
 var (
