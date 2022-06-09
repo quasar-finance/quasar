@@ -78,21 +78,20 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) erro
 	return nil
 }
 
-func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, ok bool) {
-	// TODO review this (appears to be unused function)
-	if !ok {
-		return
-	}
-	coin, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
+func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, err string) {
+	ibcTokenTransfer, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
 	if found {
-		k.AddAvailableInterchainFund(ctx, sdk.NewCoins(coin))
+		if len(err) == 0 {
+			k.AddAvailableInterchainFund(ctx, sdk.NewCoins(ibcTokenTransfer.Coin))
+		}
 		k.DeleteIBCTokenTransferRecord(ctx, packetSeq)
 	}
+	k.Logger(ctx).Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
 }
 
 func (k Keeper) OnIBCTokenTransferTimeout(ctx sdk.Context, packetSeq uint64) {
-	// App level Retry max three times. Although retry is automatically done by the relayer.
-	// Assuming that the ibc token transfer is robust and will return the requested amount.
-	k.DeleteIBCTokenTransferRecord(ctx, packetSeq)
-	// Should we return the amount back to user?
+
+	// Deleting this values can cause issues regarding proper book keeping.
+	// Orion need to either return that coins back to users or keep trying in some audit methods which
+	// will get activated time to time and will clear previous days unprocessed data.
 }

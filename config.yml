@@ -15,7 +15,7 @@ genesis:
         bond_denom: uqsr
     orion:
       params:
-        enabled: true
+        enabled: false
         lp_epoch_id: day #override day for testing
         mgmt_fee_per: '0.003000000000000000'
         perf_fee_per: '0.020000000000000000'

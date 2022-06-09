@@ -9,6 +9,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+func (k Keeper) GetAvailableInterchainFund(ctx sdk.Context) sdk.Coins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AvailableInterchainFundKBP)
+	key := types.CreateInterchainFundKey()
+	b := store.Get(key)
+	var qcoins qbanktypes.QCoins
+	if b == nil {
+		return sdk.NewCoins()
+	} else {
+		k.cdc.MustUnmarshal(b, &qcoins)
+		return qcoins.Coins
+	}
+}
+
 // AddAvailableInterchainFund to be called -
 // 1. on receiving positive ack on ibc token transfer.
 // 2. on receiving negative ack or timeout from join pool. (revert the state)

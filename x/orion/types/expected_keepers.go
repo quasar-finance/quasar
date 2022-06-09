@@ -55,7 +55,7 @@ type QoracleKeeper interface {
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
-
+	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
 	Send(ctx sdk.Context,
 		coin sdk.Coin,
 		destinationChain string,

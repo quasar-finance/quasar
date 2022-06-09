@@ -20,6 +20,9 @@ func (k Keeper) HandleAckIbcTransfer(
 	ex intergammtypes.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *intergammtypes.MsgEmptyIbcResponse],
 ) error {
 	k.Logger(ctx).Info("HandleAckIbcTransfer hook called", "error", ex.Error, "seq", ex.Sequence)
+
+	k.OnIBCTokenTransferAck(ctx, ex.Sequence, ex.Error)
+
 	return nil
 }
 

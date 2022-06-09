@@ -137,6 +137,13 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	sender sdk.AccAddress,
 	receiver string,
 	coin sdk.Coin) (uint64, error) {
+	logger := k.Logger(ctx)
+	logger.Info("SendToken",
+		"destinationChain", destinationChain,
+		"sender", sender,
+		"receiver", receiver,
+		"coin", coin,
+	)
 
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
@@ -160,7 +167,9 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		if !ok {
 			return 0, sdkerrors.Wrap(ibctransfertypes.ErrTraceNotFound, hexHash)
 		}
-
+		logger.Info("SendToken",
+			"denomTrace", denomTrace,
+		)
 		// TODO - Automated mapping from base denom, and destination chain to <port, channel, connection, middle address>
 		// to be determined. Either using some config or other ways.
 		// NOTE - Automated Routing PR for intergamm is in progress.

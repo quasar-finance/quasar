@@ -5,19 +5,33 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
+	return k.intergammKeeper.IsICARegistered(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
+}
+
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	// TODO get epoch identifier from params
 	// TODO review error handling of this function
 	logger := k.Logger(ctx)
 	var err error
-
+	var icaFound bool
+	var addr string
 	// For testing purposes - Param should be used then.
 	// Send tokens to destination chain.
-	if epochIdentifier == "minute" {
+	if epochIdentifier == "minute" { // TODO - config ibc transfer epoch identifier.
 
 		if !k.Enabled(ctx) {
 			return
 		}
+
+		addr, icaFound = k.IsOrionICACreated(ctx)
+		if !icaFound {
+			k.intergammKeeper.RegisterInterchainAccount(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
+		} else {
+			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
+		}
+
+		logger.Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
 
 		// ei := k.epochsKeeper.GetEpochInfo(ctx, "day")
 		ei := k.epochsKeeper.GetEpochInfo(ctx, k.LpEpochId(ctx))
@@ -44,7 +58,9 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				"err", err,
 				"coin", c,
 			)
-			k.SetIBCTokenTransferRecord(ctx, seqNo, c)
+			logger.Info("AfterEpochEnd 2", "available fund", k.GetAvailableInterchainFund(ctx))
+
+			// k.SetIBCTokenTransferRecord(ctx, seqNo, c)
 		}
 
 	}
@@ -54,7 +70,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			"number", epochNumber,
 			"blockheight", ctx.BlockHeight())
 
-		if k.Enabled(ctx) {
+		if k.Enabled(ctx) && icaFound {
 			// Logic :
 			// 1. Get the list of meissa strategies registered.
 			// 2. Join Pool Logic - Iteratively Execute the strategy code for each meissa sub strategy registered.

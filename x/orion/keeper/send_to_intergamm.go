@@ -47,7 +47,7 @@ func (k Keeper) getConnectionId(chainid string) string {
 	// TO cosmoshub - connection-0
 	// connection could also be self determined by integamm. It should be a param in intergamm
 	// But as orion has intergamm keeper access; it can get it from intergamm
-	return "connection-0"
+	return "connection-1"
 }
 
 // Intergamm module method wrappers
@@ -136,17 +136,24 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	)
 	destAccStr := k.getDestinationAccStr()
 	owner := k.getOwnerAcc()
-	return k.intergammKeeper.SendToken(ctx, "osmosis", owner, destAccStr, coin)
+	seqNo, err := k.intergammKeeper.SendToken(ctx, "osmosis", owner, destAccStr, coin)
+	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
+		Destination: "osmosis",
+		Sender:      k.getOwnerAccStr(),
+		Receiver:    destAccStr,
+		StartTime:   time.Now().UTC(),
+		EpochDay:    uint64(k.epochsKeeper.GetEpochInfo(ctx, "day").CurrentEpoch),
+		Coin:        coin,
+	}
 
-	// k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
+	k.SetIBCTokenTransferRecord(ctx, ibcTransferRecord)
+	return seqNo, err
 }
 
-// It should also have State Tx logic.
-// Value can be more elegant struct here.
-func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64, coin sdk.Coin) {
+func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, ibcTokenTransfer types.IbcTokenTransfer) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
-	key := types.CreateSeqKey(seqNo)
-	value := k.cdc.MustMarshal(&coin)
+	key := types.CreateSeqKey(ibcTokenTransfer.SeqNo)
+	value := k.cdc.MustMarshal(&ibcTokenTransfer)
 	store.Set(key, value)
 }
 
@@ -157,15 +164,17 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	key := types.CreateSeqKey(seqNo)
 	store.Delete(key)
 }
-func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin sdk.Coin, found bool) {
+
+// func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin sdk.Coin, found bool) {
+func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (ibokenTransfer types.IbcTokenTransfer, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
 	key := types.CreateSeqKey(seqNo)
 	b := store.Get(key)
 	if b == nil {
-		return coin, false
+		return ibokenTransfer, false
 	}
-	k.cdc.MustUnmarshal(b, &coin)
-	return coin, true
+	k.cdc.MustUnmarshal(b, &ibokenTransfer)
+	return ibokenTransfer, true
 }
 
 func (k Keeper) GetTotalEpochTransffered(ctx sdk.Context, epochNumber uint64) sdk.Coins {

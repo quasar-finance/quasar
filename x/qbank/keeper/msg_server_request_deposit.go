@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	osmolptypes "github.com/abag/quasarnode/x/orion/types"
+	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -37,6 +37,16 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 
 	dollarDepositValue := coin.Amount.ToDec().Mul(stablePrice)
 	if dollarDepositValue.LT(minDollarDepositValue) {
+		k.Logger(ctx).Info(
+			"RequestDeposit FAIL",
+			"Depositor", depositor,
+			"Coin", coin.String(),
+			"LockupPeriod", lockupPeriod.String(),
+			"Epoch", currentEpoch,
+			"stablePrice", stablePrice,
+			"minDollarDepositValue", minDollarDepositValue,
+			"dollarDepositValue", dollarDepositValue,
+		)
 		return nil, types.ErrInsufficientDollarDepositValue
 	}
 
@@ -44,7 +54,8 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 	err = k.bankKeeper.SendCoinsFromAccountToModule(
 		ctx,
 		depositorAddr,
-		osmolptypes.CreateOrionStakingMaccName(lockupPeriod),
+		oriontypes.ModuleName,
+		//osmolptypes.CreateOrionStakingMaccName(lockupPeriod),
 		sdk.NewCoins(coin),
 	)
 	if err != nil {
