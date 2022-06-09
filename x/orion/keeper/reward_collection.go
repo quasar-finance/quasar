@@ -120,7 +120,7 @@ func CalculateActualRewardForEachDenom(netRewards sdk.Coins, weights map[string]
 	for _, w := range weights {
 		sumWeights = sumWeights.Add(w)
 	}
-	if sumWeights.GT(sdk.NewDec(1)) {
+	if sumWeights.GT(sdk.OneDec()) {
 		return nil, errors.New("error: sum of weights should not be greater than 1")
 	}
 	denomActualReward := make(map[string]sdk.Coins)

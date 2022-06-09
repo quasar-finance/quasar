@@ -97,13 +97,12 @@ func (k Keeper) ClaimAll(ctx sdk.Context, uid, vaultID string) {
 
 // GetAllClaimableRewards returns a list of all claimable tokens done so far for each users.
 func (k Keeper) GetAllClaimableRewards(ctx sdk.Context) []types.UserBalanceInfo {
-	bytePrefix := types.UserClaimKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight, "bytePrefix", string(bytePrefix))
+	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight)
 
 	var totalClaimableRewards []types.UserBalanceInfo
 
@@ -169,13 +168,12 @@ func (k Keeper) AddUserClaimedRewards(ctx sdk.Context, uid, vaultID string, coin
 
 // GetAllTotalClaimedRewards returns a list of all total withdraw tokens done so far for each users.
 func (k Keeper) GetAllTotalClaimedRewards(ctx sdk.Context) []types.UserBalanceInfo {
-	bytePrefix := types.UserClaimedKBP
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, bytePrefix)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UserClaimedKBP)
+	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
 
 	logger := k.Logger(ctx)
-	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight, "bytePrefix", string(bytePrefix))
+	logger.Debug("Method", "GetAllClaimableRewards", "blockheight", ctx.BlockHeight)
 
 	var totalClaimedRewards []types.UserBalanceInfo
 

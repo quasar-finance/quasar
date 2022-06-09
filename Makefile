@@ -28,7 +28,7 @@ $(BUILD_DIR)/quasarnoded: mkdirs
 
 # Testing
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 
 mocks: mkdirs
 	mockgen -package=mock -destination=./testutil/mock/ibc_channel_mocks.go $(GOMOD)/x/intergamm/types ChannelKeeper

@@ -14,17 +14,17 @@ func samplePoolFile1() string {
 {
 	"address": "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t",
 	"id": 1,
-	"poolParams": {
+	"pool_params": {
 		"swapFee": "0.003000000000000000",
 		"exitFee": "0.000000000000000000",
 		"smoothWeightChangeParams": null
 	},
 	"future_pool_governor": "24h",
-	"totalShares": {
+	"total_shares": {
 		"denom": "gamm/pool/1",
 		"amount": "401669780697469189120477614"
 	},
-	"poolAssets": [
+	"pool_assets": [
 		{
 			"token": {
 				"denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
@@ -40,7 +40,7 @@ func samplePoolFile1() string {
 			"weight": "536870912000000"
 		}
 	],
-	"totalWeight": "1073741824000000"
+	"total_weight": "1073741824000000"
 }
 `
 }
@@ -60,18 +60,14 @@ func TestParseBalancerPoolFile(t *testing.T) {
 
 	// ok json
 	pool, err := parseBalancerPoolFile(okJSON.Name())
-	require.Nil(t, err, "unexpected error")
-	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.GetAddress())
+	require.NoError(t, err, "unexpected error")
+	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.GetAddress().String())
 	require.Equal(t, uint64(1), pool.GetId())
-	swapFee, err := sdk.NewDecFromStr("0.003000000000000000")
-	require.Nil(t, err, "unexpected error")
-	require.Equal(t, swapFee, pool.GetPoolParams().SwapFee)
-	exitFee, err := sdk.NewDecFromStr("0.000000000000000000")
-	require.Nil(t, err, "unexpected error")
-	require.Equal(t, exitFee, pool.GetPoolParams().ExitFee)
+	require.Equal(t, sdk.MustNewDecFromStr("0.003000000000000000"), pool.GetPoolParams().SwapFee)
+	require.Equal(t, sdk.MustNewDecFromStr("0.000000000000000000"), pool.GetPoolParams().ExitFee)
 
 	err = okJSON.Close()
-	require.Nil(t, err, "unexpected error")
+	require.NoError(t, err, "unexpected error")
 	err = badJSON.Close()
-	require.Nil(t, err, "unexpected error")
+	require.NoError(t, err, "unexpected error")
 }

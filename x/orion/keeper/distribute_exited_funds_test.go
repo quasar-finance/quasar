@@ -286,7 +286,7 @@ func TestCalculateUserCoinsAndFees(t *testing.T) {
 			depositorWeight:          sdk.NewDecWithPrec(1, 1),
 			availableCoins:           sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(1000))),
 			orionsMintedForEachDenom: make(map[string]sdk.Coin),
-			mgmtFeePercentage:        sdk.NewDec(0),
+			mgmtFeePercentage:        sdk.ZeroDec(),
 			userCoins:                sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
 			mgmtFees:                 sdk.NewCoins(),
 		},
