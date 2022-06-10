@@ -22,9 +22,6 @@ func ValidateUserSpecifiedWeight(weight sdk.Int) error {
 		return sdkerrors.Wrap(gammtypes.ErrNotPositiveWeight, weight.String())
 	}
 
-	if weight.GTE(MaxUserSpecifiedWeight) {
-		return sdkerrors.Wrap(gammtypes.ErrWeightTooLarge, weight.String())
-	}
 	return nil
 }
 
