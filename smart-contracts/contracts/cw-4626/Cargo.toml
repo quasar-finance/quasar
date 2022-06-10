@@ -1,13 +1,13 @@
 [package]
 name = "cw4626"
-version = "0.13.2"
-authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
-edition = "2018"
-description = "Basic implementation of a CosmWasm-20 compliant token"
+version = "0.13.4"
+authors = ["Laurens Kubat <Laurens@Quasar.fi>"]
+edition = "2021"
+description = "Basic implementation of the Quasar vault"
 license = "Apache-2.0"
-repository = "https://github.com/CosmWasm/cw-plus"
-homepage = "https://cosmwasm.com"
-documentation = "https://docs.cosmwasm.com"
+repository = "https://github.com/quasar-finance/quasar"
+homepage = "https://www.quasar.fi/"
+documentation = ""
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -18,15 +18,17 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cw-utils = "0.13.2"
-cw2 = "0.13.2"
-cw20 = "0.13.2"
-cw-storage-plus = "0.13.2"
+cw-utils = "0.13.4"
+cw2 = "0.13.4"
+cw20 = "0.13.4"
+cw20-base = { version = "0.13.4", features = ["library"]}
+cw-storage-plus = "0.13.4"
 cosmwasm-std = { version = "1.0.0-beta8" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.23" }
 quasar-traits = { path = "../../packages/quasar-traits" }
+quasar-types = { path = "../../packages/quasar-types"}
 share-distributor = { path = "../../packages/share-distributor"}
 
 [dev-dependencies]
