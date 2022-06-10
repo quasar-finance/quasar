@@ -8,6 +8,7 @@ import (
 	"github.com/abag/quasarnode/cmd/quasarnoded/cmd"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	// "github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 )
@@ -21,7 +22,6 @@ func main() {
 		app.ModuleBasics,
 		app.New,
 		cosmoscmd.AddSubCmd(cmd.TestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{})),
-		cosmoscmd.AddSubCmd(cmd.PrepareGenesisCmd(app.DefaultNodeHome, app.ModuleBasics)),
 		// this line is used by starport scaffolding # root/arguments
 	)
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {

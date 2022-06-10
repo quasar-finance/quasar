@@ -5,22 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -32,74 +25,6 @@ import (
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 )
-
-func PrepareGenesisCmd(defaultNodeHome string, mbm module.BasicManager) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "prepare-genesis",
-		Short: "Prepare a genesis file with initial setup",
-		Long: `Prepare a genesis file with initial setup.
-Examples include:
-	- Setting module initial params
-	- Setting denom metadata
-Example:
-	quasarnoded prepare-genesis mainnet quasar-1
-	- Check input genesis:
-		file is at ~/.quasarnoded/config/genesis.json
-`,
-		Args: cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			depCdc := clientCtx.Codec
-			cdc := depCdc
-			serverCtx := server.GetServerContextFromCmd(cmd)
-			config := serverCtx.Config
-
-			// read genesis file
-			genFile := config.GenesisFile()
-			appState, genDoc, err := genutiltypes.GenesisStateFromGenFile(genFile)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal genesis state: %w", err)
-			}
-
-			// get genesis params
-			var genesisParams GenesisParams
-			network := args[0]
-			if network == "testnet" {
-				genesisParams = TestnetGenesisParams()
-			} else if network == "mainnet" {
-				genesisParams = MainnetGenesisParams()
-			} else {
-				return fmt.Errorf("please choose 'mainnet' or 'testnet'")
-			}
-
-			// get genesis params
-			chainID := args[1]
-
-			// run Prepare Genesis
-			appState, genDoc, _ = PrepareGenesis(clientCtx, appState, genDoc, genesisParams, chainID)
-
-			// validate genesis state
-			if err = mbm.ValidateGenesis(cdc, clientCtx.TxConfig, appState); err != nil {
-				return fmt.Errorf("error validating genesis file: %s", err.Error())
-			}
-
-			// save genesis
-			appStateJSON, err := json.Marshal(appState)
-			if err != nil {
-				return fmt.Errorf("failed to marshal application genesis state: %w", err)
-			}
-
-			genDoc.AppState = appStateJSON
-			err = genutil.ExportGenesisFile(genDoc, genFile)
-			return err
-		},
-	}
-
-	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
 
 func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessage, genDoc *tmtypes.GenesisDoc, genesisParams GenesisParams, chainID string) (map[string]json.RawMessage, *tmtypes.GenesisDoc, error) {
 	depCdc := clientCtx.Codec

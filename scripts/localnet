@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+this_dir="${project_dir}/scripts"
+this_script="${this_dir}/$(basename "${0}")"
+run_dir="${project_dir}/run/localnet"
+
+fail() {
+  echo "$*"
+  false
+}
+
+cmd_exists() {
+  type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
+}
+
+env_subst() {
+  python -c '
+import os, sys
+data = sys.stdin.read(65536)
+for v in os.environ:
+  data = data.replace("$%s" % v, os.environ[v])
+  data = data.replace("${%s}" % v, os.environ[v])
+sys.stdout.write(data) ; sys.stdout.flush()
+'
+}
+
+gen_config() {
+  "${project_dir}/build/quasarnoded" testnet -n 4 -o "$run_dir"
+}
+
+"$@"
