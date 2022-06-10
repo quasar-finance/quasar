@@ -1,63 +1,36 @@
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::marker::PhantomData;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
-use cosmwasm_std::{Addr, Order, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Uint128};
+use cw_storage_plus::{Item, Map};
 use quasar_traits::traits::ShareDistributor;
-use cw_storage_plus::{Bound, Item, Map};
 
-use cw20::{AllowanceResponse, Balance, Cw20Coin, Logo, MarketingInfoResponse};
 use serde::de::DeserializeOwned;
 use share_distributor::single_token::SingleToken;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct TokenInfo {
-    pub name: String,
-    pub symbol: String,
-    pub decimals: u8,
-    pub total_supply: Uint128,
-    pub mint: Option<MinterData>,
-}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct VaultInfo {
-    pub vault_whitelist: Vec<Addr>,
+    // reserve_denom is the denomination accepted by this vault. If the accepted token should be
+    // a cw20-token, one should wrap the token using the tokenfactory and the wrapping contract
+    pub reserve_denom: String,
+    // total_supply is the total supply of shares this contract
+    pub total_supply: Uint128
 }
 
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct MinterData {
-    pub minter: Addr,
-    /// cap is how many more tokens can be issued by the minter
-    pub cap: Option<Uint128>,
-}
-
-impl TokenInfo {
-    pub fn get_cap(&self) -> Option<Uint128> {
-        self.mint.as_ref().and_then(|v| v.cap)
-    }
-}
 
 // we wrap our generic share distributor trait in a struct. This way, people writing their own
 // distributor either do some large changes, or implement their own version of the ShareDistributor
 // trait and get all the "code hints" we leave along the way
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct Distributor<T: ShareDistributor +  Clone + PartialEq + JsonSchema + Debug>
-{
+pub struct Distributor<T: ShareDistributor + Clone + PartialEq + JsonSchema + Debug> {
     pub dist: T,
 }
 
-pub const TOKEN_INFO: Item<TokenInfo> = Item::new("token_info");
 pub const VAULT_INFO: Item<VaultInfo> = Item::new("vault_info");
+pub const OUTSTANDING_SHARES: Map<String, Uint128> = Map::new("outstanding_shares");
 pub const VAULT_DISTRIBUTOR: Item<Distributor<SingleToken>> = Item::new("vault_distributor");
-// TODO change this to accept native tokens
-pub const VAULT_BALANCES: Map<&Addr, String> = Map::new("vault_balances");
-pub const MARKETING_INFO: Item<MarketingInfoResponse> = Item::new("marketing_info");
-pub const LOGO: Item<Logo> = Item::new("logo");
-pub const BALANCES: Map<&Addr, Uint128> = Map::new("balance");
-pub const ALLOWANCES: Map<(&Addr, &Addr), AllowanceResponse> = Map::new("allowance");
+pub const VAULT_RESERVES: Map<&Addr, String> = Map::new("vault_balances");

@@ -1,9 +1,8 @@
-use cosmwasm_std::{Addr, Binary, StdError, StdResult, Uint128, Uint256};
-use cw20::{Cw20Coin, Logo, MinterResponse};
+use cosmwasm_std::{ Binary, StdError, StdResult, Uint128, Uint256};
+use cw20::{ Cw20Coin, Logo, MinterResponse};
+use cw_utils::Expiration;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cw_utils::Expiration;
-
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMarketingInfo {
@@ -17,8 +16,10 @@ pub struct InstantiateMarketingInfo {
 pub struct InstantiateMsg {
     pub name: String,
     pub symbol: String,
-    // the list of tokens accepted by the contract
-    pub whitelisted_tokens: Vec<Addr>,
+    // the list of tokens accepted by the contract, we require tokens to be
+    pub reserve_denom: String,
+    // the total amount of tokens that put in the reserve
+    pub reserve_total_supply: Uint128,
     pub decimals: u8,
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
@@ -42,8 +43,8 @@ impl InstantiateMsg {
                 "Ticker symbol is not in expected format [a-zA-Z\\-]{3,12}",
             ));
         }
-        if self.whitelisted_tokens.is_empty() {
-            return Err(StdError::generic_err("No whitelisted tokens"));
+        if self.reserve_denom.is_empty() {
+            return Err(StdError::generic_err("No reserve denom"));
         }
         if self.decimals > 18 {
             return Err(StdError::generic_err("Decimals must not exceed 18"));
@@ -78,7 +79,7 @@ fn is_valid_symbol(symbol: &str) -> bool {
 pub enum QueryMsg {
     /// Returns the address of the vaults underlying token
     /// Return type: TODO
-    Asset { },
+    Asset {},
     /// Returns the total amount of underlying assets that is managed by the vault
     /// Return type: TODO
     TotalAssets {},
@@ -87,22 +88,22 @@ pub enum QueryMsg {
     Balance { address: String },
     /// Returns the amount of shares the vault would exchange for the underlying asset, in the ideal scenario
     /// Return type: TODO
-    ConvertToShares{ assets: Vec<Cw20Coin>},
+    ConvertToShares { assets: Vec<Cw20Coin> },
     /// Returns the amount of assets the vault would exchange for the amount of shares, in the ideal scenario
     /// Return type: ConvertToSharesResponse
-    ConvertToAssets{ shares: Uint256},
+    ConvertToAssets { shares: Uint256 },
     /// Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver, through a deposit call.
     /// Return type: TODO
-    MaxDeposit{ receiver: String },
+    MaxDeposit { receiver: String },
     /// Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given current on-chain conditions.
     /// Return type: TODO
-    PreviewDeposit{ assets: Uint256},
+    PreviewDeposit { assets: Uint256 },
     /// Return the maximum amount of shares that can be minted from the vault for the receiver, through a mint call
     /// Return type: TODO
-    MaxMint{ receiver: String },
+    MaxMint { receiver: String },
     /// Allows an on-chain or off-chain user to simulate the effects of their mint at the current block, given current on-chain conditions.
     /// Return type: TODO
-    PreviewMint{ shares: Uint256},
+    PreviewMint { shares: Uint256 },
     /// Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the Vault, through a withdraw call.
     /// Return type: TODO
     MaxWithdraw { owner: String },
@@ -110,9 +111,9 @@ pub enum QueryMsg {
     /// Return type: TODO
     PreviewWithdraw { assets: Uint256 },
     /// Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault, through a redeem call.
-    MaxRedeem{ owner: String },
+    MaxRedeem { owner: String },
     /// Allows an on-chain or off-chain user to simulate the effects of their redeemption at the current block, given current on-chain conditions.
-    PreviewRedeem{ shares: Uint256 },
+    PreviewRedeem { shares: Uint256 },
     /// Returns metadata on the contract - name, decimals, supply, etc.
     /// Return type: TokenInfoResponse.
     TokenInfo {},
@@ -156,23 +157,37 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ConvertToSharesResponse {
-    pub amount: Uint128
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct VaultInfoResponse {
-    pub vault_whitelist: Vec<Addr>,
+    pub reserve_denom: String,
+    pub total_supply: Uint128,
 }
 
 // we give our own ExecuteMsg instead of the cw-20 executeMsg so we can easily extend it
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Deposits assets and mints shares
+    Deposit {},
+    /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
+    Withdraw {
+        owner: String,
+    },
+
+    //cw20-base messages
     /// Transfer is a base message to move tokens to another account without triggering actions
-    Transfer { recipient: String, amount: Uint128 },
+    Transfer {
+        recipient: String,
+        amount: Uint128,
+    },
     /// Burn is a base message to destroy tokens forever
-    Burn { amount: Uint128 },
+    Burn {
+        amount: Uint128,
+    },
     /// Send is a base message to transfer tokens to a contract and trigger an action
     /// on the receiving contract.
     Send {
@@ -182,7 +197,8 @@ pub enum ExecuteMsg {
     },
     /// Receive is a base message to receive tokens from another contract and trigger an action on
     /// this contract. the address of the contract is stored in env.sender. Sender should match the
-    /// contract we expect to handle. Sender is the original account moving the tokens.
+    /// contract we expect to handle. Sender is the original account moving the tokens. The vault
+    /// needs to support sender if we expect people to be able to move their shares out of the vault.
     Receive {
         sender: String,
         amount: Uint128,
@@ -220,17 +236,16 @@ pub enum ExecuteMsg {
         msg: Binary,
     },
     /// Only with "approval" extension. Destroys tokens forever
-    BurnFrom { owner: String, amount: Uint128 },
+    BurnFrom {
+        owner: String,
+        amount: Uint128,
+    },
     /// Only with the "mintable" extension. If authorized, creates amount new tokens
     /// and adds to the recipient balance.
-    Mint { recipient: String, amount: Uint128 },
-    // TODO add message fields once we decide on the token approach
-    Deposit {},
-    // TODO add message fields once we decide on the token approach
-    /// Mints exactly shares Vault shares to receiver by depositing amount of underlying tokens.
-    MintShares {},
-    /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
-    Withdraw {},
+    Mint {
+        recipient: String,
+        amount: Uint128,
+    },
     /// Only with the "marketing" extension. If authorized, updates marketing metadata.
     /// Setting None/null for any of these will leave it unchanged.
     /// Setting Some("") will clear this field on the contract storage
