@@ -520,6 +520,7 @@ func New(
 		scopedQoracleKeeper,
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
+	qoracleIBCModule := qoraclemodule.NewIBCModule(app.QoracleKeeper)
 
 	qbankkeeper := qbankmodulekeeper.NewKeeper(
 		appCodec,
@@ -684,7 +685,8 @@ func New(
 		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
-		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule)
+		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
+		AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	/****  Module Options ****/

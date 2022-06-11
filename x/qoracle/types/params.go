@@ -12,12 +12,12 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyBandchainIBCParams = []byte("BandchainIBCParams")
-	KeyOracleAccounts     = []byte("OracleAccounts")
-	KeyStableDenoms       = []byte("stableDenoms")
-	KeyOneHopDenomMap     = []byte("oneHopDenomMap")
+	KeyBandchainParams = []byte("BandchainParams")
+	KeyOracleAccounts  = []byte("OracleAccounts")
+	KeyStableDenoms    = []byte("stableDenoms")
+	KeyOneHopDenomMap  = []byte("oneHopDenomMap")
 	// TODO: Determine the default value
-	DefaultBandchainIBCParams = BandchainIBCParams{
+	DefaultBandchainParams = BandchainParams{
 		OraclePortId:     "oracle",
 		OracleIBCVersion: "bandchain-1",
 		ChannelId:        "",
@@ -37,23 +37,23 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	bandchainIBCParams BandchainIBCParams,
+	bandchainParams BandchainParams,
 	oracleAccounts string,
 	stableDenoms []string,
 	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
-		BandchainIBCParams: bandchainIBCParams,
-		OracleAccounts:     oracleAccounts,
-		StableDenoms:       stableDenoms, // AUDIT slice copy
-		OneHopDenomMap:     onehopDenoms,
+		BandchainParams: bandchainParams,
+		OracleAccounts:  oracleAccounts,
+		StableDenoms:    stableDenoms, // AUDIT slice copy
+		OneHopDenomMap:  onehopDenoms,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		DefaultBandchainIBCParams,
+		DefaultBandchainParams,
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
 		DefaultOneHopDenomMap,
@@ -63,7 +63,7 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyBandchainIBCParams, &p.BandchainIBCParams, validateBandchainIBCParams),
+		paramtypes.NewParamSetPair(KeyBandchainParams, &p.BandchainParams, validateBandchainParams),
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
@@ -72,7 +72,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateBandchainIBCParams(p.BandchainIBCParams); err != nil {
+	if err := validateBandchainParams(p.BandchainParams); err != nil {
 		return err
 	}
 
@@ -96,8 +96,8 @@ func (p Params) String() string {
 	return string(out)
 }
 
-func validateBandchainIBCParams(v interface{}) error {
-	params, ok := v.(BandchainIBCParams)
+func validateBandchainParams(v interface{}) error {
+	params, ok := v.(BandchainParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}

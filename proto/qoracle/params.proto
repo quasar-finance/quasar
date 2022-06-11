@@ -14,7 +14,7 @@ message OneHopIbcDenomMapping {
   // Representation in the other chains can be added in the future.
 }
 
-message BandchainIBCParams {
+message BandchainParams {
   string oracle_port_id = 1 [(gogoproto.moretags) = "yaml:\"oracle_port_id\""]; // ID of the oracle module's port
   string oracle_ibc_version = 2 
   [(gogoproto.moretags) = "yaml:\"oracle_ibc_version\"", (gogoproto.customname) = "OracleIBCVersion"]; // Version of oracle module that we gonna negotiate at opening a new ibc channel
@@ -25,7 +25,7 @@ message BandchainIBCParams {
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  BandchainIBCParams bandchain_ibc_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_ibc_params\"", (gogoproto.nullable) = false, (gogoproto.customname) = "BandchainIBCParams"];
+  BandchainParams bandchain_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_params\"", (gogoproto.nullable) = false];
   string oracleAccounts = 2 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
   repeated  string stableDenoms = 3 [(gogoproto.moretags) = "yaml:\"stable_denoms\""];
   repeated OneHopIbcDenomMapping oneHopDenomMap = 4 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];

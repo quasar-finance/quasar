@@ -8,7 +8,7 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.BandchainIBCParams(ctx),
+		k.BandchainParams(ctx),
 		k.OracleAccounts(ctx),
 		k.StableDenoms(ctx),
 		k.OneHopDenomMap(ctx),
@@ -21,8 +21,8 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // BandchainIBCParams returns the BandchainIBCParams param
-func (k Keeper) BandchainIBCParams(ctx sdk.Context) (res types.BandchainIBCParams) {
-	k.paramstore.Get(ctx, types.KeyBandchainIBCParams, &res)
+func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
+	k.paramstore.Get(ctx, types.KeyBandchainParams, &res)
 	return
 }
 
