@@ -1,19 +1,27 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"gopkg.in/yaml.v2"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyOracleAccounts = []byte("OracleAccounts")
-	KeyStableDenoms   = []byte("stableDenoms")
-	KeyOneHopDenomMap = []byte("oneHopDenomMap")
+	KeyBandchainIBCParams = []byte("BandchainIBCParams")
+	KeyOracleAccounts     = []byte("OracleAccounts")
+	KeyStableDenoms       = []byte("stableDenoms")
+	KeyOneHopDenomMap     = []byte("oneHopDenomMap")
 	// TODO: Determine the default value
+	DefaultBandchainIBCParams = BandchainIBCParams{
+		OraclePortId:     "oracle",
+		OracleIBCVersion: "bandchain-1",
+		ChannelId:        "",
+	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
 	denom1                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
@@ -29,20 +37,23 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
+	bandchainIBCParams BandchainIBCParams,
 	oracleAccounts string,
 	stableDenoms []string,
 	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
-		OracleAccounts: oracleAccounts,
-		StableDenoms:   stableDenoms, // AUDIT slice copy
-		OneHopDenomMap: onehopDenoms,
+		BandchainIBCParams: bandchainIBCParams,
+		OracleAccounts:     oracleAccounts,
+		StableDenoms:       stableDenoms, // AUDIT slice copy
+		OneHopDenomMap:     onehopDenoms,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
+		DefaultBandchainIBCParams,
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
 		DefaultOneHopDenomMap,
@@ -52,6 +63,7 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
+		paramtypes.NewParamSetPair(KeyBandchainIBCParams, &p.BandchainIBCParams, validateBandchainIBCParams),
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
@@ -60,6 +72,10 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
+	if err := validateBandchainIBCParams(p.BandchainIBCParams); err != nil {
+		return err
+	}
+
 	if err := validateOracleAccounts(p.OracleAccounts); err != nil {
 		return err
 	}
@@ -78,6 +94,32 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
+}
+
+func validateBandchainIBCParams(v interface{}) error {
+	params, ok := v.(BandchainIBCParams)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	err := host.PortIdentifierValidator(params.OraclePortId)
+	if err != nil {
+		return err
+	}
+
+	if params.OracleIBCVersion == "" {
+		return errors.New("oracle IBC version cannot be empty")
+	}
+
+	// Only validate channel id if it's set
+	if params.ChannelId != "" {
+		err = host.ChannelIdentifierValidator(params.ChannelId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // validateOracleAccounts validates the OracleAccounts param
