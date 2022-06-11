@@ -12,6 +12,7 @@ import (
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -59,6 +60,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
 	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
+	ics4WrapperMock := mock.NewMockICS4Wrapper(ctl)
+	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
 
 	// Keepers
 
@@ -74,7 +77,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper)
+	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
+	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)

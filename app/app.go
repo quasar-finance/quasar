@@ -296,7 +296,8 @@ type App struct {
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
-	scopedWasmKeeper          capabilitykeeper.ScopedKeeper
+	scopedQoracleKeeper       capabilitykeeper.ScopedKeeper
+	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
 	EpochsKeeper  *epochsmodulekeeper.Keeper
 	QbankKeeper   qbankmodulekeeper.Keeper
@@ -389,6 +390,7 @@ func New(
 	scopedIntergammKeeper := app.CapabilityKeeper.ScopeToModule(intergammmoduletypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
+	scopedQoracleKeeper := app.CapabilityKeeper.ScopeToModule(qoraclemoduletypes.ModuleName)
 	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasm.ModuleName)
 
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
@@ -512,6 +514,10 @@ func New(
 		keys[qoraclemoduletypes.StoreKey],
 		keys[qoraclemoduletypes.MemStoreKey],
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedQoracleKeeper,
 	)
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -896,7 +902,8 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.scopedWasmKeeper = scopedWasmKeeper
+	app.ScopedWasmKeeper = scopedWasmKeeper
+	app.scopedQoracleKeeper = scopedQoracleKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 	app.ScopedIntergammKeeper = scopedIntergammKeeper

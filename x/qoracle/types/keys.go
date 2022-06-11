@@ -13,6 +13,9 @@ const (
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
 
+	// PortID is the default port id that qoracle module binds to
+	PortID = ModuleName
+
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_qoracle"
 )
@@ -31,6 +34,7 @@ var (
 	PoolAPYRankedKBP = []byte{0x03}
 	StablePriceKBP   = []byte{0x04}
 	PoolSpotPriceKBP = []byte{0x05}
+	PortKey          = []byte{0x06}
 )
 
 var SepByte = []byte("#")
