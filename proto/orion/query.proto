@@ -21,11 +21,12 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/orion/params";
   }
+  /*
   // Queries a list of ReserveBalance items.
 	rpc ReserveBalance(QueryReserveBalanceRequest) returns (QueryReserveBalanceResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/reserve_balance/{denom}";
 	}
- 
+ */
 // Queries a LpPosition by index.
 	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_position";
@@ -67,6 +68,7 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
+/*
 message QueryReserveBalanceRequest {
   string denom = 1;
 }
@@ -74,7 +76,8 @@ message QueryReserveBalanceRequest {
 message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
- 
+*/
+
 message QueryGetLpPositionRequest {
 	uint64 lpId = 1;
 }
