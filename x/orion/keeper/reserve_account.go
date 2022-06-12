@@ -52,3 +52,31 @@ func (k Keeper) SendCoinFromModuleToReserve(ctx sdk.Context, senderModule string
 func (k Keeper) SendCoinsFromModuleToReserve(ctx sdk.Context, senderModule string, amts sdk.Coins) error {
 	return k.BankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.OrionReserveMaccName, amts)
 }
+
+///////////////// Module Account ////////////////
+
+// getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
+func (k Keeper) GetOrionAcc() sdk.AccAddress {
+	return k.accountKeeper.GetModuleAddress(types.ModuleName)
+}
+
+// getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
+func (k Keeper) GetOrionAccStr() string {
+	// For initial testing use alice address -
+	// TODO AUDIT here (which return?)
+	//return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
+
+	accAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	accStr, err := sdk.Bech32ifyAddressBytes("quasar", accAddr)
+	if err != nil {
+		panic(err)
+	}
+	return accStr
+}
+
+// GetAllReserveBalances retrieve the balance of orion vault reserve as a slice of
+// sdk.Coin as sdk.Coins
+func (k Keeper) GetOrionAccBalances(ctx sdk.Context) sdk.Coins {
+	balances := k.BankKeeper.GetAllBalances(ctx, k.GetOrionAcc())
+	return balances
+}

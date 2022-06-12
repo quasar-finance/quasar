@@ -50,6 +50,11 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_epoch_pairs";
 	}
 
+// Queries a list of ListModuleAccounts items.
+	rpc ListModuleAccounts(QueryListModuleAccountsRequest) returns (QueryListModuleAccountsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/list_module_accounts";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -106,6 +111,13 @@ message QueryLpEpochPairsRequest {
 
 message QueryLpEpochPairsResponse {
   repeated LpEpochPair lpEpochPairs = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryListModuleAccountsRequest {
+}
+
+message QueryListModuleAccountsResponse {
+	repeated AccountInfo accInfo = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

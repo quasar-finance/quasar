@@ -71,8 +71,11 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 }
 
 func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) (uint64, error) {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
-		poolID, shareInAmount, tokenOutMins))
+
+	k.Logger(ctx).Info("Entered JoinPool",
+		"PoolID", poolID,
+		"shareInAmount", shareInAmount,
+		"tokenOutMins", tokenOutMins)
 
 	owner := k.getOwnerAccStr()
 	connectionId := k.getConnectionId("osmosis")
@@ -96,9 +99,9 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 	connectionId := k.getConnectionId("osmosis")
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	transferPort := "transfer"        // TODO - should be a param
-	transferChannel := "channel-1"    // TODO - should be a param
+	transferChannel := "channel-1"    // TODO - should be a param, osmosis -> hub
 	fwdTransferPort := "transfer"     // TODO - should be a param
-	fwdTransferChannel := "channel-1" // TODO - should be a param
+	fwdTransferChannel := "channel-0" // TODO - should be a param; hub->quasar
 	intermediateReceiver := k.getIntermediateReceiver()
 
 	_, err := k.intergammKeeper.TransmitForwardIbcTransfer(
@@ -165,7 +168,6 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	store.Delete(key)
 }
 
-// func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin sdk.Coin, found bool) {
 func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (ibokenTransfer types.IbcTokenTransfer, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
 	key := types.CreateSeqKey(seqNo)
