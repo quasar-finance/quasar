@@ -31,9 +31,6 @@ genesis:
           - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             onehop_quasar: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             origin_name: uatom
-          - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
-            onehop_quasar: uqsar
-            origin_name: uqsar
 #client:
 #  openapi:
 #    path: "docs/client/static/openapi/openapi.yml"

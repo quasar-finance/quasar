@@ -85,7 +85,7 @@ func (k Keeper) ProcessWithdrawable(ctx sdk.Context, keyPrefix []byte) {
 	logger.Info(fmt.Sprintf("Qbank ProcessWithdrawable|modulename=%s|blockheight=%d|keyPrefix=%s",
 		types.ModuleName, ctx.BlockHeight(), string(keyPrefix)))
 
-	// Key Example =499:Months_3:quasar1axasfth8yuuk50jqc37044nves9lht38yj5zrk:uqsar, Value = sdk.Coin
+	// Key Example =499:Months_3:quasar1axasfth8yuuk50jqc37044nves9lht38yj5zrk:uqsr, Value = sdk.Coin
 	for ; iter.Valid(); iter.Next() {
 
 		key, val := iter.Key(), iter.Value()

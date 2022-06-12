@@ -1,10 +1,10 @@
 accounts:
   - name: alice
     mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
-    coins: ["20000token", "200000000stake", "1000000000uqsar"]
+    coins: ["20000token", "200000000stake", "1000000000uqsr"]
   - name: bob
     mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
-    coins: ["10000token", "100000000stake", "1000000000uqsar"]
+    coins: ["10000token", "100000000stake", "1000000000uqsr"]
   - name: relayer_acc
     coins: ["1000000stake"]
     address: quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg
@@ -36,8 +36,8 @@ genesis:
             onehop_quasar: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             origin_name: uatom
           - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
-            onehop_quasar: uqsar
-            origin_name: uqsar
+            onehop_quasar: uqsr
+            origin_name: uqsr
 host:
   rpc: ":26659"
   p2p: ":26661"
@@ -54,4 +54,4 @@ host:
 #    path: "vue/src/store"
 faucet:
   name: bob
-  coins: ["5token", "100000stake", "10000uqsar"]
+  coins: ["5token", "100000stake", "10000uqsr"]

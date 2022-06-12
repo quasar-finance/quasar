@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
 	intergammkeeper "github.com/abag/quasarnode/x/intergamm/keeper"
 	"github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
+
 	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,6 +22,7 @@ func (kf KeeperFactory) OrionKeeper(
 	qbankKeeper qbankkeeper.Keeper,
 	qoracleKeeper qoraclekeeper.Keeper,
 	intergammKeeper *intergammkeeper.Keeper,
+	epochsKeeper epochskeeper.Keeper,
 ) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
@@ -38,6 +41,7 @@ func (kf KeeperFactory) OrionKeeper(
 		qbankKeeper,
 		qoracleKeeper,
 		intergammKeeper,
+		epochsKeeper,
 	)
 
 	return *k

@@ -39,7 +39,7 @@ To run a quasar command on a node while the testnet is running, use:
 
 For example:
 
-    make local-testnet-exec-quasar node=0 cmd='query bank total --denom=uqsar'
+    make local-testnet-exec-quasar node=0 cmd='query bank total --denom=uqsr'
 
 ### Quasar command on stopped testnet
 

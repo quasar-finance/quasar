@@ -1,15 +1,15 @@
 accounts:
   - name: alice
-    coins: ["1000token", "100000000stake", "1000000uqsar"]
+    coins: ["1000token", "100000000stake", "1000000uqsr"]
   - name: tellurian
-    coins: ["500token", "100000000stake", "1000000uqsar"]
+    coins: ["500token", "100000000stake", "1000000uqsr"]
 validator:
   name: alice
   staked: "100000000stake"
 faucet:
   host: ":4501"
   name: tellurian
-  coins: ["500000token", "100000000stake", "1000000uqsar"]
+  coins: ["500000token", "100000000stake", "1000000uqsr"]
 host:
   rpc: ":26659"
   p2p: ":26661"

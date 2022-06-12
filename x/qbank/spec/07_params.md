@@ -44,8 +44,8 @@ message WhiteListedDenomInOrion {
           },
           {
             "onehop_osmo": "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
-            "onehop_quasar": "uqsar",
-            "origin_name": "uqsar"
+            "onehop_quasar": "uqsr",
+            "origin_name": "uqsr"
           }
         ]
       }

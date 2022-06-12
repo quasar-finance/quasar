@@ -146,7 +146,7 @@ func validateWhiteListedDenomsInOrion(v interface{}) error {
 
 		ibcPrefix := ibctransfertypes.DenomPrefix + "/"
 
-		if d.OriginName == "uqsar" {
+		if d.OriginName == "uqsr" {
 			// d.OnehopQuasar is native token of quasar chain.
 			if d.OriginName != d.OnehopQuasar {
 				is_invalid_denom = true
