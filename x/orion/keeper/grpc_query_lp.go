@@ -47,3 +47,15 @@ func (k Keeper) LpStat(c context.Context, req *types.QueryGetLpStatRequest) (*ty
 	}
 	return &types.QueryGetLpStatResponse{LpStat: val}, nil
 }
+
+func (k Keeper) ListActiveLps(goCtx context.Context, req *types.QueryListActiveLpsRequest) (*types.QueryListActiveLpsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	currEpochDay := uint64(k.epochsKeeper.GetEpochInfo(ctx, k.LpEpochId(ctx)).CurrentEpoch)
+	lpIds := k.GetActiveLpIDList(ctx, currEpochDay)
+
+	return &types.QueryListActiveLpsResponse{LpIds: lpIds}, nil
+}

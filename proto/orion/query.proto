@@ -56,6 +56,11 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/orion/list_module_accounts";
 	}
 
+// Queries a list of ListActiveLps items.
+	rpc ListActiveLps(QueryListActiveLpsRequest) returns (QueryListActiveLpsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/list_active_lps";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -121,6 +126,13 @@ message QueryListModuleAccountsRequest {
 
 message QueryListModuleAccountsResponse {
 	repeated AccountInfo accInfo = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryListActiveLpsRequest {
+}
+
+message QueryListActiveLpsResponse {
+	repeated uint64 lpIds = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3
