@@ -18,9 +18,9 @@ var (
 	KeyOneHopDenomMap  = []byte("oneHopDenomMap")
 	// TODO: Determine the default value
 	DefaultBandchainParams = BandchainParams{
-		OraclePortId:     "oracle",
-		OracleIBCVersion: "bandchain-1",
-		ChannelId:        "",
+		OraclePortId:            "oracle",
+		OracleVersion:           "bandchain-1",
+		OracleActiveChannelPath: "",
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
@@ -107,14 +107,21 @@ func validateBandchainParams(v interface{}) error {
 		return err
 	}
 
-	if params.OracleIBCVersion == "" {
+	if params.OracleVersion == "" {
 		return errors.New("oracle IBC version cannot be empty")
 	}
 
 	// Only validate channel id if it's set
-	if params.ChannelId != "" {
-		err = host.ChannelIdentifierValidator(params.ChannelId)
+	if params.OracleActiveChannelPath != "" {
+		portId, channelId, err := host.ParseChannelPath(params.OracleActiveChannelPath)
 		if err != nil {
+			return err
+		}
+
+		if err = host.PortIdentifierValidator(portId); err != nil {
+			return err
+		}
+		if err = host.ChannelIdentifierValidator(channelId); err != nil {
 			return err
 		}
 	}

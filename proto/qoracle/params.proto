@@ -15,10 +15,9 @@ message OneHopIbcDenomMapping {
 }
 
 message BandchainParams {
-  string oracle_port_id = 1 [(gogoproto.moretags) = "yaml:\"oracle_port_id\""]; // ID of the oracle module's port
-  string oracle_ibc_version = 2 
-  [(gogoproto.moretags) = "yaml:\"oracle_ibc_version\"", (gogoproto.customname) = "OracleIBCVersion"]; // Version of oracle module that we gonna negotiate at opening a new ibc channel
-  string channel_id = 3 [(gogoproto.moretags) = "yaml:\"channel_id\""]; // Already active channel Id to bandchain oracle module
+  string oracle_port_id = 1 [(gogoproto.moretags) = "yaml:\"oracle_port_id\""]; // ID of the oracle module's port in which we accept new channels
+  string oracle_version = 2 [(gogoproto.moretags) = "yaml:\"oracle_version\""]; // Version of oracle module that we gonna negotiate at opening a new ibc channel
+  string oracle_active_channel_path = 3 [(gogoproto.moretags) = "yaml:\"oracle_active_channel_path\""]; // Channel path to bandchain oracle module we use to send requests
 }
 
 // Params defines the parameters for the module.
