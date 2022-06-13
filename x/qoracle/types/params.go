@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"gopkg.in/yaml.v2"
@@ -166,4 +167,17 @@ func validateOneHopDenomMaps(v interface{}) error {
 	_ = oneHopDenomMaps
 
 	return nil
+}
+
+func (p BandchainParams) CheckOracleActiveChannelPath() (string, string, error) {
+	if p.OracleActiveChannelPath == "" {
+		return "", "", sdkerrors.Wrapf(ErrNoActiveChannelPath, "bandchain oracle active channel path is not set")
+	}
+
+	portId, channelId, err := host.ParseChannelPath(p.OracleActiveChannelPath)
+	if err != nil {
+		return "", "", err
+	}
+
+	return portId, channelId, nil
 }

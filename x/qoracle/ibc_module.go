@@ -63,14 +63,14 @@ func (im IBCModule) validateChannelParams(
 
 	bandchainParams := im.keeper.BandchainParams(ctx)
 
-	switch counterparty.PortId {
+	switch counterparty.GetPortID() {
 	case bandchainParams.OraclePortId:
 		if version != bandchainParams.OracleVersion {
 			return sdkerrors.Wrapf(types.ErrInvalidCounterpartyVersion, "got %s, expected %s", version, bandchainParams.OracleVersion)
 		}
 	// TODO: Add other ports like icq, and ica once we merged intergamm with qoracle
 	default:
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid counterparty port: %s", counterparty.PortId)
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid counterparty port: %s", counterparty.GetPortID())
 	}
 
 	return nil
@@ -87,7 +87,7 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	return "", nil
+	return "", sdkerrors.Wrap(types.ErrInvalidChannelFlow, "channel handshake must be initiated by controller chain")
 }
 
 // OnChanOpenAck implements the IBCModule interface
@@ -137,8 +137,12 @@ func (im IBCModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	// TODO
-	return nil
+	resp, err := im.keeper.OnRecvPacket(ctx, packet)
+	if err != nil {
+		return types.NewErrorAcknowledgement(err)
+	}
+
+	return channeltypes.NewResultAcknowledgement(resp)
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface
@@ -148,8 +152,12 @@ func (im IBCModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	// TODO
-	return nil
+	var ack channeltypes.Acknowledgement
+	if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
+	}
+
+	return im.keeper.OnAcknowledgementPacket(ctx, packet, ack)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.

@@ -18,6 +18,7 @@ message BandchainParams {
   string oracle_port_id = 1 [(gogoproto.moretags) = "yaml:\"oracle_port_id\""]; // ID of the oracle module's port in which we accept new channels
   string oracle_version = 2 [(gogoproto.moretags) = "yaml:\"oracle_version\""]; // Version of oracle module that we gonna negotiate at opening a new ibc channel
   string oracle_active_channel_path = 3 [(gogoproto.moretags) = "yaml:\"oracle_active_channel_path\""]; // Channel path to bandchain oracle module we use to send requests
+  uint64 coin_rates_script_id = 4 [(gogoproto.moretags) = "yaml:\"coin_rates_script_id\""]; // Script ID of the coin rates script
 }
 
 // Params defines the parameters for the module.

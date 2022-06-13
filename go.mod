@@ -30,6 +30,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/bandprotocol/bandchain-packet v0.0.3
+
 require (
 	4d63.com/gochecknoglobals v0.1.0 // indirect
 	filippo.io/edwards25519 v1.0.0-beta.2 // indirect

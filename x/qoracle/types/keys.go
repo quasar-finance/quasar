@@ -18,6 +18,9 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_qoracle"
+
+	// CoinRatesClientIDKey is query request identifier
+	CoinRatesClientIDKey = "coin_rates_id"
 )
 
 func KeyPrefix(p string) []byte {
