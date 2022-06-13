@@ -356,11 +356,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "quasar-traits"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw20",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "cw20",
+ "quasar-traits",
  "schemars",
  "serde",
 ]
