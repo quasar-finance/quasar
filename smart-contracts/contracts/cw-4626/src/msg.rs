@@ -175,6 +175,7 @@ pub enum ExecuteMsg {
     Deposit {},
     /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
     Withdraw {
+        amount: Option<Uint128>,
         owner: String,
     },
 
