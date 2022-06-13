@@ -17,7 +17,7 @@ pub struct VaultInfo {
     // a cw20-token, one should wrap the token using the tokenfactory and the wrapping contract
     pub reserve_denom: String,
     // total_supply is the total supply of shares this contract
-    pub total_supply: Uint128
+    pub total_supply: Uint128,
 }
 
 

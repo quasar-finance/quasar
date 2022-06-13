@@ -20,7 +20,7 @@ use cw20_base::contract::{
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO, MARKETING_INFO, LOGO};
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
-
+use cw_utils::must_pay;
 
 
 use share_distributor::single_token::SingleToken;
@@ -177,8 +177,8 @@ pub fn execute(
         ExecuteMsg::Deposit { } => {
             execute_deposit(deps, env, info)
         }
-        ExecuteMsg::Withdraw { owner } => {
-            execute_sell(deps, env, info, owner)
+        ExecuteMsg::Withdraw { amount, owner } => {
+            execute_withdraw(deps, env, info, amount, owner)
         }
         // the cw-20 execute messages
         ExecuteMsg::Transfer { recipient, amount } => {
@@ -223,60 +223,62 @@ pub fn execute(
     }
 }
 
-pub fn execute_deposit(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    // TODO verify the buy
+pub fn execute_deposit(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+
     // do all reasonable checks
+    let denom = VAULT_INFO.load(deps.storage)?.reserve_denom;
+    // only accept one token, change this for multi asset
+    // TODO this is a hardcoded amount of a linear 1-1 price, we need to change this with customizable curves
+    let amount = must_pay(&info, denom.as_str())?;
 
-    // get all the free balance currenty in the contract
-    // TODO replace query_all_balances once we have a denom included
-    // let funds = cw_utils::must_pay(info, "SOME-DENOM");
-    let funds = info.funds;
-    // ensure that we only have one token
-    if funds.len() != 1 {
-        // TODO add this error to the error enum
-        return Err(ContractError::Std(StdError::generic_err(
-            "can only accept one token",
-        )));
-    }
-    // TODO check that we accept the right token
-    // funds[0].denom == something
 
-    let amount = funds[0].amount;
+    // call into cw20-base to mint the token, call as self as no one else is allowed
+    let sub_info = MessageInfo {
+        sender: env.contract.address.clone(),
+        funds: vec![],
+    };
+    // exchange all the free balance for shares, mint shares of the underlying cw-20
+    execute_mint(deps, env, sub_info, info.sender.to_string(), amount)?;
 
-    // exchange all the free balance for shares
-    // TODO for now, we store the amount of tokens in the outstanding shares map. If this is ever
-    //  merged we should all feel bad.
-    OUTSTANDING_SHARES.update(
-        deps.storage,
-        info.sender.as_ref().to_string(),
-        |balance: Option<Uint128>| -> StdResult<_> {
-            Ok(balance.unwrap_or_default().checked_add(amount)?)
-        },
-    )?;
     let res = Response::new()
         .add_attribute("action", "buy")
         .add_attribute("from", info.sender)
-        // TODO change shares one we have
-        .add_attribute("amount", amount)
+        // TODO change shares once the curves are customizable
+        .add_attribute("reserve", amount)
         .add_attribute("shares", amount);
     Ok(res)
 }
 
 // TODO decide on whether to add owner here for allowance support
-pub fn execute_sell(deps: DepsMut, _env: Env, info: MessageInfo, owner: String) ->Result<Response, ContractError> {
+pub fn execute_withdraw(mut deps: DepsMut, env: Env, info: MessageInfo, amount: Option<Uint128>, owner: String) ->Result<Response, ContractError> {
+    let state = VAULT_INFO.load(deps.storage)?;
 
-    // since sender is from the info, we know it's correct
-    let shares =  OUTSTANDING_SHARES.load(deps.storage, info.sender.to_string())?;
+    // if amount is None, sell all shares of sender
+    let shares = if amount.is_some() {
+        amount.unwrap()
+    } else {
+        // TODO remove clone
+        query_balance(deps.as_ref(), info.clone().sender.into_string())?.balance
+    };
 
-    // TODO add a denom to the instantiation, fetch that here and send the denomination back
-    // check that the contract has sufficient funds to return
+    // execute_burn will error if the sender does not have enough tokens to burn
+    // TODO remove clone
+    execute_burn(deps.branch(), env, info.clone(), shares)?;
 
+    // we know that the sender has amount of shares, we can release fund based on that amount
+    // TODO add customizable curves here
+    let released = shares;
+
+    let msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(released.u128(), state.reserve_denom),
+    };
 
     let res = Response::new()
+        .add_message(msg)
         .add_attribute("action", "sell")
         .add_attribute("to", &info.sender)
-        .add_attribute("amount", shares)
-        .add_message(Bank(BankMsg::Send { to_address: info.sender.to_string(), amount: coins(shares.u128(), "change-me") }));
+        .add_attribute("amount", shares);
     Ok(res)
 }
 
