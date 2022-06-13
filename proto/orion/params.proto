@@ -26,5 +26,6 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
   bool enabled = 4
   [(gogoproto.moretags) = "yaml:\"enabled,omitempty\""];
 
-  
+  repeated uint64 white_listed_pools = 5
+  [(gogoproto.moretags) = "yaml:\"white_listed_pools,omitempty\""];
 }

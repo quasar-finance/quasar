@@ -19,6 +19,7 @@ genesis:
         lp_epoch_id: day #override day for testing
         mgmt_fee_per: '0.003000000000000000'
         perf_fee_per: '0.020000000000000000'
+        white_listed_pools : [1,2,3]
     qoracle:
       params:
         oracleAccounts: 'quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec'

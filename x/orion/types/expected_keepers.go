@@ -42,6 +42,7 @@ type QbankKeeper interface {
 	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
 	AddActualWithdrawableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
 	AddUserClaimRewards(ctx sdk.Context, uid, vaultID string, coins sdk.Coins)
+	WhiteListedDenomsInOrion(ctx sdk.Context) (res []qbanktypes.WhiteListedDenomInOrion)
 }
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module

@@ -11,14 +11,16 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyPerfFeePer             = []byte("PerFeePer")
-	KeyMgmtFeePer             = []byte("MgmtFeePer")
-	KeyLpEpochId              = []byte("LpEpochId")
-	KeyEnabled                = []byte("Enabled")
-	DefaultPerfFeePer sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
-	DefaultMgmtFeePer sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
-	DefaultLpEpochId          = "day"
-	DefaultEnabled            = false
+	KeyPerfFeePer                   = []byte("PerFeePer")
+	KeyMgmtFeePer                   = []byte("MgmtFeePer")
+	KeyLpEpochId                    = []byte("LpEpochId")
+	KeyEnabled                      = []byte("Enabled")
+	KeyWhiteListedPools             = []byte("WhiteListedPools")
+	DefaultPerfFeePer       sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
+	DefaultMgmtFeePer       sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
+	DefaultLpEpochId                = "day"
+	DefaultEnabled                  = false
+	DefaultWhiteListedPools         = []uint64{}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -27,13 +29,22 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(perFeePer sdk.Dec, mgmtFeePer sdk.Dec, enabled bool, lpEpochID string) Params {
-	return Params{PerfFeePer: perFeePer, MgmtFeePer: mgmtFeePer, Enabled: enabled, LpEpochId: lpEpochID}
+func NewParams(perFeePer sdk.Dec,
+	mgmtFeePer sdk.Dec,
+	enabled bool,
+	lpEpochID string,
+	whiteListedPools []uint64,
+) Params {
+	return Params{PerfFeePer: perFeePer,
+		MgmtFeePer:       mgmtFeePer,
+		Enabled:          enabled,
+		LpEpochId:        lpEpochID,
+		WhiteListedPools: whiteListedPools}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultPerfFeePer, DefaultMgmtFeePer, DefaultEnabled, DefaultLpEpochId)
+	return NewParams(DefaultPerfFeePer, DefaultMgmtFeePer, DefaultEnabled, DefaultLpEpochId, DefaultWhiteListedPools)
 }
 
 // ParamSetPairs get the params.ParamSet
@@ -43,6 +54,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyMgmtFeePer, &p.MgmtFeePer, validateMgmtFeePer),
 		paramtypes.NewParamSetPair(KeyLpEpochId, &p.LpEpochId, validateLpEpochId),
 		paramtypes.NewParamSetPair(KeyEnabled, &p.Enabled, validateEnabled),
+		paramtypes.NewParamSetPair(KeyWhiteListedPools, &p.WhiteListedPools, validateWhiteListedPools),
 	}
 }
 
@@ -60,6 +72,10 @@ func (p Params) Validate() error {
 		return err
 	}
 	if err := validateEnabled(p.Enabled); err != nil {
+		return err
+	}
+
+	if err := validateWhiteListedPools(p.WhiteListedPools); err != nil {
 		return err
 	}
 
@@ -122,6 +138,15 @@ func validateEnabled(i interface{}) error {
 	_, ok := i.(bool)
 	if !ok {
 		return fmt.Errorf("invalid orion vault enabled parameter type: %T", i)
+	}
+	return nil
+}
+
+// validateWhiteListedPools validates the WhiteListedPools param
+func validateWhiteListedPools(v interface{}) error {
+	_, ok := v.([]uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 	return nil
 }
