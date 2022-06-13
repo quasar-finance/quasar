@@ -451,4 +451,107 @@ mod tests {
         // no balance
         assert_eq!(get_balance(deps.as_ref(), &creator), Uint128::zero());
     }
+
+    #[test]
+    fn cw20_imports_work() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobby";
+        let carl: &str = "carl";
+
+        // since we have a constant 1-1 curve hardcoded, we can only exchange 1-1 right now
+        // spend 45_000 uatom for 45_000 EPOXY
+        let info = mock_info(bob, &coins(45_000, DENOM));
+        let buy = ExecuteMsg::Deposit {};
+        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
+
+        // check balances
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000));
+        assert_eq!(get_balance(deps.as_ref(), carl), Uint128::zero());
+
+        // send coins to carl
+        let bob_info = mock_info(bob, &[]);
+        let transfer = ExecuteMsg::Transfer {
+            recipient: carl.into(),
+            amount: Uint128::new(20_000),
+        };
+        execute(deps.as_mut(), mock_env(), bob_info.clone(), transfer).unwrap();
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(25_000));
+        assert_eq!(get_balance(deps.as_ref(), carl), Uint128::new(20_000));
+
+        // allow alice
+        let allow = ExecuteMsg::IncreaseAllowance {
+            spender: alice.into(),
+            amount: Uint128::new(10_000),
+            expires: None,
+        };
+        execute(deps.as_mut(), mock_env(), bob_info, allow).unwrap();
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(25_000));
+        assert_eq!(get_balance(deps.as_ref(), alice), Uint128::zero());
+        assert_eq!(
+            query_allowance(deps.as_ref(), bob.into(), alice.into())
+                .unwrap()
+                .allowance,
+            Uint128::new(10_000)
+        );
+
+        // alice takes some for herself
+        let self_pay = ExecuteMsg::TransferFrom {
+            owner: bob.into(),
+            recipient: alice.into(),
+            amount: Uint128::new(5_000),
+        };
+        let alice_info = mock_info(alice, &[]);
+        execute(deps.as_mut(), mock_env(), alice_info, self_pay).unwrap();
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(20_000));
+        assert_eq!(get_balance(deps.as_ref(), alice), Uint128::new(5_000));
+        assert_eq!(get_balance(deps.as_ref(), carl), Uint128::new(20_000));
+        assert_eq!(
+            query_allowance(deps.as_ref(), bob.into(), alice.into())
+                .unwrap()
+                .allowance,
+            Uint128::new(5_000)
+        );
+
+        // test burn from works properly (burn tested in burning_sends_reserve)
+        // cannot burn more than they have
+
+        let info = mock_info(alice, &[]);
+        let burn_from = ExecuteMsg::BurnFrom {
+            owner: bob.into(),
+            amount: Uint128::new(3_300_000),
+        };
+        let err = execute(deps.as_mut(), mock_env(), info, burn_from).unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::Base(cw20_base::ContractError::Std(StdError::overflow(
+                OverflowError::new(OverflowOperation::Sub, 5000 as u128, 3300000 as u128)
+            )))
+        );
+
+        // burn 1_500 EPOXY to get back 1_500 DENOM (constant curve)
+        let info = mock_info(alice, &[]);
+        let burn_from = ExecuteMsg::BurnFrom {
+            owner: bob.into(),
+            amount: Uint128::new(1_500),
+        };
+        let res = execute(deps.as_mut(), mock_env(), info, burn_from).unwrap();
+
+        // bob balance is lower, not alice
+        assert_eq!(get_balance(deps.as_ref(), alice), Uint128::new(5000));
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(18500));
+
+        // ensure alice got our money back
+        // TODO, currently this is not supported, we will need to support it, in cw-20 bonding curve, this is routed to sell from
+        // assert_eq!(1, res.messages.len());
+        // assert_eq!(
+        //     &res.messages[0],
+        //     &SubMsg::new(BankMsg::Send {
+        //         to_address: alice.into(),
+        //         amount: coins(1_500, DENOM),
+        //     })
+        // );
+    }
 }
