@@ -7,30 +7,29 @@ import (
 	"time"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
-	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 const (
-	owner              string = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
-	osmosisAddress     string = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
-	cosmosAddress             = "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs"
-	connectionId       string = "connection-0"
-	transferPortId     string = "transfer"
-	transferChannelId  string = "channel-0"
-	fwdTransferPort    string = "transfer"
-	fwdTransferChannel string = "channel-1"
-	poolId                    = uint64(1)
-	timestamp                 = uint64(99999999999999)
+	owner              = "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
+	osmosisAddress     = "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq"
+	cosmosAddress      = "cosmos1vzxkv3lxccnttr9rs0002s93sgw72h7ghukuhs"
+	connectionId       = "connection-0"
+	transferPortId     = "transfer"
+	transferChannelId  = "channel-0"
+	fwdTransferPort    = "transfer"
+	fwdTransferChannel = "channel-1"
+	poolId             = uint64(1)
+	timestamp          = uint64(99999999999999)
 )
 
 var (
@@ -149,8 +148,8 @@ func createTestPoolParams() *gammbalancer.PoolParams {
 	}
 }
 
-func createTestPoolAssets() []gammtypes.PoolAsset {
-	return []gammtypes.PoolAsset{
+func createTestPoolAssets() []gammbalancer.PoolAsset {
+	return []gammbalancer.PoolAsset{
 		{
 			Weight: sdk.NewInt(100),
 			Token:  sdk.NewCoin("uatom", sdk.NewInt(10000)),
@@ -723,12 +722,10 @@ func forwardTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 
 	seq, err := k.ForwardTransferIbcTokens(
 		ctx,
-		transferPortId,
-		transferChannelId,
+		transferPortId, transferChannelId,
 		testCoin,
 		sender,
-		fwdTransferPort,
-		fwdTransferChannel,
+		fwdTransferPort, fwdTransferChannel,
 		cosmosAddress,
 		osmosisAddress,
 		transferTimeoutHeight,

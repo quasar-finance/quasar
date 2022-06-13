@@ -2,17 +2,11 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/intergamm/types"
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
-	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 )
-
-type IbcTransferHooks struct {
-	ackIbcTransfer     []func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) error
-	timeoutIbcTransfer []func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]) error
-}
 
 type OsmosisHooks struct {
 	ackMsgCreateBalancerPool      []func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) error
@@ -32,14 +26,6 @@ type OsmosisHooks struct {
 	timeoutMsgJoinSwapShareAmountOut  []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) error
 	timeoutMsgExitSwapShareAmountIn   []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) error
 	timeoutMsgLockTokens              []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) error
-}
-
-func (ih *IbcTransferHooks) ClearAckHooks() {
-	ih.ackIbcTransfer = nil
-}
-
-func (ih *IbcTransferHooks) ClearTimeoutHooks() {
-	ih.timeoutIbcTransfer = nil
 }
 
 func (ih *OsmosisHooks) ClearAckHooks() {
@@ -62,14 +48,6 @@ func (ih *OsmosisHooks) ClearTimeoutHooks() {
 	ih.timeoutMsgJoinSwapShareAmountOut = nil
 	ih.timeoutMsgExitSwapShareAmountIn = nil
 	ih.timeoutMsgLockTokens = nil
-}
-
-func (ih *IbcTransferHooks) AddHooksAckIbcTransfer(hs ...func(sdk.Context, types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) error) {
-	ih.ackIbcTransfer = append(ih.ackIbcTransfer, hs...)
-}
-
-func (ih *IbcTransferHooks) AddHooksTimeoutIbcTransfer(hs ...func(sdk.Context, types.TimeoutExchange[*ibctransfertypes.FungibleTokenPacketData]) error) {
-	ih.timeoutIbcTransfer = append(ih.timeoutIbcTransfer, hs...)
 }
 
 func (oh *OsmosisHooks) AddHooksAckMsgCreateBalancerPool(hs ...func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) error) {

@@ -6,7 +6,7 @@ import "qoracle/pool_ranking.proto";
 import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # proto/tx/import
-import "osmosis/gamm/pool-models/balancer/balancerPool.proto"; 
+import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
 import "qoracle/pool_metrics.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";

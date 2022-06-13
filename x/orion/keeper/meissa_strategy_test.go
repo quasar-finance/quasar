@@ -6,16 +6,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/abag/quasarnode/testutil"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 )
 
-func createSampleValidPoolAssetsSlice() []gammtypes.PoolAsset {
-	return []gammtypes.PoolAsset{
+func createSampleValidPoolAssetsSlice() []gammbalancer.PoolAsset {
+	return []gammbalancer.PoolAsset{
 		{
 			Token:  sdk.NewCoin("abc", sdk.NewInt(80)),
 			Weight: sdk.NewInt(3),
@@ -27,8 +27,8 @@ func createSampleValidPoolAssetsSlice() []gammtypes.PoolAsset {
 	}
 }
 
-func createSampleInvalidPoolAssetsSlice() []gammtypes.PoolAsset {
-	return []gammtypes.PoolAsset{
+func createSampleInvalidPoolAssetsSlice() []gammbalancer.PoolAsset {
+	return []gammbalancer.PoolAsset{
 		{
 			Token:  sdk.NewCoin("abc", sdk.NewInt(80)),
 			Weight: sdk.NewInt(3),
@@ -55,7 +55,7 @@ func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
 		name         string
 		lockupPeriod qbanktypes.LockupTypes
 		stakedCoins  sdk.Coins
-		poolAssets   []gammtypes.PoolAsset
+		poolAssets   []gammbalancer.PoolAsset
 		want         sdk.Coins
 	}{
 		{
@@ -90,7 +90,7 @@ func TestComputeShareOutAmount(t *testing.T) {
 	var tests = []struct {
 		name           string
 		totalShares    sdk.Int
-		poolAssets     []gammtypes.PoolAsset
+		poolAssets     []gammbalancer.PoolAsset
 		maxCoins       sdk.Coins
 		error          bool
 		shareOutAmount sdk.Int
@@ -195,7 +195,7 @@ func TestComputeNeededCoins(t *testing.T) {
 		name              string
 		totalSharesAmount sdk.Int
 		shareOutAmount    sdk.Int
-		poolAssets        []gammtypes.PoolAsset
+		poolAssets        []gammbalancer.PoolAsset
 		error             bool
 		neededCoins       sdk.Coins
 	}{

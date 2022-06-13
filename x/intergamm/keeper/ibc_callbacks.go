@@ -2,15 +2,15 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/intergamm/types"
+	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
-	gammbalancer "github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
-	lockuptypes "github.com/osmosis-labs/osmosis/v7/x/lockup/types"
 	"github.com/pkg/errors"
 )
 

@@ -30,9 +30,11 @@ genesis:
   app_state:
     interchainaccounts:
       host_genesis_state:
+        port: "icahost"
         params:
+          host_enabled: true
           allow_messages: [
-            "/osmosis.gamm.v1beta1.MsgCreateBalancerPool",
+            "/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
             "/osmosis.gamm.v1beta1.MsgJoinPool",
             "/osmosis.gamm.v1beta1.MsgExitPool",
             "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",

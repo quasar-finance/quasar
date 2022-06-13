@@ -1,6 +1,6 @@
-# Messages 
+# Messages
 
-`qoracle` supports the transaction messages for broadcasting the pool info, pool positions, pool spot prices and pool ranking. 
+`qoracle` supports the transaction messages for broadcasting the pool info, pool positions, pool spot prices and pool ranking.
 
 ## Pool Info message
 ```
@@ -24,8 +24,8 @@ message MsgUpdatePoolInfo {
 ```
 
 BalancerPool is defined in balancerPool.proto
-File - proto/osmosis/gamm/pool-models/balancer/balancerPool.proto 
-Note - BalancerPool proto message is taken from the osmosis chain. 
+File - proto/osmosis/v9/gamm/pool-models/balancer/balancerPool.proto
+Note - BalancerPool proto message is taken from the osmosis chain.
 
 ## Balancer Pool
 ```
@@ -96,7 +96,7 @@ message BalancerPoolParams {
   ];
 }
 ```
-## Pool parameter change 
+## Pool parameter change
 ```
 // Parameters for changing the weights in a balancer pool smoothly from
 // a start weight and end weight over a period of time.
@@ -153,7 +153,7 @@ message SmoothWeightChangeParams {
 }
 ```
 
-## Pool Position messages 
+## Pool Position messages
 ```
 message MsgCreatePoolPosition {
   string creator = 1;
@@ -174,7 +174,7 @@ message MsgUpdatePoolPosition {
 }
 ```
 
-## Pool spot prices 
+## Pool spot prices
 ```
 message MsgCreatePoolSpotPrice {
   string creator = 1;
@@ -197,7 +197,7 @@ message MsgUpdatePoolSpotPrice {
 }
 ```
 
-## Pool ranking 
+## Pool ranking
 ```
 message MsgCreatePoolRanking {
   string creator = 1;
