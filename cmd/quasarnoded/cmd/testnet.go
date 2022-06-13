@@ -80,10 +80,16 @@ Example:
 			)
 
 			for i := 0; i < numNodes; i++ {
-				gen.AddNode()
+				err = gen.AddNode()
+				if err != nil {
+					return err
+				}
 			}
 
-			gen.Persist()
+			err = gen.Persist()
+			if err != nil {
+				return err
+			}
 
 			cmd.PrintErrf("Successfully initialized %d node directories\n", numNodes)
 
@@ -104,8 +110,8 @@ type ClientConfig struct {
 	ChainID        string `toml:"chain-id"`
 	KeyringBackend string `toml:"keyring-backend"`
 	Output         string `toml:"output"`
-	Node           string `toml:"node""`
-	BroadcastMode  string `toml:"broadcast-mode""`
+	Node           string `toml:"node"`
+	BroadcastMode  string `toml:"broadcast-mode"`
 }
 
 type NodeConfigGenerator struct {
