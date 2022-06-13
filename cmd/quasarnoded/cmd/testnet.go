@@ -28,22 +28,24 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/google/uuid"
+	"github.com/pelletier/go-toml/v2"
 )
 
 const (
-	defaultDirPerm    = 0o755
-	defaultFilePerm   = 0o644
-	chainID           = "quasar-tesnet"
-	nodeNamePrefix    = "node"
-	nodeConfigDirName = "quasarnoded"
-	portBaseP2p       = 26500
-	portBaseRpc       = 26600
-	portBaseApi       = 1300
-	portBaseGrpc      = 9000
-	portBaseWeb       = 9100
-	flagNumNodes      = "nodes"
-	flagOutputDir     = "output-dir"
-	flagMinGasPrices  = "minimum-gas-prices"
+	defaultDirPerm   = 0o755
+	defaultFilePerm  = 0o644
+	chainID          = "quasar-tesnet"
+	nodeNamePrefix   = "node"
+	nodeHomeDirName  = "home"
+	keyringBackend   = "test"
+	portBaseP2p      = 26500
+	portBaseRpc      = 26600
+	portBaseApi      = 1300
+	portBaseGrpc     = 9000
+	portBaseWeb      = 9100
+	flagNumNodes     = "nodes"
+	flagOutputDir    = "output-dir"
+	flagMinGasPrices = "minimum-gas-prices"
 )
 
 // TestnetCmd initializes all files for tendermint testnet and application.
@@ -91,9 +93,19 @@ Example:
 
 	cmd.Flags().IntP(flagNumNodes, "n", 4, "Number of validator nodes to initialize the testnet with")
 	cmd.Flags().StringP(flagOutputDir, "o", "./localnet", "Directory to store initialization data for the testnet")
-	cmd.Flags().String(server.FlagMinGasPrices, fmt.Sprintf("0.000006%s", TestnetGenesisParams().NativeCoinMetadatas[0].Base), "Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
+	cmd.Flags().String(server.FlagMinGasPrices, fmt.Sprintf("0.000006%s", TestnetGenesisParams().NativeCoinMetadatas[0].Base), "Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01uqsr,0.001stake)")
 
 	return cmd
+}
+
+// Taken from https://github.com/cosmos/cosmos-sdk/tree/main/client/config
+// and adapted as they do not offer a way to save it to disk
+type ClientConfig struct {
+	ChainID        string `toml:"chain-id"`
+	KeyringBackend string `toml:"keyring-backend"`
+	Output         string `toml:"output"`
+	Node           string `toml:"node""`
+	BroadcastMode  string `toml:"broadcast-mode""`
 }
 
 type NodeConfigGenerator struct {
@@ -156,9 +168,9 @@ func (g *NodeConfigGenerator) newSimappConfig(minGasPrices string) *srvconfig.Co
 	conf.Telemetry.PrometheusRetentionTime = 60
 	conf.Telemetry.EnableHostnameLabel = false
 	conf.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
-	conf.API.Address = fmt.Sprintf("tcp://localhost:%d", portBaseApi+g.nodeCount)
-	conf.GRPC.Address = fmt.Sprintf("tcp://localhost:%d", portBaseGrpc+g.nodeCount)
-	conf.GRPCWeb.Address = fmt.Sprintf("tcp://localhost:%d", portBaseWeb+g.nodeCount)
+	conf.API.Address = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseApi+g.nodeCount)
+	conf.GRPC.Address = fmt.Sprintf("0.0.0.0:%d", portBaseGrpc+g.nodeCount)
+	conf.GRPCWeb.Address = fmt.Sprintf("0.0.0.0:%d", portBaseWeb+g.nodeCount)
 
 	return conf
 }
@@ -167,16 +179,19 @@ func (g *NodeConfigGenerator) AddNode() error {
 	var err error
 
 	nodeName := fmt.Sprintf("%s%d", nodeNamePrefix, g.nodeCount)
-	nodeDir := filepath.Join(g.tmpDir, nodeName, nodeConfigDirName)
-	mustMkdirAll(filepath.Join(nodeDir, "config"))
+	nodeDir := filepath.Join(g.tmpDir, nodeName)
+	homeDir := filepath.Join(nodeDir, nodeHomeDirName)
+	mustMkdirAll(filepath.Join(homeDir, "config"))
 
 	nodeConfig := tmconfig.DefaultConfig()
 	g.nodeConfigs = append(g.nodeConfigs, nodeConfig)
 
-	nodeConfig.SetRoot(nodeDir)
+	nodeConfig.SetRoot(homeDir)
 	nodeConfig.Moniker = nodeName
-	nodeConfig.RPC.ListenAddress = fmt.Sprintf("tcp://localhost:%d", portBaseRpc+g.nodeCount)
-	nodeConfig.P2P.ListenAddress = fmt.Sprintf("tcp://localhost:%d", portBaseP2p+g.nodeCount)
+	nodeConfig.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseRpc+g.nodeCount)
+	nodeConfig.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseP2p+g.nodeCount)
+	nodeConfig.P2P.AddrBookStrict = false
+	nodeConfig.P2P.AllowDuplicateIP = true
 
 	nodeID, validatorPubKey, err := genutil.InitializeNodeValidatorFiles(nodeConfig)
 	if err != nil {
@@ -186,7 +201,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 	g.validatorPubKeys = append(g.validatorPubKeys, validatorPubKey)
 	g.genesisFiles = append(g.genesisFiles, nodeConfig.GenesisFile())
 
-	addr, err := genTestKeyring(nodeDir, nodeName)
+	addr, err := genTestKeyring(homeDir, nodeName)
 	if err != nil {
 		return err
 	}
@@ -223,10 +238,10 @@ func (g *NodeConfigGenerator) AddNode() error {
 		return err
 	}
 
-	nodeMemo := fmt.Sprintf("%s@localhost:%d", g.nodeIDs[g.nodeCount], portBaseP2p+g.nodeCount)
+	nodeMemo := fmt.Sprintf("%s@0.0.0.0:%d", g.nodeIDs[g.nodeCount], portBaseP2p+g.nodeCount)
 	txBuilder.SetMemo(nodeMemo)
 
-	kr, err := loadTestKeyring(nodeDir)
+	kr, err := loadTestKeyring(homeDir)
 	if err != nil {
 		return err
 	}
@@ -248,7 +263,23 @@ func (g *NodeConfigGenerator) AddNode() error {
 	}
 
 	mustWriteFile(filepath.Join(g.gentxsDir, fmt.Sprintf("%s.json", nodeName)), txBz)
-	srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), g.newSimappConfig(g.minGasPrices))
+
+	// App config
+	appConfig := g.newSimappConfig(g.minGasPrices)
+	srvconfig.WriteConfigFile(filepath.Join(homeDir, "config/app.toml"), appConfig)
+
+	clientConfig := &ClientConfig{
+		ChainID:        chainID,
+		KeyringBackend: keyringBackend,
+		Output:         "json",
+		Node:           nodeConfig.RPC.ListenAddress,
+		BroadcastMode:  "sync",
+	}
+	clientConfigData, err := toml.Marshal(clientConfig)
+	if err != nil {
+		return err
+	}
+	mustWriteFile(filepath.Join(homeDir, "config", "client.toml"), clientConfigData)
 
 	g.nodeCount++
 
@@ -356,18 +387,12 @@ func (g *NodeConfigGenerator) cleanup() {
 }
 
 func genTestKeyring(outputDir string, keyname string) (sdk.AccAddress, error) {
-	kb, err := keyring.New("quasar", "test", outputDir, nil)
+	kb, err := keyring.New("quasar", keyringBackend, outputDir, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	keyringAlgos, _ := kb.SupportedAlgorithms()
-	algo, err := keyring.NewSigningAlgoFromString(string(hd.Secp256k1Type), keyringAlgos)
-	if err != nil {
-		return nil, err
-	}
-
-	addr, secret, err := testutil.GenerateSaveCoinKey(kb, keyname, "", true, algo)
+	addr, secret, err := testutil.GenerateSaveCoinKey(kb, keyname, "", true, hd.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +408,7 @@ func genTestKeyring(outputDir string, keyname string) (sdk.AccAddress, error) {
 }
 
 func loadTestKeyring(dir string) (keyring.Keyring, error) {
-	kb, err := keyring.New("quasar", "test", dir, nil)
+	kb, err := keyring.New("quasar", keyringBackend, dir, nil)
 	if err != nil {
 		return nil, err
 	}

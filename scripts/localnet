@@ -28,7 +28,90 @@ sys.stdout.write(data) ; sys.stdout.flush()
 }
 
 gen_config() {
-  "${project_dir}/build/quasarnoded" testnet -n 4 -o "$run_dir"
+  local n="$1" ; shift
+
+  "${project_dir}/build/quasarnoded" testnet -n "$n" -o "$run_dir"
+}
+
+for_all_nodes() {
+  (
+    cd "$run_dir"
+
+    local cmd="$1" ; shift
+
+    while IFS= read -r -d '' node_dir <&3 ; do
+      "$cmd" "$node_dir" "$@"
+    done 3< <(find . -type d -name "node*" -print0)
+  )
+}
+
+run_for_node() {
+  local node_dir="$1" ; shift
+  local node_name="$(basename "${node_dir}")"
+
+  test -d "$node_dir" || fail "node '${node_name}' not found"
+
+  (
+    cd "$node_dir"
+
+    cmd() {
+      ./quasarnoded --home home --keyring-backend=test --from node0 "$@"
+    }
+
+    start() {
+      nohup ./quasarnoded --home home start >| "quasarnoded.log" 2>&1 &
+      echo "$!" >| "quasarnoded.pid"
+    }
+
+    stop() {
+      kill "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1 || true
+      rm -f "quasarnoded.pid"
+    }
+
+    status() {
+      if ps -p "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1 ; then
+        echo "node '${node_name}' is running"
+      else
+        echo "node '${node_name}' is NOT running"
+      fi
+    }
+
+    "$@"
+  )
+}
+
+start_all() {
+  for_all_nodes run_for_node start
+}
+
+stop_all() {
+  for_all_nodes run_for_node stop
+}
+
+status_all() {
+  for_all_nodes run_for_node status
+}
+
+node() {
+  local id="$1" ; shift
+  local node_dir="${run_dir}/node${id}"
+
+  run_for_node "$node_dir" "$@"
+}
+
+install_binary() {
+  local node_dir="$1" ; shift
+
+  cp "${project_dir}/build/quasarnoded" "${node_dir}/quasarnoded"
+}
+
+install_binaries() {
+  for_all_nodes install_binary
+}
+
+init_default_cluster() {
+  gen_config 4
+  install_binaries
 }
 
 "$@"
