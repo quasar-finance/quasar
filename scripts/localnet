@@ -76,6 +76,10 @@ run_for_node() {
       fi
     }
 
+    log() {
+      tail -f "quasarnoded.log"
+    }
+
     "$@"
   )
 }
