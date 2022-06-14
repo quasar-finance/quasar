@@ -32,6 +32,7 @@ for_all_nodes() {
 
 run_for_node() {
   local node_dir="$1" ; shift
+  local home_dir="${node_dir}/home"
   local node_name="$(basename "${node_dir}")"
 
   test -d "$node_dir" || fail "node '${node_name}' not found"
@@ -40,12 +41,18 @@ run_for_node() {
     cd "$node_dir"
 
     cmd() {
-      ./quasarnoded --home home --keyring-backend=test --from node0 "$@"
+      "${home_dir}/cosmovisor/current/bin/quasarnoded" --home "$home_dir" --keyring-backend=test --from main "$@"
     }
 
     start() {
-      nohup ./quasarnoded --home home start >| "quasarnoded.log" 2>&1 &
-      echo "$!" >| "quasarnoded.pid"
+      (
+        export DAEMON_NAME="quasarnoded"
+        export DAEMON_HOME="$home_dir"
+        export DAEMON_RESTART_AFTER_UPGRADE=true
+
+        nohup cosmovisor run start --home "$home_dir" >| "quasarnoded.log" 2>&1 &
+        echo "$!" >| "quasarnoded.pid"
+      )
     }
 
     stop() {
@@ -75,7 +82,7 @@ start_all() {
 
 stop_all() {
   for_all_nodes run_for_node stop
-  killall "quasarnoded"
+  killall "cosmovisor"
 }
 
 status_all() {
@@ -92,7 +99,10 @@ node() {
 install_binary() {
   local node_dir="$1" ; shift
 
-  cp "${project_dir}/build/quasarnoded" "${node_dir}/quasarnoded"
+  mkdir -p "${node_dir}/home/cosmovisor/genesis/bin"
+  mkdir -p "${node_dir}/home/cosmovisor/upgrades"
+
+  cp "${project_dir}/build/quasarnoded" "${node_dir}/home/cosmovisor/genesis/bin/quasarnoded"
 }
 
 install_binaries() {
@@ -106,6 +116,6 @@ init_default_cluster() {
 
 cmd_exists nohup
 cmd_exists killall
-#cmd_exists cosmovisor
+cmd_exists cosmovisor
 
 "$@"
