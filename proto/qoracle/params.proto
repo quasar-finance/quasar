@@ -2,8 +2,34 @@ syntax = "proto3";
 package abag.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "ibc/core/client/v1/client.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message BandchainParams {
+  IBCParams oracle_ibc_params = 1 
+      [(gogoproto.moretags) = "yaml:\"oracle_ibc_params\"", (gogoproto.nullable) = false]; // IBC params for the oracle module of bandchain
+  OracleScriptParams coin_rates_script_params = 2 
+      [(gogoproto.moretags) = "yaml:\"coin_rates_script_params\"", (gogoproto.nullable) = false]; // Script params for the coin rates script
+}
+
+message IBCParams {
+  string authorized_channel = 1 [(gogoproto.moretags) = "yaml:\"authorized_channel\""]; // Identifier of authorized channel that we are allowed to send/receive packets
+  ibc.core.client.v1.Height timeout_height = 2
+      [(gogoproto.moretags) = "yaml:\"timeout_height\"", (gogoproto.nullable) = false]; // Timeout height relative to the current block height. The timeout is disabled when set to 0.
+  uint64 timeout_timestamp = 3 [(gogoproto.moretags) = "yaml:\"timeout_timestamp\""]; // Timeout timestamp relative to counterparty chain current time. The timeout is disabled when set to 0.
+}
+
+message OracleScriptParams {
+  uint64 script_id = 1 [(gogoproto.moretags) = "yaml:\"script_id\""];
+  uint64 ask_count = 2 [(gogoproto.moretags) = "yaml:\"ask_count\""];
+  uint64 min_count = 3 [(gogoproto.moretags) = "yaml:\"min_count\""];
+  repeated cosmos.base.v1beta1.Coin fee_limit = 4
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  uint64 prepare_gas = 5 [(gogoproto.moretags) = "yaml:\"prepare_gas\""];
+  uint64 execute_gas = 6 [(gogoproto.moretags) = "yaml:\"execute_gas\""];
+}
 
 message OneHopIbcDenomMapping {
   // option (gogoproto.goproto_stringer) = false;
@@ -12,13 +38,6 @@ message OneHopIbcDenomMapping {
   string quasar = 2  [(gogoproto.moretags) = "yaml:\"quasar\""]; // one hop ibc denom representation in quasar
   string osmo = 3 [(gogoproto.moretags) = "yaml:\"osmo\""]; // one hop ibc denom representation in osmo
   // Representation in the other chains can be added in the future.
-}
-
-message BandchainParams {
-  string oracle_port_id = 1 [(gogoproto.moretags) = "yaml:\"oracle_port_id\""]; // ID of the oracle module's port in which we accept new channels
-  string oracle_version = 2 [(gogoproto.moretags) = "yaml:\"oracle_version\""]; // Version of oracle module that we gonna negotiate at opening a new ibc channel
-  string oracle_active_channel_path = 3 [(gogoproto.moretags) = "yaml:\"oracle_active_channel_path\""]; // Channel path to bandchain oracle module we use to send requests
-  uint64 coin_rates_script_id = 4 [(gogoproto.moretags) = "yaml:\"coin_rates_script_id\""]; // Script ID of the coin rates script
 }
 
 // Params defines the parameters for the module.

@@ -6,34 +6,31 @@ import (
 	bandpacket "github.com/bandprotocol/bandchain-packet/packet"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 )
 
-func (k Keeper) SendCoinRatesRequest(ctx sdk.Context,
-	callData types.CoinRatesCallData,
-	askCount, minCount, prepareGas, executeGas uint64,
-	feeLimit sdk.Coins,
-	timeoutHeight clienttypes.Height,
-	timeoutTimestamp uint64,
-) (uint64, error) {
-	bandchainParams := k.BandchainParams(ctx)
+func (k Keeper) sendCoinRatesRequest(ctx sdk.Context, callData types.CoinRatesCallData) (uint64, error) {
+	coinRatesScriptParams := k.BandchainParams(ctx).CoinRatesScriptParams
 
 	packetData := bandpacket.NewOracleRequestPacketData(
 		types.CoinRatesClientIDKey,
-		bandchainParams.CoinRatesScriptId,
+		coinRatesScriptParams.ScriptId,
 		obi.MustEncode(callData),
-		askCount,
-		minCount,
-		feeLimit,
-		prepareGas,
-		executeGas,
+		coinRatesScriptParams.AskCount,
+		coinRatesScriptParams.MinCount,
+		coinRatesScriptParams.FeeLimit,
+		coinRatesScriptParams.PrepareGas,
+		coinRatesScriptParams.ExecuteGas,
 	)
-	portId, channelId, err := bandchainParams.CheckOracleActiveChannelPath()
-	if err != nil {
-		return 0, err
-	}
-	return k.createOutgoingPacket(ctx, portId, channelId, packetData.GetBytes(), timeoutHeight, timeoutTimestamp)
+	return k.sendOraclePacket(ctx, packetData)
+}
+
+func (k Keeper) sendOraclePacket(ctx sdk.Context, packetData bandpacket.OracleRequestPacketData) (uint64, error) {
+	port := k.GetPort(ctx)
+	ibcParams := k.BandchainParams(ctx).OracleIbcParams
+
+	return k.createOutgoingPacket(ctx, port, ibcParams.AuthorizedChannel, packetData.GetBytes(),
+		ibcParams.TimeoutHeight, ibcParams.TimeoutTimestamp)
 }
 
 func (k Keeper) handleOraclePacket(ctx sdk.Context, packet channeltypes.Packet) ([]byte, error) {

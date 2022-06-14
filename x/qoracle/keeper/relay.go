@@ -12,24 +12,22 @@ import (
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byte, error) {
 	bandchainParams := k.BandchainParams(ctx)
 
-	channelPath := host.ChannelPath(packet.GetDestPort(), packet.GetDestChannel())
-	switch channelPath {
-	case bandchainParams.OracleActiveChannelPath:
+	switch {
+	case packet.SourcePort == types.BandchainOraclePortID && packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOraclePacket(ctx, packet)
 	default:
-		return nil, sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC packet handler for packet with path: %s", channelPath)
+		return nil, sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC packet handler for packet with path: %s", host.ChannelPath(packet.DestinationPort, packet.DestinationChannel))
 	}
 }
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	bandchainParams := k.BandchainParams(ctx)
 
-	channelPath := host.ChannelPath(packet.GetDestPort(), packet.GetDestChannel())
-	switch channelPath {
-	case bandchainParams.OracleActiveChannelPath:
+	switch {
+	case packet.SourcePort == types.BandchainOraclePortID && packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOracleAcknowledgment(ctx, packet, ack)
 	default:
-		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC acknowledgment handler for packet with path: %s", channelPath)
+		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC acknowledgment handler for packet with path: %s", host.ChannelPath(packet.SourcePort, packet.SourceChannel))
 	}
 }
 

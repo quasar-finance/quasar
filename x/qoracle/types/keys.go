@@ -21,6 +21,12 @@ const (
 
 	// CoinRatesClientIDKey is query request identifier
 	CoinRatesClientIDKey = "coin_rates_id"
+
+	// BandchainOraclePortID is the default port id that bandchain oracle module binds to
+	BandchainOraclePortID = "oracle"
+
+	// BandchainOracleVersion is the default version of bandchain oracle
+	BandchainOracleVersion = "bandchain-1"
 )
 
 func KeyPrefix(p string) []byte {

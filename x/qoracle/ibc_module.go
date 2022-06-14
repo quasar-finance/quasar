@@ -61,12 +61,10 @@ func (im IBCModule) validateChannelParams(
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
-	bandchainParams := im.keeper.BandchainParams(ctx)
-
 	switch counterparty.GetPortID() {
-	case bandchainParams.OraclePortId:
-		if version != bandchainParams.OracleVersion {
-			return sdkerrors.Wrapf(types.ErrInvalidCounterpartyVersion, "got %s, expected %s", version, bandchainParams.OracleVersion)
+	case types.BandchainOraclePortID:
+		if version != types.BandchainOracleVersion {
+			return sdkerrors.Wrapf(types.ErrInvalidCounterpartyVersion, "got %s, expected %s", version, types.BandchainOracleVersion)
 		}
 	// TODO: Add other ports like icq, and ica once we merged intergamm with qoracle
 	default:

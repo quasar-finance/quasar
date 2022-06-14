@@ -3,9 +3,11 @@ package types
 import (
 	"errors"
 	"fmt"
+	"time"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"gopkg.in/yaml.v2"
 )
@@ -17,11 +19,22 @@ var (
 	KeyOracleAccounts  = []byte("OracleAccounts")
 	KeyStableDenoms    = []byte("stableDenoms")
 	KeyOneHopDenomMap  = []byte("oneHopDenomMap")
+
 	// TODO: Determine the default value
 	DefaultBandchainParams = BandchainParams{
-		OraclePortId:            "oracle",
-		OracleVersion:           "bandchain-1",
-		OracleActiveChannelPath: "",
+		OracleIbcParams: IBCParams{
+			AuthorizedChannel: "",
+			TimeoutHeight:     clienttypes.NewHeight(0, 0),
+			TimeoutTimestamp:  uint64(time.Minute * 10),
+		},
+		CoinRatesScriptParams: OracleScriptParams{
+			ScriptId:   37,
+			AskCount:   4,
+			MinCount:   3,
+			FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(10))),
+			PrepareGas: 6000,
+			ExecuteGas: 6000,
+		},
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
@@ -103,28 +116,48 @@ func validateBandchainParams(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	err := host.PortIdentifierValidator(params.OraclePortId)
+	err := params.OracleIbcParams.Validate()
 	if err != nil {
 		return err
 	}
 
-	if params.OracleVersion == "" {
-		return errors.New("oracle IBC version cannot be empty")
+	err = params.CoinRatesScriptParams.Validate()
+	if err != nil {
+		return err
 	}
 
-	// Only validate channel id if it's set
-	if params.OracleActiveChannelPath != "" {
-		portId, channelId, err := host.ParseChannelPath(params.OracleActiveChannelPath)
-		if err != nil {
-			return err
-		}
+	return nil
+}
 
-		if err = host.PortIdentifierValidator(portId); err != nil {
-			return err
-		}
-		if err = host.ChannelIdentifierValidator(channelId); err != nil {
-			return err
-		}
+func (p IBCParams) Validate() error {
+	if err := host.ChannelIdentifierValidator(p.AuthorizedChannel); err != nil {
+		return err
+	}
+
+	if p.TimeoutHeight.IsZero() && p.TimeoutTimestamp == 0 {
+		return errors.New("packet timeout height and packet timeout timestamp cannot both be 0")
+	}
+
+	return nil
+}
+
+func (p OracleScriptParams) Validate() error {
+	if p.ScriptId == 0 {
+		return errors.New("script id cannot be 0")
+	}
+
+	if p.AskCount == 0 {
+		return errors.New("ask count cannot be 0")
+	}
+	if p.MinCount == 0 {
+		return errors.New("min count cannot be 0")
+	}
+	if p.AskCount < p.MinCount {
+		return errors.New("ask count cannot be less than min count")
+	}
+
+	if p.FeeLimit.IsAnyNegative() || p.FeeLimit.IsZero() {
+		return errors.New("fee limit cannot be negative or zero")
 	}
 
 	return nil
@@ -167,17 +200,4 @@ func validateOneHopDenomMaps(v interface{}) error {
 	_ = oneHopDenomMaps
 
 	return nil
-}
-
-func (p BandchainParams) CheckOracleActiveChannelPath() (string, string, error) {
-	if p.OracleActiveChannelPath == "" {
-		return "", "", sdkerrors.Wrapf(ErrNoActiveChannelPath, "bandchain oracle active channel path is not set")
-	}
-
-	portId, channelId, err := host.ParseChannelPath(p.OracleActiveChannelPath)
-	if err != nil {
-		return "", "", err
-	}
-
-	return portId, channelId, nil
 }
