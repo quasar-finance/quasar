@@ -104,7 +104,8 @@ init_default_cluster() {
   install_binaries
 }
 
-cmd_exists killall
 cmd_exists nohup
+cmd_exists killall
+#cmd_exists cosmovisor
 
 "$@"

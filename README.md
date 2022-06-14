@@ -96,8 +96,23 @@ To run a small network of Quasar nodes locally, first generate their respective 
 
 ### Setup
 
+#### Cosmovisor
+
+Cosmovisor should be installed and available to use, [follow these instructions](https://github.com/cosmos/cosmos-sdk/tree/main/cosmovisor#installation).
+
+Note, the current method for installation of the latest version of cosmovisor is broken, but you can still build it from source:
+
 ```bash
-make build_dev # make sure we have a quasar executable available first
+git clone git@github.com:cosmos/cosmos-sdk
+cd cosmos-sdk
+git checkout cosmovisor/v1.1.0
+make cosmovisor
+cp cosmovisor/cosmovisor ~/go/bin/cosmovisor
+echo $(which cosmovisor)
+```
+
+```bash
+make build # make sure we have a quasar executable available first
 scripts/localnet init_default_cluster
 ```
 
