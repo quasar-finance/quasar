@@ -34,15 +34,11 @@ gen_config() {
 }
 
 for_all_nodes() {
-  (
-    cd "$run_dir"
+  local cmd="$1" ; shift
 
-    local cmd="$1" ; shift
-
-    while IFS= read -r -d '' node_dir <&3 ; do
-      "$cmd" "$node_dir" "$@"
-    done 3< <(find . -type d -name "node*" -print0 | sort -z)
-  )
+  while IFS= read -r -d '' node_dir <&3 ; do
+    "$cmd" "$node_dir" "$@"
+  done 3< <(find "$run_dir" -type d -name "node*" -print0 | sort -z)
 }
 
 run_for_node() {

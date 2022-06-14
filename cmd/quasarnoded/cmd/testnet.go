@@ -38,6 +38,7 @@ const (
 	nodeNamePrefix   = "node"
 	nodeHomeDirName  = "home"
 	keyringBackend   = "test"
+	nodeKeyName      = "main"
 	portBaseP2p      = 26500
 	portBaseRpc      = 26600
 	portBaseApi      = 1300
@@ -207,7 +208,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 	g.validatorPubKeys = append(g.validatorPubKeys, validatorPubKey)
 	g.genesisFiles = append(g.genesisFiles, nodeConfig.GenesisFile())
 
-	addr, err := genTestKeyring(homeDir, nodeName)
+	addr, err := genTestKeyring(homeDir)
 	if err != nil {
 		return err
 	}
@@ -259,7 +260,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 		WithKeybase(kr).
 		WithTxConfig(g.clientCtx.TxConfig)
 
-	if err := tx.Sign(txFactory, nodeName, txBuilder, true); err != nil {
+	if err := tx.Sign(txFactory, nodeKeyName, txBuilder, true); err != nil {
 		return err
 	}
 
@@ -392,13 +393,13 @@ func (g *NodeConfigGenerator) cleanup() {
 	mustRemoveAll(g.tmpDir)
 }
 
-func genTestKeyring(outputDir string, keyname string) (sdk.AccAddress, error) {
+func genTestKeyring(outputDir string) (sdk.AccAddress, error) {
 	kb, err := keyring.New("quasar", keyringBackend, outputDir, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	addr, secret, err := testutil.GenerateSaveCoinKey(kb, keyname, "", true, hd.Secp256k1)
+	addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeKeyName, "", true, hd.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
