@@ -16,17 +16,6 @@ cmd_exists() {
   type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
 }
 
-env_subst() {
-  python -c '
-import os, sys
-data = sys.stdin.read(65536)
-for v in os.environ:
-  data = data.replace("$%s" % v, os.environ[v])
-  data = data.replace("${%s}" % v, os.environ[v])
-sys.stdout.write(data) ; sys.stdout.flush()
-'
-}
-
 gen_config() {
   local n="$1" ; shift
 
@@ -86,6 +75,7 @@ start_all() {
 
 stop_all() {
   for_all_nodes run_for_node stop
+  killall "quasarnoded"
 }
 
 status_all() {
@@ -113,5 +103,8 @@ init_default_cluster() {
   gen_config 4
   install_binaries
 }
+
+cmd_exists killall
+cmd_exists nohup
 
 "$@"
