@@ -41,7 +41,7 @@ for_all_nodes() {
 
     while IFS= read -r -d '' node_dir <&3 ; do
       "$cmd" "$node_dir" "$@"
-    done 3< <(find . -type d -name "node*" -print0)
+    done 3< <(find . -type d -name "node*" -print0 | sort -z)
   )
 }
 
