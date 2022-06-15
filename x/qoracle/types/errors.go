@@ -16,4 +16,5 @@ var (
 	ErrUnauthorizedIBCPacket      = sdkerrors.Register(ModuleName, 4, "unauthorized IBC packet")
 	ErrFailedAcknowledgment       = sdkerrors.Register(ModuleName, 5, "failed acknowledgment")
 	ErrNoActiveChannelPath        = sdkerrors.Register(ModuleName, 6, "no active channel path")
+	ErrInvalidPacketSequence      = sdkerrors.Register(ModuleName, 7, "invalid packet sequence")
 )

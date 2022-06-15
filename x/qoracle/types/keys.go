@@ -22,6 +22,12 @@ const (
 	// CoinRatesClientIDKey is query request identifier
 	CoinRatesClientIDKey = "coin_rates_id"
 
+	// CoinRatesLatestRequestKey is the key for the latest request id
+	CoinRatesLatestRequestKey = "coin_rates_latest_request"
+
+	// CoinRatesStateKey is the key for the state
+	CoinRatesStateKey = "coin_rates_state"
+
 	// BandchainOraclePortID is the default port id that bandchain oracle module binds to
 	BandchainOraclePortID = "oracle"
 
