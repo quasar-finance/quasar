@@ -307,7 +307,7 @@ func TestnetGenesisParams() GenesisParams {
 		sdk.NewInt(1_000_000), // 1 QSR
 	))
 	genParams.GovParams.TallyParams.Quorum = sdk.MustNewDecFromStr("0.0000001") // 0.00001%
-	genParams.GovParams.VotingParams.VotingPeriod = time.Second * 300           // 300 seconds
+	genParams.GovParams.VotingParams.VotingPeriod = time.Second * 20            // 20 seconds
 
 	genParams.OrionParams.Enabled = false
 	genParams.OrionParams.LpEpochId = "minute"

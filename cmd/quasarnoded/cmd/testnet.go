@@ -175,9 +175,9 @@ func (g *NodeConfigGenerator) newSimappConfig(minGasPrices string) *srvconfig.Co
 	conf.Telemetry.PrometheusRetentionTime = 60
 	conf.Telemetry.EnableHostnameLabel = false
 	conf.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
-	conf.API.Address = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseApi+g.nodeCount)
-	conf.GRPC.Address = fmt.Sprintf("0.0.0.0:%d", portBaseGrpc+g.nodeCount)
-	conf.GRPCWeb.Address = fmt.Sprintf("0.0.0.0:%d", portBaseWeb+g.nodeCount)
+	conf.API.Address = fmt.Sprintf("tcp://localhost:%d", portBaseApi+g.nodeCount)
+	conf.GRPC.Address = fmt.Sprintf("localhost:%d", portBaseGrpc+g.nodeCount)
+	conf.GRPCWeb.Address = fmt.Sprintf("localhost:%d", portBaseWeb+g.nodeCount)
 
 	return conf
 }
@@ -195,8 +195,8 @@ func (g *NodeConfigGenerator) AddNode() error {
 
 	nodeConfig.SetRoot(homeDir)
 	nodeConfig.Moniker = nodeName
-	nodeConfig.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseRpc+g.nodeCount)
-	nodeConfig.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", portBaseP2p+g.nodeCount)
+	nodeConfig.RPC.ListenAddress = fmt.Sprintf("tcp://localhost:%d", portBaseRpc+g.nodeCount)
+	nodeConfig.P2P.ListenAddress = fmt.Sprintf("tcp://localhost:%d", portBaseP2p+g.nodeCount)
 	nodeConfig.P2P.AddrBookStrict = false
 	nodeConfig.P2P.AllowDuplicateIP = true
 
@@ -245,7 +245,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 		return err
 	}
 
-	nodeMemo := fmt.Sprintf("%s@0.0.0.0:%d", g.nodeIDs[g.nodeCount], portBaseP2p+g.nodeCount)
+	nodeMemo := fmt.Sprintf("%s@localhost:%d", g.nodeIDs[g.nodeCount], portBaseP2p+g.nodeCount)
 	txBuilder.SetMemo(nodeMemo)
 
 	kr, err := loadTestKeyring(homeDir)
@@ -280,7 +280,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 		KeyringBackend: keyringBackend,
 		Output:         "json",
 		Node:           nodeConfig.RPC.ListenAddress,
-		BroadcastMode:  "sync",
+		BroadcastMode:  "block",
 	}
 	clientConfigData, err := toml.Marshal(clientConfig)
 	if err != nil {
