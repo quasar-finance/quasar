@@ -21,7 +21,7 @@ use cw20_base::contract::{
 };
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
 use quasar_types::curve::{CurveType, DecimalPlaces};
 use quasar_traits::traits::Curve;
 
@@ -284,6 +284,9 @@ pub fn execute_withdraw(
     info: MessageInfo,
     amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
+    // check that no funds are sent with the withdraw
+    nonpayable(&info)?;
+
     let vault_info = VAULT_INFO.load(deps.storage)?;
     let curve = VAULT_CURVE.load(deps.storage)?;
     let curve_fn = curve.to_curve_fn();
@@ -450,7 +453,7 @@ mod tests {
     }
 
     fn setup_test(deps: DepsMut, supply_decimals: u8, reserve_decimals: u8, reserve_supply: Uint128) {
-        // this matches `linear_curve` test case from curves.rs
+        // this matches `constant_curve` test case from curves.rs
         let creator = String::from(CREATOR);
         let msg = default_instantiate(supply_decimals, reserve_decimals, reserve_supply);
         let info = mock_info(&creator, &[]);
@@ -458,6 +461,30 @@ mod tests {
         // make sure we can instantiate with this
         let res = instantiate(deps, mock_env(), info, msg).unwrap();
         assert_eq!(0, res.messages.len());
+    }
+
+    fn setup_test_with_deposit(mut deps: DepsMut, env: Env, supply_decimals: u8, reserve_decimals: u8, reserve_supply: Uint128, deposited_funds: u128, received_shares: u128) {
+        // this matches `constant_curve` test case from curves.rs
+        let creator = String::from(CREATOR);
+        let msg = default_instantiate(supply_decimals, reserve_decimals, reserve_supply);
+        let info = mock_info(&creator, &[]);
+
+        // make sure we can instantiate with this
+        let res = instantiate(deps.branch(), env.clone(), info, msg).unwrap();
+        assert_eq!(0, res.messages.len());
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // setup_test() defaults to a 1-1 curve
+        // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
+        let info = mock_info(bob, &coins(deposited_funds, DENOM));
+        let buy = ExecuteMsg::Deposit {};
+        execute(deps.branch(), env, info, buy).unwrap();
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(received_shares));
     }
 
     #[test]
@@ -510,9 +537,9 @@ mod tests {
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
     }
-    
+
     #[test]
-    fn withdraw_works() {
+    fn deposit_needs_right_denom() {
         let mut deps = mock_dependencies();
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
@@ -522,9 +549,42 @@ mod tests {
 
         // setup_test() defaults to a 1-1 curve
         // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
-        let info = mock_info(bob, &coins(45_000_000_000, DENOM));
+        let info = mock_info(bob, &coins(45_000_000_000, "money-skeleton"));
         let buy = ExecuteMsg::Deposit {};
-        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
+        execute(deps.as_mut(), mock_env(), info, buy).unwrap_err();
+
+        // check that bob has no shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(0));
+    }
+
+    fn deposit_needs_funds() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // setup_test() defaults to a 1-1 curve
+        // bob tries to buy some shares without any funds
+        let info = mock_info(bob, &[]);
+        let buy = ExecuteMsg::Deposit {};
+        execute(deps.as_mut(), mock_env(), info, buy).unwrap_err();
+
+        // check that bob has no shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(0));
+    }
+    
+    #[test]
+    fn withdraw_works() {
+        let mut deps = mock_dependencies();
+        // setup_test() defaults to a 1-1 curve
+        // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
+        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
 
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
@@ -532,14 +592,63 @@ mod tests {
         let info = mock_info(bob, &[]);
         // withdraw all shares
         let sell = ExecuteMsg::Withdraw { amount: None, };
-        execute(deps.as_mut(), mock_env(), info, sell).unwrap();
+        let res = execute(deps.as_mut(), mock_env(), info, sell).unwrap();
 
         // check that bob's balance is completely gone
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::zero());
 
         // check that bob received a bankmessage containing funds
-
+        assert_eq!(res.messages[0], SubMsg::new(BankMsg::Send { to_address: bob.to_string(), amount: coins(45_000_000_000, DENOM) }))
     }
+
+    #[test]
+    fn cannot_withdraw_too_many_funds() {
+        let mut deps = mock_dependencies();
+        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+
+        let info = mock_info(bob, &[]);
+        // withdraw too many shares
+        let sell = ExecuteMsg::Withdraw { amount: Some(Uint128::new(999_000_000)), };
+        execute(deps.as_mut(), mock_env(), info, sell).unwrap_err();
+
+        // check that bob's balance has not changed
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000))
+    }
+
+    #[test]
+    fn cannot_send_funds_with_withdraw() {
+        let mut deps = mock_dependencies();
+        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+
+        let info = mock_info(bob, &coins(45_000_000_000, DENOM));
+        // withdraw too many shares
+        let sell = ExecuteMsg::Withdraw { amount: Some(Uint128::new(999_000_000)), };
+        execute(deps.as_mut(), mock_env(), info, sell).unwrap_err();
+
+        // check that bob's balance has not changed
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000))
+    }
+
 
     #[test]
     fn cw20_imports_work() {
