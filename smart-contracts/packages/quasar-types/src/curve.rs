@@ -1,6 +1,11 @@
 use std::fmt::{Debug, Formatter};
 use quasar_traits::traits::Curve;
-use cosmwasm_std::{Decimal, Uint128};
+use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::Decimal;
+use std::str::FromStr;
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
+use cosmwasm_std::{Decimal as StdDecimal, Uint128};
 
 pub enum CurveType {
     Constant
@@ -14,22 +19,22 @@ pub struct Constant {
 
 impl Curve for Constant {
     /// price returns the current price, equal to f(x)
-    fn price(&self, _supply: Uint128) -> Result<Uint128, cosmwasm_std::StdError> {
-        Ok(self.value)
+    fn price(&self, _supply: &Uint128) -> StdDecimal {
+        decimal_to_std(self.value)
     }
 
     /// returns the amount of shares gotten for amount of reserve tokens, equal to F(x)
-    fn deposit(&mut self, amount: &Uint128) -> Result<Uint128, cosmwasm_std::StdError> {
+    fn deposit(&self, amount: &Uint128) -> Uint128 {
         // f(x) = supply * self.value
-        let reserve = self.normalize.from_supply(amount) * self.value;
-        self.normalize.to_reserve(reserve)
+        let shares = self.normalize.from_supply(amount.clone()) * self.value;
+        self.normalize.to_reserve(shares)
     }
 
     /// returns the amount of reserve tokens that should be returned for the shares, equal to F^-1(x)
-    fn withdraw(&mut self, shares: &Uint128) -> Result<Vec<Cw20Coin>, cosmwasm_std::StdError> {
+    fn withdraw(&self, shares: &Uint128) -> Uint128 {
         // f(x) = reserve / self.value
-        let supply = self.normalize.from_reserve(reserve) / self.value;
-        self.normalize.to_supply(supply)
+        let amount = self.normalize.from_reserve(*shares) / self.value;
+        self.normalize.to_supply(amount)
     }
 }
 
@@ -76,5 +81,47 @@ impl DecimalPlaces {
 
     pub fn from_reserve(&self, reserve: Uint128) -> Decimal {
         decimal(reserve, self.reserve)
+    }
+}
+
+/// StdDecimal stores as a u128 with 18 decimal points of precision
+fn decimal_to_std(x: Decimal) -> StdDecimal {
+    // this seems straight-forward (if inefficient), converting via string representation
+    // TODO: execute errors better? Result?
+    StdDecimal::from_str(x.to_string().as_str()).unwrap()
+}
+
+/// decimal returns an object = num * 10 ^ -scale
+/// We use this function in contract.rs rather than call the crate constructor
+/// itself, in case we want to swap out the implementation, we can do it only in this file.
+pub fn decimal<T: Into<u128>>(num: T, scale: u32) -> Decimal {
+    Decimal::from_i128_with_scale(num.into() as i128, scale)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn constant_curve() {
+        // supply is nstep (9), reserve is uatom (6)
+        let normalize = DecimalPlaces::new(9, 6);
+        // decimal is 1.5
+        let curve = Constant::new(Decimal::new(15i64, 1), normalize);
+
+        // do some sanity checks....
+        // spot price is always 1.5 ATOM
+        assert_eq!(
+            StdDecimal::percent(150),
+            curve.price(&Uint128::new(123))
+        );
+
+        // if we have 30 STEP, we should have 45 ATOM
+        let reserve = curve.deposit(&Uint128::new(30_000_000_000));
+        assert_eq!(Uint128::new(45_000_000), reserve);
+
+        // if we have 36 ATOM, we should have 24 STEP
+        let supply = curve.withdraw(&Uint128::new(36_000_000));
+        assert_eq!(Uint128::new(24_000_000_000), supply);
     }
 }
