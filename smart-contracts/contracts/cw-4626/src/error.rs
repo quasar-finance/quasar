@@ -10,5 +10,5 @@ pub enum ContractError {
     Base(#[from] cw20_base::ContractError),
 
     #[error("{0}")]
-    PaymentError(#[from] cw_utils::PaymentError)
+    PaymentError(#[from] cw_utils::PaymentError),
 }
