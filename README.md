@@ -11,7 +11,7 @@ IBC features that we are developing on:
 Quasar is working hard to simplfy and add ease to collaborative investment with digital assets. We are creating a decentralized platform for creating custom, soverign vaults that can be molded into any imaginable investment financial instrument from ETFs, mutual fund, SPAC, or whatever. The galaxy is the limit (or maybe the gas fee is 😅)  Our flagship product is a vault that implements optimal LPing into pools on Osmosis DEX.
 
 ## DISCLAIMER
-The current codebase is experimental and undergoing testing and auditing - no code is guarunteed to be ready for production environments at this time. 
+The current codebase is experimental and undergoing testing and auditing - no code is guaranteed to be ready for production environments at this time. 
 
 ## Quasar Node
 
