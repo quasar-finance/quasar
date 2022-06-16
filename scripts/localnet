@@ -143,7 +143,7 @@ register_upgrade() {
   local height="$1" ; shift
   local name="$1"   ; shift
 
-  node 0 cmd tx gov submit-proposal software-upgrade "$name" --title "${name} upgrade" --description "${name} upgrade" --upgrade-height "$height" --yes
+  node 0 cmd tx gov submit-proposal software-upgrade "$name" --title "${name} upgrade" --description "${name} upgrade" --upgrade-height "$height" -y
 
   node 0 cmd tx gov deposit "$id" 1000000uqsar -y
   node 1 cmd tx gov deposit "$id" 1000000uqsar -y

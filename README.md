@@ -108,7 +108,7 @@ cd cosmos-sdk
 git checkout cosmovisor/v1.1.0
 make cosmovisor
 cp cosmovisor/cosmovisor ~/go/bin/cosmovisor
-echo $(which cosmovisor)
+echo "$(which cosmovisor)"
 ```
 
 ```bash
