@@ -1,14 +1,44 @@
-use std::fmt::{Debug, Formatter};
+use cosmwasm_std::{Decimal as StdDecimal, Uint128};
 use quasar_traits::traits::Curve;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
-use std::str::FromStr;
 use schemars::JsonSchema;
-use serde::{Serialize, Deserialize};
-use cosmwasm_std::{Decimal as StdDecimal, Uint128};
+use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum CurveType {
-    Constant
+    Constant { value: Uint128, scale: u32 },
+}
+
+// TODO see if we want to add in curve_fn to deposit and withdraw similar to cw20-bonding
+pub type CurveFn = Box<dyn Fn(DecimalPlaces) -> Box<dyn Curve>>;
+
+impl CurveType {
+    pub fn to_curve_fn(&self) -> CurveFn {
+        let s = self.clone();
+        match s {
+            CurveType::Constant { value, scale } => {
+                let calc = move |places| -> Box<dyn Curve> {
+                    Box::new(Constant::new(decimal(value, scale), places))
+                };
+                Box::new(calc)
+            } // CurveType::Linear { slope, scale } => {
+              //     let calc = move |places| -> Box<dyn Curve> {
+              //         Box::new(Linear::new(decimal(slope, scale), places))
+              //     };
+              //     Box::new(calc)
+              // }
+              // CurveType::SquareRoot { slope, scale } => {
+              //     let calc = move |places| -> Box<dyn Curve> {
+              //         Box::new(SquareRoot::new(decimal(slope, scale), places))
+              //     };
+              //     Box::new(calc)
+              // }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -111,10 +141,7 @@ mod tests {
 
         // do some sanity checks....
         // spot price is always 1.5 ATOM
-        assert_eq!(
-            StdDecimal::percent(150),
-            curve.price(&Uint128::new(123))
-        );
+        assert_eq!(StdDecimal::percent(150), curve.price(&Uint128::new(123)));
 
         // if we have 30 STEP, we should have 45 ATOM
         let reserve = curve.deposit(&Uint128::new(30_000_000_000));

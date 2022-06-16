@@ -1,5 +1,5 @@
-use cosmwasm_std::{ Binary, StdError, StdResult, Uint128, Uint256};
-use cw20::{ Cw20Coin, Logo, MinterResponse};
+use cosmwasm_std::{Binary, StdError, StdResult, Uint128, Uint256};
+use cw20::{Cw20Coin, Logo, MinterResponse};
 use cw_utils::Expiration;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -20,10 +20,15 @@ pub struct InstantiateMsg {
     pub reserve_denom: String,
     // the total amount of tokens that put in the reserve
     pub reserve_total_supply: Uint128,
-    pub decimals: u8,
+    pub reserve_decimals: u8,
+    // supply is the amount of tokens this vault has issued.
+    // supply_decimals is the amount of decimals of the supply token
+    pub supply_decimals: u8,
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
     pub marketing: Option<InstantiateMarketingInfo>,
+
+    pub curve_type: quasar_types::curve::CurveType,
 }
 
 impl InstantiateMsg {
@@ -46,7 +51,7 @@ impl InstantiateMsg {
         if self.reserve_denom.is_empty() {
             return Err(StdError::generic_err("No reserve denom"));
         }
-        if self.decimals > 18 {
+        if self.supply_decimals > 18 {
             return Err(StdError::generic_err("Decimals must not exceed 18"));
         }
         Ok(())
@@ -174,21 +179,16 @@ pub enum ExecuteMsg {
     /// Deposits assets and mints shares
     Deposit {},
     /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
+    /// If amount is None, all shares are sold
     Withdraw {
         amount: Option<Uint128>,
-        owner: String,
     },
 
     //cw20-base messages
     /// Transfer is a base message to move tokens to another account without triggering actions
-    Transfer {
-        recipient: String,
-        amount: Uint128,
-    },
+    Transfer { recipient: String, amount: Uint128 },
     /// Burn is a base message to destroy tokens forever
-    Burn {
-        amount: Uint128,
-    },
+    Burn { amount: Uint128 },
     /// Send is a base message to transfer tokens to a contract and trigger an action
     /// on the receiving contract.
     Send {
@@ -237,16 +237,10 @@ pub enum ExecuteMsg {
         msg: Binary,
     },
     /// Only with "approval" extension. Destroys tokens forever
-    BurnFrom {
-        owner: String,
-        amount: Uint128,
-    },
+    BurnFrom { owner: String, amount: Uint128 },
     /// Only with the "mintable" extension. If authorized, creates amount new tokens
     /// and adds to the recipient balance.
-    Mint {
-        recipient: String,
-        amount: Uint128,
-    },
+    Mint { recipient: String, amount: Uint128 },
     /// Only with the "marketing" extension. If authorized, updates marketing metadata.
     /// Setting None/null for any of these will leave it unchanged.
     /// Setting Some("") will clear this field on the contract storage
