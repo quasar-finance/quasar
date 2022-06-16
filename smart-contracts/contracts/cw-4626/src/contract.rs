@@ -1,27 +1,29 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, BankMsg, coins};
 use cosmwasm_std::CosmosMsg::Bank;
+use cosmwasm_std::{
+    coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, Uint128,
+};
 
 use cw2::set_contract_version;
-use cw20::{
-    EmbeddedLogo, Logo, LogoInfo,
-    MarketingInfoResponse,
-};
+use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
-    deduct_allowance, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
-    execute_transfer_from, execute_burn_from, query_allowance,
+    deduct_allowance, execute_burn_from, execute_decrease_allowance, execute_increase_allowance,
+    execute_send_from, execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
-    execute_burn, execute_mint, execute_send, execute_transfer, execute_upload_logo, execute_update_marketing, query_balance, query_token_info,
-    query_download_logo, query_marketing_info, query_minter,
+    execute_burn, execute_mint, execute_send, execute_transfer, execute_update_marketing,
+    execute_upload_logo, query_balance, query_download_logo, query_marketing_info, query_minter,
+    query_token_info,
 };
-use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO, MARKETING_INFO, LOGO};
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
+use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::must_pay;
-
+use quasar_types::curve::{CurveType, DecimalPlaces};
+use quasar_traits::traits::Curve;
 
 use share_distributor::single_token::SingleToken;
 
@@ -30,8 +32,8 @@ use crate::msg::{
     ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse,
 };
 use crate::state::{
-    Distributor, VaultInfo,
-    OUTSTANDING_SHARES, VAULT_RESERVES, VAULT_DISTRIBUTOR, VAULT_INFO,
+    Distributor, VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO,
+    VAULT_RESERVES,
 };
 
 // version info for migration info
@@ -114,20 +116,22 @@ pub fn instantiate(
     msg.validate()?;
 
     // set the share distributor of the vault to the single token distributor
-    VAULT_INFO.save(deps.storage, &VaultInfo { reserve_denom: msg.reserve_denom.to_string(), total_supply: msg.reserve_total_supply })?;
-
-    // TODO see if we want to add some logic to differentiate between single and multiple token vaults
-    // set the share distributor of the vault to the single token distributor
-    let vault_distributor = Distributor {
-        dist: SingleToken {},
-    };
-    VAULT_DISTRIBUTOR.save(deps.storage, &vault_distributor)?;
+    VAULT_INFO.save(
+        deps.storage,
+        &VaultInfo {
+            reserve_denom: msg.reserve_denom.to_string(),
+            total_supply: msg.reserve_total_supply,
+            supply: Uint128::zero(),
+            reserve: Uint128::zero(),
+            decimals: DecimalPlaces{ supply: msg.supply_decimals as u32, reserve: msg.reserve_decimals as u32 }
+        },
+    )?;
 
     // store token info
     let data = TokenInfo {
         name: msg.name,
         symbol: msg.symbol,
-        decimals: msg.decimals,
+        decimals: msg.supply_decimals,
         total_supply: Uint128::zero(),
         // set self as minter, so we can properly execute mint and burn
         mint: Some(MinterData {
@@ -162,6 +166,8 @@ pub fn instantiate(
         MARKETING_INFO.save(deps.storage, &data)?;
     }
 
+    VAULT_CURVE.save(deps.storage, &msg.curve_type)?;
+
     Ok(Response::default())
 }
 
@@ -174,12 +180,8 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         // the vault execute messages
-        ExecuteMsg::Deposit { } => {
-            execute_deposit(deps, env, info)
-        }
-        ExecuteMsg::Withdraw { amount, owner } => {
-            execute_withdraw(deps, env, info, amount, owner)
-        }
+        ExecuteMsg::Deposit {} => execute_deposit(deps, env, info),
+        ExecuteMsg::Withdraw { amount } => execute_withdraw(deps, env, info, amount),
         // the cw-20 execute messages
         ExecuteMsg::Transfer { recipient, amount } => {
             Ok(execute_transfer(deps, env, info, recipient, amount)?)
@@ -190,68 +192,103 @@ pub fn execute(
             amount,
             msg,
         } => Ok(execute_send(deps, env, info, contract, amount, msg)?),
-        ExecuteMsg::Mint { recipient, amount } => Ok(execute_mint(deps, env, info, recipient, amount)?),
+        ExecuteMsg::Mint { recipient, amount } => {
+            Ok(execute_mint(deps, env, info, recipient, amount)?)
+        }
         ExecuteMsg::IncreaseAllowance {
             spender,
             amount,
             expires,
-        } => Ok(execute_increase_allowance(deps, env, info, spender, amount, expires)?),
+        } => Ok(execute_increase_allowance(
+            deps, env, info, spender, amount, expires,
+        )?),
         ExecuteMsg::DecreaseAllowance {
             spender,
             amount,
             expires,
-        } => Ok(execute_decrease_allowance(deps, env, info, spender, amount, expires)?),
+        } => Ok(execute_decrease_allowance(
+            deps, env, info, spender, amount, expires,
+        )?),
         ExecuteMsg::TransferFrom {
             owner,
             recipient,
             amount,
-        } => Ok(execute_transfer_from(deps, env, info, owner, recipient, amount)?),
-        ExecuteMsg::BurnFrom { owner, amount } => Ok(execute_burn_from(deps, env, info, owner, amount)?),
+        } => Ok(execute_transfer_from(
+            deps, env, info, owner, recipient, amount,
+        )?),
+        ExecuteMsg::BurnFrom { owner, amount } => {
+            Ok(execute_burn_from(deps, env, info, owner, amount)?)
+        }
         ExecuteMsg::SendFrom {
             owner,
             contract,
             amount,
             msg,
-        } => Ok(execute_send_from(deps, env, info, owner, contract, amount, msg)?),
+        } => Ok(execute_send_from(
+            deps, env, info, owner, contract, amount, msg,
+        )?),
         ExecuteMsg::UpdateMarketing {
             project,
             description,
             marketing,
-        } => Ok(execute_update_marketing(deps, env, info, project, description, marketing)?),
+        } => Ok(execute_update_marketing(
+            deps,
+            env,
+            info,
+            project,
+            description,
+            marketing,
+        )?),
         ExecuteMsg::UploadLogo(logo) => Ok(execute_upload_logo(deps, env, info, logo)?),
-        ExecuteMsg::Receive { .. } => {todo!()}
+        ExecuteMsg::Receive { .. } => {
+            todo!()
+        }
     }
 }
 
-pub fn execute_deposit(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-
+pub fn execute_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
     // do all reasonable checks
-    let denom = VAULT_INFO.load(deps.storage)?.reserve_denom;
+    let vault_info = VAULT_INFO.load(deps.storage)?;
+    let curve = VAULT_CURVE.load(deps.storage)?;
+    let curve_fn = curve.to_curve_fn();
+    let curve = curve_fn(vault_info.decimals);
     // only accept one token, change this for multi asset
+
     // TODO this is a hardcoded amount of a linear 1-1 price, we need to change this with customizable curves
-    let amount = must_pay(&info, denom.as_str())?;
-
-
+    let amount = must_pay(&info, vault_info.reserve_denom.as_str())?;
+    let shares = curve.deposit(&amount);
     // call into cw20-base to mint the token, call as self as no one else is allowed
     let sub_info = MessageInfo {
         sender: env.contract.address.clone(),
         funds: vec![],
     };
     // exchange all the free balance for shares, mint shares of the underlying cw-20
-    execute_mint(deps, env, sub_info, info.sender.to_string(), amount)?;
+    execute_mint(deps, env, sub_info, info.sender.to_string(), shares)?;
 
     let res = Response::new()
         .add_attribute("action", "buy")
         .add_attribute("from", info.sender)
-        // TODO change shares once the curves are customizable
         .add_attribute("reserve", amount)
-        .add_attribute("shares", amount);
+        .add_attribute("shares", shares);
     Ok(res)
 }
 
 // TODO decide on whether to add owner here for allowance support
-pub fn execute_withdraw(mut deps: DepsMut, env: Env, info: MessageInfo, amount: Option<Uint128>, owner: String) ->Result<Response, ContractError> {
-    let state = VAULT_INFO.load(deps.storage)?;
+pub fn execute_withdraw(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Option<Uint128>,
+) -> Result<Response, ContractError> {
+    let vault_info = VAULT_INFO.load(deps.storage)?;
+    let curve = VAULT_CURVE.load(deps.storage)?;
+    let curve_fn = curve.to_curve_fn();
+    let curve = curve_fn(vault_info.decimals);
+
 
     // if amount is None, sell all shares of sender
     let shares = if amount.is_some() {
@@ -261,17 +298,16 @@ pub fn execute_withdraw(mut deps: DepsMut, env: Env, info: MessageInfo, amount: 
         query_balance(deps.as_ref(), info.clone().sender.into_string())?.balance
     };
 
+    let amount = curve.withdraw(&shares);
+
     // execute_burn will error if the sender does not have enough tokens to burn
     // TODO remove clone
+    // TODO make sure that we can discard the result of execute_burn
     execute_burn(deps.branch(), env, info.clone(), shares)?;
-
-    // we know that the sender has amount of shares, we can release fund based on that amount
-    // TODO add customizable curves here
-    let released = shares;
 
     let msg = BankMsg::Send {
         to_address: info.sender.to_string(),
-        amount: coins(released.u128(), state.reserve_denom),
+        amount: coins(amount.u128(), vault_info.reserve_denom),
     };
 
     let res = Response::new()
@@ -364,23 +400,22 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 //     Ok(ConvertToSharesResponse { amount })
 // }
 
-
 pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
     let info = VAULT_INFO.load(deps.storage)?;
     let res = VaultInfoResponse {
         reserve_denom: info.reserve_denom,
-        total_supply: info.total_supply
+        total_supply: info.total_supply,
     };
     Ok(res)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::BorrowMut;
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg};
     use cw_utils::PaymentError;
+    use std::borrow::BorrowMut;
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
@@ -388,19 +423,25 @@ mod tests {
     const BUYER: &str = "buyer";
 
     fn default_instantiate(
-        decimals: u8,
+        supply_decimals: u8,
         reserve_decimals: u8,
-        reserve_supply: Uint128
+        reserve_supply: Uint128,
     ) -> InstantiateMsg {
         InstantiateMsg {
             name: "Bonded".to_string(),
             symbol: "EPOXY".to_string(),
             reserve_denom: DENOM.to_string(),
             reserve_total_supply: reserve_supply,
-            decimals,
+            reserve_decimals,
+            supply_decimals,
             initial_balances: vec![],
+            // initiate with a constant 1 to 1 curve
+            curve_type: CurveType::Constant {
+                value: Uint128::new(10),
+                scale: 1,
+            },
             mint: None,
-            marketing: None
+            marketing: None,
         }
     }
 
@@ -408,10 +449,10 @@ mod tests {
         query_balance(deps, addr.into()).unwrap().balance
     }
 
-    fn setup_test(deps: DepsMut, decimals: u8, reserve_decimals: u8, reserve_supply: Uint128) {
+    fn setup_test(deps: DepsMut, supply_decimals: u8, reserve_decimals: u8, reserve_supply: Uint128) {
         // this matches `linear_curve` test case from curves.rs
         let creator = String::from(CREATOR);
-        let msg = default_instantiate(decimals, reserve_decimals, reserve_supply);
+        let msg = default_instantiate(supply_decimals, reserve_decimals, reserve_supply);
         let info = mock_info(&creator, &[]);
 
         // make sure we can instantiate with this
@@ -447,9 +488,57 @@ mod tests {
         // spot price 0 as supply is 0
         // assert_eq!(state.spot_price, Decimal::zero());
 
-
         // no balance
         assert_eq!(get_balance(deps.as_ref(), &creator), Uint128::zero());
+    }
+
+    #[test]
+    fn deposit_works() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // setup_test() defaults to a 1-1 curve
+        // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
+        let info = mock_info(bob, &coins(45_000_000_000, DENOM));
+        let buy = ExecuteMsg::Deposit {};
+        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+    }
+    
+    #[test]
+    fn withdraw_works() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let alice: &str = "alice";
+        let bob: &str = "bobbyb";
+        let carl: &str = "carl";
+
+        // setup_test() defaults to a 1-1 curve
+        // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
+        let info = mock_info(bob, &coins(45_000_000_000, DENOM));
+        let buy = ExecuteMsg::Deposit {};
+        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
+
+        // check that bob has the shares
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
+
+        let info = mock_info(bob, &[]);
+        // withdraw all shares
+        let sell = ExecuteMsg::Withdraw { amount: None, };
+        execute(deps.as_mut(), mock_env(), info, sell).unwrap();
+
+        // check that bob's balance is completely gone
+        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::zero());
+
+        // check that bob received a bankmessage containing funds
+
     }
 
     #[test]
@@ -461,9 +550,9 @@ mod tests {
         let bob: &str = "bobby";
         let carl: &str = "carl";
 
-        // since we have a constant 1-1 curve hardcoded, we can only exchange 1-1 right now
-        // spend 45_000 uatom for 45_000 EPOXY
-        let info = mock_info(bob, &coins(45_000, DENOM));
+        // setup_test() defaults to a 1-1 curve, the supply has 9 decimals and the shares 6 decimals
+        // spend 45_000_000 uatom for 45_000 shares
+        let info = mock_info(bob, &coins(45_000_000, DENOM));
         let buy = ExecuteMsg::Deposit {};
         execute(deps.as_mut(), mock_env(), info, buy).unwrap();
 
