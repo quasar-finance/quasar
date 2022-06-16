@@ -12,6 +12,7 @@ run/
 
 node_modules/
 vue/
-target/
 
+smart-contracts/contracts/**/artifacts
+smart-contracts/contracts/**/target
 local_testnet_run-*nodes/
