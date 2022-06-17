@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg::Bank;
-use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin};
+use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin, Addr};
 
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
@@ -28,7 +28,7 @@ use crate::helpers::reserve;
 use crate::error::ContractError;
 use crate::msg::{AssetResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, TotalAssetResponse, VaultInfoResponse};
 use crate::state::{
-    Distributor, VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO, VAULT_RESERVES,
+    VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO, VAULT_RESERVES,
 };
 
 // version info for migration info
@@ -334,7 +334,7 @@ pub fn execute_burn_from(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
@@ -353,7 +353,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
         QueryMsg::Asset {} => to_binary(&query_asset(deps)?),
-        QueryMsg::TotalAssets { } => to_binary(&query_total_assets(deps)?),
+        QueryMsg::TotalAssets { } => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { .. } => {
             todo!()
@@ -391,10 +391,10 @@ pub fn query_asset(deps: Deps) -> StdResult<AssetResponse> {
     Ok(AssetResponse{ denom: vault_info.reserve_denom })
 }
 
-// TODO see if we want current reserve (and also supply in)
-pub fn query_total_assets(deps: Deps) -> StdResult<TotalAssetResponse> {
+pub fn query_total_assets(deps: Deps, env: Env) -> StdResult<TotalAssetResponse> {
     let vault_info = VAULT_INFO.load(deps.storage)?;
-    Ok(TotalAssetResponse{ total_managed_assets: vault_info.reserve })
+    let balance = deps.querier.query_balance(env.contract.address, vault_info.reserve_denom)?;
+    Ok(TotalAssetResponse{ total_managed_assets: balance.amount })
 }
 
 pub fn query_convert_to_shares(deps: Deps, assets: Vec<Coin>) -> StdResult<ConvertToSharesResponse> {
@@ -834,7 +834,7 @@ mod tests {
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
         // check that total_assets is zero upon instantiation
-        let total_assets = query_total_assets(deps.as_ref()).unwrap();
+        let total_assets = query_total_assets(deps.as_ref(), mock_env()).unwrap();
         assert_eq!(total_assets.total_managed_assets, Uint128::new(0));
 
         // deposit some funds in different accounts and check assets after each deposit
@@ -842,19 +842,9 @@ mod tests {
         let bob: &str = "bobbyb";
         let carl: &str = "carl";
 
-        let info = mock_info(bob, &coins(45_000_000_000, DENOM));
-        let buy = ExecuteMsg::Deposit {};
-        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
+        deps.querier.update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
 
-        let total_assets = query_total_assets(deps.as_ref()).unwrap();
+        let total_assets = query_total_assets(deps.as_ref(), mock_env()).unwrap();
         assert_eq!(total_assets.total_managed_assets, Uint128::new(45_000_000_000));
-
-        let info = mock_info(alice, &coins(100_000_000_000, DENOM));
-        let buy = ExecuteMsg::Deposit {};
-        execute(deps.as_mut(), mock_env(), info, buy).unwrap();
-
-        let total_assets = query_total_assets(deps.as_ref()).unwrap();
-        assert_eq!(total_assets.total_managed_assets, Uint128::new(145_000_000_000));
-
     }
 }
