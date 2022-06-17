@@ -27,16 +27,9 @@ pub struct VaultInfo {
     pub decimals: DecimalPlaces,
 }
 
-// we wrap our generic share distributor trait in a struct. This way, people writing their own
-// distributor either do some large changes, or implement their own version of the ShareDistributor
-// trait and get all the "code hints" we leave along the way
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct Distributor<T: ShareDistributor + Clone + PartialEq + JsonSchema + Debug> {
-    pub dist: T,
-}
 
 pub const VAULT_INFO: Item<VaultInfo> = Item::new("vault_info");
-pub const OUTSTANDING_SHARES: Map<String, Uint128> = Map::new("outstanding_shares");
 pub const VAULT_CURVE: Item<CurveType> = Item::new("vault_curve");
-pub const VAULT_RESERVES: Map<&Addr, String> = Map::new("vault_reserves");
+// TODO I think OUTSTANDING_SHARES and VAULT_RESERVES are deprecated, see if we can actually remove them
+pub const OUTSTANDING_SHARES: Map<String, Uint128> = Map::new("outstanding_shares");
+pub const VAULT_RESERVES: Map<&Addr, Uint128> = Map::new("vault_reserves");
