@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+# this contains a git patch of a dummy quasar chain upgrade, for testing purposes
+load_patch() {
+  base64 -d << EOS | gunzip
+H4sIAAAAAAAAA5VTwY6bMBA9w1eMOCUF7GQbRe1KldJuD72kSlvtXisDhliLbWqbNKtV/n1tB7Kg
+TZXUF6Q3b2bezDwKVpaQphUzQDBpGtw2lSIF1bhoOX/CuRTaEGE0qiRklxihoH+hZDUFLgsK89ls
+uViETBR0D7PjQ2iZf3i/yGiYpinggu6waOs6jOP4ivqrFaSzZAbxPJkvYbUK44bkj6SisLsJ4zBm
+vJHKwCSMg8jOtG0zlEuOSUYq/KclmihhhY3aRC4v0EYqCsOcXGoudfdJdfGIPQebp8YnTV0exnB/
+rPOdcAoFLZmgGsyWghRpviVMQNcIhGOUUvmon60PoTD2U45qfYLIk7y+HVF90AZ66aiDnu0Ag9Rb
+OL0BmljSnaLE0A78RkRRU3UL51DH/uXm7WB9Kuq3gEax54OlH8LigpdOsv9lpQHhKidlH8uszPJr
+nTQsPzDSzeKCkUpujib5D0sF1jAX7NQbKbiChu0W2po6dtfEwxc67HtFY9OWrcjPHt1Nyzm8OzZD
+ayLsQrwVrD1LVrWK2LNDF74bYI7z+9WXX4imn5tmQxThr1WmMNSOxr3BmVhR0yoBTuAkN3uwQ7g2
+hu5NAk1NxLjCxiIJ7Hiv6IEqzaRYk2YKkzdYAlQpqaa+U2CPijaKCVOLSRRN30Bf/Q/6wx8YOLNd
+jS1zhhj5nQa9ds7Rz1as+wTt5khguD+n2JU5uH/mBXIJE8WABQAA
+EOS
+}
+
+load_patch | git apply
+
+echo "Dummy upgrade patch loaded"
+echo "You can now register the dummy upgrade in the app.go then run a build with `make build`"

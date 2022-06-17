@@ -80,6 +80,7 @@ start_relayer_cmd() {
 
 start_quasar()  { start_chain_bg "quasar"  "${project_dir}"                                ; }
 start_osmosis() { start_chain_bg "osmosis" "${project_dir}/../contrib/osmosis-quasar-fork" ; }
+# NOTE: branch `bugfix/1710-register-ica-module` should be checked out in osmosis-quasar-fork repo
 
 start_relayer() {
   "$this_script" start_relayer_cmd >| "$relayer_out_file" 2>&1 &
