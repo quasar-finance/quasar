@@ -12,7 +12,7 @@ Quasar is working hard to simplfy and add ease to collaborative investment with 
 
 ## DISCLAIMER
 
-The current codebase is experimental and undergoing testing and auditing - no code is guarunteed to be ready for production environments at this time.
+The current codebase is experimental and undergoing testing and auditing - no code is guaranteed to be ready for production environments at this time. 
 
 ## Quasar Node
 
