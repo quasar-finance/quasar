@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, StdError, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Binary, Coin, StdError, StdResult, Uint128, Uint256};
 use cw20::{Cw20Coin, Logo, MinterResponse};
 use cw_utils::Expiration;
 use schemars::JsonSchema;
@@ -83,17 +83,17 @@ fn is_valid_symbol(symbol: &str) -> bool {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Returns the denomination of the vaults reserve token
-    /// Return type: TODO
+    /// Return type: AssetResponse
     Asset {},
-    /// Returns the total amount of underlying assets that is managed by the vault
-    /// Return type: TODO
+    /// Returns the total amount of underlying reserve assets that is managed by the vault
+    /// Return type: TotalAssetsResponse
     TotalAssets {},
     /// Returns the current balance of shares of the given address, 0 if unset.
     /// Return type: BalanceResponse.
     Balance { address: String },
-    /// Returns the amount of shares the vault would exchange for the underlying asset, in the ideal scenario
+    /// Returns the amount of shares the vault would exchange for the underlying reserve asset, in the ideal scenario
     /// Return type: TODO
-    ConvertToShares { assets: Vec<Cw20Coin> },
+    ConvertToShares { assets: Vec<Coin> },
     /// Returns the amount of assets the vault would exchange for the amount of shares, in the ideal scenario
     /// Return type: ConvertToSharesResponse
     ConvertToAssets { shares: Uint256 },
@@ -158,6 +158,18 @@ pub enum QueryMsg {
     /// contract.
     /// Return type: DownloadLogoResponse.
     DownloadLogo {},
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct AssetResponse {
+    pub denom: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct TotalAssetResponse {
+    pub total_managed_assets: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
