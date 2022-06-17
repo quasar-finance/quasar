@@ -11,7 +11,7 @@ use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
-    deduct_allowance, execute_burn_from, execute_decrease_allowance, execute_increase_allowance,
+    deduct_allowance, execute_decrease_allowance, execute_increase_allowance,
     execute_send_from, execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
@@ -22,8 +22,8 @@ use cw20_base::contract::{
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
-use quasar_types::curve::{CurveType, DecimalPlaces};
 use quasar_traits::traits::Curve;
+use quasar_types::curve::{CurveType, DecimalPlaces};
 
 use share_distributor::single_token::SingleToken;
 
@@ -32,8 +32,7 @@ use crate::msg::{
     ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VaultInfoResponse,
 };
 use crate::state::{
-    Distributor, VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO,
-    VAULT_RESERVES,
+    Distributor, VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO, VAULT_RESERVES,
 };
 
 // version info for migration info
@@ -123,7 +122,10 @@ pub fn instantiate(
             total_supply: msg.reserve_total_supply,
             supply: Uint128::zero(),
             reserve: Uint128::zero(),
-            decimals: DecimalPlaces{ supply: msg.supply_decimals as u32, reserve: msg.reserve_decimals as u32 }
+            decimals: DecimalPlaces {
+                supply: msg.supply_decimals as u32,
+                reserve: msg.reserve_decimals as u32,
+            },
         },
     )?;
 
@@ -292,7 +294,6 @@ pub fn execute_withdraw(
     let curve_fn = curve.to_curve_fn();
     let curve = curve_fn(vault_info.decimals);
 
-
     // if amount is None, sell all shares of sender
     let shares = if amount.is_some() {
         amount.unwrap()
@@ -321,6 +322,20 @@ pub fn execute_withdraw(
     Ok(res)
 }
 
+// TODO implement burn_from to support the cw20 allowances
+// execute_burn_from tries to burn the shares from owner if sender has an allowance over those tokens
+// in the cw20 contract. The underlying reserve tokens should be returned to who? probably the sender
+// and not the owner
+pub fn execute_burn_from(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    owner: String,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    todo!()
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -340,7 +355,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
-        QueryMsg::Asset { .. } => {
+        QueryMsg::Asset {} => {
             todo!()
         }
         QueryMsg::TotalAssets { .. } => {
@@ -452,7 +467,12 @@ mod tests {
         query_balance(deps, addr.into()).unwrap().balance
     }
 
-    fn setup_test(deps: DepsMut, supply_decimals: u8, reserve_decimals: u8, reserve_supply: Uint128) {
+    fn setup_test(
+        deps: DepsMut,
+        supply_decimals: u8,
+        reserve_decimals: u8,
+        reserve_supply: Uint128,
+    ) {
         // this matches `constant_curve` test case from curves.rs
         let creator = String::from(CREATOR);
         let msg = default_instantiate(supply_decimals, reserve_decimals, reserve_supply);
@@ -463,7 +483,15 @@ mod tests {
         assert_eq!(0, res.messages.len());
     }
 
-    fn setup_test_with_deposit(mut deps: DepsMut, env: Env, supply_decimals: u8, reserve_decimals: u8, reserve_supply: Uint128, deposited_funds: u128, received_shares: u128) {
+    fn setup_test_with_deposit(
+        mut deps: DepsMut,
+        env: Env,
+        supply_decimals: u8,
+        reserve_decimals: u8,
+        reserve_supply: Uint128,
+        deposited_funds: u128,
+        received_shares: u128,
+    ) {
         // this matches `constant_curve` test case from curves.rs
         let creator = String::from(CREATOR);
         let msg = default_instantiate(supply_decimals, reserve_decimals, reserve_supply);
@@ -484,7 +512,10 @@ mod tests {
         execute(deps.branch(), env, info, buy).unwrap();
 
         // check that bob has the shares
-        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(received_shares));
+        assert_eq!(
+            get_balance(deps.as_ref(), bob),
+            Uint128::new(received_shares)
+        );
     }
 
     #[test]
@@ -574,13 +605,21 @@ mod tests {
         // check that bob has no shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(0));
     }
-    
+
     #[test]
     fn withdraw_works() {
         let mut deps = mock_dependencies();
         // setup_test() defaults to a 1-1 curve
         // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
-        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+        setup_test_with_deposit(
+            deps.as_mut(),
+            mock_env(),
+            9,
+            6,
+            Uint128::MAX,
+            45_000_000_000,
+            45_000_000,
+        );
 
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
@@ -591,20 +630,34 @@ mod tests {
 
         let info = mock_info(bob, &[]);
         // withdraw all shares
-        let sell = ExecuteMsg::Withdraw { amount: None, };
+        let sell = ExecuteMsg::Withdraw { amount: None };
         let res = execute(deps.as_mut(), mock_env(), info, sell).unwrap();
 
         // check that bob's balance is completely gone
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::zero());
 
         // check that bob received a bankmessage containing funds
-        assert_eq!(res.messages[0], SubMsg::new(BankMsg::Send { to_address: bob.to_string(), amount: coins(45_000_000_000, DENOM) }))
+        assert_eq!(
+            res.messages[0],
+            SubMsg::new(BankMsg::Send {
+                to_address: bob.to_string(),
+                amount: coins(45_000_000_000, DENOM)
+            })
+        )
     }
 
     #[test]
     fn cannot_withdraw_too_many_funds() {
         let mut deps = mock_dependencies();
-        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+        setup_test_with_deposit(
+            deps.as_mut(),
+            mock_env(),
+            9,
+            6,
+            Uint128::MAX,
+            45_000_000_000,
+            45_000_000,
+        );
 
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
@@ -618,7 +671,9 @@ mod tests {
 
         let info = mock_info(bob, &[]);
         // withdraw too many shares
-        let sell = ExecuteMsg::Withdraw { amount: Some(Uint128::new(999_000_000)), };
+        let sell = ExecuteMsg::Withdraw {
+            amount: Some(Uint128::new(999_000_000)),
+        };
         execute(deps.as_mut(), mock_env(), info, sell).unwrap_err();
 
         // check that bob's balance has not changed
@@ -628,7 +683,15 @@ mod tests {
     #[test]
     fn cannot_send_funds_with_withdraw() {
         let mut deps = mock_dependencies();
-        setup_test_with_deposit(deps.as_mut(), mock_env(),9, 6, Uint128::MAX, 45_000_000_000, 45_000_000);
+        setup_test_with_deposit(
+            deps.as_mut(),
+            mock_env(),
+            9,
+            6,
+            Uint128::MAX,
+            45_000_000_000,
+            45_000_000,
+        );
 
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
@@ -642,13 +705,14 @@ mod tests {
 
         let info = mock_info(bob, &coins(45_000_000_000, DENOM));
         // withdraw too many shares
-        let sell = ExecuteMsg::Withdraw { amount: Some(Uint128::new(999_000_000)), };
+        let sell = ExecuteMsg::Withdraw {
+            amount: Some(Uint128::new(999_000_000)),
+        };
         execute(deps.as_mut(), mock_env(), info, sell).unwrap_err();
 
         // check that bob's balance has not changed
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000))
     }
-
 
     #[test]
     fn cw20_imports_work() {

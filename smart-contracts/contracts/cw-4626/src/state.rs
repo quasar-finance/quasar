@@ -24,7 +24,7 @@ pub struct VaultInfo {
     // the current total reserve
     pub reserve: Uint128,
     // the decimals of the vault supply and reserve
-    pub decimals: DecimalPlaces
+    pub decimals: DecimalPlaces,
 }
 
 // we wrap our generic share distributor trait in a struct. This way, people writing their own
