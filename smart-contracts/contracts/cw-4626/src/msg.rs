@@ -82,7 +82,7 @@ fn is_valid_symbol(symbol: &str) -> bool {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Returns the address of the vaults underlying token
+    /// Returns the denomination of the vaults reserve token
     /// Return type: TODO
     Asset {},
     /// Returns the total amount of underlying assets that is managed by the vault
@@ -180,9 +180,7 @@ pub enum ExecuteMsg {
     Deposit {},
     /// Burns shares from owner and sends exactly assets of underlying tokens to receiver.
     /// If amount is None, all shares are sold
-    Withdraw {
-        amount: Option<Uint128>,
-    },
+    Withdraw { amount: Option<Uint128> },
 
     //cw20-base messages
     /// Transfer is a base message to move tokens to another account without triggering actions
