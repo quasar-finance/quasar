@@ -7,9 +7,14 @@ build_dir="${BUILD_DIR:-"${project_dir}/build"}"
 
 mkdir -p "$build_dir"
 
+build_dev() {
+  go build -o "${build_dir}/quasarnoded" "${project_dir}/cmd/quasarnoded"
+}
+
 (
   cd "$project_dir"
 
   go mod download
-  go build -o "${build_dir}/quasarnoded" ./cmd/quasarnoded
+
+  "$@"
 )

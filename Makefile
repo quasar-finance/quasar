@@ -19,12 +19,16 @@ lint:
 proto-gen:
 	scripts/gen_proto
 
-build: $(BUILD_DIR)/quasarnoded
+build: mkdirs
+	scripts/build build_dev
 
 $(BUILD_DIR)/quasarnoded: mkdirs
-	scripts/build
+	scripts/build build_dev
 
-.PHONY: mkdirs go-mod lint build proto-gen
+build-artifacts: mkdirs
+	scripts/build build_artifacts
+
+.PHONY: mkdirs go-mod lint proto-gen build build-artifacts
 
 # Testing
 
@@ -75,6 +79,7 @@ run-silent:
 ###############################################################################
 ###                                Localnet                                 ###
 ###############################################################################
+# TODO move to script
 
 NUM_NODES ?= 4
 LOCAL_TESTNET_RUN_DIR=$(CURDIR)/local_testnet_run-$(NUM_NODES)nodes/

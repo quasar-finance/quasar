@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	appParams "github.com/abag/quasarnode/app/params"
+	"github.com/abag/quasarnode/app/upgrades"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -235,6 +236,8 @@ var (
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 		wasm.ModuleName: {authtypes.Burner},
 	}
+
+	Upgrades = []upgrades.Upgrade{}
 )
 
 var (
@@ -310,6 +313,8 @@ type App struct {
 
 	// sm is the simulation manager
 	sm *module.SimulationManager
+
+	configurator module.Configurator
 }
 
 // TODO wasmOpts and enabledProposals should be part of New() parameters according to cosmwasm, for now we don't
@@ -791,7 +796,10 @@ func New(
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
-	app.mm.RegisterServices(module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter()))
+	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
+	app.mm.RegisterServices(app.configurator)
+
+	app.setupUpgradeHandlers()
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	app.sm = module.NewSimulationManager(
@@ -873,6 +881,20 @@ func New(
 
 	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
 	return app
+}
+
+func (app *App) setupUpgradeHandlers() {
+	for _, upgrade := range Upgrades {
+		app.UpgradeKeeper.SetUpgradeHandler(
+			upgrade.UpgradeName,
+			upgrade.CreateUpgradeHandler(
+				app.mm,
+				app.configurator,
+				app.BaseApp,
+				// TODO pass the keepers necessary for the upgrades
+			),
+		)
+	}
 }
 
 // Name returns the name of the App

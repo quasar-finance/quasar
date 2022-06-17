@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+set -Cue -o pipefail
+
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+this_dir="${project_dir}/scripts"
+this_script="${this_dir}/$(basename "${0}")"
+run_dir="${project_dir}/run/localnet"
+
+fail() {
+  echo "$*"
+  false
+}
+
+cmd_exists() {
+  type "$1" >/dev/null 2>&1 || fail "command '${1}' not available"
+}
+
+json_pp() {
+  python3 -m json.tool
+}
+
+gen_config() {
+  local n="$1" ; shift
+
+  "${project_dir}/build/quasarnoded" testnet -n "$n" -o "$run_dir"
+}
+
+for_all_nodes() {
+  local cmd="$1" ; shift
+
+  while IFS= read -r -d '' node_dir <&3 ; do
+    "$cmd" "$node_dir" "$@"
+  done 3< <(find "$run_dir" -type d -name "node*" -print0 | sort -z)
+}
+
+run_for_node() {
+  local node_dir="$1" ; shift
+  local home_dir="${node_dir}/home"
+  local node_name="$(basename "${node_dir}")"
+
+  test -d "$node_dir" || fail "node '${node_name}' not found"
+
+  (
+    cd "$node_dir"
+
+    cmd() {
+      local action="$1"
+
+      if [ "$action" == "tx" ] ; then
+        "${home_dir}/cosmovisor/current/bin/quasarnoded" --home "$home_dir" --keyring-backend=test --from main "$@"
+      else
+        "${home_dir}/cosmovisor/current/bin/quasarnoded" --home "$home_dir" "$@"
+      fi
+    }
+
+    start() {
+      if ! is_running ; then
+        (
+          export DAEMON_NAME="quasarnoded"
+          export DAEMON_HOME="$home_dir"
+          export DAEMON_RESTART_AFTER_UPGRADE=true
+
+          nohup cosmovisor run start --home "$home_dir" >| "quasarnoded.log" 2>&1 &
+          echo "$!" >| "quasarnoded.pid"
+        )
+      fi
+    }
+
+    stop() {
+      kill "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1 || true
+      rm -f "quasarnoded.pid"
+    }
+
+    is_running() {
+      ps -p "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1
+    }
+
+    status() {
+      if is_running ; then
+        echo "node '${node_name}' is running"
+      else
+        echo "node '${node_name}' is NOT running"
+      fi
+    }
+
+    log() {
+      tail -f "quasarnoded.log"
+    }
+
+    "$@"
+  )
+}
+
+start_all() {
+  for_all_nodes run_for_node start
+}
+
+stop_all() {
+  for_all_nodes run_for_node stop
+  killall -9 "cosmovisor" > /dev/null 2>&1 || true
+}
+
+status_all() {
+  for_all_nodes run_for_node status
+}
+
+node() {
+  local id="$1" ; shift
+  local node_dir="${run_dir}/node${id}"
+
+  run_for_node "$node_dir" "$@"
+}
+
+install_binary() {
+  local node_dir="$1" ; shift
+  local name="$1" ; shift
+
+  mkdir -p "${node_dir}/home/cosmovisor/genesis/bin"
+  mkdir -p "${node_dir}/home/cosmovisor/upgrades"
+
+  if [ "$name" == "genesis" ] ; then
+    cp "${project_dir}/build/quasarnoded" "${node_dir}/home/cosmovisor/genesis/bin/quasarnoded"
+    ln -sf "${node_dir}/home/cosmovisor/genesis" "${node_dir}/home/cosmovisor/current"
+  else
+    mkdir -p "${node_dir}/home/cosmovisor/upgrades/${name}/bin"
+    cp "${project_dir}/build/quasarnoded" "${node_dir}/home/cosmovisor/upgrades/${name}/bin/quasarnoded"
+  fi
+}
+
+install_binaries() {
+  for_all_nodes install_binary genesis
+}
+
+install_upgrade_binaries() {
+  local name="$1" ; shift
+
+  for_all_nodes install_binary "$name"
+}
+
+register_upgrade() {
+  local id="$1"     ; shift
+  local height="$1" ; shift
+  local name="$1"   ; shift
+
+  node 0 cmd tx gov submit-proposal software-upgrade "$name" --title "${name} upgrade" --description "${name} upgrade" --upgrade-height "$height" -y
+
+  node 0 cmd tx gov deposit "$id" 1000000uqsar -y
+  node 1 cmd tx gov deposit "$id" 1000000uqsar -y
+  node 2 cmd tx gov deposit "$id" 1000000uqsar -y
+  node 3 cmd tx gov deposit "$id" 1000000uqsar -y
+
+  node 0 cmd tx gov vote "$id" yes -y
+  node 1 cmd tx gov vote "$id" yes -y
+  node 2 cmd tx gov vote "$id" yes -y
+  node 3 cmd tx gov vote "$id" yes -y
+
+  node 0 cmd query gov proposals | json_pp
+}
+
+init_default_cluster() {
+  gen_config 4
+  install_binaries
+}
+
+cmd_exists nohup
+cmd_exists killall
+cmd_exists python3
+cmd_exists cosmovisor
+
+"$@"
