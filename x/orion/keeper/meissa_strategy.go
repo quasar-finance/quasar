@@ -358,3 +358,8 @@ func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, po
 	// TODO
 	return sdk.NewCoins()
 }
+
+func (k Keeper) LockLPTokensIfAny(ctx sdk.Context) {
+	// Iterate and check if there is any lp positions which is not yet locked.
+	// If found any such lp positions then call lock lp tokens.
+}

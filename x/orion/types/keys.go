@@ -78,6 +78,10 @@ var (
 	JoinPoolKBP                = []byte{0x18}
 	IBCTokenTransferKBP        = []byte{0x19}
 	AvailableInterchainFundKBP = []byte{0x20}
+	IBCTokenTransferredKBP     = []byte{0x21}
+	IBCTokenTransferSentKBP    = []byte{0x22}
+	LockTokensKBP              = []byte{0x23}
+	SeqLockTokensKBP           = []byte{0x24} //
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
@@ -341,6 +345,17 @@ func CreateDayMappingKey(exitday uint64,
 	b.WriteString(Sep)
 	strDepositDay := strconv.FormatUint(depositday, 10)
 	b.WriteString(strDepositDay)
+	b.WriteString(Sep)
+	lockupPeriodStr := qbanktypes.LockupTypes_name[int32(lockupPeriod)]
+	b.WriteString(lockupPeriodStr)
+	return b.Bytes()
+}
+
+func CreateEpochLockupKey(epochDay uint64,
+	lockupPeriod qbanktypes.LockupTypes) []byte {
+	var b bytes.Buffer
+	strEpochDay := strconv.FormatUint(epochDay, 10)
+	b.WriteString(strEpochDay)
 	b.WriteString(Sep)
 	lockupPeriodStr := qbanktypes.LockupTypes_name[int32(lockupPeriod)]
 	b.WriteString(lockupPeriodStr)

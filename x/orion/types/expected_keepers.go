@@ -1,6 +1,8 @@
 package types
 
 import (
+	time "time"
+
 	epochtypes "github.com/abag/quasarnode/x/epochs/types"
 	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
@@ -41,6 +43,7 @@ type QbankKeeper interface {
 	GetEpochLockupDepositAllUsersAllDenoms(ctx sdk.Context, epochDay uint64, lockupPeriod qbanktypes.LockupTypes) map[string]sdk.Coins
 	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
 	AddActualWithdrawableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
+	GetEpochLockupCoins(ctx sdk.Context, epochDay uint64) qbanktypes.EpochLockupCoins
 	AddUserClaimRewards(ctx sdk.Context, uid, vaultID string, coins sdk.Coins)
 	WhiteListedDenomsInOrion(ctx sdk.Context) (res []qbanktypes.WhiteListedDenomInOrion)
 }
@@ -119,6 +122,15 @@ type IntergammKeeper interface {
 		receiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
 		transferTimeoutTimestamp uint64) (uint64, error)
+
+	TransmitIbcLockTokens(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		duration time.Duration,
+		coins sdk.Coins,
+	) (uint64, error)
 }
 
 type EpochsKeeper interface {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/abag/quasarnode/x/orion/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -67,6 +68,19 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		shareOutAmount,
 		tokenInMaxs,
 	)
+	return packetSeq, err
+}
+
+func (k Keeper) LockLPTokens(ctx sdk.Context,
+	duration time.Duration,
+	coins sdk.Coins) (uint64, error) {
+
+	owner := k.getOwnerAccStr()
+	connectionId := k.getConnectionId("osmosis")
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
+	packetSeq, err := k.intergammKeeper.TransmitIbcLockTokens(ctx,
+		owner, connectionId, uint64(timeoutTimestamp), duration, coins)
+
 	return packetSeq, err
 }
 
@@ -168,6 +182,22 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	store.Delete(key)
 }
 
+////////////
+func (k Keeper) SetIBCTokenTransferRecord2(ctx sdk.Context,
+	seqNo uint64,
+	e qbanktypes.EpochLockupCoinInfo) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	value := k.cdc.MustMarshal(&e)
+	store.Set(key, value)
+}
+
+func (k Keeper) DeleteIBCTokenTransferRecord2(ctx sdk.Context, seqNo uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	store.Delete(key)
+}
+
 func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (ibokenTransfer types.IbcTokenTransfer, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
 	key := types.CreateSeqKey(seqNo)
@@ -179,6 +209,53 @@ func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (iboken
 	return ibokenTransfer, true
 }
 
+func (k Keeper) GetIBCTokenTransferRecord2(ctx sdk.Context,
+	seqNo uint64) (e qbanktypes.EpochLockupCoinInfo, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	b := store.Get(key)
+	if b == nil {
+		return e, false
+	}
+	k.cdc.MustUnmarshal(b, &e)
+	return e, true
+}
+
 func (k Keeper) GetTotalEpochTransffered(ctx sdk.Context, epochNumber uint64) sdk.Coins {
 	return nil
 }
+
+func (k Keeper) GetTransferredEpochLockupCoins(ctx sdk.Context, epochDay uint64) qbanktypes.EpochLockupCoins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferredKBP)
+	es := []qbanktypes.EpochLockupCoinInfo{}
+	prefixKey := qbanktypes.EpochDaySepKey(epochDay, types.Sep)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	// key -> lockupStr, value -> qbanktypes.EpochLockupCoinInfo
+	for ; iter.Valid(); iter.Next() {
+		_, value := iter.Key(), iter.Value()
+		var info qbanktypes.EpochLockupCoinInfo
+		k.cdc.MustUnmarshal(value, &info)
+		es = append(es, info)
+	}
+	e := qbanktypes.EpochLockupCoins{Infos: es}
+	return e
+}
+
+func (k Keeper) SetTransferredEpochLockupCoins(ctx sdk.Context,
+	e qbanktypes.EpochLockupCoinInfo) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferredKBP)
+	key := types.CreateEpochLockupKey(e.EpochDay, e.LockupPeriod)
+	value := k.cdc.MustMarshal(&e)
+	store.Set(key, value)
+
+	// get details of epoch, lockup , coins from seqNo.
+
+	// set total epoch transfer values
+	// <k,v> -> <epoch/lockup , sdk.Coins>
+	// <k1,v1> -> <epoch/denom , sdk.Coin>
+}
+
+//////////////

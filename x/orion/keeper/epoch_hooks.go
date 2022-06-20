@@ -38,13 +38,19 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	var err error
 	var icaFound bool
 	var addr string
+
+	// TODO ->
+	// Rewinding in case of emergency operation. It is possible that foundations decide to disable
+	// Orion module temporarily and run emergency operations.
+
+	if !k.Enabled(ctx) {
+		return
+	}
+
+	// IBC Token Transfer.
 	// For testing purposes - Param should be used then.
 	// Send tokens to destination chain.
 	if epochIdentifier == "minute" { // TODO - config ibc transfer epoch identifier.
-
-		if !k.Enabled(ctx) {
-			return
-		}
 
 		addr, icaFound = k.IsOrionICACreated(ctx)
 		if !icaFound {
@@ -64,26 +70,115 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			"blockheight", ctx.BlockHeight(),
 			"ei", ei)
 
-		totalEpochDeposits := k.qbankKeeper.GetTotalEpochDeposits(ctx, uint64(currEpochDay))
-		totalEpochTransferred := k.GetTotalEpochTransffered(ctx, uint64(currEpochDay))
-		diffCoins := totalEpochDeposits.Sub(totalEpochTransferred)
-		logger.Info("AfterEpochEnd",
-			"totalEpochDeposits", totalEpochDeposits,
-			"totalEpochTransferred", totalEpochTransferred,
-			"diffCoins", diffCoins,
-		)
+		totalEpochLockupCoinsDeposit := k.qbankKeeper.GetEpochLockupCoins(ctx, uint64(epochNumber))
+		totalEpochLockupCoinsTransferred := k.GetTransferredEpochLockupCoins(ctx, uint64(epochNumber))
 
-		for _, c := range diffCoins {
-			seqNo, err := k.IBCTokenTransfer(ctx, c)
-			logger.Info("AfterEpochEnd",
-				"seqNo", seqNo,
-				"err", err,
-				"coin", c,
-			)
-			logger.Info("AfterEpochEnd 2", "available fund", k.GetAvailableInterchainFund(ctx))
+		denomDeposits := make(map[string]sdk.Coin)    // total deposited so far
+		denomTransferred := make(map[string]sdk.Coin) // total transferred so far
 
-			// k.SetIBCTokenTransferRecord(ctx, seqNo, c)
+		lockupDeposits := make(map[qbanktypes.LockupTypes]sdk.Coins)    // total a deposited for this lockup period
+		lockupTransferred := make(map[qbanktypes.LockupTypes]sdk.Coins) // total a transferred for this lockup period
+
+		diffDenoms := make(map[string]sdk.Coin)
+		diffLockups := make(map[qbanktypes.LockupTypes]sdk.Coins)
+
+		for _, elcd := range totalEpochLockupCoinsDeposit.Infos {
+			if val, ok := denomDeposits[elcd.Coin.Denom]; ok {
+				denomDeposits[elcd.Coin.Denom] = val.Add(elcd.Coin)
+			} else {
+				denomDeposits[elcd.Coin.Denom] = elcd.Coin
+			}
+
+			if val, ok := lockupDeposits[elcd.LockupPeriod]; ok {
+				lockupDeposits[elcd.LockupPeriod] = val.Add(elcd.Coin)
+			} else {
+				lockupDeposits[elcd.LockupPeriod] = sdk.NewCoins(elcd.Coin)
+			}
 		}
+
+		for _, elct := range totalEpochLockupCoinsTransferred.Infos {
+			if val, ok := denomTransferred[elct.Coin.Denom]; ok {
+				denomTransferred[elct.Coin.Denom] = val.Add(elct.Coin)
+			} else {
+				denomTransferred[elct.Coin.Denom] = elct.Coin
+			}
+
+			if val, ok := lockupTransferred[elct.LockupPeriod]; ok {
+				lockupTransferred[elct.LockupPeriod] = val.Add(elct.Coin)
+			} else {
+				lockupTransferred[elct.LockupPeriod] = sdk.NewCoins(elct.Coin)
+			}
+		}
+
+		for d, c := range denomDeposits {
+			if v, ok := denomTransferred[d]; ok {
+				diffDenoms[d] = c.Sub(v)
+			} else {
+				diffDenoms[d] = c
+			}
+		}
+
+		for l, c := range lockupDeposits {
+			if v, ok := lockupTransferred[l]; ok {
+				diffLockups[l] = c.Sub(v)
+			} else {
+				diffLockups[l] = c
+			}
+		}
+
+		// Now you need to process both the maps denomDeposits and lockupDeposits
+		// Store them in a locka kv store.
+		/*
+			// Note - A separate send for each combination of <lockup, denom> should be done, to easily manage.
+			// data structures. On ack fetch the EpochLockupCoinInfo from seq and add it to the
+			// kv store corresponding to GetTransferredEpochLockupCoins
+			for _, _ := range diffDenoms {
+				// newly added coins
+				// key -> sent1/epoch/seq/denom, value -> coin or value can be EpochLockupCoinInfo
+				// Or <k,v > => <seqNo, EpochLockupCoinInfo>
+			}
+		*/
+
+		for l, coins := range diffLockups {
+
+			for _, c := range coins {
+				seqNo, err := k.IBCTokenTransfer(ctx, c)
+				logger.Info("AfterEpochEnd",
+					"seqNo", seqNo,
+					"err", err,
+					"coin", c,
+				)
+
+				logger.Info("AfterEpochEnd 2", "available fund", k.GetAvailableInterchainFund(ctx))
+				e := qbanktypes.EpochLockupCoinInfo{EpochDay: uint64(currEpochDay),
+					LockupPeriod: l,
+					Coin:         c}
+				k.SetIBCTokenTransferRecord2(ctx, seqNo, e)
+			}
+		}
+
+		/*
+			totalEpochDeposits := k.qbankKeeper.GetTotalEpochDeposits(ctx, uint64(currEpochDay))
+			totalEpochTransferred := k.GetTotalEpochTransffered(ctx, uint64(currEpochDay))
+			diffCoins := totalEpochDeposits.Sub(totalEpochTransferred)
+			logger.Info("AfterEpochEnd",
+				"totalEpochDeposits", totalEpochDeposits,
+				"totalEpochTransferred", totalEpochTransferred,
+				"diffCoins", diffCoins,
+			)
+
+			for _, c := range diffCoins {
+				seqNo, err := k.IBCTokenTransfer(ctx, c)
+				logger.Info("AfterEpochEnd",
+					"seqNo", seqNo,
+					"err", err,
+					"coin", c,
+				)
+				logger.Info("AfterEpochEnd 2", "available fund", k.GetAvailableInterchainFund(ctx))
+
+				// k.SetIBCTokenTransferRecord(ctx, seqNo, c)
+			}
+		*/
 
 	}
 

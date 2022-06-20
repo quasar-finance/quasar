@@ -122,7 +122,10 @@ func (k Keeper) HandleAckMsgLockTokens(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse],
 ) error {
-	k.Logger(ctx).Info("HandleAckMsgLockTokens hook called", "error", ex.Error, "seq", ex.Sequence)
+	k.Logger(ctx).Info("HandleAckMsgLockTokens hook called",
+		"error", ex.Error,
+		"seq", ex.Sequence,
+		"response", ex.Response)
 	return nil
 }
 
