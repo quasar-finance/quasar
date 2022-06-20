@@ -51,6 +51,22 @@ func (mr *MockChannelKeeperMockRecorder) GetChannel(arg0, arg1, arg2 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannel), arg0, arg1, arg2)
 }
 
+// GetChannelClientState mocks base method.
+func (m *MockChannelKeeper) GetChannelClientState(arg0 types.Context, arg1, arg2 string) (string, exported.ClientState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChannelClientState", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(exported.ClientState)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetChannelClientState indicates an expected call of GetChannelClientState.
+func (mr *MockChannelKeeperMockRecorder) GetChannelClientState(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelClientState", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannelClientState), arg0, arg1, arg2)
+}
+
 // GetConnection mocks base method.
 func (m *MockChannelKeeper) GetConnection(arg0 types.Context, arg1 string) (exported.ConnectionI, error) {
 	m.ctrl.T.Helper()

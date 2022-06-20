@@ -57,6 +57,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	default:
 		ctl = controller[0]
 	}
+	ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
 	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
@@ -78,7 +79,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
+	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)

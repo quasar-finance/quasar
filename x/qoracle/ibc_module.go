@@ -48,6 +48,8 @@ func (im IBCModule) OnChanOpenInit(
 		bandchainParams := im.keeper.BandchainParams(ctx)
 		bandchainParams.OracleIbcParams.AuthorizedChannel = channelID
 		im.keeper.SetBandchainParams(ctx, bandchainParams)
+
+		im.keeper.Logger(ctx).Info("bandchain authorized channel set to: ", channelID)
 	}
 
 	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))

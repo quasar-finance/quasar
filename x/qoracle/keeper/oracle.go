@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/bandprotocol/bandchain-packet/obi"
 	bandpacket "github.com/bandprotocol/bandchain-packet/packet"
@@ -8,6 +10,35 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 )
+
+func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
+	req, err := k.getCoinRatesLatestRequest(ctx)
+	if err != nil {
+		return
+	}
+	if req.RequestPacketSequence != 0 {
+		k.Logger(ctx).Info("tried to update coin rates but another request is in progress", "packet_sequence", req.RequestPacketSequence)
+		return
+	}
+
+	seq, err := k.sendCoinRatesRequest(ctx, types.CoinRatesSymbols, types.CoinRatesMultiplier)
+	if err != nil {
+		// TODO: Implement a retry mechanism
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeCoinRatesRequest,
+				sdk.NewAttribute(types.AttributeError, err.Error()),
+			))
+		return
+	}
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeCoinRatesRequest,
+			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+		))
+
+	return
+}
 
 func (k Keeper) sendCoinRatesRequest(ctx sdk.Context, symbols []string, mul uint64) (uint64, error) {
 	coinRatesScriptParams := k.BandchainParams(ctx).CoinRatesScriptParams
@@ -77,6 +108,9 @@ func (k Keeper) handleOraclePacket(ctx sdk.Context, packet channeltypes.Packet) 
 		}
 
 		k.updateCoinRatesState(ctx, packetData.GetRequestID(), coinRatesResult)
+
+		// Resetting the latest request
+		k.setCoinRatesLatestRequest(ctx, types.CoinRatesLatestRequest{})
 	default:
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, "oracle received packet not found: %s", packetData.GetClientID())
 	}
@@ -124,6 +158,12 @@ func (k Keeper) GetCoinRatesState(ctx sdk.Context) (types.CoinRatesState, error)
 
 func (k Keeper) handleOracleAcknowledgment(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if !ack.Success() {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeOraclePacketAcknowledgement,
+				sdk.NewAttribute(types.AttributeError, ack.GetError()),
+			),
+		)
 		return sdkerrors.Wrap(types.ErrFailedAcknowledgment, "received unsuccessful oracle packet acknowledgement")
 	}
 
@@ -132,18 +172,13 @@ func (k Keeper) handleOracleAcknowledgment(ctx sdk.Context, packet channeltypes.
 		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet acknowledgement data")
 	}
 
-	var packetData bandpacket.OracleResponsePacketData
+	var packetData bandpacket.OracleRequestPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
 		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
 	}
 
 	switch packetData.GetClientID() {
 	case types.CoinRatesClientIDKey:
-		var coinRatesResult types.CoinRatesResult
-		if err := obi.Decode(packetData.GetResult(), &coinRatesResult); err != nil {
-			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "cannot decode the coinRates oracle acknowledgment packet")
-		}
-
 		req, err := k.getCoinRatesLatestRequest(ctx)
 		if err != nil {
 			return err
@@ -157,6 +192,6 @@ func (k Keeper) handleOracleAcknowledgment(ctx sdk.Context, packet channeltypes.
 		k.setCoinRatesLatestRequest(ctx, req)
 		return nil
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, "oracle acknowledgment packet not found: %s", packetData.GetClientID())
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "oracle acknowledgment packet not found: %s", packetData.GetClientID())
 	}
 }

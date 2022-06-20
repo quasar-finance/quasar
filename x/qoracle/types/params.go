@@ -28,13 +28,13 @@ var (
 			TimeoutTimestamp:  uint64(time.Minute * 10),
 		},
 		CoinRatesScriptParams: OracleScriptParams{
-			EpochIdentifier: "day",
+			EpochIdentifier: "minute",
 			ScriptId:        37,
 			AskCount:        4,
 			MinCount:        3,
-			FeeLimit:        sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(10))),
-			PrepareGas:      6000,
-			ExecuteGas:      6000,
+			FeeLimit:        sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
+			PrepareGas:      600000,
+			ExecuteGas:      600000,
 		},
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"
@@ -131,8 +131,10 @@ func validateBandchainParams(v interface{}) error {
 }
 
 func (p IBCParams) Validate() error {
-	if err := host.ChannelIdentifierValidator(p.AuthorizedChannel); err != nil {
-		return err
+	if p.AuthorizedChannel != "" {
+		if err := host.ChannelIdentifierValidator(p.AuthorizedChannel); err != nil {
+			return fmt.Errorf("invalid authorized channel: %w", err)
+		}
 	}
 
 	if p.TimeoutHeight.IsZero() && p.TimeoutTimestamp == 0 {

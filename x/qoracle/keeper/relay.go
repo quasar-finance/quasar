@@ -13,10 +13,10 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byt
 	bandchainParams := k.BandchainParams(ctx)
 
 	switch {
-	case packet.SourcePort == types.BandchainOraclePortID && packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
+	case packet.SourcePort == types.BandchainOraclePortID && packet.DestinationChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOraclePacket(ctx, packet)
 	default:
-		return nil, sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC packet handler for packet with path: %s", host.ChannelPath(packet.DestinationPort, packet.DestinationChannel))
+		return nil, sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC packet handler for packet with destination path: %s", host.ChannelPath(packet.DestinationPort, packet.DestinationChannel))
 	}
 }
 
@@ -24,7 +24,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	bandchainParams := k.BandchainParams(ctx)
 
 	switch {
-	case packet.SourcePort == types.BandchainOraclePortID && packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
+	case packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOracleAcknowledgment(ctx, packet, ack)
 	default:
 		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC acknowledgment handler for packet with path: %s", host.ChannelPath(packet.SourcePort, packet.SourceChannel))
@@ -63,6 +63,11 @@ func (k Keeper) createOutgoingPacket(
 			"module does not own channel capability")
 	}
 
+	timeoutHeight, timeoutTimestamp, err := k.convertRelativeToAbsoluteTimeout(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp)
+	if err != nil {
+		return 0, err
+	}
+
 	packet := channeltypes.NewPacket(
 		data,
 		sequence,
@@ -77,4 +82,48 @@ func (k Keeper) createOutgoingPacket(
 		return 0, err
 	}
 	return packet.Sequence, nil
+}
+
+func (k Keeper) convertRelativeToAbsoluteTimeout(
+	ctx sdk.Context,
+	port string,
+	channel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+) (
+	absTimeoutHeight clienttypes.Height,
+	absTimeoutTimestamp uint64,
+	err error,
+) {
+	clientId, clientState, err := k.channelKeeper.GetChannelClientState(ctx, port, channel)
+	if err != nil {
+		return clienttypes.ZeroHeight(), 0, err
+	}
+
+	clientHeight, ok := clientState.GetLatestHeight().(clienttypes.Height)
+	if !ok {
+		return clienttypes.ZeroHeight(), 0, sdkerrors.Wrapf(sdkerrors.ErrInvalidHeight, "invalid height type. expected type: %T, got: %T",
+			clienttypes.Height{}, clientHeight)
+	}
+
+	if !timeoutHeight.IsZero() {
+		absTimeoutHeight = clientHeight
+		absTimeoutHeight.RevisionNumber += timeoutHeight.RevisionNumber
+		absTimeoutHeight.RevisionHeight += timeoutHeight.RevisionHeight
+	}
+
+	consensusState, _ := k.clientKeeper.GetClientConsensusState(ctx, clientId, clientHeight)
+	if timeoutTimestamp != 0 {
+		// use local clock time as reference time if it is later than the
+		// consensus state timestamp of the counter party chain, otherwise
+		// still use consensus state timestamp as reference
+		now := uint64(ctx.BlockTime().UnixNano())
+		consensusStateTimestamp := consensusState.GetTimestamp()
+		if now > consensusStateTimestamp {
+			absTimeoutTimestamp = now + timeoutTimestamp
+		} else {
+			absTimeoutTimestamp = consensusStateTimestamp + timeoutTimestamp
+		}
+	}
+	return absTimeoutHeight, absTimeoutTimestamp, nil
 }

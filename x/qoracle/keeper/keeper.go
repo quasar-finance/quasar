@@ -19,6 +19,7 @@ type Keeper struct {
 	memKey     sdk.StoreKey
 	paramstore paramtypes.Subspace
 
+	clientKeeper  types.ClientKeeper
 	ics4Wrapper   types.ICS4Wrapper
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
@@ -31,6 +32,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
+	clientKeeper types.ClientKeeper,
 	ics4Wrapper types.ICS4Wrapper,
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
@@ -46,6 +48,7 @@ func NewKeeper(
 		storeKey:      storeKey,
 		memKey:        memKey,
 		paramstore:    ps,
+		clientKeeper:  clientKeeper,
 		ics4Wrapper:   ics4Wrapper,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
