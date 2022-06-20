@@ -3,16 +3,15 @@ package keeper
 import (
 	"context"
 	"errors"
-	"testing"
 
 	"github.com/abag/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var scenarios map[string]func(sdk.Context, *Keeper) func(*testing.T)
+var scenarios map[string]func(string, sdk.Context, *Keeper) *types.MsgTestScenarioResponse
 
 func init() {
-	scenarios = make(map[string]func(sdk.Context, *Keeper) func(*testing.T))
+	scenarios = make(map[string]func(string, sdk.Context, *Keeper) *types.MsgTestScenarioResponse)
 }
 
 func (ms msgServer) TestScenario(goCtx context.Context, msg *types.MsgTestScenario) (*types.MsgTestScenarioResponse, error) {
@@ -26,5 +25,5 @@ func (ms msgServer) TestScenario(goCtx context.Context, msg *types.MsgTestScenar
 		return nil, errors.New("unknown test scenario")
 	}
 
-	return runTest(msg.Scenario, f(ctx, ms.k)), nil
+	return f(msg.Scenario, ctx, ms.k), nil
 }
