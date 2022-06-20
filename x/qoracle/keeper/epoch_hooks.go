@@ -10,11 +10,6 @@ type EpochHooks struct {
 	k Keeper
 }
 
-// Hooks wrapper struct for  orion keeper.
-type Hooks struct {
-	k Keeper
-}
-
 var _ epochstypes.EpochHooks = EpochHooks{}
 
 // Return the wrapper struct.

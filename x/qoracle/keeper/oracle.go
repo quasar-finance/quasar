@@ -31,13 +31,12 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 			))
 		return
 	}
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeCoinRatesRequest,
 			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
-
-	return
 }
 
 func (k Keeper) sendCoinRatesRequest(ctx sdk.Context, symbols []string, mul uint64) (uint64, error) {
@@ -107,7 +106,9 @@ func (k Keeper) handleOraclePacket(ctx sdk.Context, packet channeltypes.Packet) 
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "cannot decode the coinRates received packet")
 		}
 
-		k.updateCoinRatesState(ctx, packetData.GetRequestID(), coinRatesResult)
+		if err := k.updateCoinRatesState(ctx, packetData.GetRequestID(), coinRatesResult); err != nil {
+			return nil, err
+		}
 
 		// Resetting the latest request
 		k.setCoinRatesLatestRequest(ctx, types.CoinRatesLatestRequest{})
