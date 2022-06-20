@@ -26,6 +26,10 @@ func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
 	return
 }
 
+func (k Keeper) SetBandchainParams(ctx sdk.Context, params types.BandchainParams) {
+	k.paramstore.Set(ctx, types.KeyBandchainParams, &params)
+}
+
 // OracleAccounts returns the OracleAccounts param
 func (k Keeper) OracleAccounts(ctx sdk.Context) (res string) {
 	k.paramstore.Get(ctx, types.KeyOracleAccounts, &res)

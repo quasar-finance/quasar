@@ -16,15 +16,13 @@ message CoinRatesResult {
 }
 
 message CoinRatesLatestRequest {
-  uint64 packet_sequence = 1;
+  uint64 request_packet_sequence = 1;
   CoinRatesCallData call_data = 2 [(gogoproto.nullable) = false];
   uint64 oracle_request_id = 3;
 }
 
 message CoinRatesState {
-  uint64 packet_sequence = 1;
-  int64 update_height = 2;
-  uint64 oracle_request_id = 3;
+  int64 updated_at_height = 2;
   repeated cosmos.base.v1beta1.DecCoin rates = 4
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
 }

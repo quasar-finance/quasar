@@ -10,5 +10,5 @@ var (
 	}
 
 	// CoinRatesMultiplier is the default multiplier used for coin rates oracle requests
-	CoinRatesMultiplier = 1e8
+	CoinRatesMultiplier uint64 = 1e8
 )

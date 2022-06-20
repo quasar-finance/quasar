@@ -22,13 +22,14 @@ message IBCParams {
 }
 
 message OracleScriptParams {
-  uint64 script_id = 1 [(gogoproto.moretags) = "yaml:\"script_id\""];
-  uint64 ask_count = 2 [(gogoproto.moretags) = "yaml:\"ask_count\""];
-  uint64 min_count = 3 [(gogoproto.moretags) = "yaml:\"min_count\""];
-  repeated cosmos.base.v1beta1.Coin fee_limit = 4
+  string epoch_identifier = 1 [(gogoproto.moretags) = "yaml:\"epoch_identifier\""]; // Identifier of the epoch that we trigger the script request
+  uint64 script_id = 2 [(gogoproto.moretags) = "yaml:\"script_id\""];
+  uint64 ask_count = 3 [(gogoproto.moretags) = "yaml:\"ask_count\""];
+  uint64 min_count = 4 [(gogoproto.moretags) = "yaml:\"min_count\""];
+  repeated cosmos.base.v1beta1.Coin fee_limit = 5
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
-  uint64 prepare_gas = 5 [(gogoproto.moretags) = "yaml:\"prepare_gas\""];
-  uint64 execute_gas = 6 [(gogoproto.moretags) = "yaml:\"execute_gas\""];
+  uint64 prepare_gas = 6 [(gogoproto.moretags) = "yaml:\"prepare_gas\""];
+  uint64 execute_gas = 7 [(gogoproto.moretags) = "yaml:\"execute_gas\""];
 }
 
 message OneHopIbcDenomMapping {

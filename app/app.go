@@ -569,6 +569,7 @@ func New(
 		epochsmoduletypes.NewMultiEpochHooks(
 			app.QbankKeeper.EpochHooks(),
 			app.OrionKeeper.EpochHooks(),
+			app.QoracleKeeper.EpochHooks(),
 		),
 	)
 

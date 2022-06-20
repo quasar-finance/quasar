@@ -28,12 +28,13 @@ var (
 			TimeoutTimestamp:  uint64(time.Minute * 10),
 		},
 		CoinRatesScriptParams: OracleScriptParams{
-			ScriptId:   37,
-			AskCount:   4,
-			MinCount:   3,
-			FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(10))),
-			PrepareGas: 6000,
-			ExecuteGas: 6000,
+			EpochIdentifier: "day",
+			ScriptId:        37,
+			AskCount:        4,
+			MinCount:        3,
+			FeeLimit:        sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(10))),
+			PrepareGas:      6000,
+			ExecuteGas:      6000,
 		},
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"

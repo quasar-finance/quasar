@@ -41,6 +41,15 @@ func (im IBCModule) OnChanOpenInit(
 		return err
 	}
 
+	// Note: this is only for testing purposes, and should be removed in the future
+	// Setting the AuthorizedChannel based on counterparty port id
+	switch counterparty.GetPortID() {
+	case types.BandchainOraclePortID:
+		bandchainParams := im.keeper.BandchainParams(ctx)
+		bandchainParams.OracleIbcParams.AuthorizedChannel = channelID
+		im.keeper.SetBandchainParams(ctx, bandchainParams)
+	}
+
 	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))
 }
 

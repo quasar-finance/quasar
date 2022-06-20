@@ -32,8 +32,8 @@ func (k Keeper) sendCoinRatesRequest(ctx sdk.Context, symbols []string, mul uint
 	}
 
 	req := types.CoinRatesLatestRequest{
-		PacketSequence: seq,
-		CallData:       callData,
+		RequestPacketSequence: seq,
+		CallData:              callData,
 	}
 	k.setCoinRatesLatestRequest(ctx, req)
 	return seq, nil
@@ -92,13 +92,11 @@ func (k Keeper) updateCoinRatesState(ctx sdk.Context, requestId uint64, coinRate
 		return err
 	}
 	if req.GetOracleRequestId() != requestId {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "coinRates request id %d does not match the latest request id %d", requestId, req.PacketSequence)
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "coinRates request id %d does not match the latest request id %d", requestId, req.RequestPacketSequence)
 	}
 
 	state := types.CoinRatesState{
-		PacketSequence:  req.GetPacketSequence(),
-		UpdateHeight:    ctx.BlockHeight(),
-		OracleRequestId: req.GetOracleRequestId(),
+		UpdatedAtHeight: ctx.BlockHeight(),
 		Rates:           coinRatesFromSymbols(req.GetCallData().Symbols, coinRatesResult.GetRates()),
 	}
 	store := ctx.KVStore(k.storeKey)
@@ -150,8 +148,8 @@ func (k Keeper) handleOracleAcknowledgment(ctx sdk.Context, packet channeltypes.
 		if err != nil {
 			return err
 		}
-		if req.PacketSequence != packet.GetSequence() {
-			return sdkerrors.Wrapf(types.ErrInvalidPacketSequence, "expected packet sequence %d, got %d", req.PacketSequence, packet.GetSequence())
+		if req.RequestPacketSequence != packet.GetSequence() {
+			return sdkerrors.Wrapf(types.ErrInvalidPacketSequence, "expected packet sequence %d, got %d", req.RequestPacketSequence, packet.GetSequence())
 		}
 
 		// Update request latest state with oracle request id
