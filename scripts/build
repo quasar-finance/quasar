@@ -7,8 +7,12 @@ build_dir="${BUILD_DIR:-"${project_dir}/build"}"
 
 mkdir -p "$build_dir"
 
+build_with_tags() {
+  go build -tags "$@" -o "${build_dir}/quasarnoded" "${project_dir}/cmd/quasarnoded"
+}
+
 build_dev() {
-  go build -o "${build_dir}/quasarnoded" "${project_dir}/cmd/quasarnoded"
+  build_with_tags "test"
 }
 
 (

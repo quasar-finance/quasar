@@ -22,8 +22,8 @@ proto-gen:
 build: mkdirs
 	scripts/build build_dev
 
-build-artifacts: mkdirs
-	scripts/build build_artifacts
+build-prod: mkdirs
+	scripts/build build_with_tags prod
 
 .PHONY: mkdirs go-mod lint proto-gen build build-artifacts
 
