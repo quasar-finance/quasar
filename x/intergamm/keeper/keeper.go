@@ -92,6 +92,13 @@ func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner s
 	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner)
 }
 
+func (k Keeper) IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool) {
+	portID, err := icatypes.NewControllerPortID(owner)
+	if err != nil {
+		return "", false
+	}
+	return k.icaControllerKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
+}
 func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
