@@ -140,13 +140,24 @@ func (k Keeper) OnExitPoolAck(ctx sdk.Context, packetSeq uint64, err error) erro
 	tokensOut := k.computeTokenOutAmount(ctx, lp.Lptoken.Amount, lp.PoolID)
 	for _, coin := range tokensOut {
 		expectedExitDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration + 1
-		k.AddEpochExitAmt(ctx, expectedExitDay, coin)
-		err = k.TokenWithdrawFromOsmosis(ctx, coin)
+		seqNo, err := k.TokenWithdrawFromOsmosis(ctx, coin)
 		if err != nil {
 			return err
 		}
+		ibcWithdraw := types.IbcIcaWithdraw{SeqNo: seqNo, ExitEpochDay: expectedExitDay, Coin: coin}
+		k.SetSeqTokenWithdrawFromOsmosis(ctx, ibcWithdraw)
 	}
 	return nil
+}
+
+func (k Keeper) OnTokenWithdrawFromOsmosis(ctx sdk.Context,
+	packetSeq uint64, err string) {
+	if len(err) != 0 {
+		return
+	}
+	iw := k.GetSeqTokenWithdrawFromOsmosis(ctx, packetSeq)
+	k.AddEpochExitAmt(ctx, iw.ExitEpochDay, iw.Coin) // packet forwarding cost to be adjusted during actual distribution
+	k.DeleteSeqTokenWithdrawFromOsmosis(ctx, packetSeq)
 }
 
 func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, err string) {
@@ -159,18 +170,6 @@ func (k Keeper) OnIBCTokenTransferAck(ctx sdk.Context, packetSeq uint64, err str
 		k.SetTransferredEpochLockupCoins(ctx, e)
 		k.DeleteIBCTokenTransferRecord2(ctx, packetSeq)
 	}
-
-	///////////
-	/*
-		ibcTokenTransfer, found := k.GetIBCTokenTransferRecord(ctx, packetSeq)
-		if found {
-			if len(err) == 0 {
-				k.AddAvailableInterchainFund(ctx, sdk.NewCoins(ibcTokenTransfer.Coin))
-			}
-			k.DeleteIBCTokenTransferRecord(ctx, packetSeq)
-
-		}
-	*/
 
 	k.Logger(ctx).Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
 }

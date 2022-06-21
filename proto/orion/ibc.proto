@@ -19,3 +19,9 @@ message IbcTokenTransfer {
   uint64 epochDay = 6;
   cosmos.base.v1beta1.Coin coin = 7 [(gogoproto.nullable) = false];
 }
+
+message IbcIcaWithdraw {
+  uint64 seqNo = 1;
+  uint64 exitEpochDay = 2;
+  cosmos.base.v1beta1.Coin coin = 3 [(gogoproto.nullable) = false];
+}

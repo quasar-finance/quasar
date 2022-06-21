@@ -182,6 +182,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 	}
 
+	// Orion EOD activity.
 	if epochIdentifier == k.LpEpochId(ctx) {
 		logger.Info("epoch ended", "identifier", epochIdentifier,
 			"number", epochNumber,
@@ -196,6 +197,9 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			// 5. Update Strategy Positions.
 
 			// Assumption 1 minute is one epoch day for testing
+			////////////////////////////////////////////
+			// Meissa Strategy Execution
+			////////////////////////////////////////////
 			for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
 
 				logger.Debug("Orion AfterEpochEnd", "epochday", epochNumber,
@@ -210,15 +214,19 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				}
 			}
 
+			////////////////////////////////////////////
 			// Refund distribution
+			////////////////////////////////////////////
 			err = k.DistributeEpochLockupFunds(ctx, uint64(epochNumber))
 			if err != nil {
 				panic(err)
 			}
 
+			////////////////////////////////////////////
 			// Reward distribution
-			_ = k.RewardDistribution(ctx, uint64(epochNumber))
-			// TODO proper error handling for RewardDistribution once its issues are fixed
+			////////////////////////////////////////////
+			k.RewardDistribution(ctx, uint64(epochNumber))
+
 		} // k.Enabled(ctx)
-	}
+	} // if epochIdentifier == k.LpEpochId(ctx)
 }

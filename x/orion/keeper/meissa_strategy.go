@@ -72,7 +72,9 @@ func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.L
 
 // ExecuteMeissa iterate over all the meissa strategy registered with the orion vault
 func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qbanktypes.LockupTypes) error {
-	k.Logger(ctx).Debug("Entered ExecuteMeissa", "epochday", epochday, "lockupType", qbanktypes.LockupTypes_name[int32(lockupPeriod)])
+	k.Logger(ctx).Debug("Entered ExecuteMeissa",
+		"epochday", epochday,
+		"lockupType", qbanktypes.LockupTypes_name[int32(lockupPeriod)])
 	var err error
 
 	err = k.MeissaCoinDistribution(ctx, epochday, lockupPeriod)
@@ -277,8 +279,8 @@ func (k Keeper) GetLPBondingUnbondingPeriod(lockupType qbanktypes.LockupTypes) (
 // 5. One idea is to use new interchain account for each new lp position. That will help proper accounting of lp positions and pnl.
 
 func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
-	k.Logger(ctx).Debug("Entered MeissaExit", "currEpochday", epochDay, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
-	//var lpIDs []uint64
+	k.Logger(ctx).Debug("Entered MeissaExit",
+		"currEpochday", epochDay, "lockupType", qbanktypes.LockupTypes_name[int32(lockupType)])
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.LPPositionKBP)
 	iter := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iter.Close()
@@ -294,10 +296,9 @@ func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktyp
 		lp, _ := k.GetLpPosition(ctx, lpEpochDay, lpID)
 		lpEndDay := lp.BondingStartEpochDay + lp.BondDuration + lp.UnbondingDuration
 		shareInAmount := lp.Lptoken.Amount
-		var tokenOutMins []sdk.Coin // Can be empty
+		var tokenOutMins []sdk.Coin // TODO AUDIT | Can be empty
 		if epochDay > lpEndDay {
 			// Need to exit today
-			//lpIDs = append(lpIDs, lpID)
 			seq, err := k.ExitPool(ctx, lp.PoolID, shareInAmount, tokenOutMins)
 			if err != nil {
 				return err
@@ -337,7 +338,6 @@ func (k Keeper) SetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.MeissaStrategyPoolPosKBP)
 	key := types.CreateMeissaPoolPositionKey(epochday, lockupType, poolID)
 	var qcoins qbanktypes.QCoins
-	// TODO | AUDIT | Check for the slice copy/pointers
 	qcoins.Coins = coins
 	value := k.cdc.MustMarshal(&qcoins)
 	store.Set(key, value)
@@ -350,16 +350,28 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	b := store.Get(key)
 	var qcoins qbanktypes.QCoins
 	k.cdc.MustUnmarshal(b, &qcoins)
-	// TODO | AUDIT Check for the slice/pointers
 	return qcoins.Coins
 }
 
+// computeTokenOutAmount calculate the token out amount from the recent values from the pool total share.
 func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, poolID uint64) sdk.Coins {
-	// TODO
-	return sdk.NewCoins()
+	poolInfo := k.getPoolInfo(ctx, poolID)
+	totalShare := poolInfo.Info.TotalShares
+	assets := poolInfo.Info.PoolAssets
+	if len(assets) != 2 {
+		return sdk.NewCoins()
+	}
+	coin1 := sdk.NewCoin(assets[0].Token.Denom,
+		shareInAmount.ToDec().Quo(totalShare.Amount.ToDec()).TruncateInt())
+	coin2 := sdk.NewCoin(assets[1].Token.Denom,
+		shareInAmount.ToDec().Quo(totalShare.Amount.ToDec()).TruncateInt())
+
+	return sdk.NewCoins(coin1, coin2)
 }
 
 func (k Keeper) LockLPTokensIfAny(ctx sdk.Context) {
+	// This method probably shouldn't be needed, but just an idea if can be implemented as a
+	// validation mechanism.
 	// Iterate and check if there is any lp positions which is not yet locked.
 	// If found any such lp positions then call lock lp tokens.
 }

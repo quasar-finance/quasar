@@ -106,7 +106,9 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 	return seq, err
 }
 
-func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
+// TokenWithdrawFromOsmosis initiate the token transfer from the osmosis to quasar
+// via middle chain using packet forwarder.
+func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64, error) {
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
@@ -118,7 +120,7 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 	fwdTransferChannel := "channel-0" // TODO - should be a param; hub->quasar
 	intermediateReceiver := k.getIntermediateReceiver()
 
-	_, err := k.intergammKeeper.TransmitForwardIbcTransfer(
+	return k.intergammKeeper.TransmitForwardIbcTransfer(
 		ctx,
 		owner,
 		connectionId,
@@ -133,7 +135,6 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 		ibcclienttypes.ZeroHeight(),
 		uint64(timeoutTimestamp),
 	)
-	return err
 }
 
 // IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.
@@ -258,4 +259,25 @@ func (k Keeper) SetTransferredEpochLockupCoins(ctx sdk.Context,
 	// <k1,v1> -> <epoch/denom , sdk.Coin>
 }
 
-//////////////
+// Token withdraw from osmosis
+func (k Keeper) SetSeqTokenWithdrawFromOsmosis(ctx sdk.Context, iw types.IbcIcaWithdraw) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(iw.SeqNo)
+	value := k.cdc.MustMarshal(&iw)
+	store.Set(key, value)
+}
+
+func (k Keeper) GetSeqTokenWithdrawFromOsmosis(ctx sdk.Context, seqNo uint64) types.IbcIcaWithdraw {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(seqNo)
+	bz := store.Get(key)
+	var iw types.IbcIcaWithdraw
+	k.cdc.MustUnmarshal(bz, &iw)
+	return iw
+}
+
+func (k Keeper) DeleteSeqTokenWithdrawFromOsmosis(ctx sdk.Context, seqNo uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(seqNo)
+	store.Delete(key)
+}

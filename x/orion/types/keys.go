@@ -58,30 +58,31 @@ func KeyPrefix(p string) []byte {
 }
 
 var (
-	UserReceiptCoinsKBP        = []byte{0x01}
-	StrategyKBP                = []byte{0x02}
-	MeissaStrategyKBP          = []byte{0x03}
-	MeissaStrategyPoolPosKBP   = []byte{0x04}
-	LPPositionKBP              = []byte{0x05}
-	RewardCollectionKBP        = []byte{0x06}
-	LastRewardCollectionKBP    = []byte{0x07}
-	EpochLPUserKBP             = []byte{0x08}
-	LPUserInfoKBP              = []byte{0x09}
-	LPEpochKBP                 = []byte{0x10}
-	EpochLPInfoKBP             = []byte{0x11}
-	EpochDayInfoKBP            = []byte{0x12}
-	LPCountKBP                 = []byte{0x13}
-	LPStatKBP                  = []byte{0x14}
-	LPEpochDenomKBP            = []byte{0x15}
-	DayMapKBP                  = []byte{0x16}
-	ExitKBP                    = []byte{0x17}
-	JoinPoolKBP                = []byte{0x18}
-	IBCTokenTransferKBP        = []byte{0x19}
-	AvailableInterchainFundKBP = []byte{0x20}
-	IBCTokenTransferredKBP     = []byte{0x21}
-	IBCTokenTransferSentKBP    = []byte{0x22}
-	LockTokensKBP              = []byte{0x23}
-	SeqLockTokensKBP           = []byte{0x24} //
+	UserReceiptCoinsKBP            = []byte{0x01}
+	StrategyKBP                    = []byte{0x02}
+	MeissaStrategyKBP              = []byte{0x03}
+	MeissaStrategyPoolPosKBP       = []byte{0x04}
+	LPPositionKBP                  = []byte{0x05}
+	RewardCollectionKBP            = []byte{0x06}
+	LastRewardCollectionKBP        = []byte{0x07}
+	EpochLPUserKBP                 = []byte{0x08}
+	LPUserInfoKBP                  = []byte{0x09}
+	LPEpochKBP                     = []byte{0x10}
+	EpochLPInfoKBP                 = []byte{0x11}
+	EpochDayInfoKBP                = []byte{0x12}
+	LPCountKBP                     = []byte{0x13}
+	LPStatKBP                      = []byte{0x14}
+	LPEpochDenomKBP                = []byte{0x15}
+	DayMapKBP                      = []byte{0x16}
+	ExitKBP                        = []byte{0x17}
+	JoinPoolKBP                    = []byte{0x18}
+	IBCTokenTransferKBP            = []byte{0x19}
+	AvailableInterchainFundKBP     = []byte{0x20}
+	IBCTokenTransferredKBP         = []byte{0x21}
+	IBCTokenTransferSentKBP        = []byte{0x22}
+	LockTokensKBP                  = []byte{0x23}
+	SeqLockTokensKBP               = []byte{0x24}
+	SeqTokenWithdrawFromOsmosisKBP = []byte{0x25}
 )
 
 func CreateUserReceiptCoinsKey(addr sdk.AccAddress) []byte {
