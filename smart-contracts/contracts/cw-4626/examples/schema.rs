@@ -1,8 +1,9 @@
 use std::env::current_dir;
 use std::fs::create_dir_all;
+extern crate cw_4626;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-
+use cw_4626::msg::{AssetResponse, TotalAssetResponse, ConvertToSharesResponse, ConvertToAssetsResponse, VaultInfoResponse};
 use cw20::{
     AllAccountsResponse, AllAllowancesResponse, AllowanceResponse, BalanceResponse,
     TokenInfoResponse,
@@ -23,4 +24,10 @@ fn main() {
     export_schema(&schema_for!(TokenInfoResponse), &out_dir);
     export_schema(&schema_for!(AllAllowancesResponse), &out_dir);
     export_schema(&schema_for!(AllAccountsResponse), &out_dir);
+    // the cw-4626 schemas
+    export_schema(&schema_for!(AssetResponse), &out_dir);
+    export_schema(&schema_for!(TotalAssetResponse), &out_dir);
+    export_schema(&schema_for!(ConvertToSharesResponse), &out_dir);
+    export_schema(&schema_for!(ConvertToAssetsResponse), &out_dir);
+    export_schema(&schema_for!(VaultInfoResponse), &out_dir);
 }
