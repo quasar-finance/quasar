@@ -18,18 +18,9 @@ pub struct VaultInfo {
     pub reserve_denom: String,
     // total_supply is the total supply of shares this contract
     pub total_supply: Uint128,
-    // TODO see if we can change supply and reserve for an iterator over OUTSTANDING_SHARES and VAULT_RESERVES
-    // the current outstanding supply
-    pub supply: Uint128,
-    // the current total reserve
-    pub reserve: Uint128,
     // the decimals of the vault supply and reserve
     pub decimals: DecimalPlaces,
 }
 
-
 pub const VAULT_INFO: Item<VaultInfo> = Item::new("vault_info");
 pub const VAULT_CURVE: Item<CurveType> = Item::new("vault_curve");
-// TODO I think OUTSTANDING_SHARES and VAULT_RESERVES are deprecated, see if we can actually remove them
-pub const OUTSTANDING_SHARES: Map<String, Uint128> = Map::new("outstanding_shares");
-pub const VAULT_RESERVES: Map<&Addr, Uint128> = Map::new("vault_reserves");
