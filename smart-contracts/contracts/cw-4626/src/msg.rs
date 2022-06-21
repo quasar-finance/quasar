@@ -96,9 +96,9 @@ pub enum QueryMsg {
     ConvertToShares { assets: Vec<Coin> },
     /// Returns the amount of assets the vault would exchange for the amount of shares, in the ideal scenario
     /// Return type: ConvertToSharesResponse
-    ConvertToAssets { shares: Uint256 },
+    ConvertToAssets { shares: Uint128 },
     /// Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver, through a deposit call.
-    /// Return type: TODO
+    /// Return type: ConvertToAssetsResponse
     MaxDeposit { receiver: String },
     /// Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given current on-chain conditions.
     /// Return type: TODO
@@ -175,6 +175,12 @@ pub struct TotalAssetResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ConvertToSharesResponse {
     pub amount: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct ConvertToAssetsResponse {
+    pub assets: Vec<Coin>
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
