@@ -701,7 +701,7 @@ func testBeginUnlocking(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 			return nil
 		})
 
-		lockTokens(t, ctx, k)
+		beginUnlocking(t, ctx, k)
 	}
 }
 
@@ -723,7 +723,7 @@ func testBeginUnlockingTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 
 		defer swapTimeout()()
 
-		lockTokens(t, ctx, k)
+		beginUnlocking(t, ctx, k)
 	}
 }
 

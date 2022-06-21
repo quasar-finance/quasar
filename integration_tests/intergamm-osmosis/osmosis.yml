@@ -42,6 +42,7 @@ genesis:
             "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
             "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
             "/osmosis.lockup.MsgLockTokens",
+            "/osmosis.lockup.MsgBeginUnlocking",
           ]
 init:
   home: "${home_dir}"
