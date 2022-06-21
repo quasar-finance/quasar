@@ -23,12 +23,11 @@ use quasar_traits::traits::Curve;
 use quasar_types::curve::{CurveType, DecimalPlaces};
 
 use share_distributor::single_token::SingleToken;
-use crate::ContractError::PaymentError;
-use crate::helpers::reserve;
+use crate::ContractError::{PaymentError, Std};
 use crate::error::ContractError;
-use crate::msg::{AssetResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, TotalAssetResponse, VaultInfoResponse};
+use crate::msg::{AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, TotalAssetResponse, VaultInfoResponse};
 use crate::state::{
-    VaultInfo, OUTSTANDING_SHARES, VAULT_CURVE, VAULT_INFO, VAULT_RESERVES,
+    VaultInfo, VAULT_CURVE, VAULT_INFO,
 };
 
 // version info for migration info
@@ -116,8 +115,6 @@ pub fn instantiate(
         &VaultInfo {
             reserve_denom: msg.reserve_denom.to_string(),
             total_supply: msg.reserve_total_supply,
-            supply: Uint128::zero(),
-            reserve: Uint128::zero(),
             decimals: DecimalPlaces {
                 supply: msg.supply_decimals as u32,
                 reserve: msg.reserve_decimals as u32,
@@ -355,9 +352,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Asset {} => to_binary(&query_asset(deps)?),
         QueryMsg::TotalAssets { } => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
-        QueryMsg::ConvertToAssets { .. } => {
-            todo!()
-        }
+        QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
         QueryMsg::MaxDeposit { .. } => {
             todo!()
         }
@@ -382,7 +377,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PreviewRedeem { .. } => {
             todo!()
         }
-        QueryMsg::VaultInfo { .. } => to_binary(&query_vault_info(deps)?),
+        QueryMsg::VaultInfo {} => to_binary(&query_vault_info(deps)?),
     }
 }
 
@@ -405,17 +400,27 @@ pub fn query_convert_to_shares(deps: Deps, assets: Vec<Coin>) -> StdResult<Conve
 
     // error on wrong amount of assets
     if assets.len() != 1 {
-        // return Err(StdError::generic_err(PaymentError(PaymentError::MultipleDenoms {})));
+        return Err(StdError::generic_err("Query only supports one asset"));
     }
 
     // error on wrong denom
     if assets[0].denom != vault_info.reserve_denom {
-        // return Err(StdError::generic_err(PaymentError::MissingDenom(vault_info.reserve_denom)));
+        return Err(StdError::generic_err(format!("Expected {} instead of {}", vault_info.reserve_denom,  assets[0].denom)));
     }
 
     let shares = curve.deposit(&assets[0].amount);
 
     Ok(ConvertToSharesResponse{ amount: shares })
+}
+
+pub fn query_convert_to_assets(deps: Deps, shares: Uint128) ->StdResult<ConvertToAssetsResponse> {
+    let vault_info = VAULT_INFO.load(deps.storage)?;
+    let curve_type = VAULT_CURVE.load(deps.storage)?;
+    let curve_fn = curve_type.to_curve_fn();
+    let curve = curve_fn(vault_info.decimals);
+
+    let amount = curve.withdraw(&shares);
+    Ok(ConvertToAssetsResponse{ assets: coins(amount.u128(), vault_info.reserve_denom) })
 }
 
 pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
@@ -847,4 +852,23 @@ mod tests {
         let total_assets = query_total_assets(deps.as_ref(), mock_env()).unwrap();
         assert_eq!(total_assets.total_managed_assets, Uint128::new(45_000_000_000));
     }
+
+    #[test]
+    fn query_convert_to_shares_works() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let response = query_convert_to_shares(deps.as_ref(), coins(45_000_000_000, DENOM)).unwrap();
+        assert_eq!(response.amount, Uint128::new(45_000_000))
+    }
+
+    #[test]
+    fn query_convert_to_assets_works() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let response = query_convert_to_assets(deps.as_ref(), Uint128::new(45_000_000)).unwrap();
+        assert_eq!(response.assets, coins(45_000_000_000, DENOM))
+    }
+
 }
