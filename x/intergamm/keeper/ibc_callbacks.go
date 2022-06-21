@@ -175,6 +175,24 @@ func (k *Keeper) HandleIcaAcknowledgement(
 			}
 		}
 
+	case *lockuptypes.MsgBeginUnlocking:
+		resp := &lockuptypes.MsgBeginUnlockingResponse{}
+		err := ParseIcaAck(ack, req, resp)
+		if err != nil {
+			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+		}
+		ex := types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]{
+			Sequence: sequence,
+			Error:    ack.GetError(),
+			Request:  req,
+			Response: resp,
+		}
+		for _, h := range k.Hooks.Osmosis.ackMsgBeginUnlocking {
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrAcknowledgementHookFailed(sdk.MsgTypeURL(req))
+			}
+		}
+
 	default:
 		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
 	}
@@ -281,6 +299,17 @@ func (k *Keeper) HandleIcaTimeout(
 			Request:  req,
 		}
 		for _, h := range k.Hooks.Osmosis.timeoutMsgLockTokens {
+			if err := h(ctx, ex); err != nil {
+				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
+			}
+		}
+
+	case *lockuptypes.MsgBeginUnlocking:
+		ex := types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]{
+			Sequence: sequence,
+			Request:  req,
+		}
+		for _, h := range k.Hooks.Osmosis.timeoutMsgBeginUnlocking {
 			if err := h(ctx, ex); err != nil {
 				return types.NewErrTimeoutHookFailed(sdk.MsgTypeURL(req))
 			}

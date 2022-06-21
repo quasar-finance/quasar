@@ -87,6 +87,10 @@ func init() {
 	scenarios["lockTokensChecks"] = scenario(testLockTokensChecks)
 	scenarios["lockTokensTimeout"] = scenario(testLockTokensTimeout)
 	scenarios["lockTokensTimeoutChecks"] = scenario(testLockTokensTimeoutChecks)
+	scenarios["beginUnlocking"] = scenario(testBeginUnlocking)
+	scenarios["beginUnlockingChecks"] = scenario(testBeginUnlockingChecks)
+	scenarios["beginUnlockingTimeout"] = scenario(testBeginUnlockingTimeout)
+	scenarios["beginUnlockingTimeoutChecks"] = scenario(testBeginUnlockingTimeoutChecks)
 	scenarios["transferIbcTokens"] = scenario(testTransferIbcTokens)
 	scenarios["transferIbcTokensChecks"] = scenario(testTransferIbcTokensChecks)
 	scenarios["forwardTransferIbcTokens"] = scenario(testForwardTransferIbcTokens)
@@ -668,6 +672,64 @@ func testLockTokensTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 func testLockTokensTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
 	return func(t *testing.T) {
 		require.True(t, testHooksState["testLockTokensTimeout"].Called)
+	}
+}
+
+// BeginUnlocking tests
+
+func beginUnlocking(t *testing.T, ctx sdk.Context, k *Keeper) {
+	testCoins := lockTokensTestCoins()
+
+	_, err := k.TransmitIbcBeginUnlocking(
+		ctx,
+		owner,
+		connectionId,
+		timestamp,
+		1,
+		testCoins,
+	)
+	require.NoError(t, err)
+}
+
+func testBeginUnlocking(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		k.Hooks.Osmosis.AddHooksAckMsgBeginUnlocking(func(ctx sdk.Context, ex types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]) error {
+			testHooksState["testBeginUnlocking"] = HookState{
+				Called: true,
+				Error:  ex.Error,
+			}
+			return nil
+		})
+
+		lockTokens(t, ctx, k)
+	}
+}
+
+func testBeginUnlockingChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testBeginUnlocking"].Called)
+		require.Empty(t, testHooksState["testBeginUnlocking"].Error)
+	}
+}
+
+func testBeginUnlockingTimeout(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		k.Hooks.Osmosis.AddHooksTimeoutMsgBeginUnlocking(func(ctx sdk.Context, ex types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]) error {
+			testHooksState["testBeginUnlockingTimeout"] = HookState{
+				Called: true,
+			}
+			return nil
+		})
+
+		defer swapTimeout()()
+
+		lockTokens(t, ctx, k)
+	}
+}
+
+func testBeginUnlockingTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) {
+	return func(t *testing.T) {
+		require.True(t, testHooksState["testBeginUnlockingTimeout"].Called)
 	}
 }
 

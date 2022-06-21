@@ -282,6 +282,21 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid MsgBeginUnlocking",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&lockuptypes.MsgBeginUnlocking{}),
+			ack:       makeIcaAck(t, &lockuptypes.MsgBeginUnlocking{}, &lockuptypes.MsgBeginUnlockingResponse{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksAckMsgBeginUnlocking(func(c sdk.Context, e types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]) error {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+
+					return nil
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "error in hook MsgLockTokens",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
@@ -467,6 +482,20 @@ func TestHandleIcaTimeout(t *testing.T) {
 			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
 			setup: func() {
 				k.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(func(c sdk.Context, e types.TimeoutExchange[*lockuptypes.MsgLockTokens]) error {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+
+					return nil
+				})
+			},
+			errorStr: "",
+		},
+		{
+			name:      "valid MsgBeginUnlocking",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&lockuptypes.MsgBeginUnlocking{}),
+			setup: func() {
+				k.Hooks.Osmosis.AddHooksTimeoutMsgBeginUnlocking(func(c sdk.Context, e types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]) error {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
 

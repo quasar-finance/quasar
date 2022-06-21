@@ -107,6 +107,14 @@ func (k Keeper) HandleAckMsgLockTokens(
 	return nil
 }
 
+func (k Keeper) HandleAckMsgBeginUnlocking(
+	ctx sdk.Context,
+	ex intergammtypes.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse],
+) error {
+	k.Logger(ctx).Info("HandleAckMsgBeginUnlocking hook called", "error", ex.Error, "seq", ex.Sequence)
+	return nil
+}
+
 func (k Keeper) HandleTimeoutMsgCreateBalancerPool(
 	ctx sdk.Context,
 	ex intergammtypes.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool],
@@ -168,5 +176,13 @@ func (k Keeper) HandleTimeoutMsgLockTokens(
 	ex intergammtypes.TimeoutExchange[*lockuptypes.MsgLockTokens],
 ) error {
 	k.Logger(ctx).Info("HandleTimeoutMsgLockTokens hook called", "seq", ex.Sequence)
+	return nil
+}
+
+func (k Keeper) HandleTimeoutMsgBeginUnlocking(
+	ctx sdk.Context,
+	ex intergammtypes.TimeoutExchange[*lockuptypes.MsgBeginUnlocking],
+) error {
+	k.Logger(ctx).Info("HandleTimeoutMsgBeginUnlocking hook called", "seq", ex.Sequence)
 	return nil
 }

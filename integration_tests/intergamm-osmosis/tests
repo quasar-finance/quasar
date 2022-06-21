@@ -259,6 +259,26 @@ run() {
   echo "> scenario: lockTokensTimeoutChecks"
   quasartx intergamm test --scenario lockTokensTimeoutChecks -y
 
+  # Begin unlocking
+
+  echo "> scenario: beginUnlocking"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario beginUnlocking -y
+  sleep 8
+
+  echo "> scenario: beginUnlockingChecks"
+  quasartx intergamm test --scenario beginUnlockingChecks -y
+
+  echo "> scenario: beginUnlockingTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario beginUnlockingTimeout -y
+  sleep 8
+
+  echo "> scenario: beginUnlockingTimeoutChecks"
+  quasartx intergamm test --scenario beginUnlockingTimeoutChecks -y
+
   # Exit pool
 
   echo "> scenario: exitPool"

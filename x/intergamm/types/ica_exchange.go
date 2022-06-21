@@ -19,7 +19,8 @@ type ibcExchangeRequest interface {
 		*gammtypes.MsgExitSwapExternAmountOut |
 		*gammtypes.MsgJoinSwapShareAmountOut |
 		*gammtypes.MsgExitSwapShareAmountIn |
-		*lockuptypes.MsgLockTokens
+		*lockuptypes.MsgLockTokens |
+		*lockuptypes.MsgBeginUnlocking
 }
 
 type ibcExchangeResponse interface {
@@ -33,7 +34,8 @@ type ibcExchangeResponse interface {
 		*gammtypes.MsgExitSwapExternAmountOutResponse |
 		*gammtypes.MsgJoinSwapShareAmountOutResponse |
 		*gammtypes.MsgExitSwapShareAmountInResponse |
-		*lockuptypes.MsgLockTokensResponse
+		*lockuptypes.MsgLockTokensResponse |
+		*lockuptypes.MsgBeginUnlockingResponse
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {

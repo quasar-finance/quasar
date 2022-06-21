@@ -591,6 +591,9 @@ func New(
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgLockTokens(
 		app.OrionKeeper.HandleAckMsgLockTokens,
 	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgBeginUnlocking(
+		app.OrionKeeper.HandleAckMsgBeginUnlocking,
+	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
 		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
 	)
@@ -614,6 +617,9 @@ func New(
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(
 		app.OrionKeeper.HandleTimeoutMsgLockTokens,
+	)
+	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgBeginUnlocking(
+		app.OrionKeeper.HandleTimeoutMsgBeginUnlocking,
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition

@@ -17,6 +17,7 @@ type OsmosisHooks struct {
 	ackMsgJoinSwapShareAmountOut  []func(sdk.Context, types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]) error
 	ackMsgExitSwapShareAmountIn   []func(sdk.Context, types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]) error
 	ackMsgLockTokens              []func(sdk.Context, types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]) error
+	ackMsgBeginUnlocking          []func(sdk.Context, types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]) error
 
 	timeoutMsgCreateBalancerPool      []func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) error
 	timeoutMsgJoinPool                []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinPool]) error
@@ -26,6 +27,7 @@ type OsmosisHooks struct {
 	timeoutMsgJoinSwapShareAmountOut  []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgJoinSwapShareAmountOut]) error
 	timeoutMsgExitSwapShareAmountIn   []func(sdk.Context, types.TimeoutExchange[*gammtypes.MsgExitSwapShareAmountIn]) error
 	timeoutMsgLockTokens              []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) error
+	timeoutMsgBeginUnlocking          []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]) error
 }
 
 func (ih *OsmosisHooks) ClearAckHooks() {
@@ -37,6 +39,7 @@ func (ih *OsmosisHooks) ClearAckHooks() {
 	ih.ackMsgJoinSwapShareAmountOut = nil
 	ih.ackMsgExitSwapShareAmountIn = nil
 	ih.ackMsgLockTokens = nil
+	ih.ackMsgBeginUnlocking = nil
 }
 
 func (ih *OsmosisHooks) ClearTimeoutHooks() {
@@ -47,7 +50,7 @@ func (ih *OsmosisHooks) ClearTimeoutHooks() {
 	ih.timeoutMsgExitSwapExternAmountOut = nil
 	ih.timeoutMsgJoinSwapShareAmountOut = nil
 	ih.timeoutMsgExitSwapShareAmountIn = nil
-	ih.timeoutMsgLockTokens = nil
+	ih.timeoutMsgBeginUnlocking = nil
 }
 
 func (oh *OsmosisHooks) AddHooksAckMsgCreateBalancerPool(hs ...func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) error) {
@@ -82,6 +85,10 @@ func (oh *OsmosisHooks) AddHooksAckMsgLockTokens(hs ...func(sdk.Context, types.A
 	oh.ackMsgLockTokens = append(oh.ackMsgLockTokens, hs...)
 }
 
+func (oh *OsmosisHooks) AddHooksAckMsgBeginUnlocking(hs ...func(sdk.Context, types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]) error) {
+	oh.ackMsgBeginUnlocking = append(oh.ackMsgBeginUnlocking, hs...)
+}
+
 func (oh *OsmosisHooks) AddHooksTimeoutMsgCreateBalancerPool(hs ...func(sdk.Context, types.TimeoutExchange[*gammbalancer.MsgCreateBalancerPool]) error) {
 	oh.timeoutMsgCreateBalancerPool = append(oh.timeoutMsgCreateBalancerPool, hs...)
 }
@@ -112,4 +119,8 @@ func (oh *OsmosisHooks) AddHooksTimeoutMsgExitSwapShareAmountIn(hs ...func(sdk.C
 
 func (oh *OsmosisHooks) AddHooksTimeoutMsgLockTokens(hs ...func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgLockTokens]) error) {
 	oh.timeoutMsgLockTokens = append(oh.timeoutMsgLockTokens, hs...)
+}
+
+func (oh *OsmosisHooks) AddHooksTimeoutMsgBeginUnlocking(hs ...func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]) error) {
+	oh.timeoutMsgBeginUnlocking = append(oh.timeoutMsgBeginUnlocking, hs...)
 }
