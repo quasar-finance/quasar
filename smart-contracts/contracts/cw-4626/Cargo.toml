@@ -1,5 +1,5 @@
 [package]
-name = "cw4626"
+name = "cw-4626"
 version = "0.13.4"
 authors = ["Laurens Kubat <Laurens@Quasar.fi>"]
 edition = "2021"
