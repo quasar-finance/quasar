@@ -12,6 +12,7 @@ type ibcExchangeRequest interface {
 	proto.Message
 
 	*ibctransfertypes.FungibleTokenPacketData |
+		*ibctransfertypes.MsgTransfer |
 		*gammbalancer.MsgCreateBalancerPool |
 		*gammtypes.MsgJoinPool |
 		*gammtypes.MsgExitPool |
@@ -27,6 +28,7 @@ type ibcExchangeResponse interface {
 	proto.Message
 
 	*MsgEmptyIbcResponse |
+		*ibctransfertypes.MsgTransferResponse |
 		*gammbalancer.MsgCreateBalancerPoolResponse |
 		*gammtypes.MsgJoinPoolResponse |
 		*gammtypes.MsgExitPoolResponse |

@@ -177,6 +177,21 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr: "",
 		},
 		{
+			name:      "valid Ica MsgTransfer",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
+			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			setup: func() {
+				k.Hooks.IbcTransfer.AddHooksAckIcaIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) error {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+
+					return nil
+				})
+			},
+			errorStr: "",
+		},
+		{
 			name:      "valid MsgJoinPool",
 			seq:       tstSeq,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinPool{}),
@@ -378,6 +393,20 @@ func TestHandleIcaTimeout(t *testing.T) {
 		setup     func()
 		errorStr  string
 	}{
+		{
+			name:      "valid Ica MsgTransfer",
+			seq:       tstSeq,
+			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
+			setup: func() {
+				k.Hooks.IbcTransfer.AddHooksTimeoutIcaIbcTransfer(func(c sdk.Context, e types.TimeoutExchange[*ibctransfertypes.MsgTransfer]) error {
+					called = true
+					require.Equal(t, tstSeq, e.Sequence)
+
+					return nil
+				})
+			},
+			errorStr: "",
+		},
 		{
 			name:      "valid MsgCreateBalancerPool",
 			seq:       tstSeq,

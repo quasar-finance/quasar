@@ -561,8 +561,14 @@ func New(
 	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIbcTransfer(
 		app.OrionKeeper.HandleAckIbcTransfer,
 	)
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIcaIbcTransfer(
+		app.OrionKeeper.HandleAckIcaIbcTransfer,
+	)
 	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(
 		app.OrionKeeper.HandleTimeoutIbcTransfer,
+	)
+	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIcaIbcTransfer(
+		app.OrionKeeper.HandleTimeoutIcaIbcTransfer,
 	)
 
 	// Osmosis

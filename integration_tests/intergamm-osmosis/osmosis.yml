@@ -34,6 +34,7 @@ genesis:
         params:
           host_enabled: true
           allow_messages: [
+            "/ibc.applications.transfer.v1.MsgTransfer",
             "/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
             "/osmosis.gamm.v1beta1.MsgJoinPool",
             "/osmosis.gamm.v1beta1.MsgExitPool",
