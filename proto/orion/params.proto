@@ -8,6 +8,7 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
 // Params defines the parameters for the module.
  message Params {
   option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.equal) = true;
   string perf_fee_per                = 1 [
     (gogoproto.moretags)   = "yaml:\"perf_fee_per\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
@@ -27,5 +28,5 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
   [(gogoproto.moretags) = "yaml:\"enabled,omitempty\""];
 
   repeated uint64 white_listed_pools = 5
-  [(gogoproto.moretags) = "yaml:\"white_listed_pools,omitempty\""];
+  [(gogoproto.moretags) = "yaml:\"white_listed_pools\""];
 }

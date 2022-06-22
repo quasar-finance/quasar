@@ -15,7 +15,7 @@ func TestGetParams(t *testing.T) {
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)
-	require.EqualValues(t, params, k.GetParams(ctx))
+	require.True(t, params.Equal(k.GetParams(ctx)))
 
 	params.Enabled = false
 	params.LpEpochId = "day"
@@ -23,6 +23,5 @@ func TestGetParams(t *testing.T) {
 	params.MgmtFeePer = sdk.NewDecWithPrec(3, 3)
 
 	k.SetParams(ctx, params)
-	require.EqualValues(t, params, k.GetParams(ctx))
-
+	require.True(t, params.Equal(k.GetParams(ctx)))
 }

@@ -13,7 +13,7 @@ type EpochHooks struct {
 
 var _ epochstypes.EpochHooks = EpochHooks{}
 
-// Return the wrapper struct.
+// EpochHooks returns the wrapper struct.
 func (k Keeper) EpochHooks() EpochHooks {
 	return EpochHooks{k}
 }
@@ -54,7 +54,10 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		addr, icaFound = k.IsOrionICACreated(ctx)
 		if !icaFound {
-			k.intergammKeeper.RegisterInterchainAccount(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
+			err := k.intergammKeeper.RegisterInterchainAccount(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 		}
@@ -159,7 +162,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		/*
 			totalEpochDeposits := k.qbankKeeper.GetTotalEpochDeposits(ctx, uint64(currEpochDay))
-			totalEpochTransferred := k.GetTotalEpochTransffered(ctx, uint64(currEpochDay))
+			totalEpochTransferred := k.GetTotalEpochTransferred(ctx, uint64(currEpochDay))
 			diffCoins := totalEpochDeposits.Sub(totalEpochTransferred)
 			logger.Info("AfterEpochEnd",
 				"totalEpochDeposits", totalEpochDeposits,
@@ -225,7 +228,10 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			////////////////////////////////////////////
 			// Reward distribution
 			////////////////////////////////////////////
-			k.RewardDistribution(ctx, uint64(epochNumber))
+			err := k.RewardDistribution(ctx, uint64(epochNumber))
+			if err != nil {
+				panic(err)
+			}
 
 		} // k.Enabled(ctx)
 	} // if epochIdentifier == k.LpEpochId(ctx)

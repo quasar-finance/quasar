@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 
 	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/abag/quasarnode/x/orion/types"
@@ -14,7 +13,6 @@ import (
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls
@@ -52,19 +50,10 @@ func (k Keeper) getTotalShare(ctx sdk.Context, poolID uint64) (totalShare sdk.Co
 // Get the maximum available amount in the orion staking.
 // Input denom is osmosis equivalent denom,
 func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Int {
-	ibcPrefix := ibctransfertypes.DenomPrefix + "/"
 	wdenoms := k.qbankKeeper.WhiteListedDenomsInOrion(ctx)
-	if strings.HasPrefix(denom, ibcPrefix) {
-		for _, v := range wdenoms {
-			if v.OnehopOsmo == denom {
-				return k.GetStakingBalance(ctx, lockupPeriod, v.OnehopQuasar).Amount
-			}
-		}
-	} else {
-		for _, v := range wdenoms {
-			if v.OnehopQuasar == denom {
-				return k.GetStakingBalance(ctx, lockupPeriod, v.OnehopQuasar).Amount
-			}
+	for _, v := range wdenoms {
+		if v.OnehopOsmo == denom {
+			return k.GetStakingBalance(ctx, lockupPeriod, v.OnehopQuasar).Amount
 		}
 	}
 	return sdk.ZeroInt()

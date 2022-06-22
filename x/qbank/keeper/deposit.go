@@ -384,8 +384,7 @@ func (k Keeper) GetEpochLockupCoins(ctx sdk.Context, epochDay uint64) types.Epoc
 	for ; iter.Valid(); iter.Next() {
 		key, value := iter.Key(), iter.Value()
 		splits := types.SplitKeyBytes(key)
-		lockupStr := string(splits[0])
-		lockupPeriod := types.LockupTypes(types.LockupTypes_value[lockupStr])
+		lockupPeriod := types.LockupTypes(types.LockupTypes_value[string(splits[0])])
 		//denomStr := string(splits[2])
 		var coin sdk.Coin
 		k.cdc.MustUnmarshal(value, &coin)

@@ -52,22 +52,35 @@ func stakeSampleTokens(k *orionkeeper.Keeper, ctx sdk.Context, lockupPeriod qban
 
 func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
 	var tests = []struct {
-		name         string
-		lockupPeriod qbanktypes.LockupTypes
-		stakedCoins  sdk.Coins
-		poolAssets   []gammbalancer.PoolAsset
-		want         sdk.Coins
+		name              string
+		lockupPeriod      qbanktypes.LockupTypes
+		stakedCoins       sdk.Coins
+		poolAssets        []gammbalancer.PoolAsset
+		whiteListedDenoms []qbanktypes.WhiteListedDenomInOrion
+		want              sdk.Coins
 	}{
 		{
 			name:         "valid",
 			lockupPeriod: qbankmoduletypes.LockupTypes_Days_7,
 			stakedCoins: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(100)),
-				sdk.NewCoin("def", sdk.NewInt(150)),
-				sdk.NewCoin("xyz", sdk.NewInt(120)),
-				sdk.NewCoin("zyx", sdk.NewInt(50)),
+				sdk.NewCoin("q-abc", sdk.NewInt(100)),
+				sdk.NewCoin("q-def", sdk.NewInt(150)),
+				sdk.NewCoin("q-xyz", sdk.NewInt(120)),
+				sdk.NewCoin("q-zyx", sdk.NewInt(50)),
 			),
 			poolAssets: createSampleValidPoolAssetsSlice(),
+			whiteListedDenoms: []qbanktypes.WhiteListedDenomInOrion{
+				{
+					OriginName:   "abc",
+					OnehopQuasar: "q-abc",
+					OnehopOsmo:   "abc",
+				},
+				{
+					OriginName:   "xyz",
+					OnehopQuasar: "q-xyz",
+					OnehopOsmo:   "xyz",
+				},
+			},
 			want: sdk.NewCoins(
 				sdk.NewCoin("abc", sdk.NewInt(100)),
 				sdk.NewCoin("xyz", sdk.NewInt(120)),
@@ -79,6 +92,9 @@ func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setup := testutil.NewTestSetup(t)
 			ctx, k := setup.Ctx, setup.Keepers.OrionKeeper
+			qBankParams := setup.Keepers.QbankKeeper.GetParams(ctx)
+			qBankParams.WhiteListedDenomsInOrion = tt.whiteListedDenoms
+			setup.Keepers.QbankKeeper.SetParams(ctx, qBankParams)
 			stakeSampleTokens(&k, ctx, tt.lockupPeriod, tt.stakedCoins)
 			res := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, tt.lockupPeriod, tt.poolAssets)
 			require.EqualValues(t, tt.want, res)

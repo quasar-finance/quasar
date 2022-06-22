@@ -1,8 +1,7 @@
 package types
 
 import (
-	fmt "fmt"
-	"strings"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -19,18 +18,19 @@ var (
 	KeyOrionEpochIdentifier            = []byte("OrionEpochIdentifier")
 	KeyWhiteListedDenomsInOrion        = []byte("WhiteListedDenomsInOrion")
 
-	DefaultEnabled                                 = false
-	DefaultMinOrionEpochDenomDollarDeposit sdk.Dec = sdk.NewDecWithPrec(100, 0) // 100.0 Dollar
-	DefaultOrionEpochIdentifier                    = "day"
+	DefaultEnabled                         = false
+	DefaultMinOrionEpochDenomDollarDeposit = sdk.NewDecWithPrec(100, 0) // 100.0 Dollar
+	DefaultOrionEpochIdentifier            = "day"
 
 	// AUDIT NOTE - Below commented value are used for local testing -with different values of ibc hexh hash.
 	// And should be uncommented in the final production code.
-	denom1 WhiteListedDenomInOrion = WhiteListedDenomInOrion{
+	denom1 = WhiteListedDenomInOrion{
 		OriginName:   "uatom",
 		OnehopQuasar: "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
 		OnehopOsmo:   "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
 	}
 	//denom2 WhiteListedDenomInOrion = WhiteListedDenomInOrion{OriginName: "uosmo", OnehopQuasar: "IBC/TESTQSRATOM", OnehopOsmo: "IBC/TESTOSMOOSMO"}
+
 	//DefaultWhiteListedDenomsInOrion = []WhiteListedDenomInOrion{denom1, denom2}
 	DefaultWhiteListedDenomsInOrion = []WhiteListedDenomInOrion{denom1}
 )
@@ -141,43 +141,19 @@ func validateWhiteListedDenomsInOrion(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-	var is_invalid_denom bool
 	for _, d := range WhiteListedDenomsInOrion {
-
-		ibcPrefix := ibctransfertypes.DenomPrefix + "/"
-
-		if d.OriginName == "uqsr" {
-			// d.OnehopQuasar is native token of quasar chain.
-			if d.OriginName != d.OnehopQuasar {
-				is_invalid_denom = true
-			}
-		} else {
-			// OnehopQuasar is ibc token transfered from other chain.
-			if strings.HasPrefix(d.OnehopQuasar, ibcPrefix) {
-				hexHash := d.OnehopQuasar[len(ibcPrefix):]
-				_, err := ibctransfertypes.ParseHexHash(hexHash)
-				if err != nil {
-					is_invalid_denom = true
-				}
-			} else {
-				is_invalid_denom = true
-			}
+		if err := sdk.ValidateDenom(d.OriginName); err != nil {
+			return sdkerrors.Wrapf(ibctransfertypes.ErrInvalidDenomForTransfer,
+				"incorrect denom in OriginName: %s", d.OriginName)
 		}
-
-		if strings.HasPrefix(d.OnehopOsmo, ibcPrefix) {
-			hexHash := d.OnehopOsmo[len(ibcPrefix):]
-			_, err := ibctransfertypes.ParseHexHash(hexHash)
-			if err != nil {
-				is_invalid_denom = true
-			}
-		} else {
-			is_invalid_denom = true
+		if err := sdk.ValidateDenom(d.OnehopOsmo); err != nil {
+			return sdkerrors.Wrapf(ibctransfertypes.ErrInvalidDenomForTransfer,
+				"incorrect denom in OnehopOsmo: %s", d.OnehopOsmo)
 		}
-	}
-	// This failure will indicates to lookinto the qbank params.
-	if is_invalid_denom {
-		return sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer,
-			"incorrect one hop ibc param is set")
+		if err := sdk.ValidateDenom(d.OnehopQuasar); err != nil {
+			return sdkerrors.Wrapf(ibctransfertypes.ErrInvalidDenomForTransfer,
+				"incorrect denom in v: %s", d.OnehopQuasar)
+		}
 	}
 	return nil
 }
