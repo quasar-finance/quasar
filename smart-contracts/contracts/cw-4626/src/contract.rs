@@ -1,8 +1,8 @@
+use std::cmp::min;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg::Bank;
 use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin, Addr};
-
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
 
@@ -25,7 +25,7 @@ use quasar_types::curve::{CurveType, DecimalPlaces};
 use share_distributor::single_token::SingleToken;
 use crate::ContractError::{PaymentError, Std};
 use crate::error::ContractError;
-use crate::msg::{AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, QueryMsg, TotalAssetResponse, VaultInfoResponse};
+use crate::msg::{AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse};
 use crate::state::{
     VaultInfo, VAULT_CURVE, VAULT_INFO,
 };
@@ -353,7 +353,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalAssets { } => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
-        QueryMsg::MaxDeposit { .. } => {
+        QueryMsg::MaxDeposit { receiver } => {
+            // max deposit needs to check the underlying cw-20 token for the maximum supply, convert that
+            // to the amout
             todo!()
         }
         QueryMsg::PreviewDeposit { .. } => {
@@ -421,6 +423,40 @@ pub fn query_convert_to_assets(deps: Deps, shares: Uint128) ->StdResult<ConvertT
 
     let amount = curve.withdraw(&shares);
     Ok(ConvertToAssetsResponse{ assets: coins(amount.u128(), vault_info.reserve_denom) })
+}
+
+fn query_max_deposit(deps: Deps) -> StdResult<MaxDepositResponse> {
+    let vault_info = VAULT_INFO.load(deps.storage)?;
+    let curve_type = VAULT_CURVE.load(deps.storage)?;
+    let curve_fn = curve_type.to_curve_fn();
+    let curve = curve_fn(vault_info.decimals);
+
+    let minter = query_minter(deps)?;
+    let mut free_tokens = Uint128::zero();
+    if minter.is_some() {
+        let min = minter.unwrap();
+        // calculate the outstanding tokens
+        let accounts = query_all_accounts(deps, None, None)?;
+        let mut outstanding = Uint128::zero();
+        for acc in accounts.accounts {
+            let balance = query_balance(deps, acc)?;
+            outstanding = outstanding.checked_add(balance.balance)?
+        }
+        // if we have a cap, calculate the difference between current outstanding supply and cap
+        if min.cap.is_some() {
+            free_tokens = min.cap.unwrap() - outstanding;
+        } else {
+            // if there is no cap, what do we do? We can return Uint128::MAX - outstanding tokens
+            // This does create an issue with normalizing so that probably is not best.
+            // thus we have to return None here to indicate the vault has no cap
+            return Ok(MaxDepositResponse{ max_assets: None });
+        }
+    } else {
+        return Err(StdError::generic_err("no minter found in vault"));
+    }
+    // in order to get this many shares, we calculate F^-1(X), or withdraw, since withdraw and deposit are reversible
+    let asset = curve.deposit(&free_tokens);
+    Ok(MaxDepositResponse{ max_assets: Some(coins(asset.u128(), vault_info.reserve_denom)) })
 }
 
 pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
@@ -871,4 +907,13 @@ mod tests {
         assert_eq!(response.assets, coins(45_000_000_000, DENOM))
     }
 
+    #[test]
+    fn query_max_deposit_works() {
+        let mut deps = mock_dependencies();
+        setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
+
+        let response = query_max_deposit(deps.as_ref()).unwrap();
+        // the vault has no cap to minting by default, thus we expect None
+        assert_eq!(response.max_assets, None)
+    }
 }

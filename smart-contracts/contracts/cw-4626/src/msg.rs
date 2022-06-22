@@ -16,9 +16,9 @@ pub struct InstantiateMarketingInfo {
 pub struct InstantiateMsg {
     pub name: String,
     pub symbol: String,
-    // the list of tokens accepted by the contract, we require tokens to be
+    // the token accepted by the contract.
     pub reserve_denom: String,
-    // the total amount of tokens that put in the reserve
+    // the total amount of tokens that can be put in the reserve.
     pub reserve_total_supply: Uint128,
     pub reserve_decimals: u8,
     // supply is the amount of tokens this vault has issued.
@@ -98,6 +98,7 @@ pub enum QueryMsg {
     /// Return type: ConvertToSharesResponse
     ConvertToAssets { shares: Uint128 },
     /// Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver, through a deposit call.
+    /// If None is returned in the response, the vault does not have a cap
     /// Return type: ConvertToAssetsResponse
     MaxDeposit { receiver: String },
     /// Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given current on-chain conditions.
@@ -181,6 +182,13 @@ pub struct ConvertToSharesResponse {
 #[serde(rename_all = "snake_case")]
 pub struct ConvertToAssetsResponse {
     pub assets: Vec<Coin>
+}
+
+/// A None response indicates that the vault has no cap an thus no max deposit
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct MaxDepositResponse {
+    pub max_assets: Option<Vec<Coin>>
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
