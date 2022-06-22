@@ -66,7 +66,7 @@ scripts/localnet node 0 cmd tx bank send main quasar1khfcjt5w0dfjgkcudlrnnun2rtq
 
 This will send a bank transfer from `node0`'s `main` address, to another quasar address `quasar1khfcjt5w0dfjgkcudlrnnun2rtq359ulrgv7gw`.
 
-You can control the balance after the transfer:
+You can check the balance after the transfer:
 
 ```bash
 curl http://localhost:1300/bank/balances/quasar1khfcjt5w0dfjgkcudlrnnun2rtq359ulrgv7gw
