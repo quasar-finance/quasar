@@ -50,6 +50,7 @@ func (ih *OsmosisHooks) ClearTimeoutHooks() {
 	ih.timeoutMsgExitSwapExternAmountOut = nil
 	ih.timeoutMsgJoinSwapShareAmountOut = nil
 	ih.timeoutMsgExitSwapShareAmountIn = nil
+	ih.timeoutMsgLockTokens = nil
 	ih.timeoutMsgBeginUnlocking = nil
 }
 
