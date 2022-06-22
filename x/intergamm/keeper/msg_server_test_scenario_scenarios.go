@@ -45,46 +45,52 @@ type HookState struct {
 
 var testHooksState map[string]HookState
 
+func scenario(f func(sdk.Context, *Keeper) func(*testing.T)) func(string, sdk.Context, *Keeper) *types.MsgTestScenarioResponse {
+	return func(name string, ctx sdk.Context, k *Keeper) *types.MsgTestScenarioResponse {
+		return runTest(name, f(ctx, k))
+	}
+}
+
 func init() {
 	testHooksState = make(map[string]HookState)
 
-	scenarios["registerIca"] = testRegisterIca
-	scenarios["createPool"] = testCreatePool
-	scenarios["createPoolChecks"] = testCreatePoolChecks
-	scenarios["createPoolTimeout"] = testCreatePoolTimeout
-	scenarios["createPoolTimeoutChecks"] = testCreatePoolTimeoutChecks
-	scenarios["joinPool"] = testJoinPool
-	scenarios["joinPoolChecks"] = testJoinPoolChecks
-	scenarios["joinPoolTimeout"] = testJoinPoolTimeout
-	scenarios["joinPoolTimeoutChecks"] = testJoinPoolTimeoutChecks
-	scenarios["exitPool"] = testExitPool
-	scenarios["exitPoolChecks"] = testExitPoolChecks
-	scenarios["exitPoolTimeout"] = testExitPoolTimeout
-	scenarios["exitPoolTimeoutChecks"] = testExitPoolTimeoutChecks
-	scenarios["joinSwapExternAmountIn"] = testJoinSwapExternAmountIn
-	scenarios["joinSwapExternAmountInChecks"] = testJoinSwapExternAmountInChecks
-	scenarios["joinSwapExternAmountInTimeout"] = testJoinSwapExternAmountInTimeout
-	scenarios["joinSwapExternAmountInTimeoutChecks"] = testJoinSwapExternAmountInTimeoutChecks
-	scenarios["exitSwapExternAmountOut"] = testExitSwapExternAmountOut
-	scenarios["exitSwapExternAmountOutChecks"] = testExitSwapExternAmountOutChecks
-	scenarios["exitSwapExternAmountOutTimeout"] = testExitSwapExternAmountOutTimeout
-	scenarios["exitSwapExternAmountOutTimeoutChecks"] = testExitSwapExternAmountOutTimeoutChecks
-	scenarios["joinSwapShareAmountOut"] = testJoinSwapShareAmountOut
-	scenarios["joinSwapShareAmountOutChecks"] = testJoinSwapShareAmountOutChecks
-	scenarios["joinSwapShareAmountOutTimeout"] = testJoinSwapShareAmountOutTimeout
-	scenarios["joinSwapShareAmountOutTimeoutChecks"] = testJoinSwapShareAmountOutTimeoutChecks
-	scenarios["exitSwapShareAmountIn"] = testExitSwapShareAmountIn
-	scenarios["exitSwapShareAmountInChecks"] = testExitSwapShareAmountInChecks
-	scenarios["exitSwapShareAmountInTimeout"] = testExitSwapShareAmountInTimeout
-	scenarios["exitSwapShareAmountInTimeoutChecks"] = testExitSwapShareAmountInTimeoutChecks
-	scenarios["lockTokens"] = testLockTokens
-	scenarios["lockTokensChecks"] = testLockTokensChecks
-	scenarios["lockTokensTimeout"] = testLockTokensTimeout
-	scenarios["lockTokensTimeoutChecks"] = testLockTokensTimeoutChecks
-	scenarios["transferIbcTokens"] = testTransferIbcTokens
-	scenarios["transferIbcTokensChecks"] = testTransferIbcTokensChecks
-	scenarios["forwardTransferIbcTokens"] = testForwardTransferIbcTokens
-	scenarios["forwardTransferIbcTokensChecks"] = testForwardTransferIbcTokensChecks
+	scenarios["registerIca"] = scenario(testRegisterIca)
+	scenarios["createPool"] = scenario(testCreatePool)
+	scenarios["createPoolChecks"] = scenario(testCreatePoolChecks)
+	scenarios["createPoolTimeout"] = scenario(testCreatePoolTimeout)
+	scenarios["createPoolTimeoutChecks"] = scenario(testCreatePoolTimeoutChecks)
+	scenarios["joinPool"] = scenario(testJoinPool)
+	scenarios["joinPoolChecks"] = scenario(testJoinPoolChecks)
+	scenarios["joinPoolTimeout"] = scenario(testJoinPoolTimeout)
+	scenarios["joinPoolTimeoutChecks"] = scenario(testJoinPoolTimeoutChecks)
+	scenarios["exitPool"] = scenario(testExitPool)
+	scenarios["exitPoolChecks"] = scenario(testExitPoolChecks)
+	scenarios["exitPoolTimeout"] = scenario(testExitPoolTimeout)
+	scenarios["exitPoolTimeoutChecks"] = scenario(testExitPoolTimeoutChecks)
+	scenarios["joinSwapExternAmountIn"] = scenario(testJoinSwapExternAmountIn)
+	scenarios["joinSwapExternAmountInChecks"] = scenario(testJoinSwapExternAmountInChecks)
+	scenarios["joinSwapExternAmountInTimeout"] = scenario(testJoinSwapExternAmountInTimeout)
+	scenarios["joinSwapExternAmountInTimeoutChecks"] = scenario(testJoinSwapExternAmountInTimeoutChecks)
+	scenarios["exitSwapExternAmountOut"] = scenario(testExitSwapExternAmountOut)
+	scenarios["exitSwapExternAmountOutChecks"] = scenario(testExitSwapExternAmountOutChecks)
+	scenarios["exitSwapExternAmountOutTimeout"] = scenario(testExitSwapExternAmountOutTimeout)
+	scenarios["exitSwapExternAmountOutTimeoutChecks"] = scenario(testExitSwapExternAmountOutTimeoutChecks)
+	scenarios["joinSwapShareAmountOut"] = scenario(testJoinSwapShareAmountOut)
+	scenarios["joinSwapShareAmountOutChecks"] = scenario(testJoinSwapShareAmountOutChecks)
+	scenarios["joinSwapShareAmountOutTimeout"] = scenario(testJoinSwapShareAmountOutTimeout)
+	scenarios["joinSwapShareAmountOutTimeoutChecks"] = scenario(testJoinSwapShareAmountOutTimeoutChecks)
+	scenarios["exitSwapShareAmountIn"] = scenario(testExitSwapShareAmountIn)
+	scenarios["exitSwapShareAmountInChecks"] = scenario(testExitSwapShareAmountInChecks)
+	scenarios["exitSwapShareAmountInTimeout"] = scenario(testExitSwapShareAmountInTimeout)
+	scenarios["exitSwapShareAmountInTimeoutChecks"] = scenario(testExitSwapShareAmountInTimeoutChecks)
+	scenarios["lockTokens"] = scenario(testLockTokens)
+	scenarios["lockTokensChecks"] = scenario(testLockTokensChecks)
+	scenarios["lockTokensTimeout"] = scenario(testLockTokensTimeout)
+	scenarios["lockTokensTimeoutChecks"] = scenario(testLockTokensTimeoutChecks)
+	scenarios["transferIbcTokens"] = scenario(testTransferIbcTokens)
+	scenarios["transferIbcTokensChecks"] = scenario(testTransferIbcTokensChecks)
+	scenarios["forwardTransferIbcTokens"] = scenario(testForwardTransferIbcTokens)
+	scenarios["forwardTransferIbcTokensChecks"] = scenario(testForwardTransferIbcTokensChecks)
 }
 
 // Replace timeout to trigger timeout hooks in test

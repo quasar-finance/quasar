@@ -7,5 +7,7 @@ project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
 (
   cd "$project_dir"
 
-  ignite chain serve -c config.yml --reset-once -v
+  mkdir -p run/quasar/home
+
+  ignite chain serve -c config.yml --home run/quasar/home --reset-once -v
 )
