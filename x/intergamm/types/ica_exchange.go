@@ -12,6 +12,7 @@ type ibcExchangeRequest interface {
 	proto.Message
 
 	*ibctransfertypes.FungibleTokenPacketData |
+		*ibctransfertypes.MsgTransfer |
 		*gammbalancer.MsgCreateBalancerPool |
 		*gammtypes.MsgJoinPool |
 		*gammtypes.MsgExitPool |
@@ -19,13 +20,15 @@ type ibcExchangeRequest interface {
 		*gammtypes.MsgExitSwapExternAmountOut |
 		*gammtypes.MsgJoinSwapShareAmountOut |
 		*gammtypes.MsgExitSwapShareAmountIn |
-		*lockuptypes.MsgLockTokens
+		*lockuptypes.MsgLockTokens |
+		*lockuptypes.MsgBeginUnlocking
 }
 
 type ibcExchangeResponse interface {
 	proto.Message
 
 	*MsgEmptyIbcResponse |
+		*ibctransfertypes.MsgTransferResponse |
 		*gammbalancer.MsgCreateBalancerPoolResponse |
 		*gammtypes.MsgJoinPoolResponse |
 		*gammtypes.MsgExitPoolResponse |
@@ -33,7 +36,8 @@ type ibcExchangeResponse interface {
 		*gammtypes.MsgExitSwapExternAmountOutResponse |
 		*gammtypes.MsgJoinSwapShareAmountOutResponse |
 		*gammtypes.MsgExitSwapShareAmountInResponse |
-		*lockuptypes.MsgLockTokensResponse
+		*lockuptypes.MsgLockTokensResponse |
+		*lockuptypes.MsgBeginUnlockingResponse
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {

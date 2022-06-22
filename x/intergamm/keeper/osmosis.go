@@ -237,3 +237,30 @@ func (k Keeper) TransmitIbcLockTokens(
 
 	return k.sendTxOverIca(ctx, owner, connectionId, msgs, timeoutTimestamp)
 }
+
+func (k Keeper) TransmitIbcBeginUnlocking(
+	ctx sdk.Context,
+	owner string,
+	connectionId string,
+	timeoutTimestamp uint64,
+	id uint64,
+	coins sdk.Coins,
+) (uint64, error) {
+	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+		Owner:        owner,
+		ConnectionId: connectionId,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	msgs := []sdk.Msg{
+		&lockuptypes.MsgBeginUnlocking{
+			Owner: iaResp.InterchainAccountAddress,
+			ID:    id,
+			Coins: coins,
+		},
+	}
+
+	return k.sendTxOverIca(ctx, owner, connectionId, msgs, timeoutTimestamp)
+}

@@ -259,6 +259,26 @@ run() {
   echo "> scenario: lockTokensTimeoutChecks"
   quasartx intergamm test --scenario lockTokensTimeoutChecks -y
 
+  # Begin unlocking
+
+  echo "> scenario: beginUnlocking"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario beginUnlocking -y
+  sleep 8
+
+  echo "> scenario: beginUnlockingChecks"
+  quasartx intergamm test --scenario beginUnlockingChecks -y
+
+  echo "> scenario: beginUnlockingTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario beginUnlockingTimeout -y
+  sleep 8
+
+  echo "> scenario: beginUnlockingTimeoutChecks"
+  quasartx intergamm test --scenario beginUnlockingTimeoutChecks -y
+
   # Exit pool
 
   echo "> scenario: exitPool"
@@ -358,6 +378,48 @@ run() {
 
   echo "> scenario: exitSwapShareAmountInTimeoutChecks"
   quasartx intergamm test --scenario exitSwapShareAmountInTimeoutChecks -y
+
+  # IBC transfers
+
+  echo "> scenario: transferIbcTokens"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario transferIbcTokens -y
+  sleep 8
+
+  echo "> scenario: transferIbcTokensChecks"
+  quasartx intergamm test --scenario transferIbcTokensChecks -y
+
+  # FIXME: ibc transfer timeout callback is not triggered
+  # echo "> scenario: transferIbcTokensTimeout"
+  # quasartx intergamm test --scenario setup -y
+  # sleep 8
+  # quasartx intergamm test --scenario transferIbcTokensTimeout -y
+  # sleep 8
+
+  # echo "> scenario: transferIbcTokensTimeoutChecks"
+  # quasartx intergamm test --scenario transferIbcTokensTimeoutChecks -y
+
+  # IBC transfers over ICA
+
+  echo "> scenario: icaTransferIbcTokens"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario icaTransferIbcTokens -y
+  sleep 8
+
+  echo "> scenario: icaTransferIbcTokensChecks"
+  quasartx intergamm test --scenario icaTransferIbcTokensChecks -y
+
+  echo "> scenario: icaTransferIbcTokensTimeout"
+  quasartx intergamm test --scenario setup -y
+  sleep 8
+  quasartx intergamm test --scenario icaTransferIbcTokensTimeout -y
+  sleep 8
+
+  echo "> scenario: icaTransferIbcTokensTimeoutChecks"
+  quasartx intergamm test --scenario icaTransferIbcTokensTimeoutChecks -y
+
 }
 
 "$@"

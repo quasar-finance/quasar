@@ -12,7 +12,7 @@ Quasar is working hard to simplfy and add ease to collaborative investment with 
 
 ## DISCLAIMER
 
-The current codebase is experimental and undergoing testing and auditing - no code is guaranteed to be ready for production environments at this time. 
+The current codebase is experimental and undergoing testing and auditing - no code is guaranteed to be ready for production environments at this time.
 
 ## Quasar Node
 
@@ -63,16 +63,6 @@ git push origin v0.1
 ```
 
 After a draft release is created, make your final changes from the release page and publish it.
-
-#### Release artifacts
-
-To generate the release artifacts, run:
-
-```bash
-make build_artifacts
-```
-
-This will generate the quasar artifacts in the `build/` folder.
 
 ## Documentation
 
