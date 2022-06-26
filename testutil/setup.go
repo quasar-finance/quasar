@@ -19,6 +19,7 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
@@ -63,6 +64,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
 	ics4WrapperMock := mock.NewMockICS4Wrapper(ctl)
 	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
+	// Set BindPort method for mock and return a mock capability
+	ibcPortKeeperMock.EXPECT().BindPort(gomock.Any(), gomock.Any()).AnyTimes().Return(capabilitytypes.NewCapability(1))
 
 	// Keepers
 
