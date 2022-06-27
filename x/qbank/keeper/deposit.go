@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+
 	oriontypes "github.com/abag/quasarnode/x/orion/types"
 	"github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -365,4 +366,31 @@ func (k Keeper) GetAllTotalDeposits(ctx sdk.Context) []types.UserBalanceInfo {
 	logger := k.Logger(ctx)
 	logger.Info("GetAllTotalDeposits", "TotalDepositInfos", totalDepositInfos)
 	return totalDepositInfos
+}
+
+// GetEpochLockupCoins get the todays lockup coins tuple list.
+func (k Keeper) GetEpochLockupCoins(ctx sdk.Context, epochDay uint64) types.EpochLockupCoins {
+	elcs := types.EpochLockupCoins{}
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.EpochLockupUserDenomDepositKBP)
+	prefixKey := types.EpochDaySepKey(epochDay, types.Sep)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	logger := k.Logger(ctx)
+	logger.Info(fmt.Sprintf("GetAllEpochLockupCoins|modulename=%s|blockheight=%d|prefixKey=%s",
+		types.ModuleName, ctx.BlockHeight(), string(prefixKey)))
+	// key = {$lockupPeriods} + {:} + {userAcc} + {:} + {denom}
+	// value = sdk.Coin marshaled
+	for ; iter.Valid(); iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		splits := types.SplitKeyBytes(key)
+		lockupPeriod := types.LockupTypes(types.LockupTypes_value[string(splits[0])])
+		//denomStr := string(splits[2])
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		elcs.Infos = append(elcs.Infos,
+			types.EpochLockupCoinInfo{EpochDay: epochDay, LockupPeriod: lockupPeriod, Coin: coin})
+
+	}
+	return elcs
 }

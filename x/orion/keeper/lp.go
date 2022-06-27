@@ -22,7 +22,7 @@ func (k Keeper) NewLP(lockId, bondingStartEpochDay, bondDuration, unbondingStart
 		StartTime:              time.Now(),
 		BondingStartEpochDay:   bondingStartEpochDay,
 		BondDuration:           bondDuration,
-		UnbondingStartEpochDay: unbondingDuration,
+		UnbondingStartEpochDay: unbondingStartEpochDay,
 		UnbondingDuration:      unbondingDuration,
 		PoolID:                 poolID,
 		Lptoken:                lpToken,
@@ -250,22 +250,22 @@ func (k Keeper) GetAllLpEpochPairList(ctx sdk.Context) []types.LpEpochPair {
 	return lpEpochs
 }
 
-// SetDayMapping is used to iterate and create tuple of reward day, deposit day and lockup period.
+// SetDayMapping is used to iterate and create tuple of target day( exit or reward), deposit day and lockup period.
 // To further calculate the denom weights and users weights.
-// Key = {DayMapKBP} +   {rewardDay} + {":"} + {depositDay} + {":"} + {lockupPeriod}
-// Reward is happening every day - during thw whole periods.
-// This map is also used for distribution of exited funds. reward day/distribution day is same.
-func (k Keeper) SetDayMapping(ctx sdk.Context, rewardDay uint64,
+// Key = {DayMapKBP} +   {targetDay} + {":"} + {depositDay} + {":"} + {lockupPeriod}
+// Target is happening every day - during thw whole periods.
+// This map is also used for distribution of exited funds. target day/distribution day is same.
+func (k Keeper) SetDayMapping(ctx sdk.Context, targetDay uint64,
 	depositDay uint64, lockupPeriod qbanktypes.LockupTypes) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DayMapKBP)
-	key := types.CreateDayMappingKey(rewardDay, depositDay, lockupPeriod)
+	key := types.CreateDayMappingKey(targetDay, depositDay, lockupPeriod)
 	store.Set(key, []byte{0x00})
 }
 
 // GetDepositDayInfos gets the list of deposit day and lockup period for further processing.
-// This method should be called every EOD with today epochDay = rewardDay.
-func (k Keeper) GetDepositDayInfos(ctx sdk.Context, rewardDay uint64) []types.DepositDayLockupPair {
-	prefixKey := types.EpochDayKey(rewardDay)
+// This method should be called every EOD with today epochDay = targetDay.
+func (k Keeper) GetDepositDayInfos(ctx sdk.Context, targetDay uint64) []types.DepositDayLockupPair {
+	prefixKey := types.EpochDayKey(targetDay)
 	prefixKey = append(prefixKey, qbanktypes.SepByte...)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DayMapKBP)
 	iter := sdk.KVStorePrefixIterator(store, prefixKey)

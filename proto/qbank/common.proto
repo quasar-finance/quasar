@@ -24,3 +24,15 @@ enum LockupTypes {
     Months_1 = 3; // 1 Month of lockup
     Months_3 = 4; // 3 Months of lockup
   }
+
+message EpochLockupCoinInfo {
+    uint64  epochDay = 1;
+    LockupTypes lockupPeriod  = 2;
+    cosmos.base.v1beta1.Coin coin = 3 [ (gogoproto.nullable) = false ];
+}
+
+message EpochLockupCoins {
+    repeated EpochLockupCoinInfo infos = 1 [ (gogoproto.nullable) = false ];
+}
+
+

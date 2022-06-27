@@ -6,7 +6,9 @@ import (
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -44,4 +46,5 @@ type IBCTransferKeeper interface {
 		timeoutHeight clienttypes.Height,
 		timeoutTimestamp uint64,
 	) error
+	GetDenomTrace(ctx sdk.Context, denomTraceHash tmbytes.HexBytes) (ibctransfertypes.DenomTrace, bool)
 }

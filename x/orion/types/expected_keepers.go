@@ -1,6 +1,9 @@
 package types
 
 import (
+	time "time"
+
+	epochtypes "github.com/abag/quasarnode/x/epochs/types"
 	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
@@ -40,7 +43,9 @@ type QbankKeeper interface {
 	GetEpochLockupDepositAllUsersAllDenoms(ctx sdk.Context, epochDay uint64, lockupPeriod qbanktypes.LockupTypes) map[string]sdk.Coins
 	AddUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sdk.Coin)
 	AddActualWithdrawableAmt(ctx sdk.Context, uid string, coin sdk.Coin)
+	GetEpochLockupCoins(ctx sdk.Context, epochDay uint64) qbanktypes.EpochLockupCoins
 	AddUserClaimRewards(ctx sdk.Context, uid, vaultID string, coins sdk.Coins)
+	WhiteListedDenomsInOrion(ctx sdk.Context) (res []qbanktypes.WhiteListedDenomInOrion)
 }
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module
@@ -54,12 +59,18 @@ type QoracleKeeper interface {
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
-
+	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
 	Send(ctx sdk.Context,
 		coin sdk.Coin,
 		destinationChain string,
 		owner string,
 		destinationAddress string) (uint64, error)
+
+	SendToken(ctx sdk.Context,
+		destinationChain string,
+		sender sdk.AccAddress,
+		receiver string,
+		coin sdk.Coin) (uint64, error)
 
 	TransmitIbcCreatePool(
 		ctx sdk.Context,
@@ -111,4 +122,17 @@ type IntergammKeeper interface {
 		receiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
 		transferTimeoutTimestamp uint64) (uint64, error)
+
+	TransmitIbcLockTokens(
+		ctx sdk.Context,
+		owner string,
+		connectionId string,
+		timeoutTimestamp uint64,
+		duration time.Duration,
+		coins sdk.Coins,
+	) (uint64, error)
+}
+
+type EpochsKeeper interface {
+	GetEpochInfo(ctx sdk.Context, identifier string) epochtypes.EpochInfo
 }

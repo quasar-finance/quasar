@@ -8,8 +8,10 @@ import (
 	reflect "reflect"
 
 	types "github.com/cosmos/cosmos-sdk/types"
-	types0 "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	types0 "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	types1 "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	gomock "github.com/golang/mock/gomock"
+	bytes "github.com/tendermint/tendermint/libs/bytes"
 )
 
 // MockIBCTransferKeeper is a mock of IBCTransferKeeper interface.
@@ -35,8 +37,23 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 	return m.recorder
 }
 
+// GetDenomTrace mocks base method.
+func (m *MockIBCTransferKeeper) GetDenomTrace(arg0 types.Context, arg1 bytes.HexBytes) (types0.DenomTrace, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDenomTrace", arg0, arg1)
+	ret0, _ := ret[0].(types0.DenomTrace)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetDenomTrace indicates an expected call of GetDenomTrace.
+func (mr *MockIBCTransferKeeperMockRecorder) GetDenomTrace(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDenomTrace", reflect.TypeOf((*MockIBCTransferKeeper)(nil).GetDenomTrace), arg0, arg1)
+}
+
 // SendTransfer mocks base method.
-func (m *MockIBCTransferKeeper) SendTransfer(arg0 types.Context, arg1, arg2 string, arg3 types.Coin, arg4 types.AccAddress, arg5 string, arg6 types0.Height, arg7 uint64) error {
+func (m *MockIBCTransferKeeper) SendTransfer(arg0 types.Context, arg1, arg2 string, arg3 types.Coin, arg4 types.AccAddress, arg5 string, arg6 types1.Height, arg7 uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendTransfer", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].(error)

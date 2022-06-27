@@ -5,10 +5,16 @@ import (
 	"time"
 
 	"github.com/abag/quasarnode/x/orion/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
+
+// getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
+func (k Keeper) getOwnerAcc() sdk.AccAddress {
+	return k.accountKeeper.GetModuleAddress(types.ModuleName)
+}
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
@@ -42,7 +48,7 @@ func (k Keeper) getConnectionId(chainid string) string {
 	// TO cosmoshub - connection-0
 	// connection could also be self determined by integamm. It should be a param in intergamm
 	// But as orion has intergamm keeper access; it can get it from intergamm
-	return "connection-0"
+	return "connection-1"
 }
 
 // Intergamm module method wrappers
@@ -65,9 +71,25 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 	return packetSeq, err
 }
 
+func (k Keeper) LockLPTokens(ctx sdk.Context,
+	duration time.Duration,
+	coins sdk.Coins) (uint64, error) {
+
+	owner := k.getOwnerAccStr()
+	connectionId := k.getConnectionId("osmosis")
+	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
+	packetSeq, err := k.intergammKeeper.TransmitIbcLockTokens(ctx,
+		owner, connectionId, uint64(timeoutTimestamp), duration, coins)
+
+	return packetSeq, err
+}
+
 func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) (uint64, error) {
-	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareInAmount=%v|tokenOutMins=%v\n",
-		poolID, shareInAmount, tokenOutMins))
+
+	k.Logger(ctx).Info("Entered JoinPool",
+		"PoolID", poolID,
+		"shareInAmount", shareInAmount,
+		"tokenOutMins", tokenOutMins)
 
 	owner := k.getOwnerAccStr()
 	connectionId := k.getConnectionId("osmosis")
@@ -84,19 +106,21 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 	return seq, err
 }
 
-func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
+// TokenWithdrawFromOsmosis initiate the token transfer from the osmosis to quasar
+// via middle chain using packet forwarder.
+func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64, error) {
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
 	connectionId := k.getConnectionId("osmosis")
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	transferPort := "transfer"        // TODO - should be a param
-	transferChannel := "channel-1"    // TODO - should be a param
+	transferChannel := "channel-1"    // TODO - should be a param, osmosis -> hub
 	fwdTransferPort := "transfer"     // TODO - should be a param
-	fwdTransferChannel := "channel-1" // TODO - should be a param
+	fwdTransferChannel := "channel-0" // TODO - should be a param; hub->quasar
 	intermediateReceiver := k.getIntermediateReceiver()
 
-	_, err := k.intergammKeeper.TransmitForwardIbcTransfer(
+	return k.intergammKeeper.TransmitForwardIbcTransfer(
 		ctx,
 		owner,
 		connectionId,
@@ -111,7 +135,6 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 		ibcclienttypes.ZeroHeight(),
 		uint64(timeoutTimestamp),
 	)
-	return err
 }
 
 // IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.
@@ -124,24 +147,31 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) error {
 // in case of failure.
 // Can we actually query or determine if ibc token transfer call was successful. And if it failed; tokens
 // are returned.
-func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) {
+func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error) {
+	logger := k.Logger(ctx)
+	logger.Info("IBCTokenTransfer",
+		"coin", coin,
+	)
 	destAccStr := k.getDestinationAccStr()
-	owner := k.getOwnerAccStr()
-	// TODO - Send should be replaced with upcoming ibc token transfer method.
-	seqNo, _ := k.intergammKeeper.Send(ctx,
-		coin,
-		"osmosis",
-		owner,
-		destAccStr)
-	k.SetIBCTokenTransferRecord(ctx, seqNo, coin)
+	owner := k.getOwnerAcc()
+	seqNo, err := k.intergammKeeper.SendToken(ctx, "osmosis", owner, destAccStr, coin)
+	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
+		Destination: "osmosis",
+		Sender:      k.getOwnerAccStr(),
+		Receiver:    destAccStr,
+		StartTime:   time.Now().UTC(),
+		EpochDay:    uint64(k.epochsKeeper.GetEpochInfo(ctx, "day").CurrentEpoch),
+		Coin:        coin,
+	}
+
+	k.SetIBCTokenTransferRecord(ctx, ibcTransferRecord)
+	return seqNo, err
 }
 
-// It should also have State Tx logic.
-// Value can be more elegant struct here.
-func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64, coin sdk.Coin) {
+func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, ibcTokenTransfer types.IbcTokenTransfer) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
-	key := types.CreateSeqKey(seqNo)
-	value := k.cdc.MustMarshal(&coin)
+	key := types.CreateSeqKey(ibcTokenTransfer.SeqNo)
+	value := k.cdc.MustMarshal(&ibcTokenTransfer)
 	store.Set(key, value)
 }
 
@@ -152,13 +182,102 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	key := types.CreateSeqKey(seqNo)
 	store.Delete(key)
 }
-func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (coin sdk.Coin, found bool) {
+
+////////////
+func (k Keeper) SetIBCTokenTransferRecord2(ctx sdk.Context,
+	seqNo uint64,
+	e qbanktypes.EpochLockupCoinInfo) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	value := k.cdc.MustMarshal(&e)
+	store.Set(key, value)
+}
+
+func (k Keeper) DeleteIBCTokenTransferRecord2(ctx sdk.Context, seqNo uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	store.Delete(key)
+}
+
+func (k Keeper) GetIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) (ibokenTransfer types.IbcTokenTransfer, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)
 	key := types.CreateSeqKey(seqNo)
 	b := store.Get(key)
 	if b == nil {
-		return coin, false
+		return ibokenTransfer, false
 	}
-	k.cdc.MustUnmarshal(b, &coin)
-	return coin, true
+	k.cdc.MustUnmarshal(b, &ibokenTransfer)
+	return ibokenTransfer, true
+}
+
+func (k Keeper) GetIBCTokenTransferRecord2(ctx sdk.Context,
+	seqNo uint64) (e qbanktypes.EpochLockupCoinInfo, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferSentKBP)
+	key := types.CreateSeqKey(seqNo)
+	b := store.Get(key)
+	if b == nil {
+		return e, false
+	}
+	k.cdc.MustUnmarshal(b, &e)
+	return e, true
+}
+
+func (k Keeper) GetTotalEpochTransffered(ctx sdk.Context, epochNumber uint64) sdk.Coins {
+	return nil
+}
+
+func (k Keeper) GetTransferredEpochLockupCoins(ctx sdk.Context, epochDay uint64) qbanktypes.EpochLockupCoins {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferredKBP)
+	es := []qbanktypes.EpochLockupCoinInfo{}
+	prefixKey := qbanktypes.EpochDaySepKey(epochDay, types.Sep)
+	iter := sdk.KVStorePrefixIterator(store, prefixKey)
+	defer iter.Close()
+
+	// key -> lockupStr, value -> qbanktypes.EpochLockupCoinInfo
+	for ; iter.Valid(); iter.Next() {
+		_, value := iter.Key(), iter.Value()
+		var info qbanktypes.EpochLockupCoinInfo
+		k.cdc.MustUnmarshal(value, &info)
+		es = append(es, info)
+	}
+	e := qbanktypes.EpochLockupCoins{Infos: es}
+	return e
+}
+
+func (k Keeper) SetTransferredEpochLockupCoins(ctx sdk.Context,
+	e qbanktypes.EpochLockupCoinInfo) {
+
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferredKBP)
+	key := types.CreateEpochLockupKey(e.EpochDay, e.LockupPeriod)
+	value := k.cdc.MustMarshal(&e)
+	store.Set(key, value)
+
+	// get details of epoch, lockup , coins from seqNo.
+
+	// set total epoch transfer values
+	// <k,v> -> <epoch/lockup , sdk.Coins>
+	// <k1,v1> -> <epoch/denom , sdk.Coin>
+}
+
+// Token withdraw from osmosis
+func (k Keeper) SetSeqTokenWithdrawFromOsmosis(ctx sdk.Context, iw types.IbcIcaWithdraw) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(iw.SeqNo)
+	value := k.cdc.MustMarshal(&iw)
+	store.Set(key, value)
+}
+
+func (k Keeper) GetSeqTokenWithdrawFromOsmosis(ctx sdk.Context, seqNo uint64) types.IbcIcaWithdraw {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(seqNo)
+	bz := store.Get(key)
+	var iw types.IbcIcaWithdraw
+	k.cdc.MustUnmarshal(bz, &iw)
+	return iw
+}
+
+func (k Keeper) DeleteSeqTokenWithdrawFromOsmosis(ctx sdk.Context, seqNo uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.SeqTokenWithdrawFromOsmosisKBP)
+	key := types.CreateSeqKey(seqNo)
+	store.Delete(key)
 }

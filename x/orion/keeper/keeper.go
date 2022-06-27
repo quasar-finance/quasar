@@ -23,6 +23,7 @@ type (
 		qbankKeeper     types.QbankKeeper
 		qoracleKeeper   types.QoracleKeeper
 		intergammKeeper types.IntergammKeeper
+		epochsKeeper    types.EpochsKeeper
 	}
 )
 
@@ -36,6 +37,7 @@ func NewKeeper(
 	qbankkeeper types.QbankKeeper,
 	qoraclekeeper types.QoracleKeeper,
 	intergammkeeper types.IntergammKeeper,
+	epochsKeeper types.EpochsKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -53,6 +55,7 @@ func NewKeeper(
 		qbankKeeper:     qbankkeeper,
 		qoracleKeeper:   qoraclekeeper,
 		intergammKeeper: intergammkeeper,
+		epochsKeeper:    epochsKeeper,
 	}
 }
 

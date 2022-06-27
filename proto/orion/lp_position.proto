@@ -74,3 +74,15 @@ message LpPosition {
   repeated GaugeLockInfo gaugelocks  = 13;
   
 }
+
+message LockInfo { 
+  uint64 lpID = 1; // Associated lpID
+  uint64 lockID = 2;
+  google.protobuf.Duration duration = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true,
+    (gogoproto.jsontag) = "duration,omitempty",
+    (gogoproto.moretags) = "yaml:\"duration\""
+  ]; 
+  cosmos.base.v1beta1.Coin lpToken = 4 [(gogoproto.nullable) = false];
+}

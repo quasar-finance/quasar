@@ -21,11 +21,12 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/abag/quasarnode/orion/params";
   }
+  /*
   // Queries a list of ReserveBalance items.
 	rpc ReserveBalance(QueryReserveBalanceRequest) returns (QueryReserveBalanceResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/reserve_balance/{denom}";
 	}
- 
+ */
 // Queries a LpPosition by index.
 	rpc LpPosition(QueryGetLpPositionRequest) returns (QueryGetLpPositionResponse) {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_position";
@@ -50,6 +51,16 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/orion/lp_epoch_pairs";
 	}
 
+// Queries a list of ListModuleAccounts items.
+	rpc ListModuleAccounts(QueryListModuleAccountsRequest) returns (QueryListModuleAccountsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/list_module_accounts";
+	}
+
+// Queries a list of ListActiveLps items.
+	rpc ListActiveLps(QueryListActiveLpsRequest) returns (QueryListActiveLpsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/orion/list_active_lps";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -62,6 +73,7 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
+/*
 message QueryReserveBalanceRequest {
   string denom = 1;
 }
@@ -69,7 +81,8 @@ message QueryReserveBalanceRequest {
 message QueryReserveBalanceResponse {
   uint64 amount = 1;
 }
- 
+*/
+
 message QueryGetLpPositionRequest {
 	uint64 lpId = 1;
 }
@@ -106,6 +119,20 @@ message QueryLpEpochPairsRequest {
 
 message QueryLpEpochPairsResponse {
   repeated LpEpochPair lpEpochPairs = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryListModuleAccountsRequest {
+}
+
+message QueryListModuleAccountsResponse {
+	repeated AccountInfo accInfo = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryListActiveLpsRequest {
+}
+
+message QueryListActiveLpsResponse {
+	repeated uint64 lpIds = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

@@ -525,6 +525,8 @@ func New(
 		app.QoracleKeeper,
 	)
 
+	app.QbankKeeper = qbankkeeper
+
 	app.OrionKeeper = *orionmodulekeeper.NewKeeper(
 		appCodec,
 		keys[orionmoduletypes.StoreKey],
@@ -535,15 +537,24 @@ func New(
 		app.QbankKeeper,
 		app.QoracleKeeper,
 		app.IntergammKeeper,
+		*app.EpochsKeeper,
 	)
 
 	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.QbankKeeper = *qbankkeeper.SetDepositHooks(
+	/*
+		app.QbankKeeper = *qbankkeeper.SetDepositHooks(
+			qbankmoduletypes.NewMultiDepositHooks(
+				app.OrionKeeper.QBankHooks(),
+			),
+		)
+	*/
+	app.QbankKeeper.SetDepositHooks(
 		qbankmoduletypes.NewMultiDepositHooks(
 			app.OrionKeeper.QBankHooks(),
 		),
 	)
+
 	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// Set epoch hooks
