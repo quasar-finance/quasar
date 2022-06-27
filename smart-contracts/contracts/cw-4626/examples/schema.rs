@@ -3,12 +3,12 @@ use std::fs::create_dir_all;
 extern crate cw_4626;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use cw_4626::msg::{AssetResponse, TotalAssetResponse, ConvertToSharesResponse, ConvertToAssetsResponse, VaultInfoResponse, MaxDepositResponse};
+use cw_4626::msg::{InstantiateMsg, AssetResponse, TotalAssetResponse, ConvertToSharesResponse, ConvertToAssetsResponse, VaultInfoResponse, MaxDepositResponse};
 use cw20::{
     AllAccountsResponse, AllAllowancesResponse, AllowanceResponse, BalanceResponse,
     TokenInfoResponse,
 };
-use cw20_base::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use cw20_base::msg::{ExecuteMsg, QueryMsg};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
