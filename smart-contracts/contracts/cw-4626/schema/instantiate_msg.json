@@ -3,16 +3,18 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "decimals",
+    "curve_type",
     "initial_balances",
     "name",
+    "reserve_decimals",
+    "reserve_denom",
+    "reserve_total_supply",
+    "supply_decimals",
     "symbol"
   ],
   "properties": {
-    "decimals": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0.0
+    "curve_type": {
+      "$ref": "#/definitions/CurveType"
     },
     "initial_balances": {
       "type": "array",
@@ -43,6 +45,22 @@
     "name": {
       "type": "string"
     },
+    "reserve_decimals": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
+    },
+    "reserve_denom": {
+      "type": "string"
+    },
+    "reserve_total_supply": {
+      "$ref": "#/definitions/Uint128"
+    },
+    "supply_decimals": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
+    },
     "symbol": {
       "type": "string"
     }
@@ -51,6 +69,36 @@
     "Binary": {
       "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
       "type": "string"
+    },
+    "CurveType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "constant"
+          ],
+          "properties": {
+            "constant": {
+              "type": "object",
+              "required": [
+                "scale",
+                "value"
+              ],
+              "properties": {
+                "scale": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "value": {
+                  "$ref": "#/definitions/Uint128"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "Cw20Coin": {
       "type": "object",

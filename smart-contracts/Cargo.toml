@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "contracts/cw-4626",
+    "packages/quasar-traits",
+    "packages/quasar-types"
+]
