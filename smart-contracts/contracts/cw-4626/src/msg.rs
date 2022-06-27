@@ -19,11 +19,13 @@ pub struct InstantiateMsg {
     // the token accepted by the contract.
     pub reserve_denom: String,
     // the total amount of tokens that can be put in the reserve.
+    // TODO change to Option<Uint128> to allow for no cap on reserve supply
     pub reserve_total_supply: Uint128,
     pub reserve_decimals: u8,
     // supply is the amount of tokens this vault has issued.
     // supply_decimals is the amount of decimals of the supply token
     pub supply_decimals: u8,
+    // TODO should this be an Option to not need the field in the initialization json
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
     pub marketing: Option<InstantiateMarketingInfo>,
