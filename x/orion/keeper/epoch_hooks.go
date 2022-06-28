@@ -56,7 +56,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 		if !icaFound {
 			err := k.intergammKeeper.RegisterInterchainAccount(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
 			if err != nil {
-				panic(err)
+				// panic(err)
+				logger.Info("AfterEpochEnd", "RegisterInterchainAccount failed.", err)
 			}
 		} else {
 			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)

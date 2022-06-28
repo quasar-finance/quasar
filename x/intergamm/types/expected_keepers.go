@@ -8,6 +8,7 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 )
 
@@ -25,6 +26,7 @@ type BankKeeper interface {
 
 type ChannelKeeper interface {
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
+	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, exported.ConnectionI, error)
 }
 
 type ICAControllerKeeper interface {

@@ -20,3 +20,11 @@ const (
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
+
+var (
+	PortInfoKBP = []byte{0x01}
+)
+
+func CreatePortIDKey(portID string) []byte {
+	return []byte(portID)
+}

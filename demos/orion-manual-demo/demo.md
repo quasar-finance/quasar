@@ -698,3 +698,22 @@ quasarnoded tx qbank request-deposit "MID" "orion" 110ibc/27394FB092D2ECCD56123C
 - Post check - 
 Note that, it will also packet forward the deposited tokens to osmosis via cosmos. Check the 
 osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq address for initial version ( hardcoded in code )
+
+## Other sample commands 
+### Query port info from intergamm module 
+```
+quasarnoded q intergamm get-port-info transfer  --node tcp://localhost:26659
+portInfo:
+  channelID: channel-2
+  connectionID: connection-1
+  counterpartyChannelID: channel-1
+  portID: transfer
+```
+```
+quasar-demo/quasar$ quasarnoded q intergamm get-port-info icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
+portInfo:
+  channelID: channel-1
+  connectionID: connection-1
+  counterpartyChannelID: channel-2
+  portID: icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc
+```

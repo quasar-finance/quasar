@@ -8,6 +8,7 @@ import (
 
 	"github.com/abag/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
@@ -77,6 +78,28 @@ func NewKeeper(
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) GetChannelKeeper(ctx sdk.Context) types.ChannelKeeper {
+	return k.channelKeeper
+}
+
+func (k Keeper) SetPortDetail(ctx sdk.Context, pi types.PortInfo) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
+	key := types.CreatePortIDKey(pi.PortID)
+	b := k.cdc.MustMarshal(&pi)
+	store.Set(key, b)
+}
+
+func (k Keeper) GetPortDetail(ctx sdk.Context, portID string) (pi types.PortInfo, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
+	key := types.CreatePortIDKey(portID)
+	b := store.Get(key)
+	if b == nil {
+		return pi, false
+	}
+	k.cdc.MustUnmarshal(b, &pi)
+	return pi, true
 }
 
 // ClaimCapability claims the channel capability passed via the OnOpenChanInit callback

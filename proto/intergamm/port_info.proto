@@ -1,0 +1,12 @@
+syntax = "proto3";
+package abag.quasarnode.intergamm;
+
+option go_package = "github.com/abag/quasarnode/x/intergamm/types";
+import "gogoproto/gogo.proto";  
+
+message PortInfo {
+  string portID = 1;  
+  string channelID = 2;
+  string counterpartyChannelID = 3;
+  string connectionID = 4; // To be updated if needed otherwise will be left unused. 
+}
