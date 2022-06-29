@@ -17,11 +17,11 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 		return
 	}
 	if req.RequestPacketSequence != 0 {
-		k.Logger(ctx).Info("tried to update coin rates but another request is in progress", "packet_sequence", req.RequestPacketSequence)
+		k.Logger(ctx).Info("Tried to update CoinRates but another request is in progress", "packet_sequence", req.RequestPacketSequence)
 		return
 	}
 
-	seq, err := k.sendCoinRatesRequest(ctx, types.CoinRatesSymbols, types.CoinRatesMultiplier)
+	seq, err := k.sendCoinRatesRequest(ctx)
 	if err != nil {
 		// TODO: Implement a retry mechanism
 		ctx.EventManager().EmitEvent(
@@ -29,6 +29,8 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 				types.EventTypeCoinRatesRequest,
 				sdk.NewAttribute(types.AttributeError, err.Error()),
 			))
+
+		k.Logger(ctx).Error("Sending CoinRates request failed", "error", err)
 		return
 	}
 
@@ -39,22 +41,19 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 		))
 }
 
-func (k Keeper) sendCoinRatesRequest(ctx sdk.Context, symbols []string, mul uint64) (uint64, error) {
-	coinRatesScriptParams := k.BandchainParams(ctx).CoinRatesScriptParams
+func (k Keeper) sendCoinRatesRequest(ctx sdk.Context) (uint64, error) {
+	coinRatesParams := k.BandchainParams(ctx).CoinRatesParams
 
-	callData := types.CoinRatesCallData{
-		Symbols:    symbols,
-		Multiplier: mul,
-	}
+	callData := types.NewCoinRatesCallDataFromDecCoins(coinRatesParams.SymbolsWithMul)
 	packetData := bandpacket.NewOracleRequestPacketData(
 		types.CoinRatesClientIDKey,
-		coinRatesScriptParams.ScriptId,
+		coinRatesParams.ScriptParams.ScriptId,
 		obi.MustEncode(callData),
-		coinRatesScriptParams.AskCount,
-		coinRatesScriptParams.MinCount,
-		coinRatesScriptParams.FeeLimit,
-		coinRatesScriptParams.PrepareGas,
-		coinRatesScriptParams.ExecuteGas,
+		coinRatesParams.ScriptParams.AskCount,
+		coinRatesParams.ScriptParams.MinCount,
+		coinRatesParams.ScriptParams.FeeLimit,
+		coinRatesParams.ScriptParams.PrepareGas,
+		coinRatesParams.ScriptParams.ExecuteGas,
 	)
 	seq, err := k.sendOraclePacket(ctx, packetData)
 	if err != nil {

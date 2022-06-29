@@ -27,14 +27,22 @@ var (
 			TimeoutHeight:     clienttypes.NewHeight(0, 0),
 			TimeoutTimestamp:  uint64(time.Minute * 10),
 		},
-		CoinRatesScriptParams: OracleScriptParams{
+		CoinRatesParams: CoinRatesParams{
 			EpochIdentifier: "minute",
-			ScriptId:        37,
-			AskCount:        4,
-			MinCount:        3,
-			FeeLimit:        sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
-			PrepareGas:      600000,
-			ExecuteGas:      600000,
+			SymbolsWithMul: sdk.NewDecCoins(
+				sdk.NewDecCoinFromDec("BTC", sdk.NewDecWithPrec(1, 8)),
+				sdk.NewDecCoinFromDec("OSMO", sdk.NewDecWithPrec(1, 6)),
+				sdk.NewDecCoinFromDec("LUNA", sdk.NewDecWithPrec(1, 6)),
+				sdk.NewDecCoinFromDec("ATOM", sdk.NewDecWithPrec(1, 6)),
+			),
+			ScriptParams: OracleScriptParams{
+				ScriptId:   37,
+				AskCount:   4,
+				MinCount:   3,
+				FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
+				PrepareGas: 600000,
+				ExecuteGas: 600000,
+			},
 		},
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"
@@ -122,7 +130,7 @@ func validateBandchainParams(v interface{}) error {
 		return err
 	}
 
-	err = params.CoinRatesScriptParams.Validate()
+	err = params.CoinRatesParams.Validate()
 	if err != nil {
 		return err
 	}
@@ -139,6 +147,18 @@ func (p IBCParams) Validate() error {
 
 	if p.TimeoutHeight.IsZero() && p.TimeoutTimestamp == 0 {
 		return errors.New("packet timeout height and packet timeout timestamp cannot both be 0")
+	}
+
+	return nil
+}
+
+func (p CoinRatesParams) Validate() error {
+	if err := p.SymbolsWithMul.Validate(); err != nil {
+		return fmt.Errorf("invalid symbols with multipliers channel: %w", err)
+	}
+
+	if err := p.ScriptParams.Validate(); err != nil {
+		return fmt.Errorf("invalid oracle script params: %w", err)
 	}
 
 	return nil
