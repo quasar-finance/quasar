@@ -66,6 +66,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
 	// Set BindPort method for mock and return a mock capability
 	ibcPortKeeperMock.EXPECT().BindPort(gomock.Any(), gomock.Any()).AnyTimes().Return(capabilitytypes.NewCapability(1))
+	ibcConnectionKeeperMock := mock.NewMockConnectionKeeper(ctl)
+	// ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 
 	// Keepers
 
@@ -84,7 +86,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
-	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock)
+	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock, ibcConnectionKeeperMock, ibcClientKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.

@@ -61,6 +61,16 @@ func (m *MockChannelKeeper) GetChannelClientState(arg0 types.Context, arg1, arg2
 	return ret0, ret1, ret2
 }
 
+// GetChannelConnection mocks base method.
+func (m *MockChannelKeeper) GetChannelConnection(arg0 types.Context, arg1, arg2 string) (string, exported.ConnectionI, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChannelConnection", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(exported.ConnectionI)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
 // GetChannelClientState indicates an expected call of GetChannelClientState.
 func (mr *MockChannelKeeperMockRecorder) GetChannelClientState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -80,6 +90,11 @@ func (m *MockChannelKeeper) GetConnection(arg0 types.Context, arg1 string) (expo
 func (mr *MockChannelKeeperMockRecorder) GetConnection(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockChannelKeeper)(nil).GetConnection), arg0, arg1)
+}
+	// GetChannelConnection indicates an expected call of GetChannelConnection.
+func (mr *MockChannelKeeperMockRecorder) GetChannelConnection(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelConnection", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannelConnection), arg0, arg1, arg2)
 }
 
 // GetNextSequenceSend mocks base method.
