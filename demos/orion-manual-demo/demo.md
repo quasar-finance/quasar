@@ -702,7 +702,7 @@ osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq address for initial version ( hardco
 ## Other sample commands 
 ### Query port info from intergamm module 
 ```
-quasarnoded q intergamm get-port-info transfer  --node tcp://localhost:26659
+quasarnoded q intergamm get-port-info osmosis transfer  --node tcp://localhost:26659
 portInfo:
   channelID: channel-2
   connectionID: connection-1
@@ -710,7 +710,7 @@ portInfo:
   portID: transfer
 ```
 ```
-quasar-demo/quasar$ quasarnoded q intergamm get-port-info icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
+quasar-demo/quasar$ quasarnoded q intergamm get-port-info osmosis icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
 portInfo:
   channelID: channel-1
   connectionID: connection-1

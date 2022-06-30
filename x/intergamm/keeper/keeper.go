@@ -281,9 +281,10 @@ func (k Keeper) SendToken(ctx sdk.Context,
 
 		case "uatom": // middlechain is comsos-hub
 			// TODO - Get the middle chain intermediate address
+			fwdChannelID := k.OsmoTokenTransferChannels(ctx)[destinationChain]
 			return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
 				sender, "transfer",
-				"channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This two is TODO.
+				fwdChannelID, "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
 				receiver, transferTimeoutHeight, connectionTimeout)
 			//return k.ForwardTransferIbcTokens(ctx, "transfer", "channel-0", coin,
 			//	sender, "transfer", "channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
