@@ -8,6 +8,7 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 )
@@ -49,4 +50,16 @@ type IBCTransferKeeper interface {
 		timeoutTimestamp uint64,
 	) error
 	GetDenomTrace(ctx sdk.Context, denomTraceHash tmbytes.HexBytes) (ibctransfertypes.DenomTrace, bool)
+}
+
+// ConnectionKeeper expected account IBC connection keeper
+type ConnectionKeeper interface {
+	GetConnection(ctx sdk.Context, connectionID string) (connectiontypes.ConnectionEnd, bool)
+	GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection)
+}
+
+type ClientKeeper interface {
+	GetClientState(ctx sdk.Context, clientID string) (exported.ClientState, bool)
+	GetClientConsensusState(ctx sdk.Context, clientID string, height exported.Height) (exported.ConsensusState, bool)
+	ClientStore(ctx sdk.Context, clientID string) sdk.KVStore
 }

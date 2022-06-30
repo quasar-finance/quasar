@@ -481,6 +481,8 @@ func New(
 		app.IBCKeeper.ChannelKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
 		app.GetSubspace(intergammmoduletypes.ModuleName),
 	)
 	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)

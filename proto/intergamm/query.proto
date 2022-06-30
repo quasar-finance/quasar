@@ -23,7 +23,7 @@ service Query {
 
 // Queries a list of GetPortInfo items.
 	rpc GetPortInfo(QueryGetPortInfoRequest) returns (QueryGetPortInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/intergamm/get_port_info/{portID}";
+		option (google.api.http).get = "/abag/quasarnode/intergamm/get_port_info/{portID}/{destinationChainID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -49,6 +49,7 @@ message QueryInterchainAccountFromAddressResponse {
 
 message QueryGetPortInfoRequest {
   string portID = 1;
+  string destinationChainID = 2;
 }
 
 message QueryGetPortInfoResponse {

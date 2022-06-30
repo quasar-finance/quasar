@@ -24,9 +24,12 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
   string lp_epoch_id = 3 [
     (gogoproto.moretags)   = "yaml:\"lp_epoch_id\""];
   
-  bool enabled = 4
+  string destination_chain_id = 4 [
+    (gogoproto.moretags)   = "yaml:\"destination_chainid\""];
+  
+  bool enabled = 5
   [(gogoproto.moretags) = "yaml:\"enabled,omitempty\""];
 
-  repeated uint64 white_listed_pools = 5
+  repeated uint64 white_listed_pools = 6
   [(gogoproto.moretags) = "yaml:\"white_listed_pools\""];
 }

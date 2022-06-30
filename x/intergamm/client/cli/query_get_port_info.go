@@ -13,12 +13,12 @@ var _ = strconv.Itoa(0)
 
 func CmdGetPortInfo() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get-port-info [port-id]",
+		Use:   "get-port-info [destination-chain-id][port-id]",
 		Short: "Query getPortInfo",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqPortID := args[0]
-
+			reqDestinationChainId := args[0]
+			reqPortID := args[1]
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -28,7 +28,8 @@ func CmdGetPortInfo() *cobra.Command {
 
 			params := &types.QueryGetPortInfoRequest{
 
-				PortID: reqPortID,
+				PortID:             reqPortID,
+				DestinationChainID: reqDestinationChainId,
 			}
 
 			res, err := queryClient.GetPortInfo(cmd.Context(), params)

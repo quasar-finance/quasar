@@ -109,6 +109,17 @@ func request_Query_GetPortInfo_0(ctx context.Context, marshaler runtime.Marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "portID", err)
 	}
 
+	val, ok = pathParams["destinationChainID"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "destinationChainID")
+	}
+
+	protoReq.DestinationChainID, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "destinationChainID", err)
+	}
+
 	msg, err := client.GetPortInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -134,6 +145,17 @@ func local_request_Query_GetPortInfo_0(ctx context.Context, marshaler runtime.Ma
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "portID", err)
+	}
+
+	val, ok = pathParams["destinationChainID"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "destinationChainID")
+	}
+
+	protoReq.DestinationChainID, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "destinationChainID", err)
 	}
 
 	msg, err := server.GetPortInfo(ctx, &protoReq)
@@ -325,7 +347,7 @@ var (
 
 	pattern_Query_InterchainAccountFromAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"abag", "quasarnode", "intergamm", "interchain_account_from_address"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_GetPortInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"abag", "quasarnode", "intergamm", "get_port_info", "portID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_GetPortInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"abag", "quasarnode", "intergamm", "get_port_info", "portID", "destinationChainID"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

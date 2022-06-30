@@ -17,8 +17,10 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 )
 
 var (
@@ -39,6 +41,8 @@ type Keeper struct {
 	channelKeeper       types.ChannelKeeper
 	icaControllerKeeper types.ICAControllerKeeper
 	ibcTransferKeeper   types.IBCTransferKeeper
+	connectionKeeper    types.ConnectionKeeper
+	clientKeeper        types.ClientKeeper
 	paramstore          paramtypes.Subspace
 
 	Hooks GammHooks
@@ -52,6 +56,8 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper,
 	iaKeeper types.ICAControllerKeeper,
 	transferKeeper types.IBCTransferKeeper,
+	connectionKeeper types.ConnectionKeeper,
+	clientKeeper types.ClientKeeper,
 	ps paramtypes.Subspace,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -67,6 +73,8 @@ func NewKeeper(
 		channelKeeper:       channelKeeper,
 		icaControllerKeeper: iaKeeper,
 		ibcTransferKeeper:   transferKeeper,
+		connectionKeeper:    connectionKeeper,
+		clientKeeper:        clientKeeper,
 		paramstore:          ps,
 
 		Hooks: GammHooks{
@@ -84,18 +92,68 @@ func (k Keeper) GetChannelKeeper(ctx sdk.Context) types.ChannelKeeper {
 	return k.channelKeeper
 }
 
+func (k Keeper) GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection) {
+	return k.connectionKeeper.GetAllConnections(ctx)
+}
+
+func (k Keeper) GetChainID(ctx sdk.Context, connectionID string) (string, error) {
+	conn, found := k.connectionKeeper.GetConnection(ctx, connectionID)
+	if !found {
+		return "", fmt.Errorf("invalid connection id, \"%s\" not found", connectionID)
+	}
+	clientState, found := k.clientKeeper.GetClientState(ctx, conn.ClientId)
+	if !found {
+		return "", fmt.Errorf("client id \"%s\" not found for connection \"%s\"", conn.ClientId, connectionID)
+	}
+	client, ok := clientState.(*ibctmtypes.ClientState)
+	if !ok {
+		return "", fmt.Errorf("invalid client state for client \"%s\" on connection \"%s\"", conn.ClientId, connectionID)
+	}
+
+	return client.ChainId, nil
+}
+
+// getConnectionId returns the connection identifier to osmosis from intergamm module
+func (k Keeper) GetConnectionId(ctx sdk.Context, inChainID string) (string, bool) {
+
+	logger := k.Logger(ctx)
+	for _, c := range k.GetAllConnections(ctx) {
+		logger.Info("GetConnectionId", "Connection", c)
+		chainID, err := k.GetChainID(ctx, c.Id)
+		if err != nil {
+			logger.Info("GetConnectionId",
+				"Connection", c,
+				"GetChainID failed.", err)
+		} else {
+			logger.Info("GetConnectionId",
+				"Connection", c,
+				"chainID", chainID)
+			if chainID == inChainID {
+				return c.Id, true
+			}
+		}
+	}
+	return "", false
+}
 func (k Keeper) SetPortDetail(ctx sdk.Context, pi types.PortInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
-	key := types.CreatePortIDKey(pi.PortID)
+	// key := types.CreatePortIDKey(pi.PortID)
+	destinationChain, _ := k.GetChainID(ctx, pi.ConnectionID)
+	key := types.CreateChainIDPortIDKey(destinationChain, pi.PortID)
 	b := k.cdc.MustMarshal(&pi)
 	store.Set(key, b)
 }
 
-func (k Keeper) GetPortDetail(ctx sdk.Context, portID string) (pi types.PortInfo, found bool) {
+func (k Keeper) GetPortDetail(ctx sdk.Context, destinationChain, portID string) (pi types.PortInfo, found bool) {
+	logger := k.Logger(ctx)
+	logger.Info("GetPortDetail", "portID", portID, "destinationChain", destinationChain)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
-	key := types.CreatePortIDKey(portID)
+	// key := types.CreatePortIDKey(portID)
+	key := types.CreateChainIDPortIDKey(destinationChain, portID)
+	logger.Info("GetPortDetail", "key", string(key))
 	b := store.Get(key)
 	if b == nil {
+		logger.Info("GetPortDetail key not found", "key", string(key))
 		return pi, false
 	}
 	k.cdc.MustUnmarshal(b, &pi)
@@ -174,14 +232,24 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		"receiver", receiver,
 		"coin", coin,
 	)
-
+	// Assuming that the destination chain for token transfer is always osmosis right now.
+	// To be made more generic.
+	pi, found := k.GetPortDetail(ctx, destinationChain, "transfer")
+	if !found {
+		return 0, fmt.Errorf("token transfer to osmosis not available right now, port info not found")
+	}
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
 	if coin.Denom == "uqsr" { // Native gov token
 		// Support for all non-ibc tokens should be added here in future so to support
 		// other vaults native tokens with cosmwasm.
-		return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
-			sender, receiver, transferTimeoutHeight, connectionTimeout)
+		// Assuming token to be transferred to osmosis chain only.
+		return k.TransferIbcTokens(ctx, "transfer",
+			pi.ChannelID, coin,
+			sender, receiver,
+			transferTimeoutHeight, connectionTimeout)
+		//return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
+		//	sender, receiver, transferTimeoutHeight, connectionTimeout)
 	}
 
 	// IBC denom validations in case vaults are giving wrong arguments
@@ -205,14 +273,21 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		// NOTE - Automated Routing PR for intergamm is in progress.
 		switch denomTrace.BaseDenom {
 		case "uosmo": // no middle chain involves
-			return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
+
+			return k.TransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
 				sender, receiver, transferTimeoutHeight, connectionTimeout)
+			//return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
+			//	sender, receiver, transferTimeoutHeight, connectionTimeout)
 
 		case "uatom": // middlechain is comsos-hub
 			// TODO - Get the middle chain intermediate address
-			return k.ForwardTransferIbcTokens(ctx, "transfer", "channel-0", coin,
-				sender, "transfer", "channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
+			return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
+				sender, "transfer",
+				"channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This two is TODO.
 				receiver, transferTimeoutHeight, connectionTimeout)
+			//return k.ForwardTransferIbcTokens(ctx, "transfer", "channel-0", coin,
+			//	sender, "transfer", "channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
+			//	receiver, transferTimeoutHeight, connectionTimeout)
 
 		default:
 			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, hexHash)
