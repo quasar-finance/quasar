@@ -14,7 +14,7 @@ pub struct InstantiateMarketingInfo {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
-   // TODO write the instantiate msg
+    // TODO write the instantiate msg
 }
 
 impl InstantiateMsg {
@@ -47,14 +47,14 @@ fn is_valid_symbol(symbol: &str) -> bool {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-   // TODO add all wanted queries
+    // TODO add all wanted queries
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     // We can always deposit money into the strategy
-    Deposit {},
+    Deposit { owner: String },
     // A request for a withdraw, this has to be a request and cannot be an immediate withdraw since funds might be locked
-    WithdrawRequest {}
+    WithdrawRequest {},
 }
