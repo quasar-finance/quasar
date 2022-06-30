@@ -1,6 +1,8 @@
 package qoracle
 
 import (
+	"fmt"
+
 	"github.com/abag/quasarnode/x/qoracle/keeper"
 	"github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,6 +11,19 @@ import (
 // InitGenesis initializes the capability module's state from a provided genesis
 // state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
+	k.SetPort(ctx, genState.PortId)
+
+	// Only try to bind to port if it is not already bound, since we may already own
+	// port capability from capability InitGenesis
+	if !k.IsBound(ctx, genState.PortId) {
+		// transfer module binds to the transfer port on InitChain
+		// and claims the returned capability
+		err := k.BindPort(ctx, genState.PortId)
+		if err != nil {
+			panic(fmt.Sprintf("could not claim port capability: %v", err))
+		}
+	}
+
 	// Set all the poolPosition
 	for _, elem := range genState.PoolPositionList {
 		k.SetPoolPosition(ctx, elem)
@@ -32,6 +47,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 // ExportGenesis returns the capability module's exported genesis.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
+	genesis.PortId = k.GetPort(ctx)
 	genesis.Params = k.GetParams(ctx)
 
 	genesis.PoolPositionList = k.GetAllPoolPosition(ctx)

@@ -13,8 +13,26 @@ const (
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
 
+	// PortID is the default port id that qoracle module binds to
+	PortID = ModuleName
+
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_qoracle"
+
+	// CoinRatesClientIDKey is query request identifier
+	CoinRatesClientIDKey = "coin_rates_id"
+
+	// CoinRatesLatestRequestKey is the key for the latest request id
+	CoinRatesLatestRequestKey = "coin_rates_latest_request"
+
+	// CoinRatesStateKey is the key for the state
+	CoinRatesStateKey = "coin_rates_state"
+
+	// BandchainOraclePortID is the default port id that bandchain oracle module binds to
+	BandchainOraclePortID = "oracle"
+
+	// BandchainOracleVersion is the default version of bandchain oracle
+	BandchainOracleVersion = "bandchain-1"
 )
 
 func KeyPrefix(p string) []byte {
@@ -31,6 +49,7 @@ var (
 	PoolAPYRankedKBP = []byte{0x03}
 	StablePriceKBP   = []byte{0x04}
 	PoolSpotPriceKBP = []byte{0x05}
+	PortKey          = []byte{0x06}
 )
 
 var SepByte = []byte("#")

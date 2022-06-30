@@ -40,7 +40,8 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
+				PortId: types.PortID,
+				Params: types.DefaultParams(),
 				PoolPositionList: []types.PoolPosition{
 					{
 						PoolId:          "1",

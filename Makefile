@@ -32,9 +32,12 @@ build-prod: mkdirs
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 
 mocks: mkdirs
-	mockgen -package=mock -destination=./testutil/mock/ibc_channel_mocks.go $(GOMOD)/x/intergamm/types ChannelKeeper
+	mockgen -package=mock -destination=./testutil/mock/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
 	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
 	mockgen -package=mock -destination=./testutil/mock/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
+	mockgen -package=mock -destination=./testutil/mock/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
+	mockgen -package=mock -destination=./testutil/mock/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
+	mockgen -package=mock -destination=./testutil/mock/ibc_client_mocks.go $(GOMOD)/x/qoracle/types ClientKeeper
 
 test:
 	go test -mod=readonly -v $(PACKAGES_UNIT)

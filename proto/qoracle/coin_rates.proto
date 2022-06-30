@@ -1,0 +1,28 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message CoinRatesCallData {
+  repeated string symbols = 1;
+  uint64 multiplier = 2;
+}
+
+message CoinRatesResult {
+  repeated uint64 rates = 1;
+}
+
+message CoinRatesLatestRequest {
+  uint64 request_packet_sequence = 1;
+  CoinRatesCallData call_data = 2 [(gogoproto.nullable) = false];
+  uint64 oracle_request_id = 3;
+}
+
+message CoinRatesState {
+  int64 updated_at_height = 2;
+  repeated cosmos.base.v1beta1.DecCoin rates = 4
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+}

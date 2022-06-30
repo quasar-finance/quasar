@@ -9,6 +9,7 @@ import "qoracle/pool_position.proto";
 import "qoracle/pool_ranking.proto";
 import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
+import "qoracle/coin_rates.proto";
 // this line is used by starport scaffolding # 1
 import "qoracle/pool_metrics.proto";
 
@@ -52,6 +53,11 @@ service Query {
 	// Queries a list of PoolInfo items.
 	rpc PoolInfoAll(QueryAllPoolInfoRequest) returns (QueryAllPoolInfoResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_info";
+	}
+
+// Queries a list of State items.
+	rpc State(QueryStateRequest) returns (QueryStateResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/state";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -125,6 +131,13 @@ message QueryAllPoolInfoRequest {
 message QueryAllPoolInfoResponse {
 	repeated PoolInfo poolInfo = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryStateRequest {
+}
+
+message QueryStateResponse {
+	CoinRatesState coin_rates_state = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

@@ -5,10 +5,11 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
-func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
+func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, clientKeeper types.ClientKeeper, ics4Wrapper types.ICS4Wrapper, channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper, scopedKeeper capabilitykeeper.ScopedKeeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -21,6 +22,11 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.K
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
+		clientKeeper,
+		ics4Wrapper,
+		channelKeeper,
+		portKeeper,
+		scopedKeeper,
 	)
 
 	return *k

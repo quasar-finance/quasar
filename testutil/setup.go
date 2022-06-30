@@ -12,12 +12,14 @@ import (
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
@@ -56,9 +58,14 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	default:
 		ctl = controller[0]
 	}
+	ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
 	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
+	ics4WrapperMock := mock.NewMockICS4Wrapper(ctl)
+	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
+	// Set BindPort method for mock and return a mock capability
+	ibcPortKeeperMock.EXPECT().BindPort(gomock.Any(), gomock.Any()).AnyTimes().Return(capabilitytypes.NewCapability(1))
 
 	// Keepers
 
@@ -74,7 +81,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper)
+	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
+	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)

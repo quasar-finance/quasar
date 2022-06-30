@@ -1,19 +1,50 @@
 package types
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"gopkg.in/yaml.v2"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyOracleAccounts = []byte("OracleAccounts")
-	KeyStableDenoms   = []byte("stableDenoms")
-	KeyOneHopDenomMap = []byte("oneHopDenomMap")
+	KeyBandchainParams = []byte("BandchainParams")
+	KeyOracleAccounts  = []byte("OracleAccounts")
+	KeyStableDenoms    = []byte("stableDenoms")
+	KeyOneHopDenomMap  = []byte("oneHopDenomMap")
+
 	// TODO: Determine the default value
+	DefaultBandchainParams = BandchainParams{
+		OracleIbcParams: IBCParams{
+			AuthorizedChannel: "",
+			TimeoutHeight:     clienttypes.NewHeight(0, 0),
+			TimeoutTimestamp:  uint64(time.Minute * 10),
+		},
+		CoinRatesParams: CoinRatesParams{
+			EpochIdentifier: "minute",
+			SymbolsWithMul: sdk.NewDecCoins(
+				sdk.NewDecCoinFromDec("BTC", sdk.NewDecWithPrec(1, 8)),
+				sdk.NewDecCoinFromDec("OSMO", sdk.NewDecWithPrec(1, 6)),
+				sdk.NewDecCoinFromDec("LUNA", sdk.NewDecWithPrec(1, 6)),
+				sdk.NewDecCoinFromDec("ATOM", sdk.NewDecWithPrec(1, 6)),
+			),
+			ScriptParams: OracleScriptParams{
+				ScriptId:   37,
+				AskCount:   4,
+				MinCount:   3,
+				FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
+				PrepareGas: 600000,
+				ExecuteGas: 600000,
+			},
+		},
+	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
 	denom1                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
@@ -29,20 +60,23 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
+	bandchainParams BandchainParams,
 	oracleAccounts string,
 	stableDenoms []string,
 	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
-		OracleAccounts: oracleAccounts,
-		StableDenoms:   stableDenoms, // AUDIT slice copy
-		OneHopDenomMap: onehopDenoms,
+		BandchainParams: bandchainParams,
+		OracleAccounts:  oracleAccounts,
+		StableDenoms:    stableDenoms, // AUDIT slice copy
+		OneHopDenomMap:  onehopDenoms,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
+		DefaultBandchainParams,
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
 		DefaultOneHopDenomMap,
@@ -52,6 +86,7 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
+		paramtypes.NewParamSetPair(KeyBandchainParams, &p.BandchainParams, validateBandchainParams),
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
@@ -60,6 +95,10 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
+	if err := validateBandchainParams(p.BandchainParams); err != nil {
+		return err
+	}
+
 	if err := validateOracleAccounts(p.OracleAccounts); err != nil {
 		return err
 	}
@@ -78,6 +117,73 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
+}
+
+func validateBandchainParams(v interface{}) error {
+	params, ok := v.(BandchainParams)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	err := params.OracleIbcParams.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = params.CoinRatesParams.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p IBCParams) Validate() error {
+	if p.AuthorizedChannel != "" {
+		if err := host.ChannelIdentifierValidator(p.AuthorizedChannel); err != nil {
+			return fmt.Errorf("invalid authorized channel: %w", err)
+		}
+	}
+
+	if p.TimeoutHeight.IsZero() && p.TimeoutTimestamp == 0 {
+		return errors.New("packet timeout height and packet timeout timestamp cannot both be 0")
+	}
+
+	return nil
+}
+
+func (p CoinRatesParams) Validate() error {
+	if err := p.SymbolsWithMul.Validate(); err != nil {
+		return fmt.Errorf("invalid symbols with multipliers channel: %w", err)
+	}
+
+	if err := p.ScriptParams.Validate(); err != nil {
+		return fmt.Errorf("invalid oracle script params: %w", err)
+	}
+
+	return nil
+}
+
+func (p OracleScriptParams) Validate() error {
+	if p.ScriptId == 0 {
+		return errors.New("script id cannot be 0")
+	}
+
+	if p.AskCount == 0 {
+		return errors.New("ask count cannot be 0")
+	}
+	if p.MinCount == 0 {
+		return errors.New("min count cannot be 0")
+	}
+	if p.AskCount < p.MinCount {
+		return errors.New("ask count cannot be less than min count")
+	}
+
+	if p.FeeLimit.IsAnyNegative() || p.FeeLimit.IsZero() {
+		return errors.New("fee limit cannot be negative or zero")
+	}
+
+	return nil
 }
 
 // validateOracleAccounts validates the OracleAccounts param
