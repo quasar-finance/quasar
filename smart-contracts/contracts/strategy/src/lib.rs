@@ -1,5 +1,7 @@
-pub mod msg;
 mod contract;
+mod error;
+pub mod msg;
+mod queue;
 mod state;
 
 #[cfg(test)]
