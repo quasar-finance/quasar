@@ -37,7 +37,6 @@ mocks: mkdirs
 	mockgen -package=mock -destination=./testutil/mock/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
 	mockgen -package=mock -destination=./testutil/mock/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
 	mockgen -package=mock -destination=./testutil/mock/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
-	mockgen -package=mock -destination=./testutil/mock/ibc_client_mocks.go $(GOMOD)/x/qoracle/types ClientKeeper
 	mockgen -package=mock -destination=./testutil/mock/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
 	mockgen -package=mock -destination=./testutil/mock/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
 
