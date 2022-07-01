@@ -15,6 +15,6 @@ func (k Keeper) GetPortInfo(goCtx context.Context, req *types.QueryGetPortInfoRe
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	pi, _ := k.GetPortDetail(ctx, req.DestinationChainID, req.PortID) // osmosis TODO to arguments.
+	pi, _ := k.GetPortDetail(ctx, req.DestinationChainID, req.PortID)
 	return &types.QueryGetPortInfoResponse{PortInfo: pi}, nil
 }

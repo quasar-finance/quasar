@@ -137,7 +137,6 @@ func (k Keeper) GetConnectionId(ctx sdk.Context, inChainID string) (string, bool
 }
 func (k Keeper) SetPortDetail(ctx sdk.Context, pi types.PortInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
-	// key := types.CreatePortIDKey(pi.PortID)
 	destinationChain, _ := k.GetChainID(ctx, pi.ConnectionID)
 	key := types.CreateChainIDPortIDKey(destinationChain, pi.PortID)
 	b := k.cdc.MustMarshal(&pi)
@@ -148,7 +147,6 @@ func (k Keeper) GetPortDetail(ctx sdk.Context, destinationChain, portID string) 
 	logger := k.Logger(ctx)
 	logger.Info("GetPortDetail", "portID", portID, "destinationChain", destinationChain)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
-	// key := types.CreatePortIDKey(portID)
 	key := types.CreateChainIDPortIDKey(destinationChain, portID)
 	logger.Info("GetPortDetail", "key", string(key))
 	b := store.Get(key)
@@ -232,8 +230,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		"receiver", receiver,
 		"coin", coin,
 	)
-	// Assuming that the destination chain for token transfer is always osmosis right now.
-	// To be made more generic.
+
 	pi, found := k.GetPortDetail(ctx, destinationChain, "transfer")
 	if !found {
 		return 0, fmt.Errorf("token transfer to osmosis not available right now, port info not found")
@@ -243,13 +240,11 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	if coin.Denom == "uqsr" { // Native gov token
 		// Support for all non-ibc tokens should be added here in future so to support
 		// other vaults native tokens with cosmwasm.
-		// Assuming token to be transferred to osmosis chain only.
+
 		return k.TransferIbcTokens(ctx, "transfer",
 			pi.ChannelID, coin,
 			sender, receiver,
 			transferTimeoutHeight, connectionTimeout)
-		//return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
-		//	sender, receiver, transferTimeoutHeight, connectionTimeout)
 	}
 
 	// IBC denom validations in case vaults are giving wrong arguments
@@ -268,16 +263,12 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		logger.Info("SendToken",
 			"denomTrace", denomTrace,
 		)
-		// TODO - Automated mapping from base denom, and destination chain to <port, channel, connection, middle address>
-		// to be determined. Either using some config or other ways.
-		// NOTE - Automated Routing PR for intergamm is in progress.
+
 		switch denomTrace.BaseDenom {
 		case "uosmo": // no middle chain involves
 
 			return k.TransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
 				sender, receiver, transferTimeoutHeight, connectionTimeout)
-			//return k.TransferIbcTokens(ctx, "transfer", "channel-0", coin,
-			//	sender, receiver, transferTimeoutHeight, connectionTimeout)
 
 		case "uatom": // middlechain is comsos-hub
 			// TODO - Get the middle chain intermediate address
@@ -286,9 +277,6 @@ func (k Keeper) SendToken(ctx sdk.Context,
 				sender, "transfer",
 				fwdChannelID, "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
 				receiver, transferTimeoutHeight, connectionTimeout)
-			//return k.ForwardTransferIbcTokens(ctx, "transfer", "channel-0", coin,
-			//	sender, "transfer", "channel-1", "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
-			//	receiver, transferTimeoutHeight, connectionTimeout)
 
 		default:
 			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, hexHash)

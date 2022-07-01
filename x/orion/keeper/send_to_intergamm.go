@@ -18,10 +18,6 @@ func (k Keeper) getOwnerAcc() sdk.AccAddress {
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
-	// For initial testing use alice address -
-	// TODO AUDIT here (which return?)
-	//return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
-
 	accAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	accStr, err := sdk.Bech32ifyAddressBytes("quasar", accAddr)
 	if err != nil {
@@ -34,13 +30,6 @@ func (k Keeper) getDestinationChainId(ctx sdk.Context) string {
 	return k.DestinationChainId(ctx)
 }
 
-/*
-func (k Keeper) getDestinationAccStr(ctx sdk.Context) string {
-	// k.IsOrionICACreated(ctx)
-	return "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" // alice on osmosis
-	// return "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
-}
-*/
 // TODO :  should be a parameter. Could be orion ica account on hub.
 func (k Keeper) getIntermediateReceiver() string {
 	return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
@@ -49,33 +38,6 @@ func (k Keeper) getIntermediateReceiver() string {
 // getConnectionId returns the connection identifier to osmosis from intergamm module
 func (k Keeper) GetConnectionId(ctx sdk.Context, chainID string) (string, bool) {
 	return k.intergammKeeper.GetConnectionId(ctx, chainID)
-	/*
-		// TODO - Get it from the param
-		// TO osmosis - connection-0
-		// TO cosmoshub - connection-0
-		// connection could also be self determined by integamm. It should be a param in intergamm
-		// But as orion has intergamm keeper access; it can get it from intergamm
-
-		logger := k.Logger(ctx)
-		for _, c := range k.intergammKeeper.GetAllConnections(ctx) {
-			logger.Info("GetConnectionId", "Connection", c)
-			chainID, err := k.intergammKeeper.GetChainID(ctx, c.Id)
-			if err != nil {
-				logger.Info("GetConnectionId",
-					"Connection", c,
-					"GetChainID failed.", err)
-			} else {
-				logger.Info("GetConnectionId",
-					"Connection", c,
-					"chainID", chainID)
-				if chainID == inChainID {
-					return c.Id, true
-				}
-			}
-		}
-		return "", false
-		// return "connection-1"
-	*/
 }
 
 // Intergamm module method wrappers
@@ -188,7 +150,6 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	logger.Info("IBCTokenTransfer",
 		"coin", coin,
 	)
-	// destAccStr := k.getDestinationAccStr()
 	destAccStr, found := k.IsOrionICACreated(ctx)
 	if !found {
 		return 0, fmt.Errorf("orion ica account for orion address %s not found", k.getOwnerAccStr())

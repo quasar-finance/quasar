@@ -710,7 +710,7 @@ portInfo:
   portID: transfer
 ```
 ```
-quasar-demo/quasar$ quasarnoded q intergamm get-port-info osmosis icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
+quasarnoded q intergamm get-port-info osmosis icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
 portInfo:
   channelID: channel-1
   connectionID: connection-1

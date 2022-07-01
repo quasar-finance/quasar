@@ -80,7 +80,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		logger.Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
 
-		// Below code is independent of interchain account
 		ei := k.epochsKeeper.GetEpochInfo(ctx, k.LpEpochId(ctx))
 		currEpochDay := ei.CurrentEpoch
 

@@ -31,10 +31,6 @@ var (
 	PortInfoKBP = []byte{0x01}
 )
 
-func CreatePortIDKey(portID string) []byte {
-	return []byte(portID)
-}
-
 func CreateChainIDPortIDKey(chainID, portID string) []byte {
 	var b bytes.Buffer
 	b.WriteString(chainID)
