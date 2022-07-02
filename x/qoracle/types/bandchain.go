@@ -1,7 +1,7 @@
 package types
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -25,7 +25,7 @@ func NewCoinRatesCallDataFromDecCoins(coins sdk.DecCoins) CoinRatesCallData {
 }
 
 func NewOracleScriptState(ctx sdk.Context, requestSeq uint64, callData proto.Message) OracleScriptState {
-	callDataAny, err := codectypes.NewAnyWithValue(callData)
+	callDataAny, err := cdctypes.NewAnyWithValue(callData)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func (state OracleScriptState) Pending() bool {
 }
 
 func (state *OracleScriptState) SetResult(result proto.Message) {
-	resultAny, err := codectypes.NewAnyWithValue(result)
+	resultAny, err := cdctypes.NewAnyWithValue(result)
 	if err != nil {
 		panic(err)
 	}

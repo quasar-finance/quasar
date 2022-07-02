@@ -27,7 +27,8 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*proto.Message)(nil),
 		&CoinRatesCallData{},
-		&CoinRatesResult{})
+		&CoinRatesResult{},
+	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgCreatePoolPosition{},
 		&MsgUpdatePoolPosition{},
