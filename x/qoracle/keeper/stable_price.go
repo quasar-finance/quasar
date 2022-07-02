@@ -11,17 +11,9 @@ import (
 func (k Keeper) updateStablePrices(ctx sdk.Context) {
 	state := k.GetCoinRatesState(ctx)
 	var callData types.CoinRatesCallData
-	err := types.ModuleCdc.UnpackAny(state.CallData, &callData)
-	if err != nil {
-		k.Logger(ctx).Error("Failed to unpack call data", "error", err)
-		return
-	}
+	k.cdc.MustUnmarshal(state.CallData.Value, &callData)
 	var result types.CoinRatesResult
-	err = types.ModuleCdc.UnpackAny(state.CallData, &callData)
-	if err != nil {
-		k.Logger(ctx).Error("Failed to unpack result", "error", err)
-		return
-	}
+	k.cdc.MustUnmarshal(state.Result.Value, &result)
 
 	symbolsWithMul := k.BandchainParams(ctx).CoinRatesParams.SymbolsWithMul.Sort()
 	if len(symbolsWithMul) != len(callData.Symbols) {
