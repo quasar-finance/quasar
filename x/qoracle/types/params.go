@@ -32,7 +32,7 @@ var (
 			SymbolsWithMul: sdk.NewDecCoins(
 				sdk.NewDecCoinFromDec("BTC", sdk.NewDecWithPrec(1, 8)),
 				sdk.NewDecCoinFromDec("OSMO", sdk.NewDecWithPrec(1, 6)),
-				sdk.NewDecCoinFromDec("LUNA", sdk.NewDecWithPrec(1, 6)),
+				sdk.NewDecCoinFromDec("BNB", sdk.NewDecWithPrec(1, 6)),
 				sdk.NewDecCoinFromDec("ATOM", sdk.NewDecWithPrec(1, 6)),
 			),
 			ScriptParams: OracleScriptParams{

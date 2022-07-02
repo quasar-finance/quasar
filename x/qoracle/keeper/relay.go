@@ -31,6 +31,17 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	}
 }
 
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
+	bandchainParams := k.BandchainParams(ctx)
+
+	switch {
+	case packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
+		return k.handleOracleTimeout(ctx, packet)
+	default:
+		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC timeout handler for packet with path: %s", host.ChannelPath(packet.SourcePort, packet.SourceChannel))
+	}
+}
+
 func (k Keeper) createOutgoingPacket(
 	ctx sdk.Context,
 	sourcePort string,

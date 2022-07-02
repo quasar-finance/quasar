@@ -15,11 +15,7 @@ func (k Keeper) State(goCtx context.Context, req *types.QueryStateRequest) (*typ
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	coinRatesState, err := k.GetCoinRatesState(ctx)
-	if err != nil {
-		return nil, err
-	}
 	return &types.QueryStateResponse{
-		CoinRatesState: coinRatesState,
+		CoinRatesState: k.GetCoinRatesState(ctx),
 	}, nil
 }
