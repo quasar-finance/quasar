@@ -279,17 +279,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 		qoraclesimulation.SimulateMsgDeletePoolInfo(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
-	var weightMsgStablePrice int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgStablePrice, &weightMsgStablePrice, nil,
-		func(_ *rand.Rand) {
-			weightMsgStablePrice = defaultWeightMsgStablePrice
-		},
-	)
-	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgStablePrice,
-		qoraclesimulation.SimulateMsgStablePrice(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
-
 	// this line is used by starport scaffolding # simapp/module/operation
 
 	return operations

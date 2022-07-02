@@ -17,4 +17,6 @@ var (
 	ErrFailedAcknowledgment       = sdkerrors.Register(ModuleName, 5, "failed acknowledgment")
 	ErrNoActiveChannelPath        = sdkerrors.Register(ModuleName, 6, "no active channel path")
 	ErrInvalidPacketSequence      = sdkerrors.Register(ModuleName, 7, "invalid packet sequence")
+	ErrStablePriceNotFound        = sdkerrors.Register(ModuleName, 8, "stable price not found")
+	ErrZeroStablePrice            = sdkerrors.Register(ModuleName, 9, "zero stable price")
 )
