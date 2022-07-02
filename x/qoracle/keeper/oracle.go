@@ -105,14 +105,6 @@ func (k Keeper) handleOraclePacket(ctx sdk.Context, packet channeltypes.Packet) 
 	), nil
 }
 
-func coinRatesFromSymbols(symbols []string, rates []uint64) sdk.DecCoins {
-	coins := make(sdk.DecCoins, len(symbols))
-	for i, symbol := range symbols {
-		coins[i] = sdk.NewDecCoinFromDec(symbol, sdk.NewDec(int64(rates[i])))
-	}
-	return coins
-}
-
 func (k Keeper) updateCoinRatesState(ctx sdk.Context, fn func(state *types.OracleScriptState) error) error {
 	state := k.GetCoinRatesState(ctx)
 
