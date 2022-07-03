@@ -11,6 +11,20 @@ var (
 	CoinRatesMultiplier uint64 = 1e6
 )
 
+type CoinRatesCallDataI interface {
+	GetSymbols() []string
+	GetMultiplier() uint64
+}
+
+type CoinRatesResultI interface {
+	GetRates() []uint64
+}
+
+var (
+	_ CoinRatesCallDataI = (*CoinRatesCallData)(nil)
+	_ CoinRatesResultI   = (*CoinRatesResult)(nil)
+)
+
 // NewCoinRatesCallDataFromDecCoins creates a new CoinRatesCallData with coins symbols and default multiplier.
 func NewCoinRatesCallDataFromDecCoins(coins sdk.DecCoins) CoinRatesCallData {
 	symbols := make([]string, len(coins))
