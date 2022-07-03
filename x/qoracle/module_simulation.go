@@ -72,10 +72,6 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgDeletePoolInfo int = 100
 
-	opWeightMsgStablePrice = "op_weight_msg_stable_price"
-	// TODO: Determine the simulation weight value
-	defaultWeightMsgStablePrice int = 100
-
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
