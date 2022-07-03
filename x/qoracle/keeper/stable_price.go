@@ -10,24 +10,28 @@ import (
 // updateStablePrices sets the price of unit of coins request from bandchain oracle based on the latest CoinRatesState.
 func (k Keeper) updateStablePrices(ctx sdk.Context) {
 	state := k.GetCoinRatesState(ctx)
-	var callData types.CoinRatesCallData
-	k.cdc.MustUnmarshal(state.CallData.Value, &callData)
-	var result types.CoinRatesResult
-	k.cdc.MustUnmarshal(state.Result.Value, &result)
+	var callData types.CoinRatesCallDataI
+	if err := k.cdc.UnpackAny(state.CallData, &callData); err != nil {
+		panic(err)
+	}
+	var result types.CoinRatesResultI
+	if err := k.cdc.UnpackAny(state.Result, &result); err != nil {
+		panic(err)
+	}
 
 	symbolsWithMul := k.BandchainParams(ctx).CoinRatesParams.SymbolsWithMul.Sort()
-	if len(symbolsWithMul) != len(callData.Symbols) {
+	if len(symbolsWithMul) != len(callData.GetSymbols()) {
 		k.Logger(ctx).Error("Failed to update stable prices because params symbols length is not equal to call data symbols length")
 		return
 	}
-	for i, symbol := range callData.Symbols {
+	for i, symbol := range callData.GetSymbols() {
 		mul := symbolsWithMul.AmountOf(symbol)
 		if mul.IsZero() {
 			k.Logger(ctx).Error("Failed to update stable prices because couldn't find multiplier for symbol %s in params", symbol)
 			return
 		}
 
-		price := sdk.NewDec(int64(result.Rates[i])).QuoInt64(int64(callData.Multiplier)).Mul(mul)
+		price := sdk.NewDec(int64(result.GetRates()[i])).QuoInt64(int64(callData.GetMultiplier())).Mul(mul)
 		k.SetStablePrice(ctx, symbol, price)
 	}
 }

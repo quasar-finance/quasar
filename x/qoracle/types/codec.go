@@ -5,7 +5,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	"github.com/gogo/protobuf/proto"
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
@@ -25,10 +24,8 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations((*proto.Message)(nil),
-		&CoinRatesCallData{},
-		&CoinRatesResult{},
-	)
+	registry.RegisterImplementations((*CoinRatesCallDataI)(nil), &CoinRatesCallData{})
+	registry.RegisterImplementations((*CoinRatesResultI)(nil), &CoinRatesResult{})
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgCreatePoolPosition{},
 		&MsgUpdatePoolPosition{},
