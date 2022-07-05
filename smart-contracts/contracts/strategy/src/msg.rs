@@ -1,6 +1,5 @@
-use cosmwasm_std::{Binary, Coin, StdError, StdResult, Uint128, Uint256};
-use cw20::{Cw20Coin, Logo, MinterResponse};
-use cw_utils::Expiration;
+use cosmwasm_std::StdResult;
+use cw20::Logo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
