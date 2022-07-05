@@ -13,5 +13,5 @@ pub enum ContractError {
     PaymentError(#[from] cw_utils::PaymentError),
 
     #[error("{0}")]
-    QueueError(String)
+    QueueError(String),
 }
