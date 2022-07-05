@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -60,6 +61,9 @@ type QoracleKeeper interface {
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
+	GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection)
+	GetChainID(ctx sdk.Context, connectionID string) (string, error)
+	GetConnectionId(ctx sdk.Context, inChainID string) (string, bool)
 	Send(ctx sdk.Context,
 		coin sdk.Coin,
 		destinationChain string,

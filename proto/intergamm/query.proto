@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "intergamm/params.proto";
+import "intergamm/port_info.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/intergamm/types";
@@ -18,6 +19,11 @@ service Query {
   // Queries a list of InterchainAccountFromAddress items.
 	rpc InterchainAccountFromAddress(QueryInterchainAccountFromAddressRequest) returns (QueryInterchainAccountFromAddressResponse) {
 		option (google.api.http).get = "/abag/quasarnode/intergamm/interchain_account_from_address";
+	}
+
+// Queries a list of GetPortInfo items.
+	rpc GetPortInfo(QueryGetPortInfoRequest) returns (QueryGetPortInfoResponse) {
+		option (google.api.http).get = "/abag/quasarnode/intergamm/get_port_info/{portID}/{destinationChainID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -39,6 +45,15 @@ message QueryInterchainAccountFromAddressRequest {
 
 message QueryInterchainAccountFromAddressResponse {
   string interchain_account_address = 1 [(gogoproto.moretags) = "yaml:\"interchain_account_address\""];
+}
+
+message QueryGetPortInfoRequest {
+  string portID = 1;
+  string destinationChainID = 2;
+}
+
+message QueryGetPortInfoResponse {
+  PortInfo portInfo = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

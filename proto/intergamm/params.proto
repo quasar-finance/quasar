@@ -8,5 +8,7 @@ option go_package = "github.com/abag/quasarnode/x/intergamm/types";
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
-  
+
+  // map of chain id and transfer port channel id. This should be updated via governance
+  map<string, string> osmo_token_transfer_channels = 1;
 }

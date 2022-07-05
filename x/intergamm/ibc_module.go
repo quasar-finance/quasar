@@ -66,6 +66,25 @@ func (im IBCModule) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
+
+	logger := im.keeper.Logger(ctx)
+	logger.Info("OnChanOpenAck ICS26", "portID", portID,
+		"channelID", channelID,
+		"counterpartyChannelID", counterpartyChannelID,
+		"counterpartyVersion", counterpartyVersion,
+	)
+	connectionID, _, err := im.keeper.GetChannelKeeper(ctx).GetChannelConnection(ctx, portID, channelID)
+	if err != nil {
+		return err
+	}
+	pi := types.PortInfo{PortID: portID,
+		ChannelID:             channelID,
+		CounterpartyChannelID: counterpartyChannelID,
+		ConnectionID:          connectionID,
+	}
+
+	logger.Info("OnChanOpenAck ICS26", "PortInfo", pi)
+	im.keeper.SetPortDetail(ctx, pi)
 	return nil
 }
 

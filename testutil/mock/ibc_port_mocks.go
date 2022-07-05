@@ -5,37 +5,36 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
-// MockPortKeeper is a mock of PortKeeper interface.
+// MockPortKeeper is a mock of PortKeeper interface
 type MockPortKeeper struct {
 	ctrl     *gomock.Controller
 	recorder *MockPortKeeperMockRecorder
 }
 
-// MockPortKeeperMockRecorder is the mock recorder for MockPortKeeper.
+// MockPortKeeperMockRecorder is the mock recorder for MockPortKeeper
 type MockPortKeeperMockRecorder struct {
 	mock *MockPortKeeper
 }
 
-// NewMockPortKeeper creates a new mock instance.
+// NewMockPortKeeper creates a new mock instance
 func NewMockPortKeeper(ctrl *gomock.Controller) *MockPortKeeper {
 	mock := &MockPortKeeper{ctrl: ctrl}
 	mock.recorder = &MockPortKeeperMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockPortKeeper) EXPECT() *MockPortKeeperMockRecorder {
 	return m.recorder
 }
 
-// BindPort mocks base method.
+// BindPort mocks base method
 func (m *MockPortKeeper) BindPort(arg0 types.Context, arg1 string) *types0.Capability {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BindPort", arg0, arg1)
@@ -43,13 +42,13 @@ func (m *MockPortKeeper) BindPort(arg0 types.Context, arg1 string) *types0.Capab
 	return ret0
 }
 
-// BindPort indicates an expected call of BindPort.
+// BindPort indicates an expected call of BindPort
 func (mr *MockPortKeeperMockRecorder) BindPort(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BindPort", reflect.TypeOf((*MockPortKeeper)(nil).BindPort), arg0, arg1)
 }
 
-// IsBound mocks base method.
+// IsBound mocks base method
 func (m *MockPortKeeper) IsBound(arg0 types.Context, arg1 string) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsBound", arg0, arg1)
@@ -57,7 +56,7 @@ func (m *MockPortKeeper) IsBound(arg0 types.Context, arg1 string) bool {
 	return ret0
 }
 
-// IsBound indicates an expected call of IsBound.
+// IsBound indicates an expected call of IsBound
 func (mr *MockPortKeeperMockRecorder) IsBound(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBound", reflect.TypeOf((*MockPortKeeper)(nil).IsBound), arg0, arg1)

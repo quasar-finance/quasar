@@ -10,6 +10,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/tendermint/tendermint/libs/log"
@@ -69,6 +70,36 @@ func (im IBCTransferModuleDecorator) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
+
+	logger := im.k.Logger(ctx)
+	logger.Info("OnChanOpenAck", "portID", portID,
+		"channelID", channelID,
+		"counterpartyChannelID", counterpartyChannelID,
+		"counterpartyVersion", counterpartyVersion,
+	)
+
+	connectionID, _, err := im.k.GetChannelKeeper(ctx).GetChannelConnection(ctx, portID, channelID)
+	if err != nil {
+		return err
+	}
+	destinationChain, _ := im.k.GetChainID(ctx, connectionID)
+
+	epi, found := im.k.GetPortDetail(ctx, destinationChain, portID)
+	if found {
+		// Don't update the im.k.SetPortDetail. As updating the new channel id will cause denom changes
+		// to ibc token transfer. This make sure we use constant value of channel id for a given connection id/chain id
+		logger.Info("OnChanOpenAck ibc-token-transfer ChannelID-PortID already exist", "PortInfo", epi)
+		return im.m.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
+	}
+
+	pi := types.PortInfo{PortID: portID,
+		ChannelID:             channelID,
+		CounterpartyChannelID: counterpartyChannelID,
+		ConnectionID:          connectionID,
+	}
+	logger.Info("OnChanOpenAck", "PortInfo", pi)
+
+	im.k.SetPortDetail(ctx, pi)
 	return im.m.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 }
 

@@ -28,7 +28,11 @@ func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epoch
 }
 
 func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
-	return k.intergammKeeper.IsICARegistered(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
+	c, found := k.GetConnectionId(ctx, "osmosis")
+	if !found {
+		return "", false
+	}
+	return k.intergammKeeper.IsICARegistered(ctx, c, k.getOwnerAccStr())
 }
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
@@ -54,17 +58,28 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		addr, icaFound = k.IsOrionICACreated(ctx)
 		if !icaFound {
-			err := k.intergammKeeper.RegisterInterchainAccount(ctx, k.getConnectionId("osmosis"), k.getOwnerAccStr())
-			if err != nil {
-				panic(err)
+			// Print all connections ids to console
+			logger.Info("AfterEpochEnd", "GetAllConnections", k.intergammKeeper.GetAllConnections(ctx))
+
+			c, found := k.GetConnectionId(ctx, "osmosis")
+			if !found {
+				logger.Info("AfterEpochEnd", "GetConnectionId failed.")
+			} else {
+				err := k.intergammKeeper.RegisterInterchainAccount(ctx, c, k.getOwnerAccStr())
+				if err != nil {
+					// panic(err)
+					logger.Info("AfterEpochEnd", "RegisterInterchainAccount failed.", err)
+				}
 			}
+			// return so we don't end up with calling token transfer logics, as token transfer is to be done
+			// to orion ica account.
+			return
 		} else {
 			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 		}
 
 		logger.Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
 
-		// ei := k.epochsKeeper.GetEpochInfo(ctx, "day")
 		ei := k.epochsKeeper.GetEpochInfo(ctx, k.LpEpochId(ctx))
 		currEpochDay := ei.CurrentEpoch
 

@@ -13,12 +13,18 @@ genesis:
     staking:
       params:
         bond_denom: uqsr
+    intergamm:
+      params:
+        osmo_token_transfer_channels:
+          osmosis-test: channel-1
+          osmosis: channel-1
     orion:
       params:
         enabled: false
         lp_epoch_id: day #override day for testing
         mgmt_fee_per: '0.003000000000000000'
         perf_fee_per: '0.020000000000000000'
+        destination_chain_id: osmosis
         white_listed_pools : [1,2,3]
     qoracle:
       params:

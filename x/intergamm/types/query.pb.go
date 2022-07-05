@@ -215,47 +215,153 @@ func (m *QueryInterchainAccountFromAddressResponse) GetInterchainAccountAddress(
 	return ""
 }
 
+type QueryGetPortInfoRequest struct {
+	PortID             string `protobuf:"bytes,1,opt,name=portID,proto3" json:"portID,omitempty"`
+	DestinationChainID string `protobuf:"bytes,2,opt,name=destinationChainID,proto3" json:"destinationChainID,omitempty"`
+}
+
+func (m *QueryGetPortInfoRequest) Reset()         { *m = QueryGetPortInfoRequest{} }
+func (m *QueryGetPortInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryGetPortInfoRequest) ProtoMessage()    {}
+func (*QueryGetPortInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{4}
+}
+func (m *QueryGetPortInfoRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetPortInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetPortInfoRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetPortInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetPortInfoRequest.Merge(m, src)
+}
+func (m *QueryGetPortInfoRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetPortInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetPortInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetPortInfoRequest proto.InternalMessageInfo
+
+func (m *QueryGetPortInfoRequest) GetPortID() string {
+	if m != nil {
+		return m.PortID
+	}
+	return ""
+}
+
+func (m *QueryGetPortInfoRequest) GetDestinationChainID() string {
+	if m != nil {
+		return m.DestinationChainID
+	}
+	return ""
+}
+
+type QueryGetPortInfoResponse struct {
+	PortInfo PortInfo `protobuf:"bytes,1,opt,name=portInfo,proto3" json:"portInfo"`
+}
+
+func (m *QueryGetPortInfoResponse) Reset()         { *m = QueryGetPortInfoResponse{} }
+func (m *QueryGetPortInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryGetPortInfoResponse) ProtoMessage()    {}
+func (*QueryGetPortInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{5}
+}
+func (m *QueryGetPortInfoResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetPortInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetPortInfoResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetPortInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetPortInfoResponse.Merge(m, src)
+}
+func (m *QueryGetPortInfoResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetPortInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetPortInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetPortInfoResponse proto.InternalMessageInfo
+
+func (m *QueryGetPortInfoResponse) GetPortInfo() PortInfo {
+	if m != nil {
+		return m.PortInfo
+	}
+	return PortInfo{}
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "abag.quasarnode.intergamm.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "abag.quasarnode.intergamm.QueryParamsResponse")
 	proto.RegisterType((*QueryInterchainAccountFromAddressRequest)(nil), "abag.quasarnode.intergamm.QueryInterchainAccountFromAddressRequest")
 	proto.RegisterType((*QueryInterchainAccountFromAddressResponse)(nil), "abag.quasarnode.intergamm.QueryInterchainAccountFromAddressResponse")
+	proto.RegisterType((*QueryGetPortInfoRequest)(nil), "abag.quasarnode.intergamm.QueryGetPortInfoRequest")
+	proto.RegisterType((*QueryGetPortInfoResponse)(nil), "abag.quasarnode.intergamm.QueryGetPortInfoResponse")
 }
 
 func init() { proto.RegisterFile("intergamm/query.proto", fileDescriptor_6dbccab1e37347e0) }
 
 var fileDescriptor_6dbccab1e37347e0 = []byte{
-	// 471 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x31, 0x6f, 0xd3, 0x40,
-	0x14, 0x8e, 0x0b, 0x8d, 0xc4, 0x01, 0xcb, 0x11, 0x50, 0xb0, 0x2a, 0x87, 0x18, 0x21, 0xb5, 0x08,
-	0x7c, 0x6a, 0xd9, 0x2a, 0x10, 0xaa, 0x41, 0x95, 0xba, 0x81, 0x07, 0x06, 0x96, 0xe8, 0xd9, 0x3e,
-	0xdc, 0x93, 0xea, 0x7b, 0xce, 0xdd, 0x19, 0xc8, 0x84, 0xc4, 0xcc, 0x50, 0xc1, 0x9f, 0xea, 0x58,
-	0x89, 0x85, 0x29, 0x42, 0x09, 0x2b, 0x4b, 0x7f, 0x01, 0xb2, 0xcf, 0x6d, 0x68, 0x4b, 0x43, 0xa4,
-	0x6e, 0xbe, 0x7b, 0xdf, 0xf7, 0xbe, 0xef, 0x7b, 0xcf, 0x47, 0x6e, 0x0b, 0x69, 0xb8, 0xca, 0x20,
-	0xcf, 0xd9, 0xb0, 0xe4, 0x6a, 0x14, 0x14, 0x0a, 0x0d, 0xd2, 0xbb, 0x10, 0x43, 0x16, 0x0c, 0x4b,
-	0xd0, 0xa0, 0x24, 0xa6, 0x3c, 0x38, 0x81, 0xb9, 0x9d, 0x0c, 0x33, 0xac, 0x51, 0xac, 0xfa, 0xb2,
-	0x04, 0x77, 0x25, 0x43, 0xcc, 0xf6, 0x38, 0x83, 0x42, 0x30, 0x90, 0x12, 0x0d, 0x18, 0x81, 0x52,
-	0x37, 0xd5, 0x87, 0x09, 0xea, 0x1c, 0x35, 0x8b, 0x41, 0x73, 0xab, 0xc3, 0xde, 0xaf, 0xc7, 0xdc,
-	0xc0, 0x3a, 0x2b, 0x20, 0x13, 0xb2, 0x06, 0x37, 0xd8, 0x3b, 0x33, 0x47, 0x05, 0x28, 0xc8, 0x9b,
-	0x1e, 0x7e, 0x87, 0xd0, 0xd7, 0x15, 0xf3, 0x55, 0x7d, 0x19, 0xf1, 0x61, 0xc9, 0xb5, 0xf1, 0xdf,
-	0x90, 0x5b, 0xa7, 0x6e, 0x75, 0x81, 0x52, 0x73, 0xfa, 0x9c, 0xb4, 0x2d, 0xb9, 0xeb, 0xdc, 0x73,
-	0x56, 0xaf, 0x6f, 0xf4, 0x83, 0x0b, 0x03, 0x05, 0x96, 0x1a, 0x5e, 0x3d, 0x18, 0xf7, 0x5a, 0x51,
-	0x43, 0xf3, 0x3f, 0x91, 0xd5, 0xba, 0xef, 0x4e, 0x05, 0x4b, 0x76, 0x41, 0xc8, 0xad, 0x24, 0xc1,
-	0x52, 0x9a, 0x6d, 0x85, 0xf9, 0x56, 0x9a, 0x2a, 0xae, 0x8f, 0x3d, 0xd0, 0x0e, 0x59, 0xc6, 0x0f,
-	0x92, 0xab, 0x5a, 0xeb, 0x5a, 0x64, 0x0f, 0xf4, 0x19, 0xb9, 0x99, 0xa0, 0x94, 0x3c, 0xa9, 0xb2,
-	0x0d, 0x44, 0xda, 0x5d, 0xaa, 0xaa, 0x61, 0xf7, 0x68, 0xdc, 0xeb, 0x8c, 0x20, 0xdf, 0xdb, 0xf4,
-	0x4f, 0x95, 0xfd, 0xe8, 0xc6, 0xec, 0xbc, 0x93, 0xfa, 0xfb, 0x0e, 0x59, 0x5b, 0xc0, 0x41, 0x93,
-	0x37, 0x21, 0xae, 0x38, 0xc1, 0x0d, 0xc0, 0x02, 0x07, 0x60, 0x51, 0xd6, 0x57, 0xf8, 0xe0, 0x68,
-	0xdc, 0xeb, 0x5b, 0xe5, 0x8b, 0xb1, 0x7e, 0xd4, 0x15, 0x67, 0x05, 0x1b, 0xb1, 0x8d, 0x2f, 0x57,
-	0xc8, 0x72, 0x6d, 0x89, 0x7e, 0x75, 0x48, 0xdb, 0x8e, 0x8d, 0x3e, 0x9e, 0x33, 0xd9, 0xf3, 0xfb,
-	0x72, 0x83, 0x45, 0xe1, 0x36, 0x98, 0xbf, 0xf6, 0xf9, 0xfb, 0xaf, 0x6f, 0x4b, 0xf7, 0x69, 0x9f,
-	0x55, 0x3c, 0x36, 0xe3, 0xb1, 0xb3, 0xbf, 0x09, 0xfd, 0xed, 0x90, 0x95, 0x79, 0xc3, 0xa2, 0x2f,
-	0xfe, 0xa7, 0xbd, 0xc0, 0xb2, 0xdd, 0x97, 0x97, 0x6b, 0xd2, 0xc4, 0x0a, 0xeb, 0x58, 0x4f, 0xe9,
-	0xe6, 0x9c, 0x58, 0xff, 0x58, 0xd2, 0x3b, 0x85, 0xf9, 0xf1, 0xa6, 0xc2, 0xed, 0x83, 0x89, 0xe7,
-	0x1c, 0x4e, 0x3c, 0xe7, 0xe7, 0xc4, 0x73, 0xf6, 0xa7, 0x5e, 0xeb, 0x70, 0xea, 0xb5, 0x7e, 0x4c,
-	0xbd, 0xd6, 0xdb, 0x47, 0x99, 0x30, 0xbb, 0x65, 0x1c, 0x24, 0x98, 0x9f, 0xeb, 0xff, 0xf1, 0x2f,
-	0x05, 0x33, 0x2a, 0xb8, 0x8e, 0xdb, 0xf5, 0xfb, 0x7a, 0xf2, 0x27, 0x00, 0x00, 0xff, 0xff, 0xb6,
-	0x91, 0xfd, 0x2a, 0x0b, 0x04, 0x00, 0x00,
+	// 597 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0x4f, 0x6b, 0x13, 0x4f,
+	0x18, 0xce, 0x96, 0x36, 0xfc, 0x7e, 0x53, 0xbd, 0x8c, 0xb1, 0xa6, 0x4b, 0xd9, 0x98, 0x2d, 0x42,
+	0x2b, 0xba, 0x43, 0xd3, 0x5b, 0x51, 0xa4, 0x69, 0x8c, 0xe6, 0x22, 0x75, 0x0f, 0x1e, 0xbc, 0x84,
+	0xc9, 0xee, 0x64, 0xbb, 0xd0, 0x9d, 0xd9, 0xcc, 0x4c, 0xd4, 0x50, 0x8a, 0xe0, 0x27, 0x28, 0xfa,
+	0x9d, 0xa4, 0xc7, 0x82, 0x08, 0x9e, 0x82, 0x24, 0x5e, 0xbd, 0xf4, 0x13, 0xc8, 0xee, 0x4c, 0xfe,
+	0xb4, 0x69, 0xb7, 0x11, 0x6f, 0x99, 0x79, 0x9f, 0xf7, 0x7d, 0x9e, 0x77, 0x9e, 0x27, 0x0b, 0xee,
+	0x86, 0x54, 0x12, 0x1e, 0xe0, 0x28, 0x42, 0x9d, 0x2e, 0xe1, 0x3d, 0x27, 0xe6, 0x4c, 0x32, 0xb8,
+	0x8a, 0x5b, 0x38, 0x70, 0x3a, 0x5d, 0x2c, 0x30, 0xa7, 0xcc, 0x27, 0xce, 0x18, 0x66, 0x16, 0x02,
+	0x16, 0xb0, 0x14, 0x85, 0x92, 0x5f, 0xaa, 0xc1, 0x5c, 0x0b, 0x18, 0x0b, 0x0e, 0x09, 0xc2, 0x71,
+	0x88, 0x30, 0xa5, 0x4c, 0x62, 0x19, 0x32, 0x2a, 0x74, 0xf5, 0xa1, 0xc7, 0x44, 0xc4, 0x04, 0x6a,
+	0x61, 0x41, 0x14, 0x0f, 0x7a, 0xb7, 0xd5, 0x22, 0x12, 0x6f, 0xa1, 0x18, 0x07, 0x21, 0x4d, 0xc1,
+	0x1a, 0xbb, 0x32, 0x51, 0x14, 0x63, 0x8e, 0xa3, 0xd1, 0x8c, 0xd5, 0xa9, 0x7b, 0xc6, 0x65, 0x33,
+	0xa4, 0x6d, 0x4d, 0x6e, 0x17, 0x00, 0x7c, 0x9d, 0x0c, 0xdd, 0x4f, 0xf1, 0x2e, 0xe9, 0x74, 0x89,
+	0x90, 0xf6, 0x1b, 0x70, 0xe7, 0xc2, 0xad, 0x88, 0x19, 0x15, 0x04, 0x3e, 0x03, 0x79, 0x35, 0xb7,
+	0x68, 0xdc, 0x37, 0x36, 0x96, 0x2b, 0x65, 0xe7, 0xda, 0x5d, 0x1d, 0xd5, 0x5a, 0x5d, 0x3c, 0xed,
+	0x97, 0x72, 0xae, 0x6e, 0xb3, 0x3f, 0x82, 0x8d, 0x74, 0x6e, 0x23, 0x81, 0x79, 0x07, 0x38, 0xa4,
+	0xbb, 0x9e, 0xc7, 0xba, 0x54, 0xd6, 0x39, 0x8b, 0x76, 0x7d, 0x9f, 0x13, 0x31, 0xd2, 0x00, 0x0b,
+	0x60, 0x89, 0xbd, 0xa7, 0x84, 0xa7, 0x5c, 0xff, 0xbb, 0xea, 0x00, 0x9f, 0x82, 0xdb, 0x1e, 0xa3,
+	0x94, 0x78, 0xc9, 0xda, 0xcd, 0xd0, 0x2f, 0x2e, 0x24, 0xd5, 0x6a, 0xf1, 0xbc, 0x5f, 0x2a, 0xf4,
+	0x70, 0x74, 0xb8, 0x63, 0x5f, 0x28, 0xdb, 0xee, 0xad, 0xc9, 0xb9, 0xe1, 0xdb, 0x27, 0x06, 0xd8,
+	0x9c, 0x43, 0x81, 0xde, 0xd7, 0x03, 0x66, 0x38, 0xc6, 0x35, 0xb1, 0x02, 0x36, 0xb1, 0x42, 0x29,
+	0x5d, 0xd5, 0x07, 0xe7, 0xfd, 0x52, 0x59, 0x31, 0x5f, 0x8f, 0xb5, 0xdd, 0x62, 0x78, 0x99, 0x50,
+	0x93, 0xd9, 0x18, 0xdc, 0x4b, 0x15, 0xbd, 0x20, 0x72, 0x9f, 0x71, 0xd9, 0xa0, 0x6d, 0x36, 0x7a,
+	0x82, 0x15, 0x90, 0x4f, 0xfc, 0x6a, 0xd4, 0xf4, 0x1b, 0xe8, 0x13, 0x74, 0x00, 0xf4, 0x89, 0x90,
+	0xda, 0xfc, 0xbd, 0x64, 0x68, 0xa3, 0xa6, 0x5e, 0xc2, 0xbd, 0xa2, 0x62, 0x63, 0x50, 0x9c, 0xa5,
+	0xd0, 0x3b, 0x3e, 0x07, 0xff, 0xc5, 0xfa, 0x4e, 0xbb, 0xba, 0x9e, 0xe5, 0xaa, 0x86, 0x6a, 0x5f,
+	0xc7, 0xad, 0x95, 0xef, 0x8b, 0x60, 0x29, 0xe5, 0x80, 0x9f, 0x0d, 0x90, 0x57, 0xe6, 0xc3, 0xc7,
+	0x19, 0x93, 0x66, 0x53, 0x67, 0x3a, 0xf3, 0xc2, 0x95, 0x74, 0x7b, 0xf3, 0xd3, 0xb7, 0x5f, 0x5f,
+	0x16, 0xd6, 0x61, 0x19, 0x25, 0x7d, 0x68, 0xd2, 0x87, 0x2e, 0xff, 0x0f, 0xe0, 0x6f, 0x03, 0xac,
+	0x65, 0x59, 0x0e, 0xf7, 0x6e, 0xe2, 0x9e, 0x23, 0xb2, 0x66, 0xed, 0xdf, 0x86, 0xe8, 0xb5, 0xaa,
+	0xe9, 0x5a, 0x4f, 0xe0, 0x4e, 0xc6, 0x5a, 0x57, 0x44, 0xad, 0xcd, 0x59, 0x34, 0xca, 0x1b, 0xfc,
+	0x6a, 0x80, 0xe5, 0x29, 0xb7, 0x61, 0xe5, 0x26, 0x65, 0xb3, 0xe9, 0x33, 0xb7, 0xff, 0xaa, 0x47,
+	0x8b, 0x7f, 0x95, 0x8a, 0x7f, 0x09, 0xeb, 0x19, 0xe2, 0x03, 0x22, 0x9b, 0xe3, 0xef, 0x10, 0x3a,
+	0x52, 0xa1, 0x3e, 0x46, 0x47, 0xb3, 0xc9, 0x3d, 0xae, 0xd6, 0x4f, 0x07, 0x96, 0x71, 0x36, 0xb0,
+	0x8c, 0x9f, 0x03, 0xcb, 0x38, 0x19, 0x5a, 0xb9, 0xb3, 0xa1, 0x95, 0xfb, 0x31, 0xb4, 0x72, 0x6f,
+	0x1f, 0x05, 0xa1, 0x3c, 0xe8, 0xb6, 0x1c, 0x8f, 0x45, 0x33, 0x5c, 0x1f, 0xa6, 0xd8, 0x64, 0x2f,
+	0x26, 0xa2, 0x95, 0x4f, 0x3f, 0x77, 0xdb, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0xdd, 0xfb, 0x56,
+	0xc8, 0xb5, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -274,6 +380,8 @@ type QueryClient interface {
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Queries a list of InterchainAccountFromAddress items.
 	InterchainAccountFromAddress(ctx context.Context, in *QueryInterchainAccountFromAddressRequest, opts ...grpc.CallOption) (*QueryInterchainAccountFromAddressResponse, error)
+	// Queries a list of GetPortInfo items.
+	GetPortInfo(ctx context.Context, in *QueryGetPortInfoRequest, opts ...grpc.CallOption) (*QueryGetPortInfoResponse, error)
 }
 
 type queryClient struct {
@@ -302,12 +410,23 @@ func (c *queryClient) InterchainAccountFromAddress(ctx context.Context, in *Quer
 	return out, nil
 }
 
+func (c *queryClient) GetPortInfo(ctx context.Context, in *QueryGetPortInfoRequest, opts ...grpc.CallOption) (*QueryGetPortInfoResponse, error) {
+	out := new(QueryGetPortInfoResponse)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.intergamm.Query/GetPortInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Queries a list of InterchainAccountFromAddress items.
 	InterchainAccountFromAddress(context.Context, *QueryInterchainAccountFromAddressRequest) (*QueryInterchainAccountFromAddressResponse, error)
+	// Queries a list of GetPortInfo items.
+	GetPortInfo(context.Context, *QueryGetPortInfoRequest) (*QueryGetPortInfoResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -319,6 +438,9 @@ func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsReq
 }
 func (*UnimplementedQueryServer) InterchainAccountFromAddress(ctx context.Context, req *QueryInterchainAccountFromAddressRequest) (*QueryInterchainAccountFromAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InterchainAccountFromAddress not implemented")
+}
+func (*UnimplementedQueryServer) GetPortInfo(ctx context.Context, req *QueryGetPortInfoRequest) (*QueryGetPortInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPortInfo not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -361,6 +483,24 @@ func _Query_InterchainAccountFromAddress_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetPortInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetPortInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetPortInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/abag.quasarnode.intergamm.Query/GetPortInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetPortInfo(ctx, req.(*QueryGetPortInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "abag.quasarnode.intergamm.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -372,6 +512,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InterchainAccountFromAddress",
 			Handler:    _Query_InterchainAccountFromAddress_Handler,
+		},
+		{
+			MethodName: "GetPortInfo",
+			Handler:    _Query_GetPortInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -501,6 +645,76 @@ func (m *QueryInterchainAccountFromAddressResponse) MarshalToSizedBuffer(dAtA []
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryGetPortInfoRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetPortInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetPortInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.DestinationChainID) > 0 {
+		i -= len(m.DestinationChainID)
+		copy(dAtA[i:], m.DestinationChainID)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.DestinationChainID)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.PortID) > 0 {
+		i -= len(m.PortID)
+		copy(dAtA[i:], m.PortID)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.PortID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetPortInfoResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetPortInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetPortInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.PortInfo.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -559,6 +773,34 @@ func (m *QueryInterchainAccountFromAddressResponse) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
+	return n
+}
+
+func (m *QueryGetPortInfoRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.PortID)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.DestinationChainID)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetPortInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.PortInfo.Size()
+	n += 1 + l + sovQuery(uint64(l))
 	return n
 }
 
@@ -875,6 +1117,203 @@ func (m *QueryInterchainAccountFromAddressResponse) Unmarshal(dAtA []byte) error
 				return io.ErrUnexpectedEOF
 			}
 			m.InterchainAccountAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetPortInfoRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetPortInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetPortInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationChainID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DestinationChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetPortInfoResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetPortInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetPortInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.PortInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

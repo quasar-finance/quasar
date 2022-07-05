@@ -18,10 +18,6 @@ func (k Keeper) getOwnerAcc() sdk.AccAddress {
 
 // getOwnerAccStr returns the module account bech32 with which ICA transactions to be done
 func (k Keeper) getOwnerAccStr() string {
-	// For initial testing use alice address -
-	// TODO AUDIT here (which return?)
-	//return "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" // alice on quasar
-
 	accAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	accStr, err := sdk.Bech32ifyAddressBytes("quasar", accAddr)
 	if err != nil {
@@ -30,25 +26,18 @@ func (k Keeper) getOwnerAccStr() string {
 	return accStr
 }
 
-func (k Keeper) getDestinationAccStr() string {
-	// TODO - Call interchain account getter from the intergamm module
-	return "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" // alice on osmosis
-	// return "osmo1hphwfu3yjf82z8xpcl6e05gzkjwjmu8ts2m97mdk62feuqm77f2skm6qcy"
+func (k Keeper) getDestinationChainId(ctx sdk.Context) string {
+	return k.DestinationChainId(ctx)
 }
 
-// TODO :  should be a parameter
+// TODO :  should be a parameter. Could be orion ica account on hub.
 func (k Keeper) getIntermediateReceiver() string {
 	return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
-func (k Keeper) getConnectionId(chainid string) string {
-	// TODO - Get it from the param
-	// TO osmosis - connection-0
-	// TO cosmoshub - connection-0
-	// connection could also be self determined by integamm. It should be a param in intergamm
-	// But as orion has intergamm keeper access; it can get it from intergamm
-	return "connection-1"
+func (k Keeper) GetConnectionId(ctx sdk.Context, chainID string) (string, bool) {
+	return k.intergammKeeper.GetConnectionId(ctx, chainID)
 }
 
 // Intergamm module method wrappers
@@ -57,7 +46,10 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		poolID, shareOutAmount, tokenInMaxs))
 
 	owner := k.getOwnerAccStr()
-	connectionId := k.getConnectionId("osmosis")
+	connectionId, found := k.GetConnectionId(ctx, "osmosis")
+	if !found {
+		return 0, fmt.Errorf("join pool failed due to connection id not found for ica message")
+	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	packetSeq, err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
@@ -76,7 +68,10 @@ func (k Keeper) LockLPTokens(ctx sdk.Context,
 	coins sdk.Coins) (uint64, error) {
 
 	owner := k.getOwnerAccStr()
-	connectionId := k.getConnectionId("osmosis")
+	connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
+	if !found {
+		return 0, fmt.Errorf("lock tokens failed due to connection id not found for ica message")
+	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	packetSeq, err := k.intergammKeeper.TransmitIbcLockTokens(ctx,
 		owner, connectionId, uint64(timeoutTimestamp), duration, coins)
@@ -92,7 +87,10 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 		"tokenOutMins", tokenOutMins)
 
 	owner := k.getOwnerAccStr()
-	connectionId := k.getConnectionId("osmosis")
+	connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
+	if !found {
+		return 0, fmt.Errorf("exit pool failed due to connection id not found for ica message")
+	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	seq, err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
@@ -112,7 +110,7 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
-	connectionId := k.getConnectionId("osmosis")
+	connectionId, _ := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	transferPort := "transfer"        // TODO - should be a param
 	transferChannel := "channel-1"    // TODO - should be a param, osmosis -> hub
@@ -152,11 +150,18 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	logger.Info("IBCTokenTransfer",
 		"coin", coin,
 	)
-	destAccStr := k.getDestinationAccStr()
-	owner := k.getOwnerAcc()
-	seqNo, err := k.intergammKeeper.SendToken(ctx, "osmosis", owner, destAccStr, coin)
+	destAccStr, found := k.IsOrionICACreated(ctx)
+	if !found {
+		return 0, fmt.Errorf("orion ica account for orion address %s not found", k.getOwnerAccStr())
+	}
+
+	seqNo, err := k.intergammKeeper.SendToken(ctx,
+		k.getDestinationChainId(ctx),
+		k.getOwnerAcc(),
+		destAccStr,
+		coin)
 	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
-		Destination: "osmosis",
+		Destination: k.getDestinationChainId(ctx),
 		Sender:      k.getOwnerAccStr(),
 		Receiver:    destAccStr,
 		StartTime:   time.Now().UTC(),

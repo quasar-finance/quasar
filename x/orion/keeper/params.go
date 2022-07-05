@@ -11,6 +11,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.MgmtFeePer(ctx),
 		k.Enabled(ctx),
 		k.LpEpochId(ctx),
+		k.DestinationChainId(ctx),
 		k.WhiteListedPools(ctx),
 	)
 }
@@ -41,6 +42,12 @@ func (k Keeper) LpEpochId(ctx sdk.Context) (res string) {
 // Enabled returns the value of Orion vault enabled param in bool
 func (k Keeper) Enabled(ctx sdk.Context) (res bool) {
 	k.paramstore.Get(ctx, types.KeyEnabled, &res)
+	return
+}
+
+// DestinationChainId returns the value of destination chain id
+func (k Keeper) DestinationChainId(ctx sdk.Context) (res string) {
+	k.paramstore.Get(ctx, types.KeyDestinationChainId, &res)
 	return
 }
 
