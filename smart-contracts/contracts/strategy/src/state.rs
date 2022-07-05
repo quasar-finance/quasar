@@ -1,16 +1,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
 use std::fmt::Debug;
-use uuid::Uuid;
 
-use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, Map};
-use quasar_traits::traits::ShareDistributor;
-use quasar_types::curve::{CurveType, DecimalPlaces};
-
-use serde::de::DeserializeOwned;
-use share_distributor::single_token::SingleToken;
+use cosmwasm_std::Uint128;
+use cw_storage_plus::Map;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
