@@ -1,26 +1,15 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::CosmosMsg::Bank;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use std::cmp::min;
-use std::collections::VecDeque;
-
-use cw_utils::{must_pay, nonpayable};
-use quasar_traits::traits::Curve;
-use quasar_types::curve::{CurveType, DecimalPlaces};
 
 use crate::error::ContractError;
-use crate::error::ContractError::{PaymentError, Std};
-use crate::msg::{
-    InstantiateMsg, QueryMsg, ExecuteMsg
-};
+use crate::error::ContractError::PaymentError;
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{WITHDRAW_QUEUE, WithdrawRequest};
-use share_distributor::single_token::SingleToken;
+use crate::state::WithdrawRequest;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -52,20 +41,22 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         // TODO decide if we want to do something with deposit
-        ExecuteMsg::Deposit { .. } => {
-            execute_deposit(deps, env, info)
-        }
+        ExecuteMsg::Deposit { .. } => execute_deposit(deps, env, info),
         ExecuteMsg::WithdrawRequest { .. } => {
             todo!()
         }
     }
 }
 
-pub fn execute_deposit(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn execute_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
     // do things here with the funds. This is where the actual strategy starts placing funds on a new deposit
     // in the template version of the contract, all we do is check that funds are present
-    if info.funds.len() == 0 {
-        PaymentError(cw_utils::PaymentError::NoFunds {});
+    if info.funds.is_empty() {
+        return Err(PaymentError(cw_utils::PaymentError::NoFunds {}));
     }
     // TODO add some more sensible attributes here
     Ok(Response::new().add_attribute("deposit", info.sender))
@@ -74,26 +65,29 @@ pub fn execute_deposit(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Res
 pub fn execute_withdraw_request(
     mut deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     owner: String,
+    denom: String,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
     enqueue(
         deps.branch(),
         WithdrawRequest {
-            denom: info.funds[0].denom.clone(),
-            amount: info.funds[0].amount,
+            denom,
+            amount,
             owner,
         },
     )?;
     let res = try_withdraw(deps, env)?;
-    todo!()
-
+    Ok(res)
 }
 
 fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let withdraw = dequeue(deps.branch());
     if withdraw.is_none() {
-        return Err(ContractError::QueueError("dequeue was none while queue should be some".to_string()));
+        return Err(ContractError::QueueError(
+            "dequeue was none while queue should be some".to_string(),
+        ));
     }
     let w = withdraw.unwrap();
     // check the free balance of the contract
@@ -103,7 +97,7 @@ fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> 
     // if the contract has enough free balance, execute the withdraw
     if w.amount <= free_balance.amount {
         // remove the peeked withdraw request
-        return do_withdraw(w);
+        do_withdraw(w)
     } else {
         // else we start to unlock funds and return a response
         // TODO determine whether we need to dequeue the withdraw at this point or a later point
@@ -113,7 +107,6 @@ fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> 
 
 // do_withdraw sends funds from the contract to the owner of the funds according to the withdraw request
 fn do_withdraw(withdraw: WithdrawRequest) -> Result<Response, ContractError> {
-
     let msg = BankMsg::Send {
         to_address: withdraw.owner.clone(),
         amount: coins(withdraw.amount.u128(), withdraw.denom.clone()),
@@ -134,17 +127,14 @@ fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, Co
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-    }
+    match msg {}
     todo!()
 }
 
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg};
-    use cw_utils::PaymentError;
-    use std::borrow::BorrowMut;
+    use cosmwasm_std::SubMsg;
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
@@ -159,7 +149,6 @@ mod tests {
         InstantiateMsg {}
     }
 
-
     fn setup_test(
         deps: DepsMut,
         supply_decimals: u8,
@@ -170,6 +159,33 @@ mod tests {
 
     #[test]
     fn deposit_works() {
+        let mut deps = mock_dependencies();
+        let info = mock_info("alice", &coins(100_000, "uqsar"));
+        execute_deposit(deps.as_mut(), mock_env(), info).unwrap();
+    }
 
+    #[test]
+    fn withdraw_with_sufficient_funds_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        deps.querier
+            .update_balance(env.clone().contract.address, coins(100_000, "uqsar"));
+        let res = execute_withdraw_request(
+            deps.as_mut(),
+            env,
+            mock_info("alice", &[]),
+            "alice".into(),
+            "uqsar".to_string(),
+            Uint128::new(100_000),
+        )
+        .unwrap();
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(
+            res.messages[0],
+            SubMsg::new(BankMsg::Send {
+                to_address: "alice".to_string(),
+                amount: coins(100_000, "uqsar")
+            })
+        )
     }
 }
