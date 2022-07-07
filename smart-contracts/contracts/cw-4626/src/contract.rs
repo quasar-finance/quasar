@@ -2,7 +2,7 @@ use std::cmp::min;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg::Bank;
-use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin, Addr};
+use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin, Addr, SubMsg};
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
 
@@ -19,10 +19,11 @@ use cw20_base::contract::{
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
+
+use strategy::contract::{execute_withdraw_request, execute_deposit as execute_strategy_deposit};
 use quasar_traits::traits::Curve;
 use quasar_types::curve::{CurveType, DecimalPlaces};
 
-use share_distributor::single_token::SingleToken;
 use crate::ContractError::{PaymentError, Std};
 use crate::error::ContractError;
 use crate::msg::{AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse};
@@ -242,7 +243,7 @@ pub fn execute(
 }
 
 pub fn execute_deposit(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
@@ -255,6 +256,11 @@ pub fn execute_deposit(
 
     // TODO this is a hardcoded amount of a linear 1-1 price, we need to change this with customizable curves
     let amount = must_pay(&info, vault_info.reserve_denom.as_str())?;
+
+    // deposit the funds into the strategy
+    // TODO remove clones and decide whether we directly pass info
+    execute_strategy_deposit(deps.branch(), env.clone(), info.clone())?;
+
     let shares = curve.deposit(&amount);
     // call into cw20-base to mint the token, call as self as no one else is allowed
     let sub_info = MessageInfo {
@@ -298,18 +304,19 @@ pub fn execute_withdraw(
 
     let amount = curve.withdraw(&shares);
 
+    // TODO here we need to withdraw from the strategy, if the strategy has the funds, we can simply withdraw
+    //  if the withdraw is queued, do we already burn and mint again if we need to reverse or not burn at all?
+    let withdraw_res = execute_withdraw_request(deps.branch(), env.clone(), info.clone(), info.sender.to_string(), vault_info.reserve_denom.clone(), amount)?;
+
     // execute_burn will error if the sender does not have enough tokens to burn
     // TODO remove clone
     // TODO make sure that we can discard the result of execute_burn
     execute_burn(deps.branch(), env, info.clone(), shares)?;
 
-    let msg = BankMsg::Send {
-        to_address: info.sender.to_string(),
-        amount: coins(amount.u128(), vault_info.reserve_denom),
-    };
-
+    // we have created the Send bankmessage in the strategy contract, thus we pass res.messages here
     let res = Response::new()
-        .add_message(msg)
+        .add_submessages(withdraw_res.messages)
+        .add_attributes(withdraw_res.attributes)
         .add_attribute("action", "sell")
         .add_attribute("to", &info.sender)
         .add_attribute("amount", shares);
@@ -662,6 +669,8 @@ mod tests {
             45_000_000,
         );
 
+        deps.querier.update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
+
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
         let carl: &str = "carl";
@@ -677,6 +686,7 @@ mod tests {
         // check that bob's balance is completely gone
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::zero());
 
+        assert_eq!(res.messages.len(), 1);
         // check that bob received a bankmessage containing funds
         assert_eq!(
             res.messages[0],
@@ -703,9 +713,6 @@ mod tests {
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
         let carl: &str = "carl";
-
-        // check that bob has the shares
-        assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
 
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
