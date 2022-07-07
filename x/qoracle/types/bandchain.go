@@ -25,13 +25,8 @@ var (
 	_ CoinRatesResultI   = (*CoinRatesResult)(nil)
 )
 
-// NewCoinRatesCallDataFromDecCoins creates a new CoinRatesCallData with coins symbols and default multiplier.
-func NewCoinRatesCallDataFromDecCoins(coins sdk.DecCoins) CoinRatesCallData {
-	symbols := make([]string, len(coins))
-	for i, coin := range coins {
-		symbols[i] = coin.GetDenom()
-	}
-
+// NewCoinRatesCallData creates a new CoinRatesCallData with symbols and default multiplier.
+func NewCoinRatesCallData(symbols []string) CoinRatesCallData {
 	return CoinRatesCallData{
 		Symbols:    symbols,
 		Multiplier: CoinRatesMultiplier,

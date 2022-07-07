@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdStablePrices() *cobra.Command {
+func CmdOraclePrices() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-stable-prices",
-		Short: "list all StablePrices",
+		Use:   "oracle-prices",
+		Short: "OraclePrices",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -22,18 +22,10 @@ func CmdStablePrices() *cobra.Command {
 				return err
 			}
 
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
-			if err != nil {
-				return err
-			}
-
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryStablePricesRequest{
-				Pagination: pageReq,
-			}
-
-			res, err := queryClient.StablePrices(cmd.Context(), params)
+			params := &types.QueryOraclePricesRequest{}
+			res, err := queryClient.OraclePrices(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -42,7 +34,6 @@ func CmdStablePrices() *cobra.Command {
 		},
 	}
 
-	flags.AddPaginationFlagsToCmd(cmd, cmd.Use)
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

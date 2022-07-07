@@ -41,7 +41,7 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 func (k Keeper) sendCoinRatesRequest(ctx sdk.Context) (uint64, error) {
 	coinRatesParams := k.BandchainParams(ctx).CoinRatesParams
 
-	callData := types.NewCoinRatesCallDataFromDecCoins(coinRatesParams.SymbolsWithMul)
+	callData := types.NewCoinRatesCallData(coinRatesParams.Symbols)
 	packetData := bandpacket.NewOracleRequestPacketData(
 		types.CoinRatesClientID,
 		coinRatesParams.ScriptParams.ScriptId,
@@ -95,7 +95,7 @@ func (k Keeper) handleOraclePacket(ctx sdk.Context, packet channeltypes.Packet) 
 			return nil, err
 		}
 
-		k.updateStablePrices(ctx)
+		k.updateOraclePrices(ctx)
 	default:
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, "oracle received packet not found: %s", packetData.GetClientID())
 	}
