@@ -133,6 +133,7 @@ message MsgStablePrice {
   string denom = 2;
   string price = 3;
 }
+
 message MsgStablePriceResponse {
 }
 
