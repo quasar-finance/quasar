@@ -25,6 +25,7 @@ service Msg {
   rpc CreatePoolInfo(MsgCreatePoolInfo) returns (MsgCreatePoolInfoResponse);
   rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
   rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
+  rpc StablePrice(MsgStablePrice) returns (MsgStablePriceResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -126,5 +127,13 @@ message MsgDeletePoolInfo {
   string poolId = 2;
 }
 message MsgDeletePoolInfoResponse {}
+
+message MsgStablePrice {
+  string creator = 1;
+  string denom = 2;
+  string price = 3;
+}
+message MsgStablePriceResponse {
+}
 
 // this line is used by starport scaffolding # proto/tx/message
