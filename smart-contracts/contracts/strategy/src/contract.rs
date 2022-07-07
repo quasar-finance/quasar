@@ -9,7 +9,7 @@ use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::WithdrawRequest;
+use crate::state::{OUTSTANDING_FUNDS, WithdrawRequest};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -58,6 +58,7 @@ pub fn execute_deposit(
     if info.funds.is_empty() {
         return Err(PaymentError(cw_utils::PaymentError::NoFunds {}));
     }
+    // if funds are sent to an outside contract, OUTSTANDING funds should be updated here
     // TODO add some more sensible attributes here
     Ok(Response::new().add_attribute("deposit", info.sender))
 }
@@ -93,7 +94,9 @@ fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> 
     // check the free balance of the contract
     let free_balance = deps
         .querier
-        .query_balance(env.contract.address, w.denom.clone())?;
+        .query_balance(env.contract.address, w.denom.clone()).map_err(|error| {
+        ContractError::Std(error)
+    })?;
     // if the contract has enough free balance, execute the withdraw
     if w.amount <= free_balance.amount {
         // remove the peeked withdraw request
@@ -120,8 +123,12 @@ fn do_withdraw(withdraw: WithdrawRequest) -> Result<Response, ContractError> {
 }
 
 fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, ContractError> {
-    // TODO this is where funds are locked or not present within the strategy contract. The withdraw happens async here
+    // TODO this is where funds are locked or not present within the strategy contract. The withdraw happens 'async' here
     // the strategy needs to know where the funds are located, unlock the funds there(or do so)
+    let outstanding = OUTSTANDING_FUNDS.load(deps.storage)?;
+    if withdraw.amount > outstanding {
+        return Err(ContractError::InsufficientOutStandingFunds);
+    }
     todo!()
 }
 
