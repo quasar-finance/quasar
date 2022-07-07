@@ -30,7 +30,6 @@ serde_json = { version = "1.0.81" , default-features = false, features = ["alloc
 thiserror = { version = "1.0.23" }
 quasar-traits = { path = "../../packages/quasar-traits" }
 quasar-types = { path = "../../packages/quasar-types"}
-share-distributor = { path = "../../packages/share-distributor"}
-
+strategy = { path = "../strategy", features = ["library"]}
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0-beta8" }

@@ -1,9 +1,6 @@
 use std::fmt::Debug;
 use cw20::{Cw20Coin};
 use cosmwasm_std::{Decimal, Uint128};
-use serde::{Serialize};
-use schemars::JsonSchema;
-use serde::de::DeserializeOwned;
 
 
 /// ShareDistributor is the trait describing the logic behind distributing shares within a quasar vault.
