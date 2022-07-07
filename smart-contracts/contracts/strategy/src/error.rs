@@ -14,4 +14,7 @@ pub enum ContractError {
 
     #[error("{0}")]
     QueueError(String),
+
+    #[error("not enough funds in the strategy to withdraw")]
+    InsufficientOutStandingFunds,
 }

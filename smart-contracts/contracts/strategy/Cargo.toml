@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+library = []
+
 
 [dependencies]
 uuid = { version = "1.1.2", default-features = false, features = ["v4","js"]}
@@ -19,4 +22,3 @@ serde_json = { version = "1.0.81" , default-features = false, features = ["alloc
 thiserror = { version = "1.0.23" }
 quasar-traits = { path = "../../packages/quasar-traits" }
 quasar-types = { path = "../../packages/quasar-types"}
-share-distributor = { path = "../../packages/share-distributor"}

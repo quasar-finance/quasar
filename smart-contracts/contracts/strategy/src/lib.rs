@@ -1,6 +1,6 @@
-mod contract;
-mod error;
-pub mod msg;
+pub mod contract;
+pub mod error;
+mod msg;
 mod queue;
 mod state;
 
