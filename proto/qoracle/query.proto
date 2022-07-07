@@ -61,9 +61,9 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/state";
 	}
 
-// Queries a list of StablePrices items.
-	rpc StablePrices(QueryStablePricesRequest) returns (QueryStablePricesResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/stable_prices";
+// Queries a list of OraclePrices items.
+	rpc OraclePrices(QueryOraclePricesRequest) returns (QueryOraclePricesResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/oracle_prices";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -146,13 +146,13 @@ message QueryStateResponse {
 	OracleScriptState coin_rates_state = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryStablePricesRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+message QueryOraclePricesRequest {
 }
 
-message QueryStablePricesResponse {
-	repeated cosmos.base.v1beta1.DecCoin prices = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+message QueryOraclePricesResponse {
+	repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  	int64 updated_at_height = 2;
 }
 
 // this line is used by starport scaffolding # 3

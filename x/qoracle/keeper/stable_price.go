@@ -7,65 +7,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// updateStablePrices sets the price of unit of coins request from bandchain oracle based on the latest CoinRatesState.
-func (k Keeper) updateStablePrices(ctx sdk.Context) {
-	state := k.GetCoinRatesState(ctx)
-	var callData types.CoinRatesCallDataI
-	if err := k.cdc.UnpackAny(state.CallData, &callData); err != nil {
-		panic(err)
-	}
-	var result types.CoinRatesResultI
-	if err := k.cdc.UnpackAny(state.Result, &result); err != nil {
-		panic(err)
-	}
-
-	symbolsWithMul := k.BandchainParams(ctx).CoinRatesParams.SymbolsWithMul.Sort()
-	if len(symbolsWithMul) != len(callData.GetSymbols()) {
-		k.Logger(ctx).Error("Failed to update stable prices because params symbols length is not equal to call data symbols length")
-		return
-	}
-
-	var prices sdk.DecCoins
-	for i, symbol := range callData.GetSymbols() {
-		mul := symbolsWithMul.AmountOf(symbol)
-		if mul.IsZero() {
-			k.Logger(ctx).Error("Failed to update stable prices because couldn't find multiplier for symbol %s in params", symbol)
-			return
-		}
-
-		price := sdk.NewDec(int64(result.GetRates()[i])).QuoInt64(int64(callData.GetMultiplier())).Mul(mul)
-		prices = append(prices, sdk.NewDecCoinFromDec(symbol, price))
-	}
-
-	k.writeStablePrices(ctx, prices)
-}
-
-// writeStablePrices first removes all the stable prices from store and then writes the new ones.
-func (k Keeper) writeStablePrices(ctx sdk.Context, prices sdk.DecCoins) {
-	k.removeAllStablePrices(ctx)
-
-	for _, price := range prices {
-		k.SetStablePrice(ctx, price.Denom, price.Amount)
-	}
-}
-
-// removeAllStablePrices removes all stable prices
-func (k Keeper) removeAllStablePrices(ctx sdk.Context) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyStablePricesPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, nil)
-	defer iterator.Close()
-
-	// Fetch all the keys first since we are not allowed to write during iteration
-	var symbols [][]byte
-	for ; iterator.Valid(); iterator.Next() {
-		symbols = append(symbols, iterator.Key())
-	}
-
-	for _, s := range symbols {
-		store.Delete(s)
-	}
-}
-
 // SetStablePrice set the stable price for the symbol
 func (k Keeper) SetStablePrice(ctx sdk.Context, symbol string, price sdk.Dec) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyStablePricesPrefix)

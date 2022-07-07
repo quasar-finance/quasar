@@ -17,8 +17,7 @@ message BandchainParams {
 
 message CoinRatesParams {
   string epoch_identifier = 1 [(gogoproto.moretags) = "yaml:\"epoch_identifier\""]; // Identifier of the epoch that we trigger the script request
-  repeated cosmos.base.v1beta1.DecCoin symbols_with_mul = 2
-      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.moretags) = "yaml:\"symbols_with_mul\""];
+  repeated string symbols = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"symbols\""];
   OracleScriptParams script_params = 3
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"script_params\""];
 }
@@ -50,4 +49,10 @@ message CoinRatesCallData {
 
 message CoinRatesResult {
   repeated uint64 rates = 1;
+}
+
+message OraclePrices {
+  repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  int64 updated_at_height = 2;
 }

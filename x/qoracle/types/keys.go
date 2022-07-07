@@ -46,6 +46,7 @@ var (
 	PoolSpotPriceKBP      = []byte{0x05}
 	PortKey               = []byte{0x06}
 	KeyCoinRatesState     = []byte("coin_rates_state")
+	KeyOraclePrices       = []byte("oracle_prices")
 	KeyStablePricesPrefix = []byte("stable_prices")
 )
 

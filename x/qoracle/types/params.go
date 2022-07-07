@@ -29,12 +29,7 @@ var (
 		},
 		CoinRatesParams: CoinRatesParams{
 			EpochIdentifier: "minute",
-			SymbolsWithMul: sdk.NewDecCoins(
-				sdk.NewDecCoinFromDec("BTC", sdk.NewDecWithPrec(1, 8)),
-				sdk.NewDecCoinFromDec("OSMO", sdk.NewDecWithPrec(1, 6)),
-				sdk.NewDecCoinFromDec("BNB", sdk.NewDecWithPrec(1, 6)),
-				sdk.NewDecCoinFromDec("ATOM", sdk.NewDecWithPrec(1, 6)),
-			),
+			Symbols:         []string{"BTC", "OSMO", "BNB", "ATOM"},
 			ScriptParams: OracleScriptParams{
 				ScriptId:   37,
 				AskCount:   4,
@@ -153,8 +148,8 @@ func (p IBCParams) Validate() error {
 }
 
 func (p CoinRatesParams) Validate() error {
-	if err := p.SymbolsWithMul.Validate(); err != nil {
-		return fmt.Errorf("invalid symbols with multipliers channel: %w", err)
+	if len(p.Symbols) < 1 {
+		return errors.New("symbols cannot be empty")
 	}
 
 	if err := p.ScriptParams.Validate(); err != nil {
