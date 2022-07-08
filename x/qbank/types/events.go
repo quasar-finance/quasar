@@ -20,6 +20,7 @@ const (
 	AttributeKeyWithdrawVaultId     = "withdraw_vault_id"
 	AttributeKeyWithdrawRiskProfile = "withdraw_risk_profile"
 	AttributeKeyWithdrawAllVaultId  = "withdraw_all_vault_id"
+	AttributeKeyClaimCoin           = "claim_coin"
 	AttributeKeyClaimRewardsVaultId = "claim_rewards_vault_id"
 )
 
@@ -54,11 +55,12 @@ func CreateWithdrawAllEvent(ctx sdk.Context, sender sdk.AccAddress, vaultId stri
 	)
 }
 
-func CreateClaimRewardsEvent(ctx sdk.Context, sender sdk.AccAddress, vaultId string) sdk.Event {
+func CreateClaimRewardsEvent(ctx sdk.Context, sender sdk.AccAddress, coins sdk.Coins, vaultId string) sdk.Event {
 	return sdk.NewEvent(
 		TypeEvtClaimRewards,
 		sdk.NewAttribute(sdk.AttributeKeyModule, AttributeValueCategory),
 		sdk.NewAttribute(sdk.AttributeKeySender, sender.String()),
+		sdk.NewAttribute(AttributeKeyClaimCoin, coins.String()),
 		sdk.NewAttribute(AttributeKeyClaimRewardsVaultId, vaultId),
 	)
 }

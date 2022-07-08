@@ -39,15 +39,14 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 
 			k.ClaimAll(ctx, depositor, vaultId)
 			k.AddUserClaimedRewards(ctx, depositor, vaultId, qcoins.Coins)
+			ctx.EventManager().EmitEvent(
+				types.CreateClaimRewardsEvent(ctx, depositorAddr, qcoins.Coins, vaultId),
+			)
 		}
 
 	default:
 		return nil, types.ErrInvalidVaultId
 	}
-
-	ctx.EventManager().EmitEvent(
-		types.CreateClaimRewardsEvent(ctx, depositorAddr, vaultId),
-	)
 
 	k.Logger(ctx).Info(
 		"ClaimRewards",
