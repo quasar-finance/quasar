@@ -11,8 +11,9 @@ import "qoracle/pool_ranking.proto";
 import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
 import "qoracle/bandchain.proto";
-// this line is used by starport scaffolding # 1
 import "qoracle/pool_metrics.proto";
+import "qoracle/denom_price_mapping.proto";
+// this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 
@@ -64,6 +65,11 @@ service Query {
 // Queries a list of OraclePrices items.
 	rpc OraclePrices(QueryOraclePricesRequest) returns (QueryOraclePricesResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/oracle_prices";
+	}
+
+// Queries a list of DenomPriceMappings items.
+	rpc DenomPriceMappings(QueryDenomPriceMappingsRequest) returns (QueryDenomPriceMappingsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/denom_price_mappings";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -153,6 +159,15 @@ message QueryOraclePricesResponse {
 	repeated cosmos.base.v1beta1.DecCoin prices = 1
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
   	int64 updated_at_height = 2;
+}
+
+message QueryDenomPriceMappingsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryDenomPriceMappingsResponse {
+	repeated DenomPriceMapping mappings = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3
