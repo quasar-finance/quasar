@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/abag/quasarnode/testutil/sample"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -21,9 +22,14 @@ func TestMsgAddDenomPriceMapping_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid",
 			msg: MsgAddDenomPriceMapping{
 				Creator: sample.AccAddress().String(),
+				Mapping: DenomPriceMapping{
+					Denom:       "uatom",
+					OracleDenom: "ATOM",
+					Multiplier:  sdk.NewDecWithPrec(1, 6), // 1e-6
+				},
 			},
 		},
 	}
