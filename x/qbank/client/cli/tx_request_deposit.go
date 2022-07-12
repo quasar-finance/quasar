@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -16,14 +17,18 @@ var _ = strconv.Itoa(0)
 
 func CmdRequestDeposit() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "request-deposit [risk-profile=LOW/MID/HIGH] [vault-id=orion] [sdk.coin = 1000qsr] [Lockupperiod = Days_7/Days_21/Months_1/Months_3]",
+		Use:   "request-deposit [vault-id=orion] [sdk.coin = 1000qsr] [Lockupperiod = Days_7/Days_21/Months_1/Months_3] [Reserved = comma separated list of fields]",
 		Short: "Broadcast message requestDeposit",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argRiskProfile := args[0]
-			argVaultID := args[1]
-			argCoinStr := args[2]
-			argLockupType := args[3]
+			argVaultID := args[0]
+			argCoinStr := args[1]
+			argLockupType := args[2]
+			argReserved := args[3] // comma separated reserved fields
+			reservedFields := []string{}
+			if argReserved != "" {
+				reservedFields = strings.Split(argReserved, ",")
+			}
 
 			lockupPeriodInt := types.LockupTypes(types.LockupTypes_value[argLockupType])
 
@@ -38,10 +43,10 @@ func CmdRequestDeposit() *cobra.Command {
 
 			msg := types.NewMsgRequestDeposit(
 				clientCtx.GetFromAddress().String(),
-				argRiskProfile,
 				argVaultID,
 				CoinStr,
 				lockupPeriodInt,
+				reservedFields,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

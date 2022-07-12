@@ -34,7 +34,6 @@ func SimulateMsgRequestDeposit(
 
 		msg := &types.MsgRequestDeposit{
 			Creator:      simAccount.Address.String(),
-			RiskProfile:  RandRiskProfile(r),
 			VaultID:      "orion",
 			Coin:         sdk.NewCoin("QSR", sdk.NewInt(42)), // FIXME coins.AmountOf("QSR") triggers insufficient balance
 			LockupPeriod: RandLockupTime(r),

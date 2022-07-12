@@ -7,3 +7,7 @@ var Lockupdays = map[string]int32{
 	"Months_1": 31,
 	"Months_3": 90,
 }
+
+var ReservedFieldLenMap = map[string]int32{
+	"orion": 0,
+}

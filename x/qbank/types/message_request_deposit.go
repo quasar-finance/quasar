@@ -1,7 +1,6 @@
 package types
 
 import (
-	// oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -10,13 +9,16 @@ const TypeMsgRequestDeposit = "request_deposit"
 
 var _ sdk.Msg = &MsgRequestDeposit{}
 
-func NewMsgRequestDeposit(creator string, riskProfile string, vaultID string, coin sdk.Coin, lockupPeriod LockupTypes) *MsgRequestDeposit {
+func NewMsgRequestDeposit(creator string,
+	// riskProfile string,
+	vaultID string,
+	coin sdk.Coin, lockupPeriod LockupTypes, reserved []string) *MsgRequestDeposit {
 	return &MsgRequestDeposit{
 		Creator:      creator,
-		RiskProfile:  riskProfile,
 		VaultID:      vaultID,
 		Coin:         coin,
 		LockupPeriod: lockupPeriod,
+		Reserved:     reserved,
 	}
 }
 
@@ -47,10 +49,6 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	if msg.GetRiskProfile() != "LOW" && msg.GetRiskProfile() != "MID" && msg.GetRiskProfile() != "HIGH" {
-		return ErrDepositInvalidRiskProfile
-	}
-
 	if msg.GetVaultID() == "" || !Contains(SupportedVaultTypes, msg.GetVaultID()) {
 		return ErrInvalidVaultId
 	}
@@ -62,6 +60,10 @@ func (msg *MsgRequestDeposit) ValidateBasic() error {
 	v := LockupTypes_name[int32(msg.GetLockupPeriod())]
 	if v == "" || v == "Invalid" {
 		return ErrInvalidLockupType
+	}
+
+	if len(msg.Reserved) != int(ReservedFieldLenMap[msg.GetVaultID()]) {
+		return ErrReservedFieldLength
 	}
 
 	return nil
