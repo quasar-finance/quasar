@@ -1,6 +1,7 @@
 syntax = "proto3";
 package abag.quasarnode.qoracle;
 
+import "gogoproto/gogo.proto";
 import "qoracle/pool_position.proto";
 import "qoracle/pool_ranking.proto";
 import "qoracle/pool_spot_price.proto";
@@ -8,6 +9,7 @@ import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # proto/tx/import
 import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
 import "qoracle/pool_metrics.proto";
+import "qoracle/denom_price_mapping.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
 
@@ -26,6 +28,7 @@ service Msg {
   rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
   rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
   rpc StablePrice(MsgStablePrice) returns (MsgStablePriceResponse);
+  rpc AddDenomPriceMapping(MsgAddDenomPriceMapping) returns (MsgAddDenomPriceMappingResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -135,6 +138,14 @@ message MsgStablePrice {
 }
 
 message MsgStablePriceResponse {
+}
+
+message MsgAddDenomPriceMapping {
+  string creator = 1;
+  DenomPriceMapping mapping = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgAddDenomPriceMappingResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
