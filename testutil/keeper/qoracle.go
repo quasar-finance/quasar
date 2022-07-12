@@ -22,6 +22,7 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, clientKe
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
+		"", // The gov module account
 		clientKeeper,
 		ics4Wrapper,
 		channelKeeper,

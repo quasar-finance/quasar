@@ -76,6 +76,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgStablePrice int = 100
 
+	opWeightMsgAddDenomPriceMapping = "op_weight_msg_add_denom_price_mapping"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgAddDenomPriceMapping int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -288,6 +292,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgStablePrice,
 		qoraclesimulation.SimulateMsgStablePrice(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgAddDenomPriceMapping int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddDenomPriceMapping, &weightMsgAddDenomPriceMapping, nil,
+		func(_ *rand.Rand) {
+			weightMsgAddDenomPriceMapping = defaultWeightMsgAddDenomPriceMapping
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgAddDenomPriceMapping,
+		qoraclesimulation.SimulateMsgAddDenomPriceMapping(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

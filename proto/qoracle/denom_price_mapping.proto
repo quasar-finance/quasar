@@ -1,0 +1,15 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "qoracle/ibc.proto";
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message DenomPriceMapping {
+  string denom = 1;
+  string oracle_denom = 2; // Denom in oracle prices which is used to calculate the price of this denom
+  string multiplier = 3 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false]; // Multiplier of the oracle denom (denom_price = oracle_denom_price * multiplier)
+}
