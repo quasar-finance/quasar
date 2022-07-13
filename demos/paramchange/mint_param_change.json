@@ -1,0 +1,12 @@
+{
+  "title": "Create a new mint param",
+  "description": "Testing mint param change",
+  "changes":[
+    {
+      "subspace": "mint",
+      "key": "InflationRateChange",
+      "value": "1.00"
+    }
+  ],
+  "deposit": "10000uqsr"
+}
