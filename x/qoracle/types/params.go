@@ -15,10 +15,11 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyBandchainParams = []byte("BandchainParams")
-	KeyOracleAccounts  = []byte("OracleAccounts")
-	KeyStableDenoms    = []byte("stableDenoms")
-	KeyOneHopDenomMap  = []byte("oneHopDenomMap")
+	KeyBandchainParams    = []byte("BandchainParams")
+	KeyOracleAccounts     = []byte("OracleAccounts")
+	KeyDenomPriceMappings = []byte("DenomPriceMappings")
+	KeyStableDenoms       = []byte("stableDenoms")
+	KeyOneHopDenomMap     = []byte("oneHopDenomMap")
 
 	// TODO: Determine the default value
 	DefaultBandchainParams = BandchainParams{
@@ -40,6 +41,13 @@ var (
 			},
 		},
 	}
+	DefaultDenomPriceMappings = []DenomPriceMapping{
+		{
+			Denom:       "uatom",
+			OracleDenom: "ATOM",
+			Multiplier:  sdk.NewDecWithPrec(1, 6),
+		},
+	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
 	denom1                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
@@ -56,15 +64,17 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	bandchainParams BandchainParams,
+	denomPriceMappings []DenomPriceMapping,
 	oracleAccounts string,
 	stableDenoms []string,
 	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
-		BandchainParams: bandchainParams,
-		OracleAccounts:  oracleAccounts,
-		StableDenoms:    stableDenoms, // AUDIT slice copy
-		OneHopDenomMap:  onehopDenoms,
+		BandchainParams:    bandchainParams,
+		DenomPriceMappings: denomPriceMappings,
+		OracleAccounts:     oracleAccounts,
+		StableDenoms:       stableDenoms, // AUDIT slice copy
+		OneHopDenomMap:     onehopDenoms,
 	}
 }
 
@@ -72,6 +82,7 @@ func NewParams(
 func DefaultParams() Params {
 	return NewParams(
 		DefaultBandchainParams,
+		DefaultDenomPriceMappings,
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
 		DefaultOneHopDenomMap,
@@ -82,6 +93,7 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyBandchainParams, &p.BandchainParams, validateBandchainParams),
+		paramtypes.NewParamSetPair(KeyDenomPriceMappings, &p.DenomPriceMappings, validateDenomPriceMappings),
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
@@ -91,6 +103,10 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateBandchainParams(p.BandchainParams); err != nil {
+		return err
+	}
+
+	if err := validateDenomPriceMappings(p.DenomPriceMappings); err != nil {
 		return err
 	}
 
@@ -176,6 +192,22 @@ func (p OracleScriptParams) Validate() error {
 
 	if p.FeeLimit.IsAnyNegative() || p.FeeLimit.IsZero() {
 		return errors.New("fee limit cannot be negative or zero")
+	}
+
+	return nil
+}
+
+// validateDenomPriceMappings validates the denom price mappings
+func validateDenomPriceMappings(v interface{}) error {
+	mappings, ok := v.([]DenomPriceMapping)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	for i, mapping := range mappings {
+		if err := mapping.Validate(); err != nil {
+			return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
+		}
 	}
 
 	return nil

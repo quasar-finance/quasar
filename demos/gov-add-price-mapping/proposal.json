@@ -1,0 +1,23 @@
+{
+    "title": "Add a denom price mapping",
+    "description": "Add uosmo price mapping",
+    "changes": [
+        {
+            "subspace": "qoracle",
+            "key": "DenomPriceMappings",
+            "value": [
+                {
+                    "denom": "uatom",
+                    "oracle_denom": "ATOM",
+                    "multiplier": "0.000001000000000000"
+                },
+                {
+                    "denom": "uosmo",
+                    "oracle_denom": "OSMO",
+                    "multiplier": "0.000001000000000000"
+                }
+            ]
+        }
+    ],
+    "deposit": "10000uqsr"
+}

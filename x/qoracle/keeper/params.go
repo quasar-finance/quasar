@@ -9,6 +9,7 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.BandchainParams(ctx),
+		k.GetDenomPriceMappings(ctx),
 		k.OracleAccounts(ctx),
 		k.StableDenoms(ctx),
 		k.OneHopDenomMap(ctx),
@@ -28,6 +29,15 @@ func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
 
 func (k Keeper) SetBandchainParams(ctx sdk.Context, params types.BandchainParams) {
 	k.paramstore.Set(ctx, types.KeyBandchainParams, &params)
+}
+
+func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMapping) {
+	k.paramstore.Get(ctx, types.KeyDenomPriceMappings, &res)
+	return
+}
+
+func (k Keeper) SetDenomPriceMappings(ctx sdk.Context, mappings []types.DenomPriceMapping) {
+	k.paramstore.Set(ctx, types.KeyDenomPriceMappings, &mappings)
 }
 
 // OracleAccounts returns the OracleAccounts param

@@ -18,7 +18,6 @@ type Keeper struct {
 	storeKey   sdk.StoreKey
 	memKey     sdk.StoreKey
 	paramstore paramtypes.Subspace
-	authority  string // The gov module account
 
 	clientKeeper  types.ClientKeeper
 	ics4Wrapper   types.ICS4Wrapper
@@ -32,7 +31,6 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
-	authority string,
 	clientKeeper types.ClientKeeper,
 	ics4Wrapper types.ICS4Wrapper,
 	channelKeeper types.ChannelKeeper,
@@ -49,7 +47,6 @@ func NewKeeper(
 		storeKey:      storeKey,
 		memKey:        memKey,
 		paramstore:    ps,
-		authority:     authority,
 		clientKeeper:  clientKeeper,
 		ics4Wrapper:   ics4Wrapper,
 		channelKeeper: channelKeeper,

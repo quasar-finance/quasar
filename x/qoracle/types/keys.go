@@ -40,15 +40,14 @@ const (
 )
 
 var (
-	PoolPositionKBP            = []byte{0x01}
-	PoolInfoKBP                = []byte{0x02}
-	PoolAPYRankedKBP           = []byte{0x03}
-	PoolSpotPriceKBP           = []byte{0x05}
-	PortKey                    = []byte{0x06}
-	KeyCoinRatesState          = []byte("coin_rates_state")
-	KeyOraclePrices            = []byte("oracle_prices")
-	KeyStablePricesPrefix      = []byte("stable_prices")
-	KeyDenomPriceMappingPrefix = []byte("denom_price_mapping")
+	PoolPositionKBP       = []byte{0x01}
+	PoolInfoKBP           = []byte{0x02}
+	PoolAPYRankedKBP      = []byte{0x03}
+	PoolSpotPriceKBP      = []byte{0x05}
+	PortKey               = []byte{0x06}
+	KeyCoinRatesState     = []byte("coin_rates_state")
+	KeyOraclePrices       = []byte("oracle_prices")
+	KeyStablePricesPrefix = []byte("stable_prices")
 )
 
 var SepByte = []byte("#")

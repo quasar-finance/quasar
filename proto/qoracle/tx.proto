@@ -28,7 +28,6 @@ service Msg {
   rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
   rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
   rpc StablePrice(MsgStablePrice) returns (MsgStablePriceResponse);
-  rpc AddDenomPriceMapping(MsgAddDenomPriceMapping) returns (MsgAddDenomPriceMappingResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -138,14 +137,6 @@ message MsgStablePrice {
 }
 
 message MsgStablePriceResponse {
-}
-
-message MsgAddDenomPriceMapping {
-  string creator = 1;
-  DenomPriceMapping mapping = 2 [(gogoproto.nullable) = false];
-}
-
-message MsgAddDenomPriceMappingResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
