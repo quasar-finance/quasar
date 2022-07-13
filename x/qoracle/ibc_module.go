@@ -175,6 +175,5 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// TODO
-	return nil
+	return im.keeper.OnTimeoutPacket(ctx, packet)
 }

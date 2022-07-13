@@ -1,0 +1,58 @@
+syntax = "proto3";
+package abag.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "qoracle/ibc.proto";
+
+option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+
+message BandchainParams {
+  IBCParams oracle_ibc_params = 1 
+      [(gogoproto.moretags) = "yaml:\"oracle_ibc_params\"", (gogoproto.nullable) = false]; // IBC params for the oracle module of bandchain
+  CoinRatesParams coin_rates_params = 2 
+      [(gogoproto.moretags) = "yaml:\"coin_rates_params\"", (gogoproto.nullable) = false]; // Script params for the coin rates script
+}
+
+message CoinRatesParams {
+  string epoch_identifier = 1 [(gogoproto.moretags) = "yaml:\"epoch_identifier\""]; // Identifier of the epoch that we trigger the script request
+  repeated string symbols = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"symbols\""];
+  OracleScriptParams script_params = 3
+      [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"script_params\""];
+}
+
+message OracleScriptParams {
+  uint64 script_id = 1 [(gogoproto.moretags) = "yaml:\"script_id\""];
+  uint64 ask_count = 2 [(gogoproto.moretags) = "yaml:\"ask_count\""];
+  uint64 min_count = 3 [(gogoproto.moretags) = "yaml:\"min_count\""];
+  repeated cosmos.base.v1beta1.Coin fee_limit = 4
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  uint64 prepare_gas = 5 [(gogoproto.moretags) = "yaml:\"prepare_gas\""];
+  uint64 execute_gas = 6 [(gogoproto.moretags) = "yaml:\"execute_gas\""];
+}
+
+message OracleScriptState {
+    google.protobuf.Any call_data = 1;
+    uint64 request_packet_sequence = 2;
+    uint64 oracle_request_id = 3;
+    uint64 result_packet_sequence = 4;
+    google.protobuf.Any result = 5;
+    bool failed = 6;
+    int64 updated_at_height = 7;
+}
+
+message CoinRatesCallData {
+  repeated string symbols = 1;
+  uint64 multiplier = 2;
+}
+
+message CoinRatesResult {
+  repeated uint64 rates = 1;
+}
+
+message OraclePrices {
+  repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  int64 updated_at_height = 2;
+}

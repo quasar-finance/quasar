@@ -23,8 +23,7 @@ type Keeper struct {
 	ics4Wrapper   types.ICS4Wrapper
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
-
-	scopedKeeper capabilitykeeper.ScopedKeeper
+	scopedKeeper  capabilitykeeper.ScopedKeeper
 }
 
 func NewKeeper(

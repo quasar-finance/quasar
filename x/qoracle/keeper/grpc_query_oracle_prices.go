@@ -9,13 +9,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) State(goCtx context.Context, req *types.QueryStateRequest) (*types.QueryStateResponse, error) {
+func (k Keeper) OraclePrices(goCtx context.Context, req *types.QueryOraclePricesRequest) (*types.QueryOraclePricesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	return &types.QueryStateResponse{
-		CoinRatesState: k.GetCoinRatesState(ctx),
+	op := k.GetOraclePrices(ctx)
+
+	return &types.QueryOraclePricesResponse{
+		Prices:          op.Prices,
+		UpdatedAtHeight: op.UpdatedAtHeight,
 	}, nil
 }

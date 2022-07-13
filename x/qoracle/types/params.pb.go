@@ -5,9 +5,8 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types1 "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	_ "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -26,262 +25,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type BandchainParams struct {
-	OracleIbcParams IBCParams       `protobuf:"bytes,1,opt,name=oracle_ibc_params,json=oracleIbcParams,proto3" json:"oracle_ibc_params" yaml:"oracle_ibc_params"`
-	CoinRatesParams CoinRatesParams `protobuf:"bytes,2,opt,name=coin_rates_params,json=coinRatesParams,proto3" json:"coin_rates_params" yaml:"coin_rates_params"`
-}
-
-func (m *BandchainParams) Reset()         { *m = BandchainParams{} }
-func (m *BandchainParams) String() string { return proto.CompactTextString(m) }
-func (*BandchainParams) ProtoMessage()    {}
-func (*BandchainParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{0}
-}
-func (m *BandchainParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *BandchainParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_BandchainParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *BandchainParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BandchainParams.Merge(m, src)
-}
-func (m *BandchainParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *BandchainParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_BandchainParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BandchainParams proto.InternalMessageInfo
-
-func (m *BandchainParams) GetOracleIbcParams() IBCParams {
-	if m != nil {
-		return m.OracleIbcParams
-	}
-	return IBCParams{}
-}
-
-func (m *BandchainParams) GetCoinRatesParams() CoinRatesParams {
-	if m != nil {
-		return m.CoinRatesParams
-	}
-	return CoinRatesParams{}
-}
-
-type IBCParams struct {
-	AuthorizedChannel string       `protobuf:"bytes,1,opt,name=authorized_channel,json=authorizedChannel,proto3" json:"authorized_channel,omitempty" yaml:"authorized_channel"`
-	TimeoutHeight     types.Height `protobuf:"bytes,2,opt,name=timeout_height,json=timeoutHeight,proto3" json:"timeout_height" yaml:"timeout_height"`
-	TimeoutTimestamp  uint64       `protobuf:"varint,3,opt,name=timeout_timestamp,json=timeoutTimestamp,proto3" json:"timeout_timestamp,omitempty" yaml:"timeout_timestamp"`
-}
-
-func (m *IBCParams) Reset()         { *m = IBCParams{} }
-func (m *IBCParams) String() string { return proto.CompactTextString(m) }
-func (*IBCParams) ProtoMessage()    {}
-func (*IBCParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{1}
-}
-func (m *IBCParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *IBCParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_IBCParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *IBCParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IBCParams.Merge(m, src)
-}
-func (m *IBCParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *IBCParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_IBCParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_IBCParams proto.InternalMessageInfo
-
-func (m *IBCParams) GetAuthorizedChannel() string {
-	if m != nil {
-		return m.AuthorizedChannel
-	}
-	return ""
-}
-
-func (m *IBCParams) GetTimeoutHeight() types.Height {
-	if m != nil {
-		return m.TimeoutHeight
-	}
-	return types.Height{}
-}
-
-func (m *IBCParams) GetTimeoutTimestamp() uint64 {
-	if m != nil {
-		return m.TimeoutTimestamp
-	}
-	return 0
-}
-
-type CoinRatesParams struct {
-	EpochIdentifier string                                      `protobuf:"bytes,1,opt,name=epoch_identifier,json=epochIdentifier,proto3" json:"epoch_identifier,omitempty" yaml:"epoch_identifier"`
-	SymbolsWithMul  github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,2,rep,name=symbols_with_mul,json=symbolsWithMul,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"symbols_with_mul" yaml:"symbols_with_mul"`
-	ScriptParams    OracleScriptParams                          `protobuf:"bytes,3,opt,name=script_params,json=scriptParams,proto3" json:"script_params" yaml:"script_params"`
-}
-
-func (m *CoinRatesParams) Reset()         { *m = CoinRatesParams{} }
-func (m *CoinRatesParams) String() string { return proto.CompactTextString(m) }
-func (*CoinRatesParams) ProtoMessage()    {}
-func (*CoinRatesParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{2}
-}
-func (m *CoinRatesParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CoinRatesParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CoinRatesParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *CoinRatesParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CoinRatesParams.Merge(m, src)
-}
-func (m *CoinRatesParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *CoinRatesParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_CoinRatesParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CoinRatesParams proto.InternalMessageInfo
-
-func (m *CoinRatesParams) GetEpochIdentifier() string {
-	if m != nil {
-		return m.EpochIdentifier
-	}
-	return ""
-}
-
-func (m *CoinRatesParams) GetSymbolsWithMul() github_com_cosmos_cosmos_sdk_types.DecCoins {
-	if m != nil {
-		return m.SymbolsWithMul
-	}
-	return nil
-}
-
-func (m *CoinRatesParams) GetScriptParams() OracleScriptParams {
-	if m != nil {
-		return m.ScriptParams
-	}
-	return OracleScriptParams{}
-}
-
-type OracleScriptParams struct {
-	ScriptId   uint64                                   `protobuf:"varint,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty" yaml:"script_id"`
-	AskCount   uint64                                   `protobuf:"varint,2,opt,name=ask_count,json=askCount,proto3" json:"ask_count,omitempty" yaml:"ask_count"`
-	MinCount   uint64                                   `protobuf:"varint,3,opt,name=min_count,json=minCount,proto3" json:"min_count,omitempty" yaml:"min_count"`
-	FeeLimit   github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,4,rep,name=fee_limit,json=feeLimit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"fee_limit"`
-	PrepareGas uint64                                   `protobuf:"varint,5,opt,name=prepare_gas,json=prepareGas,proto3" json:"prepare_gas,omitempty" yaml:"prepare_gas"`
-	ExecuteGas uint64                                   `protobuf:"varint,6,opt,name=execute_gas,json=executeGas,proto3" json:"execute_gas,omitempty" yaml:"execute_gas"`
-}
-
-func (m *OracleScriptParams) Reset()         { *m = OracleScriptParams{} }
-func (m *OracleScriptParams) String() string { return proto.CompactTextString(m) }
-func (*OracleScriptParams) ProtoMessage()    {}
-func (*OracleScriptParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{3}
-}
-func (m *OracleScriptParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *OracleScriptParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OracleScriptParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *OracleScriptParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OracleScriptParams.Merge(m, src)
-}
-func (m *OracleScriptParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *OracleScriptParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_OracleScriptParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OracleScriptParams proto.InternalMessageInfo
-
-func (m *OracleScriptParams) GetScriptId() uint64 {
-	if m != nil {
-		return m.ScriptId
-	}
-	return 0
-}
-
-func (m *OracleScriptParams) GetAskCount() uint64 {
-	if m != nil {
-		return m.AskCount
-	}
-	return 0
-}
-
-func (m *OracleScriptParams) GetMinCount() uint64 {
-	if m != nil {
-		return m.MinCount
-	}
-	return 0
-}
-
-func (m *OracleScriptParams) GetFeeLimit() github_com_cosmos_cosmos_sdk_types.Coins {
-	if m != nil {
-		return m.FeeLimit
-	}
-	return nil
-}
-
-func (m *OracleScriptParams) GetPrepareGas() uint64 {
-	if m != nil {
-		return m.PrepareGas
-	}
-	return 0
-}
-
-func (m *OracleScriptParams) GetExecuteGas() uint64 {
-	if m != nil {
-		return m.ExecuteGas
-	}
-	return 0
-}
-
 type OneHopIbcDenomMapping struct {
 	OriginName string `protobuf:"bytes,1,opt,name=originName,proto3" json:"originName,omitempty" yaml:"origin_name"`
 	Quasar     string `protobuf:"bytes,2,opt,name=quasar,proto3" json:"quasar,omitempty" yaml:"quasar"`
@@ -292,7 +35,7 @@ func (m *OneHopIbcDenomMapping) Reset()         { *m = OneHopIbcDenomMapping{} }
 func (m *OneHopIbcDenomMapping) String() string { return proto.CompactTextString(m) }
 func (*OneHopIbcDenomMapping) ProtoMessage()    {}
 func (*OneHopIbcDenomMapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{4}
+	return fileDescriptor_95f4338228c132f2, []int{0}
 }
 func (m *OneHopIbcDenomMapping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -344,16 +87,17 @@ func (m *OneHopIbcDenomMapping) GetOsmo() string {
 
 // Params defines the parameters for the module.
 type Params struct {
-	BandchainParams BandchainParams          `protobuf:"bytes,1,opt,name=bandchain_params,json=bandchainParams,proto3" json:"bandchain_params" yaml:"bandchain_params"`
-	OracleAccounts  string                   `protobuf:"bytes,2,opt,name=oracleAccounts,proto3" json:"oracleAccounts,omitempty" yaml:"oracle_accounts"`
-	StableDenoms    []string                 `protobuf:"bytes,3,rep,name=stableDenoms,proto3" json:"stableDenoms,omitempty" yaml:"stable_denoms"`
-	OneHopDenomMap  []*OneHopIbcDenomMapping `protobuf:"bytes,4,rep,name=oneHopDenomMap,proto3" json:"oneHopDenomMap,omitempty" yaml:"onehop_ibcdenoms"`
+	BandchainParams    BandchainParams          `protobuf:"bytes,1,opt,name=bandchain_params,json=bandchainParams,proto3" json:"bandchain_params" yaml:"bandchain_params"`
+	DenomPriceMappings []DenomPriceMapping      `protobuf:"bytes,2,rep,name=denom_price_mappings,json=denomPriceMappings,proto3" json:"denom_price_mappings" yaml:"denom_price_mappings"`
+	OracleAccounts     string                   `protobuf:"bytes,3,opt,name=oracleAccounts,proto3" json:"oracleAccounts,omitempty" yaml:"oracle_accounts"`
+	StableDenoms       []string                 `protobuf:"bytes,4,rep,name=stableDenoms,proto3" json:"stableDenoms,omitempty" yaml:"stable_denoms"`
+	OneHopDenomMap     []*OneHopIbcDenomMapping `protobuf:"bytes,5,rep,name=oneHopDenomMap,proto3" json:"oneHopDenomMap,omitempty" yaml:"onehop_ibcdenoms"`
 }
 
 func (m *Params) Reset()      { *m = Params{} }
 func (*Params) ProtoMessage() {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_95f4338228c132f2, []int{5}
+	return fileDescriptor_95f4338228c132f2, []int{1}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -389,6 +133,13 @@ func (m *Params) GetBandchainParams() BandchainParams {
 	return BandchainParams{}
 }
 
+func (m *Params) GetDenomPriceMappings() []DenomPriceMapping {
+	if m != nil {
+		return m.DenomPriceMappings
+	}
+	return nil
+}
+
 func (m *Params) GetOracleAccounts() string {
 	if m != nil {
 		return m.OracleAccounts
@@ -411,10 +162,6 @@ func (m *Params) GetOneHopDenomMap() []*OneHopIbcDenomMapping {
 }
 
 func init() {
-	proto.RegisterType((*BandchainParams)(nil), "abag.quasarnode.qoracle.BandchainParams")
-	proto.RegisterType((*IBCParams)(nil), "abag.quasarnode.qoracle.IBCParams")
-	proto.RegisterType((*CoinRatesParams)(nil), "abag.quasarnode.qoracle.CoinRatesParams")
-	proto.RegisterType((*OracleScriptParams)(nil), "abag.quasarnode.qoracle.OracleScriptParams")
 	proto.RegisterType((*OneHopIbcDenomMapping)(nil), "abag.quasarnode.qoracle.OneHopIbcDenomMapping")
 	proto.RegisterType((*Params)(nil), "abag.quasarnode.qoracle.Params")
 }
@@ -422,271 +169,40 @@ func init() {
 func init() { proto.RegisterFile("qoracle/params.proto", fileDescriptor_95f4338228c132f2) }
 
 var fileDescriptor_95f4338228c132f2 = []byte{
-	// 949 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x4f, 0x6f, 0xdb, 0x36,
-	0x14, 0xf7, 0xbf, 0x05, 0x31, 0xd3, 0xc4, 0xb6, 0x90, 0xb6, 0x6e, 0x96, 0x5a, 0x01, 0x77, 0xf1,
-	0x56, 0x4c, 0x9a, 0x3b, 0x60, 0x03, 0x8a, 0x5d, 0xa6, 0x04, 0x6b, 0x0d, 0xf4, 0xcf, 0xc0, 0x0d,
-	0x18, 0xb0, 0x8b, 0x46, 0xd1, 0x8c, 0x45, 0xc4, 0x22, 0x55, 0x91, 0xce, 0x9a, 0x7d, 0x80, 0x01,
-	0xbb, 0xed, 0x34, 0xec, 0xb6, 0x9d, 0xfb, 0x49, 0x7a, 0xec, 0x71, 0x27, 0x77, 0x48, 0xbe, 0x81,
-	0xaf, 0xbd, 0x0c, 0x22, 0x69, 0x47, 0x96, 0x63, 0x60, 0x27, 0x51, 0xef, 0xfd, 0x7e, 0xbf, 0xf7,
-	0xf8, 0xde, 0x23, 0x09, 0xf6, 0x5f, 0x8a, 0x0c, 0x93, 0x09, 0xf5, 0x53, 0x9c, 0xe1, 0x44, 0x7a,
-	0x69, 0x26, 0x94, 0x70, 0xee, 0xe2, 0x08, 0x8f, 0xbd, 0x97, 0x53, 0x2c, 0x71, 0xc6, 0xc5, 0x88,
-	0x7a, 0x16, 0x75, 0xb0, 0x3f, 0x16, 0x63, 0xa1, 0x31, 0x7e, 0xbe, 0x32, 0xf0, 0x83, 0x1e, 0x11,
-	0x32, 0x11, 0xd2, 0x8f, 0xb0, 0xa4, 0xfe, 0xf9, 0x20, 0xa2, 0x0a, 0x0f, 0x7c, 0x22, 0x18, 0xb7,
-	0x7e, 0x97, 0x45, 0xc4, 0x27, 0x22, 0xa3, 0x3e, 0x99, 0x30, 0xca, 0x95, 0x7f, 0x3e, 0xb0, 0x2b,
-	0x03, 0x80, 0xef, 0xab, 0xa0, 0x15, 0x60, 0x3e, 0x22, 0x31, 0x66, 0xfc, 0x5b, 0x9d, 0x89, 0x93,
-	0x82, 0x8e, 0x09, 0x1a, 0xb2, 0x88, 0x84, 0x26, 0xbd, 0x6e, 0xf5, 0xa8, 0xda, 0xdf, 0x79, 0x08,
-	0xbd, 0x0d, 0xf9, 0x79, 0xc3, 0xe0, 0xd8, 0xd0, 0x83, 0xa3, 0x37, 0x33, 0xb7, 0x32, 0x9f, 0xb9,
-	0xdd, 0x0b, 0x9c, 0x4c, 0x1e, 0xc1, 0x35, 0x29, 0x88, 0x5a, 0xc6, 0x36, 0x8c, 0x88, 0x8d, 0x78,
-	0x0e, 0x3a, 0x79, 0xd2, 0x61, 0x86, 0x15, 0x95, 0x8b, 0x88, 0x35, 0x1d, 0xb1, 0xbf, 0x31, 0xe2,
-	0xb1, 0x60, 0x1c, 0xe5, 0x84, 0x9b, 0xe3, 0xae, 0x09, 0x42, 0xd4, 0x22, 0xab, 0x14, 0xf8, 0x6b,
-	0x0d, 0x34, 0x97, 0x89, 0x3b, 0x4f, 0x81, 0x83, 0xa7, 0x2a, 0x16, 0x19, 0xfb, 0x85, 0x8e, 0x42,
-	0x12, 0x63, 0xce, 0xe9, 0x44, 0x6f, 0xbc, 0x19, 0xdc, 0x9f, 0xcf, 0xdc, 0x7b, 0x46, 0x78, 0x1d,
-	0x03, 0x51, 0xe7, 0xda, 0x78, 0x6c, 0x6c, 0xce, 0x4f, 0x60, 0x4f, 0xb1, 0x84, 0x8a, 0xa9, 0x0a,
-	0x63, 0xca, 0xc6, 0xb1, 0xb2, 0x1b, 0x3a, 0xf0, 0x58, 0x44, 0xbc, 0xbc, 0x27, 0x9e, 0xed, 0xc4,
-	0xf9, 0xc0, 0x7b, 0xa2, 0x11, 0xc1, 0x7d, 0xbb, 0x85, 0xdb, 0x26, 0xd2, 0x2a, 0x1f, 0xa2, 0x5d,
-	0x6b, 0x30, 0x68, 0x67, 0x08, 0x3a, 0x0b, 0x44, 0xfe, 0x95, 0x0a, 0x27, 0x69, 0xb7, 0x7e, 0x54,
-	0xed, 0x37, 0x82, 0xc3, 0xeb, 0x3a, 0xac, 0x41, 0x20, 0x6a, 0x5b, 0xdb, 0xf7, 0x4b, 0xd3, 0x65,
-	0x0d, 0xb4, 0x4a, 0xf5, 0x74, 0xbe, 0x01, 0x6d, 0x9a, 0x0a, 0x12, 0x87, 0x6c, 0x44, 0xb9, 0x62,
-	0xa7, 0x8c, 0x66, 0xb6, 0x18, 0x1f, 0xce, 0x67, 0xee, 0x5d, 0xa3, 0x5e, 0x46, 0x40, 0xd4, 0xd2,
-	0xa6, 0xe1, 0xd2, 0xe2, 0xfc, 0x51, 0x05, 0x6d, 0x79, 0x91, 0x44, 0x62, 0x22, 0xc3, 0x9f, 0x99,
-	0x8a, 0xc3, 0x64, 0x3a, 0xe9, 0xd6, 0x8e, 0xea, 0xfd, 0x9d, 0x87, 0x87, 0x9e, 0x99, 0x5f, 0x2f,
-	0x9f, 0x5f, 0xcf, 0xce, 0xaf, 0x77, 0x42, 0x49, 0x9e, 0x4b, 0xf0, 0xdc, 0x56, 0xc3, 0x86, 0x2a,
-	0x6b, 0xc0, 0xd7, 0xef, 0xdc, 0x07, 0x63, 0xa6, 0xe2, 0x69, 0xe4, 0x11, 0x91, 0xf8, 0xf6, 0x28,
-	0x98, 0xcf, 0xa7, 0x72, 0x74, 0xe6, 0xab, 0x8b, 0x94, 0xca, 0x85, 0x9c, 0x44, 0x7b, 0x56, 0xe1,
-	0x07, 0xa6, 0xe2, 0x67, 0xd3, 0x89, 0xc3, 0xc1, 0xae, 0x24, 0x19, 0x4b, 0xd5, 0x62, 0xe2, 0xea,
-	0xba, 0x41, 0x0f, 0x36, 0x4e, 0xdc, 0x0b, 0xfd, 0xf9, 0x4e, 0x73, 0xec, 0xd0, 0x1d, 0xda, 0x1c,
-	0xf7, 0x6d, 0x8e, 0x45, 0x3d, 0x88, 0x6e, 0xc9, 0x02, 0x16, 0xfe, 0x56, 0x07, 0xce, 0xba, 0x84,
-	0x33, 0x00, 0x4d, 0x4b, 0x63, 0x23, 0x5d, 0xe0, 0x46, 0xb0, 0x3f, 0x9f, 0xb9, 0xed, 0x15, 0x45,
-	0x36, 0x82, 0x68, 0xdb, 0xac, 0x87, 0xa3, 0x9c, 0x82, 0xe5, 0x59, 0x48, 0xc4, 0x94, 0x9b, 0xb1,
-	0x5a, 0xa1, 0x2c, 0x5d, 0x10, 0x6d, 0x63, 0x79, 0x76, 0x9c, 0x2f, 0x73, 0x4a, 0xc2, 0xb8, 0xa5,
-	0xd4, 0xcb, 0x94, 0xa5, 0x0b, 0xa2, 0xed, 0x84, 0x71, 0x43, 0x89, 0x41, 0xf3, 0x94, 0xd2, 0x70,
-	0xc2, 0x12, 0xa6, 0xba, 0x0d, 0xdd, 0xb0, 0x7b, 0x37, 0x36, 0x4c, 0x77, 0xeb, 0xb3, 0xbc, 0x12,
-	0xaf, 0xdf, 0xb9, 0xfd, 0xff, 0xd1, 0x12, 0xd3, 0x8f, 0xed, 0x53, 0x4a, 0x9f, 0xe6, 0xe2, 0xce,
-	0x97, 0x60, 0x27, 0xcd, 0x68, 0x8a, 0x33, 0x1a, 0x8e, 0xb1, 0xec, 0x7e, 0xa0, 0xd3, 0xbb, 0x33,
-	0x9f, 0xb9, 0x8e, 0x49, 0xaf, 0xe0, 0x84, 0x08, 0xd8, 0xbf, 0xc7, 0x58, 0xe6, 0x44, 0xfa, 0x8a,
-	0x92, 0xa9, 0x32, 0xc4, 0xad, 0x32, 0xb1, 0xe0, 0x84, 0x08, 0xd8, 0xbf, 0xc7, 0x58, 0xc2, 0xbf,
-	0xaa, 0xe0, 0xf6, 0x0b, 0x4e, 0x9f, 0x88, 0x74, 0x18, 0x91, 0x13, 0xca, 0x45, 0xf2, 0x0c, 0xa7,
-	0x29, 0xe3, 0x63, 0xe7, 0x0b, 0x00, 0x44, 0xc6, 0xc6, 0x8c, 0x3f, 0xc7, 0x09, 0xb5, 0x03, 0x5f,
-	0x50, 0x34, 0xbe, 0x90, 0xe3, 0x84, 0x42, 0x54, 0x40, 0x3a, 0x1f, 0x83, 0x2d, 0x33, 0x32, 0xba,
-	0x21, 0xcd, 0xa0, 0x33, 0x9f, 0xb9, 0xbb, 0x86, 0x63, 0xec, 0x10, 0x59, 0x80, 0xf3, 0x11, 0x68,
-	0xe4, 0x15, 0xd1, 0x6d, 0x68, 0x06, 0xad, 0xf9, 0xcc, 0xdd, 0xb1, 0xe2, 0x32, 0x11, 0x10, 0x69,
-	0x27, 0x7c, 0x5f, 0x03, 0x5b, 0x76, 0x42, 0x14, 0x68, 0x47, 0x8b, 0x3b, 0x7a, 0xf5, 0x3e, 0xde,
-	0x7c, 0x3b, 0x96, 0x2e, 0xf5, 0xc0, 0x5d, 0x3d, 0x4c, 0x65, 0x3d, 0x88, 0x5a, 0x51, 0xe9, 0x19,
-	0x08, 0xc0, 0x9e, 0xd1, 0xfa, 0x9a, 0xe8, 0xd1, 0x90, 0x76, 0x63, 0x07, 0xf3, 0x99, 0x7b, 0x67,
-	0xe5, 0x6e, 0xc7, 0x16, 0x00, 0x51, 0x89, 0xe1, 0x7c, 0x05, 0x6e, 0x49, 0x85, 0xa3, 0x09, 0xd5,
-	0x25, 0xce, 0x4f, 0x58, 0xbd, 0xdf, 0x0c, 0xba, 0x85, 0x03, 0xa3, 0xbd, 0xe1, 0x48, 0xbb, 0xf3,
-	0x03, 0x53, 0x40, 0x3b, 0x12, 0xec, 0x09, 0xdd, 0xa3, 0x45, 0x83, 0xec, 0x14, 0x7a, 0x9b, 0x4f,
-	0xe8, 0x4d, 0x2d, 0x2d, 0xde, 0x57, 0x82, 0xd3, 0x58, 0xa4, 0xf9, 0x6b, 0xb4, 0x08, 0x59, 0x0a,
-	0xf1, 0xa8, 0xf1, 0xe7, 0xdf, 0x6e, 0x25, 0x38, 0x79, 0x73, 0xd9, 0xab, 0xbe, 0xbd, 0xec, 0x55,
-	0xff, 0xbd, 0xec, 0x55, 0x7f, 0xbf, 0xea, 0x55, 0xde, 0x5e, 0xf5, 0x2a, 0xff, 0x5c, 0xf5, 0x2a,
-	0x3f, 0x7e, 0x52, 0x98, 0xef, 0x3c, 0x0d, 0xff, 0x3a, 0x0d, 0xff, 0x95, 0xbf, 0x78, 0xd4, 0xf5,
-	0x9c, 0x47, 0x5b, 0xfa, 0x91, 0xfd, 0xfc, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xde, 0x68, 0x85,
-	0x53, 0xec, 0x07, 0x00, 0x00,
-}
-
-func (m *BandchainParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *BandchainParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *BandchainParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.CoinRatesParams.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintParams(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OracleIbcParams.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintParams(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *IBCParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *IBCParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IBCParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.TimeoutTimestamp != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.TimeoutTimestamp))
-		i--
-		dAtA[i] = 0x18
-	}
-	{
-		size, err := m.TimeoutHeight.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintParams(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if len(m.AuthorizedChannel) > 0 {
-		i -= len(m.AuthorizedChannel)
-		copy(dAtA[i:], m.AuthorizedChannel)
-		i = encodeVarintParams(dAtA, i, uint64(len(m.AuthorizedChannel)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CoinRatesParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CoinRatesParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CoinRatesParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.ScriptParams.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintParams(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	if len(m.SymbolsWithMul) > 0 {
-		for iNdEx := len(m.SymbolsWithMul) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.SymbolsWithMul[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintParams(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.EpochIdentifier) > 0 {
-		i -= len(m.EpochIdentifier)
-		copy(dAtA[i:], m.EpochIdentifier)
-		i = encodeVarintParams(dAtA, i, uint64(len(m.EpochIdentifier)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *OracleScriptParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *OracleScriptParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *OracleScriptParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ExecuteGas != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.ExecuteGas))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.PrepareGas != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.PrepareGas))
-		i--
-		dAtA[i] = 0x28
-	}
-	if len(m.FeeLimit) > 0 {
-		for iNdEx := len(m.FeeLimit) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.FeeLimit[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintParams(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	if m.MinCount != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.MinCount))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.AskCount != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.AskCount))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ScriptId != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.ScriptId))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	// 516 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x3f, 0x6f, 0xd3, 0x4c,
+	0x18, 0xb7, 0x9b, 0xbc, 0x91, 0x7a, 0x79, 0x69, 0xe1, 0x14, 0x1a, 0x2b, 0x95, 0xec, 0xe0, 0x2e,
+	0xa1, 0x83, 0x4f, 0x29, 0x12, 0x43, 0xc5, 0x82, 0xd5, 0x01, 0x06, 0xa0, 0xf2, 0xc8, 0x62, 0xdd,
+	0x5d, 0x4e, 0x8e, 0xa5, 0xf8, 0xce, 0xf5, 0x39, 0x15, 0x1d, 0xf9, 0x06, 0x8c, 0x6c, 0xf0, 0x71,
+	0x3a, 0x76, 0x64, 0xb2, 0x50, 0xf2, 0x0d, 0xfc, 0x05, 0x40, 0xbe, 0x3b, 0xb7, 0x34, 0x4a, 0xb6,
+	0x93, 0x7f, 0xff, 0x9e, 0xe7, 0xe7, 0x07, 0x0c, 0xae, 0x44, 0x81, 0xe9, 0x82, 0xa1, 0x1c, 0x17,
+	0x38, 0x93, 0x41, 0x5e, 0x88, 0x52, 0xc0, 0x21, 0x26, 0x38, 0x09, 0xae, 0x96, 0x58, 0xe2, 0x82,
+	0x8b, 0x19, 0x0b, 0x0c, 0x6b, 0x34, 0x48, 0x44, 0x22, 0x14, 0x07, 0x35, 0x2f, 0x4d, 0x1f, 0xb9,
+	0x54, 0xc8, 0x4c, 0x48, 0x44, 0xb0, 0x64, 0xe8, 0x7a, 0x4a, 0x58, 0x89, 0xa7, 0x88, 0x8a, 0x94,
+	0x1b, 0xdc, 0x4b, 0x09, 0x45, 0x54, 0x14, 0x0c, 0xd1, 0x45, 0xca, 0x78, 0x89, 0xae, 0xa7, 0xe6,
+	0x65, 0x08, 0xc3, 0x76, 0x0a, 0x82, 0xf9, 0x8c, 0xce, 0xf1, 0xbd, 0xf2, 0x45, 0x0b, 0xcc, 0x18,
+	0x17, 0x59, 0x9c, 0x17, 0x29, 0x65, 0x71, 0x86, 0xf3, 0x3c, 0xe5, 0x89, 0xa6, 0xf8, 0x3f, 0x6c,
+	0xf0, 0xfc, 0x13, 0x67, 0xef, 0x44, 0xfe, 0x9e, 0xd0, 0x8b, 0x86, 0xf6, 0x41, 0xe3, 0xf0, 0x35,
+	0x00, 0xa2, 0x48, 0x93, 0x94, 0x7f, 0xc4, 0x19, 0x73, 0xec, 0xb1, 0x3d, 0xd9, 0x0f, 0x8f, 0xea,
+	0xca, 0x83, 0x37, 0x38, 0x5b, 0x9c, 0xfb, 0x1a, 0x8b, 0x39, 0xce, 0x98, 0x1f, 0xfd, 0xc3, 0x84,
+	0x2f, 0x41, 0x4f, 0xaf, 0xee, 0xec, 0x29, 0xcd, 0xb3, 0xba, 0xf2, 0x9e, 0x68, 0x8d, 0xfe, 0xee,
+	0x47, 0x86, 0x00, 0x4f, 0x40, 0xb7, 0x59, 0xdd, 0xe9, 0x28, 0xe2, 0x61, 0x5d, 0x79, 0x7d, 0x63,
+	0x2e, 0x33, 0xe1, 0x47, 0x0a, 0xf4, 0xff, 0x74, 0x40, 0xef, 0x52, 0xd5, 0x0b, 0x4b, 0xf0, 0xf4,
+	0x7e, 0xc5, 0x58, 0x57, 0xae, 0x06, 0xeb, 0x9f, 0x4d, 0x82, 0x1d, 0x9d, 0x07, 0x61, 0x2b, 0xd0,
+	0x1e, 0xa1, 0x77, 0x5b, 0x79, 0x56, 0x5d, 0x79, 0x43, 0x9d, 0xb4, 0xe9, 0xe7, 0x47, 0x87, 0xe4,
+	0xb1, 0x02, 0x7e, 0xb5, 0xc1, 0x60, 0x4b, 0x81, 0xd2, 0xd9, 0x1b, 0x77, 0x26, 0xfd, 0xb3, 0xd3,
+	0x9d, 0xd1, 0xaa, 0xce, 0xcb, 0x46, 0x63, 0x3a, 0x0d, 0x4f, 0x4c, 0xf8, 0xb1, 0x0e, 0xdf, 0xe6,
+	0xea, 0x47, 0x70, 0xb6, 0xa9, 0x93, 0x30, 0x04, 0x07, 0xda, 0xf4, 0x2d, 0xa5, 0x62, 0xc9, 0x4b,
+	0x69, 0x3a, 0x1b, 0xd5, 0x95, 0x77, 0xd4, 0xfe, 0x90, 0x06, 0x8f, 0xb1, 0x21, 0xf8, 0xd1, 0x86,
+	0x02, 0xbe, 0x01, 0xff, 0xcb, 0x12, 0x93, 0x05, 0x53, 0x73, 0x49, 0xa7, 0x3b, 0xee, 0x4c, 0xf6,
+	0x43, 0xa7, 0xae, 0xbc, 0x81, 0x76, 0xd0, 0x68, 0xac, 0xe2, 0xa5, 0x1f, 0x3d, 0x62, 0x43, 0x09,
+	0x0e, 0x84, 0xba, 0x93, 0xf6, 0x48, 0x9c, 0xff, 0xd4, 0xfa, 0xc1, 0xce, 0xf5, 0xb7, 0x9e, 0x55,
+	0x78, 0xfc, 0xd0, 0xbd, 0xe0, 0x6c, 0x2e, 0xf2, 0x38, 0x25, 0xb4, 0x8d, 0xdc, 0x88, 0x38, 0xef,
+	0x7e, 0xff, 0xe9, 0x59, 0xe1, 0xc5, 0xed, 0xca, 0xb5, 0xef, 0x56, 0xae, 0xfd, 0x7b, 0xe5, 0xda,
+	0xdf, 0xd6, 0xae, 0x75, 0xb7, 0x76, 0xad, 0x5f, 0x6b, 0xd7, 0xfa, 0x7c, 0x9a, 0xa4, 0xe5, 0x7c,
+	0x49, 0x02, 0x2a, 0x32, 0xd4, 0x8c, 0x81, 0x1e, 0xc6, 0x40, 0x5f, 0x50, 0x7b, 0xfd, 0xe5, 0x4d,
+	0xce, 0x24, 0xe9, 0xa9, 0x83, 0x7f, 0xf5, 0x37, 0x00, 0x00, 0xff, 0xff, 0xb4, 0x07, 0xc8, 0x2a,
+	0xb4, 0x03, 0x00, 0x00,
 }
 
 func (m *OneHopIbcDenomMapping) Marshal() (dAtA []byte, err error) {
@@ -764,7 +280,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintParams(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.StableDenoms) > 0 {
@@ -773,7 +289,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.StableDenoms[iNdEx])
 			i = encodeVarintParams(dAtA, i, uint64(len(m.StableDenoms[iNdEx])))
 			i--
-			dAtA[i] = 0x1a
+			dAtA[i] = 0x22
 		}
 	}
 	if len(m.OracleAccounts) > 0 {
@@ -781,7 +297,21 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.OracleAccounts)
 		i = encodeVarintParams(dAtA, i, uint64(len(m.OracleAccounts)))
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
+	}
+	if len(m.DenomPriceMappings) > 0 {
+		for iNdEx := len(m.DenomPriceMappings) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DenomPriceMappings[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintParams(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
 	}
 	{
 		size, err := m.BandchainParams.MarshalToSizedBuffer(dAtA[:i])
@@ -807,88 +337,6 @@ func encodeVarintParams(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *BandchainParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.OracleIbcParams.Size()
-	n += 1 + l + sovParams(uint64(l))
-	l = m.CoinRatesParams.Size()
-	n += 1 + l + sovParams(uint64(l))
-	return n
-}
-
-func (m *IBCParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.AuthorizedChannel)
-	if l > 0 {
-		n += 1 + l + sovParams(uint64(l))
-	}
-	l = m.TimeoutHeight.Size()
-	n += 1 + l + sovParams(uint64(l))
-	if m.TimeoutTimestamp != 0 {
-		n += 1 + sovParams(uint64(m.TimeoutTimestamp))
-	}
-	return n
-}
-
-func (m *CoinRatesParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.EpochIdentifier)
-	if l > 0 {
-		n += 1 + l + sovParams(uint64(l))
-	}
-	if len(m.SymbolsWithMul) > 0 {
-		for _, e := range m.SymbolsWithMul {
-			l = e.Size()
-			n += 1 + l + sovParams(uint64(l))
-		}
-	}
-	l = m.ScriptParams.Size()
-	n += 1 + l + sovParams(uint64(l))
-	return n
-}
-
-func (m *OracleScriptParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ScriptId != 0 {
-		n += 1 + sovParams(uint64(m.ScriptId))
-	}
-	if m.AskCount != 0 {
-		n += 1 + sovParams(uint64(m.AskCount))
-	}
-	if m.MinCount != 0 {
-		n += 1 + sovParams(uint64(m.MinCount))
-	}
-	if len(m.FeeLimit) > 0 {
-		for _, e := range m.FeeLimit {
-			l = e.Size()
-			n += 1 + l + sovParams(uint64(l))
-		}
-	}
-	if m.PrepareGas != 0 {
-		n += 1 + sovParams(uint64(m.PrepareGas))
-	}
-	if m.ExecuteGas != 0 {
-		n += 1 + sovParams(uint64(m.ExecuteGas))
-	}
-	return n
-}
-
 func (m *OneHopIbcDenomMapping) Size() (n int) {
 	if m == nil {
 		return 0
@@ -918,6 +366,12 @@ func (m *Params) Size() (n int) {
 	_ = l
 	l = m.BandchainParams.Size()
 	n += 1 + l + sovParams(uint64(l))
+	if len(m.DenomPriceMappings) > 0 {
+		for _, e := range m.DenomPriceMappings {
+			l = e.Size()
+			n += 1 + l + sovParams(uint64(l))
+		}
+	}
 	l = len(m.OracleAccounts)
 	if l > 0 {
 		n += 1 + l + sovParams(uint64(l))
@@ -942,584 +396,6 @@ func sovParams(x uint64) (n int) {
 }
 func sozParams(x uint64) (n int) {
 	return sovParams(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *BandchainParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowParams
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: BandchainParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: BandchainParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OracleIbcParams", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OracleIbcParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CoinRatesParams", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.CoinRatesParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipParams(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthParams
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *IBCParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowParams
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: IBCParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: IBCParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AuthorizedChannel", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.AuthorizedChannel = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutHeight", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TimeoutHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutTimestamp", wireType)
-			}
-			m.TimeoutTimestamp = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TimeoutTimestamp |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipParams(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthParams
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CoinRatesParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowParams
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CoinRatesParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CoinRatesParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EpochIdentifier", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.EpochIdentifier = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SymbolsWithMul", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SymbolsWithMul = append(m.SymbolsWithMul, types1.DecCoin{})
-			if err := m.SymbolsWithMul[len(m.SymbolsWithMul)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ScriptParams", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ScriptParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipParams(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthParams
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *OracleScriptParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowParams
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: OracleScriptParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: OracleScriptParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ScriptId", wireType)
-			}
-			m.ScriptId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ScriptId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AskCount", wireType)
-			}
-			m.AskCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.AskCount |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinCount", wireType)
-			}
-			m.MinCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MinCount |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FeeLimit", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthParams
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthParams
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FeeLimit = append(m.FeeLimit, types1.Coin{})
-			if err := m.FeeLimit[len(m.FeeLimit)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PrepareGas", wireType)
-			}
-			m.PrepareGas = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.PrepareGas |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExecuteGas", wireType)
-			}
-			m.ExecuteGas = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowParams
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ExecuteGas |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipParams(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthParams
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *OneHopIbcDenomMapping) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1731,6 +607,40 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DenomPriceMappings", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DenomPriceMappings = append(m.DenomPriceMappings, DenomPriceMapping{})
+			if err := m.DenomPriceMappings[len(m.DenomPriceMappings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OracleAccounts", wireType)
 			}
 			var stringLen uint64
@@ -1761,7 +671,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			}
 			m.OracleAccounts = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StableDenoms", wireType)
 			}
@@ -1793,7 +703,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			}
 			m.StableDenoms = append(m.StableDenoms, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OneHopDenomMap", wireType)
 			}

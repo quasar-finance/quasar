@@ -19,14 +19,10 @@ const (
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_qoracle"
 
-	// CoinRatesClientIDKey is query request identifier
-	CoinRatesClientIDKey = "coin_rates_id"
+	// CoinRatesClientID is query request identifier
+	CoinRatesClientID = "coin_rates_id"
 
-	// CoinRatesLatestRequestKey is the key for the latest request id
-	CoinRatesLatestRequestKey = "coin_rates_latest_request"
-
-	// CoinRatesStateKey is the key for the state
-	CoinRatesStateKey = "coin_rates_state"
+	// KeyCoinRatesState is the key for the state
 
 	// BandchainOraclePortID is the default port id that bandchain oracle module binds to
 	BandchainOraclePortID = "oracle"
@@ -44,19 +40,17 @@ const (
 )
 
 var (
-	PoolPositionKBP  = []byte{0x01}
-	PoolInfoKBP      = []byte{0x02}
-	PoolAPYRankedKBP = []byte{0x03}
-	StablePriceKBP   = []byte{0x04}
-	PoolSpotPriceKBP = []byte{0x05}
-	PortKey          = []byte{0x06}
+	PoolPositionKBP       = []byte{0x01}
+	PoolInfoKBP           = []byte{0x02}
+	PoolAPYRankedKBP      = []byte{0x03}
+	PoolSpotPriceKBP      = []byte{0x05}
+	PortKey               = []byte{0x06}
+	KeyCoinRatesState     = []byte("coin_rates_state")
+	KeyOraclePrices       = []byte("oracle_prices")
+	KeyStablePricesPrefix = []byte("stable_prices")
 )
 
 var SepByte = []byte("#")
-
-func CreateStablePriceKey(denom string) []byte {
-	return []byte(denom)
-}
 
 func CreatePoolPositionKey(poolID string) []byte {
 	return []byte(poolID)
