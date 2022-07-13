@@ -1,0 +1,69 @@
+accounts:
+  - name: alice
+    mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
+    coins: ["20000token", "200000000stake", "1000000000uqsr"]
+  - name: bob
+    mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
+    coins: ["10000token", "100000000stake", "1000000000uqsr"]
+validator:
+  name: alice
+  staked: "100000000uqsr"
+genesis:
+  chain_id: "quasar"
+  app_state:
+    gov:
+      deposit_params:
+        max_deposit_period: 172800s
+        min_deposit:
+        - amount: '1'
+          denom: uqsr
+      deposits: []
+      proposals: []
+      starting_proposal_id: '1'
+      tally_params:
+        quorum: '00.000000000000000001'
+        threshold: '0.000000000000000001'
+        veto_threshold: '0.334000000000000000'
+      votes: []
+      voting_params:
+        voting_period: 300s
+    staking:
+      params:
+        bond_denom: uqsr
+    mint:
+      params:
+        mint_denom: uqsr
+    orion:
+      params:
+        enabled: false
+        lp_epoch_id: day #override day for testing
+        mgmt_fee_per: '0.003000000000000000'
+        perf_fee_per: '0.020000000000000000'
+        white_listed_pools : [1,2,3]
+    qoracle:
+      params:
+        oracleAccounts: 'quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec'
+    qbank:
+      params:
+        enabled: true
+        min_orion_epoch_denom_dollar_deposit: '100.000000000000000000'
+        orion_epoch_identifier: day #override day for testing
+        white_listed_denoms_in_orion:
+          - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
+            onehop_quasar: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
+            origin_name: uatom
+          - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
+            onehop_quasar: uqsr
+            origin_name: uqsr
+host:
+  rpc: ":26659"
+  p2p: ":26661"
+  prof: ":6061"
+  grpc: ":9095"
+  grpc-web: ":8091"
+  api: ":1311"
+  frontend: ":8081"
+  dev-ui: ":12351"
+faucet:
+  name: bob
+  coins: ["5token", "100000stake", "10000uqsr"]

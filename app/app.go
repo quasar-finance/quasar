@@ -514,7 +514,6 @@ func New(
 		keys[qoraclemoduletypes.StoreKey],
 		keys[qoraclemoduletypes.MemStoreKey],
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
-		string(app.AccountKeeper.GetModuleAddress(govtypes.ModuleName)),
 		app.IBCKeeper.ClientKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
