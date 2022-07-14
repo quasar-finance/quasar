@@ -1724,8 +1724,8 @@ github.com/stbenjam/no-sprintf-host-port v0.1.1/go.mod h1:TLhvtIvONRzdmkFiio4O8L
 github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570/go.mod h1:8OR4w3TdeIHIh1g6EMY5p0gVNOovcWC+1vpc7naMuAw=
 github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3/go.mod h1:hpGUWaI9xL8pRQCTXQgocU38Qw1g0Us7n5PxxTwTCYU=
 github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980/go.mod h1:AO3tvPzVZ/ayst6UlUKUv6rcPQInYe3IknH3jYhAKu8=
-github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220622152118-86a199c7a516 h1:n9/oMWBZNgmDxeS8E1kEPOU2bSvrTPkK3Iz+W/5KANw=
-github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220622152118-86a199c7a516/go.mod h1:uOacuNF45qKSQ16I2xLzvESqbstHSOf1fShpwSTc0/Y=
+github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220714101859-f79a4eee19ba h1:7QIP2+I4fnEOhTmQsZvjyxiRy8gLqGRzeLC+dkHs8Go=
+github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220714101859-f79a4eee19ba/go.mod h1:DbOlOa4yKumaHGKApKkJN90L88PCjSD9ZBdAfL9tT40=
 github.com/strangelove-ventures/ibc-test-framework v0.0.0-20220429080124-bbff765486be h1:n729/WaLf85h+7c/VvChzHxIl4M68O2XzqjMhpmWFpk=
 github.com/strangelove-ventures/ibc-test-framework v0.0.0-20220429080124-bbff765486be/go.mod h1:BkhdPf4tz9Y544TdzQZVj2du+zEFwMhqwieHBZbq5/o=
 github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
