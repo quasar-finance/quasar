@@ -51,7 +51,7 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.0 // indirect
 	github.com/Workiva/go-datastructures v1.0.53 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
-	github.com/armon/go-metrics v0.3.10 // indirect
+	github.com/armon/go-metrics v0.3.11 // indirect
 	github.com/ashanbrown/forbidigo v1.3.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/avast/retry-go/v4 v4.0.4 // indirect
@@ -274,6 +274,8 @@ require (
 )
 
 replace (
+	// used latest commit of branch feature/icq_implementation
+	github.com/cosmos/ibc-go/v3 => github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220622152118-86a199c7a516
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
 )
