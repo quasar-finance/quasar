@@ -274,8 +274,8 @@ require (
 )
 
 replace (
-	// used latest commit of branch feature/icq_implementation
-	github.com/cosmos/ibc-go/v3 => github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220622152118-86a199c7a516
+	// used latest commit of branch v3.1.0-icq
+	github.com/cosmos/ibc-go/v3 => github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20220714101859-f79a4eee19ba
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
 )
