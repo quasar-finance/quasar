@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "ibc/core/client/v1/client.proto";
 import "qoracle/bandchain.proto";
+import "qoracle/osmosis.proto";
 import "qoracle/denom_price_mapping.proto";
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -23,8 +24,9 @@ message Params {
   option (gogoproto.goproto_stringer) = false;
   
   BandchainParams bandchain_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_params\"", (gogoproto.nullable) = false];
-  repeated DenomPriceMapping denom_price_mappings = 2 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
-  string oracleAccounts = 3 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
-  repeated  string stableDenoms = 4 [(gogoproto.moretags) = "yaml:\"stable_denoms\""];
-  repeated OneHopIbcDenomMapping oneHopDenomMap = 5 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
+  OsmosisParams osmosis_params = 2 [(gogoproto.moretags) = "yaml:\"osmosis_params\"", (gogoproto.nullable) = false];
+  repeated DenomPriceMapping denom_price_mappings = 3 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
+  string oracleAccounts = 4 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
+  repeated  string stableDenoms = 5 [(gogoproto.moretags) = "yaml:\"stable_denoms\""];
+  repeated OneHopIbcDenomMapping oneHopDenomMap = 6 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
 }
