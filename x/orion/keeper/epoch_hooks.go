@@ -28,7 +28,9 @@ func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epoch
 }
 
 func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
-	c, found := k.GetConnectionId(ctx, "osmosis")
+	c, found := k.GetConnectionId(ctx)
+	//	c, found := k.GetConnectionId(ctx, "osmosis")
+
 	if !found {
 		return "", false
 	}
@@ -61,7 +63,9 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			// Print all connections ids to console
 			logger.Info("AfterEpochEnd", "GetAllConnections", k.intergammKeeper.GetAllConnections(ctx))
 
-			c, found := k.GetConnectionId(ctx, "osmosis")
+			//			c, found := k.GetConnectionId(ctx, "osmosis")
+			c, found := k.GetConnectionId(ctx)
+
 			if !found {
 				logger.Info("AfterEpochEnd", "GetConnectionId failed.")
 			} else {

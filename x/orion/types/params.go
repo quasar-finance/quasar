@@ -11,18 +11,22 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyPerfFeePer                     = []byte("PerFeePer")
-	KeyMgmtFeePer                     = []byte("MgmtFeePer")
-	KeyLpEpochId                      = []byte("LpEpochId")
-	KeyEnabled                        = []byte("Enabled")
-	KeyDestinationChainId             = []byte("DestinationChainId")
-	KeyWhiteListedPools               = []byte("WhiteListedPools")
+	KeyPerfFeePer         = []byte("PerFeePer")
+	KeyMgmtFeePer         = []byte("MgmtFeePer")
+	KeyLpEpochId          = []byte("LpEpochId")
+	KeyEnabled            = []byte("Enabled")
+	KeyDestinationChainId = []byte("DestinationChainId")
+	KeyWhiteListedPools   = []byte("WhiteListedPools")
+	KeyOsmosisLocalInfo   = []byte("OsmosisLocalInfo")
+	// KeyIntrRcvrs                       = []byte("IntrRcvrs")
 	DefaultPerfFeePer         sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
 	DefaultMgmtFeePer         sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
 	DefaultLpEpochId                  = "day"
 	DefaultEnabled                    = false
 	DefaultDestinationChainId         = "osmosis"
 	DefaultWhiteListedPools           = []uint64{}
+	DefaulOsmosisLocalInfo            = ZoneLocalInfo{}
+	// DefaultIntrRcvrs                   = []IntermediateReceiver{}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -37,13 +41,17 @@ func NewParams(perFeePer sdk.Dec,
 	lpEpochID string,
 	destinationChainId string,
 	whiteListedPools []uint64,
+	osmosisLocalInfo ZoneLocalInfo,
+	// intrRcvrs []IntermediateReceiver,
 ) Params {
 	return Params{PerfFeePer: perFeePer,
 		MgmtFeePer:         mgmtFeePer,
 		Enabled:            enabled,
 		LpEpochId:          lpEpochID,
 		DestinationChainId: destinationChainId,
-		WhiteListedPools:   whiteListedPools}
+		WhiteListedPools:   whiteListedPools,
+		OsmosisLocalInfo:   osmosisLocalInfo}
+	// IntrRcvrs : intrRcvrs}
 }
 
 // DefaultParams returns a default set of parameters
@@ -53,7 +61,8 @@ func DefaultParams() Params {
 		DefaultEnabled,
 		DefaultLpEpochId,
 		DefaultDestinationChainId,
-		DefaultWhiteListedPools)
+		DefaultWhiteListedPools,
+		DefaulOsmosisLocalInfo)
 }
 
 // ParamSetPairs get the params.ParamSet
@@ -65,6 +74,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyEnabled, &p.Enabled, validateEnabled),
 		paramtypes.NewParamSetPair(KeyDestinationChainId, &p.DestinationChainId, validateDestinationChainId),
 		paramtypes.NewParamSetPair(KeyWhiteListedPools, &p.WhiteListedPools, validateWhiteListedPools),
+		paramtypes.NewParamSetPair(KeyOsmosisLocalInfo, &p.OsmosisLocalInfo, validateWOsmosisLocalInfo),
 	}
 }
 
@@ -90,6 +100,10 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateWhiteListedPools(p.WhiteListedPools); err != nil {
+		return err
+	}
+
+	if err := validateWOsmosisLocalInfo(p.OsmosisLocalInfo); err != nil {
 		return err
 	}
 
@@ -170,5 +184,29 @@ func validateWhiteListedPools(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
+	return nil
+}
+
+// validateWOsmosisLocalInfo validates the osmosis local info type.
+// Note - Orion should perform other tests in its core logic too for the emptyness
+// We could also implement custom governance for such paramteres.
+func validateWOsmosisLocalInfo(v interface{}) error {
+	_, ok := v.(ZoneLocalInfo)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	/*
+			if z.ConnectionID == "" {
+				return fmt.Errorf("empty connection id in OsmosisLocalInfo")
+			}
+
+			if z.ChainID == "" {
+				return fmt.Errorf("empty chain id in OsmosisLocalInfo")
+			}
+
+		if z.NativeDenom != "uosmo" {
+			return fmt.Errorf("osmosis native denom is not uosmo")
+		}
+	*/
 	return nil
 }

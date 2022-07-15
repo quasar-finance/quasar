@@ -5,10 +5,52 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/abag/quasarnode/x/intergamm/types";
 
+// Local Information of the other zone in the intergamm module.
+message ZoneLocalInfo {
+  string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
+  string connection_id = 2  
+  [(gogoproto.moretags) = "yaml:\"connection_id\""];// local connection id associated with the other chain
+  string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
+}
+
+message NextZoneRouteInfo {
+  string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
+  string connection_id = 2
+  [(gogoproto.moretags) = "yaml:\"connection_id\""]; // local connection id associated with the other chain
+  string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
+  string transfer_channel_id = 4
+  [(gogoproto.moretags) = "yaml:\"transfer_channel_id\""]; // token transfer port to next chain
+
+}
+
+// IntermediateReceiver 
+message IntermediateReceiver {
+  ZoneLocalInfo zone_info = 1
+  [(gogoproto.moretags) = "yaml:\"zone_info\"",
+  (gogoproto.nullable)   = false
+  ];
+  string rcvr_address = 2 [(gogoproto.moretags) = "yaml:\"rcvr_address\""];
+  map<string, NextZoneRouteInfo> next_zone_route_map = 3
+  [(gogoproto.moretags) = "yaml:\"next_zone_route_map\"", (gogoproto.nullable)   = false]; // key zone-id
+}
+
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
 
   // map of chain id and transfer port channel id. This should be updated via governance
-  map<string, string> osmo_token_transfer_channels = 1;
+  map<string, string> osmo_token_transfer_channels = 1
+  [(gogoproto.moretags) = "yaml:\"osmo_token_transfer_channels\"",
+  (gogoproto.nullable)   = false
+  ];
+
+  map<string, string> dest_to_intr_zone_map = 2
+  [(gogoproto.moretags) = "yaml:\"dest_to_intr_zone_map\"",
+  (gogoproto.nullable)   = false
+  ];
+
+  repeated IntermediateReceiver intr_rcvrs = 3
+  [(gogoproto.moretags) = "yaml:\"intr_rcvrs\"",
+  (gogoproto.nullable)   = false
+  ];
 }
