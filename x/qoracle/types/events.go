@@ -5,6 +5,8 @@ const (
 	EventTypeCoinRatesRequest = "coin_rates_request"
 	// EventTypeOraclePacketAcknowledgement	is the type for the event OraclePacketAcknowledgement
 	EventTypeOraclePacketAcknowledgement = "oracle_packet_acknowledgement"
+	// EventTypeOsmosisPacketAcknowledgement is the type for the event OsmosisPacketAcknowledgement
+	EventTypeOsmosisPacketAcknowledgement = "osmosis_packet_acknowledgement"
 
 	//AtributePacketSequence is the attribute for the packet sequence
 	AtributePacketSequence = "packet_sequence"
