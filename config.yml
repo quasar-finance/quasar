@@ -9,6 +9,7 @@ validator:
   name: alice
   staked: "100000000uqsr"
 genesis:
+  chain_id: "quasar"
   app_state:
     staking:
       params:
@@ -60,6 +61,15 @@ genesis:
           - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             onehop_quasar: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             origin_name: uatom
+host:
+  rpc: ":26659"
+  p2p: ":26661"
+  prof: ":6061"
+  grpc: ":9095"
+  grpc-web: ":8091"
+  api: ":1311"
+  frontend: ":8081"
+  dev-ui: ":12351"
 #client:
 #  openapi:
 #    path: "docs/client/static/openapi/openapi.yml"

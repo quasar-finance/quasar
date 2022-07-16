@@ -16,18 +16,42 @@ genesis:
   app_state:
     staking:
       params:
-        bond_denom: stake
+        bond_denom: uqsr
     intergamm:
       params:
         osmo_token_transfer_channels:
           osmosis-test: channel-1
           osmosis: channel-1
+        dest_to_intr_zone_map:
+          osmosis-01: cosmos
+        intr_rcvrs:
+          - zone_info:
+              chain_id: 'cosmos'
+              connection_id: 'connection-02'
+            rcvr_address: 'cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu'
+            next_zone_route_map:
+                osmosis-01:
+                  local_zone_id: osmosis-01
+                  connection_id: 'connection-01'
+                  chain_id: "osmosis"
+                  transfer_channel_id: "channel-01"
+                osmosis-02:
+                  local_zone_id: osmosis-02
+                  connection_id: 'connection-02'
+                  chain_id: "osmosis2"
+                  transfer_channel_id: "channel-02"
     orion:
       params:
-        enabled: true
+        enabled: false
         lp_epoch_id: day #override day for testing
         mgmt_fee_per: '0.003000000000000000'
         perf_fee_per: '0.020000000000000000'
+        destination_chain_id: osmosis
+        white_listed_pools : [1,2,3]
+        osmosis_local_info:
+          local_zone_id : osmosis-01
+          chain_id: 'osmosis'
+          connection_id: 'connection-01'
     qoracle:
       params:
         oracleAccounts: 'quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec'
