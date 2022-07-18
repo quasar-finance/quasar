@@ -46,14 +46,24 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
+	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26650"+g' $HOME_QSR/config/config.toml
+	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26650"+g' $HOME_QSR/config/client.toml
+	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26651"+g' $HOME_QSR/config/config.toml
+	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6050"+g' $HOME_QSR/config/config.toml
+	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9050"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:9051"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1350"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = ":8080"+address = ":8050"+g' $HOME_QSR/config/app.toml
 	sed -i 's%"amount": "10000000"%"amount": "1"%g' $HOME_QSR/config/genesis.json
 	sed -i 's%"quorum": "0.334000000000000000",%"quorum": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
 	sed -i 's%"threshold": "0.500000000000000000",%"threshold": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
 	sed -i 's%"voting_period": "172800s"%"voting_period": "30s"%g' $HOME_QSR/config/genesis.json
 else
+	echo "only linux platforms are supported, if you are using other platforms you should probably improve this script."
+	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
-	sed -i '' 's%"amount": "10000000"%"amount": "1"%g' $HOME_QSR/config/genesis.json
+ 	sed -i '' 's%"amount": "10000000"%"amount": "1"%g' $HOME_QSR/config/genesis.json
 	sed -i '' 's%"quorum": "0.334000000000000000",%"quorum": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
 	sed -i '' 's%"threshold": "0.500000000000000000",%"threshold": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
 	sed -i '' 's%"voting_period": "172800s"%"voting_period": "30s"%g' $HOME_QSR/config/genesis.json

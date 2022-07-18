@@ -67,3 +67,12 @@ dev-ui: ":12351"
 no mapping in the config directory. These two are specific to frontend application.
 
 
+### for this demo
+
+field	|   default	| quasar	| cosmos hub	| osmosis				
+rpc	    |   26657	| 26650	    | 26660	        | 26670
+p2p	    |   26656	| 26651	    | 26661	        | 26671
+prof	|   6060	| 6050	    | 6060	        | 6070
+grpc	|   9090	| 9050	    | 9060	        | 9070
+grpc-web|	9091	| 9051	    | 9061	        | 9071
+api	    |   1313	| 1350	    | 1360	        | 1370
