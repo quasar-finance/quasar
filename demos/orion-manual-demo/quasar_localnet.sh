@@ -23,7 +23,7 @@ $BINARY init $CHAIN_ID --chain-id $CHAIN_ID
 
 # Bootstrap the quasar local network with single node
 
-$BINARY init $CHAIN_ID --chain-id $CHAIN_ID
+#$BINARY init $CHAIN_ID --chain-id $CHAIN_ID
 echo $VALIDATOR_1 | $BINARY keys add val1 --keyring-backend test --recover
 #echo $VALIDATOR_2 | $BINARY keys add val2 --keyring-backend test --recover
 echo $USER_1 | $BINARY keys add user1 --keyring-backend test --recover
