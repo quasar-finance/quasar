@@ -17,7 +17,6 @@ export USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
 
 
 # Remove previous setup
-
 rm -rf $HOME_QSR
  
 $BINARY init $CHAIN_ID --chain-id $CHAIN_ID
