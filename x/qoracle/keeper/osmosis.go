@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	epochtypes "github.com/abag/quasarnode/osmosis/v7/epochs/types"
 	balancerpool "github.com/abag/quasarnode/osmosis/v7/gamm/pool-models/balancer"
@@ -17,9 +18,62 @@ import (
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
+func (k Keeper) TryUpdateOsmosisParams(ctx sdk.Context) {
+	state := k.GetOsmosisParamsRequestState(ctx)
+	if state.Pending() {
+		k.Logger(ctx).Info("Tried to send a packet to update osmosis params but another request is pending")
+		return
+	}
+
+	seq, err := k.sendOsmosisParamsRequest(ctx)
+	if err != nil {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeOsmosisParamsRequest,
+				sdk.NewAttribute(types.AttributeError, err.Error()),
+			))
+
+		k.Logger(ctx).Error("Sending ICQ request to update osmosis params failed", "error", err)
+		return
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeOsmosisParamsRequest,
+			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+		))
+}
+
+func (k Keeper) sendOsmosisParamsRequest(ctx sdk.Context) (uint64, error) {
+	port := k.GetPort(ctx)
+	ibcParams := k.OsmosisParams(ctx).ICQParams
+
+	packetData := types.NewOsmosisParamsICQPacketData()
+	seq, err := k.createOutgoingPacket(ctx, port, ibcParams.AuthorizedChannel, packetData.GetBytes(),
+		ibcParams.TimeoutHeight, ibcParams.TimeoutTimestamp)
+	if err != nil {
+		return 0, err
+	}
+
+	state := types.NewOsmosisParamsRequestState(ctx, seq)
+	k.setOsmosisParamsRequestState(ctx, state)
+	return seq, nil
+}
+
 func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+	state := k.GetOsmosisParamsRequestState(ctx)
+
 	if !ack.Success() {
-		// TODO: Setting the state of icq request
+		// Update the state of osmosis params request if it matches the sequence of packet
+		if packet.Sequence == state.PacketSequence {
+			err := k.updateOsmosisParamsRequestState(ctx, func(state *types.OsmosisParamsRequestState) error {
+				state.Failed = true
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -48,10 +102,46 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 		}
 	}
 
+	// Update the state of osmosis params request if it matches the sequence of packet
+	if packet.Sequence == state.PacketSequence {
+		err := k.updateOsmosisParamsRequestState(cacheCtx, func(state *types.OsmosisParamsRequestState) error {
+			state.Acknowledged = true
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	// NOTE: The context returned by CacheContext() creates a new EventManager, so events must be correctly propagated back to the current context
 	ctx.EventManager().EmitEvents(cacheCtx.EventManager().Events())
 	writeCache()
 	return nil
+}
+
+func (k Keeper) updateOsmosisParamsRequestState(ctx sdk.Context, fn func(state *types.OsmosisParamsRequestState) error) error {
+	state := k.GetOsmosisParamsRequestState(ctx)
+
+	if err := fn(&state); err != nil {
+		return err
+	}
+	state.UpdatedAtHeight = ctx.BlockHeight()
+
+	k.setOsmosisParamsRequestState(ctx, state)
+	return nil
+}
+
+func (k Keeper) setOsmosisParamsRequestState(ctx sdk.Context, state types.OsmosisParamsRequestState) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.KeyOsmosisParamsRequestState, k.cdc.MustMarshal(&state))
+}
+
+// GetOsmosisParamsRequestState returns the state of the osmosis params request
+func (k Keeper) GetOsmosisParamsRequestState(ctx sdk.Context) types.OsmosisParamsRequestState {
+	store := ctx.KVStore(k.storeKey)
+	var state types.OsmosisParamsRequestState
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisParamsRequestState), &state)
+	return state
 }
 
 func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {

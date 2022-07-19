@@ -1,5 +1,14 @@
 package types
 
+import (
+	epochtypes "github.com/abag/quasarnode/osmosis/v7/epochs/types"
+	minttypes "github.com/abag/quasarnode/osmosis/v7/mint/types"
+	poolincentivestypes "github.com/abag/quasarnode/osmosis/v7/pool-incentives/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
+)
+
 const (
 	OsmosisQueryEpochsInfoPath          = "/osmosis.epochs.v1beta1.Query/EpochInfos"
 	OsmosisQueryPoolPath                = "/osmosis.gamm.v1beta1.Query/Pool"
@@ -11,3 +20,39 @@ const (
 	OsmosisQueryDistrInfoPath           = "/osmosis.poolincentives.v1beta1.Query/DistrInfo"
 	OsmosisQuerySpotPricePath           = "/osmosis.gamm.v1beta1.Query/SpotPrice"
 )
+
+func NewOsmosisParamsICQPacketData() icqtypes.InterchainQueryPacketData {
+	return icqtypes.InterchainQueryPacketData{
+		Requests: []abcitypes.RequestQuery{
+			{
+				Path: OsmosisQueryEpochsInfoPath,
+				Data: ModuleCdc.MustMarshal(&epochtypes.QueryEpochsInfoRequest{}),
+			},
+			{
+				Path: OsmosisQueryLockableDurationsPath,
+				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryLockableDurationsRequest{}),
+			},
+			{
+				Path: OsmosisQueryMintParamsPath,
+				Data: ModuleCdc.MustMarshal(&minttypes.QueryParamsRequest{}),
+			},
+			{
+				Path: OsmosisQueryLockableDurationsPath,
+				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryLockableDurationsRequest{}),
+			},
+		},
+	}
+}
+
+func NewOsmosisParamsRequestState(ctx sdk.Context, seq uint64) OsmosisParamsRequestState {
+	return OsmosisParamsRequestState{
+		PacketSequence:  seq,
+		Acknowledged:    false,
+		Failed:          false,
+		UpdatedAtHeight: ctx.BlockHeight(),
+	}
+}
+
+func (state OsmosisParamsRequestState) Pending() bool {
+	return !state.Acknowledged && !state.Failed
+}
