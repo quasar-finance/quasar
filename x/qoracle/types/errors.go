@@ -23,4 +23,5 @@ var (
 	ErrNegativeDenomPriceMultiplier = sdkerrors.Register(ModuleName, 11, "negative denom price multiplier")
 	ErrUnauthorized                 = sdkerrors.Register(ModuleName, 12, "unauthorized")
 	ErrFailedICQResponse            = sdkerrors.Register(ModuleName, 13, "failed ICQ response")
+	ErrPendingRequest               = sdkerrors.Register(ModuleName, 14, "pending request")
 )

@@ -126,6 +126,10 @@ func (im IBCModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
+	// Try to send a packet to set osmosis params as soon as the channel is confirmed
+	if im.keeper.OsmosisParams(ctx).ICQParams.AuthorizedChannel == channelID {
+		im.keeper.TryUpdateOsmosisParams(ctx)
+	}
 	return nil
 }
 
