@@ -11,3 +11,10 @@ message OsmosisParams {
     [(gogoproto.moretags) = "yaml:\"icq_params\"", (gogoproto.nullable) = false, (gogoproto.customname) = "ICQParams"]; // IBC params for a valid icq connection to osmosis
   string epoch_identifier = 2; // epoch used for updating osmosis pools information and calculations
 }
+
+message OsmosisParamsRequestState {
+  uint64 packet_sequence = 1;
+  bool acknowledged = 2;
+  bool failed = 3;
+  int64 updated_at_height = 4;
+}

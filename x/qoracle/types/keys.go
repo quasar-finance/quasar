@@ -50,6 +50,7 @@ var (
 	KeyCoinRatesState                 = []byte("coin_rates_state")
 	KeyOraclePrices                   = []byte("oracle_prices")
 	KeyStablePricesPrefix             = []byte("stable_prices")
+	KeyOsmosisParamsRequestState      = []byte("osmosis_params_request_state")
 	KeyOsmosisPrefix                  = []byte("osmosis")
 	KeyOsmosisEpochsInfoPrefix        = []byte("epochs_info")
 	KeyOsmosisPoolPrefix              = []byte("pools")
