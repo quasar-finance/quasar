@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	gammtypes "github.com/abag/quasarnode/osmosis/v9/gamm/types"
+	lockuptypes "github.com/abag/quasarnode/osmosis/v9/lockup/types"
 	"github.com/abag/quasarnode/x/intergamm/types"
-	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"

@@ -16,7 +16,7 @@ func (k msgServer) UpdateOsmosisParams(goCtx context.Context, msg *types.MsgUpda
 
 	state := k.GetOsmosisParamsRequestState(ctx)
 	if state.Pending() {
-		return nil, sdkerrors.Wrapf(types.ErrPendingRequest, "tried to send a packet to update osmosis params but another request is pending with sequence %s", state.PacketSequence)
+		return nil, sdkerrors.Wrapf(types.ErrPendingRequest, "tried to send a packet to update osmosis params but another request is pending with sequence %d", state.PacketSequence)
 	}
 
 	seq, err := k.sendOsmosisParamsRequest(ctx)

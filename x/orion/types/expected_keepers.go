@@ -3,8 +3,8 @@ package types
 import (
 	time "time"
 
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	epochtypes "github.com/abag/quasarnode/x/epochs/types"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
