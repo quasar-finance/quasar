@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	balancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	balancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"

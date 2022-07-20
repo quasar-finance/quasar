@@ -1,9 +1,9 @@
 package types
 
 import (
-	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	gammtypes "github.com/abag/quasarnode/osmosis/v9/gamm/types"
+	lockuptypes "github.com/abag/quasarnode/osmosis/v9/lockup/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
