@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 
