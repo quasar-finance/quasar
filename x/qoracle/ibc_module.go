@@ -56,7 +56,7 @@ func (im IBCModule) OnChanOpenInit(
 		osmosisParams.ICQParams.AuthorizedChannel = channelID
 		im.keeper.SetOsmosisParams(ctx, osmosisParams)
 
-		im.keeper.Logger(ctx).Info("Osmosis icq authorized channel set to: ", channelID)
+		im.keeper.Logger(ctx).Info("Osmosis ICQ authorized channel set to: ", channelID)
 	}
 
 	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))

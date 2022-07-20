@@ -3,11 +3,10 @@ package types
 import (
 	time "time"
 
-	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	epochtypes "github.com/abag/quasarnode/x/epochs/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -61,8 +60,6 @@ type QoracleKeeper interface {
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
-	IntrRcvrs(ctx sdk.Context) (res []intergammtypes.IntermediateReceiver)
-
 	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
 	GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection)
 	GetChainID(ctx sdk.Context, connectionID string) (string, error)
@@ -74,7 +71,7 @@ type IntergammKeeper interface {
 		destinationAddress string) (uint64, error)
 
 	SendToken(ctx sdk.Context,
-		destinationLocalZoneId string,
+		destinationChain string,
 		sender sdk.AccAddress,
 		receiver string,
 		coin sdk.Coin) (uint64, error)

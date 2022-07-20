@@ -5,12 +5,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/quasarlabs/quasarnode/testutil"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
-	"github.com/quasarlabs/quasarnode/x/orion/types"
-	qbankmoduletypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	"github.com/abag/quasarnode/testutil"
+	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
+	"github.com/abag/quasarnode/x/orion/types"
+	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

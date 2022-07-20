@@ -6,10 +6,10 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	balancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
-	balancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -1571,7 +1571,7 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 
 func (c *msgClient) CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPosition, opts ...grpc.CallOption) (*MsgCreatePoolPositionResponse, error) {
 	out := new(MsgCreatePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1580,7 +1580,7 @@ func (c *msgClient) CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPos
 
 func (c *msgClient) UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPosition, opts ...grpc.CallOption) (*MsgUpdatePoolPositionResponse, error) {
 	out := new(MsgUpdatePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1589,7 +1589,7 @@ func (c *msgClient) UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPos
 
 func (c *msgClient) DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPosition, opts ...grpc.CallOption) (*MsgDeletePoolPositionResponse, error) {
 	out := new(MsgDeletePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1598,7 +1598,7 @@ func (c *msgClient) DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPos
 
 func (c *msgClient) CreatePoolRanking(ctx context.Context, in *MsgCreatePoolRanking, opts ...grpc.CallOption) (*MsgCreatePoolRankingResponse, error) {
 	out := new(MsgCreatePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1607,7 +1607,7 @@ func (c *msgClient) CreatePoolRanking(ctx context.Context, in *MsgCreatePoolRank
 
 func (c *msgClient) UpdatePoolRanking(ctx context.Context, in *MsgUpdatePoolRanking, opts ...grpc.CallOption) (*MsgUpdatePoolRankingResponse, error) {
 	out := new(MsgUpdatePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1616,7 +1616,7 @@ func (c *msgClient) UpdatePoolRanking(ctx context.Context, in *MsgUpdatePoolRank
 
 func (c *msgClient) DeletePoolRanking(ctx context.Context, in *MsgDeletePoolRanking, opts ...grpc.CallOption) (*MsgDeletePoolRankingResponse, error) {
 	out := new(MsgDeletePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1625,7 +1625,7 @@ func (c *msgClient) DeletePoolRanking(ctx context.Context, in *MsgDeletePoolRank
 
 func (c *msgClient) CreatePoolSpotPrice(ctx context.Context, in *MsgCreatePoolSpotPrice, opts ...grpc.CallOption) (*MsgCreatePoolSpotPriceResponse, error) {
 	out := new(MsgCreatePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1634,7 +1634,7 @@ func (c *msgClient) CreatePoolSpotPrice(ctx context.Context, in *MsgCreatePoolSp
 
 func (c *msgClient) UpdatePoolSpotPrice(ctx context.Context, in *MsgUpdatePoolSpotPrice, opts ...grpc.CallOption) (*MsgUpdatePoolSpotPriceResponse, error) {
 	out := new(MsgUpdatePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1643,7 +1643,7 @@ func (c *msgClient) UpdatePoolSpotPrice(ctx context.Context, in *MsgUpdatePoolSp
 
 func (c *msgClient) DeletePoolSpotPrice(ctx context.Context, in *MsgDeletePoolSpotPrice, opts ...grpc.CallOption) (*MsgDeletePoolSpotPriceResponse, error) {
 	out := new(MsgDeletePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1652,7 +1652,7 @@ func (c *msgClient) DeletePoolSpotPrice(ctx context.Context, in *MsgDeletePoolSp
 
 func (c *msgClient) CreatePoolInfo(ctx context.Context, in *MsgCreatePoolInfo, opts ...grpc.CallOption) (*MsgCreatePoolInfoResponse, error) {
 	out := new(MsgCreatePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1661,7 +1661,7 @@ func (c *msgClient) CreatePoolInfo(ctx context.Context, in *MsgCreatePoolInfo, o
 
 func (c *msgClient) UpdatePoolInfo(ctx context.Context, in *MsgUpdatePoolInfo, opts ...grpc.CallOption) (*MsgUpdatePoolInfoResponse, error) {
 	out := new(MsgUpdatePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1670,7 +1670,7 @@ func (c *msgClient) UpdatePoolInfo(ctx context.Context, in *MsgUpdatePoolInfo, o
 
 func (c *msgClient) DeletePoolInfo(ctx context.Context, in *MsgDeletePoolInfo, opts ...grpc.CallOption) (*MsgDeletePoolInfoResponse, error) {
 	out := new(MsgDeletePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1679,7 +1679,7 @@ func (c *msgClient) DeletePoolInfo(ctx context.Context, in *MsgDeletePoolInfo, o
 
 func (c *msgClient) StablePrice(ctx context.Context, in *MsgStablePrice, opts ...grpc.CallOption) (*MsgStablePriceResponse, error) {
 	out := new(MsgStablePriceResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/StablePrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/StablePrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1774,7 +1774,7 @@ func _Msg_CreatePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolPosition",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolPosition(ctx, req.(*MsgCreatePoolPosition))
@@ -1792,7 +1792,7 @@ func _Msg_UpdatePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolPosition",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolPosition(ctx, req.(*MsgUpdatePoolPosition))
@@ -1810,7 +1810,7 @@ func _Msg_DeletePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolPosition",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolPosition(ctx, req.(*MsgDeletePoolPosition))
@@ -1828,7 +1828,7 @@ func _Msg_CreatePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolRanking",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolRanking(ctx, req.(*MsgCreatePoolRanking))
@@ -1846,7 +1846,7 @@ func _Msg_UpdatePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolRanking",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolRanking(ctx, req.(*MsgUpdatePoolRanking))
@@ -1864,7 +1864,7 @@ func _Msg_DeletePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolRanking",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolRanking(ctx, req.(*MsgDeletePoolRanking))
@@ -1882,7 +1882,7 @@ func _Msg_CreatePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolSpotPrice",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolSpotPrice(ctx, req.(*MsgCreatePoolSpotPrice))
@@ -1900,7 +1900,7 @@ func _Msg_UpdatePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolSpotPrice",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolSpotPrice(ctx, req.(*MsgUpdatePoolSpotPrice))
@@ -1918,7 +1918,7 @@ func _Msg_DeletePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolSpotPrice",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolSpotPrice(ctx, req.(*MsgDeletePoolSpotPrice))
@@ -1936,7 +1936,7 @@ func _Msg_CreatePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolInfo",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolInfo(ctx, req.(*MsgCreatePoolInfo))
@@ -1954,7 +1954,7 @@ func _Msg_UpdatePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolInfo",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolInfo(ctx, req.(*MsgUpdatePoolInfo))
@@ -1972,7 +1972,7 @@ func _Msg_DeletePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolInfo",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolInfo(ctx, req.(*MsgDeletePoolInfo))
@@ -1990,7 +1990,7 @@ func _Msg_StablePrice_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/StablePrice",
+		FullMethod: "/abag.quasarnode.qoracle.Msg/StablePrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).StablePrice(ctx, req.(*MsgStablePrice))
@@ -2017,7 +2017,7 @@ func _Msg_UpdateOsmosisParams_Handler(srv interface{}, ctx context.Context, dec 
 }
 
 var _Msg_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "quasarlabs.quasarnode.qoracle.Msg",
+	ServiceName: "abag.quasarnode.qoracle.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

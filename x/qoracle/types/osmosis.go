@@ -1,9 +1,9 @@
 package types
 
 import (
-	epochtypes "github.com/abag/quasarnode/osmosis/v7/epochs/types"
-	minttypes "github.com/abag/quasarnode/osmosis/v7/mint/types"
-	poolincentivestypes "github.com/abag/quasarnode/osmosis/v7/pool-incentives/types"
+	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
+	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
+	poolincentivestypes "github.com/abag/quasarnode/osmosis/v9/pool-incentives/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
@@ -54,5 +54,5 @@ func NewOsmosisParamsRequestState(ctx sdk.Context, seq uint64) OsmosisParamsRequ
 }
 
 func (state OsmosisParamsRequestState) Pending() bool {
-	return !state.Acknowledged && !state.Failed
+	return state.PacketSequence > 0 && !state.Acknowledged && !state.Failed
 }

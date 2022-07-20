@@ -10,7 +10,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
 import "cosmos_proto/cosmos.proto";
 
-option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm";
+option go_package = "github.com/abag/quasarnode/osmosis/v9/gamm/types";
 
 service Query {
   rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {

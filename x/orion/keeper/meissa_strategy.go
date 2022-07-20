@@ -6,11 +6,11 @@ import (
 	"math"
 	"strconv"
 
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	"github.com/quasarlabs/quasarnode/x/orion/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	"github.com/abag/quasarnode/x/orion/types"
+	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
 
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
