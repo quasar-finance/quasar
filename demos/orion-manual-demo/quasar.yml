@@ -10,7 +10,7 @@ accounts:
     address: quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg
 validator:
   name: alice
-  staked: "100000000stake"
+  staked: "100000000uqsr"
 genesis:
   chain_id: "quasar"
   app_state:

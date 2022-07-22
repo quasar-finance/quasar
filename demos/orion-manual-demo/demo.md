@@ -627,9 +627,9 @@ hermes start
 ## IBC token transfer 
 - Prechecks all account lists 
 ```
-  gaiad keys list --home quasar/demos/orion-manual-demo/run/home/cosmos-hub/
-  quasarnoded keys list --home quasar/demos/orion-manual-demo/run/home/quasarnode/
-  osmosisd keys list --home quasar/demos/orion-manual-demo/run/home/osmosis/
+  gaiad keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub/
+  quasarnoded keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
+  osmosisd keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/
 ```
 
 - Prechecks account balances
@@ -656,7 +656,7 @@ quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --nod
 - IBC transfer
   
 ```
-gaiad tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000uatom --from alice --chain-id cosmos --home quasar/demos/orion-manual-demo/run/home/cosmos-hub  --node tcp://localhost:26669
+gaiad tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000uatom --from alice --chain-id cosmos --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub  --node tcp://localhost:26669
 
 ```
 - Post check account balances 
@@ -675,7 +675,7 @@ quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --nod
 - IBC Transfer 
   
 ```
-osmosisd tx ibc-transfer transfer transfer channel-1 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100uosmo --from alice --chain-id osmosis --home quasar/demos/orion-manual-demo/run/home/osmosis/  --node tcp://localhost:26679
+osmosisd tx ibc-transfer transfer transfer channel-1 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100uosmo --from alice --chain-id osmosis --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/  --node tcp://localhost:26679
 ``` 
 
 - Post check account balances 
@@ -688,12 +688,12 @@ quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --nod
 
 ## Set the Price of in quasarnode
 ```
-quasarnoded tx qoracle stable-price ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 "1" --from alice --node tcp://localhost:26659 --chain-id quasar --home quasar/demos/orion-manual-demo/run/home/quasarnode/
+quasarnoded tx qoracle stable-price ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 "1" --from alice --node tcp://localhost:26659 --chain-id quasar --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
 ```
 
 ## Request Deposit 
 ```
-quasarnoded tx qbank request-deposit "MID" "orion" 110ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 Days_7 --from alice --node tcp://localhost:26659 --chain-id quasar --home quasar/demos/orion-manual-demo/run/home/quasarnode/
+quasarnoded tx qbank request-deposit "MID" "orion" 110ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 Days_7 --from alice --node tcp://localhost:26659 --chain-id quasar --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
 ```
 - Post check - 
 Note that, it will also packet forward the deposited tokens to osmosis via cosmos. Check the 
