@@ -10,16 +10,14 @@ import (
 func (k Keeper) SetStablePrice(ctx sdk.Context, symbol string, price sdk.Dec) {
 	denomMapping := k.GetDenomPriceMappings(ctx)
 	denomMapping = append(denomMapping, types.DenomPriceMapping{
-		symbol,
-		symbol,
-		sdk.NewDec(1),
+		Denom:       symbol,
+		OracleDenom: symbol,
+		Multiplier:  sdk.NewDec(1),
 	})
 	k.SetDenomPriceMappings(ctx, denomMapping)
+
 	op := k.GetOraclePrices(ctx)
-	op.Prices = op.Prices.Add(sdk.DecCoin{
-		symbol,
-		price,
-	})
+	op.Prices = op.Prices.Add(sdk.NewDecCoinFromDec(symbol, price))
 	k.setOraclePrices(ctx, op)
 }
 
