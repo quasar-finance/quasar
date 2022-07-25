@@ -2,8 +2,6 @@ package keeper
 
 import (
 	"github.com/abag/quasarnode/x/qoracle/types"
-	"github.com/coreos/etcd/store"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
