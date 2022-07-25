@@ -17,7 +17,7 @@ type DenomPrice struct {
 
 func createStablePrice(k *keeper.Keeper, ctx sdk.Context) DenomPrice {
 	price, _ := sdk.NewDecFromStr("10.12")
-	dp := DenomPrice{Denom: "testd_enom_1", Price: price}
+	dp := DenomPrice{Denom: "testdenom1", Price: price}
 
 	k.SetStablePrice(ctx, dp.Denom, dp.Price)
 
