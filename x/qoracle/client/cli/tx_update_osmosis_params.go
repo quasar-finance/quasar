@@ -12,10 +12,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdUpdateOsmosisParams() *cobra.Command {
+func CmdUpdateOsmosisChainParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update-osmosis-params",
-		Short: "Broadcast message UpdateOsmosisParams",
+		Short: "Broadcast message UpdateOsmosisChainParams",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
@@ -24,7 +24,7 @@ func CmdUpdateOsmosisParams() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgUpdateOsmosisParams(
+			msg := types.NewMsgUpdateOsmosisChainParams(
 				clientCtx.GetFromAddress().String(),
 			)
 			if err := msg.ValidateBasic(); err != nil {

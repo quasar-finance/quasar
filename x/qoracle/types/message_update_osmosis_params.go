@@ -5,25 +5,25 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const TypeMsgUpdateOsmosisParams = "update_osmosis_params"
+const TypeMsgUpdateOsmosisChainParams = "update_osmosis_params"
 
-var _ sdk.Msg = &MsgUpdateOsmosisParams{}
+var _ sdk.Msg = &MsgUpdateOsmosisChainParams{}
 
-func NewMsgUpdateOsmosisParams(creator string) *MsgUpdateOsmosisParams {
-	return &MsgUpdateOsmosisParams{
+func NewMsgUpdateOsmosisChainParams(creator string) *MsgUpdateOsmosisChainParams {
+	return &MsgUpdateOsmosisChainParams{
 		Creator: creator,
 	}
 }
 
-func (msg *MsgUpdateOsmosisParams) Route() string {
+func (msg *MsgUpdateOsmosisChainParams) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgUpdateOsmosisParams) Type() string {
-	return TypeMsgUpdateOsmosisParams
+func (msg *MsgUpdateOsmosisChainParams) Type() string {
+	return TypeMsgUpdateOsmosisChainParams
 }
 
-func (msg *MsgUpdateOsmosisParams) GetSigners() []sdk.AccAddress {
+func (msg *MsgUpdateOsmosisChainParams) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -31,12 +31,12 @@ func (msg *MsgUpdateOsmosisParams) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgUpdateOsmosisParams) GetSignBytes() []byte {
+func (msg *MsgUpdateOsmosisChainParams) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgUpdateOsmosisParams) ValidateBasic() error {
+func (msg *MsgUpdateOsmosisChainParams) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)

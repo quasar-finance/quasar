@@ -8,21 +8,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMsgUpdateOsmosisParams_ValidateBasic(t *testing.T) {
+func TestMsgUpdateOsmosisChainParams_ValidateBasic(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  MsgUpdateOsmosisParams
+		msg  MsgUpdateOsmosisChainParams
 		err  error
 	}{
 		{
 			name: "invalid address",
-			msg: MsgUpdateOsmosisParams{
+			msg: MsgUpdateOsmosisChainParams{
 				Creator: "invalid_address",
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
-			msg: MsgUpdateOsmosisParams{
+			msg: MsgUpdateOsmosisChainParams{
 				Creator: sample.AccAddress().String(),
 			},
 		},

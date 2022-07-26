@@ -56,8 +56,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		case *types.MsgStablePrice:
 			res, err := msgServer.StablePrice(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgUpdateOsmosisParams:
-			res, err := msgServer.UpdateOsmosisParams(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgUpdateOsmosisChainParams:
+			res, err := msgServer.UpdateOsmosisChainParams(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 			// this line is used by starport scaffolding # 1
 		default:
