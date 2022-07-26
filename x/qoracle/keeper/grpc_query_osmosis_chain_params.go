@@ -6,12 +6,8 @@ import (
 	"github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/encoding"
-	"google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/status"
 )
-
-var protoCodec = encoding.GetCodec(proto.Name)
 
 func (k Keeper) OsmosisChainParams(goCtx context.Context, req *types.QueryOsmosisChainParamsRequest) (*types.QueryOsmosisChainParamsResponse, error) {
 	if req == nil {
