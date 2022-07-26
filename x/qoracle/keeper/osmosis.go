@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
 	balancerpool "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
@@ -189,6 +190,21 @@ func (k Keeper) setOsmosisEpochsInfo(ctx sdk.Context, epochs []epochtypes.EpochI
 	}
 }
 
+// GetOsmosisEpochsInfo returns the latest received epochs info from osmosis
+func (k Keeper) GetOsmosisEpochsInfo(ctx sdk.Context) []epochtypes.EpochInfo {
+	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisEpochsInfoPrefix)
+	iter := store.Iterator(nil, nil)
+	defer iter.Close()
+
+	var epochs []epochtypes.EpochInfo
+	for ; iter.Valid(); iter.Next() {
+		var epoch epochtypes.EpochInfo
+		k.cdc.MustUnmarshal(iter.Value(), &epoch)
+		epochs = append(epochs, epoch)
+	}
+	return epochs
+}
+
 // getOsmosisStore returns the prefix store for osmosis incoming data
 func (k Keeper) getOsmosisStore(ctx sdk.Context) prefix.Store {
 	return prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyOsmosisPrefix)
@@ -231,6 +247,15 @@ func (k Keeper) setOsmosisLockableDurations(ctx sdk.Context, lockableDurations p
 	store.Set(types.KeyOsmosisLockableDurations, k.cdc.MustMarshal(&lockableDurations))
 }
 
+// GetOsmosisLockableDurations returns the latest received lockable durations from osmosis
+func (k Keeper) GetOsmosisLockableDurations(ctx sdk.Context) []time.Duration {
+	store := k.getOsmosisStore(ctx)
+
+	var lockableDurations poolincentivestypes.QueryLockableDurationsResponse
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisLockableDurations), &lockableDurations)
+	return lockableDurations.LockableDurations
+}
+
 func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp minttypes.QueryParamsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
@@ -243,6 +268,15 @@ func (k Keeper) setOsmosisMintParams(ctx sdk.Context, mintParams minttypes.Param
 	store := k.getOsmosisStore(ctx)
 
 	store.Set(types.KeyOsmosisMintParams, k.cdc.MustMarshal(&mintParams))
+}
+
+// GetOsmosisMintParams returns the latest received mint params from osmosis
+func (k Keeper) GetOsmosisMintParams(ctx sdk.Context) minttypes.Params {
+	store := k.getOsmosisStore(ctx)
+
+	var mintParams minttypes.Params
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisMintParams), &mintParams)
+	return mintParams
 }
 
 func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
@@ -261,6 +295,19 @@ func (k Keeper) setOsmosisMintEpochProvisions(ctx sdk.Context, epochProvisions s
 		panic(err)
 	}
 	store.Set(types.KeyOsmosisMintEpochProvisions, bz)
+}
+
+// GetOsmosisMintEpochProvisions returns the latest received epoch provisions from osmosis
+func (k Keeper) GetOsmosisMintEpochProvisions(ctx sdk.Context) sdk.Dec {
+	store := k.getOsmosisStore(ctx)
+	bz := store.Get(types.KeyOsmosisMintEpochProvisions)
+
+	var epochProvisions sdk.Dec
+	err := epochProvisions.Unmarshal(bz)
+	if err != nil {
+		panic(err)
+	}
+	return epochProvisions
 }
 
 func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
@@ -314,6 +361,15 @@ func (k Keeper) setOsmosisDistrInfo(ctx sdk.Context, distrInfo poolincentivestyp
 	store := k.getOsmosisStore(ctx)
 
 	store.Set(types.KeyOsmosisDistrInfo, k.cdc.MustMarshal(&distrInfo))
+}
+
+// GetOsmosisDistrInfo returns the latest received distr info from osmosis
+func (k Keeper) GetOsmosisDistrInfo(ctx sdk.Context) poolincentivestypes.DistrInfo {
+	store := k.getOsmosisStore(ctx)
+
+	var distrInfo poolincentivestypes.DistrInfo
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisDistrInfo), &distrInfo)
+	return distrInfo
 }
 
 func (k Keeper) handleOsmosisSpotPriceResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {

@@ -14,6 +14,9 @@ import "qoracle/bandchain.proto";
 import "qoracle/osmosis.proto";
 import "qoracle/pool_metrics.proto";
 import "qoracle/denom_price_mapping.proto";
+import "osmosis/v9/epochs/genesis.proto";
+import "osmosis/v9/mint/v1beta1/mint.proto";
+import "osmosis/v9/pool-incentives/v1beta1/incentives.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -66,6 +69,11 @@ service Query {
 // Queries a list of OraclePrices items.
 	rpc OraclePrices(QueryOraclePricesRequest) returns (QueryOraclePricesResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/oracle_prices";
+	}
+
+// Queries a list of OsmosisChainParams items.
+	rpc OsmosisChainParams(QueryOsmosisChainParamsRequest) returns (QueryOsmosisChainParamsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/chain_params";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -156,6 +164,17 @@ message QueryOraclePricesResponse {
 	repeated cosmos.base.v1beta1.DecCoin prices = 1
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
   	int64 updated_at_height = 2;
+}
+
+message QueryOsmosisChainParamsRequest {
+}
+
+message QueryOsmosisChainParamsResponse {
+	repeated osmosis.epochs.v1beta1.EpochInfo epochs_info = 1 [(gogoproto.nullable) = false];
+	repeated int64 lockable_durations = 2 [(gogoproto.casttype) = "time.Duration"];
+	osmosis.mint.v1beta1.Params mint_params = 3 [(gogoproto.nullable) = false];
+	string mint_epoch_provisions = 4;
+	osmosis.poolincentives.v1beta1.DistrInfo distr_info = 5 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3
