@@ -9,7 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-func (k msgServer) UpdateOsmosisParams(goCtx context.Context, msg *types.MsgUpdateOsmosisParams) (*types.MsgUpdateOsmosisParamsResponse, error) {
+func (k msgServer) UpdateOsmosisChainParams(goCtx context.Context, msg *types.MsgUpdateOsmosisChainParams) (*types.MsgUpdateOsmosisChainParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Check authority of the sender
@@ -35,5 +35,5 @@ func (k msgServer) UpdateOsmosisParams(goCtx context.Context, msg *types.MsgUpda
 			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 
-	return &types.MsgUpdateOsmosisParamsResponse{PacketSequence: seq}, nil
+	return &types.MsgUpdateOsmosisChainParamsResponse{PacketSequence: seq}, nil
 }

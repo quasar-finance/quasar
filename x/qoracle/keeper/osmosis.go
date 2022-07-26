@@ -19,7 +19,7 @@ import (
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
-func (k Keeper) TryUpdateOsmosisParams(ctx sdk.Context) {
+func (k Keeper) TryUpdateOsmosisChainParams(ctx sdk.Context) {
 	state := k.GetOsmosisParamsRequestState(ctx)
 	if state.Pending() {
 		k.Logger(ctx).Info("Tried to send a packet to update osmosis params but another request is pending")
@@ -67,7 +67,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 	if !ack.Success() {
 		// Update the state of osmosis params request if it matches the sequence of packet
 		if packet.Sequence == state.PacketSequence {
-			err := k.updateOsmosisParamsRequestState(ctx, func(state *types.OsmosisParamsRequestState) error {
+			err := k.UpdateOsmosisChainParamsRequestState(ctx, func(state *types.OsmosisParamsRequestState) error {
 				state.Failed = true
 				return nil
 			})
@@ -105,7 +105,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 
 	// Update the state of osmosis params request if it matches the sequence of packet
 	if packet.Sequence == state.PacketSequence {
-		err := k.updateOsmosisParamsRequestState(cacheCtx, func(state *types.OsmosisParamsRequestState) error {
+		err := k.UpdateOsmosisChainParamsRequestState(cacheCtx, func(state *types.OsmosisParamsRequestState) error {
 			state.Acknowledged = true
 			return nil
 		})
@@ -120,7 +120,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 	return nil
 }
 
-func (k Keeper) updateOsmosisParamsRequestState(ctx sdk.Context, fn func(state *types.OsmosisParamsRequestState) error) error {
+func (k Keeper) UpdateOsmosisChainParamsRequestState(ctx sdk.Context, fn func(state *types.OsmosisParamsRequestState) error) error {
 	state := k.GetOsmosisParamsRequestState(ctx)
 
 	if err := fn(&state); err != nil {

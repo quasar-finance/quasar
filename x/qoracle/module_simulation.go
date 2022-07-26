@@ -76,9 +76,9 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgStablePrice int = 100
 
-	opWeightMsgUpdateOsmosisParams = "op_weight_msg_update_osmosis_params"
+	opWeightMsgUpdateOsmosisChainParams = "op_weight_msg_update_osmosis_params"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgUpdateOsmosisParams int = 100
+	defaultWeightMsgUpdateOsmosisChainParams int = 100
 
 	// this line is used by starport scaffolding # simapp/module/const
 )
@@ -294,15 +294,15 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 		qoraclesimulation.SimulateMsgStablePrice(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
-	var weightMsgUpdateOsmosisParams int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUpdateOsmosisParams, &weightMsgUpdateOsmosisParams, nil,
+	var weightMsgUpdateOsmosisChainParams int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUpdateOsmosisChainParams, &weightMsgUpdateOsmosisChainParams, nil,
 		func(_ *rand.Rand) {
-			weightMsgUpdateOsmosisParams = defaultWeightMsgUpdateOsmosisParams
+			weightMsgUpdateOsmosisChainParams = defaultWeightMsgUpdateOsmosisChainParams
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgUpdateOsmosisParams,
-		qoraclesimulation.SimulateMsgUpdateOsmosisParams(am.accountKeeper, am.bankKeeper, am.keeper),
+		weightMsgUpdateOsmosisChainParams,
+		qoraclesimulation.SimulateMsgUpdateOsmosisChainParams(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
