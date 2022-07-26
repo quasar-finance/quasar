@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 
 func CmdUpdateOsmosisChainParams() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update-osmosis-params",
+		Use:   "update-osmosis-chain-params",
 		Short: "Broadcast message UpdateOsmosisChainParams",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
