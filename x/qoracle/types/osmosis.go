@@ -37,8 +37,12 @@ func NewOsmosisParamsICQPacketData() icqtypes.InterchainQueryPacketData {
 				Data: ModuleCdc.MustMarshal(&minttypes.QueryParamsRequest{}),
 			},
 			{
-				Path: OsmosisQueryLockableDurationsPath,
-				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryLockableDurationsRequest{}),
+				Path: OsmosisQueryMintEpochProvisionsPath,
+				Data: ModuleCdc.MustMarshal(&minttypes.QueryEpochProvisionsRequest{}),
+			},
+			{
+				Path: OsmosisQueryDistrInfoPath,
+				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryDistrInfoRequest{}),
 			},
 		},
 	}
