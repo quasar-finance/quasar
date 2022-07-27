@@ -7,8 +7,9 @@ accounts:
     mnemonic: lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool
     coins: ["10000000000000uosmo", "1000000000stake"]
   - name: relayer_acc
+    mnemonic: rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself
+    # corresponding address is osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz
     coins: ["10000stake"]
-    address: osmo139njd402zqj368sk65y753ppp4hxr9268w7wdp
 validator:
   name: alice
   staked: "100000000stake"

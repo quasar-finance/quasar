@@ -67,28 +67,28 @@ hermes keys restore --mnemonic "jungle law popular reunion festival horn divorce
 ```
 
 2022-06-01T06:24:07.459912Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
-Success: Restored key 'testkey1' (quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg) on chain quasar
+Success: Restored key 'testkey1' (quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew) on chain quasar
 
 ``` 
 hermes keys restore --mnemonic "blade trap agent boy note critic jazz nuclear eight lion pipe fresh tourist make broken inquiry close agree usual human stock move remain swim" cosmos
 ```
 2022-06-01T06:24:15.776985Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
-Success: Restored key 'testkey2' (cosmos14ahzv9ldtfn7ktgnd0m8k70d6l080lvdlrrsth) on chain cosmos
+Success: Restored key 'testkey2' (cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc) on chain cosmos
 
 ```
 hermes keys restore --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner" osmosis
 ```
 
 2022-06-01T06:24:30.371926Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
-Success: Restored key 'testkey3' (osmo139njd402zqj368sk65y753ppp4hxr9268w7wdp) on chain osmosis
+Success: Restored key 'testkey3' (osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz) on chain osmosis
 
 ## Connecting the chains
 
 ### First pre-check relayer balances in each chain
 ```
-quasarnoded q bank balances quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg --node tcp://localhost:26659
-gaiad q bank balances cosmos14ahzv9ldtfn7ktgnd0m8k70d6l080lvdlrrsth  --node tcp://localhost:26669
-osmosisd q bank balances osmo139njd402zqj368sk65y753ppp4hxr9268w7wdp --node tcp://localhost:26679
+quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
+gaiad q bank balances cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc  --node tcp://localhost:26669
+osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp://localhost:26679
 ```
 ### Connect quasar and cosmos 
 `

@@ -3,18 +3,19 @@
 
 
 # Configure variables
-export BINARY=quasarnoded
-export HOME_QSR=$HOME/.quasarnode
-export CHAIN_ID=quasar
-export VALIDATOR_1="edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"
-#export VALIDATOR_2="harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar"
-export USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
-export USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-export VALIDATOR_1_GENESIS_COINS=10000000000stake,10000000000uqsr
-#export VALIDATOR_2_GENESIS_COINS=10000000000stake,10000000000uqsr
-export USER_1_GENESIS_COINS=10000000000stake,10000000000uatom
-export USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
-
+BINARY=quasarnoded
+HOME_QSR=$HOME/.quasarnode
+CHAIN_ID=quasar
+ALICE="edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"
+BOB="harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar"
+USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
+USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
+RELAYER_ACC="old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license"
+ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
+BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
+USER_1_GENESIS_COINS=10000000000stake,10000000000uatom
+USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
+RELAYER_ACC_GENESIS_COINS=1000000stake
 
 # Remove previous setup
 rm -rf $HOME_QSR
@@ -24,16 +25,18 @@ $BINARY init $CHAIN_ID --chain-id $CHAIN_ID
 # Bootstrap the quasar local network with single node
 
 #$BINARY init $CHAIN_ID --chain-id $CHAIN_ID
-echo $VALIDATOR_1 | $BINARY keys add val1 --keyring-backend test --recover
-#echo $VALIDATOR_2 | $BINARY keys add val2 --keyring-backend test --recover
+echo $ALICE  | $BINARY keys add alice --keyring-backend test --recover
+echo $BOB    | $BINARY keys add bob   --keyring-backend test --recover
 echo $USER_1 | $BINARY keys add user1 --keyring-backend test --recover
 echo $USER_2 | $BINARY keys add user2 --keyring-backend test --recover
-$BINARY add-genesis-account $($BINARY keys show val1 --keyring-backend test -a) $VALIDATOR_1_GENESIS_COINS
-#$BINARY add-genesis-account $($BINARY keys show val2 --keyring-backend test -a) $VALIDATOR_2_GENESIS_COINS
+echo $RELAYER_ACC | $BINARY keys add relayer_acc --keyring-backend test --recover
+$BINARY add-genesis-account $($BINARY keys show alice --keyring-backend test -a) $ALICE_GENESIS_COINS
+$BINARY add-genesis-account $($BINARY keys show bob   --keyring-backend test -a) $BOB_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a) $USER_1_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a) $USER_2_GENESIS_COINS
-$BINARY gentx val1 100000000stake --chain-id $CHAIN_ID --keyring-backend test
-# $BINARY gentx val2 100000000stake --chain-id $CHAIN_ID --keyring-backend test
+$BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a) $RELAYER_ACC_GENESIS_COINS
+$BINARY gentx alice 100000000stake --chain-id $CHAIN_ID --keyring-backend test
+# $BINARY gentx bob 100000000stake --chain-id $CHAIN_ID --keyring-backend test
 $BINARY collect-gentxs
 
 # Check platform
@@ -46,31 +49,27 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
-	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26650"+g' $HOME_QSR/config/config.toml
-	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26650"+g' $HOME_QSR/config/client.toml
-	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26651"+g' $HOME_QSR/config/config.toml
-	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6050"+g' $HOME_QSR/config/config.toml
-	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9050"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:9051"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1350"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = ":8080"+address = ":8050"+g' $HOME_QSR/config/app.toml
-	sed -i 's%"amount": "10000000"%"amount": "1"%g' $HOME_QSR/config/genesis.json
-	sed -i 's%"quorum": "0.334000000000000000",%"quorum": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
-	sed -i 's%"threshold": "0.500000000000000000",%"threshold": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
-	sed -i 's%"voting_period": "172800s"%"voting_period": "30s"%g' $HOME_QSR/config/genesis.json
+	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
+	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
+	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
+	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6061"+g' $HOME_QSR/config/config.toml
+	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9095"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8091"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1311"+g' $HOME_QSR/config/app.toml
+	sed -i 's+address = ":8080"+address = ":8081"+g' $HOME_QSR/config/app.toml
 else
 	echo "only linux platforms are supported, if you are using other platforms you should probably improve this script."
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
- 	sed -i '' 's%"amount": "10000000"%"amount": "1"%g' $HOME_QSR/config/genesis.json
-	sed -i '' 's%"quorum": "0.334000000000000000",%"quorum": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
-	sed -i '' 's%"threshold": "0.500000000000000000",%"threshold": "0.000000000000000001",%g' $HOME_QSR/config/genesis.json
-	sed -i '' 's%"voting_period": "172800s"%"voting_period": "30s"%g' $HOME_QSR/config/genesis.json
 fi
 
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
-cat $HOME_QSR/config/genesis.json | jq '.app_state.orion = {
+cat $HOME_QSR/config/genesis_original.json |
+  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
+  jq '.app_state.gov.voting_params.voting_period="30s"' |
+  jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
+  jq '.app_state.orion = {
       "lpPosition": null,
       "lpStat": null,
       "params": {
@@ -91,9 +90,8 @@ cat $HOME_QSR/config/genesis.json | jq '.app_state.orion = {
         ]
       },
       "rewardCollection": null
-    }' > $HOME_QSR/config/genesis1.json
-
-cat $HOME_QSR/config/genesis1.json | jq '.app_state.intergamm = {
+    }' |
+  jq '.app_state.intergamm = {
       "params": {
         "dest_to_intr_zone_map": {
           "osmosis-01": "cosmos"
@@ -126,9 +124,8 @@ cat $HOME_QSR/config/genesis1.json | jq '.app_state.intergamm = {
           "osmosis-test": "channel-1"
         }
       }
-    }' > $HOME_QSR/config/genesis2.json
-
-cat $HOME_QSR/config/genesis2.json | jq '.app_state.qbank = {
+    }' |
+  jq '.app_state.qbank = {
       "claimableRewards": [],
       "depositInfos": [],
       "params": {
@@ -147,9 +144,7 @@ cat $HOME_QSR/config/genesis2.json | jq '.app_state.qbank = {
       "totalDeposits": [],
       "totalWithdraws": [],
       "withdrawables": []
-    }' > $HOME_QSR/config/genesis3.json
-
-cp $HOME_QSR/config/genesis3.json $HOME_QSR/config/genesis.json
+    }' >  $HOME_QSR/config/genesis.json
 
 # Start
 $BINARY start
