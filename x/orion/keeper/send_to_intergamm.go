@@ -26,7 +26,7 @@ func (k Keeper) getOwnerAccStr() string {
 	return accStr
 }
 
-func (k Keeper) getDestinationChainId(ctx sdk.Context) string {
+func (k Keeper) GetDestinationChainId(ctx sdk.Context) string {
 	return k.DestinationChainId(ctx)
 }
 

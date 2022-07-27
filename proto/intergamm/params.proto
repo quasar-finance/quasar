@@ -7,6 +7,7 @@ option go_package = "github.com/abag/quasarnode/x/intergamm/types";
 
 // Local Information of the other zone in the intergamm module.
 message ZoneLocalInfo {
+  option (gogoproto.equal) = true;
   string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
   string connection_id = 2  
   [(gogoproto.moretags) = "yaml:\"connection_id\""];// local connection id associated with the other chain
@@ -14,6 +15,7 @@ message ZoneLocalInfo {
 }
 
 message NextZoneRouteInfo {
+  option (gogoproto.equal) = true;
   string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
   string connection_id = 2
   [(gogoproto.moretags) = "yaml:\"connection_id\""]; // local connection id associated with the other chain
@@ -25,6 +27,7 @@ message NextZoneRouteInfo {
 
 // IntermediateReceiver 
 message IntermediateReceiver {
+  option (gogoproto.equal) = true;
   ZoneLocalInfo zone_info = 1
   [(gogoproto.moretags) = "yaml:\"zone_info\"",
   (gogoproto.nullable)   = false
@@ -37,6 +40,7 @@ message IntermediateReceiver {
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.equal) = true;
 
   // map of chain id and transfer port channel id. This should be updated via governance
   map<string, string> osmo_token_transfer_channels = 1
