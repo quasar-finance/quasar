@@ -10,6 +10,6 @@ quasar-traits = { version = "0.1.0", path = "../quasar-traits"}
 
 rust_decimal = "1.24.0"
 cw20 = "0.13.4"
-cosmwasm-std = { version = "1.0.0-beta8" }
+cosmwasm-std = { version = "1.0.0" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
