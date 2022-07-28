@@ -3,6 +3,7 @@
 members = [
     "contracts/cw-4626",
     "contracts/strategy",
+    "contracts/ibc-transfer-test",
     "packages/quasar-traits",
     "packages/quasar-types"
 ]
