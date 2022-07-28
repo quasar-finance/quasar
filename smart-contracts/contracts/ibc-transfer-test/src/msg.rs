@@ -11,6 +11,8 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Increment {},
     Reset { count: i32 },
+    // Transfer tests the IBC transfer message and tries to transfer the funds to the osmosis test chain
+    // Transfer {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
