@@ -21,8 +21,7 @@ Commands -
 ## Prerequisites
 
 1. `go` version 1.18
-2. `ignite` latest version should be installed (see https://docs.ignite.com/guide/install.html)
-3. The cosmos-hub `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
+2. The cosmos-hub `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
 
 ## Set up
 Create a demo directory in home directory. 
@@ -36,32 +35,41 @@ cd quasar-demo
 - For gaia use, https://github.com/quasar-finance/gaia branch bugfix/replace_default_transfer_with_router_module
 
 
-## Up the quasar-chain, in the cloned quasar directory. And use the already prepared config from demos/orion-manual-demo/quasar.yml
+## Up the quasar-chain, in the cloned quasar directory
 ```
-cd quasar-demo/quasar/
-ignite chain serve -c demos/orion-manual-demo/quasar.yml  --reset-once --home demos/orion-manual-demo/run/home/quasarnode/  -v  > quasar.log 2>&1
+cd quasar-demo/quasar/demos/orion-manual-demo/
+./quasar_localnet.sh
 ```
-You can `tail -f quasar.log` in a separate terminal to continusly check the logs. 
+You can monitor the quasar logs in this terminal. 
 
-## Up the osmosis chain, in the cloned osmosis ( with ica ) directory. And use the already prepared config from demos/orion-manual-demo/osmosis.yml
+## Up the osmosis chain, in the cloned osmosis (with ica) directory
 ```
-cd quasar-demo/osmosis
-ignite chain serve -c ~/quasar-demo/quasar/demos/orion-manual-demo/osmosis.yml  --reset-once --home  ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/ -v > osmosis.log 2>&1
+cd quasar-demo/quasar/demos/orion-manual-demo/
+./osmo_localnet.sh
 ```
-You can `tail -f osmosis.log` in a separate terminal to continusly check the logs. 
+You can monitor the osmosis logs in this terminal. 
 
-## Up the cosmos-hub chain, in the gaid cloned directory. And use the already prepared config from demos/orion-manual-demos/cosmos.yml 
+## Up the cosmos-hub chain, in the gaid cloned directory 
 ```
-ignite chain serve -c  ~/quasar-demo/quasar/demos/orion-manual-demo/cosmos.yml  --reset-once --home  ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub/ -v > cosmos.log 2>&1
+cd quasar-demo/quasar/demos/orion-manual-demo/
+./cosmos_localnet.sh
 ```
-You can `tail -f cosmos.log` in a separate terminal to continusly check the logs. 
+You can monitor the cosmos logs in this terminal. 
 
 ## copy hermes config 
 ```
 cp ~/quasar-demo/quasar/demos/orion-manual-demo/hermes_config.toml ~/.hermes/config.toml
 ```
 
-## Hermes Key restore 
+## hermes automatic setup
+
+It is sufficient to just run the following:
+```
+./run_hermes.sh
+```
+
+## hermes manual setup
+### Hermes Key restore 
 ```
 hermes keys restore --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter" quasar
 ```
@@ -82,15 +90,15 @@ hermes keys restore --mnemonic "act scale exhibit enough swamp vivid bleak eagle
 2022-06-01T06:24:30.371926Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
 Success: Restored key 'testkey3' (osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz) on chain osmosis
 
-## Connecting the chains
+### Connecting the chains
 
-### First pre-check relayer balances in each chain
+#### First pre-check relayer balances in each chain
 ```
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
 gaiad q bank balances cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc  --node tcp://localhost:26669
 osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp://localhost:26679
 ```
-### Connect quasar and cosmos 
+#### Connect quasar and cosmos 
 `
 hermes create connection quasar cosmos
 `
@@ -190,7 +198,7 @@ hermes query client connections  cosmos 07-tendermint-0
 `
 
 
-### Connect quasar and osmosis
+#### Connect quasar and osmosis
 `
 hermes create connection quasar osmosis
 `
@@ -291,7 +299,7 @@ hermes query client connections  quasar 07-tendermint-1
 hermes query client connections  cosmos 07-tendermint-0
 `
 
-### Connect osmosis and cosmos hub
+#### Connect osmosis and cosmos hub
 `
 hermes create connection osmosis cosmos
 `
@@ -404,9 +412,9 @@ hermes query client connections  osmosis 07-tendermint-1
 `
 
 
-## IBC token transfer channel creation 
+### IBC token transfer channel creation 
 
-### Create token transfer channel between cosmos and quasar 
+#### Create token transfer channel between cosmos and quasar 
 ```
 hermes create channel --port-a transfer --port-b transfer cosmos connection-0
 ```
@@ -600,7 +608,7 @@ hermes query channels quasar
 hermes query channels cosmos
 hermes query channels osmosis
 ```
-## Detailed channel status commands 
+### Detailed channel status commands 
 
 With queries you should be able to track the associated self connection-id, self client-id, counterparty chain-id, counterparty client id, and counterparty connection-id
 
@@ -618,7 +626,7 @@ hermes query channel end cosmos transfer channel-1
 hermes query channel end osmosis transfer channel-0
 hermes query channel end osmosis transfer channel-1
 `
-## Start hermes
+### Start hermes
 
 ```
 hermes start

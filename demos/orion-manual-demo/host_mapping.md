@@ -70,9 +70,9 @@ no mapping in the config directory. These two are specific to frontend applicati
 ### for this demo
 
 field	|   default	| quasar	| cosmos hub	| osmosis				
-rpc	    |   26657	| 26650	    | 26660	        | 26670
-p2p	    |   26656	| 26651	    | 26661	        | 26671
-prof	|   6060	| 6050	    | 6060	        | 6070
-grpc	|   9090	| 9050	    | 9060	        | 9070
-grpc-web|	9091	| 9051	    | 9061	        | 9071
-api	    |   1313	| 1350	    | 1360	        | 1370
+rpc	    |   26657	| 26659	    | 26669	        | 26679
+p2p	    |   26656	| 26661	    | 26663	        | 26662
+prof	|   6060	| 6061	    | 6063	        | 6062
+grpc	|   9090	| 9095	    | 9097	        | 9096
+grpc-web|	9091	| 8081	    | 8093	        | 8092
+api	    |   1313	| 1311	    | 1313	        | 1312
