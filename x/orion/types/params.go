@@ -11,20 +11,20 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyPerfFeePer         = []byte("PerFeePer")
-	KeyMgmtFeePer         = []byte("MgmtFeePer")
-	KeyLpEpochId          = []byte("LpEpochId")
-	KeyEnabled            = []byte("Enabled")
-	KeyDestinationChainId = []byte("DestinationChainId")
-	KeyWhiteListedPools   = []byte("WhiteListedPools")
-	KeyOsmosisLocalInfo   = []byte("OsmosisLocalInfo")
-	DefaultPerfFeePer         sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
-	DefaultMgmtFeePer         sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
-	DefaultLpEpochId                  = "day"
-	DefaultEnabled                    = false
-	DefaultDestinationChainId         = "osmosis"
-	DefaultWhiteListedPools           = []uint64{}
-	DefaulOsmosisLocalInfo            = ZoneLocalInfo{}
+	KeyPerfFeePer             = []byte("PerFeePer")
+	KeyMgmtFeePer             = []byte("MgmtFeePer")
+	KeyLpEpochId              = []byte("LpEpochId")
+	KeyEnabled                = []byte("Enabled")
+	KeyDestinationChainId     = []byte("DestinationChainId")
+	KeyWhiteListedPools       = []byte("WhiteListedPools")
+	KeyOsmosisLocalInfo       = []byte("OsmosisLocalInfo")
+	DefaultPerfFeePer         = sdk.MustNewDecFromStr("0.03")  // 3.0%
+	DefaultMgmtFeePer         = sdk.MustNewDecFromStr("0.005") // 0.5%
+	DefaultLpEpochId          = "day"
+	DefaultEnabled            = false
+	DefaultDestinationChainId = "osmosis"
+	DefaultWhiteListedPools   = []uint64{}
+	DefaulOsmosisLocalInfo    = ZoneLocalInfo{}
 )
 
 // ParamKeyTable the param key table for launch module

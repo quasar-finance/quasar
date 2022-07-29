@@ -24,7 +24,6 @@ $BINARY init $CHAIN_ID --chain-id $CHAIN_ID
 
 # Bootstrap the quasar local network with single node
 
-#$BINARY init $CHAIN_ID --chain-id $CHAIN_ID
 echo $ALICE  | $BINARY keys add alice --keyring-backend test --recover
 echo $BOB    | $BINARY keys add bob   --keyring-backend test --recover
 echo $USER_1 | $BINARY keys add user1 --keyring-backend test --recover
@@ -35,8 +34,7 @@ $BINARY add-genesis-account $($BINARY keys show bob   --keyring-backend test -a)
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a) $USER_1_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a) $USER_2_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a) $RELAYER_ACC_GENESIS_COINS
-$BINARY gentx alice 100000000stake --chain-id $CHAIN_ID --keyring-backend test
-# $BINARY gentx bob 100000000stake --chain-id $CHAIN_ID --keyring-backend test
+$BINARY gentx alice 100000000uqsr --chain-id $CHAIN_ID --keyring-backend test
 $BINARY collect-gentxs
 
 # Check platform
@@ -66,6 +64,7 @@ fi
 
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
 cat $HOME_QSR/config/genesis_original.json |
+  jq '.app_state.staking.params.bond_denom="uqsr"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
