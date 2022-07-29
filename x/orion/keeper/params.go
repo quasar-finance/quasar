@@ -13,11 +13,14 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.LpEpochId(ctx),
 		k.DestinationChainId(ctx),
 		k.WhiteListedPools(ctx),
+		k.OsmosisLocalInfo(ctx),
 	)
 }
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+	k.Logger(ctx).Info("SetParams",
+		"params", params)
 	k.paramstore.SetParamSet(ctx, &params)
 }
 
@@ -51,7 +54,14 @@ func (k Keeper) DestinationChainId(ctx sdk.Context) (res string) {
 	return
 }
 
+// WhiteListedPools returns the list of whitelisted pool ids
 func (k Keeper) WhiteListedPools(ctx sdk.Context) (res []uint64) {
 	k.paramstore.Get(ctx, types.KeyWhiteListedPools, &res)
+	return
+}
+
+// OsmosisLocalInfo returns the osmosis zone information
+func (k Keeper) OsmosisLocalInfo(ctx sdk.Context) (res types.ZoneLocalInfo) {
+	k.paramstore.Get(ctx, types.KeyOsmosisLocalInfo, &res)
 	return
 }

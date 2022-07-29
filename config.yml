@@ -9,6 +9,7 @@ validator:
   name: alice
   staked: "100000000uqsr"
 genesis:
+  chain_id: "quasar"
   app_state:
     staking:
       params:
@@ -18,6 +19,24 @@ genesis:
         osmo_token_transfer_channels:
           osmosis-test: channel-1
           osmosis: channel-1
+        dest_to_intr_zone_map:
+          osmosis-01: cosmos
+        intr_rcvrs:
+          - zone_info:
+              chain_id: 'cosmos'
+              connection_id: 'connection-02'
+            rcvr_address: 'cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu'
+            next_zone_route_map:
+                osmosis-01:
+                  local_zone_id: osmosis-01
+                  connection_id: 'connection-01'
+                  chain_id: "osmosis"
+                  transfer_channel_id: "channel-01"
+                osmosis-02:
+                  local_zone_id: osmosis-02
+                  connection_id: 'connection-02'
+                  chain_id: "osmosis2"
+                  transfer_channel_id: "channel-02"      
     orion:
       params:
         enabled: false
@@ -26,6 +45,10 @@ genesis:
         perf_fee_per: '0.020000000000000000'
         destination_chain_id: osmosis
         white_listed_pools : [1,2,3]
+        osmosis_local_info:
+          local_zone_id : osmosis-01
+          chain_id: 'osmosis'
+          connection_id: 'connection-01'
     qoracle:
       params:
         oracleAccounts: 'quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec'
@@ -38,6 +61,15 @@ genesis:
           - onehop_osmo: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             onehop_quasar: ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC
             origin_name: uatom
+host:
+  rpc: ":26659"
+  p2p: ":26661"
+  prof: ":6061"
+  grpc: ":9095"
+  grpc-web: ":8091"
+  api: ":1311"
+  frontend: ":8081"
+  dev-ui: ":12351"
 #client:
 #  openapi:
 #    path: "docs/client/static/openapi/openapi.yml"

@@ -23,16 +23,208 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Local Information of the other zone in the intergamm module.
+type ZoneLocalInfo struct {
+	LocalZoneId  string `protobuf:"bytes,1,opt,name=local_zone_id,json=localZoneId,proto3" json:"local_zone_id,omitempty" yaml:"local_zone_id"`
+	ConnectionId string `protobuf:"bytes,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty" yaml:"connection_id"`
+	ChainId      string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty" yaml:"chain_id"`
+}
+
+func (m *ZoneLocalInfo) Reset()         { *m = ZoneLocalInfo{} }
+func (m *ZoneLocalInfo) String() string { return proto.CompactTextString(m) }
+func (*ZoneLocalInfo) ProtoMessage()    {}
+func (*ZoneLocalInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8141babea2094d3b, []int{0}
+}
+func (m *ZoneLocalInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ZoneLocalInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ZoneLocalInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ZoneLocalInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ZoneLocalInfo.Merge(m, src)
+}
+func (m *ZoneLocalInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *ZoneLocalInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_ZoneLocalInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ZoneLocalInfo proto.InternalMessageInfo
+
+func (m *ZoneLocalInfo) GetLocalZoneId() string {
+	if m != nil {
+		return m.LocalZoneId
+	}
+	return ""
+}
+
+func (m *ZoneLocalInfo) GetConnectionId() string {
+	if m != nil {
+		return m.ConnectionId
+	}
+	return ""
+}
+
+func (m *ZoneLocalInfo) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+type NextZoneRouteInfo struct {
+	LocalZoneId       string `protobuf:"bytes,1,opt,name=local_zone_id,json=localZoneId,proto3" json:"local_zone_id,omitempty" yaml:"local_zone_id"`
+	ConnectionId      string `protobuf:"bytes,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty" yaml:"connection_id"`
+	ChainId           string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty" yaml:"chain_id"`
+	TransferChannelId string `protobuf:"bytes,4,opt,name=transfer_channel_id,json=transferChannelId,proto3" json:"transfer_channel_id,omitempty" yaml:"transfer_channel_id"`
+}
+
+func (m *NextZoneRouteInfo) Reset()         { *m = NextZoneRouteInfo{} }
+func (m *NextZoneRouteInfo) String() string { return proto.CompactTextString(m) }
+func (*NextZoneRouteInfo) ProtoMessage()    {}
+func (*NextZoneRouteInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8141babea2094d3b, []int{1}
+}
+func (m *NextZoneRouteInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *NextZoneRouteInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_NextZoneRouteInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *NextZoneRouteInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NextZoneRouteInfo.Merge(m, src)
+}
+func (m *NextZoneRouteInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *NextZoneRouteInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_NextZoneRouteInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NextZoneRouteInfo proto.InternalMessageInfo
+
+func (m *NextZoneRouteInfo) GetLocalZoneId() string {
+	if m != nil {
+		return m.LocalZoneId
+	}
+	return ""
+}
+
+func (m *NextZoneRouteInfo) GetConnectionId() string {
+	if m != nil {
+		return m.ConnectionId
+	}
+	return ""
+}
+
+func (m *NextZoneRouteInfo) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *NextZoneRouteInfo) GetTransferChannelId() string {
+	if m != nil {
+		return m.TransferChannelId
+	}
+	return ""
+}
+
+// IntermediateReceiver
+type IntermediateReceiver struct {
+	ZoneInfo         ZoneLocalInfo                `protobuf:"bytes,1,opt,name=zone_info,json=zoneInfo,proto3" json:"zone_info" yaml:"zone_info"`
+	RcvrAddress      string                       `protobuf:"bytes,2,opt,name=rcvr_address,json=rcvrAddress,proto3" json:"rcvr_address,omitempty" yaml:"rcvr_address"`
+	NextZoneRouteMap map[string]NextZoneRouteInfo `protobuf:"bytes,3,rep,name=next_zone_route_map,json=nextZoneRouteMap,proto3" json:"next_zone_route_map" yaml:"next_zone_route_map" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *IntermediateReceiver) Reset()         { *m = IntermediateReceiver{} }
+func (m *IntermediateReceiver) String() string { return proto.CompactTextString(m) }
+func (*IntermediateReceiver) ProtoMessage()    {}
+func (*IntermediateReceiver) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8141babea2094d3b, []int{2}
+}
+func (m *IntermediateReceiver) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *IntermediateReceiver) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_IntermediateReceiver.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *IntermediateReceiver) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IntermediateReceiver.Merge(m, src)
+}
+func (m *IntermediateReceiver) XXX_Size() int {
+	return m.Size()
+}
+func (m *IntermediateReceiver) XXX_DiscardUnknown() {
+	xxx_messageInfo_IntermediateReceiver.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IntermediateReceiver proto.InternalMessageInfo
+
+func (m *IntermediateReceiver) GetZoneInfo() ZoneLocalInfo {
+	if m != nil {
+		return m.ZoneInfo
+	}
+	return ZoneLocalInfo{}
+}
+
+func (m *IntermediateReceiver) GetRcvrAddress() string {
+	if m != nil {
+		return m.RcvrAddress
+	}
+	return ""
+}
+
+func (m *IntermediateReceiver) GetNextZoneRouteMap() map[string]NextZoneRouteInfo {
+	if m != nil {
+		return m.NextZoneRouteMap
+	}
+	return nil
+}
+
 // Params defines the parameters for the module.
 type Params struct {
 	// map of chain id and transfer port channel id. This should be updated via governance
-	OsmoTokenTransferChannels map[string]string `protobuf:"bytes,1,rep,name=osmo_token_transfer_channels,json=osmoTokenTransferChannels,proto3" json:"osmo_token_transfer_channels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	OsmoTokenTransferChannels map[string]string      `protobuf:"bytes,1,rep,name=osmo_token_transfer_channels,json=osmoTokenTransferChannels,proto3" json:"osmo_token_transfer_channels" yaml:"osmo_token_transfer_channels" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DestToIntrZoneMap         map[string]string      `protobuf:"bytes,2,rep,name=dest_to_intr_zone_map,json=destToIntrZoneMap,proto3" json:"dest_to_intr_zone_map" yaml:"dest_to_intr_zone_map" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	IntrRcvrs                 []IntermediateReceiver `protobuf:"bytes,3,rep,name=intr_rcvrs,json=intrRcvrs,proto3" json:"intr_rcvrs" yaml:"intr_rcvrs"`
 }
 
 func (m *Params) Reset()      { *m = Params{} }
 func (*Params) ProtoMessage() {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8141babea2094d3b, []int{0}
+	return fileDescriptor_8141babea2094d3b, []int{3}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -68,32 +260,382 @@ func (m *Params) GetOsmoTokenTransferChannels() map[string]string {
 	return nil
 }
 
+func (m *Params) GetDestToIntrZoneMap() map[string]string {
+	if m != nil {
+		return m.DestToIntrZoneMap
+	}
+	return nil
+}
+
+func (m *Params) GetIntrRcvrs() []IntermediateReceiver {
+	if m != nil {
+		return m.IntrRcvrs
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*ZoneLocalInfo)(nil), "abag.quasarnode.intergamm.ZoneLocalInfo")
+	proto.RegisterType((*NextZoneRouteInfo)(nil), "abag.quasarnode.intergamm.NextZoneRouteInfo")
+	proto.RegisterType((*IntermediateReceiver)(nil), "abag.quasarnode.intergamm.IntermediateReceiver")
+	proto.RegisterMapType((map[string]NextZoneRouteInfo)(nil), "abag.quasarnode.intergamm.IntermediateReceiver.NextZoneRouteMapEntry")
 	proto.RegisterType((*Params)(nil), "abag.quasarnode.intergamm.Params")
+	proto.RegisterMapType((map[string]string)(nil), "abag.quasarnode.intergamm.Params.DestToIntrZoneMapEntry")
 	proto.RegisterMapType((map[string]string)(nil), "abag.quasarnode.intergamm.Params.OsmoTokenTransferChannelsEntry")
 }
 
 func init() { proto.RegisterFile("intergamm/params.proto", fileDescriptor_8141babea2094d3b) }
 
 var fileDescriptor_8141babea2094d3b = []byte{
-	// 270 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xcb, 0xcc, 0x2b, 0x49,
-	0x2d, 0x4a, 0x4f, 0xcc, 0xcd, 0xd5, 0x2f, 0x48, 0x2c, 0x4a, 0xcc, 0x2d, 0xd6, 0x2b, 0x28, 0xca,
-	0x2f, 0xc9, 0x17, 0x92, 0x4c, 0x4c, 0x4a, 0x4c, 0xd7, 0x2b, 0x2c, 0x4d, 0x2c, 0x4e, 0x2c, 0xca,
-	0xcb, 0x4f, 0x49, 0xd5, 0x83, 0xab, 0x93, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0xab, 0xd2, 0x07,
-	0xb1, 0x20, 0x1a, 0x94, 0x1e, 0x30, 0x72, 0xb1, 0x05, 0x80, 0x4d, 0x10, 0x6a, 0x64, 0xe4, 0x92,
-	0xc9, 0x2f, 0xce, 0xcd, 0x8f, 0x2f, 0xc9, 0xcf, 0x4e, 0xcd, 0x8b, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,
-	0x4e, 0x4b, 0x2d, 0x8a, 0x4f, 0xce, 0x48, 0xcc, 0xcb, 0x4b, 0xcd, 0x29, 0x96, 0x60, 0x54, 0x60,
-	0xd6, 0xe0, 0x36, 0x72, 0xd0, 0xc3, 0x69, 0x87, 0x1e, 0xc4, 0x24, 0x3d, 0xff, 0xe2, 0xdc, 0xfc,
-	0x10, 0x90, 0x21, 0x21, 0x50, 0x33, 0x9c, 0xa1, 0x46, 0xb8, 0xe6, 0x95, 0x14, 0x55, 0x06, 0x49,
-	0xe6, 0xe3, 0x92, 0x97, 0xf2, 0xe1, 0x92, 0xc3, 0xaf, 0x59, 0x48, 0x80, 0x8b, 0x39, 0x3b, 0xb5,
-	0x52, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc4, 0x14, 0x12, 0xe1, 0x62, 0x2d, 0x4b, 0xcc,
-	0x29, 0x4d, 0x95, 0x60, 0x02, 0x8b, 0x41, 0x38, 0x56, 0x4c, 0x16, 0x8c, 0x56, 0x2c, 0x33, 0x16,
-	0xc8, 0x33, 0x38, 0xb9, 0x9d, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72,
-	0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x4e,
-	0x7a, 0x66, 0x49, 0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae, 0x3e, 0xc8, 0x53, 0xfa, 0x08, 0x4f,
-	0xe9, 0x57, 0xe8, 0x23, 0x82, 0xb8, 0xa4, 0xb2, 0x20, 0xb5, 0x38, 0x89, 0x0d, 0x1c, 0x62, 0xc6,
-	0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xe6, 0x6c, 0xba, 0xa6, 0x7c, 0x01, 0x00, 0x00,
+	// 689 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0xcd, 0x4e, 0xdb, 0x4c,
+	0x14, 0x8d, 0x13, 0x3e, 0x3e, 0x32, 0x01, 0x95, 0x38, 0x81, 0x86, 0x08, 0xd9, 0x68, 0xda, 0x05,
+	0x52, 0x91, 0x2d, 0xd1, 0x0d, 0x8a, 0x5a, 0xa9, 0x4d, 0xa1, 0x52, 0x24, 0x4a, 0xab, 0x11, 0x2b,
+	0x36, 0xd6, 0x60, 0x0f, 0xc1, 0x22, 0x9e, 0x09, 0xe3, 0x09, 0x22, 0x7d, 0x0a, 0x56, 0x15, 0x4b,
+	0x9e, 0xa0, 0x0f, 0xd1, 0x4d, 0x59, 0xb2, 0xa9, 0xd4, 0x55, 0x54, 0xc1, 0xa6, 0xeb, 0x3c, 0x41,
+	0x35, 0x33, 0x6e, 0xfe, 0x6a, 0x52, 0xb1, 0xec, 0xee, 0x5e, 0xcf, 0x9c, 0x7b, 0xcf, 0x3d, 0xf7,
+	0x58, 0x03, 0x96, 0x43, 0x2a, 0x08, 0x6f, 0xe2, 0x28, 0x72, 0xdb, 0x98, 0xe3, 0x28, 0x76, 0xda,
+	0x9c, 0x09, 0x66, 0xae, 0xe0, 0x43, 0xdc, 0x74, 0x4e, 0x3b, 0x38, 0xc6, 0x9c, 0xb2, 0x80, 0x38,
+	0x83, 0x7b, 0xd5, 0x72, 0x93, 0x35, 0x99, 0xba, 0xe5, 0xca, 0x48, 0x03, 0xe0, 0x17, 0x03, 0x2c,
+	0x1c, 0x30, 0x4a, 0x76, 0x99, 0x8f, 0x5b, 0x0d, 0x7a, 0xc4, 0xcc, 0x17, 0x60, 0xa1, 0x25, 0x13,
+	0xef, 0x23, 0xa3, 0xc4, 0x0b, 0x83, 0x8a, 0xb1, 0x66, 0xac, 0xe7, 0xeb, 0x95, 0x7e, 0xcf, 0x2e,
+	0x77, 0x71, 0xd4, 0xaa, 0xc1, 0xb1, 0x63, 0x88, 0x0a, 0x2a, 0x97, 0x45, 0x1a, 0x81, 0xf9, 0x12,
+	0x2c, 0xf8, 0x8c, 0x52, 0xe2, 0x8b, 0x90, 0x51, 0x89, 0xce, 0x4e, 0xa2, 0xc7, 0x8e, 0x21, 0x9a,
+	0x1f, 0xe6, 0x8d, 0xc0, 0x74, 0xc0, 0x9c, 0x7f, 0x8c, 0x43, 0x85, 0xcc, 0x29, 0x64, 0xa9, 0xdf,
+	0xb3, 0x1f, 0x25, 0xc8, 0xe4, 0x04, 0xa2, 0xff, 0x55, 0xd8, 0x08, 0x6a, 0x33, 0x3f, 0xaf, 0x6c,
+	0x03, 0x7e, 0xca, 0x82, 0xe2, 0x1e, 0x39, 0x17, 0x92, 0x03, 0x62, 0x1d, 0x41, 0xfe, 0xb9, 0x41,
+	0xcc, 0x3d, 0x50, 0x12, 0x1c, 0xd3, 0xf8, 0x88, 0x70, 0xcf, 0x3f, 0xc6, 0x94, 0x92, 0x96, 0x84,
+	0xce, 0x28, 0xa8, 0xd5, 0xef, 0xd9, 0x55, 0x0d, 0x4d, 0xb9, 0x04, 0x51, 0xf1, 0xf7, 0xd7, 0x37,
+	0xfa, 0xe3, 0x40, 0x98, 0xaf, 0x39, 0x50, 0x6e, 0x48, 0x07, 0x44, 0x24, 0x08, 0xb1, 0x20, 0x88,
+	0xf8, 0x24, 0x3c, 0x23, 0xdc, 0xf4, 0x40, 0x5e, 0x8f, 0x4d, 0x8f, 0x98, 0xd2, 0xa5, 0xb0, 0xb9,
+	0xee, 0xdc, 0xeb, 0x1d, 0x67, 0xcc, 0x21, 0xf5, 0xca, 0x75, 0xcf, 0xce, 0xf4, 0x7b, 0xf6, 0xa2,
+	0xa6, 0x34, 0x28, 0x04, 0xd1, 0x9c, 0x8c, 0x95, 0xf8, 0x35, 0x30, 0xcf, 0xfd, 0x33, 0xee, 0xe1,
+	0x20, 0xe0, 0x24, 0x8e, 0x13, 0xf5, 0x1e, 0xf7, 0x7b, 0x76, 0x49, 0xa3, 0x46, 0x4f, 0x21, 0x2a,
+	0xc8, 0xf4, 0xb5, 0xce, 0xcc, 0x4b, 0x03, 0x94, 0x28, 0x39, 0x17, 0x7a, 0x33, 0x5c, 0x2e, 0xd4,
+	0x8b, 0x70, 0xbb, 0x92, 0x5b, 0xcb, 0xad, 0x17, 0x36, 0x77, 0xa6, 0xf0, 0x4c, 0x9b, 0xd5, 0x19,
+	0x73, 0xc6, 0x3b, 0xdc, 0xde, 0xa1, 0x82, 0x77, 0xeb, 0x30, 0x19, 0x22, 0xd1, 0x35, 0xa5, 0x1f,
+	0x44, 0x8b, 0x74, 0x02, 0x5a, 0x3d, 0x05, 0x4b, 0xa9, 0xe5, 0xcc, 0x45, 0x90, 0x3b, 0x21, 0x5d,
+	0x6d, 0x31, 0x24, 0x43, 0xb3, 0x0e, 0xfe, 0x3b, 0xc3, 0xad, 0x0e, 0x51, 0xa3, 0x17, 0x36, 0x37,
+	0xa6, 0xd0, 0xfe, 0xc3, 0xbb, 0x48, 0x43, 0x6b, 0xd9, 0x2d, 0x23, 0xd9, 0xe4, 0xb7, 0x19, 0x30,
+	0xfb, 0x41, 0xfd, 0xe9, 0xe6, 0x67, 0x03, 0xac, 0xb2, 0x38, 0x62, 0x9e, 0x60, 0x27, 0x84, 0x7a,
+	0x93, 0x8e, 0x88, 0x2b, 0x86, 0xd2, 0xe9, 0xd5, 0x94, 0x86, 0xba, 0x92, 0xf3, 0x3e, 0x8e, 0xd8,
+	0xbe, 0x2c, 0xb2, 0x3f, 0xee, 0x9f, 0x58, 0x4b, 0xf4, 0x2c, 0x91, 0xe8, 0x89, 0x96, 0x68, 0x5a,
+	0x4f, 0x88, 0x56, 0xd8, 0x7d, 0xc5, 0xcc, 0x0b, 0x03, 0x2c, 0x05, 0x24, 0x16, 0x9e, 0x60, 0x5e,
+	0x48, 0x05, 0xd7, 0x3a, 0xcb, 0x8d, 0x66, 0x15, 0xd3, 0xad, 0xbf, 0x33, 0xdd, 0x26, 0xb1, 0xd8,
+	0x67, 0x0d, 0x2a, 0xb8, 0xd4, 0x69, 0xb0, 0xc4, 0xa7, 0x09, 0xc3, 0x55, 0xcd, 0x30, 0xb5, 0x09,
+	0x44, 0xc5, 0x60, 0x12, 0x6d, 0x86, 0x00, 0xa8, 0x4b, 0xd2, 0x76, 0x71, 0x62, 0x2c, 0xf7, 0x81,
+	0xc6, 0xaa, 0xaf, 0x24, 0xdd, 0x8b, 0xba, 0xfb, 0xb0, 0x20, 0x44, 0x79, 0x99, 0x20, 0x19, 0x57,
+	0x77, 0x81, 0x35, 0x5d, 0xe7, 0x14, 0xef, 0x94, 0x47, 0xbd, 0x93, 0x1f, 0x71, 0x43, 0x75, 0x1b,
+	0x2c, 0xa7, 0x6b, 0xf1, 0x90, 0x2a, 0xb5, 0xb9, 0xcb, 0x2b, 0x3b, 0x23, 0x7d, 0x55, 0x7f, 0x7b,
+	0x7d, 0x6b, 0x19, 0x37, 0xb7, 0x96, 0xf1, 0xe3, 0xd6, 0x32, 0x2e, 0xee, 0xac, 0xcc, 0xcd, 0x9d,
+	0x95, 0xf9, 0x7e, 0x67, 0x65, 0x0e, 0x36, 0x9a, 0xa1, 0x38, 0xee, 0x1c, 0x3a, 0x3e, 0x8b, 0x5c,
+	0x29, 0x8c, 0x3b, 0x14, 0xc6, 0x3d, 0x77, 0x87, 0xef, 0x8f, 0xe8, 0xb6, 0x49, 0x7c, 0x38, 0xab,
+	0x9e, 0x93, 0xe7, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff, 0xf5, 0x61, 0x5f, 0xe1, 0x99, 0x06, 0x00,
+	0x00,
+}
+
+func (this *ZoneLocalInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ZoneLocalInfo)
+	if !ok {
+		that2, ok := that.(ZoneLocalInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.LocalZoneId != that1.LocalZoneId {
+		return false
+	}
+	if this.ConnectionId != that1.ConnectionId {
+		return false
+	}
+	if this.ChainId != that1.ChainId {
+		return false
+	}
+	return true
+}
+func (this *NextZoneRouteInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*NextZoneRouteInfo)
+	if !ok {
+		that2, ok := that.(NextZoneRouteInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.LocalZoneId != that1.LocalZoneId {
+		return false
+	}
+	if this.ConnectionId != that1.ConnectionId {
+		return false
+	}
+	if this.ChainId != that1.ChainId {
+		return false
+	}
+	if this.TransferChannelId != that1.TransferChannelId {
+		return false
+	}
+	return true
+}
+func (this *IntermediateReceiver) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*IntermediateReceiver)
+	if !ok {
+		that2, ok := that.(IntermediateReceiver)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ZoneInfo.Equal(&that1.ZoneInfo) {
+		return false
+	}
+	if this.RcvrAddress != that1.RcvrAddress {
+		return false
+	}
+	if len(this.NextZoneRouteMap) != len(that1.NextZoneRouteMap) {
+		return false
+	}
+	for i := range this.NextZoneRouteMap {
+		a := this.NextZoneRouteMap[i]
+		b := that1.NextZoneRouteMap[i]
+		if !(&a).Equal(&b) {
+			return false
+		}
+	}
+	return true
+}
+func (this *Params) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Params)
+	if !ok {
+		that2, ok := that.(Params)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.OsmoTokenTransferChannels) != len(that1.OsmoTokenTransferChannels) {
+		return false
+	}
+	for i := range this.OsmoTokenTransferChannels {
+		if this.OsmoTokenTransferChannels[i] != that1.OsmoTokenTransferChannels[i] {
+			return false
+		}
+	}
+	if len(this.DestToIntrZoneMap) != len(that1.DestToIntrZoneMap) {
+		return false
+	}
+	for i := range this.DestToIntrZoneMap {
+		if this.DestToIntrZoneMap[i] != that1.DestToIntrZoneMap[i] {
+			return false
+		}
+	}
+	if len(this.IntrRcvrs) != len(that1.IntrRcvrs) {
+		return false
+	}
+	for i := range this.IntrRcvrs {
+		if !this.IntrRcvrs[i].Equal(&that1.IntrRcvrs[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (m *ZoneLocalInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ZoneLocalInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ZoneLocalInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ConnectionId) > 0 {
+		i -= len(m.ConnectionId)
+		copy(dAtA[i:], m.ConnectionId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.ConnectionId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.LocalZoneId) > 0 {
+		i -= len(m.LocalZoneId)
+		copy(dAtA[i:], m.LocalZoneId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.LocalZoneId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *NextZoneRouteInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *NextZoneRouteInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *NextZoneRouteInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TransferChannelId) > 0 {
+		i -= len(m.TransferChannelId)
+		copy(dAtA[i:], m.TransferChannelId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.TransferChannelId)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ConnectionId) > 0 {
+		i -= len(m.ConnectionId)
+		copy(dAtA[i:], m.ConnectionId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.ConnectionId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.LocalZoneId) > 0 {
+		i -= len(m.LocalZoneId)
+		copy(dAtA[i:], m.LocalZoneId)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.LocalZoneId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *IntermediateReceiver) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *IntermediateReceiver) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *IntermediateReceiver) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.NextZoneRouteMap) > 0 {
+		for k := range m.NextZoneRouteMap {
+			v := m.NextZoneRouteMap[k]
+			baseI := i
+			{
+				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintParams(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintParams(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintParams(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.RcvrAddress) > 0 {
+		i -= len(m.RcvrAddress)
+		copy(dAtA[i:], m.RcvrAddress)
+		i = encodeVarintParams(dAtA, i, uint64(len(m.RcvrAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	{
+		size, err := m.ZoneInfo.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintParams(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -116,6 +658,39 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.IntrRcvrs) > 0 {
+		for iNdEx := len(m.IntrRcvrs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.IntrRcvrs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintParams(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.DestToIntrZoneMap) > 0 {
+		for k := range m.DestToIntrZoneMap {
+			v := m.DestToIntrZoneMap[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintParams(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintParams(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintParams(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	if len(m.OsmoTokenTransferChannels) > 0 {
 		for k := range m.OsmoTokenTransferChannels {
 			v := m.OsmoTokenTransferChannels[k]
@@ -149,6 +724,76 @@ func encodeVarintParams(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *ZoneLocalInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.LocalZoneId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	l = len(m.ConnectionId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	return n
+}
+
+func (m *NextZoneRouteInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.LocalZoneId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	l = len(m.ConnectionId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	l = len(m.TransferChannelId)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	return n
+}
+
+func (m *IntermediateReceiver) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.ZoneInfo.Size()
+	n += 1 + l + sovParams(uint64(l))
+	l = len(m.RcvrAddress)
+	if l > 0 {
+		n += 1 + l + sovParams(uint64(l))
+	}
+	if len(m.NextZoneRouteMap) > 0 {
+		for k, v := range m.NextZoneRouteMap {
+			_ = k
+			_ = v
+			l = v.Size()
+			mapEntrySize := 1 + len(k) + sovParams(uint64(len(k))) + 1 + l + sovParams(uint64(l))
+			n += mapEntrySize + 1 + sovParams(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
 func (m *Params) Size() (n int) {
 	if m == nil {
 		return 0
@@ -163,6 +808,20 @@ func (m *Params) Size() (n int) {
 			n += mapEntrySize + 1 + sovParams(uint64(mapEntrySize))
 		}
 	}
+	if len(m.DestToIntrZoneMap) > 0 {
+		for k, v := range m.DestToIntrZoneMap {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovParams(uint64(len(k))) + 1 + len(v) + sovParams(uint64(len(v)))
+			n += mapEntrySize + 1 + sovParams(uint64(mapEntrySize))
+		}
+	}
+	if len(m.IntrRcvrs) > 0 {
+		for _, e := range m.IntrRcvrs {
+			l = e.Size()
+			n += 1 + l + sovParams(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -171,6 +830,574 @@ func sovParams(x uint64) (n int) {
 }
 func sozParams(x uint64) (n int) {
 	return sovParams(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *ZoneLocalInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowParams
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ZoneLocalInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ZoneLocalInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocalZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LocalZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConnectionId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConnectionId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipParams(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthParams
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *NextZoneRouteInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowParams
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: NextZoneRouteInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: NextZoneRouteInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocalZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LocalZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConnectionId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConnectionId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TransferChannelId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TransferChannelId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipParams(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthParams
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IntermediateReceiver) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowParams
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IntermediateReceiver: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IntermediateReceiver: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZoneInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ZoneInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RcvrAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RcvrAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NextZoneRouteMap", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.NextZoneRouteMap == nil {
+				m.NextZoneRouteMap = make(map[string]NextZoneRouteInfo)
+			}
+			var mapkey string
+			mapvalue := &NextZoneRouteInfo{}
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowParams
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowParams
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthParams
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthParams
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowParams
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthParams
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthParams
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &NextZoneRouteInfo{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipParams(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthParams
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.NextZoneRouteMap[mapkey] = *mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipParams(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthParams
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Params) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -327,6 +1554,167 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.OsmoTokenTransferChannels[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestToIntrZoneMap", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DestToIntrZoneMap == nil {
+				m.DestToIntrZoneMap = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowParams
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowParams
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthParams
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthParams
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowParams
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthParams
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthParams
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipParams(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthParams
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.DestToIntrZoneMap[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IntrRcvrs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IntrRcvrs = append(m.IntrRcvrs, IntermediateReceiver{})
+			if err := m.IntrRcvrs[len(m.IntrRcvrs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

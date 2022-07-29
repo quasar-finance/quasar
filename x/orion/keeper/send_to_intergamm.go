@@ -26,18 +26,33 @@ func (k Keeper) getOwnerAccStr() string {
 	return accStr
 }
 
-func (k Keeper) getDestinationChainId(ctx sdk.Context) string {
+func (k Keeper) GetDestinationChainId(ctx sdk.Context) string {
 	return k.DestinationChainId(ctx)
 }
 
+func (k Keeper) getDestinationLocalZoneId(ctx sdk.Context) string {
+	return k.OsmosisLocalInfo(ctx).LocalZoneId
+}
+
 // TODO :  should be a parameter. Could be orion ica account on hub.
-func (k Keeper) getIntermediateReceiver() string {
-	return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
+func (k Keeper) getIntermediateReceiver(ctx sdk.Context) string {
+	intr_rcvrs := k.intergammKeeper.IntrRcvrs(ctx)
+	osmo_connection_id := k.OsmosisLocalInfo(ctx).ConnectionId
+	for _, v := range intr_rcvrs {
+		if v.ZoneInfo.ConnectionId == osmo_connection_id {
+			return v.RcvrAddress
+		}
+	}
+	return ""
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
-func (k Keeper) GetConnectionId(ctx sdk.Context, chainID string) (string, bool) {
-	return k.intergammKeeper.GetConnectionId(ctx, chainID)
+// func (k Keeper) GetConnectionId(ctx sdk.Context, chainID string) (string, bool) {
+func (k Keeper) GetConnectionId(ctx sdk.Context) (string, bool) {
+	if k.OsmosisLocalInfo(ctx).ConnectionId == "" {
+		return "", false
+	}
+	return k.OsmosisLocalInfo(ctx).ConnectionId, true
 }
 
 // Intergamm module method wrappers
@@ -46,7 +61,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		poolID, shareOutAmount, tokenInMaxs))
 
 	owner := k.getOwnerAccStr()
-	connectionId, found := k.GetConnectionId(ctx, "osmosis")
+	connectionId, found := k.GetConnectionId(ctx)
 	if !found {
 		return 0, fmt.Errorf("join pool failed due to connection id not found for ica message")
 	}
@@ -68,7 +83,7 @@ func (k Keeper) LockLPTokens(ctx sdk.Context,
 	coins sdk.Coins) (uint64, error) {
 
 	owner := k.getOwnerAccStr()
-	connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
+	connectionId, found := k.GetConnectionId(ctx)
 	if !found {
 		return 0, fmt.Errorf("lock tokens failed due to connection id not found for ica message")
 	}
@@ -87,7 +102,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 		"tokenOutMins", tokenOutMins)
 
 	owner := k.getOwnerAccStr()
-	connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
+	connectionId, found := k.GetConnectionId(ctx)
 	if !found {
 		return 0, fmt.Errorf("exit pool failed due to connection id not found for ica message")
 	}
@@ -110,13 +125,13 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
-	connectionId, _ := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
+	connectionId := k.OsmosisLocalInfo(ctx).ConnectionId
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	transferPort := "transfer"        // TODO - should be a param
-	transferChannel := "channel-1"    // TODO - should be a param, osmosis -> hub
-	fwdTransferPort := "transfer"     // TODO - should be a param
+	transferPort := "transfer"
+	transferChannel := "channel-1" // TODO - should be a param, osmosis -> hub
+	fwdTransferPort := "transfer"
 	fwdTransferChannel := "channel-0" // TODO - should be a param; hub->quasar
-	intermediateReceiver := k.getIntermediateReceiver()
+	intermediateReceiver := k.getIntermediateReceiver(ctx)
 
 	return k.intergammKeeper.TransmitForwardIbcTransfer(
 		ctx,
@@ -156,12 +171,12 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	}
 
 	seqNo, err := k.intergammKeeper.SendToken(ctx,
-		k.getDestinationChainId(ctx),
+		k.getDestinationLocalZoneId(ctx),
 		k.getOwnerAcc(),
 		destAccStr,
 		coin)
 	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
-		Destination: k.getDestinationChainId(ctx),
+		Destination: k.getDestinationLocalZoneId(ctx),
 		Sender:      k.getOwnerAccStr(),
 		Receiver:    destAccStr,
 		StartTime:   time.Now().UTC(),

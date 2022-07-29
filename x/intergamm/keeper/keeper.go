@@ -92,6 +92,21 @@ func (k Keeper) GetChannelKeeper(ctx sdk.Context) types.ChannelKeeper {
 	return k.channelKeeper
 }
 
+// GetIntermediateReceiver retrieve the intermediate receiver address in the middle chain
+// for packet forwarding.
+// Arguments connectionID is the connection id of the next intermediate chain
+// NOTE - We can very well have local zone -id (chainid/connectionid) to easy the calculations
+func (k Keeper) GetIntermediateReceiver(ctx sdk.Context,
+	connectionID string) string {
+	intr_rcvrs := k.IntrRcvrs(ctx)
+	for _, v := range intr_rcvrs {
+		if v.ZoneInfo.ConnectionId == connectionId {
+			return v.RcvrAddress
+		}
+	}
+	return ""
+}
+
 func (k Keeper) GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection) {
 	return k.connectionKeeper.GetAllConnections(ctx)
 }
@@ -219,28 +234,67 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 // Current version support only uqsr as native non ibc token denom
 // NOTE - This method to be used till automated routing logic is in place.
 func (k Keeper) SendToken(ctx sdk.Context,
-	destinationChain string, // TODO - To be used for cross validation
+	// destinationChain string, // TODO - To be used for cross validation
+	destinationLocalZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
 	coin sdk.Coin) (uint64, error) {
 	logger := k.Logger(ctx)
 	logger.Info("SendToken",
-		"destinationChain", destinationChain,
+		"destinationLocalZoneId", destinationLocalZoneId,
 		"sender", sender,
 		"receiver", receiver,
 		"coin", coin,
 	)
 
+	var is_one_hop bool
+	var destinationChain string
+	var fwdChannelID string
+	if intrZone, found := k.DestToIntrZoneMap(ctx)[destinationLocalZoneId]; !found {
+		// DestToIntrZoneMap does not have a corresponding entry.
+		// This could mean that; destination zone is the intrZone for this case.
+		// And this is normal one hop token tranfer.
+
+		// Verifying is intr zone exist
+		intrRcvrs := k.IntrRcvrs(ctx)
+		for _, intrRcvr := range intrRcvrs {
+			if destinationLocalZoneId == intrRcvr.ZoneInfo.LocalZoneId {
+				is_one_hop = true
+				destinationChain = intrRcvr.ZoneInfo.ChainId
+			}
+		}
+	} else {
+		// Packet forwarding case
+		intrRcvrs := k.IntrRcvrs(ctx)
+		for _, intrRcvr := range intrRcvrs {
+			if intrZone == intrRcvr.ZoneInfo.LocalZoneId {
+				if nextZone, found := intrRcvr.NextZoneRouteMap[destinationLocalZoneId]; found {
+					fwdChannelID = nextZone.TransferChannelId
+					destinationChain = nextZone.ChainId
+				} else {
+					return 0, fmt.Errorf("packet forwarding channel not found for intr zone %s,next zone %s",
+						intrZone, destinationLocalZoneId)
+				}
+			}
+		}
+	}
+
+	if destinationChain == "" {
+		return 0, fmt.Errorf("destination chain not found for zone %s", destinationLocalZoneId)
+	}
+
+	if !is_one_hop && fwdChannelID == "" {
+		return 0, fmt.Errorf("packet forwarding channel is empty for two hop token transfer to dest zone id %s", destinationLocalZoneId)
+	}
+
 	pi, found := k.GetPortDetail(ctx, destinationChain, "transfer")
 	if !found {
 		return 0, fmt.Errorf("token transfer to osmosis not available right now, port info not found")
 	}
+
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	if coin.Denom == "uqsr" { // Native gov token
-		// Support for all non-ibc tokens should be added here in future so to support
-		// other vaults native tokens with cosmwasm.
-
+	if is_one_hop {
 		return k.TransferIbcTokens(ctx, "transfer",
 			pi.ChannelID, coin,
 			sender, receiver,
@@ -264,23 +318,12 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			"denomTrace", denomTrace,
 		)
 
-		switch denomTrace.BaseDenom {
-		case "uosmo": // no middle chain involves
+		return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
+			sender, "transfer",
+			fwdChannelID,
+			"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
+			receiver, transferTimeoutHeight, connectionTimeout)
 
-			return k.TransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
-				sender, receiver, transferTimeoutHeight, connectionTimeout)
-
-		case "uatom": // middlechain is comsos-hub
-			// TODO - Get the middle chain intermediate address
-			fwdChannelID := k.OsmoTokenTransferChannels(ctx)[destinationChain]
-			return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
-				sender, "transfer",
-				fwdChannelID, "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
-				receiver, transferTimeoutHeight, connectionTimeout)
-
-		default:
-			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, hexHash)
-		}
 	}
 
 	return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, "unrecognized ibc denom")

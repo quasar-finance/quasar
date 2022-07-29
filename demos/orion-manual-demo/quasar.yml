@@ -6,28 +6,53 @@ accounts:
     mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
     coins: ["10000token", "100000000stake", "1000000000uqsr"]
   - name: relayer_acc
+    mnemonic: old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license
+    # corresponding address is quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew
     coins: ["1000000stake"]
-    address: quasar1tshnze3yrtv3hk9x536p7znpxeckd4v9ha0trg
 validator:
   name: alice
-  staked: "100000000stake"
+  staked: "100000000uqsr"
 genesis:
   chain_id: "quasar"
   app_state:
     staking:
       params:
-        bond_denom: stake
+        bond_denom: uqsr
     intergamm:
       params:
         osmo_token_transfer_channels:
           osmosis-test: channel-1
           osmosis: channel-1
+        dest_to_intr_zone_map:
+          osmosis-01: cosmos
+        intr_rcvrs:
+          - zone_info:
+              chain_id: 'cosmos'
+              connection_id: 'connection-02'
+            rcvr_address: 'cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu'
+            next_zone_route_map:
+                osmosis-01:
+                  local_zone_id: osmosis-01
+                  connection_id: 'connection-01'
+                  chain_id: "osmosis"
+                  transfer_channel_id: "channel-01"
+                osmosis-02:
+                  local_zone_id: osmosis-02
+                  connection_id: 'connection-02'
+                  chain_id: "osmosis2"
+                  transfer_channel_id: "channel-02"
     orion:
       params:
-        enabled: true
+        enabled: false
         lp_epoch_id: day #override day for testing
         mgmt_fee_per: '0.003000000000000000'
         perf_fee_per: '0.020000000000000000'
+        destination_chain_id: osmosis
+        white_listed_pools : [1,2,3]
+        osmosis_local_info:
+          local_zone_id : osmosis-01
+          chain_id: 'osmosis'
+          connection_id: 'connection-01'
     qoracle:
       params:
         oracleAccounts: 'quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec'

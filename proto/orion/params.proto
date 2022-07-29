@@ -5,6 +5,14 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/abag/quasarnode/x/orion/types";
 
+// Local Information of the other zone in the intergamm module.
+message ZoneLocalInfo {
+  option (gogoproto.equal) = true;
+  string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
+  string connection_id = 2
+  [(gogoproto.moretags) = "yaml:\"connection_id\""];// local connection id associated with the other chain
+  string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
+}
 // Params defines the parameters for the module.
  message Params {
   option (gogoproto.goproto_stringer) = false;
@@ -32,4 +40,8 @@ option go_package = "github.com/abag/quasarnode/x/orion/types";
 
   repeated uint64 white_listed_pools = 6
   [(gogoproto.moretags) = "yaml:\"white_listed_pools\""];
+
+  ZoneLocalInfo osmosis_local_info = 7
+  [(gogoproto.moretags) = "yaml:\"osmosis_local_info\"",
+  (gogoproto.nullable)   = false];
 }
