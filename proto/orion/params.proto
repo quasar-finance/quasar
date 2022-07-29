@@ -13,12 +13,6 @@ message ZoneLocalInfo {
   [(gogoproto.moretags) = "yaml:\"connection_id\""];// local connection id associated with the other chain
   string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
 }
-/*
-message IntermediateReceiver {
-  ZoneLocalInfo zoneInfo = 1;
-  string rcvr_address = 2;
-}
-*/
 // Params defines the parameters for the module.
  message Params {
   option (gogoproto.goproto_stringer) = false;
@@ -50,10 +44,4 @@ message IntermediateReceiver {
   ZoneLocalInfo osmosis_local_info = 7
   [(gogoproto.moretags) = "yaml:\"osmosis_local_info\"",
   (gogoproto.nullable)   = false];
-/*
-  repeated IntermediateReceiver intr_rcvr = 8
-  [(gogoproto.moretags) = "yaml:\"intr_rcvr\"",
-  (gogoproto.nullable)   = false
-  ];
-  */
 }

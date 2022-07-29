@@ -18,7 +18,6 @@ var (
 	KeyDestinationChainId = []byte("DestinationChainId")
 	KeyWhiteListedPools   = []byte("WhiteListedPools")
 	KeyOsmosisLocalInfo   = []byte("OsmosisLocalInfo")
-	// KeyIntrRcvrs                       = []byte("IntrRcvrs")
 	DefaultPerfFeePer         sdk.Dec = sdk.NewDecWithPrec(3, 2) // 3.00% , .03
 	DefaultMgmtFeePer         sdk.Dec = sdk.NewDecWithPrec(5, 3) // 0.5% ,  .05
 	DefaultLpEpochId                  = "day"
@@ -26,7 +25,6 @@ var (
 	DefaultDestinationChainId         = "osmosis"
 	DefaultWhiteListedPools           = []uint64{}
 	DefaulOsmosisLocalInfo            = ZoneLocalInfo{}
-	// DefaultIntrRcvrs                   = []IntermediateReceiver{}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -42,7 +40,6 @@ func NewParams(perFeePer sdk.Dec,
 	destinationChainId string,
 	whiteListedPools []uint64,
 	osmosisLocalInfo ZoneLocalInfo,
-	// intrRcvrs []IntermediateReceiver,
 ) Params {
 	return Params{PerfFeePer: perFeePer,
 		MgmtFeePer:         mgmtFeePer,
@@ -51,7 +48,6 @@ func NewParams(perFeePer sdk.Dec,
 		DestinationChainId: destinationChainId,
 		WhiteListedPools:   whiteListedPools,
 		OsmosisLocalInfo:   osmosisLocalInfo}
-	// IntrRcvrs : intrRcvrs}
 }
 
 // DefaultParams returns a default set of parameters
@@ -195,18 +191,5 @@ func validateWOsmosisLocalInfo(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-	/*
-			if z.ConnectionID == "" {
-				return fmt.Errorf("empty connection id in OsmosisLocalInfo")
-			}
-
-			if z.ChainID == "" {
-				return fmt.Errorf("empty chain id in OsmosisLocalInfo")
-			}
-
-		if z.NativeDenom != "uosmo" {
-			return fmt.Errorf("osmosis native denom is not uosmo")
-		}
-	*/
 	return nil
 }

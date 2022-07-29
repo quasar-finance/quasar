@@ -74,7 +74,6 @@ type IntergammKeeper interface {
 		destinationAddress string) (uint64, error)
 
 	SendToken(ctx sdk.Context,
-		// destinationChain string,
 		destinationLocalZoneId string,
 		sender sdk.AccAddress,
 		receiver string,

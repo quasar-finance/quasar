@@ -44,7 +44,6 @@ func (k Keeper) getIntermediateReceiver(ctx sdk.Context) string {
 		}
 	}
 	return ""
-	// return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
@@ -52,10 +51,8 @@ func (k Keeper) getIntermediateReceiver(ctx sdk.Context) string {
 func (k Keeper) GetConnectionId(ctx sdk.Context) (string, bool) {
 	if k.OsmosisLocalInfo(ctx).ConnectionId == "" {
 		return "", false
-	} else {
-		return k.OsmosisLocalInfo(ctx).ConnectionId, true
 	}
-	//return k.intergammKeeper.GetConnectionId(ctx, chainID)
+	return k.OsmosisLocalInfo(ctx).ConnectionId, true
 }
 
 // Intergamm module method wrappers
@@ -64,7 +61,6 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		poolID, shareOutAmount, tokenInMaxs))
 
 	owner := k.getOwnerAccStr()
-	// connectionId, found := k.GetConnectionId(ctx, "osmosis")
 	connectionId, found := k.GetConnectionId(ctx)
 	if !found {
 		return 0, fmt.Errorf("join pool failed due to connection id not found for ica message")
@@ -87,9 +83,7 @@ func (k Keeper) LockLPTokens(ctx sdk.Context,
 	coins sdk.Coins) (uint64, error) {
 
 	owner := k.getOwnerAccStr()
-	// connectionId, found := k.GetConnectionId(ctx, "osmosis")
 	connectionId, found := k.GetConnectionId(ctx)
-	// connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
 	if !found {
 		return 0, fmt.Errorf("lock tokens failed due to connection id not found for ica message")
 	}
@@ -109,7 +103,6 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 
 	owner := k.getOwnerAccStr()
 	connectionId, found := k.GetConnectionId(ctx)
-	// connectionId, found := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
 	if !found {
 		return 0, fmt.Errorf("exit pool failed due to connection id not found for ica message")
 	}
@@ -132,8 +125,6 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
-	//	connectionId, _ := k.GetConnectionId(ctx, k.getDestinationChainId(ctx))
-	// connectionId, _ := k.GetConnectionId(ctx)
 	connectionId := k.OsmosisLocalInfo(ctx).ConnectionId
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
 	transferPort := "transfer"
@@ -180,13 +171,11 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	}
 
 	seqNo, err := k.intergammKeeper.SendToken(ctx,
-		// k.getDestinationChainId(ctx),
 		k.getDestinationLocalZoneId(ctx),
 		k.getOwnerAcc(),
 		destAccStr,
 		coin)
 	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
-		// Destination: k.getDestinationChainId(ctx),
 		Destination: k.getDestinationLocalZoneId(ctx),
 		Sender:      k.getOwnerAccStr(),
 		Receiver:    destAccStr,

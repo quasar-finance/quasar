@@ -30,7 +30,6 @@ $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a 
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_2_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a --home $HOME_OSMOSIS) $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY gentx alice 100000000stake --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
-#$BINARY gentx bob 100000000stake --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
 $BINARY collect-gentxs --home $HOME_OSMOSIS
 
 # Check platform

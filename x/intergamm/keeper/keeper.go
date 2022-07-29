@@ -105,7 +105,6 @@ func (k Keeper) GetIntermediateReceiver(ctx sdk.Context,
 		}
 	}
 	return ""
-	// return "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu" // alice on cosmos
 }
 
 func (k Keeper) GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection) {
@@ -296,10 +295,6 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
 	if is_one_hop {
-		// if coin.Denom == "uqsr" { // Native gov token
-		// Support for all non-ibc tokens should be added here in future so to support
-		// other vaults native tokens with cosmwasm.
-
 		return k.TransferIbcTokens(ctx, "transfer",
 			pi.ChannelID, coin,
 			sender, receiver,
@@ -329,27 +324,6 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
 			receiver, transferTimeoutHeight, connectionTimeout)
 
-		/*
-			switch denomTrace.BaseDenom {
-			case "uosmo": // no middle chain involves
-
-				return k.TransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
-					sender, receiver, transferTimeoutHeight, connectionTimeout)
-
-			case "uatom": // middlechain is comsos-hub
-				// TODO - Get the middle chain intermediate address
-				fwdChannelID := k.OsmoTokenTransferChannels(ctx)[destinationChain]
-				return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
-					sender, "transfer",
-					fwdChannelID,
-
-					"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
-					receiver, transferTimeoutHeight, connectionTimeout)
-
-			default:
-				return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, hexHash)
-			}
-		*/
 	}
 
 	return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, "unrecognized ibc denom")
