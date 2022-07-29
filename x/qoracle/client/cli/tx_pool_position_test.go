@@ -10,8 +10,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/abag/quasarnode/testutil/network"
-	"github.com/abag/quasarnode/x/qoracle/client/cli"
+	"github.com/quasarlabs/quasarnode/testutil/network"
+	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
 )
 
 func sampleMetricsStr() string {

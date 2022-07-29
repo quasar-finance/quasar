@@ -1,5 +1,5 @@
 syntax = "proto3";
-package abag.quasarnode.intergamm;
+package quasarlabs.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -8,22 +8,22 @@ import "intergamm/params.proto";
 import "intergamm/port_info.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "github.com/abag/quasarnode/x/intergamm/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 
 // Query defines the gRPC querier service.
 service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/abag/quasarnode/intergamm/params";
+    option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/params";
   }
   // Queries a list of InterchainAccountFromAddress items.
 	rpc InterchainAccountFromAddress(QueryInterchainAccountFromAddressRequest) returns (QueryInterchainAccountFromAddressResponse) {
-		option (google.api.http).get = "/abag/quasarnode/intergamm/interchain_account_from_address";
+		option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/interchain_account_from_address";
 	}
 
 // Queries a list of GetPortInfo items.
 	rpc GetPortInfo(QueryGetPortInfoRequest) returns (QueryGetPortInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/intergamm/get_port_info/{portID}/{destinationChainID}";
+		option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/get_port_info/{portID}/{destinationChainID}";
 	}
 
 // this line is used by starport scaffolding # 2

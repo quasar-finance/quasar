@@ -3,8 +3,8 @@ package qbank
 import (
 	"fmt"
 
-	"github.com/abag/quasarnode/x/qbank/keeper"
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )

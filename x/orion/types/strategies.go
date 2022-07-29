@@ -1,7 +1,7 @@
 package types
 
 import (
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // TODO | AUDIT | Can/should these be managed in module parameter / genesis parameter

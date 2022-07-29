@@ -37,5 +37,5 @@ Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:"$tmp_dir" \
   done 3< <(collect_proto_dirs "${project_dir}/proto")
 
   # Copy the generated go files over
-  cp -r "${tmp_dir}/github.com/abag/quasarnode/"* .
+  cp -r "${tmp_dir}/github.com/quasarlabs/quasarnode/"* .
 )

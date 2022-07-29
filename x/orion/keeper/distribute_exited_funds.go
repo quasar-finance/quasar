@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

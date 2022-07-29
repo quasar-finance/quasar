@@ -3,8 +3,8 @@ package simulation
 import (
 	"math/rand"
 
-	"github.com/abag/quasarnode/x/qbank/keeper"
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"

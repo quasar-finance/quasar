@@ -1,10 +1,10 @@
 syntax = "proto3";
-package abag.quasarnode.qoracle;
+package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "ibc/core/client/v1/client.proto";
 
-option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 message IBCParams {
   string authorized_channel = 1 [(gogoproto.moretags) = "yaml:\"authorized_channel\""]; // Identifier of authorized channel that we are allowed to send/receive packets

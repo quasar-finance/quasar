@@ -1,9 +1,9 @@
 syntax = "proto3";
-package abag.quasarnode.orion;
+package quasarlabs.quasarnode.orion;
 
 // this line is used by starport scaffolding # proto/tx/import
 
-option go_package = "github.com/abag/quasarnode/x/orion/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/orion/types";
 
 // Msg defines the Msg service.
 service Msg {

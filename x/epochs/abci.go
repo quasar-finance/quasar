@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/abag/quasarnode/x/epochs/keeper"
-	"github.com/abag/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

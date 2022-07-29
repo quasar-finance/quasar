@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/app"
-	oriontypes "github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/app"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"

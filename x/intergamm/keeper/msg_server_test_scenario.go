@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

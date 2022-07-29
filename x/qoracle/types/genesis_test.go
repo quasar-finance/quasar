@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package abag.quasarnode.qoracle;
+package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -15,56 +15,56 @@ import "qoracle/pool_metrics.proto";
 import "qoracle/denom_price_mapping.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // Query defines the gRPC querier service.
 service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/abag/quasarnode/qoracle/params";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
   }
   // Queries a PoolPosition by index.
 	rpc PoolPosition(QueryGetPoolPositionRequest) returns (QueryGetPoolPositionResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_position/{poolId}";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_position/{poolId}";
 	}
 
 	// Queries a list of PoolPosition items.
 	rpc PoolPositionAll(QueryAllPoolPositionRequest) returns (QueryAllPoolPositionResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_position";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_position";
 	}
 
 // Queries a PoolRanking by index.
 	rpc PoolRanking(QueryGetPoolRankingRequest) returns (QueryGetPoolRankingResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_ranking";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_ranking";
 	}
 // Queries a PoolSpotPrice by index.
 	rpc PoolSpotPrice(QueryGetPoolSpotPriceRequest) returns (QueryGetPoolSpotPriceResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_spot_price/{poolId}/{denomIn}/{denomOut}";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_spot_price/{poolId}/{denomIn}/{denomOut}";
 	}
 
 	// Queries a list of PoolSpotPrice items.
 	rpc PoolSpotPriceAll(QueryAllPoolSpotPriceRequest) returns (QueryAllPoolSpotPriceResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_spot_price";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_spot_price";
 	}
 
 // Queries a PoolInfo by index.
 	rpc PoolInfo(QueryGetPoolInfoRequest) returns (QueryGetPoolInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_info/{poolId}";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_info/{poolId}";
 	}
 
 	// Queries a list of PoolInfo items.
 	rpc PoolInfoAll(QueryAllPoolInfoRequest) returns (QueryAllPoolInfoResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/pool_info";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_info";
 	}
 
 // Queries a list of State items.
 	rpc State(QueryStateRequest) returns (QueryStateResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/state";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/state";
 	}
 
 // Queries a list of OraclePrices items.
 	rpc OraclePrices(QueryOraclePricesRequest) returns (QueryOraclePricesResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/oracle_prices";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/oracle_prices";
 	}
 
 // this line is used by starport scaffolding # 2

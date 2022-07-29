@@ -19,11 +19,11 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	appParams "github.com/abag/quasarnode/app/params"
-	epochstypes "github.com/abag/quasarnode/x/epochs/types"
-	oriontypes "github.com/abag/quasarnode/x/orion/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
-	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
+	appParams "github.com/quasarlabs/quasarnode/app/params"
+	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessage, genDoc *tmtypes.GenesisDoc, genesisParams GenesisParams, chainID string) (map[string]json.RawMessage, *tmtypes.GenesisDoc, error) {

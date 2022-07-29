@@ -3,11 +3,11 @@ package types
 import (
 	time "time"
 
-	epochtypes "github.com/abag/quasarnode/x/epochs/types"
-	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
-	qoracletypes "github.com/abag/quasarnode/x/qoracle/types"
+	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"

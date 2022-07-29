@@ -1,12 +1,12 @@
 syntax = "proto3";
-package abag.quasarnode.orion;
+package quasarlabs.quasarnode.orion;
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "qbank/common.proto";
 
-option go_package = "github.com/abag/quasarnode/x/orion/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/orion/types";
 
 // AUDIT NOTE - Strategy objects and interfaces need to be defined. After proper testing.
 

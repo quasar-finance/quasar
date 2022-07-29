@@ -1,13 +1,13 @@
 package keeper
 
 import (
-	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
-	intergammkeeper "github.com/abag/quasarnode/x/intergamm/keeper"
-	"github.com/abag/quasarnode/x/orion/keeper"
-	"github.com/abag/quasarnode/x/orion/types"
-	qbankkeeper "github.com/abag/quasarnode/x/qbank/keeper"
+	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	"github.com/quasarlabs/quasarnode/x/orion/keeper"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
+	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
 
-	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"

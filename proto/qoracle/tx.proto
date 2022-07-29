@@ -1,5 +1,5 @@
 syntax = "proto3";
-package abag.quasarnode.qoracle;
+package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "qoracle/pool_position.proto";
@@ -11,7 +11,7 @@ import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
 import "qoracle/pool_metrics.proto";
 import "qoracle/denom_price_mapping.proto";
 
-option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // Msg defines the Msg service.
 service Msg {

@@ -11,10 +11,10 @@ import (
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"google.golang.org/grpc/status"
 
-	"github.com/abag/quasarnode/testutil/network"
-	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/x/orion/client/cli"
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/testutil/network"
+	"github.com/quasarlabs/quasarnode/testutil/nullify"
+	"github.com/quasarlabs/quasarnode/x/orion/client/cli"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 func networkWithLpStatObjects(t *testing.T) (*network.Network, types.LpStat) {

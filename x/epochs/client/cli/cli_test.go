@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/abag/quasarnode/testutil/network"
-	"github.com/abag/quasarnode/x/epochs/client/cli"
-	"github.com/abag/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/testutil/network"
+	"github.com/quasarlabs/quasarnode/x/epochs/client/cli"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 )

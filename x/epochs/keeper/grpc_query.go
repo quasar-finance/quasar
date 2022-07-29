@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/abag/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

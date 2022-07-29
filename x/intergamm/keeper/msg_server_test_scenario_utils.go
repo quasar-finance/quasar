@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 type corpusEntry = struct {

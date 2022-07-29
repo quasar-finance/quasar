@@ -3,11 +3,11 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/testutil"
-	eventtest "github.com/abag/quasarnode/testutil/event"
-	"github.com/abag/quasarnode/testutil/sample"
-	oriontypes "github.com/abag/quasarnode/x/orion/types"
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	eventtest "github.com/quasarlabs/quasarnode/testutil/event"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )

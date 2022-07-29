@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,7 +1,7 @@
 package types
 
 import (
-	epochtypes "github.com/abag/quasarnode/x/epochs/types"
+	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )

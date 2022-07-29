@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/epochs/keeper"
-	"github.com/abag/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )

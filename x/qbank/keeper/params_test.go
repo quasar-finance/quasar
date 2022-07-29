@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/stretchr/testify/require"
 )
 

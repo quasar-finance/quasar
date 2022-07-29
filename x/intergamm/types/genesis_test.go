@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/stretchr/testify/require"
 )
 
