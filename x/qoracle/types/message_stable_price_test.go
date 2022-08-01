@@ -21,10 +21,20 @@ func TestMsgStablePrice_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "valid fields",
 			msg: MsgStablePrice{
 				Creator: sample.AccAddress().String(),
+				Denom:   "uatom",
+				Price:   "10.10",
 			},
+		}, {
+			name: "invalid price",
+			msg: MsgStablePrice{
+				Creator: sample.AccAddress().String(),
+				Denom:   "uatom",
+				Price:   "-10.10",
+			},
+			err: ErrInvalidStablePrice,
 		},
 	}
 	for _, tt := range tests {

@@ -23,7 +23,6 @@ func (k msgServer) StablePrice(goCtx context.Context, msg *types.MsgStablePrice)
 	if price.IsNil() || price.IsNegative() {
 		return nil, types.ErrInvalidStablePrice
 	}
-	// AUDIT TODO : oracle account validation to be added.
 
 	k.SetStablePrice(ctx, msg.Denom, price)
 

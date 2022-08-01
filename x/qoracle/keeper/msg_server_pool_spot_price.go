@@ -15,6 +15,9 @@ func (k msgServer) CreatePoolSpotPrice(goCtx context.Context, msg *types.MsgCrea
 		return nil, types.ErrUnAuthorizedOracleClient
 	}
 
+	if msg.DenomIn == msg.DenomOut {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "input denoms are same")
+	}
 	// Check if the value already exists
 	_, isFound := k.GetPoolSpotPrice(
 		ctx,

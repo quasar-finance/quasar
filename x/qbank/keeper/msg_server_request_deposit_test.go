@@ -27,7 +27,7 @@ func TestRequestDeposit(t *testing.T) {
 	targetAmount := sdk.NewInt(int64(42))
 	server, srvCtx := setupMsgServer(setup.Ctx, k)
 	var err error
-
+	reservedFields := []string{}
 	// Mint coins for qbank module account
 	setup.Keepers.AccountKeeper.NewAccountWithAddress(setup.Ctx, userAddr)
 	err = setup.Keepers.BankKeeper.MintCoins(
@@ -48,10 +48,10 @@ func TestRequestDeposit(t *testing.T) {
 	// Deposit the targetAmount
 	d := types.NewMsgRequestDeposit(
 		userAddr.String(),
-		"HIGH",
 		"orion",
 		sdk.NewCoin("QSR", targetAmount),
 		types.LockupTypes_Days_21,
+		reservedFields,
 	)
 
 	res1, err1 := server.RequestDeposit(srvCtx, d)

@@ -43,5 +43,16 @@ func (msg *MsgStablePrice) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+
+	if err = sdk.ValidateDenom(msg.Denom); err != nil {
+		return err
+	}
+
+	price := sdk.MustNewDecFromStr(msg.Price)
+	if price.IsNil() || price.IsNegative() {
+		return ErrInvalidStablePrice
+
+	}
+
 	return nil
 }

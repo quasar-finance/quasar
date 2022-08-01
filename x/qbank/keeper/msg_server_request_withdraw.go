@@ -46,6 +46,7 @@ func (k msgServer) RequestWithdraw(goCtx context.Context, msg *types.MsgRequestW
 	}
 
 	k.Keeper.SubActualWithdrawableAmt(ctx, depositor, coin)
+	k.Keeper.AddTotalWithdrawAmt(ctx, depositor, vaultId, sdk.NewCoins(coin))
 
 	ctx.EventManager().EmitEvent(
 		types.CreateWithdrawEvent(ctx, depositorAddr, coin, vaultId, riskProfile),

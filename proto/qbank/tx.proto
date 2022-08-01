@@ -19,11 +19,10 @@ service Msg {
 
 message MsgRequestDeposit {
   string creator = 1;
-  string riskProfile = 2;
-  string vaultID = 3;
-  cosmos.base.v1beta1.Coin coin = 4 [ (gogoproto.nullable) = false ];
-  // string lockupPeriod = 5;
-  LockupTypes lockupPeriod  = 5;
+  string vaultID = 2;
+  cosmos.base.v1beta1.Coin coin = 3 [ (gogoproto.nullable) = false ];
+  LockupTypes lockupPeriod  = 4;
+  repeated string reserved = 5  [(gogoproto.nullable) = false];
 }
 
 message MsgRequestDepositResponse {

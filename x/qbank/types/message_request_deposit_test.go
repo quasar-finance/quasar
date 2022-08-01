@@ -23,21 +23,31 @@ func TestMsgRequestDeposit_ValidateBasic(t *testing.T) {
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "invalid risk profile",
+			name: "invalid vault id",
 			msg: MsgRequestDeposit{
-				Creator:     sample.AccAddressStr(),
-				RiskProfile: "FOO",
+				Creator: sample.AccAddressStr(),
+				VaultID: "xyz",
 			},
-			errMsg: "invalid risk profile",
+			errMsg: "invalid vault",
 		}, {
 			name: "valid address",
 			msg: MsgRequestDeposit{
 				Creator:      sample.AccAddressStr(),
-				RiskProfile:  "HIGH",
 				VaultID:      "orion",
 				Coin:         sdk.NewCoin("abc", sdk.NewInt(100)),
 				LockupPeriod: 1,
 			},
+		},
+		{
+			name: "valid reserved length",
+			msg: MsgRequestDeposit{
+				Creator:      sample.AccAddressStr(),
+				VaultID:      "orion",
+				Coin:         sdk.NewCoin("abc", sdk.NewInt(100)),
+				LockupPeriod: 1,
+				Reserved:     []string{"abc"},
+			},
+			errMsg: "invalid reserved field length",
 		},
 	}
 	for _, tt := range tests {

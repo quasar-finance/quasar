@@ -16,4 +16,5 @@ var (
 	ErrStablePriceNotAvailable        = sdkerrors.Register(ModuleName, 201, "stable price is not available")
 	ErrInsufficientDollarDepositValue = sdkerrors.Register(ModuleName, 202, "insufficient dollar deposit value")
 	ErrWithdrawInsufficientFunds      = sdkerrors.Register(ModuleName, 203, "insufficient funds")
+	ErrReservedFieldLength            = sdkerrors.Register(ModuleName, 204, "invalid reserved field length")
 )
