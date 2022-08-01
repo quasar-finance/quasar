@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -227,9 +226,7 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 func (k Keeper) setOsmosisPool(ctx sdk.Context, pool balancerpool.Pool) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 
-	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key, pool.Id) // TODO: Ensure that big endian is the correct bit order
-
+	key := sdk.Uint64ToBigEndian(pool.Id)
 	store.Set(key, k.cdc.MustMarshal(&pool))
 }
 
@@ -322,9 +319,7 @@ func (k Keeper) setOsmosisIncentivizedPools(ctx sdk.Context, pools []poolincenti
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisIncentivizedPoolsPrefix)
 
 	for _, pool := range pools {
-		key := make([]byte, 8)
-		binary.BigEndian.PutUint64(key, pool.PoolId) // TODO: Ensure that big endian is the correct bit order
-
+		key := sdk.Uint64ToBigEndian(pool.PoolId)
 		store.Set(key, k.cdc.MustMarshal(&pool))
 	}
 }
@@ -343,9 +338,7 @@ func (k Keeper) handleOsmosisPoolGaugeIdsResponse(ctx sdk.Context, req abcitypes
 func (k Keeper) setOsmosisPoolGaugeIds(ctx sdk.Context, poolId uint64, gaugeIdWithDuration poolincentivestypes.QueryGaugeIdsResponse_GaugeIdWithDuration) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolGaugeIdsPrefix)
 
-	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key, poolId) // TODO: Ensure that big endian is the correct bit order
-
+	key := sdk.Uint64ToBigEndian(poolId)
 	store.Set(key, k.cdc.MustMarshal(&gaugeIdWithDuration))
 }
 
