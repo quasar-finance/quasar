@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"

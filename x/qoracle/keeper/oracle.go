@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/bandprotocol/bandchain-packet/obi"
 	bandpacket "github.com/bandprotocol/bandchain-packet/packet"
 	sdk "github.com/cosmos/cosmos-sdk/types"

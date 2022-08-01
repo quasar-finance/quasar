@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	epochstypes "github.com/abag/quasarnode/x/epochs/types"
+	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

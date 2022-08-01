@@ -1,4 +1,4 @@
-module github.com/abag/quasarnode
+module github.com/quasarlabs/quasarnode
 
 go 1.18
 

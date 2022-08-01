@@ -1,12 +1,12 @@
 syntax = "proto3";
-package abag.quasarnode.epochs;
+package quasarlabs.quasarnode.epochs;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "epochs/genesis.proto";
 
-option go_package = "github.com/abag/quasarnode/x/epochs/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/epochs/types";
 
 // Query defines the gRPC querier service.
 service Query {

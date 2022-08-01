@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 
-	oriontypes "github.com/abag/quasarnode/x/orion/types"
-	"github.com/abag/quasarnode/x/qbank/types"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

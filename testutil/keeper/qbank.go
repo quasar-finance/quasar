@@ -1,10 +1,10 @@
 package keeper
 
 import (
-	epochskeeper "github.com/abag/quasarnode/x/epochs/keeper"
-	"github.com/abag/quasarnode/x/qbank/keeper"
-	"github.com/abag/quasarnode/x/qbank/types"
-	qoraclekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
+	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"

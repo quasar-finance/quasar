@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/abag/quasarnode/testutil/network"
-	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/x/qoracle/client/cli"
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/testutil/network"
+	"github.com/quasarlabs/quasarnode/testutil/nullify"
+	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // Prevent strconv unused error

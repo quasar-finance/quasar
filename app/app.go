@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	appParams "github.com/abag/quasarnode/app/params"
-	"github.com/abag/quasarnode/app/upgrades"
+	appParams "github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasarlabs/quasarnode/app/upgrades"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -104,31 +104,31 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	// Quasar imports
-	"github.com/abag/quasarnode/docs"
+	"github.com/quasarlabs/quasarnode/docs"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
-	epochsmodule "github.com/abag/quasarnode/x/epochs"
-	epochsmodulekeeper "github.com/abag/quasarnode/x/epochs/keeper"
-	epochsmoduletypes "github.com/abag/quasarnode/x/epochs/types"
+	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
+	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 
-	orionmodule "github.com/abag/quasarnode/x/orion"
-	orionmodulekeeper "github.com/abag/quasarnode/x/orion/keeper"
-	orionmoduletypes "github.com/abag/quasarnode/x/orion/types"
+	orionmodule "github.com/quasarlabs/quasarnode/x/orion"
+	orionmodulekeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
+	orionmoduletypes "github.com/quasarlabs/quasarnode/x/orion/types"
 
-	qbankmodule "github.com/abag/quasarnode/x/qbank"
-	qbankmodulekeeper "github.com/abag/quasarnode/x/qbank/keeper"
-	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"
+	qbankmodule "github.com/quasarlabs/quasarnode/x/qbank"
+	qbankmodulekeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	qbankmoduletypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 
-	qoraclemodule "github.com/abag/quasarnode/x/qoracle"
-	qoraclemodulekeeper "github.com/abag/quasarnode/x/qoracle/keeper"
-	qoraclemoduletypes "github.com/abag/quasarnode/x/qoracle/types"
+	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
+	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 
-	intergammmodule "github.com/abag/quasarnode/x/intergamm"
-	intergammmodulekeeper "github.com/abag/quasarnode/x/intergamm/keeper"
-	intergammmoduletypes "github.com/abag/quasarnode/x/intergamm/types"
+	intergammmodule "github.com/quasarlabs/quasarnode/x/intergamm"
+	intergammmodulekeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	intergammmoduletypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 

@@ -11,9 +11,9 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/abag/quasarnode/x/qoracle/client/cli"
-	"github.com/abag/quasarnode/x/qoracle/keeper"
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
+	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"

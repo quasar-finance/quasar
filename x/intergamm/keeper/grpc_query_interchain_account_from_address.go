@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	"google.golang.org/grpc/codes"

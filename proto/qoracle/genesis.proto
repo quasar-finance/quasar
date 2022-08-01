@@ -1,5 +1,5 @@
 syntax = "proto3";
-package abag.quasarnode.qoracle;
+package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "qoracle/params.proto";
@@ -9,7 +9,7 @@ import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // GenesisState defines the qoracle module's genesis state.
 message GenesisState {

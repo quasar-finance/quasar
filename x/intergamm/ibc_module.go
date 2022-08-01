@@ -3,8 +3,8 @@ package intergamm
 import (
 	"fmt"
 
-	"github.com/abag/quasarnode/x/intergamm/keeper"
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"

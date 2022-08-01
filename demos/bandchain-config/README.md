@@ -35,5 +35,5 @@ Wait for the channel and relayer to come online
 
 5. Watch for changes in state
 ```
-http://localhost:1317/abag/quasarnode/qoracle/state
+http://localhost:1317/quasarlabs/quasarnode/qoracle/state
 ```

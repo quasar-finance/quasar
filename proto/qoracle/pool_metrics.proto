@@ -1,7 +1,7 @@
 syntax = "proto3";
-package abag.quasarnode.qoracle;
+package quasarlabs.quasarnode.qoracle;
 
-option go_package = "github.com/abag/quasarnode/x/qoracle/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 import "qoracle/gauge_apy.proto"; 
 
 message PoolMetrics {

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/abag/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 

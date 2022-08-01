@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/x/orion"
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/testutil/nullify"
+	"github.com/quasarlabs/quasarnode/x/orion"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/stretchr/testify/require"
 )
 

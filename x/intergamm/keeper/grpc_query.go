@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var _ types.QueryServer = Keeper{}

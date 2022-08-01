@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 )
 

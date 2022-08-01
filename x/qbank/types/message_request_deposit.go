@@ -1,7 +1,7 @@
 package types
 
 import (
-	// oriontypes "github.com/abag/quasarnode/x/orion/types"
+	// oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )

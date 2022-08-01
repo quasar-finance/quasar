@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/testutil/nullify"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func TestPoolPositionQuerySingle(t *testing.T) {

@@ -3,10 +3,10 @@ package qbank_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/testutil/sample"
-	"github.com/abag/quasarnode/x/qbank"
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
+	"github.com/quasarlabs/quasarnode/x/qbank"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )

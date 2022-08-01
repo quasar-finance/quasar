@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/abag/quasarnode/app"
-	appParams "github.com/abag/quasarnode/app/params"
-	"github.com/abag/quasarnode/cmd/quasarnoded/cmd"
+	"github.com/quasarlabs/quasarnode/app"
+	appParams "github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 

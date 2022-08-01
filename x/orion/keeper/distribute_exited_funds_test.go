@@ -1,9 +1,9 @@
 package keeper_test
 
 import (
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/x/orion/keeper"
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/x/orion/keeper"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"testing"

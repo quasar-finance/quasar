@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 type msgServer struct {

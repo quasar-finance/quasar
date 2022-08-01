@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/client"
 )
 

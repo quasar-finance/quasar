@@ -1,9 +1,9 @@
 syntax = "proto3";
-package abag.quasarnode.orion;
+package quasarlabs.quasarnode.orion;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/abag/quasarnode/x/orion/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/orion/types";
 
 // Local Information of the other zone in the intergamm module.
 message ZoneLocalInfo {

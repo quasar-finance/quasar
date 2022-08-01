@@ -7,7 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 
-	"github.com/abag/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

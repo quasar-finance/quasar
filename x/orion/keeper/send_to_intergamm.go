@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/abag/quasarnode/x/orion/types"
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"

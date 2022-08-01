@@ -1,7 +1,7 @@
 package types
 
 import (
-	qbanktypes "github.com/abag/quasarnode/x/qbank/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

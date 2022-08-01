@@ -3,10 +3,10 @@ package intergamm_test
 import (
 	"testing"
 
-	"github.com/abag/quasarnode/testutil"
-	"github.com/abag/quasarnode/testutil/nullify"
-	"github.com/abag/quasarnode/x/intergamm"
-	"github.com/abag/quasarnode/x/intergamm/types"
+	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasarlabs/quasarnode/testutil/nullify"
+	"github.com/quasarlabs/quasarnode/x/intergamm"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/stretchr/testify/require"
 )
 

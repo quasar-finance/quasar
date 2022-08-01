@@ -3,10 +3,10 @@ package keeper
 import (
 	"time"
 
-	"github.com/abag/quasarnode/x/intergamm/types"
-	gammtypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/lockup"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
+	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

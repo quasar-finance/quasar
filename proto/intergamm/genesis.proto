@@ -1,11 +1,11 @@
 syntax = "proto3";
-package abag.quasarnode.intergamm;
+package quasarlabs.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
 import "intergamm/params.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/abag/quasarnode/x/intergamm/types";
+option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 
 // GenesisState defines the intergamm module's genesis state.
 message GenesisState {
