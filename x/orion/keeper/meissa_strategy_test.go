@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/abag/quasarnode/testutil"
-	gammbalancer "github.com/abag/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	orionkeeper "github.com/abag/quasarnode/x/orion/keeper"
 	"github.com/abag/quasarnode/x/orion/types"
 	qbankmoduletypes "github.com/abag/quasarnode/x/qbank/types"

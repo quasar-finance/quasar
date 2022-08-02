@@ -16,6 +16,7 @@ func (k Keeper) State(goCtx context.Context, req *types.QueryStateRequest) (*typ
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	return &types.QueryStateResponse{
-		CoinRatesState: k.GetCoinRatesState(ctx),
+		CoinRatesState:            k.GetCoinRatesState(ctx),
+		OsmosisParamsRequestState: k.GetOsmosisParamsRequestState(ctx),
 	}, nil
 }

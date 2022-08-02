@@ -1,0 +1,44 @@
+build:
+  binary: "osmosisd"
+  main: "./cmd/osmosisd"
+accounts:
+  - name: alice
+    mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
+    coins: ["20000000uosmo", "2000000000stake"]
+  - name: bob
+    mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
+    coins: ["10000000uosmo", "1000000000stake"]
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4502"
+  name: bob
+  coins: ["1000000uosmo", "100000000stake"]
+host:
+  rpc: ":26669"
+  p2p: ":26663"
+  prof: ":6063"
+  grpc: ":9097"
+  grpc-web: ":8093"
+  api: ":1313"
+  frontend: ":8083"
+  dev-ui: ":12353"
+genesis:
+  chain_id: "osmosis"
+  app_state:
+    app_state:
+    interchainquery:
+        params:
+          allow_queries: 
+          - "/osmosis.epochs.v1beta1.Query/EpochInfos"
+          - "/osmosis.gamm.v1beta1.Query/Pool"
+          - "/osmosis.poolincentives.v1beta1.Query/LockableDurations"
+          - "/osmosis.mint.v1beta1.Query/Params"
+          - "/osmosis.mint.v1beta1.Query/EpochProvisions"
+          - "/osmosis.poolincentives.v1beta1.Query/IncentivizedPools"
+          - "/osmosis.poolincentives.v1beta1.Query/GaugeIds"
+          - "/osmosis.poolincentives.v1beta1.Query/DistrInfo"
+          - "/osmosis.gamm.v1beta1.Query/SpotPrice"
+init:
+  home: "$HOME/.osmo"
