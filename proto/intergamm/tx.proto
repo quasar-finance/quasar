@@ -2,6 +2,9 @@ syntax = "proto3";
 package quasarlabs.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "osmosis/v9/gamm/v1beta1/tx.proto";
+
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
@@ -9,6 +12,13 @@ option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 // Msg defines the Msg service.
 service Msg {
   rpc TestScenario(MsgTestScenario) returns (MsgTestScenarioResponse);
+  rpc TransmitIbcJoinPool(MsgTransmitIbcJoinPool) returns (MsgTransmitIbcJoinPoolResponse);
+  rpc TransmitIbcExitPool(MsgTransmitIbcExitPool) returns (MsgTransmitIbcExitPoolResponse);
+  rpc TransmitIbcLockTokens(MsgTransmitIbcLockTokens) returns (MsgTransmitIbcLockTokensResponse);
+  rpc TransmitIbcBeginUnlocking(MsgTransmitIbcBeginUnlocking) returns (MsgTransmitIbcBeginUnlockingResponse);
+  rpc TransmitIbcJoinSwapExternAmountIn(MsgTransmitIbcJoinSwapExternAmountIn) returns (MsgTransmitIbcJoinSwapExternAmountInResponse);
+  rpc TransmitIbcExitSwapExternAmountOut(MsgTransmitIbcExitSwapExternAmountOut) returns (MsgTransmitIbcExitSwapExternAmountOutResponse);
+  rpc SendToken(MsgSendToken) returns (MsgSendTokenResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -23,6 +33,97 @@ message MsgTestScenario {
 message MsgTestScenarioResponse {
   string result = 1;
   int64 exitCode = 2;
+}
+
+message MsgSendToken {
+  string creator = 1;
+  string destinationLocalZoneId = 2;
+  string sender = 3;
+  string receiver = 4;
+  cosmos.base.v1beta1.Coin coin = 5;
+}
+
+message MsgSendTokenResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcJoinPool {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4;
+  int64 shareOutAmount = 5;
+  repeated cosmos.base.v1beta1.Coin tokenInMaxs = 6 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcJoinPoolResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcExitPool {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4;
+  int64 shareInAmount = 5;
+  repeated cosmos.base.v1beta1.Coin tokenOutMins = 6 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcExitPoolResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcLockTokens {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 duration = 4 [
+  (gogoproto.stdduration) = true,
+  (gogoproto.jsontag) = "duration,omitempty",
+  (gogoproto.moretags) = "yaml:\"duration\"" ];
+  repeated cosmos.base.v1beta1.Coin coins  = 5 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcLockTokensResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcBeginUnlocking {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 id = 4;
+  repeated cosmos.base.v1beta1.Coin coins  = 5 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcBeginUnlockingResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcJoinSwapExternAmountIn {
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4;
+  int64 shareOutMinAmount = 5;
+  cosmos.base.v1beta1.Coin tokenIn = 6 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcJoinSwapExternAmountInResponse {
+  uint64 seq = 1;
+}
+
+message MsgTransmitIbcExitSwapExternAmountOut{
+  string creator = 1;
+  string connectionId = 2;
+  uint64 timeoutTimestamp = 3;
+  uint64 poolId = 4;
+  int64 shareInAmount = 5;
+  cosmos.base.v1beta1.Coin tokenOutMins = 6 [ (gogoproto.nullable) = false ];
+}
+
+message MsgTransmitIbcExitSwapExternAmountOutResponse {
+  uint64 seq = 1;
 }
 
 // this line is used by starport scaffolding # proto/tx/message
