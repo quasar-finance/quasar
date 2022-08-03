@@ -1,3 +1,9 @@
+mod msg;
+mod querier;
+mod query;
+mod types;
+
+
 #[cfg(test)]
 mod tests {
     #[test]
