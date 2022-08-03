@@ -1,6 +1,6 @@
 # Importing
 
-In [Publishing](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/Publishing.md), we discussed how you can publish your contract to the world.
+In [Publishing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Publishing.md), we discussed how you can publish your contract to the world.
 This looks at the flip-side, how can you use someone else's contract (which is the same
 question as how they will use your contract). Let's go through the various stages.
 
