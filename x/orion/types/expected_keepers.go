@@ -74,7 +74,7 @@ type IntergammKeeper interface {
 	GetConnectionId(ctx sdk.Context, inChainID string) (string, bool)
 
 	SendToken(ctx sdk.Context,
-		destinationLocalZoneId string,
+		destination_local_zone_id string,
 		sender sdk.AccAddress,
 		receiver string,
 		coin sdk.Coin) (uint64, error)

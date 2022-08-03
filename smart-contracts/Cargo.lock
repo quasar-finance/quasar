@@ -467,6 +467,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "intergamm-bindings"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "intergamm-bindings-test"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus",
+ "cw2",
+ "intergamm-bindings",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "itertools"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -647,26 +673,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom 0.2.7",
-]
-
-[[package]]
-name = "remote_strategy"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus",
- "cw-utils",
- "cw2",
- "cw20",
- "cw20-base",
- "osmo-bindings",
- "quasar-traits",
- "quasar-types",
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
 ]
 
 [[package]]
