@@ -40,6 +40,7 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
+intergamm-bindings = { path = "../../packages/intergamm-bindings", version = "0.1.0"}
 cosmwasm-std = "1.0.0"
 cosmwasm-storage = "1.0.0"
 cw-storage-plus = "0.13.2"
