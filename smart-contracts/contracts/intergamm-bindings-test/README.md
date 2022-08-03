@@ -72,8 +72,8 @@ git push -u origin main
 
 ## CI Support
 
-We have template configurations for both [GitHub Actions](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/.github/workflows/Basic.yml)
-and [Circle CI](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/.circleci/config.yml) in the generated project, so you can
+We have template configurations for both [GitHub Actions](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/.github/workflows/Basic.yml)
+and [Circle CI](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/.circleci/config.yml) in the generated project, so you can
 get up and running with CI right away.
 
 One note is that the CI runs all `cargo` commands
@@ -85,14 +85,14 @@ running `cargo check` or `cargo unit-test`.
 
 ## Using your project
 
-Once you have your custom repo, you should check out [Developing](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/Developing.md) to explain
+Once you have your custom repo, you should check out [Developing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Developing.md) to explain
 more on how to run tests and develop code. Or go through the
 [online tutorial](https://docs.cosmwasm.com/) to get a better feel
 of how to develop.
 
-[Publishing](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/Publishing.md) contains useful information on how to publish your contract
+[Publishing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Publishing.md) contains useful information on how to publish your contract
 to the world, once you are ready to deploy it on a running blockchain. And
-[Importing](quasar-finance/quasar/smart-contracts/packages/intergamm-bindings-test/Importing.md) contains information about pulling in other contracts or crates
+[Importing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Importing.md) contains information about pulling in other contracts or crates
 that have been published.
 
 Please replace this README file with information about your specific project. You can keep
