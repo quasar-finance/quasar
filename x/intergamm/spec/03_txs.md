@@ -4,6 +4,80 @@ order: 3
 
 # Keepers
 
+## Transactions
+
+Intergamm allows for a couple of transactions, namely the ones smart contract strategies need to functions. The transactions are:
+### TransmitIbcJoinPool
+```go
+type MsgTransmitIbcJoinPool struct {
+    Creator          string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+    ConnectionId     string       `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+    TimeoutTimestamp uint64       `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+    PoolId           uint64       `protobuf:"varint,4,opt,name=poolId,proto3" json:"poolId,omitempty"`
+    ShareOutAmount   int64        `protobuf:"varint,5,opt,name=shareOutAmount,proto3" json:"shareOutAmount,omitempty"`
+    TokenInMaxs      []types.Coin `protobuf:"bytes,6,rep,name=tokenInMaxs,proto3" json:"tokenInMaxs"`
+}
+```
+### TransmitIbcExitPool
+```go
+type MsgTransmitIbcExitPool struct {
+	Creator          string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	ConnectionId     string       `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+	TimeoutTimestamp uint64       `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+	PoolId           uint64       `protobuf:"varint,4,opt,name=poolId,proto3" json:"poolId,omitempty"`
+	ShareInAmount    int64        `protobuf:"varint,5,opt,name=shareInAmount,proto3" json:"shareInAmount,omitempty"`
+	TokenOutMins     []types.Coin `protobuf:"bytes,6,rep,name=tokenOutMins,proto3" json:"tokenOutMins"`
+}
+```
+### TransmitIbcLockTokens
+```go
+type MsgTransmitIbcLockTokens struct {
+	Creator          string               `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	ConnectionId     string               `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+	TimeoutTimestamp uint64               `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+	Duration         *durationpb.Duration `protobuf:"bytes,4,opt,name=duration,proto3" json:"duration,omitempty"`
+	Coins            []types.Coin         `protobuf:"bytes,5,rep,name=coins,proto3" json:"coins"`
+}
+```
+
+### TransmitIbcBeginUnlocking
+
+```go
+type MsgTransmitIbcBeginUnlocking struct {
+	Creator          string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	ConnectionId     string       `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+	TimeoutTimestamp uint64       `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+	Id               uint64       `protobuf:"varint,4,opt,name=id,proto3" json:"id,omitempty"`
+	Coins            []types.Coin `protobuf:"bytes,5,rep,name=coins,proto3" json:"coins"`
+}
+```
+
+### TransmitIbcJoinSwapExternAmountIn
+
+```go
+type MsgTransmitIbcJoinSwapExternAmountIn struct {
+	Creator           string     `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	ConnectionId      string     `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+	TimeoutTimestamp  uint64     `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+	PoolId            uint64     `protobuf:"varint,4,opt,name=poolId,proto3" json:"poolId,omitempty"`
+	ShareOutMinAmount int64      `protobuf:"varint,5,opt,name=shareOutMinAmount,proto3" json:"shareOutMinAmount,omitempty"`
+	TokenIn           types.Coin `protobuf:"bytes,6,opt,name=tokenIn,proto3" json:"tokenIn"`
+}
+```
+
+
+### TransmitIbcExitSwapExternAmountOut
+```go
+type MsgTransmitIbcExitSwapExternAmountOut struct {
+Creator          string     `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+ConnectionId     string     `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+TimeoutTimestamp uint64     `protobuf:"varint,3,opt,name=timeoutTimestamp,proto3" json:"timeoutTimestamp,omitempty"`
+PoolId           uint64     `protobuf:"varint,4,opt,name=poolId,proto3" json:"poolId,omitempty"`
+ShareInAmount    int64      `protobuf:"varint,5,opt,name=shareInAmount,proto3" json:"shareInAmount,omitempty"`
+TokenOutMins     types.Coin `protobuf:"bytes,6,opt,name=tokenOutMins,proto3" json:"tokenOutMins"`
+}
+```
+
 ## Keeper functions
 
 The Intergamm keeper exposes functions to directly talk to the remote chain.

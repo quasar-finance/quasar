@@ -6,7 +6,6 @@ import (
 
 	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +20,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var (
@@ -193,6 +193,9 @@ func (k Keeper) IsICARegistered(ctx sdk.Context, connectionID, owner string) (st
 	}
 	return k.icaControllerKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
 }
+
+// TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
+//  timeoutTimestamp should probably be used at some point
 func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
