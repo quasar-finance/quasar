@@ -9,9 +9,9 @@ const TypeMsgSendToken = "send_token"
 
 var _ sdk.Msg = &MsgSendToken{}
 
-func NewMsgSendToken(destinationLocalZoneId string, connectionId string, timoutTimestamp, id uint64, coins []sdk.Coin) *MsgSendToken {
+func NewMsgSendToken(destination_local_zone_id string, connectionId string, timoutTimestamp, id uint64, coins []sdk.Coin) *MsgSendToken {
 	return &MsgSendToken{
-		DestinationLocalZoneId: destinationLocalZoneId,
+		DestinationLocalZoneId: destination_local_zone_id,
 	}
 }
 
@@ -42,7 +42,7 @@ func (msg *MsgSendToken) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 	if msg.DestinationLocalZoneId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "destinationLocalZoneId cannot be empty")
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "destination_local_zone_id cannot be empty")
 	}
 	if msg.Coin == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be nil")

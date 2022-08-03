@@ -238,13 +238,13 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 // NOTE - This method to be used till automated routing logic is in place.
 func (k Keeper) SendToken(ctx sdk.Context,
 	// destinationChain string, // TODO - To be used for cross validation
-	destinationLocalZoneId string,
+	destination_local_zone_id string,
 	sender sdk.AccAddress,
 	receiver string,
 	coin sdk.Coin) (uint64, error) {
 	logger := k.Logger(ctx)
 	logger.Info("SendToken",
-		"destinationLocalZoneId", destinationLocalZoneId,
+		"destination_local_zone_id", destination_local_zone_id,
 		"sender", sender,
 		"receiver", receiver,
 		"coin", coin,
@@ -253,7 +253,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	var is_one_hop bool
 	var destinationChain string
 	var fwdChannelID string
-	if intrZone, found := k.DestToIntrZoneMap(ctx)[destinationLocalZoneId]; !found {
+	if intrZone, found := k.DestToIntrZoneMap(ctx)[destination_local_zone_id]; !found {
 		// DestToIntrZoneMap does not have a corresponding entry.
 		// This could mean that; destination zone is the intrZone for this case.
 		// And this is normal one hop token tranfer.
@@ -261,7 +261,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		// Verifying is intr zone exist
 		intrRcvrs := k.IntrRcvrs(ctx)
 		for _, intrRcvr := range intrRcvrs {
-			if destinationLocalZoneId == intrRcvr.ZoneInfo.LocalZoneId {
+			if destination_local_zone_id == intrRcvr.ZoneInfo.LocalZoneId {
 				is_one_hop = true
 				destinationChain = intrRcvr.ZoneInfo.ChainId
 			}
@@ -271,23 +271,23 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		intrRcvrs := k.IntrRcvrs(ctx)
 		for _, intrRcvr := range intrRcvrs {
 			if intrZone == intrRcvr.ZoneInfo.LocalZoneId {
-				if nextZone, found := intrRcvr.NextZoneRouteMap[destinationLocalZoneId]; found {
+				if nextZone, found := intrRcvr.NextZoneRouteMap[destination_local_zone_id]; found {
 					fwdChannelID = nextZone.TransferChannelId
 					destinationChain = nextZone.ChainId
 				} else {
 					return 0, fmt.Errorf("packet forwarding channel not found for intr zone %s,next zone %s",
-						intrZone, destinationLocalZoneId)
+						intrZone, destination_local_zone_id)
 				}
 			}
 		}
 	}
 
 	if destinationChain == "" {
-		return 0, fmt.Errorf("destination chain not found for zone %s", destinationLocalZoneId)
+		return 0, fmt.Errorf("destination chain not found for zone %s", destination_local_zone_id)
 	}
 
 	if !is_one_hop && fwdChannelID == "" {
-		return 0, fmt.Errorf("packet forwarding channel is empty for two hop token transfer to dest zone id %s", destinationLocalZoneId)
+		return 0, fmt.Errorf("packet forwarding channel is empty for two hop token transfer to dest zone id %s", destination_local_zone_id)
 	}
 
 	pi, found := k.GetPortDetail(ctx, destinationChain, "transfer")

@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 #[serde(rename_all = "snake_case")]
 /// A number of Custom messages that can call into the intergamm bindings
 pub enum IntergammMsg {
-    SendToken {
+    MsgSendToken {
         creator: String,
         destination_local_zone_id: String,
         sender: String,
