@@ -3,10 +3,10 @@ package intergamm
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 // NewHandler ...
@@ -19,6 +19,9 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		case *types.MsgTestScenario:
 			res, err := msgServer.TestScenario(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSendToken:
+			res, err := msgServer.SendToken((sdk.WrapSDKContext(ctx)), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 			// this line is used by starport scaffolding # 1
 		default:
