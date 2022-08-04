@@ -70,9 +70,9 @@ host:
   api: ":1311"
   frontend: ":8081"
   dev-ui: ":12351"
-#client:
-#  openapi:
-#    path: "docs/client/static/openapi/openapi.yml"
+client:
+  openapi:
+    path: "docs/static/openapi.yml"
 #  vuex:
 #    path: "vue/src/store"
 faucet:
