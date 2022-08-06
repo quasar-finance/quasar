@@ -54,7 +54,7 @@ func (m *CustomMessenger) testScenario(ctx sdk.Context, contractAddr sdk.AccAddr
 	err := PerformTestScenario(m.intergammKeeper, ctx, contractAddr, testScenario)
 	// err := PerformCreateDenom(m.tokenFactory, m.bank, ctx, contractAddr, createDenom)
 	if err != nil {
-		return nil, nil, sdkerrors.Wrap(err, "perform create denom")
+		return nil, nil, sdkerrors.Wrap(err, "perform test scenario")
 	}
 	return nil, nil, nil
 }
