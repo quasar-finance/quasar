@@ -7,21 +7,24 @@ use serde::{Serialize, Deserialize};
 #[serde(rename_all = "snake_case")]
 /// A number of Custom messages that can call into the intergamm bindings
 pub enum IntergammMsg {
-    MsgSendToken {
+    SendToken {
         creator: String,
         destination_local_zone_id: String,
         sender: String,
         receiver: String,
         coin: Coin
     },
-    TransmitIbcJoinPool {
+    // unused and unimplemented on go side (wasmbinding)
+    // TransmitIbcJoinPool {
+    //     creator: String,
+    //     connection_id: String,
+    //     timeout_timestamp: Timestamp,
+    //     pool_id: Uint64,
+    // },
+    TestScenario {
         creator: String,
-        connection_id: String,
-        timeout_timestamp: Timestamp,
-        pool_id: Uint64,
-    }
-
-
+        scenario: String,
+    },
 }
 
 impl IntergammMsg {

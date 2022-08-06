@@ -109,6 +109,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	owasm "github.com/quasarlabs/quasarnode/wasmbinding"
 
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
@@ -658,6 +659,8 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
+	wasmOpts = append(owasm.RegisterCustomPlugins(app.IntergammKeeper, &bankkeeper.BaseKeeper{}), wasmOpts...)
+
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "iterator,staking,stargate"
@@ -858,7 +861,7 @@ func New(
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
-		intergammModule,
+		// intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
