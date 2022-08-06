@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
-use intergamm_bindings::{msg::IntergammMsg};
+use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -30,27 +30,31 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     match msg {
-        ExecuteMsg::SendToken { } => {
-            execute_send_token()
+        ExecuteMsg::SendToken {} => execute_send_token(),
+        ExecuteMsg::JoinPool {} => {
+            todo!()
         }
-        ExecuteMsg::JoinPool { } => {todo!()}
     }
 }
 
 pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(Response::new().add_message(IntergammMsg::MsgSendToken{
-        creator: "".to_string(),
-        destination_local_zone_id: "".to_string(),
-        sender: "".to_string(),
-        receiver: "".to_string(),
-        coin: Default::default()
+    Ok(Response::new().add_message(IntergammMsg::TestScenario {
+        creator: "niki".to_string(),
+        scenario: "test123".to_string(),
     }))
+
+    // Ok(Response::new().add_message(IntergammMsg::MsgSendToken{
+    //     creator: "".to_string(),
+    //     destination_local_zone_id: "".to_string(),
+    //     sender: "".to_string(),
+    //     receiver: "".to_string(),
+    //     coin: Default::default()
+    // }))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-    }
+    match msg {}
 }
 
 #[cfg(test)]
