@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Coin};
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
 
@@ -38,9 +38,12 @@ pub fn execute(
 }
 
 pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(Response::new().add_message(IntergammMsg::TestScenario {
-        creator: "niki".to_string(),
-        scenario: "test123".to_string(),
+    Ok(Response::new().add_message(IntergammMsg::MsgSendToken{
+        creator: "".to_string(),
+        destination_local_zone_id: "".to_string(),
+        sender: "".to_string(),
+        receiver: "".to_string(),
+        coin: Coin::new(0, "")
     }))
 
     // Ok(Response::new().add_message(IntergammMsg::MsgSendToken{
