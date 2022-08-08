@@ -14,17 +14,12 @@ pub enum IntergammMsg {
         receiver: String,
         coin: Coin
     },
-    // unused and unimplemented on go side (wasmbinding)
-    // TransmitIbcJoinPool {
-    //     creator: String,
-    //     connection_id: String,
-    //     timeout_timestamp: Timestamp,
-    //     pool_id: Uint64,
-    // },
-    TestScenario {
+    MsgTransmitIbcJoinPool {
         creator: String,
-        scenario: String,
-    },
+        connection_id: String,
+        timeout_timestamp: Timestamp,
+        pool_id: Uint64,
+    }
 }
 
 impl IntergammMsg {
