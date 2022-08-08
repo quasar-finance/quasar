@@ -14,14 +14,12 @@ pub enum IntergammMsg {
         receiver: String,
         coin: Coin
     },
-    TransmitIbcJoinPool {
+    MsgTransmitIbcJoinPool {
         creator: String,
         connection_id: String,
         timeout_timestamp: Timestamp,
         pool_id: Uint64,
     }
-
-
 }
 
 impl IntergammMsg {

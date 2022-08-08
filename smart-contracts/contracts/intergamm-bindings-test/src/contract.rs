@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Coin};
 use cw2::set_contract_version;
 use intergamm_bindings::{msg::IntergammMsg};
 
@@ -43,7 +43,7 @@ pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
         destination_local_zone_id: "".to_string(),
         sender: "".to_string(),
         receiver: "".to_string(),
-        coin: Default::default()
+        coin: Coin::new(0, "")
     }))
 }
 
