@@ -2,6 +2,7 @@ package types
 
 import (
 	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
+	gammtypes "github.com/abag/quasarnode/osmosis/v9/gamm/types"
 	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
 	poolincentivestypes "github.com/abag/quasarnode/osmosis/v9/pool-incentives/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -48,8 +49,55 @@ func NewOsmosisParamsICQPacketData() icqtypes.InterchainQueryPacketData {
 	}
 }
 
-func NewOsmosisParamsRequestState(ctx sdk.Context, seq uint64) OsmosisParamsRequestState {
-	return OsmosisParamsRequestState{
+func NewOsmosisIncentivizedPoolsICQPacketData() icqtypes.InterchainQueryPacketData {
+	return icqtypes.InterchainQueryPacketData{
+		Requests: []abcitypes.RequestQuery{
+			{
+				Path: OsmosisQueryIncentivizedPoolsPath,
+				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryIncentivizedPoolsRequest{}),
+			},
+		},
+	}
+}
+
+func NewOsmosisPoolsICQPacketData(poolIds []uint64) icqtypes.InterchainQueryPacketData {
+	reqs := make([]abcitypes.RequestQuery, len(poolIds))
+	for i, poolId := range poolIds {
+		reqs[i] = abcitypes.RequestQuery{
+			Path: OsmosisQueryPoolPath,
+			Data: ModuleCdc.MustMarshal(&gammtypes.QueryPoolRequest{
+				PoolId: poolId,
+			}),
+		}
+	}
+
+	return icqtypes.InterchainQueryPacketData{
+		Requests: reqs,
+	}
+}
+
+// UniquePoolIdsFromIncentivizedPools returns the unique pool ids from an array of incentivized pools.
+func UniquePoolIdsFromIncentivizedPools(incentivizedPools []poolincentivestypes.IncentivizedPool) []uint64 {
+	poolIds := make([]uint64, 0, len(incentivizedPools))
+	for _, pool := range incentivizedPools {
+		skip := false
+		for _, id := range poolIds {
+			if id == pool.PoolId {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			continue
+		}
+
+		poolIds = append(poolIds, pool.PoolId)
+	}
+	return poolIds
+}
+
+func NewOsmosisRequestState(ctx sdk.Context, seq uint64) OsmosisRequestState {
+	return OsmosisRequestState{
 		PacketSequence:  seq,
 		Acknowledged:    false,
 		Failed:          false,
@@ -57,6 +105,6 @@ func NewOsmosisParamsRequestState(ctx sdk.Context, seq uint64) OsmosisParamsRequ
 	}
 }
 
-func (state OsmosisParamsRequestState) Pending() bool {
+func (state OsmosisRequestState) Pending() bool {
 	return state.PacketSequence > 0 && !state.Acknowledged && !state.Failed
 }

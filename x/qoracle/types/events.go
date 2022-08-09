@@ -7,6 +7,10 @@ const (
 	EventTypeOraclePacketAcknowledgement = "oracle_packet_acknowledgement"
 	// EventTypeOsmosisParamsRequest is the type for the event OsmosisParamsRequest
 	EventTypeOsmosisParamsRequest = "osmosis_params_request"
+	// EventTypeOsmosisIncentivizedPoolsRequest is the type for the event OsmosisIncentivizedPoolsRequest
+	EventTypeOsmosisIncentivizedPoolsRequest = "osmosis_incentivized_pools_request"
+	// EventTypeOsmosisPoolsRequest is the type for the event OsmosisPoolsRequest
+	EventTypeOsmosisPoolsRequest = "osmosis_pools_request"
 	// EventTypeOsmosisPacketAcknowledgement is the type for the event OsmosisPacketAcknowledgement
 	EventTypeOsmosisPacketAcknowledgement = "osmosis_packet_acknowledgement"
 
