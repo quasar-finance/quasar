@@ -78,9 +78,9 @@ service Query {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/chain_params";
 	}
 
-// Queries a list of OsmosisIcentivizedPools items.
-	rpc OsmosisIcentivizedPools(QueryOsmosisIcentivizedPoolsRequest) returns (QueryOsmosisIcentivizedPoolsResponse) {
-		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/icentivized_pools";
+// Queries a list of OsmosisIncentivizedPools items.
+	rpc OsmosisIncentivizedPools(QueryOsmosisIncentivizedPoolsRequest) returns (QueryOsmosisIncentivizedPoolsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/incentivized_pools";
 	}
 
 // Queries a list of OsmosisPools items.
@@ -191,10 +191,10 @@ message QueryOsmosisChainParamsResponse {
 	osmosis.poolincentives.v1beta1.DistrInfo distr_info = 5 [(gogoproto.nullable) = false];
 }
 
-message QueryOsmosisIcentivizedPoolsRequest {
+message QueryOsmosisIncentivizedPoolsRequest {
 }
 
-message QueryOsmosisIcentivizedPoolsResponse {
+message QueryOsmosisIncentivizedPoolsResponse {
 	repeated osmosis.poolincentives.v1beta1.IncentivizedPool incentivized_pools = 1 [(gogoproto.nullable) = false];
 }
 

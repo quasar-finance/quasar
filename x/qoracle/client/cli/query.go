@@ -36,7 +36,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdOraclePrices())
 	cmd.AddCommand(CmdOsmosisChainParams())
 
-	cmd.AddCommand(CmdOsmosisIcentivizedPools())
+	cmd.AddCommand(CmdOsmosisIncentivizedPools())
 
 	cmd.AddCommand(CmdOsmosisPools())
 
