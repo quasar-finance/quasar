@@ -132,6 +132,7 @@ func (k Keeper) TryUpdateOsmosisPools(ctx sdk.Context) {
 		sdk.NewEvent(
 			types.EventTypeOsmosisPoolsRequest,
 			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AtributePoolIds, fmt.Sprintf("%v", poolIds)),
 		))
 }
 
@@ -496,25 +497,15 @@ func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abci
 }
 
 func (k Keeper) setOsmosisIncentivizedPools(ctx sdk.Context, pools []poolincentivestypes.IncentivizedPool) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisIncentivizedPoolsPrefix)
-
-	for _, pool := range pools {
-		key := sdk.Uint64ToBigEndian(pool.PoolId)
-		store.Set(key, k.cdc.MustMarshal(&pool))
-	}
+	store := k.getOsmosisStore(ctx)
+	store.Set(types.KeyOsmosisIncentivizedPools, k.cdc.MustMarshal(&types.IncentivizedPools{IncentivizedPools: pools}))
 }
 
 func (k Keeper) GetOsmosisIncentivizedPools(ctx sdk.Context) []poolincentivestypes.IncentivizedPool {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisIncentivizedPoolsPrefix)
-
-	var pools []poolincentivestypes.IncentivizedPool
-	iter := store.Iterator(nil, nil)
-	for ; iter.Valid(); iter.Next() {
-		var pool poolincentivestypes.IncentivizedPool
-		k.cdc.MustUnmarshal(iter.Value(), &pool)
-		pools = append(pools, pool)
-	}
-	return pools
+	store := k.getOsmosisStore(ctx)
+	var pools types.IncentivizedPools
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisIncentivizedPools), &pools)
+	return pools.IncentivizedPools
 }
 
 func (k Keeper) handleOsmosisPoolGaugeIdsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {

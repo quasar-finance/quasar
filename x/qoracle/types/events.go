@@ -22,4 +22,6 @@ const (
 	AttributeEpochIdentifier = "epoch_identifier"
 	// AttributeEpochNumber is the attribute key for the epoch number
 	AttributeEpochNumber = "epoch_number"
+	// AttributeEpochStart is the attribute key for pools ids
+	AtributePoolIds = "pool_ids"
 )

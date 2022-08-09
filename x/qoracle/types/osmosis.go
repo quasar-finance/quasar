@@ -87,7 +87,7 @@ func UniquePoolIdsFromIncentivizedPools(incentivizedPools []poolincentivestypes.
 				break
 			}
 		}
-		if !skip {
+		if skip {
 			continue
 		}
 

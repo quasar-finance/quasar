@@ -59,7 +59,7 @@ var (
 	KeyOsmosisLockableDurations             = []byte("lockable_durations")
 	KeyOsmosisMintParams                    = []byte("mint_params")
 	KeyOsmosisMintEpochProvisions           = []byte("mint_epoch_provisions")
-	KeyOsmosisIncentivizedPoolsPrefix       = []byte("incentivized_pools")
+	KeyOsmosisIncentivizedPools             = []byte("incentivized_pools")
 	KeyOsmosisPoolGaugeIdsPrefix            = []byte("pool_gauge_ids")
 	KeyOsmosisDistrInfo                     = []byte("distr_info")
 	KeyOsmosisSpotPricePrefix               = []byte("spot_prices")
