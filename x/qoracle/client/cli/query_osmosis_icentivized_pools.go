@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdOsmosisIcentivizedPools() *cobra.Command {
+func CmdOsmosisIncentivizedPools() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "osmosis-icentivized-pools",
-		Short: "Query OsmosisIcentivizedPools",
+		Use:   "osmosis-Incentivized-pools",
+		Short: "Query OsmosisIncentivizedPools",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
@@ -25,9 +25,9 @@ func CmdOsmosisIcentivizedPools() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryOsmosisIcentivizedPoolsRequest{}
+			params := &types.QueryOsmosisIncentivizedPoolsRequest{}
 
-			res, err := queryClient.OsmosisIcentivizedPools(cmd.Context(), params)
+			res, err := queryClient.OsmosisIncentivizedPools(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
