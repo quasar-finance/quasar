@@ -42,25 +42,27 @@ const (
 )
 
 var (
-	PoolPositionKBP                   = []byte{0x01}
-	PoolInfoKBP                       = []byte{0x02}
-	PoolAPYRankedKBP                  = []byte{0x03}
-	PoolSpotPriceKBP                  = []byte{0x05}
-	PortKey                           = []byte{0x06}
-	KeyCoinRatesState                 = []byte("coin_rates_state")
-	KeyOraclePrices                   = []byte("oracle_prices")
-	KeyStablePricesPrefix             = []byte("stable_prices")
-	KeyOsmosisParamsRequestState      = []byte("osmosis_params_request_state")
-	KeyOsmosisPrefix                  = []byte("osmosis")
-	KeyOsmosisEpochsInfoPrefix        = []byte("epochs_info")
-	KeyOsmosisPoolPrefix              = []byte("pools")
-	KeyOsmosisLockableDurations       = []byte("lockable_durations")
-	KeyOsmosisMintParams              = []byte("mint_params")
-	KeyOsmosisMintEpochProvisions     = []byte("mint_epoch_provisions")
-	KeyOsmosisIncentivizedPoolsPrefix = []byte("incentivized_pools")
-	KeyOsmosisPoolGaugeIdsPrefix      = []byte("pool_gauge_ids")
-	KeyOsmosisDistrInfo               = []byte("distr_info")
-	KeyOsmosisSpotPricePrefix         = []byte("spot_prices")
+	PoolPositionKBP                         = []byte{0x01}
+	PoolInfoKBP                             = []byte{0x02}
+	PoolAPYRankedKBP                        = []byte{0x03}
+	PoolSpotPriceKBP                        = []byte{0x05}
+	PortKey                                 = []byte{0x06}
+	KeyCoinRatesState                       = []byte("coin_rates_state")
+	KeyOraclePrices                         = []byte("oracle_prices")
+	KeyStablePricesPrefix                   = []byte("stable_prices")
+	KeyOsmosisParamsRequestState            = []byte("osmosis_params_request_state")
+	KeyOsmosisIncentivizedPoolsRequestState = []byte("osmosis_incentivized_pools_request_state")
+	KeyOsmosisPoolsRequestState             = []byte("osmosis_pools_request_state")
+	KeyOsmosisPrefix                        = []byte("osmosis")
+	KeyOsmosisEpochsInfoPrefix              = []byte("epochs_info")
+	KeyOsmosisPoolPrefix                    = []byte("pools")
+	KeyOsmosisLockableDurations             = []byte("lockable_durations")
+	KeyOsmosisMintParams                    = []byte("mint_params")
+	KeyOsmosisMintEpochProvisions           = []byte("mint_epoch_provisions")
+	KeyOsmosisIncentivizedPoolsPrefix       = []byte("incentivized_pools")
+	KeyOsmosisPoolGaugeIdsPrefix            = []byte("pool_gauge_ids")
+	KeyOsmosisDistrInfo                     = []byte("distr_info")
+	KeyOsmosisSpotPricePrefix               = []byte("spot_prices")
 )
 
 var SepByte = []byte("#")

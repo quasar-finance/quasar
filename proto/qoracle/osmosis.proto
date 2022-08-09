@@ -12,7 +12,7 @@ message OsmosisParams {
   string epoch_identifier = 2; // epoch used for updating osmosis pools information and calculations
 }
 
-message OsmosisParamsRequestState {
+message OsmosisRequestState {
   uint64 packet_sequence = 1;
   bool acknowledged = 2;
   bool failed = 3;
