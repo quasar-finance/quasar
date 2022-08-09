@@ -17,6 +17,8 @@ import "qoracle/denom_price_mapping.proto";
 import "osmosis/v9/epochs/genesis.proto";
 import "osmosis/v9/mint/v1beta1/mint.proto";
 import "osmosis/v9/pool-incentives/v1beta1/incentives.proto";
+import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
+import "osmosis/v9/pool-incentives/v1beta1/query.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/abag/quasarnode/x/qoracle/types";
@@ -74,6 +76,16 @@ service Query {
 // Queries a list of OsmosisChainParams items.
 	rpc OsmosisChainParams(QueryOsmosisChainParamsRequest) returns (QueryOsmosisChainParamsResponse) {
 		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/chain_params";
+	}
+
+// Queries a list of OsmosisIcentivizedPools items.
+	rpc OsmosisIcentivizedPools(QueryOsmosisIcentivizedPoolsRequest) returns (QueryOsmosisIcentivizedPoolsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/icentivized_pools";
+	}
+
+// Queries a list of OsmosisPools items.
+	rpc OsmosisPools(QueryOsmosisPoolsRequest) returns (QueryOsmosisPoolsResponse) {
+		option (google.api.http).get = "/abag/quasarnode/qoracle/osmosis/pools";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -177,6 +189,22 @@ message QueryOsmosisChainParamsResponse {
 	osmosis.mint.v1beta1.Params mint_params = 3 [(gogoproto.nullable) = false];
 	string mint_epoch_provisions = 4;
 	osmosis.poolincentives.v1beta1.DistrInfo distr_info = 5 [(gogoproto.nullable) = false];
+}
+
+message QueryOsmosisIcentivizedPoolsRequest {
+}
+
+message QueryOsmosisIcentivizedPoolsResponse {
+	repeated osmosis.poolincentives.v1beta1.IncentivizedPool incentivized_pools = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryOsmosisPoolsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryOsmosisPoolsResponse {
+	repeated osmosis.gamm.v1beta1.Pool pools = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3
