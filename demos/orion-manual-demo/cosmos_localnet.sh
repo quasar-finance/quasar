@@ -48,6 +48,7 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6063"+g' $HOME_COSMOSHUB/config/config.toml
 	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9097"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8093"+g' $HOME_COSMOSHUB/config/app.toml
+    sed -i 's+minimum-gas-prices = ""+minimum-gas-prices = "0stake"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
 else
@@ -65,4 +66,4 @@ cat $HOME_COSMOSHUB/config/genesis_original.json |
   >  $HOME_COSMOSHUB/config/genesis.json
 
 # Start
-$BINARY start
+$BINARY start --home $HOME_COSMOSHUB
