@@ -70,11 +70,9 @@ host:
   api: ":1311"
   frontend: ":8081"
   dev-ui: ":12351"
-#client:
-#  openapi:
-#    path: "docs/client/static/openapi/openapi.yml"
-#  vuex:
-#    path: "vue/src/store"
+client:
+  openapi:
+    path: "docs/static/openapi.yml"
 faucet:
   name: bob
   coins: ["5token", "100000stake", "10000uqsr"]
