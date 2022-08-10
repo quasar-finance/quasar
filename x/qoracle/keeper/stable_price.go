@@ -1,10 +1,9 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+  "github.com/abag/quasarnode/x/qoracle/types"
+  sdk "github.com/cosmos/cosmos-sdk/types"
+  sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // SetStablePrice set the stable price for the symbol
