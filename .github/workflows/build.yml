@@ -32,3 +32,7 @@ jobs:
         run: go version
       - name: Build quasarnoded
         run: make build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: build/quasarnoded
