@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	gammbalancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
-	gammtypes "github.com/abag/quasarnode/osmosis/v9/gamm/types"
-	lockuptypes "github.com/abag/quasarnode/osmosis/v9/lockup/types"
-	intergammtypes "github.com/abag/quasarnode/x/intergamm/types"
-	"github.com/abag/quasarnode/x/orion/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
+	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
+	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"

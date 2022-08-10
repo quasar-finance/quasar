@@ -1,40 +1,38 @@
 package keeper
 
 import (
-	"github.com/abag/quasarnode/x/qoracle/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // SetStablePrice set the stable price for the symbol
 func (k Keeper) SetStablePrice(ctx sdk.Context, symbol string, price sdk.Dec) {
-	denomMapping := k.GetDenomPriceMappings(ctx)
-	denomMapping = append(denomMapping, types.DenomPriceMapping{
-		Denom:       symbol,
-		OracleDenom: symbol,
-		Multiplier:  sdk.NewDec(1),
-	})
-	k.SetDenomPriceMappings(ctx, denomMapping)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyStablePricesPrefix)
 
-	op := k.GetOraclePrices(ctx)
-	op.Prices = op.Prices.Add(sdk.NewDecCoinFromDec(symbol, price))
-	k.setOraclePrices(ctx, op)
+	key := []byte(symbol)
+	b, err := price.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	store.Set(key, b)
 }
 
 // GetStablePrice get the stable denom for the symbol
 func (k Keeper) GetStablePrice(ctx sdk.Context, symbol string) (price sdk.Dec, found bool) {
-	denomMapping := k.GetDenomPriceMappings(ctx)
-	for _, d := range denomMapping {
-		if d.OracleDenom == symbol {
-			op := k.GetOraclePrices(ctx)
-			amount := op.Prices.AmountOf(d.OracleDenom)
-			if amount.IsZero() {
-				return price, false
-			}
-			return amount.Mul(d.Multiplier), true
-		}
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyStablePricesPrefix)
+	key := []byte(symbol)
+	b := store.Get(key)
+	if b == nil {
+		return price, false
 	}
-	return price, false
+
+	err := (&price).Unmarshal(b)
+	if err != nil {
+		return price, false
+	}
+	return price, true
 }
 
 // GetRelativeStablePrice calculates how many denomOut is equivalent to one denomIn.

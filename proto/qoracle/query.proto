@@ -11,7 +11,6 @@ import "qoracle/pool_ranking.proto";
 import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
 import "qoracle/bandchain.proto";
-import "qoracle/osmosis.proto";
 import "qoracle/pool_metrics.proto";
 import "qoracle/denom_price_mapping.proto";
 // this line is used by starport scaffolding # 1
@@ -146,7 +145,6 @@ message QueryStateRequest {
 
 message QueryStateResponse {
 	OracleScriptState coin_rates_state = 1 [(gogoproto.nullable) = false];
-	OsmosisParamsRequestState osmosis_params_request_state = 2 [(gogoproto.nullable) = false];
 }
 
 message QueryOraclePricesRequest {

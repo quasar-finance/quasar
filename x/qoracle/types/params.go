@@ -16,9 +16,8 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyBandchainParams    = []byte("BandchainParams")
-	KeyOsmosisParams      = []byte("OsmosisParams")
-	KeyDenomPriceMappings = []byte("DenomPriceMappings")
 	KeyOracleAccounts     = []byte("OracleAccounts")
+	KeyDenomPriceMappings = []byte("DenomPriceMappings")
 	KeyStableDenoms       = []byte("stableDenoms")
 	KeyOneHopDenomMap     = []byte("oneHopDenomMap")
 
@@ -41,14 +40,6 @@ var (
 				ExecuteGas: 600000,
 			},
 		},
-	}
-	DefaultOsmosisParams = OsmosisParams{
-		ICQParams: IBCParams{
-			AuthorizedChannel: "",
-			TimeoutHeight:     clienttypes.NewHeight(0, 0),
-			TimeoutTimestamp:  uint64(time.Minute * 10),
-		},
-		EpochIdentifier: "minute",
 	}
 	DefaultDenomPriceMappings = []DenomPriceMapping{
 		{
@@ -73,7 +64,6 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	bandchainParams BandchainParams,
-	osmosisParams OsmosisParams,
 	denomPriceMappings []DenomPriceMapping,
 	oracleAccounts string,
 	stableDenoms []string,
@@ -81,7 +71,6 @@ func NewParams(
 ) Params {
 	return Params{
 		BandchainParams:    bandchainParams,
-		OsmosisParams:      osmosisParams,
 		DenomPriceMappings: denomPriceMappings,
 		OracleAccounts:     oracleAccounts,
 		StableDenoms:       stableDenoms, // AUDIT slice copy
@@ -93,7 +82,6 @@ func NewParams(
 func DefaultParams() Params {
 	return NewParams(
 		DefaultBandchainParams,
-		DefaultOsmosisParams,
 		DefaultDenomPriceMappings,
 		DefaultOracleAccounts,
 		DefaultStableDenoms,
@@ -105,7 +93,6 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyBandchainParams, &p.BandchainParams, validateBandchainParams),
-		paramtypes.NewParamSetPair(KeyOsmosisParams, &p.OsmosisParams, validateOsmosisParams),
 		paramtypes.NewParamSetPair(KeyDenomPriceMappings, &p.DenomPriceMappings, validateDenomPriceMappings),
 		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
 		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
@@ -116,10 +103,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateBandchainParams(p.BandchainParams); err != nil {
-		return err
-	}
-
-	if err := validateOsmosisParams(p.OsmosisParams); err != nil {
 		return err
 	}
 
@@ -209,20 +192,6 @@ func (p OracleScriptParams) Validate() error {
 
 	if p.FeeLimit.IsAnyNegative() || p.FeeLimit.IsZero() {
 		return errors.New("fee limit cannot be negative or zero")
-	}
-
-	return nil
-}
-
-func validateOsmosisParams(v interface{}) error {
-	params, ok := v.(OsmosisParams)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	err := params.ICQParams.Validate()
-	if err != nil {
-		return err
 	}
 
 	return nil

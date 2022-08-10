@@ -36,7 +36,6 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdUpdatePoolInfo())
 	cmd.AddCommand(CmdDeletePoolInfo())
 	cmd.AddCommand(CmdStablePrice())
-	cmd.AddCommand(CmdUpdateOsmosisParams())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

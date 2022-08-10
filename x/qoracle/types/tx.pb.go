@@ -6,10 +6,10 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	balancer "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	balancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -1349,188 +1349,95 @@ func (m *MsgStablePriceResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgStablePriceResponse proto.InternalMessageInfo
 
-type MsgUpdateOsmosisParams struct {
-	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-}
-
-func (m *MsgUpdateOsmosisParams) Reset()         { *m = MsgUpdateOsmosisParams{} }
-func (m *MsgUpdateOsmosisParams) String() string { return proto.CompactTextString(m) }
-func (*MsgUpdateOsmosisParams) ProtoMessage()    {}
-func (*MsgUpdateOsmosisParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a216e1369aaebb38, []int{26}
-}
-func (m *MsgUpdateOsmosisParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgUpdateOsmosisParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgUpdateOsmosisParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgUpdateOsmosisParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgUpdateOsmosisParams.Merge(m, src)
-}
-func (m *MsgUpdateOsmosisParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgUpdateOsmosisParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgUpdateOsmosisParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgUpdateOsmosisParams proto.InternalMessageInfo
-
-func (m *MsgUpdateOsmosisParams) GetCreator() string {
-	if m != nil {
-		return m.Creator
-	}
-	return ""
-}
-
-type MsgUpdateOsmosisParamsResponse struct {
-	PacketSequence uint64 `protobuf:"varint,1,opt,name=packet_sequence,json=packetSequence,proto3" json:"packet_sequence,omitempty"`
-}
-
-func (m *MsgUpdateOsmosisParamsResponse) Reset()         { *m = MsgUpdateOsmosisParamsResponse{} }
-func (m *MsgUpdateOsmosisParamsResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgUpdateOsmosisParamsResponse) ProtoMessage()    {}
-func (*MsgUpdateOsmosisParamsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a216e1369aaebb38, []int{27}
-}
-func (m *MsgUpdateOsmosisParamsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgUpdateOsmosisParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgUpdateOsmosisParamsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgUpdateOsmosisParamsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgUpdateOsmosisParamsResponse.Merge(m, src)
-}
-func (m *MsgUpdateOsmosisParamsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgUpdateOsmosisParamsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgUpdateOsmosisParamsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgUpdateOsmosisParamsResponse proto.InternalMessageInfo
-
-func (m *MsgUpdateOsmosisParamsResponse) GetPacketSequence() uint64 {
-	if m != nil {
-		return m.PacketSequence
-	}
-	return 0
-}
-
 func init() {
-	proto.RegisterType((*MsgCreatePoolPosition)(nil), "abag.quasarnode.qoracle.MsgCreatePoolPosition")
-	proto.RegisterType((*MsgCreatePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgCreatePoolPositionResponse")
-	proto.RegisterType((*MsgUpdatePoolPosition)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolPosition")
-	proto.RegisterType((*MsgUpdatePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolPositionResponse")
-	proto.RegisterType((*MsgDeletePoolPosition)(nil), "abag.quasarnode.qoracle.MsgDeletePoolPosition")
-	proto.RegisterType((*MsgDeletePoolPositionResponse)(nil), "abag.quasarnode.qoracle.MsgDeletePoolPositionResponse")
-	proto.RegisterType((*MsgCreatePoolRanking)(nil), "abag.quasarnode.qoracle.MsgCreatePoolRanking")
-	proto.RegisterType((*MsgCreatePoolRankingResponse)(nil), "abag.quasarnode.qoracle.MsgCreatePoolRankingResponse")
-	proto.RegisterType((*MsgUpdatePoolRanking)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolRanking")
-	proto.RegisterType((*MsgUpdatePoolRankingResponse)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolRankingResponse")
-	proto.RegisterType((*MsgDeletePoolRanking)(nil), "abag.quasarnode.qoracle.MsgDeletePoolRanking")
-	proto.RegisterType((*MsgDeletePoolRankingResponse)(nil), "abag.quasarnode.qoracle.MsgDeletePoolRankingResponse")
-	proto.RegisterType((*MsgCreatePoolSpotPrice)(nil), "abag.quasarnode.qoracle.MsgCreatePoolSpotPrice")
-	proto.RegisterType((*MsgCreatePoolSpotPriceResponse)(nil), "abag.quasarnode.qoracle.MsgCreatePoolSpotPriceResponse")
-	proto.RegisterType((*MsgUpdatePoolSpotPrice)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolSpotPrice")
-	proto.RegisterType((*MsgUpdatePoolSpotPriceResponse)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolSpotPriceResponse")
-	proto.RegisterType((*MsgDeletePoolSpotPrice)(nil), "abag.quasarnode.qoracle.MsgDeletePoolSpotPrice")
-	proto.RegisterType((*MsgDeletePoolSpotPriceResponse)(nil), "abag.quasarnode.qoracle.MsgDeletePoolSpotPriceResponse")
-	proto.RegisterType((*MsgCreatePoolInfo)(nil), "abag.quasarnode.qoracle.MsgCreatePoolInfo")
-	proto.RegisterType((*MsgCreatePoolInfoResponse)(nil), "abag.quasarnode.qoracle.MsgCreatePoolInfoResponse")
-	proto.RegisterType((*MsgUpdatePoolInfo)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolInfo")
-	proto.RegisterType((*MsgUpdatePoolInfoResponse)(nil), "abag.quasarnode.qoracle.MsgUpdatePoolInfoResponse")
-	proto.RegisterType((*MsgDeletePoolInfo)(nil), "abag.quasarnode.qoracle.MsgDeletePoolInfo")
-	proto.RegisterType((*MsgDeletePoolInfoResponse)(nil), "abag.quasarnode.qoracle.MsgDeletePoolInfoResponse")
-	proto.RegisterType((*MsgStablePrice)(nil), "abag.quasarnode.qoracle.MsgStablePrice")
-	proto.RegisterType((*MsgStablePriceResponse)(nil), "abag.quasarnode.qoracle.MsgStablePriceResponse")
-	proto.RegisterType((*MsgUpdateOsmosisParams)(nil), "abag.quasarnode.qoracle.MsgUpdateOsmosisParams")
-	proto.RegisterType((*MsgUpdateOsmosisParamsResponse)(nil), "abag.quasarnode.qoracle.MsgUpdateOsmosisParamsResponse")
+	proto.RegisterType((*MsgCreatePoolPosition)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolPosition")
+	proto.RegisterType((*MsgCreatePoolPositionResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolPositionResponse")
+	proto.RegisterType((*MsgUpdatePoolPosition)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolPosition")
+	proto.RegisterType((*MsgUpdatePoolPositionResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolPositionResponse")
+	proto.RegisterType((*MsgDeletePoolPosition)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolPosition")
+	proto.RegisterType((*MsgDeletePoolPositionResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolPositionResponse")
+	proto.RegisterType((*MsgCreatePoolRanking)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolRanking")
+	proto.RegisterType((*MsgCreatePoolRankingResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolRankingResponse")
+	proto.RegisterType((*MsgUpdatePoolRanking)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolRanking")
+	proto.RegisterType((*MsgUpdatePoolRankingResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolRankingResponse")
+	proto.RegisterType((*MsgDeletePoolRanking)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolRanking")
+	proto.RegisterType((*MsgDeletePoolRankingResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolRankingResponse")
+	proto.RegisterType((*MsgCreatePoolSpotPrice)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolSpotPrice")
+	proto.RegisterType((*MsgCreatePoolSpotPriceResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolSpotPriceResponse")
+	proto.RegisterType((*MsgUpdatePoolSpotPrice)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolSpotPrice")
+	proto.RegisterType((*MsgUpdatePoolSpotPriceResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolSpotPriceResponse")
+	proto.RegisterType((*MsgDeletePoolSpotPrice)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolSpotPrice")
+	proto.RegisterType((*MsgDeletePoolSpotPriceResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolSpotPriceResponse")
+	proto.RegisterType((*MsgCreatePoolInfo)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolInfo")
+	proto.RegisterType((*MsgCreatePoolInfoResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgCreatePoolInfoResponse")
+	proto.RegisterType((*MsgUpdatePoolInfo)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolInfo")
+	proto.RegisterType((*MsgUpdatePoolInfoResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgUpdatePoolInfoResponse")
+	proto.RegisterType((*MsgDeletePoolInfo)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolInfo")
+	proto.RegisterType((*MsgDeletePoolInfoResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgDeletePoolInfoResponse")
+	proto.RegisterType((*MsgStablePrice)(nil), "quasarlabs.quasarnode.qoracle.MsgStablePrice")
+	proto.RegisterType((*MsgStablePriceResponse)(nil), "quasarlabs.quasarnode.qoracle.MsgStablePriceResponse")
 }
 
 func init() { proto.RegisterFile("qoracle/tx.proto", fileDescriptor_a216e1369aaebb38) }
 
 var fileDescriptor_a216e1369aaebb38 = []byte{
-	// 941 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4f, 0x8f, 0xdb, 0x44,
-	0x14, 0x5f, 0x93, 0xec, 0x2e, 0x99, 0x8a, 0x2d, 0x1d, 0x42, 0x6b, 0x5c, 0x6a, 0xc2, 0x0a, 0xa9,
-	0x51, 0xa4, 0xd8, 0x34, 0x08, 0x2a, 0x2e, 0x48, 0x94, 0x72, 0x88, 0xd4, 0xa8, 0x91, 0xb3, 0xac,
-	0x04, 0x97, 0x68, 0xe2, 0x4c, 0x8d, 0x55, 0xdb, 0xe3, 0xf5, 0x38, 0x55, 0x57, 0xaa, 0x04, 0x1f,
-	0x81, 0x6f, 0xc0, 0x87, 0xe8, 0x8d, 0x13, 0x47, 0x8e, 0x3d, 0x72, 0x44, 0xbb, 0x5f, 0x04, 0x79,
-	0x3c, 0xfe, 0x17, 0x4f, 0x9c, 0xc9, 0x22, 0xa1, 0xee, 0xcd, 0x33, 0xef, 0xcd, 0xfb, 0xfd, 0xde,
-	0x6f, 0xfe, 0xbc, 0x27, 0x83, 0xf7, 0xcf, 0x48, 0x84, 0x6c, 0x0f, 0x9b, 0xf1, 0x4b, 0x23, 0x8c,
-	0x48, 0x4c, 0xe0, 0x1d, 0xb4, 0x40, 0x8e, 0x71, 0xb6, 0x42, 0x14, 0x45, 0x01, 0x59, 0x62, 0x83,
-	0x7b, 0x68, 0x5d, 0x87, 0x38, 0x84, 0xf9, 0x98, 0xc9, 0x57, 0xea, 0xae, 0xdd, 0xcd, 0x02, 0x84,
-	0x84, 0x78, 0xf3, 0x90, 0x50, 0x37, 0x76, 0x49, 0xc0, 0x8d, 0x5a, 0xc5, 0x18, 0xa1, 0xe0, 0xb9,
-	0x1b, 0x38, 0xdc, 0x76, 0xaf, 0x62, 0xa3, 0x21, 0x89, 0xe7, 0x61, 0xe4, 0xda, 0x98, 0x9b, 0xef,
-	0x54, 0xcc, 0x6e, 0xf0, 0x2c, 0x03, 0x7c, 0x48, 0xa8, 0x4f, 0xa8, 0x4b, 0xcd, 0x17, 0x5f, 0x9b,
-	0x0e, 0xf2, 0x7d, 0xe6, 0x30, 0xf4, 0xc9, 0x12, 0x7b, 0xd4, 0x5c, 0x20, 0x0f, 0x05, 0x36, 0x8e,
-	0xf2, 0x8f, 0x29, 0x21, 0x9e, 0x90, 0x8c, 0x8f, 0xe3, 0xc8, 0xb5, 0x29, 0xb7, 0x7d, 0x9a, 0xd9,
-	0x96, 0x38, 0x20, 0x7e, 0x4a, 0x64, 0xee, 0xa3, 0x30, 0xcc, 0xf9, 0x1e, 0xbf, 0x56, 0xc0, 0x87,
-	0x13, 0xea, 0x7c, 0x17, 0x61, 0x14, 0xe3, 0x24, 0xec, 0x94, 0xe7, 0x0a, 0x55, 0x70, 0x68, 0x27,
-	0xb3, 0x24, 0x52, 0x95, 0x9e, 0xd2, 0xef, 0x58, 0xd9, 0x10, 0xde, 0x06, 0x07, 0x09, 0xd8, 0x78,
-	0xa9, 0xbe, 0xc3, 0x0c, 0x7c, 0x04, 0xbf, 0x01, 0x87, 0x1c, 0x5f, 0x6d, 0xf5, 0x94, 0xfe, 0x8d,
-	0xd1, 0x67, 0xc6, 0x06, 0xd5, 0x8d, 0x04, 0x69, 0x92, 0xfa, 0x5a, 0xd9, 0x22, 0xd8, 0x07, 0x37,
-	0x3d, 0x44, 0xe3, 0x1f, 0xc2, 0x25, 0x8a, 0xf1, 0xf2, 0xc4, 0xf5, 0xb1, 0xda, 0xee, 0x29, 0xfd,
-	0xb6, 0xb5, 0x3e, 0x7d, 0xfc, 0x09, 0xb8, 0x27, 0x24, 0x6d, 0x61, 0x1a, 0x92, 0x80, 0xe2, 0x2c,
-	0xad, 0x74, 0xcd, 0x35, 0x4b, 0xab, 0x4e, 0x3a, 0x4f, 0x6b, 0xcc, 0xb2, 0x7a, 0x8c, 0x3d, 0xfc,
-	0x5f, 0xb3, 0xe2, 0x58, 0xf5, 0x50, 0x39, 0xd6, 0x1f, 0x0a, 0xe8, 0x56, 0x44, 0xb6, 0xd2, 0x83,
-	0xde, 0x80, 0x65, 0x00, 0x98, 0x46, 0xa7, 0x33, 0x12, 0xc5, 0x78, 0xf9, 0xe8, 0xfc, 0xdb, 0xe9,
-	0x8f, 0x6a, 0xab, 0xd7, 0xea, 0x77, 0x2c, 0x81, 0x45, 0xe0, 0x7f, 0x72, 0xfa, 0x44, 0x6d, 0x0b,
-	0xfd, 0x4f, 0x4e, 0x9f, 0x88, 0x94, 0xdc, 0x17, 0x2b, 0xa9, 0x83, 0x8f, 0x45, 0xdc, 0xd7, 0x93,
-	0x2b, 0xa4, 0xbe, 0x7e, 0xc9, 0xd5, 0xb8, 0xe7, 0xc9, 0x7d, 0xce, 0x72, 0x2b, 0xb6, 0x76, 0x6b,
-	0x6e, 0x3c, 0x62, 0x6d, 0x45, 0x1e, 0xf1, 0x4f, 0x05, 0xdc, 0xae, 0xe8, 0x39, 0x0b, 0x49, 0x3c,
-	0x4d, 0x9e, 0x93, 0x2b, 0xdc, 0x27, 0x15, 0x1c, 0xb2, 0xf7, 0x68, 0x1c, 0xb0, 0xfb, 0xd4, 0xb1,
-	0xb2, 0x21, 0xd4, 0xc0, 0xbb, 0xec, 0xf3, 0xe9, 0x2a, 0x66, 0x57, 0xa4, 0x63, 0xe5, 0x63, 0xd8,
-	0x05, 0xfb, 0xec, 0xfd, 0x62, 0xa2, 0x74, 0xac, 0x74, 0x20, 0x12, 0xed, 0x40, 0x2c, 0x5a, 0x0f,
-	0xe8, 0xe2, 0x0c, 0xd6, 0x93, 0x2c, 0x74, 0xbd, 0xae, 0x49, 0x0a, 0x32, 0xc8, 0x93, 0xfc, 0x35,
-	0x4d, 0xb2, 0xd8, 0xea, 0xff, 0x3d, 0x49, 0x4e, 0x52, 0xc0, 0x20, 0x27, 0xf9, 0xbb, 0x02, 0x6e,
-	0x55, 0x36, 0x6b, 0x1c, 0x3c, 0x23, 0x57, 0xe0, 0x67, 0x80, 0x76, 0x52, 0x62, 0xf9, 0xb3, 0xad,
-	0x19, 0xbc, 0xc6, 0x1a, 0x49, 0x81, 0x35, 0x5e, 0x3c, 0x58, 0xe0, 0x18, 0x3d, 0x60, 0x6f, 0xb6,
-	0xc5, 0xfc, 0x76, 0x78, 0xa9, 0xef, 0x82, 0x8f, 0x6a, 0x04, 0xd7, 0xe9, 0x17, 0xdb, 0xf0, 0x96,
-	0xd2, 0xaf, 0x12, 0xcc, 0xe9, 0x7f, 0xcf, 0xd8, 0x17, 0xfb, 0x73, 0x35, 0xf6, 0x1c, 0xa3, 0x1a,
-	0x26, 0xc7, 0x38, 0x05, 0x47, 0x13, 0xea, 0xcc, 0x62, 0xb4, 0xf0, 0xf0, 0xb6, 0xd3, 0xd7, 0x05,
-	0xfb, 0xec, 0xec, 0xf0, 0xf8, 0xe9, 0xa0, 0xb8, 0x2a, 0xad, 0xd2, 0x55, 0x39, 0x56, 0xd9, 0xe9,
-	0x2e, 0xc5, 0xcd, 0x11, 0x47, 0xa5, 0xcb, 0xfd, 0x34, 0x15, 0x72, 0x8a, 0x22, 0xe4, 0xd3, 0x86,
-	0x67, 0x71, 0x5c, 0xba, 0x4e, 0x95, 0x35, 0x59, 0x54, 0x78, 0x1f, 0xdc, 0x0c, 0x91, 0xfd, 0x1c,
-	0xc7, 0x73, 0x8a, 0xcf, 0x56, 0x38, 0xb0, 0x31, 0x8b, 0xd1, 0xb6, 0x8e, 0xd2, 0xe9, 0x19, 0x9f,
-	0x1d, 0xbd, 0x7e, 0x0f, 0xb4, 0x26, 0xd4, 0x81, 0xaf, 0x00, 0x14, 0xf4, 0x5a, 0xc6, 0xc6, 0x8e,
-	0x42, 0xd8, 0xe6, 0x68, 0x5f, 0xed, 0xe6, 0x9f, 0xd3, 0x7d, 0x05, 0xa0, 0xa0, 0x25, 0x6a, 0x44,
-	0xaf, 0xfb, 0x37, 0xa3, 0x6f, 0xee, 0x5e, 0x12, 0x74, 0x41, 0xeb, 0xd2, 0x88, 0x5e, 0xf7, 0x6f,
-	0x46, 0xdf, 0xdc, 0xcf, 0xc0, 0x73, 0x70, 0xab, 0xde, 0xcb, 0x0c, 0xe5, 0x84, 0xe4, 0xee, 0xda,
-	0x97, 0x3b, 0xb9, 0x97, 0xa1, 0xeb, 0x9d, 0xc6, 0x50, 0x4e, 0x45, 0x29, 0xe8, 0x8d, 0xbd, 0x40,
-	0x02, 0x5d, 0x6f, 0x04, 0x86, 0x72, 0x12, 0x4a, 0x41, 0x6f, 0x6c, 0x1a, 0xe0, 0x2f, 0xe0, 0x03,
-	0x51, 0xc3, 0x60, 0xca, 0x69, 0x98, 0x2f, 0xd0, 0x1e, 0xee, 0xb8, 0xa0, 0x4c, 0x40, 0x54, 0xcc,
-	0x4d, 0x39, 0x25, 0x25, 0x09, 0x34, 0x14, 0xdb, 0x84, 0x80, 0xa8, 0xd0, 0x9a, 0x72, 0x7a, 0x4a,
-	0x12, 0x68, 0x28, 0xa4, 0x30, 0x04, 0x47, 0x6b, 0x45, 0x74, 0x20, 0x27, 0x66, 0xe2, 0xab, 0x8d,
-	0xe4, 0x7d, 0xcb, 0x88, 0x6b, 0x75, 0x6f, 0x20, 0xa7, 0xde, 0x76, 0x44, 0x71, 0xb9, 0x4a, 0x10,
-	0xd7, 0x6a, 0xd5, 0x40, 0x4e, 0xae, 0xed, 0x88, 0xe2, 0xe2, 0x05, 0x1d, 0x70, 0xa3, 0x5c, 0xb9,
-	0xee, 0x37, 0x85, 0x28, 0x39, 0x6a, 0xa6, 0xa4, 0x63, 0xfd, 0x00, 0x57, 0x0b, 0x96, 0xc4, 0x01,
-	0xae, 0x2c, 0x90, 0x39, 0xc0, 0xc2, 0xf2, 0xf6, 0xe8, 0xf1, 0x5f, 0x17, 0xba, 0xf2, 0xe6, 0x42,
-	0x57, 0xfe, 0xb9, 0xd0, 0x95, 0xdf, 0x2e, 0xf5, 0xbd, 0x37, 0x97, 0xfa, 0xde, 0xdf, 0x97, 0xfa,
-	0xde, 0x4f, 0x03, 0xc7, 0x8d, 0x7f, 0x5e, 0x2d, 0x0c, 0x9b, 0xf8, 0x66, 0x12, 0xdc, 0x2c, 0x82,
-	0x9b, 0x2f, 0xcd, 0xfc, 0xf7, 0xcb, 0x79, 0x88, 0xe9, 0xe2, 0x80, 0xfd, 0x6a, 0xf8, 0xe2, 0xdf,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xe4, 0x5c, 0xc0, 0xb6, 0x96, 0x11, 0x00, 0x00,
+	// 888 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4d, 0x6f, 0xd3, 0x48,
+	0x18, 0xae, 0x37, 0x69, 0xbb, 0x99, 0x6a, 0xbb, 0x5b, 0x6f, 0xb6, 0xeb, 0x75, 0xb7, 0xde, 0x6c,
+	0x4f, 0x11, 0x52, 0xed, 0xb4, 0x21, 0x02, 0x04, 0x1c, 0x28, 0xe5, 0x10, 0xd4, 0x88, 0xc8, 0x2d,
+	0x95, 0xe0, 0x52, 0x39, 0xc9, 0xd4, 0x58, 0xd8, 0x1e, 0xd7, 0xe3, 0x56, 0xad, 0xc4, 0x81, 0x0b,
+	0x12, 0x12, 0x17, 0xfe, 0x01, 0xbf, 0x03, 0x4e, 0x1c, 0x39, 0xf6, 0x06, 0x47, 0xd4, 0xfe, 0x11,
+	0xe4, 0xf1, 0xd8, 0x8e, 0xe3, 0xc9, 0xc7, 0x04, 0x09, 0xd1, 0x9b, 0x27, 0xef, 0xd7, 0xf3, 0x3c,
+	0xf3, 0xf1, 0xbe, 0x0a, 0xf8, 0xe3, 0x08, 0xf9, 0x46, 0xd7, 0x86, 0x5a, 0x70, 0xaa, 0x7a, 0x3e,
+	0x0a, 0x90, 0xb8, 0x7a, 0x74, 0x6c, 0x60, 0xc3, 0xb7, 0x8d, 0x0e, 0x56, 0xa3, 0x4f, 0x17, 0xf5,
+	0xa0, 0x4a, 0xfd, 0xe4, 0xb2, 0x89, 0x4c, 0x44, 0x3c, 0xb5, 0xf0, 0x2b, 0x0a, 0x92, 0x57, 0xe2,
+	0x34, 0x1e, 0x42, 0xf6, 0x81, 0x87, 0xb0, 0x15, 0x58, 0xc8, 0xa5, 0x46, 0x39, 0x63, 0xf4, 0x0d,
+	0xf7, 0xb9, 0xe5, 0x9a, 0xd4, 0xb6, 0x9a, 0xb1, 0x61, 0x0f, 0x05, 0x07, 0x9e, 0x6f, 0x75, 0x21,
+	0x35, 0xff, 0x9d, 0x31, 0x5b, 0xee, 0x61, 0x5c, 0xf0, 0x06, 0xc2, 0x0e, 0xc2, 0x16, 0xd6, 0x4e,
+	0x6e, 0x69, 0xa6, 0xe1, 0x38, 0xc4, 0x61, 0xdd, 0x41, 0x3d, 0x68, 0x63, 0xad, 0x63, 0xd8, 0x86,
+	0xdb, 0x85, 0x7e, 0xf2, 0xd1, 0x46, 0xc8, 0x66, 0x82, 0x71, 0x60, 0xe0, 0x5b, 0x5d, 0x4c, 0x6d,
+	0xff, 0xc7, 0xb6, 0x1e, 0x74, 0x91, 0x13, 0x01, 0x39, 0x70, 0x0c, 0xcf, 0x4b, 0xf0, 0xae, 0xbd,
+	0x17, 0xc0, 0x5f, 0x2d, 0x6c, 0xde, 0xf7, 0xa1, 0x11, 0xc0, 0x30, 0x6d, 0x9b, 0x72, 0x15, 0x25,
+	0x30, 0xdf, 0x0d, 0x7f, 0x45, 0xbe, 0x24, 0x54, 0x84, 0x6a, 0x49, 0x8f, 0x97, 0xe2, 0x32, 0x98,
+	0x0b, 0x8b, 0x35, 0x7b, 0xd2, 0x2f, 0xc4, 0x40, 0x57, 0xe2, 0x36, 0x98, 0xa7, 0xf5, 0xa5, 0x42,
+	0x45, 0xa8, 0x2e, 0x6c, 0x5e, 0x53, 0x47, 0x6a, 0xaf, 0x86, 0xf5, 0x5a, 0x51, 0x84, 0x1e, 0x87,
+	0x8a, 0x55, 0xf0, 0xbb, 0x6d, 0xe0, 0xe0, 0xb1, 0xd7, 0x33, 0x02, 0xd8, 0xdb, 0xb3, 0x1c, 0x28,
+	0x15, 0x2b, 0x42, 0xb5, 0xa8, 0x0f, 0xfe, 0xbc, 0xf6, 0x1f, 0x58, 0x65, 0x42, 0xd7, 0x21, 0xf6,
+	0x90, 0x8b, 0x61, 0x4c, 0x2e, 0x8a, 0xb9, 0x92, 0xe4, 0xf2, 0xd0, 0x13, 0x72, 0x4d, 0xc2, 0x6d,
+	0x1b, 0xda, 0xf0, 0x7b, 0xb9, 0xd1, 0x5a, 0xf9, 0x54, 0x49, 0xad, 0x0f, 0x02, 0x28, 0x67, 0xa4,
+	0xd6, 0xa3, 0x43, 0x3f, 0xa2, 0x96, 0x0a, 0xc4, 0x28, 0x3b, 0xde, 0x45, 0x7e, 0x00, 0x7b, 0x5b,
+	0x67, 0xf7, 0xda, 0x4f, 0xa4, 0x42, 0xa5, 0x50, 0x2d, 0xe9, 0x0c, 0x0b, 0xc3, 0x7f, 0x6f, 0x7f,
+	0x47, 0x2a, 0x32, 0xfd, 0xf7, 0xf6, 0x77, 0x58, 0x4a, 0xce, 0xb2, 0x95, 0x54, 0xc0, 0xbf, 0x2c,
+	0xec, 0x83, 0xe4, 0x52, 0xa9, 0xaf, 0x1e, 0xb9, 0x1c, 0xf6, 0x84, 0x5c, 0x8d, 0x70, 0x4b, 0xb7,
+	0x76, 0x2c, 0x37, 0x9a, 0x31, 0x17, 0x91, 0x64, 0xfc, 0x28, 0x80, 0xe5, 0x8c, 0x9e, 0xbb, 0x1e,
+	0x0a, 0xda, 0xe1, 0xd3, 0x32, 0xc5, 0xad, 0x92, 0xc0, 0x3c, 0x79, 0x9b, 0x9a, 0x2e, 0xb9, 0x55,
+	0x25, 0x3d, 0x5e, 0x8a, 0x32, 0xf8, 0x95, 0x7c, 0x3e, 0x3a, 0x0e, 0xc8, 0x15, 0x29, 0xe9, 0xc9,
+	0x5a, 0x2c, 0x83, 0x59, 0xf2, 0x96, 0x11, 0x51, 0x4a, 0x7a, 0xb4, 0x60, 0x89, 0x36, 0xc7, 0x16,
+	0xad, 0x02, 0x14, 0x36, 0x83, 0x41, 0x92, 0xa9, 0xae, 0x57, 0x95, 0x24, 0x83, 0x41, 0x42, 0xf2,
+	0x65, 0x44, 0x32, 0xdd, 0xea, 0x1f, 0x4e, 0x92, 0x82, 0x64, 0x20, 0x48, 0x40, 0xbe, 0x13, 0xc0,
+	0x52, 0x66, 0xb3, 0x9a, 0xee, 0x21, 0x9a, 0x02, 0x9f, 0x0a, 0x8a, 0x61, 0xbb, 0xa5, 0x8f, 0xb7,
+	0xac, 0xd2, 0x7e, 0xab, 0x86, 0xcd, 0x56, 0x3d, 0xd9, 0xe8, 0xc0, 0xc0, 0xd8, 0x20, 0x6f, 0xb6,
+	0x4e, 0xfc, 0x38, 0x5e, 0xea, 0x15, 0xf0, 0x4f, 0x0e, 0xe0, 0x20, 0xfc, 0x74, 0x1b, 0x7e, 0x52,
+	0xf8, 0x59, 0x80, 0x09, 0xfc, 0x07, 0x04, 0x7d, 0xba, 0x3f, 0xd3, 0xa1, 0xa7, 0x35, 0xb2, 0x69,
+	0x92, 0x1a, 0xfb, 0x60, 0xb1, 0x85, 0xcd, 0xdd, 0xc0, 0xe8, 0xd8, 0x70, 0xdc, 0xe9, 0x2b, 0x83,
+	0x59, 0x72, 0x76, 0x68, 0xfe, 0x68, 0x91, 0x5e, 0x95, 0x42, 0xdf, 0x55, 0x59, 0x93, 0xc8, 0xe9,
+	0xee, 0xcb, 0x1b, 0x57, 0xdc, 0xfc, 0xfc, 0x1b, 0x28, 0xb4, 0xb0, 0x29, 0xbe, 0x16, 0x80, 0xc8,
+	0x98, 0x7c, 0xae, 0x8f, 0xe9, 0xec, 0xcc, 0xa1, 0x43, 0xbe, 0x33, 0x4d, 0x54, 0x0c, 0x89, 0x40,
+	0x61, 0xcc, 0x29, 0x13, 0x40, 0xc9, 0x47, 0x4d, 0x02, 0x65, 0xf8, 0x60, 0x41, 0xa0, 0x30, 0xc6,
+	0x8a, 0x09, 0xa0, 0xe4, 0xa3, 0x26, 0x81, 0x32, 0x7c, 0xee, 0x10, 0x5f, 0x09, 0x60, 0x29, 0x3f,
+	0x74, 0xd4, 0x79, 0x94, 0xa6, 0x41, 0xf2, 0xed, 0x29, 0x82, 0x32, 0x38, 0xf2, 0xf3, 0x41, 0x9d,
+	0x47, 0x66, 0x0e, 0x1c, 0x43, 0xbb, 0x39, 0xc1, 0x91, 0xef, 0xe5, 0x75, 0x1e, 0x8d, 0x39, 0x70,
+	0x0c, 0x9d, 0x01, 0xc4, 0x37, 0x02, 0xf8, 0x93, 0x35, 0x00, 0x34, 0x78, 0x44, 0x4e, 0xc2, 0xe4,
+	0xbb, 0x53, 0x85, 0x65, 0xd0, 0xb0, 0x3a, 0x75, 0x83, 0x47, 0x6a, 0x2e, 0x34, 0x23, 0xba, 0x2a,
+	0x41, 0xc3, 0x6a, 0xa9, 0x0d, 0x1e, 0xc1, 0xb9, 0xd0, 0x8c, 0x68, 0x9f, 0xe2, 0x0b, 0xb0, 0x38,
+	0xd0, 0x3a, 0x6b, 0x3c, 0x62, 0x87, 0x11, 0xf2, 0x4d, 0xde, 0x88, 0xfe, 0xea, 0x03, 0x9d, 0xaf,
+	0xc6, 0x23, 0xee, 0xa4, 0xd5, 0xd9, 0xcd, 0x2b, 0xac, 0x3e, 0xd0, 0xb9, 0x6a, 0x3c, 0x62, 0x4e,
+	0x5a, 0x9d, 0xdd, 0xd6, 0x44, 0x0c, 0x16, 0xfa, 0x7b, 0xda, 0xfa, 0xf8, 0x44, 0x7d, 0xee, 0x72,
+	0x83, 0xcb, 0x3d, 0x2e, 0xba, 0xf5, 0xf0, 0xd3, 0x85, 0x22, 0x9c, 0x5f, 0x28, 0xc2, 0xd7, 0x0b,
+	0x45, 0x78, 0x7b, 0xa9, 0xcc, 0x9c, 0x5f, 0x2a, 0x33, 0x5f, 0x2e, 0x95, 0x99, 0xa7, 0x35, 0xd3,
+	0x0a, 0x9e, 0x1d, 0x77, 0xd4, 0x2e, 0x72, 0xb4, 0x34, 0xb5, 0x96, 0xa6, 0xd6, 0x4e, 0xb5, 0xe4,
+	0xbf, 0x93, 0x33, 0x0f, 0xe2, 0xce, 0x1c, 0xf9, 0x87, 0xa0, 0xfe, 0x2d, 0x00, 0x00, 0xff, 0xff,
+	0x26, 0x24, 0x3e, 0xbb, 0x53, 0x11, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1558,7 +1465,6 @@ type MsgClient interface {
 	UpdatePoolInfo(ctx context.Context, in *MsgUpdatePoolInfo, opts ...grpc.CallOption) (*MsgUpdatePoolInfoResponse, error)
 	DeletePoolInfo(ctx context.Context, in *MsgDeletePoolInfo, opts ...grpc.CallOption) (*MsgDeletePoolInfoResponse, error)
 	StablePrice(ctx context.Context, in *MsgStablePrice, opts ...grpc.CallOption) (*MsgStablePriceResponse, error)
-	UpdateOsmosisParams(ctx context.Context, in *MsgUpdateOsmosisParams, opts ...grpc.CallOption) (*MsgUpdateOsmosisParamsResponse, error)
 }
 
 type msgClient struct {
@@ -1571,7 +1477,7 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 
 func (c *msgClient) CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPosition, opts ...grpc.CallOption) (*MsgCreatePoolPositionResponse, error) {
 	out := new(MsgCreatePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1580,7 +1486,7 @@ func (c *msgClient) CreatePoolPosition(ctx context.Context, in *MsgCreatePoolPos
 
 func (c *msgClient) UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPosition, opts ...grpc.CallOption) (*MsgUpdatePoolPositionResponse, error) {
 	out := new(MsgUpdatePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1589,7 +1495,7 @@ func (c *msgClient) UpdatePoolPosition(ctx context.Context, in *MsgUpdatePoolPos
 
 func (c *msgClient) DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPosition, opts ...grpc.CallOption) (*MsgDeletePoolPositionResponse, error) {
 	out := new(MsgDeletePoolPositionResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolPosition", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolPosition", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1598,7 +1504,7 @@ func (c *msgClient) DeletePoolPosition(ctx context.Context, in *MsgDeletePoolPos
 
 func (c *msgClient) CreatePoolRanking(ctx context.Context, in *MsgCreatePoolRanking, opts ...grpc.CallOption) (*MsgCreatePoolRankingResponse, error) {
 	out := new(MsgCreatePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1607,7 +1513,7 @@ func (c *msgClient) CreatePoolRanking(ctx context.Context, in *MsgCreatePoolRank
 
 func (c *msgClient) UpdatePoolRanking(ctx context.Context, in *MsgUpdatePoolRanking, opts ...grpc.CallOption) (*MsgUpdatePoolRankingResponse, error) {
 	out := new(MsgUpdatePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1616,7 +1522,7 @@ func (c *msgClient) UpdatePoolRanking(ctx context.Context, in *MsgUpdatePoolRank
 
 func (c *msgClient) DeletePoolRanking(ctx context.Context, in *MsgDeletePoolRanking, opts ...grpc.CallOption) (*MsgDeletePoolRankingResponse, error) {
 	out := new(MsgDeletePoolRankingResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolRanking", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolRanking", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1625,7 +1531,7 @@ func (c *msgClient) DeletePoolRanking(ctx context.Context, in *MsgDeletePoolRank
 
 func (c *msgClient) CreatePoolSpotPrice(ctx context.Context, in *MsgCreatePoolSpotPrice, opts ...grpc.CallOption) (*MsgCreatePoolSpotPriceResponse, error) {
 	out := new(MsgCreatePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1634,7 +1540,7 @@ func (c *msgClient) CreatePoolSpotPrice(ctx context.Context, in *MsgCreatePoolSp
 
 func (c *msgClient) UpdatePoolSpotPrice(ctx context.Context, in *MsgUpdatePoolSpotPrice, opts ...grpc.CallOption) (*MsgUpdatePoolSpotPriceResponse, error) {
 	out := new(MsgUpdatePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1643,7 +1549,7 @@ func (c *msgClient) UpdatePoolSpotPrice(ctx context.Context, in *MsgUpdatePoolSp
 
 func (c *msgClient) DeletePoolSpotPrice(ctx context.Context, in *MsgDeletePoolSpotPrice, opts ...grpc.CallOption) (*MsgDeletePoolSpotPriceResponse, error) {
 	out := new(MsgDeletePoolSpotPriceResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolSpotPrice", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolSpotPrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1652,7 +1558,7 @@ func (c *msgClient) DeletePoolSpotPrice(ctx context.Context, in *MsgDeletePoolSp
 
 func (c *msgClient) CreatePoolInfo(ctx context.Context, in *MsgCreatePoolInfo, opts ...grpc.CallOption) (*MsgCreatePoolInfoResponse, error) {
 	out := new(MsgCreatePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/CreatePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1661,7 +1567,7 @@ func (c *msgClient) CreatePoolInfo(ctx context.Context, in *MsgCreatePoolInfo, o
 
 func (c *msgClient) UpdatePoolInfo(ctx context.Context, in *MsgUpdatePoolInfo, opts ...grpc.CallOption) (*MsgUpdatePoolInfoResponse, error) {
 	out := new(MsgUpdatePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdatePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1670,7 +1576,7 @@ func (c *msgClient) UpdatePoolInfo(ctx context.Context, in *MsgUpdatePoolInfo, o
 
 func (c *msgClient) DeletePoolInfo(ctx context.Context, in *MsgDeletePoolInfo, opts ...grpc.CallOption) (*MsgDeletePoolInfoResponse, error) {
 	out := new(MsgDeletePoolInfoResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/DeletePoolInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1679,16 +1585,7 @@ func (c *msgClient) DeletePoolInfo(ctx context.Context, in *MsgDeletePoolInfo, o
 
 func (c *msgClient) StablePrice(ctx context.Context, in *MsgStablePrice, opts ...grpc.CallOption) (*MsgStablePriceResponse, error) {
 	out := new(MsgStablePriceResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/StablePrice", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *msgClient) UpdateOsmosisParams(ctx context.Context, in *MsgUpdateOsmosisParams, opts ...grpc.CallOption) (*MsgUpdateOsmosisParamsResponse, error) {
-	out := new(MsgUpdateOsmosisParamsResponse)
-	err := c.cc.Invoke(ctx, "/abag.quasarnode.qoracle.Msg/UpdateOsmosisParams", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qoracle.Msg/StablePrice", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1710,7 +1607,6 @@ type MsgServer interface {
 	UpdatePoolInfo(context.Context, *MsgUpdatePoolInfo) (*MsgUpdatePoolInfoResponse, error)
 	DeletePoolInfo(context.Context, *MsgDeletePoolInfo) (*MsgDeletePoolInfoResponse, error)
 	StablePrice(context.Context, *MsgStablePrice) (*MsgStablePriceResponse, error)
-	UpdateOsmosisParams(context.Context, *MsgUpdateOsmosisParams) (*MsgUpdateOsmosisParamsResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -1756,9 +1652,6 @@ func (*UnimplementedMsgServer) DeletePoolInfo(ctx context.Context, req *MsgDelet
 func (*UnimplementedMsgServer) StablePrice(ctx context.Context, req *MsgStablePrice) (*MsgStablePriceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StablePrice not implemented")
 }
-func (*UnimplementedMsgServer) UpdateOsmosisParams(ctx context.Context, req *MsgUpdateOsmosisParams) (*MsgUpdateOsmosisParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateOsmosisParams not implemented")
-}
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
@@ -1774,7 +1667,7 @@ func _Msg_CreatePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolPosition",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolPosition(ctx, req.(*MsgCreatePoolPosition))
@@ -1792,7 +1685,7 @@ func _Msg_UpdatePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolPosition",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolPosition(ctx, req.(*MsgUpdatePoolPosition))
@@ -1810,7 +1703,7 @@ func _Msg_DeletePoolPosition_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolPosition",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolPosition",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolPosition(ctx, req.(*MsgDeletePoolPosition))
@@ -1828,7 +1721,7 @@ func _Msg_CreatePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolRanking",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolRanking(ctx, req.(*MsgCreatePoolRanking))
@@ -1846,7 +1739,7 @@ func _Msg_UpdatePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolRanking",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolRanking(ctx, req.(*MsgUpdatePoolRanking))
@@ -1864,7 +1757,7 @@ func _Msg_DeletePoolRanking_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolRanking",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolRanking",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolRanking(ctx, req.(*MsgDeletePoolRanking))
@@ -1882,7 +1775,7 @@ func _Msg_CreatePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolSpotPrice",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolSpotPrice(ctx, req.(*MsgCreatePoolSpotPrice))
@@ -1900,7 +1793,7 @@ func _Msg_UpdatePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolSpotPrice",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolSpotPrice(ctx, req.(*MsgUpdatePoolSpotPrice))
@@ -1918,7 +1811,7 @@ func _Msg_DeletePoolSpotPrice_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolSpotPrice",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolSpotPrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolSpotPrice(ctx, req.(*MsgDeletePoolSpotPrice))
@@ -1936,7 +1829,7 @@ func _Msg_CreatePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/CreatePoolInfo",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/CreatePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).CreatePoolInfo(ctx, req.(*MsgCreatePoolInfo))
@@ -1954,7 +1847,7 @@ func _Msg_UpdatePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdatePoolInfo",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/UpdatePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdatePoolInfo(ctx, req.(*MsgUpdatePoolInfo))
@@ -1972,7 +1865,7 @@ func _Msg_DeletePoolInfo_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/DeletePoolInfo",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/DeletePoolInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeletePoolInfo(ctx, req.(*MsgDeletePoolInfo))
@@ -1990,7 +1883,7 @@ func _Msg_StablePrice_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/StablePrice",
+		FullMethod: "/quasarlabs.quasarnode.qoracle.Msg/StablePrice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).StablePrice(ctx, req.(*MsgStablePrice))
@@ -1998,26 +1891,8 @@ func _Msg_StablePrice_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_UpdateOsmosisParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgUpdateOsmosisParams)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).UpdateOsmosisParams(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/abag.quasarnode.qoracle.Msg/UpdateOsmosisParams",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).UpdateOsmosisParams(ctx, req.(*MsgUpdateOsmosisParams))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _Msg_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "abag.quasarnode.qoracle.Msg",
+	ServiceName: "quasarlabs.quasarnode.qoracle.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -2071,10 +1946,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StablePrice",
 			Handler:    _Msg_StablePrice_Handler,
-		},
-		{
-			MethodName: "UpdateOsmosisParams",
-			Handler:    _Msg_UpdateOsmosisParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -3027,64 +2898,6 @@ func (m *MsgStablePriceResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgUpdateOsmosisParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgUpdateOsmosisParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgUpdateOsmosisParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Creator) > 0 {
-		i -= len(m.Creator)
-		copy(dAtA[i:], m.Creator)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgUpdateOsmosisParamsResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgUpdateOsmosisParamsResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgUpdateOsmosisParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.PacketSequence != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.PacketSequence))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -3519,31 +3332,6 @@ func (m *MsgStablePriceResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	return n
-}
-
-func (m *MsgUpdateOsmosisParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Creator)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgUpdateOsmosisParamsResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.PacketSequence != 0 {
-		n += 1 + sovTx(uint64(m.PacketSequence))
-	}
 	return n
 }
 
@@ -6280,157 +6068,6 @@ func (m *MsgStablePriceResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: MsgStablePriceResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgUpdateOsmosisParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgUpdateOsmosisParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgUpdateOsmosisParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Creator = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgUpdateOsmosisParamsResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgUpdateOsmosisParamsResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgUpdateOsmosisParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PacketSequence", wireType)
-			}
-			m.PacketSequence = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.PacketSequence |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

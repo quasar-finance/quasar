@@ -1,7 +1,5 @@
 package types
 
-import "encoding/binary"
-
 const (
 	// ModuleName defines the module name
 	ModuleName = "qoracle"
@@ -42,25 +40,14 @@ const (
 )
 
 var (
-	PoolPositionKBP                   = []byte{0x01}
-	PoolInfoKBP                       = []byte{0x02}
-	PoolAPYRankedKBP                  = []byte{0x03}
-	PoolSpotPriceKBP                  = []byte{0x05}
-	PortKey                           = []byte{0x06}
-	KeyCoinRatesState                 = []byte("coin_rates_state")
-	KeyOraclePrices                   = []byte("oracle_prices")
-	KeyStablePricesPrefix             = []byte("stable_prices")
-	KeyOsmosisParamsRequestState      = []byte("osmosis_params_request_state")
-	KeyOsmosisPrefix                  = []byte("osmosis")
-	KeyOsmosisEpochsInfoPrefix        = []byte("epochs_info")
-	KeyOsmosisPoolPrefix              = []byte("pools")
-	KeyOsmosisLockableDurations       = []byte("lockable_durations")
-	KeyOsmosisMintParams              = []byte("mint_params")
-	KeyOsmosisMintEpochProvisions     = []byte("mint_epoch_provisions")
-	KeyOsmosisIncentivizedPoolsPrefix = []byte("incentivized_pools")
-	KeyOsmosisPoolGaugeIdsPrefix      = []byte("pool_gauge_ids")
-	KeyOsmosisDistrInfo               = []byte("distr_info")
-	KeyOsmosisSpotPricePrefix         = []byte("spot_prices")
+	PoolPositionKBP       = []byte{0x01}
+	PoolInfoKBP           = []byte{0x02}
+	PoolAPYRankedKBP      = []byte{0x03}
+	PoolSpotPriceKBP      = []byte{0x05}
+	PortKey               = []byte{0x06}
+	KeyCoinRatesState     = []byte("coin_rates_state")
+	KeyOraclePrices       = []byte("oracle_prices")
+	KeyStablePricesPrefix = []byte("stable_prices")
 )
 
 var SepByte = []byte("#")
@@ -71,22 +58,6 @@ func CreatePoolPositionKey(poolID string) []byte {
 
 func CreatePoolInfoKey(poolID string) []byte {
 	return []byte(poolID)
-}
-
-func CreateOsmosisSpotPriceKey(poolId uint64, base, quote string) []byte {
-	key := make([]byte, 8, len(base)+len(quote)+2)
-
-	binary.BigEndian.PutUint64(key, poolId)
-	key = append(key, SepByte...)
-
-	baseBytes := []byte(base)
-	key = append(key, baseBytes...)
-	key = append(key, SepByte...)
-
-	quoteBytes := []byte(quote)
-	key = append(key, quoteBytes...)
-
-	return key
 }
 
 // PoolSpotPriceKey returns the store key to retrieve a PoolSpotPrice from the index fields
