@@ -1,7 +1,5 @@
 package types
 
-import "encoding/binary"
-
 const (
 	// ModuleName defines the module name
 	ModuleName = "qoracle"
@@ -62,7 +60,6 @@ var (
 	KeyOsmosisIncentivizedPools             = []byte("incentivized_pools")
 	KeyOsmosisPoolGaugeIdsPrefix            = []byte("pool_gauge_ids")
 	KeyOsmosisDistrInfo                     = []byte("distr_info")
-	KeyOsmosisSpotPricePrefix               = []byte("spot_prices")
 )
 
 var SepByte = []byte("#")
@@ -73,22 +70,6 @@ func CreatePoolPositionKey(poolID string) []byte {
 
 func CreatePoolInfoKey(poolID string) []byte {
 	return []byte(poolID)
-}
-
-func CreateOsmosisSpotPriceKey(poolId uint64, base, quote string) []byte {
-	key := make([]byte, 8, len(base)+len(quote)+2)
-
-	binary.BigEndian.PutUint64(key, poolId)
-	key = append(key, SepByte...)
-
-	baseBytes := []byte(base)
-	key = append(key, baseBytes...)
-	key = append(key, SepByte...)
-
-	quoteBytes := []byte(quote)
-	key = append(key, quoteBytes...)
-
-	return key
 }
 
 // PoolSpotPriceKey returns the store key to retrieve a PoolSpotPrice from the index fields
