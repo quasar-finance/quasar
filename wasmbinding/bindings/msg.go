@@ -20,5 +20,5 @@ type SendToken struct {
 	DestinationLocalZoneId string   `json:"destination_local_zone_id"`
 	Sender                 string   `json:"sender"`
 	Receiver               string   `json:"receiver"`
-	coin                   sdk.Coin `json:"coin"`
+	Coin                   sdk.Coin `json:"coin"`
 }

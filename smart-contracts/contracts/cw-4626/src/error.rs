@@ -13,5 +13,5 @@ pub enum ContractError {
     PaymentError(#[from] cw_utils::PaymentError),
 
     #[error("{0}")]
-    StrategyError(#[from] strategy::error::ContractError)
+    StrategyError(#[from] strategy::error::ContractError),
 }

@@ -10,4 +10,5 @@ pub struct State {
     pub owner: Addr,
 }
 
+pub const ACKTRIGGERED: Item<u128> = Item::new("ack_triggered");
 pub const STATE: Item<State> = Item::new("state");

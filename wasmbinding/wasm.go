@@ -10,6 +10,7 @@ import (
 func RegisterCustomPlugins(
 	intergammKeeper *intergammkeeper.Keeper,
 	bank *bankkeeper.BaseKeeper,
+	callback *CallbackPlugin,
 ) []wasmkeeper.Option {
 	wasmQueryPlugin := NewQueryPlugin(intergammKeeper)
 
@@ -17,7 +18,7 @@ func RegisterCustomPlugins(
 		Custom: CustomQuerier(wasmQueryPlugin),
 	})
 	messengerDecoratorOpt := wasmkeeper.WithMessageHandlerDecorator(
-		CustomMessageDecorator(intergammKeeper, bank),
+		CustomMessageDecorator(intergammKeeper, bank, callback),
 	)
 
 	return []wasm.Option{
