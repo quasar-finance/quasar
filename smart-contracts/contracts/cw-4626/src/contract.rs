@@ -1,15 +1,18 @@
-use std::cmp::min;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg::Bank;
-use cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128, Coin, Addr, SubMsg};
+use cosmwasm_std::{
+    coins, to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, SubMsg, Uint128,
+};
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
+use std::cmp::min;
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
-    deduct_allowance, execute_decrease_allowance, execute_increase_allowance,
-    execute_send_from, execute_transfer_from, query_allowance,
+    deduct_allowance, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
+    execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
     execute_burn, execute_mint, execute_send, execute_transfer, execute_update_marketing,
@@ -20,16 +23,17 @@ use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
-use strategy::contract::{execute_withdraw_request, execute_deposit as execute_strategy_deposit};
 use quasar_traits::traits::Curve;
 use quasar_types::curve::{CurveType, DecimalPlaces};
+use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
-use crate::ContractError::{PaymentError, Std};
 use crate::error::ContractError;
-use crate::msg::{AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg, MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse};
-use crate::state::{
-    VaultInfo, VAULT_CURVE, VAULT_INFO,
+use crate::msg::{
+    AssetResponse, ConvertToAssetsResponse, ConvertToSharesResponse, ExecuteMsg, InstantiateMsg,
+    MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse,
 };
+use crate::state::{VaultInfo, VAULT_CURVE, VAULT_INFO};
+use crate::ContractError::{PaymentError, Std};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -306,7 +310,14 @@ pub fn execute_withdraw(
 
     // TODO here we need to withdraw from the strategy, if the strategy has the funds, we can simply withdraw
     //  if the withdraw is queued, do we already burn and mint again if we need to reverse or not burn at all?
-    let withdraw_res = execute_withdraw_request(deps.branch(), env.clone(), info.clone(), info.sender.to_string(), vault_info.reserve_denom.clone(), amount)?;
+    let withdraw_res = execute_withdraw_request(
+        deps.branch(),
+        env.clone(),
+        info.clone(),
+        info.sender.to_string(),
+        vault_info.reserve_denom.clone(),
+        amount,
+    )?;
 
     // execute_burn will error if the sender does not have enough tokens to burn
     // TODO remove clone
@@ -357,7 +368,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
         QueryMsg::Asset {} => to_binary(&query_asset(deps)?),
-        QueryMsg::TotalAssets { } => to_binary(&query_total_assets(deps, env)?),
+        QueryMsg::TotalAssets {} => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
         QueryMsg::MaxDeposit { receiver } => {
@@ -392,16 +403,25 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_asset(deps: Deps) -> StdResult<AssetResponse> {
     let vault_info = VAULT_INFO.load(deps.storage)?;
-    Ok(AssetResponse{ denom: vault_info.reserve_denom })
+    Ok(AssetResponse {
+        denom: vault_info.reserve_denom,
+    })
 }
 
 pub fn query_total_assets(deps: Deps, env: Env) -> StdResult<TotalAssetResponse> {
     let vault_info = VAULT_INFO.load(deps.storage)?;
-    let balance = deps.querier.query_balance(env.contract.address, vault_info.reserve_denom)?;
-    Ok(TotalAssetResponse{ total_managed_assets: balance.amount })
+    let balance = deps
+        .querier
+        .query_balance(env.contract.address, vault_info.reserve_denom)?;
+    Ok(TotalAssetResponse {
+        total_managed_assets: balance.amount,
+    })
 }
 
-pub fn query_convert_to_shares(deps: Deps, assets: Vec<Coin>) -> StdResult<ConvertToSharesResponse> {
+pub fn query_convert_to_shares(
+    deps: Deps,
+    assets: Vec<Coin>,
+) -> StdResult<ConvertToSharesResponse> {
     let vault_info = VAULT_INFO.load(deps.storage)?;
     let curve_type = VAULT_CURVE.load(deps.storage)?;
     let curve_fn = curve_type.to_curve_fn();
@@ -414,22 +434,27 @@ pub fn query_convert_to_shares(deps: Deps, assets: Vec<Coin>) -> StdResult<Conve
 
     // error on wrong denom
     if assets[0].denom != vault_info.reserve_denom {
-        return Err(StdError::generic_err(format!("Expected {} instead of {}", vault_info.reserve_denom,  assets[0].denom)));
+        return Err(StdError::generic_err(format!(
+            "Expected {} instead of {}",
+            vault_info.reserve_denom, assets[0].denom
+        )));
     }
 
     let shares = curve.deposit(&assets[0].amount);
 
-    Ok(ConvertToSharesResponse{ amount: shares })
+    Ok(ConvertToSharesResponse { amount: shares })
 }
 
-pub fn query_convert_to_assets(deps: Deps, shares: Uint128) ->StdResult<ConvertToAssetsResponse> {
+pub fn query_convert_to_assets(deps: Deps, shares: Uint128) -> StdResult<ConvertToAssetsResponse> {
     let vault_info = VAULT_INFO.load(deps.storage)?;
     let curve_type = VAULT_CURVE.load(deps.storage)?;
     let curve_fn = curve_type.to_curve_fn();
     let curve = curve_fn(vault_info.decimals);
 
     let amount = curve.withdraw(&shares);
-    Ok(ConvertToAssetsResponse{ assets: coins(amount.u128(), vault_info.reserve_denom) })
+    Ok(ConvertToAssetsResponse {
+        assets: coins(amount.u128(), vault_info.reserve_denom),
+    })
 }
 
 fn query_max_deposit(deps: Deps) -> StdResult<MaxDepositResponse> {
@@ -456,14 +481,16 @@ fn query_max_deposit(deps: Deps) -> StdResult<MaxDepositResponse> {
             // if there is no cap, what do we do? We can return Uint128::MAX - outstanding tokens
             // This does create an issue with normalizing so that probably is not best.
             // thus we have to return None here to indicate the vault has no cap
-            return Ok(MaxDepositResponse{ max_assets: None });
+            return Ok(MaxDepositResponse { max_assets: None });
         }
     } else {
         return Err(StdError::generic_err("no minter found in vault"));
     }
     // in order to get this many shares, we calculate F^-1(X), or withdraw, since withdraw and deposit are reversible
     let asset = curve.deposit(&free_tokens);
-    Ok(MaxDepositResponse{ max_assets: Some(coins(asset.u128(), vault_info.reserve_denom)) })
+    Ok(MaxDepositResponse {
+        max_assets: Some(coins(asset.u128(), vault_info.reserve_denom)),
+    })
 }
 
 pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
@@ -669,7 +696,8 @@ mod tests {
             45_000_000,
         );
 
-        deps.querier.update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
+        deps.querier
+            .update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
 
         let alice: &str = "alice";
         let bob: &str = "bobbyb";
@@ -890,10 +918,14 @@ mod tests {
         let bob: &str = "bobbyb";
         let carl: &str = "carl";
 
-        deps.querier.update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
+        deps.querier
+            .update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
 
         let total_assets = query_total_assets(deps.as_ref(), mock_env()).unwrap();
-        assert_eq!(total_assets.total_managed_assets, Uint128::new(45_000_000_000));
+        assert_eq!(
+            total_assets.total_managed_assets,
+            Uint128::new(45_000_000_000)
+        );
     }
 
     #[test]
@@ -901,7 +933,8 @@ mod tests {
         let mut deps = mock_dependencies();
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
-        let response = query_convert_to_shares(deps.as_ref(), coins(45_000_000_000, DENOM)).unwrap();
+        let response =
+            query_convert_to_shares(deps.as_ref(), coins(45_000_000_000, DENOM)).unwrap();
         assert_eq!(response.amount, Uint128::new(45_000_000))
     }
 
