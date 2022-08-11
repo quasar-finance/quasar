@@ -343,12 +343,8 @@ func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQ
 		return k.handleOsmosisMintEpochProvisionsResponse(ctx, req, resp)
 	case types.OsmosisQueryIncentivizedPoolsPath:
 		return k.handleOsmosisIncentivizedPoolsResponse(ctx, req, resp)
-	case types.OsmosisQueryPoolGaugeIdsPath:
-		return k.handleOsmosisPoolGaugeIdsResponse(ctx, req, resp)
 	case types.OsmosisQueryDistrInfoPath:
 		return k.handleOsmosisDistrInfoResponse(ctx, req, resp)
-	case types.OsmosisQuerySpotPricePath:
-		return k.handleOsmosisSpotPriceResponse(ctx, req, resp)
 	default:
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
 	}
@@ -508,24 +504,6 @@ func (k Keeper) GetOsmosisIncentivizedPools(ctx sdk.Context) []poolincentivestyp
 	return pools.IncentivizedPools
 }
 
-func (k Keeper) handleOsmosisPoolGaugeIdsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
-	var qreq poolincentivestypes.QueryGaugeIdsRequest
-	k.cdc.MustUnmarshal(req.GetData(), &qreq)
-
-	var qresp poolincentivestypes.QueryGaugeIdsResponse_GaugeIdWithDuration
-	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
-
-	k.setOsmosisPoolGaugeIds(ctx, qreq.PoolId, qresp)
-	return nil
-}
-
-func (k Keeper) setOsmosisPoolGaugeIds(ctx sdk.Context, poolId uint64, gaugeIdWithDuration poolincentivestypes.QueryGaugeIdsResponse_GaugeIdWithDuration) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolGaugeIdsPrefix)
-
-	key := sdk.Uint64ToBigEndian(poolId)
-	store.Set(key, k.cdc.MustMarshal(&gaugeIdWithDuration))
-}
-
 func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp poolincentivestypes.QueryDistrInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
@@ -547,28 +525,6 @@ func (k Keeper) GetOsmosisDistrInfo(ctx sdk.Context) poolincentivestypes.DistrIn
 	var distrInfo poolincentivestypes.DistrInfo
 	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisDistrInfo), &distrInfo)
 	return distrInfo
-}
-
-func (k Keeper) handleOsmosisSpotPriceResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
-	var qreq gammtypes.QuerySpotPriceRequest
-	k.cdc.MustUnmarshal(req.GetData(), &qreq)
-
-	var qresp gammtypes.QuerySpotPriceResponse
-	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
-
-	spotPrice := sdk.MustNewDecFromStr(qresp.SpotPrice)
-	k.setOsmosisSpotPrice(ctx, qreq.PoolId, qreq.BaseAssetDenom, qreq.QuoteAssetDenom, spotPrice)
-	return nil
-}
-
-func (k Keeper) setOsmosisSpotPrice(ctx sdk.Context, poolId uint64, base, quote string, spotPrice sdk.Dec) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisSpotPricePrefix)
-
-	bz, err := spotPrice.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	store.Set(types.CreateOsmosisSpotPriceKey(poolId, base, quote), bz)
 }
 
 func (k Keeper) handleOsmosisICQTimeout(ctx sdk.Context, packet channeltypes.Packet) error {
