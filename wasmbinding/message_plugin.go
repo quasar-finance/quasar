@@ -14,12 +14,13 @@ import (
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
-func CustomMessageDecorator(intergammKeeper *intergammkeeper.Keeper, bank *bankkeeper.BaseKeeper) func(wasmkeeper.Messenger) wasmkeeper.Messenger {
+func CustomMessageDecorator(intergammKeeper *intergammkeeper.Keeper, bank *bankkeeper.BaseKeeper, callback *CallbackPlugin) func(wasmkeeper.Messenger) wasmkeeper.Messenger {
 	return func(old wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return &CustomMessenger{
 			wrapped:         old,
 			bank:            bank,
 			intergammKeeper: intergammKeeper,
+			callback:        callback,
 		}
 	}
 }
@@ -28,6 +29,7 @@ type CustomMessenger struct {
 	wrapped         wasmkeeper.Messenger
 	bank            *bankkeeper.BaseKeeper
 	intergammKeeper *intergammkeeper.Keeper
+	callback        *CallbackPlugin
 }
 
 var _ wasmkeeper.Messenger = (*CustomMessenger)(nil)
@@ -86,33 +88,41 @@ func PerformTestScenario(k *intergammkeeper.Keeper, ctx sdk.Context, contractAdd
 }
 
 func (m *CustomMessenger) sendToken(ctx sdk.Context, contractAddr sdk.AccAddress, send *bindings.SendToken) ([]sdk.Event, [][]byte, error) {
-	err := PerformSendToken(m.intergammKeeper, m.bank, ctx, contractAddr, send)
+	err := PerformSendToken(m.intergammKeeper, m.bank, ctx, contractAddr, send, m.callback)
 	if err != nil {
 		return nil, nil, sdkerrors.Wrap(err, "send token")
 	}
 	return nil, nil, nil
 }
 
-func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, send *bindings.SendToken) error {
+func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, send *bindings.SendToken, cb *CallbackPlugin) error {
 	if send == nil {
 		return wasmvmtypes.InvalidRequest{Err: "send token null"}
 	}
-	_, err := parseAddress(send.Receiver) // where to use?
+	receiver, err := parseAddress(send.Receiver) // where to use?
 	if err != nil {
-		return err
+		return sdkerrors.Wrap(err, "parse receiver")
 	}
 
-	sdkMsg := intergammtypes.NewMsgSendToken(send.DestinationLocalZoneId, "todo", 1, 1, nil)
-	if err = sdkMsg.ValidateBasic(); err != nil {
-		return err
+	sdkMsg := intergammtypes.NewMsgSendToken(send.Creator, send.DestinationLocalZoneId, send.Sender, receiver.String(), &send.Coin)
+	if err := sdkMsg.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "basic validate msg")
 	}
 
-	// Mint through token factory / message server
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
 	_, err = msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
-	if err != nil {
-		return sdkerrors.Wrap(err, "sending tokens")
-	}
+
+	// hardcode seq for POC
+	// register the packet as sent with the callback plugin
+	cb.OnSendPacket(ctx, 1, contractAddr)
+	// for testing, trigger the callback in the contract
+	cb.doHandle(ctx, 1)
+
+	// TODO stop ignoring the error once we have a test setup and trigger the contract on the Handle of the ack
+	// ignore the error for now
+	// if err != nil {
+	// 	return sdkerrors.Wrap(err, "sending tokens")
+	// }
 	return nil
 }
 

@@ -1,7 +1,6 @@
 use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Timestamp, Uint64};
 use schemars::JsonSchema;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -12,7 +11,7 @@ pub enum IntergammMsg {
         destination_local_zone_id: String,
         sender: String,
         receiver: String,
-        coin: Coin
+        coin: Coin,
     },
     // unused and unimplemented on go side (wasmbinding)
     // TransmitIbcJoinPool {
@@ -27,9 +26,7 @@ pub enum IntergammMsg {
     },
 }
 
-impl IntergammMsg {
-
-}
+impl IntergammMsg {}
 
 impl From<IntergammMsg> for CosmosMsg<IntergammMsg> {
     fn from(msg: IntergammMsg) -> CosmosMsg<IntergammMsg> {
