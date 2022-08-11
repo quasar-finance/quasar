@@ -36,11 +36,11 @@ message MsgTestScenarioResponse {
 }
 
 message MsgSendToken {
-  string creator = 1;
-  string destinationLocalZoneId = 2;
-  string sender = 3;
-  string receiver = 4;
-  cosmos.base.v1beta1.Coin coin = 5;
+  string creator = 1 [(gogoproto.moretags) = "yaml:\"creator\" json:\"creator\""];
+  string destinationLocalZoneId = 2 [(gogoproto.moretags) = "yaml:\"destination_local_zone_id\" json:\"destination_local_zone_id\""];
+  string sender = 3 [(gogoproto.moretags) = "yaml:\"sender\" json:\"sender\""];
+  string receiver = 4 [(gogoproto.moretags) = "yaml:\"receiver\" json:\"receiver\""];
+  cosmos.base.v1beta1.Coin coin = 5 [(gogoproto.moretags) = "yaml:\"coin\" json:\"coin\""];
 }
 
 message MsgSendTokenResponse {
