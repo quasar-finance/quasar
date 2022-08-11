@@ -183,14 +183,14 @@ pub struct ConvertToSharesResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ConvertToAssetsResponse {
-    pub assets: Vec<Coin>
+    pub assets: Vec<Coin>,
 }
 
 /// A None response indicates that the vault has no cap an thus no max deposit
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct MaxDepositResponse {
-    pub max_assets: Option<Vec<Coin>>
+    pub max_assets: Option<Vec<Coin>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

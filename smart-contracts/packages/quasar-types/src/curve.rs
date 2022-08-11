@@ -4,7 +4,7 @@ use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

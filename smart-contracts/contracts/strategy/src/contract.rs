@@ -9,7 +9,7 @@ use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{OUTSTANDING_FUNDS, WithdrawRequest};
+use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -94,9 +94,8 @@ fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> 
     // check the free balance of the contract
     let free_balance = deps
         .querier
-        .query_balance(env.contract.address, w.denom.clone()).map_err(|error| {
-        ContractError::Std(error)
-    })?;
+        .query_balance(env.contract.address, w.denom.clone())
+        .map_err(|error| ContractError::Std(error))?;
     // if the contract has enough free balance, execute the withdraw
     if w.amount <= free_balance.amount {
         // remove the peeked withdraw request

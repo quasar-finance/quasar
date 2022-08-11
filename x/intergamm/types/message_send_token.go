@@ -9,9 +9,13 @@ const TypeMsgSendToken = "send_token"
 
 var _ sdk.Msg = &MsgSendToken{}
 
-func NewMsgSendToken(destination_local_zone_id string, connectionId string, timoutTimestamp, id uint64, coins []sdk.Coin) *MsgSendToken {
+func NewMsgSendToken(creator string, destination_local_zone_id string, sender string, receiver string, coin *sdk.Coin) *MsgSendToken {
 	return &MsgSendToken{
+		Creator:                creator,
 		DestinationLocalZoneId: destination_local_zone_id,
+		Sender:                 sender,
+		Receiver:               receiver,
+		Coin:                   coin,
 	}
 }
 

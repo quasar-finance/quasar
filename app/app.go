@@ -10,6 +10,7 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
+	"github.com/quasarlabs/quasarnode/wasmbinding"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -109,6 +110,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	owasm "github.com/quasarlabs/quasarnode/wasmbinding"
 
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
@@ -576,6 +578,40 @@ func New(
 		),
 	)
 
+	// create the wasm callback plugin
+	callback := wasmbinding.NewCallbackPlugin(&app.wasmKeeper)
+
+	wasmDir := filepath.Join(homePath, "wasm")
+	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
+	if err != nil {
+		panic(fmt.Sprintf("error while reading wasm config: %s", err))
+	}
+
+	wasmOpts = append(owasm.RegisterCustomPlugins(app.IntergammKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+
+	// The last arguments can contain custom message handlers, and custom query handlers,
+	// if we want to allow any custom callbacks
+	supportedFeatures := "iterator,staking,stargate"
+	app.wasmKeeper = wasm.NewKeeper(
+		appCodec,
+		keys[wasm.StoreKey],
+		app.GetSubspace(wasm.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.DistrKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedWasmKeeper,
+		app.TransferKeeper,
+		app.MsgServiceRouter(),
+		app.GRPCQueryRouter(),
+		wasmDir,
+		wasmConfig,
+		supportedFeatures,
+		wasmOpts...,
+	)
+
 	// Set Intergamm hooks
 
 	// IBC
@@ -585,6 +621,7 @@ func New(
 	)
 	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIcaIbcTransfer(
 		app.OrionKeeper.HandleAckIcaIbcTransfer,
+		callback.Handle,
 	)
 	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(
 		app.OrionKeeper.HandleTimeoutIbcTransfer,
@@ -651,35 +688,6 @@ func New(
 	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
-
-	wasmDir := filepath.Join(homePath, "wasm")
-	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
-	if err != nil {
-		panic(fmt.Sprintf("error while reading wasm config: %s", err))
-	}
-
-	// The last arguments can contain custom message handlers, and custom query handlers,
-	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
-	app.wasmKeeper = wasm.NewKeeper(
-		appCodec,
-		keys[wasm.StoreKey],
-		app.GetSubspace(wasm.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.DistrKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		scopedWasmKeeper,
-		app.TransferKeeper,
-		app.MsgServiceRouter(),
-		app.GRPCQueryRouter(),
-		wasmDir,
-		wasmConfig,
-		supportedFeatures,
-		wasmOpts...,
-	)
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
