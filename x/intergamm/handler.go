@@ -21,23 +21,13 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 			res, err := msgServer.TestScenario(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgSendToken:
-			res, err := msgServer.SendToken((sdk.WrapSDKContext(ctx)), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
-			// this line is used by starport scaffolding # 1
-		case *types.MsgSendToken:
 			res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTransmitIbcJoinPool:
 			res, err := msgServer.TransmitIbcJoinPool(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgTransmitIbcJoinSwapExternAmountIn:
-			res, err := msgServer.TransmitIbcJoinSwapExternAmountIn(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTransmitIbcExitPool:
 			res, err := msgServer.TransmitIbcExitPool(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgTransmitIbcExitSwapExternAmountOut:
-			res, err := msgServer.TransmitIbcExitSwapExternAmountOut(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTransmitIbcLockTokens:
 			res, err := msgServer.TransmitIbcLockTokens(sdk.WrapSDKContext(ctx), msg)
@@ -45,6 +35,13 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgTransmitIbcBeginUnlocking:
 			res, err := msgServer.TransmitIbcBeginUnlocking(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgTransmitIbcJoinSwapExternAmountIn:
+			res, err := msgServer.TransmitIbcJoinSwapExternAmountIn(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgTransmitIbcExitSwapExternAmountOut:
+			res, err := msgServer.TransmitIbcExitSwapExternAmountOut(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+			// this line is used by starport scaffolding # 1
 		default:
 			errMsg := fmt.Sprintf("unrecognized %s message type: %T", types.ModuleName, msg)
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
