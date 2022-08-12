@@ -7,11 +7,11 @@ BOB="lucky surface version conduct ketchup cash unfair rival shoulder example de
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
 RELAYER_ACC="ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle"
-ALICE_GENESIS_COINS=20000000uatom,2000000000stake
+ALICE_GENESIS_COINS=200000000uatom,2000000000stake
 BOB_GENESIS_COINS=10000000uatom,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uatom,10000000000uusd
 USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
-RELAYER_ACC_GENESIS_COINS=1000000stake
+RELAYER_ACC_GENESIS_COINS=10000000uatom
 
 # Remove previous setup
 rm -rf $HOME_COSMOSHUB
@@ -28,8 +28,8 @@ $BINARY add-genesis-account $($BINARY keys show bob   --keyring-backend test -a)
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a) $USER_1_GENESIS_COINS --home $HOME_COSMOSHUB
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a) $USER_2_GENESIS_COINS --home $HOME_COSMOSHUB
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a) $RELAYER_ACC_GENESIS_COINS --home $HOME_COSMOSHUB
-$BINARY gentx alice 100000000stake --chain-id $CHAIN_ID --keyring-backend test --home $HOME_COSMOSHUB
-#$BINARY gentx bob 100000000stake --chain-id $CHAIN_ID --keyring-backend test --home $HOME_COSMOSHUB
+$BINARY gentx alice 100000000uatom --chain-id $CHAIN_ID --keyring-backend test --home $HOME_COSMOSHUB
+#$BINARY gentx bob 100000000uatom --chain-id $CHAIN_ID --keyring-backend test --home $HOME_COSMOSHUB
 $BINARY collect-gentxs
 
 # Check platform
@@ -42,6 +42,7 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
+	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26669"+g' $HOME_COSMOSHUB/config/config.toml
 	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26669"+g' $HOME_COSMOSHUB/config/client.toml	
 	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26663"+g' $HOME_COSMOSHUB/config/config.toml
@@ -59,7 +60,11 @@ fi
 
 cp $HOME_COSMOSHUB/config/genesis.json $HOME_COSMOSHUB/config/genesis_original.json
 cat $HOME_COSMOSHUB/config/genesis_original.json |
-  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
+  jq '.app_state.crisis.constant_fee.denom="uatom"' |
+  jq '.app_state.staking.params.bond_denom="uatom"' |
+  jq '.app_state.mint.params.mint_denom="uatom"' |
+  jq '.app_state.liquidity.params.pool_creation_fee=[{denom:"uatom",amount:"1"}]' |
+  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uatom",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' \
   >  $HOME_COSMOSHUB/config/genesis.json

@@ -13,9 +13,9 @@ USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon 
 RELAYER_ACC="old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license"
 ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
 BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
-USER_1_GENESIS_COINS=10000000000stake,10000000000uatom
-USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
-RELAYER_ACC_GENESIS_COINS=1000000stake
+USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
+USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
+RELAYER_ACC_GENESIS_COINS=10000000uqsr
 
 # Remove previous setup
 rm -rf $HOME_QSR
@@ -47,6 +47,7 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
+	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uqsr"/g' $HOME_QSR/config/app.toml
 	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
 	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
 	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
@@ -64,8 +65,10 @@ fi
 
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
 cat $HOME_QSR/config/genesis_original.json |
+  jq '.app_state.crisis.constant_fee.denom="uqsr"' |
   jq '.app_state.staking.params.bond_denom="uqsr"' |
-  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
+  jq '.app_state.mint.params.mint_denom="uqsr"' |
+  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
   jq '.app_state.orion = {
