@@ -67,7 +67,24 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.txfees.basedenom="uosmo"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uosmo",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
-  jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' \
+  jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
+  jq '.app_state.interchainaccounts.host_genesis_state.port="icahost"' |
+  jq '.app_state.interchainaccounts.host_genesis_state.params=
+  {
+    host_enabled:true,
+    allow_messages: [
+      "/ibc.applications.transfer.v1.MsgTransfer",
+      "/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
+      "/osmosis.gamm.v1beta1.MsgJoinPool",
+      "/osmosis.gamm.v1beta1.MsgExitPool",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+      "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+      "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+      "/osmosis.lockup.MsgLockTokens",
+      "/osmosis.lockup.MsgBeginUnlocking"
+    ]
+  }' \
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start
