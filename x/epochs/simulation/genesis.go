@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 // RandomizedGenState generates a random GenesisState for mint.

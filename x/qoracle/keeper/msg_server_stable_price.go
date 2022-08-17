@@ -3,8 +3,8 @@ package keeper
 import (
 	"context"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func (k msgServer) StablePrice(goCtx context.Context, msg *types.MsgStablePrice) (*types.MsgStablePriceResponse, error) {

@@ -10,9 +10,9 @@ import (
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // TODO - Need to optimize all these getters to reduce the KV store calls

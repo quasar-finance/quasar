@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

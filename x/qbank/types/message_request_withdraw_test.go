@@ -3,9 +3,9 @@ package types
 import (
 	"testing"
 
-	"github.com/quasarlabs/quasarnode/testutil/sample"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
 

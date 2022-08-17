@@ -4,6 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	proto "github.com/gogo/protobuf/proto"
 	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
@@ -11,12 +17,6 @@ import (
 	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	proto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
 )
 

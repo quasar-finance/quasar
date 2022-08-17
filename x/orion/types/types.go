@@ -1,8 +1,8 @@
 package types
 
 import (
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // UserCoin is used to fetch users deposit of a particular denom on a given

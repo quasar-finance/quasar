@@ -1,10 +1,10 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/orion/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // SetStrategyNames Set the list of strategy names in store with prefix key string equals orion_strategies

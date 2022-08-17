@@ -3,10 +3,10 @@ package intergamm
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 // NewHandler ...

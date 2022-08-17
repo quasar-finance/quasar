@@ -3,9 +3,9 @@ package cli
 import (
 	"context"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/spf13/cobra"
 )
 

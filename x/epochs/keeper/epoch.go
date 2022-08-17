@@ -3,9 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/protobuf/proto"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 // GetEpochInfo returns epoch info by identifier.

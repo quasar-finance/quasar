@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var cmds []*cobra.Command

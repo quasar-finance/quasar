@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // updateOraclePrices sets the price of symbols requested from bandchain oracle based on the latest CoinRatesState.

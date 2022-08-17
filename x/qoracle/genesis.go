@@ -3,9 +3,9 @@ package qoracle
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

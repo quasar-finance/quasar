@@ -1,9 +1,9 @@
 package keeper
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 ////////////////////////////////////////////////////////////////

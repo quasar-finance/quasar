@@ -1,12 +1,12 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, clientKeeper types.ClientKeeper, ics4Wrapper types.ICS4Wrapper, channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper, scopedKeeper capabilitykeeper.ScopedKeeper) keeper.Keeper {

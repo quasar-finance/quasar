@@ -3,10 +3,10 @@ package orion
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/orion/keeper"
-	"github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/orion/keeper"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // NewHandler ...
