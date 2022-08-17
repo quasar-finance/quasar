@@ -15,6 +15,14 @@ build_dev() {
   build_with_tags "test"
 }
 
+install_with_tags() {
+  go install -tags "$@" "${project_dir}/cmd/quasarnoded"
+}
+
+install_dev() {
+  install_with_tags "test"
+}
+
 (
   cd "$project_dir"
 

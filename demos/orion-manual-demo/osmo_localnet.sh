@@ -11,7 +11,7 @@ ALICE_GENESIS_COINS=20000000uosmo,2000000000stake
 BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
 USER_2_GENESIS_COINS=10000000000stake,10000000000uosmo
-RELAYER_ACC_GENESIS_COINS=1000000stake
+RELAYER_ACC_GENESIS_COINS=10000000uosmo
 
 echo $HOME_OSMOSIS
 
@@ -29,7 +29,7 @@ $BINARY add-genesis-account $($BINARY keys show bob   --keyring-backend test -a 
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_1_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_2_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a --home $HOME_OSMOSIS) $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
-$BINARY gentx alice 100000000stake --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
+$BINARY gentx alice 10000000uosmo --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
 $BINARY collect-gentxs --home $HOME_OSMOSIS
 
 # Check platform
@@ -42,6 +42,7 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
+	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uosmo"/g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26679"+g' $HOME_OSMOSIS/config/config.toml
 	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml	
 	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26662"+g' $HOME_OSMOSIS/config/config.toml
@@ -59,9 +60,31 @@ fi
 
 cp $HOME_OSMOSIS/config/genesis.json $HOME_OSMOSIS/config/genesis_original.json
 cat $HOME_OSMOSIS/config/genesis_original.json |
-  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
+  jq '.app_state.crisis.constant_fee.denom="uosmo"' |
+  jq '.app_state.staking.params.bond_denom="uosmo"' |
+  jq '.app_state.mint.params.mint_denom="uosmo"' |
+  jq '.app_state.poolincentives.params.minted_denom="uosmo"' |
+  jq '.app_state.txfees.basedenom="uosmo"' |
+  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uosmo",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
-  jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' \
+  jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
+  jq '.app_state.interchainaccounts.host_genesis_state.port="icahost"' |
+  jq '.app_state.interchainaccounts.host_genesis_state.params=
+  {
+    host_enabled:true,
+    allow_messages: [
+      "/ibc.applications.transfer.v1.MsgTransfer",
+      "/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
+      "/osmosis.gamm.v1beta1.MsgJoinPool",
+      "/osmosis.gamm.v1beta1.MsgExitPool",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+      "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+      "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+      "/osmosis.lockup.MsgLockTokens",
+      "/osmosis.lockup.MsgBeginUnlocking"
+    ]
+  }' \
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start

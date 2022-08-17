@@ -2,11 +2,10 @@ package keeper
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // SetRewardCollection set the osmosis RewardCollection in kv store and is expected to be called
@@ -39,10 +38,13 @@ func (k Keeper) RemoveRewardCollection(ctx sdk.Context, epochDay uint64) {
 
 // RewardDistribution implements the reward distribution to users
 func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
+	logger := k.Logger(ctx)
+
 	rc, found := k.GetRewardCollection(ctx, epochDay)
 
 	if !found {
-		return fmt.Errorf("rewards not yet collected for epoch day %v", epochDay)
+		logger.Info("RewardDistribution", "rewards not yet collected for epoch day: ", epochDay)
+		return nil
 	}
 
 	perFees, err := k.DeductPerformanceFee(ctx, rc.Coins)

@@ -13,9 +13,9 @@ USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon 
 RELAYER_ACC="old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license"
 ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
 BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
-USER_1_GENESIS_COINS=10000000000stake,10000000000uatom
-USER_2_GENESIS_COINS=10000000000stake,10000000000uatom
-RELAYER_ACC_GENESIS_COINS=1000000stake
+USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
+USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
+RELAYER_ACC_GENESIS_COINS=10000000uqsr
 
 # Remove previous setup
 rm -rf $HOME_QSR
@@ -47,6 +47,7 @@ fi
 if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
+	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uqsr"/g' $HOME_QSR/config/app.toml
 	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
 	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
 	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
@@ -64,22 +65,25 @@ fi
 
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
 cat $HOME_QSR/config/genesis_original.json |
+  jq '.app_state.crisis.constant_fee.denom="uqsr"' |
   jq '.app_state.staking.params.bond_denom="uqsr"' |
-  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"stake",amount:"1"}]' |
+  jq '.app_state.mint.params.mint_denom="uqsr"' |
+  jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
+  jq ".app_state.qoracle.params.oracleAccounts=\"$($BINARY keys show alice --keyring-backend test -a)\"" |
   jq '.app_state.orion = {
       "lpPosition": null,
       "lpStat": null,
       "params": {
         "destination_chain_id": "osmosis",
-        "enabled": false,
-        "lp_epoch_id": "day",
+        "enabled": true,
+        "lp_epoch_id": "minute",
         "mgmt_fee_per": "0.003000000000000000",
         "osmosis_local_info": {
           "chain_id": "osmosis",
-          "connection_id": "connection-01",
-          "local_zone_id": "osmosis-01"
+          "connection_id": "connection-1",
+          "local_zone_id": "osmosis-1"
         },
         "perf_fee_per": "0.020000000000000000",
         "white_listed_pools": [
@@ -100,21 +104,21 @@ cat $HOME_QSR/config/genesis_original.json |
             "next_zone_route_map": {
               "osmosis-01": {
                 "chain_id": "osmosis",
-                "connection_id": "connection-01",
-                "local_zone_id": "osmosis-01",
-                "transfer_channel_id": "channel-01"
+                "connection_id": "connection-1",
+                "local_zone_id": "osmosis-1",
+                "transfer_channel_id": "channel-1"
               },
               "osmosis-02": {
                 "chain_id": "osmosis2",
-                "connection_id": "connection-02",
-                "local_zone_id": "osmosis-02",
-                "transfer_channel_id": "channel-02"
+                "connection_id": "connection-2",
+                "local_zone_id": "osmosis-2",
+                "transfer_channel_id": "channel-2"
               }
             },
             "rcvr_address": "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
             "zone_info": {
               "chain_id": "cosmos",
-              "connection_id": "connection-02"
+              "connection_id": "connection-2"
             }
           }
         ],
@@ -130,7 +134,7 @@ cat $HOME_QSR/config/genesis_original.json |
       "params": {
         "enabled": true,
         "min_orion_epoch_denom_dollar_deposit": "100.000000000000000000",
-        "orion_epoch_identifier": "day",
+        "orion_epoch_identifier": "minute",
         "white_listed_denoms_in_orion": [
           {
             "onehop_osmo": "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
