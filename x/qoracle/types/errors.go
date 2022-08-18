@@ -25,4 +25,6 @@ var (
 	ErrFailedICQResponse            = sdkerrors.Register(ModuleName, 13, "failed ICQ response")
 	ErrPendingRequest               = sdkerrors.Register(ModuleName, 14, "pending request")
 	ErrPoolNotFound                 = sdkerrors.Register(ModuleName, 15, "pool not found")
+	ErrEpochNotFound                = sdkerrors.Register(ModuleName, 16, "epoch not found")
+	ErrGaugeWeightNotFound          = sdkerrors.Register(ModuleName, 17, "gauge weight not found")
 )

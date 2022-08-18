@@ -18,6 +18,8 @@ import (
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
+const Year = 365 * 24 * time.Hour
+
 func (k Keeper) TryUpdateOsmosisChainParams(ctx sdk.Context) {
 	state := k.GetOsmosisParamsRequestState(ctx)
 	if state.Pending() {
@@ -556,7 +558,8 @@ func (k Keeper) CalculatePoolTVLByPoolId(ctx sdk.Context, poolId uint64) (sdk.De
 	return k.CalculatePoolTVL(ctx, pool)
 }
 
-func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (tvl sdk.Dec, err error) {
+func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (sdk.Dec, error) {
+	tvl := sdk.ZeroDec()
 	for _, asset := range pool.PoolAssets {
 		price, found := k.GetStablePrice(ctx, asset.Token.Denom)
 		if !found {
@@ -566,4 +569,70 @@ func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (tvl s
 		tvl = tvl.Add(asset.Token.Amount.ToDec().Mul(price))
 	}
 	return tvl, nil
+}
+
+func (k Keeper) CalculatePoolAPYByPoolId(ctx sdk.Context, poolId uint64) (sdk.Dec, error) {
+	pool, found := k.GetOsmosisPool(ctx, poolId)
+	if !found {
+		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrPoolNotFound, fmt.Sprintf("pool id: %d", poolId))
+	}
+
+	tvl, err := k.CalculatePoolTVL(ctx, pool)
+	if err != nil {
+		return sdk.ZeroDec(), err
+	}
+
+	return k.calculatePoolAPY(ctx, pool, tvl)
+}
+
+func (k Keeper) calculatePoolAPY(ctx sdk.Context, pool balancerpool.Pool, poolTVL sdk.Dec) (sdk.Dec, error) {
+	distrInfo := k.GetOsmosisDistrInfo(ctx)
+	epochProvisions := k.GetOsmosisMintEpochProvisions(ctx)
+
+	mintParams := k.GetOsmosisMintParams(ctx)
+	poolIncentivesProportion := mintParams.DistributionProportions.PoolIncentives
+	mintDenomPrice, found := k.GetStablePrice(ctx, mintParams.MintDenom)
+	if !found {
+		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrStablePriceNotFound, fmt.Sprintf("denom: %s", mintParams.MintDenom))
+	}
+	mintEpoch, found := k.findOsmosisEpochByIdentifier(ctx, mintParams.EpochIdentifier)
+	if !found {
+		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrEpochNotFound, fmt.Sprintf("could not find osmosis mint, epoch identifier: %s", mintParams.EpochIdentifier))
+	}
+
+	var poolTotalWeight sdk.Int
+	for _, incentive := range k.GetOsmosisIncentivizedPools(ctx) {
+		if incentive.PoolId == pool.Id {
+			gaugeWeight, found := findGaugeWeight(ctx, incentive.GaugeId, distrInfo)
+			if !found {
+				return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrGaugeWeightNotFound, fmt.Sprintf("gauge id: %d", incentive.GaugeId))
+			}
+			poolTotalWeight = poolTotalWeight.Add(gaugeWeight)
+		}
+	}
+
+	annualMintEpochs := Year.Nanoseconds() / mintEpoch.Duration.Nanoseconds()
+	annualProvisions := epochProvisions.MulInt64(annualMintEpochs)
+	annualPoolIncentives := annualProvisions.Mul(poolIncentivesProportion)
+	poolAnnualProvisions := annualPoolIncentives.MulInt(poolTotalWeight).QuoInt(distrInfo.TotalWeight).Mul(mintDenomPrice)
+	poolAPY := poolAnnualProvisions.Quo(poolTVL).Mul(sdk.NewDec(100))
+	return poolAPY, nil
+}
+
+func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string) (epochtypes.EpochInfo, bool) {
+	for _, epoch := range k.GetOsmosisEpochsInfo(ctx) {
+		if epoch.Identifier == identifier {
+			return epoch, true
+		}
+	}
+	return epochtypes.EpochInfo{}, false
+}
+
+func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdk.Int, bool) {
+	for _, record := range distrInfo.Records {
+		if record.GaugeId == gaugeId {
+			return record.Weight, true
+		}
+	}
+	return sdk.ZeroInt(), false
 }
