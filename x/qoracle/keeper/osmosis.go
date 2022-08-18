@@ -407,6 +407,21 @@ func (k Keeper) setOsmosisPool(ctx sdk.Context, pool balancerpool.Pool) {
 	store.Set(key, k.cdc.MustMarshal(&pool))
 }
 
+// GetOsmosisPool returns the pool with the given id if exists
+func (k Keeper) GetOsmosisPool(ctx sdk.Context, id uint64) (balancerpool.Pool, bool) {
+	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
+
+	key := sdk.Uint64ToBigEndian(id)
+	bz := store.Get(key)
+	if bz == nil {
+		return balancerpool.Pool{}, false
+	}
+
+	var pool balancerpool.Pool
+	k.cdc.MustUnmarshal(bz, &pool)
+	return pool, true
+}
+
 func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp poolincentivestypes.QueryLockableDurationsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
@@ -530,4 +545,25 @@ func (k Keeper) GetOsmosisDistrInfo(ctx sdk.Context) poolincentivestypes.DistrIn
 func (k Keeper) handleOsmosisICQTimeout(ctx sdk.Context, packet channeltypes.Packet) error {
 	// TODO: Handle timeout
 	return nil
+}
+
+func (k Keeper) CalculatePoolTVLByPoolId(ctx sdk.Context, poolId uint64) (sdk.Dec, error) {
+	pool, found := k.GetOsmosisPool(ctx, poolId)
+	if !found {
+		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrPoolNotFound, fmt.Sprintf("pool id: %d", poolId))
+	}
+
+	return k.CalculatePoolTVL(ctx, pool)
+}
+
+func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (tvl sdk.Dec, err error) {
+	for _, asset := range pool.PoolAssets {
+		price, found := k.GetStablePrice(ctx, asset.Token.Denom)
+		if !found {
+			return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrStablePriceNotFound, fmt.Sprintf("denom: %s", asset.Token.Denom))
+		}
+
+		tvl = tvl.Add(asset.Token.Amount.ToDec().Mul(price))
+	}
+	return tvl, nil
 }

@@ -24,4 +24,5 @@ var (
 	ErrUnauthorized                 = sdkerrors.Register(ModuleName, 12, "unauthorized")
 	ErrFailedICQResponse            = sdkerrors.Register(ModuleName, 13, "failed ICQ response")
 	ErrPendingRequest               = sdkerrors.Register(ModuleName, 14, "pending request")
+	ErrPoolNotFound                 = sdkerrors.Register(ModuleName, 15, "pool not found")
 )
