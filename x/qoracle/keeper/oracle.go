@@ -34,7 +34,7 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeCoinRatesRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 }
 

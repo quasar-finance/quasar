@@ -32,7 +32,7 @@ func (k msgServer) UpdateOsmosisChainParams(goCtx context.Context, msg *types.Ms
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOsmosisParamsRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 
 	return &types.MsgUpdateOsmosisChainParamsResponse{PacketSequence: seq}, nil
