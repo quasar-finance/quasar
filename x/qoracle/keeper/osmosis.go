@@ -55,18 +55,129 @@ func (k Keeper) sendOsmosisParamsRequest(ctx sdk.Context) (uint64, error) {
 		return 0, err
 	}
 
-	state := types.NewOsmosisParamsRequestState(ctx, seq)
+	state := types.NewOsmosisRequestState(ctx, seq)
 	k.setOsmosisParamsRequestState(ctx, state)
 	return seq, nil
 }
 
+func (k Keeper) TryUpdateOsmosisIncentivizedPools(ctx sdk.Context) {
+	state := k.GetOsmosisIncentivizedPoolsRequestState(ctx)
+	if state.Pending() {
+		k.Logger(ctx).Info("Tried to send a packet to get list of incentivized pools but another request is pending")
+		return
+	}
+
+	seq, err := k.sendOsmosisIncentivizedPoolsRequest(ctx)
+	if err != nil {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeOsmosisIncentivizedPoolsRequest,
+				sdk.NewAttribute(types.AttributeError, err.Error()),
+			))
+
+		k.Logger(ctx).Error("Sending ICQ request to get list of incentivized pools failed", "error", err)
+		return
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeOsmosisIncentivizedPoolsRequest,
+			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+		))
+}
+
+func (k Keeper) sendOsmosisIncentivizedPoolsRequest(ctx sdk.Context) (uint64, error) {
+	port := k.GetPort(ctx)
+	ibcParams := k.OsmosisParams(ctx).ICQParams
+
+	packetData := types.NewOsmosisIncentivizedPoolsICQPacketData()
+	seq, err := k.createOutgoingPacket(ctx, port, ibcParams.AuthorizedChannel, packetData.GetBytes(),
+		ibcParams.TimeoutHeight, ibcParams.TimeoutTimestamp)
+	if err != nil {
+		return 0, err
+	}
+
+	state := types.NewOsmosisRequestState(ctx, seq)
+	k.setOsmosisIncentivizedPoolsRequestState(ctx, state)
+	return seq, nil
+}
+
+func (k Keeper) TryUpdateOsmosisPools(ctx sdk.Context) {
+	state := k.GetOsmosisPoolsRequestState(ctx)
+	if state.Pending() {
+		k.Logger(ctx).Info("Tried to send a packet to get list of pools but another request is pending")
+		return
+	}
+
+	incentivizedPools := k.GetOsmosisIncentivizedPools(ctx)
+	if len(incentivizedPools) == 0 {
+		k.Logger(ctx).Info("Tried to send a packet to get list of pools but no incentivized pools are found")
+		return
+	}
+
+	poolIds := types.UniquePoolIdsFromIncentivizedPools(incentivizedPools)
+	seq, err := k.sendOsmosisPoolsRequest(ctx, poolIds)
+	if err != nil {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeOsmosisPoolsRequest,
+				sdk.NewAttribute(types.AttributeError, err.Error()),
+			))
+
+		k.Logger(ctx).Error("Sending ICQ request to get list of pools failed", "error", err)
+		return
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeOsmosisPoolsRequest,
+			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AtributePoolIds, fmt.Sprintf("%v", poolIds)),
+		))
+}
+
+func (k Keeper) sendOsmosisPoolsRequest(ctx sdk.Context, poolIds []uint64) (uint64, error) {
+	port := k.GetPort(ctx)
+	ibcParams := k.OsmosisParams(ctx).ICQParams
+
+	packetData := types.NewOsmosisPoolsICQPacketData(poolIds)
+	seq, err := k.createOutgoingPacket(ctx, port, ibcParams.AuthorizedChannel, packetData.GetBytes(),
+		ibcParams.TimeoutHeight, ibcParams.TimeoutTimestamp)
+	if err != nil {
+		return 0, err
+	}
+
+	state := types.NewOsmosisRequestState(ctx, seq)
+	k.setOsmosisPoolsRequestState(ctx, state)
+	return seq, nil
+}
+
 func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
-	state := k.GetOsmosisParamsRequestState(ctx)
+	paramsState := k.GetOsmosisParamsRequestState(ctx)
+	incentivizedPoolsState := k.GetOsmosisIncentivizedPoolsRequestState(ctx)
+	poolsState := k.GetOsmosisPoolsRequestState(ctx)
 
 	if !ack.Success() {
 		// Update the state of osmosis params request if it matches the sequence of packet
-		if packet.Sequence == state.PacketSequence {
-			err := k.UpdateOsmosisChainParamsRequestState(ctx, func(state *types.OsmosisParamsRequestState) error {
+		switch packet.Sequence {
+		case paramsState.PacketSequence:
+			err := k.UpdateOsmosisChainParamsRequestState(ctx, func(state *types.OsmosisRequestState) error {
+				state.Failed = true
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		case incentivizedPoolsState.PacketSequence:
+			err := k.UpdateOsmosisIncentivizedPoolsRequestState(ctx, func(state *types.OsmosisRequestState) error {
+				state.Failed = true
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		case poolsState.PacketSequence:
+			err := k.UpdateOsmosisPoolsRequestState(ctx, func(state *types.OsmosisRequestState) error {
 				state.Failed = true
 				return nil
 			})
@@ -103,8 +214,28 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 	}
 
 	// Update the state of osmosis params request if it matches the sequence of packet
-	if packet.Sequence == state.PacketSequence {
-		err := k.UpdateOsmosisChainParamsRequestState(cacheCtx, func(state *types.OsmosisParamsRequestState) error {
+	switch packet.Sequence {
+	case paramsState.PacketSequence:
+		err := k.UpdateOsmosisChainParamsRequestState(cacheCtx, func(state *types.OsmosisRequestState) error {
+			state.Acknowledged = true
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	case incentivizedPoolsState.PacketSequence:
+		err := k.UpdateOsmosisIncentivizedPoolsRequestState(cacheCtx, func(state *types.OsmosisRequestState) error {
+			state.Acknowledged = true
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		// Sends a request to update pools info
+		k.TryUpdateOsmosisPools(cacheCtx)
+	case poolsState.PacketSequence:
+		err := k.UpdateOsmosisPoolsRequestState(cacheCtx, func(state *types.OsmosisRequestState) error {
 			state.Acknowledged = true
 			return nil
 		})
@@ -119,7 +250,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 	return nil
 }
 
-func (k Keeper) UpdateOsmosisChainParamsRequestState(ctx sdk.Context, fn func(state *types.OsmosisParamsRequestState) error) error {
+func (k Keeper) UpdateOsmosisChainParamsRequestState(ctx sdk.Context, fn func(state *types.OsmosisRequestState) error) error {
 	state := k.GetOsmosisParamsRequestState(ctx)
 
 	if err := fn(&state); err != nil {
@@ -131,16 +262,66 @@ func (k Keeper) UpdateOsmosisChainParamsRequestState(ctx sdk.Context, fn func(st
 	return nil
 }
 
-func (k Keeper) setOsmosisParamsRequestState(ctx sdk.Context, state types.OsmosisParamsRequestState) {
+func (k Keeper) setOsmosisParamsRequestState(ctx sdk.Context, state types.OsmosisRequestState) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.KeyOsmosisParamsRequestState, k.cdc.MustMarshal(&state))
 }
 
 // GetOsmosisParamsRequestState returns the state of the osmosis params request
-func (k Keeper) GetOsmosisParamsRequestState(ctx sdk.Context) types.OsmosisParamsRequestState {
+func (k Keeper) GetOsmosisParamsRequestState(ctx sdk.Context) types.OsmosisRequestState {
 	store := ctx.KVStore(k.storeKey)
-	var state types.OsmosisParamsRequestState
+	var state types.OsmosisRequestState
 	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisParamsRequestState), &state)
+	return state
+}
+
+func (k Keeper) UpdateOsmosisIncentivizedPoolsRequestState(ctx sdk.Context, fn func(state *types.OsmosisRequestState) error) error {
+	state := k.GetOsmosisIncentivizedPoolsRequestState(ctx)
+
+	if err := fn(&state); err != nil {
+		return err
+	}
+	state.UpdatedAtHeight = ctx.BlockHeight()
+
+	k.setOsmosisIncentivizedPoolsRequestState(ctx, state)
+	return nil
+}
+
+func (k Keeper) setOsmosisIncentivizedPoolsRequestState(ctx sdk.Context, state types.OsmosisRequestState) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.KeyOsmosisIncentivizedPoolsRequestState, k.cdc.MustMarshal(&state))
+}
+
+// GetOsmosisIncentivizedPoolsRequestState returns the state of the osmosis incentivized pools request
+func (k Keeper) GetOsmosisIncentivizedPoolsRequestState(ctx sdk.Context) types.OsmosisRequestState {
+	store := ctx.KVStore(k.storeKey)
+	var state types.OsmosisRequestState
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisIncentivizedPoolsRequestState), &state)
+	return state
+}
+
+func (k Keeper) UpdateOsmosisPoolsRequestState(ctx sdk.Context, fn func(state *types.OsmosisRequestState) error) error {
+	state := k.GetOsmosisPoolsRequestState(ctx)
+
+	if err := fn(&state); err != nil {
+		return err
+	}
+	state.UpdatedAtHeight = ctx.BlockHeight()
+
+	k.setOsmosisPoolsRequestState(ctx, state)
+	return nil
+}
+
+func (k Keeper) setOsmosisPoolsRequestState(ctx sdk.Context, state types.OsmosisRequestState) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.KeyOsmosisPoolsRequestState, k.cdc.MustMarshal(&state))
+}
+
+// GetOsmosisPoolsRequestState returns the state of the osmosis pools request
+func (k Keeper) GetOsmosisPoolsRequestState(ctx sdk.Context) types.OsmosisRequestState {
+	store := ctx.KVStore(k.storeKey)
+	var state types.OsmosisRequestState
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisPoolsRequestState), &state)
 	return state
 }
 
@@ -162,12 +343,8 @@ func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQ
 		return k.handleOsmosisMintEpochProvisionsResponse(ctx, req, resp)
 	case types.OsmosisQueryIncentivizedPoolsPath:
 		return k.handleOsmosisIncentivizedPoolsResponse(ctx, req, resp)
-	case types.OsmosisQueryPoolGaugeIdsPath:
-		return k.handleOsmosisPoolGaugeIdsResponse(ctx, req, resp)
 	case types.OsmosisQueryDistrInfoPath:
 		return k.handleOsmosisDistrInfoResponse(ctx, req, resp)
-	case types.OsmosisQuerySpotPricePath:
-		return k.handleOsmosisSpotPriceResponse(ctx, req, resp)
 	default:
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
 	}
@@ -316,30 +493,15 @@ func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abci
 }
 
 func (k Keeper) setOsmosisIncentivizedPools(ctx sdk.Context, pools []poolincentivestypes.IncentivizedPool) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisIncentivizedPoolsPrefix)
-
-	for _, pool := range pools {
-		key := sdk.Uint64ToBigEndian(pool.PoolId)
-		store.Set(key, k.cdc.MustMarshal(&pool))
-	}
+	store := k.getOsmosisStore(ctx)
+	store.Set(types.KeyOsmosisIncentivizedPools, k.cdc.MustMarshal(&types.IncentivizedPools{IncentivizedPools: pools}))
 }
 
-func (k Keeper) handleOsmosisPoolGaugeIdsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
-	var qreq poolincentivestypes.QueryGaugeIdsRequest
-	k.cdc.MustUnmarshal(req.GetData(), &qreq)
-
-	var qresp poolincentivestypes.QueryGaugeIdsResponse_GaugeIdWithDuration
-	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
-
-	k.setOsmosisPoolGaugeIds(ctx, qreq.PoolId, qresp)
-	return nil
-}
-
-func (k Keeper) setOsmosisPoolGaugeIds(ctx sdk.Context, poolId uint64, gaugeIdWithDuration poolincentivestypes.QueryGaugeIdsResponse_GaugeIdWithDuration) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolGaugeIdsPrefix)
-
-	key := sdk.Uint64ToBigEndian(poolId)
-	store.Set(key, k.cdc.MustMarshal(&gaugeIdWithDuration))
+func (k Keeper) GetOsmosisIncentivizedPools(ctx sdk.Context) []poolincentivestypes.IncentivizedPool {
+	store := k.getOsmosisStore(ctx)
+	var pools types.IncentivizedPools
+	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisIncentivizedPools), &pools)
+	return pools.IncentivizedPools
 }
 
 func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
@@ -363,28 +525,6 @@ func (k Keeper) GetOsmosisDistrInfo(ctx sdk.Context) poolincentivestypes.DistrIn
 	var distrInfo poolincentivestypes.DistrInfo
 	k.cdc.MustUnmarshal(store.Get(types.KeyOsmosisDistrInfo), &distrInfo)
 	return distrInfo
-}
-
-func (k Keeper) handleOsmosisSpotPriceResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
-	var qreq gammtypes.QuerySpotPriceRequest
-	k.cdc.MustUnmarshal(req.GetData(), &qreq)
-
-	var qresp gammtypes.QuerySpotPriceResponse
-	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
-
-	spotPrice := sdk.MustNewDecFromStr(qresp.SpotPrice)
-	k.setOsmosisSpotPrice(ctx, qreq.PoolId, qreq.BaseAssetDenom, qreq.QuoteAssetDenom, spotPrice)
-	return nil
-}
-
-func (k Keeper) setOsmosisSpotPrice(ctx sdk.Context, poolId uint64, base, quote string, spotPrice sdk.Dec) {
-	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisSpotPricePrefix)
-
-	bz, err := spotPrice.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	store.Set(types.CreateOsmosisSpotPriceKey(poolId, base, quote), bz)
 }
 
 func (k Keeper) handleOsmosisICQTimeout(ctx sdk.Context, packet channeltypes.Packet) error {

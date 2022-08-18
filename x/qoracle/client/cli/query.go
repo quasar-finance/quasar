@@ -36,6 +36,10 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdOraclePrices())
 	cmd.AddCommand(CmdOsmosisChainParams())
 
+	cmd.AddCommand(CmdOsmosisIncentivizedPools())
+
+	cmd.AddCommand(CmdOsmosisPools())
+
 	// this line is used by starport scaffolding # 1
 
 	return cmd
