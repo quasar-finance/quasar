@@ -14,8 +14,8 @@ const (
 	// EventTypeOsmosisPacketAcknowledgement is the type for the event OsmosisPacketAcknowledgement
 	EventTypeOsmosisPacketAcknowledgement = "osmosis_packet_acknowledgement"
 
-	//AtributePacketSequence is the attribute for the packet sequence
-	AtributePacketSequence = "packet_sequence"
+	// AttributePacketSequence is the attribute for the packet sequence
+	AttributePacketSequence = "packet_sequence"
 	// AttributeError is the attribute key for the error
 	AttributeError = "error"
 	// AttributeEpochIdentifier is the attribute key for the epoch identifier
@@ -23,5 +23,5 @@ const (
 	// AttributeEpochNumber is the attribute key for the epoch number
 	AttributeEpochNumber = "epoch_number"
 	// AttributeEpochStart is the attribute key for pools ids
-	AtributePoolIds = "pool_ids"
+	AttributePoolIds = "pool_ids"
 )

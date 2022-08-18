@@ -40,7 +40,7 @@ func (k Keeper) TryUpdateOsmosisChainParams(ctx sdk.Context) {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOsmosisParamsRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 }
 
@@ -82,7 +82,7 @@ func (k Keeper) TryUpdateOsmosisIncentivizedPools(ctx sdk.Context) {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOsmosisIncentivizedPoolsRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 }
 
@@ -131,8 +131,8 @@ func (k Keeper) TryUpdateOsmosisPools(ctx sdk.Context) {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOsmosisPoolsRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
-			sdk.NewAttribute(types.AtributePoolIds, fmt.Sprintf("%v", poolIds)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePoolIds, fmt.Sprintf("%v", poolIds)),
 		))
 }
 
