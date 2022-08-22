@@ -1,0 +1,30 @@
+accounts:
+  - name: alice
+    mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
+    coins: ["20000000uatom", "2000000000stake"]
+  - name: bob
+    mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
+    coins: ["10000000uatom", "1000000000stake"]
+  - name: relayer_acc
+    coins: ["10000stake"]
+    address: cosmos14ahzv9ldtfn7ktgnd0m8k70d6l080lvdlrrsth
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4501"
+  name: bob
+  coins: ["1000000uatom", "100000000stake"]
+host:
+  rpc: ":26559"
+  p2p: ":26662"
+  prof: ":6062"
+  grpc: ":9096"
+  grpc-web: ":8092"
+  api: ":1312"
+  frontend: ":8082"
+  dev-ui: ":12352"
+genesis:
+  chain_id: "cosmos"
+init:
+  home: "$HOME/.cosmos"
