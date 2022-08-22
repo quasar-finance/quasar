@@ -54,6 +54,12 @@ pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
     }))
 }
 
+pub fn execute_deposit(info: MessageInfo) ->Result<Response<IntergammMsg>, ContractError> {
+    let funds  = cw_utils::must_pay(&info, "uqsar")?;
+    // we dont do anything else with the funds since we solely use them for testing and don't need to deposit
+    Ok(Response::new().add_attribute("deposit", funds))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
