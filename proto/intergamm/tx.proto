@@ -19,6 +19,7 @@ service Msg {
   rpc TransmitIbcJoinSwapExternAmountIn(MsgTransmitIbcJoinSwapExternAmountIn) returns (MsgTransmitIbcJoinSwapExternAmountInResponse);
   rpc TransmitIbcExitSwapExternAmountOut(MsgTransmitIbcExitSwapExternAmountOut) returns (MsgTransmitIbcExitSwapExternAmountOutResponse);
   rpc SendToken(MsgSendToken) returns (MsgSendTokenResponse);
+  rpc RegisterInterchainAccount(MsgRegisterInterchainAccount) returns (MsgRegisterInterchainAccountResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -45,6 +46,14 @@ message MsgSendToken {
 
 message MsgSendTokenResponse {
   uint64 seq = 1;
+}
+
+message MsgRegisterInterchainAccount {
+  string creator = 1;
+  string connectionId = 2;
+}
+
+message MsgRegisterInterchainAccountResponse {
 }
 
 message MsgTransmitIbcJoinPool {
