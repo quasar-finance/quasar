@@ -284,6 +284,94 @@ func (m *MsgSendTokenResponse) GetSeq() uint64 {
 	return 0
 }
 
+type MsgRegisterInterchainAccount struct {
+	Creator      string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	ConnectionId string `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
+}
+
+func (m *MsgRegisterInterchainAccount) Reset()         { *m = MsgRegisterInterchainAccount{} }
+func (m *MsgRegisterInterchainAccount) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterInterchainAccount) ProtoMessage()    {}
+func (*MsgRegisterInterchainAccount) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{5}
+}
+func (m *MsgRegisterInterchainAccount) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterInterchainAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterInterchainAccount.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterInterchainAccount) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterInterchainAccount.Merge(m, src)
+}
+func (m *MsgRegisterInterchainAccount) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterInterchainAccount) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterInterchainAccount.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterInterchainAccount proto.InternalMessageInfo
+
+func (m *MsgRegisterInterchainAccount) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgRegisterInterchainAccount) GetConnectionId() string {
+	if m != nil {
+		return m.ConnectionId
+	}
+	return ""
+}
+
+type MsgRegisterInterchainAccountResponse struct {
+}
+
+func (m *MsgRegisterInterchainAccountResponse) Reset()         { *m = MsgRegisterInterchainAccountResponse{} }
+func (m *MsgRegisterInterchainAccountResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterInterchainAccountResponse) ProtoMessage()    {}
+func (*MsgRegisterInterchainAccountResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{6}
+}
+func (m *MsgRegisterInterchainAccountResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterInterchainAccountResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterInterchainAccountResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterInterchainAccountResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterInterchainAccountResponse.Merge(m, src)
+}
+func (m *MsgRegisterInterchainAccountResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterInterchainAccountResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterInterchainAccountResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterInterchainAccountResponse proto.InternalMessageInfo
+
 type MsgTransmitIbcJoinPool struct {
 	Creator          string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	ConnectionId     string       `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
@@ -297,7 +385,7 @@ func (m *MsgTransmitIbcJoinPool) Reset()         { *m = MsgTransmitIbcJoinPool{}
 func (m *MsgTransmitIbcJoinPool) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcJoinPool) ProtoMessage()    {}
 func (*MsgTransmitIbcJoinPool) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{5}
+	return fileDescriptor_a78c651f644a1267, []int{7}
 }
 func (m *MsgTransmitIbcJoinPool) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -376,7 +464,7 @@ func (m *MsgTransmitIbcJoinPoolResponse) Reset()         { *m = MsgTransmitIbcJo
 func (m *MsgTransmitIbcJoinPoolResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcJoinPoolResponse) ProtoMessage()    {}
 func (*MsgTransmitIbcJoinPoolResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{6}
+	return fileDescriptor_a78c651f644a1267, []int{8}
 }
 func (m *MsgTransmitIbcJoinPoolResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -425,7 +513,7 @@ func (m *MsgTransmitIbcExitPool) Reset()         { *m = MsgTransmitIbcExitPool{}
 func (m *MsgTransmitIbcExitPool) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcExitPool) ProtoMessage()    {}
 func (*MsgTransmitIbcExitPool) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{7}
+	return fileDescriptor_a78c651f644a1267, []int{9}
 }
 func (m *MsgTransmitIbcExitPool) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -504,7 +592,7 @@ func (m *MsgTransmitIbcExitPoolResponse) Reset()         { *m = MsgTransmitIbcEx
 func (m *MsgTransmitIbcExitPoolResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcExitPoolResponse) ProtoMessage()    {}
 func (*MsgTransmitIbcExitPoolResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{8}
+	return fileDescriptor_a78c651f644a1267, []int{10}
 }
 func (m *MsgTransmitIbcExitPoolResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -552,7 +640,7 @@ func (m *MsgTransmitIbcLockTokens) Reset()         { *m = MsgTransmitIbcLockToke
 func (m *MsgTransmitIbcLockTokens) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcLockTokens) ProtoMessage()    {}
 func (*MsgTransmitIbcLockTokens) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{9}
+	return fileDescriptor_a78c651f644a1267, []int{11}
 }
 func (m *MsgTransmitIbcLockTokens) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -624,7 +712,7 @@ func (m *MsgTransmitIbcLockTokensResponse) Reset()         { *m = MsgTransmitIbc
 func (m *MsgTransmitIbcLockTokensResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcLockTokensResponse) ProtoMessage()    {}
 func (*MsgTransmitIbcLockTokensResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{10}
+	return fileDescriptor_a78c651f644a1267, []int{12}
 }
 func (m *MsgTransmitIbcLockTokensResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -672,7 +760,7 @@ func (m *MsgTransmitIbcBeginUnlocking) Reset()         { *m = MsgTransmitIbcBegi
 func (m *MsgTransmitIbcBeginUnlocking) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcBeginUnlocking) ProtoMessage()    {}
 func (*MsgTransmitIbcBeginUnlocking) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{11}
+	return fileDescriptor_a78c651f644a1267, []int{13}
 }
 func (m *MsgTransmitIbcBeginUnlocking) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -744,7 +832,7 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) Reset()         { *m = MsgTransmi
 func (m *MsgTransmitIbcBeginUnlockingResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcBeginUnlockingResponse) ProtoMessage()    {}
 func (*MsgTransmitIbcBeginUnlockingResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{12}
+	return fileDescriptor_a78c651f644a1267, []int{14}
 }
 func (m *MsgTransmitIbcBeginUnlockingResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -793,7 +881,7 @@ func (m *MsgTransmitIbcJoinSwapExternAmountIn) Reset()         { *m = MsgTransmi
 func (m *MsgTransmitIbcJoinSwapExternAmountIn) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcJoinSwapExternAmountIn) ProtoMessage()    {}
 func (*MsgTransmitIbcJoinSwapExternAmountIn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{13}
+	return fileDescriptor_a78c651f644a1267, []int{15}
 }
 func (m *MsgTransmitIbcJoinSwapExternAmountIn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -876,7 +964,7 @@ func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) String() string {
 }
 func (*MsgTransmitIbcJoinSwapExternAmountInResponse) ProtoMessage() {}
 func (*MsgTransmitIbcJoinSwapExternAmountInResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{14}
+	return fileDescriptor_a78c651f644a1267, []int{16}
 }
 func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -925,7 +1013,7 @@ func (m *MsgTransmitIbcExitSwapExternAmountOut) Reset()         { *m = MsgTransm
 func (m *MsgTransmitIbcExitSwapExternAmountOut) String() string { return proto.CompactTextString(m) }
 func (*MsgTransmitIbcExitSwapExternAmountOut) ProtoMessage()    {}
 func (*MsgTransmitIbcExitSwapExternAmountOut) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{15}
+	return fileDescriptor_a78c651f644a1267, []int{17}
 }
 func (m *MsgTransmitIbcExitSwapExternAmountOut) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1008,7 +1096,7 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) String() string {
 }
 func (*MsgTransmitIbcExitSwapExternAmountOutResponse) ProtoMessage() {}
 func (*MsgTransmitIbcExitSwapExternAmountOutResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a78c651f644a1267, []int{16}
+	return fileDescriptor_a78c651f644a1267, []int{18}
 }
 func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1436,6 +1524,8 @@ func init() {
 	proto.RegisterType((*MsgTestScenarioResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTestScenarioResponse")
 	proto.RegisterType((*MsgSendToken)(nil), "quasarlabs.quasarnode.intergamm.MsgSendToken")
 	proto.RegisterType((*MsgSendTokenResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgSendTokenResponse")
+	proto.RegisterType((*MsgRegisterInterchainAccount)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterInterchainAccount")
+	proto.RegisterType((*MsgRegisterInterchainAccountResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterInterchainAccountResponse")
 	proto.RegisterType((*MsgTransmitIbcJoinPool)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcJoinPool")
 	proto.RegisterType((*MsgTransmitIbcJoinPoolResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcJoinPoolResponse")
 	proto.RegisterType((*MsgTransmitIbcExitPool)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcExitPool")
@@ -2184,6 +2274,66 @@ func (m *MsgSendTokenResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x8
 	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterInterchainAccount) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterInterchainAccount) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterInterchainAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ConnectionId) > 0 {
+		i -= len(m.ConnectionId)
+		copy(dAtA[i:], m.ConnectionId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ConnectionId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterInterchainAccountResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterInterchainAccountResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterInterchainAccountResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
 	return len(dAtA) - i, nil
 }
 
@@ -3091,6 +3241,32 @@ func (m *MsgSendTokenResponse) Size() (n int) {
 	return n
 }
 
+func (m *MsgRegisterInterchainAccount) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ConnectionId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterInterchainAccountResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func (m *MsgTransmitIbcJoinPool) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3953,6 +4129,170 @@ func (m *MsgSendTokenResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterInterchainAccount) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterInterchainAccount: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterInterchainAccount: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConnectionId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConnectionId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterInterchainAccountResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterInterchainAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterInterchainAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

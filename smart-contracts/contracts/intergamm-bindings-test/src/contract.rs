@@ -2,7 +2,9 @@ use std::env;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint64};
+use cosmwasm_std::{
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint64,
+};
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
 
@@ -37,6 +39,7 @@ pub fn execute(
         ExecuteMsg::SendToken {
             destination_local_zone_id,
         } => execute_send_token(destination_local_zone_id, env),
+        ExecuteMsg::RegisterInterchainAccount { connection_id } => execute_register_ica(connection_id, env),
         ExecuteMsg::JoinSinglePool {
             connection_id,
             pool_id,
@@ -59,7 +62,7 @@ pub fn execute_send_token(
             destination_local_zone_id: destination_local_zone_id,
             sender: env.contract.address.to_string(),
             receiver: env.contract.address.to_string(),
-            coin: Coin::new(100, "uqsr")
+            coin: Coin::new(100, "uqsr"),
         })
         .add_attribute("sending tokens", "100 uqsr to osmosis"))
 }
@@ -70,7 +73,7 @@ pub fn execute_join_pool(
     pool_id: Uint64,
     share_out_min_amount: i64,
     token_in: Coin,
-    env: Env
+    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     Ok(
         Response::new().add_message(IntergammMsg::JoinSwapExternAmountIn {
@@ -81,6 +84,18 @@ pub fn execute_join_pool(
             pool_id: pool_id.u64(),
             share_out_min_amount,
             token_in,
+        }),
+    )
+}
+
+pub fn execute_register_ica(
+    connection_id: String,
+    env: Env,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(
+        Response::new().add_message(IntergammMsg::RegisterInterchainAccount {
+            creator: env.contract.address.to_string(),
+            connection_id: connection_id,
         }),
     )
 }

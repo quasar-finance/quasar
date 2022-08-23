@@ -48,6 +48,14 @@ message MsgSendTokenResponse {
   uint64 seq = 1;
 }
 
+message MsgRegisterInterchainAccount {
+  string creator = 1;
+  string connectionId = 2;
+}
+
+message MsgRegisterInterchainAccountResponse {
+}
+
 message MsgTransmitIbcJoinPool {
   string creator = 1;
   string connectionId = 2;
