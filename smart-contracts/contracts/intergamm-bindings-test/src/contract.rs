@@ -1,3 +1,5 @@
+use std::env;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Coin};
@@ -27,16 +29,22 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     match msg {
-        ExecuteMsg::SendToken {} => execute_send_token(),
-        ExecuteMsg::JoinPool {} => {
-            todo!()
-        }
-        ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, _env),
+        ExecuteMsg::SendToken {
+            destination_local_zone_id,
+        } => execute_send_token(destination_local_zone_id, env),
+        ExecuteMsg::JoinSinglePool {
+            connection_id,
+            pool_id,
+            share_out_min_amount,
+            token_in,
+        } => execute_join_pool(connection_id, pool_id, share_out_min_amount, token_in, env),
+        ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, env),
+        ExecuteMsg::Deposit {} => execute_deposit(info),
     }
 }
 
@@ -50,8 +58,29 @@ pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
     }))
 }
 
-pub fn execute_deposit(info: MessageInfo) ->Result<Response<IntergammMsg>, ContractError> {
-    let funds  = cw_utils::must_pay(&info, "uqsar")?;
+// join pool requires us to have a pool on the remote chain
+pub fn execute_join_pool(
+    connection_id: String,
+    pool_id: Uint64,
+    share_out_min_amount: i64,
+    token_in: Coin,
+    env: Env
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(
+        Response::new().add_message(IntergammMsg::JoinSwapExternAmountIn {
+            creator: env.contract.address.to_string(),
+            connection_id,
+            // timeout in 10 minutes
+            timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
+            pool_id: pool_id.u64(),
+            share_out_min_amount,
+            token_in,
+        }),
+    )
+}
+
+pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
+    let funds = cw_utils::must_pay(&info, "uqsr")?;
     // we dont do anything else with the funds since we solely use them for testing and don't need to deposit
     Ok(Response::new().add_attribute("deposit", funds))
 }
@@ -68,56 +97,13 @@ pub fn query_ack_triggered(deps: Deps) -> StdResult<AckTriggeredResponse> {
     Ok(AckTriggeredResponse { state })
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-/// check if success or failure and update balance, or return funds
-pub fn ibc_packet_ack(
+pub fn do_ibc_packet_ack(
     deps: DepsMut,
     _env: Env,
-    msg: IbcPacketAckMsg,
-) -> Result<IbcBasicResponse, ContractError> {
+) -> Result<Response<IntergammMsg>, ContractError> {
     let triggered = ACKTRIGGERED.load(deps.storage)?;
     ACKTRIGGERED.save(deps.storage, &(triggered + 1))?;
-    Ok(IbcBasicResponse::new().add_attribute("ack", "succes"))
-}
-
-pub fn do_ibc_packet_ack(deps: DepsMut, _env: Env) -> Result<Response<IntergammMsg>, ContractError> {
-    let triggered = ACKTRIGGERED.load(deps.storage)?;
-    ACKTRIGGERED.save(deps.storage, &(triggered + 1))?;
-    Ok(Response::new().add_attribute("ack tiggered", (triggered+1).to_string()))
-}
-
-#[entry_point]
-/// enforces ordering and versioning constraints
-pub fn ibc_channel_open(deps: DepsMut, env: Env, msg: IbcChannelOpenMsg) -> StdResult<()> {
-    todo!()
-}
-
-#[entry_point]
-pub fn ibc_channel_close(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcChannelCloseMsg,
-) -> StdResult<IbcBasicResponse> {
-    todo!()
-}
-
-#[entry_point]
-pub fn ibc_packet_receive(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcPacketReceiveMsg,
-) -> StdResult<IbcReceiveResponse> {
-    todo!()
-}
-
-#[entry_point]
-/// never should be called as we do not send packets
-pub fn ibc_packet_timeout(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcPacketTimeoutMsg,
-) -> StdResult<IbcBasicResponse> {
-    todo!()
+    Ok(Response::new().add_attribute("ack tiggered", (triggered + 1).to_string()))
 }
 
 #[cfg(test)]
