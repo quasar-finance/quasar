@@ -12,6 +12,9 @@ pub enum ExecuteMsg {
         destination_local_zone_id: String,
     },
     Deposit {},
+    RegisterInterchainAccount {
+        connection_id: String,
+    },
     JoinSinglePool {
         connection_id: String,
         pool_id: Uint64,

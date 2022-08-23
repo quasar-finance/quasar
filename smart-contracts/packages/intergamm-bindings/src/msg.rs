@@ -24,6 +24,10 @@ pub enum IntergammMsg {
         creator: String,
         scenario: String,
     },
+    RegisterInterchainAccount {
+        creator: String,
+        connection_id: String,
+    },
     JoinSwapExternAmountIn {
         creator: String,
         connection_id: String,

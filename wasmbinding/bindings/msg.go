@@ -1,6 +1,8 @@
 package bindings
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 type QuasarMsg struct {
 	/// Trigger test scenario
@@ -8,6 +10,9 @@ type QuasarMsg struct {
 
 	/// Contracts can send tokens
 	SendToken *SendToken `json:"send_token,omitempty"`
+
+	// Contracts can register interchain accounts
+	RegisterInterchainAccount *RegisterInterchainAccount `json:"register_interchain_account,omitempty"`
 
 	/// Contracts can transmit JoinPool Messages over IBC
 	OsmosisJoinPool *OsmosisJoinPool `json:"join_pool,omitempty"`
@@ -31,6 +36,11 @@ type QuasarMsg struct {
 type TestScenario struct {
 	Creator  string `json:"creator"`
 	Scenario string `json:"scenario"`
+}
+
+type RegisterInterchainAccount struct {
+	Creator string `json:"creator"`
+	ConnectionId string `json:"connection_id"`
 }
 
 type SendToken struct {
