@@ -14,13 +14,13 @@ type QuasarQuery struct {
 	QueryGetPoolPositionRequest *qoracletypes.QueryGetPoolPositionRequest `json:"query_get_pool_position_request,omitempty"`
 
 	// Query a list of pool positions
-	QueryPoolPositionsRequest *qoracletypes.QueryAllPoolPositionRequest `json:"query_pool_positions_request,omitempty"`
+	QueryAllPoolPositionsRequest *qoracletypes.QueryAllPoolPositionRequest `json:"query_pool_positions_request,omitempty"`
 
 	// Query the ranking of pools
-	QueryPoolRankingRequest *qoracletypes.QueryGetPoolRankingRequest `json:"query_pool_ranking_request,omitempty"`
+	QueryGetPoolRankingRequest *qoracletypes.QueryGetPoolRankingRequest `json:"query_pool_ranking_request,omitempty"`
 
 	// Query pool info
-	QueryPoolInfoRequest *qoracletypes.QueryAllPoolInfoRequest `json:"query_pool_info_request,omitempty"`
+	QueryGetPoolInfoRequest *qoracletypes.QueryGetPoolInfoRequest `json:"query_pool_info_request,omitempty"`
 
 	// Query all pool info
 	QueryAllPoolInfoRequest *qoracletypes.QueryAllPoolInfoRequest `json:"query_all_pool_info_request,omitempty"`

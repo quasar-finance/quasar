@@ -21,11 +21,11 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper) *QueryPlugin {
 	}
 }
 
-func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) (types.PoolInfo, error) {
+func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) (*types.PoolInfo, error) {
 	pool, found := qp.qoracleKeeper.GetPoolInfo(ctx, poolID)
 	if !found {
 		return nil, fmt.Errorf("failed to find pool for poolID: %s", poolID)
 	}
 
-	return pool, nil
+	return &pool, nil
 }
