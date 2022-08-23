@@ -21,6 +21,34 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper) *QueryPlugin {
 	}
 }
 
+func (qp QueryPlugin) GetParams(ctx sdk.Context) types.Params {
+	// TODO: Can this ever error??
+	return qp.qoracleKeeper.GetParams(ctx)
+}
+
+func (qp QueryPlugin) GetPoolPosition(ctx sdk.Context, poolID string) (*types.PoolPosition, error) {
+	pool, found := qp.qoracleKeeper.GetPoolPosition(ctx, poolID)
+	if !found {
+		return nil, fmt.Errorf("failed to find pool for poolID: %s", poolID)
+	}
+
+	return &pool, nil
+}
+
+func (qp QueryPlugin) GetAllPoolPosition(ctx sdk.Context) []types.PoolPosition {
+	// TODO: Can this ever error??
+	return qp.qoracleKeeper.GetAllPoolPosition(ctx)
+}
+
+func (qp QueryPlugin) GetPoolRanking(ctx sdk.Context) (*types.PoolRanking, error) {
+	poolRanking, found := qp.qoracleKeeper.GetPoolRanking(ctx)
+	if !found {
+		return nil, fmt.Errorf("failed to find pool ranking")
+	}
+
+	return &poolRanking, nil
+}
+
 func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) (*types.PoolInfo, error) {
 	pool, found := qp.qoracleKeeper.GetPoolInfo(ctx, poolID)
 	if !found {
@@ -28,4 +56,14 @@ func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) (*types.PoolIn
 	}
 
 	return &pool, nil
+}
+
+func (qp QueryPlugin) GetAllPoolInfo(ctx sdk.Context) []types.PoolInfo {
+	// TODO: Can this ever error??
+	return qp.qoracleKeeper.GetAllPoolInfo(ctx)
+}
+
+func (qp QueryPlugin) GetOraclePrices(ctx sdk.Context) types.OraclePrices {
+	// TODO: Can this ever error??
+	return qp.qoracleKeeper.GetOraclePrices(ctx)
 }
