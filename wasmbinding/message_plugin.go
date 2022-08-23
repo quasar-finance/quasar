@@ -134,14 +134,10 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	// hardcode seq for POC
 	// register the packet as sent with the callback plugin
 	cb.OnSendPacket(ctx, 1, contractAddr)
-	// for testing, trigger the callback in the contract
-	cb.doHandle(ctx, 1)
 
-	// TODO stop ignoring the error once we have a test setup and trigger the contract on the Handle of the ack
-	// ignore the error for now
-	// if err != nil {
-	// 	return sdkerrors.Wrap(err, "sending tokens")
-	// }
+	if err != nil {
+		return sdkerrors.Wrap(err, "sending tokens")
+	}
 	return nil
 }
 

@@ -9,7 +9,6 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 

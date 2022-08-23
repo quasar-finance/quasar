@@ -15,10 +15,16 @@ pub enum IntergammMsg {
     },
     MsgTransmitIbcJoinPool {
         creator: String,
+        scenario: String,
+    },
+    JoinSwapExternAmountIn {
+        creator: String,
         connection_id: String,
-        timeout_timestamp: Timestamp,
-        pool_id: Uint64,
-    }
+        timeout_timestamp: u64,
+        pool_id: u64,
+        share_out_min_amount: i64,
+        token_in: Coin,
+    },
 }
 
 impl IntergammMsg {}
