@@ -8,7 +8,7 @@ accounts:
   - name: relayer_acc
     mnemonic: old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license
     # corresponding address is quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew
-    coins: ["1000000stake"]
+    coins: ["1000000stake", "100000000uqsr"]
 validator:
   name: alice
   staked: "100000000uqsr"

@@ -147,7 +147,7 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 func (m *CustomMessenger) RegisterInterchainAccount(ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterInterchainAccount) ([]sdk.Event, [][]byte, error) {
 	err := PerformRegisterInterchainAccount(m.intergammKeeper, ctx, contractAddr, register) 
 	if err != nil {
-		return nil, nil, sdkerrors.Wrap(err, "join pool")
+		return nil, nil, sdkerrors.Wrap(err, "register ica account")
 	}
 	return nil, nil, nil
 }

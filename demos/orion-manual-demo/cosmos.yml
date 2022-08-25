@@ -8,7 +8,7 @@ accounts:
   - name: relayer_acc
     mnemonic: ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle
     # corresponding address is cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc
-    coins: ["10000stake"]
+    coins: ["10000stake", "10000000uatom"]
 validator:
   name: alice
   staked: "100000000stake"
