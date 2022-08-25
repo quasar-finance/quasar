@@ -39,13 +39,16 @@ pub fn execute(
         ExecuteMsg::SendToken {
             destination_local_zone_id,
         } => execute_send_token(destination_local_zone_id, env),
-        ExecuteMsg::RegisterInterchainAccount { connection_id } => execute_register_ica(connection_id, env),
+        ExecuteMsg::RegisterInterchainAccount { connection_id } => {
+            execute_register_ica(connection_id, env)
+        }
         ExecuteMsg::JoinSinglePool {
             connection_id,
             pool_id,
             share_out_min_amount,
             token_in,
         } => execute_join_pool(connection_id, pool_id, share_out_min_amount, token_in, env),
+        ExecuteMsg::TestIcaScenario {} => execute_test_scenario(env),
         ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, env),
         ExecuteMsg::Deposit {} => execute_deposit(info),
     }
@@ -65,6 +68,13 @@ pub fn execute_send_token(
             coin: Coin::new(100, "uqsr"),
         })
         .add_attribute("sending tokens", "100 uqsr to osmosis"))
+}
+
+pub fn execute_test_scenario(env: Env) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(Response::new().add_message(IntergammMsg::TestScenario {
+        creator: env.contract.address.to_string(),
+        scenario: "registerIca".to_string(),
+    }))
 }
 
 // join pool requires us to have a pool on the remote chain
@@ -101,9 +111,12 @@ pub fn execute_register_ica(
 }
 
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
-    let funds = cw_utils::must_pay(&info, "uqsr")?;
+    let funds = cw_utils::one_coin(&info)?;
+    if funds.denom != "uqsr" && funds.denom != "stake" {
+        return Err(ContractError::PaymentError(cw_utils::PaymentError::MissingDenom("uqsr/stake".into())));
+    }
     // we dont do anything else with the funds since we solely use them for testing and don't need to deposit
-    Ok(Response::new().add_attribute("deposit", funds))
+    Ok(Response::new().add_attribute("deposit_amount", funds.amount).add_attribute("deposit_denom", funds.denom))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

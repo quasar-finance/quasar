@@ -9,7 +9,7 @@ accounts:
   - name: relayer_acc
     mnemonic: rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself
     # corresponding address is osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz
-    coins: ["10000stake"]
+    coins: ["100000stake", "10000000000000uosmo"]
 validator:
   name: alice
   staked: "100000000stake"

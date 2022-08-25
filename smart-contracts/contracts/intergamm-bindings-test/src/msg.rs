@@ -21,6 +21,7 @@ pub enum ExecuteMsg {
         share_out_min_amount: i64,
         token_in: Coin,
     },
+    TestIcaScenario {},
     AckTriggered {},
 }
 
