@@ -152,23 +152,23 @@ trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
-[[chains]]
-id = 'band-laozi-testnet5'
-rpc_addr = 'https://rpc.laozi-testnet5.bandchain.org:443'
-grpc_addr = 'https://laozi-testnet5.bandchain.org'
-websocket_addr = 'ws://rpc.laozi-testnet5.bandchain.org:443/websocket'
-rpc_timeout = '10s'
-account_prefix = 'band'
-key_name = 'bandkey'
-store_prefix = 'ibc'
-default_gas = 100000
-max_gas = 3000000
-gas_price = { price = 0.001, denom = 'uband' }
-gas_adjustment = 0.1
-max_msg_num = 30
-max_tx_size = 2097152
-clock_drift = '5s'
-max_block_time = '10s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-address_type = { derivation = 'cosmos' }
+# [[chains]]
+# id = 'band-laozi-testnet5'
+# rpc_addr = 'https://rpc.laozi-testnet5.bandchain.org:443'
+# grpc_addr = 'https://laozi-testnet5.bandchain.org'
+# websocket_addr = 'ws://rpc.laozi-testnet5.bandchain.org:443/websocket'
+# rpc_timeout = '10s'
+# account_prefix = 'band'
+# key_name = 'bandkey'
+# store_prefix = 'ibc'
+# default_gas = 100000
+# max_gas = 3000000
+# gas_price = { price = 0.001, denom = 'uband' }
+# gas_adjustment = 0.1
+# max_msg_num = 30
+# max_tx_size = 2097152
+# clock_drift = '5s'
+# max_block_time = '10s'
+# trusting_period = '14days'
+# trust_threshold = { numerator = '1', denominator = '3' }
+# address_type = { derivation = 'cosmos' }
