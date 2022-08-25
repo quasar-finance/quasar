@@ -25,7 +25,13 @@ build: mkdirs
 build-prod: mkdirs
 	scripts/build build_with_tags prod
 
-.PHONY: mkdirs go-mod lint proto-gen build build-artifacts
+install: mkdirs
+	scripts/build install_dev
+
+install-prod: mkdirs
+	scripts/build install_with_tags prod
+
+.PHONY: mkdirs go-mod lint proto-gen build build-artifacts install install-prod
 
 # Testing
 
