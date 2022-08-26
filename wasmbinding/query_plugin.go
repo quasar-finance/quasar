@@ -116,10 +116,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		case contractQuery.QueryOraclePricesRequest != nil:
 			oraclePrices := qp.GetOraclePrices(ctx)
 
-			res := qoracletypes.QueryOraclePricesResponse{
-				Prices:          oraclePrices.Prices,
-				UpdatedAtHeight: oraclePrices.UpdatedAtHeight,
-			}
+			res := qoracletypes.QueryOraclePricesResponse(oraclePrices)
 
 			bz, err := json.Marshal(res)
 			if err != nil {
