@@ -129,7 +129,10 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	}
 
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
-	_, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
+	_, err = msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "send token")
+	}
 
 	// hardcode seq for POC
 	// register the packet as sent with the callback plugin
@@ -307,7 +310,7 @@ func parseAddress(addr string) (sdk.AccAddress, error) {
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "address from bech32")
 	}
-	err := sdk.VerifyAddressFormat(parsed)
+	err = sdk.VerifyAddressFormat(parsed)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "verify address format")
 	}
