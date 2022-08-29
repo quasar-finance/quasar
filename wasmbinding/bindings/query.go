@@ -7,9 +7,6 @@ import (
 // OsmosisQuery contains osmosis custom queries.
 // See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
 type QuasarQuery struct {
-	// Query Params RPC Method
-	QueryParamsRequest *qoracletypes.QueryParamsRequest `json:"query_params_request,omitempty"`
-
 	// Query our position within a specific pool
 	QueryGetPoolPositionRequest *qoracletypes.QueryGetPoolPositionRequest `json:"query_get_pool_position_request,omitempty"`
 
