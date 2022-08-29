@@ -3,7 +3,8 @@ use std::env;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint64,
+    to_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
+    Response, StdResult, Uint64,
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
@@ -39,6 +40,12 @@ pub fn execute(
         ExecuteMsg::SendToken {
             destination_local_zone_id,
         } => execute_send_token(destination_local_zone_id, env),
+        ExecuteMsg::SendTokenIbc {
+            channel_id,
+            to_address,
+            amount,
+            timeout,
+        } => execute_send_token_ibc(channel_id, to_address, amount, timeout),
         ExecuteMsg::RegisterInterchainAccount { connection_id } => {
             execute_register_ica(connection_id, env)
         }
@@ -68,6 +75,20 @@ pub fn execute_send_token(
             coin: Coin::new(100, "uqsr"),
         })
         .add_attribute("sending tokens", "100 uqsr to osmosis"))
+}
+
+pub fn execute_send_token_ibc(
+    channel_id: String,
+    to_address: String,
+    amount: Coin,
+    timeout: IbcTimeout,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(Response::new().add_message(IbcMsg::Transfer {
+        channel_id,
+        to_address,
+        amount,
+        timeout,
+    }))
 }
 
 pub fn execute_test_scenario(env: Env) -> Result<Response<IntergammMsg>, ContractError> {
@@ -113,10 +134,14 @@ pub fn execute_register_ica(
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
     let funds = cw_utils::one_coin(&info)?;
     if funds.denom != "uqsr" && funds.denom != "stake" {
-        return Err(ContractError::PaymentError(cw_utils::PaymentError::MissingDenom("uqsr/stake".into())));
+        return Err(ContractError::PaymentError(
+            cw_utils::PaymentError::MissingDenom("uqsr/stake".into()),
+        ));
     }
     // we dont do anything else with the funds since we solely use them for testing and don't need to deposit
-    Ok(Response::new().add_attribute("deposit_amount", funds.amount).add_attribute("deposit_denom", funds.denom))
+    Ok(Response::new()
+        .add_attribute("deposit_amount", funds.amount)
+        .add_attribute("deposit_denom", funds.denom))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
