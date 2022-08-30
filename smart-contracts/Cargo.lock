@@ -487,6 +487,7 @@ dependencies = [
  "cw-storage-plus",
  "cw2",
  "intergamm-bindings",
+ "quasar-bindings",
  "schemars",
  "serde",
  "thiserror",
@@ -624,6 +625,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "quasar-bindings"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
