@@ -32,8 +32,8 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryGetPoolPositionRequest != nil:
-			poolId := contractQuery.QueryGetPoolPositionRequest.PoolId
+		case contractQuery.OsmosisPoolPosition != nil:
+			poolId := contractQuery.OsmosisPoolPosition.PoolId
 
 			pool, err := qp.GetPoolPosition(ctx, poolId)
 			if err != nil {
@@ -50,7 +50,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryAllPoolPositionsRequest != nil:
+		case contractQuery.OsmosisAllPoolPositions != nil:
 			positions := qp.GetAllPoolPosition(ctx)
 
 			// TODO: this type has a pagination, but the implementation of the query is not paginated yet
@@ -65,7 +65,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryGetPoolRankingRequest != nil:
+		case contractQuery.OsmosisPoolRanking != nil:
 			ranking, err := qp.GetPoolRanking(ctx)
 
 			if err != nil {
@@ -82,8 +82,8 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryGetPoolInfoRequest != nil:
-			poolId := contractQuery.QueryGetPoolInfoRequest.PoolId
+		case contractQuery.OsmosisPoolInfo != nil:
+			poolId := contractQuery.OsmosisPoolInfo.PoolId
 
 			pool, err := qp.GetPoolInfo(ctx, poolId)
 			if err != nil {
@@ -100,7 +100,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryAllPoolInfoRequest != nil:
+		case contractQuery.OsmosisAllPoolInfo != nil:
 			pools := qp.GetAllPoolInfo(ctx)
 
 			res := qoracletypes.QueryAllPoolInfoResponse{
@@ -113,7 +113,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.QueryOraclePricesRequest != nil:
+		case contractQuery.OraclePrices != nil:
 			oraclePrices := qp.GetOraclePrices(ctx)
 
 			res := qoracletypes.QueryOraclePricesResponse(oraclePrices)
