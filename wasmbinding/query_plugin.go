@@ -19,19 +19,6 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		}
 
 		switch {
-		case contractQuery.QueryParamsRequest != nil:
-			params := qp.GetParams(ctx)
-
-			res := qoracletypes.QueryParamsResponse{
-				Params: params,
-			}
-
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal query params response")
-			}
-
-			return bz, nil
 		case contractQuery.OsmosisPoolPosition != nil:
 			poolId := contractQuery.OsmosisPoolPosition.PoolId
 
