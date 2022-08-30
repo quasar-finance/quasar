@@ -19,8 +19,8 @@ pub enum ExecuteMsg {
         /// packet data only supports one coin
         /// https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20
         amount: Coin,
-        /// when packet times out, measured on remote chain
-        timeout: IbcTimeout,
+        // when packet times out, measured on remote chain, for now we hardcode the timeout
+        // timeout: IbcTimeout,
     },
     Deposit {},
     RegisterInterchainAccount {
