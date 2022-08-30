@@ -3,7 +3,6 @@
 members = [
     "contracts/cw-4626",
     "contracts/strategy",
-    "packages/osmosis-helpers",
     "contracts/ibc-transfer-test",
     "packages/intergamm-bindings",
     "contracts/intergamm-bindings-test",
