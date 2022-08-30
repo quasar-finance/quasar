@@ -57,3 +57,36 @@ We also need to send tokens to the register interchain account, easiest way to d
 quasarnoded query intergamm interchain-account-from-address connection-1 $ADDR --node tcp://localhost:26679 --chain-id osmosis
 ```
 Funds using IBC transfer should also be sent to this address
+## Regular IBC transfer
+query the channel and port on the quasar-osmosis connection
+```
+hermes query connection channels quasar connection-1
+```
+look for the channel with the transfer port, in this case
+```
+PortChannelId {
+        channel_id: ChannelId(
+            "channel-2",
+        ),
+        port_id: PortId(
+            "transfer",
+        ),
+    },
+```
+deposit some funds to send
+```
+quasarnoded tx wasm execute $ADDR '{"deposit": {}}' --node http://0.0.0.0:26659 --amount 100000uqsr --chain-id quasar --from alice --gas auto
+```
+We now send the ibc transfer from the smart contract, we'll use alice's address on osmosis as the to_address
+```
+quuasarnoded tx wasm execute $ADDR '{"send_token_ibc": {"channel_id":"channel-2","to_address":"osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq", "amount": {"denom": "uqsr", "amount": 1000}}}' --node http://0.0.0.0:26659 --chain-id quasar --from alice --gas auto
+```
+check the balance on osmosis
+```
+osmosisd query bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679 --chain-id osmosis
+```
+There should be a new ibc denom with our funds, eg:
+```
+- amount: "1000"
+  denom: ibc/C18695C91D20F11FEE3919D7822B34651277CA84550EF33379E823AD9702B257
+```

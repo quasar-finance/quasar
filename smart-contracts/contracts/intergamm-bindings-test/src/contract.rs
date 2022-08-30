@@ -4,7 +4,7 @@ use std::env;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Response, StdResult, Uint64,
+    Response, StdResult, Uint64, Timestamp,
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
@@ -44,8 +44,7 @@ pub fn execute(
             channel_id,
             to_address,
             amount,
-            timeout,
-        } => execute_send_token_ibc(channel_id, to_address, amount, timeout),
+        } => execute_send_token_ibc(channel_id, to_address, amount, env),
         ExecuteMsg::RegisterInterchainAccount { connection_id } => {
             execute_register_ica(connection_id, env)
         }
@@ -81,8 +80,10 @@ pub fn execute_send_token_ibc(
     channel_id: String,
     to_address: String,
     amount: Coin,
-    timeout: IbcTimeout,
+    env: Env
 ) -> Result<Response<IntergammMsg>, ContractError> {
+    // timeout in 600 seconds after current block timestamp
+    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(600));
     Ok(Response::new().add_message(IbcMsg::Transfer {
         channel_id,
         to_address,
