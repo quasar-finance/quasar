@@ -356,11 +356,11 @@ func (k Keeper) handleOsmosisEpochsInfoResponse(ctx sdk.Context, req abcitypes.R
 	var qresp epochtypes.QueryEpochsInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisEpochsInfo(ctx, qresp.Epochs)
+	k.SetOsmosisEpochsInfo(ctx, qresp.Epochs)
 	return nil
 }
 
-func (k Keeper) setOsmosisEpochsInfo(ctx sdk.Context, epochs []epochtypes.EpochInfo) {
+func (k Keeper) SetOsmosisEpochsInfo(ctx sdk.Context, epochs []epochtypes.EpochInfo) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisEpochsInfoPrefix)
 
 	for _, epoch := range epochs {
@@ -398,11 +398,11 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 		return sdkerrors.Wrapf(err, "could not unmarshal pool")
 	}
 
-	k.setOsmosisPool(ctx, pool)
+	k.SetOsmosisPool(ctx, pool)
 	return nil
 }
 
-func (k Keeper) setOsmosisPool(ctx sdk.Context, pool balancerpool.Pool) {
+func (k Keeper) SetOsmosisPool(ctx sdk.Context, pool balancerpool.Pool) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 
 	key := sdk.Uint64ToBigEndian(pool.Id)
@@ -451,11 +451,11 @@ func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, req abcitypes.R
 	var qresp minttypes.QueryParamsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisMintParams(ctx, qresp.Params)
+	k.SetOsmosisMintParams(ctx, qresp.Params)
 	return nil
 }
 
-func (k Keeper) setOsmosisMintParams(ctx sdk.Context, mintParams minttypes.Params) {
+func (k Keeper) SetOsmosisMintParams(ctx sdk.Context, mintParams minttypes.Params) {
 	store := k.getOsmosisStore(ctx)
 
 	store.Set(types.KeyOsmosisMintParams, k.cdc.MustMarshal(&mintParams))
@@ -474,11 +474,11 @@ func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, req ab
 	var qresp minttypes.QueryEpochProvisionsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisMintEpochProvisions(ctx, qresp.EpochProvisions)
+	k.SetOsmosisMintEpochProvisions(ctx, qresp.EpochProvisions)
 	return nil
 }
 
-func (k Keeper) setOsmosisMintEpochProvisions(ctx sdk.Context, epochProvisions sdk.Dec) {
+func (k Keeper) SetOsmosisMintEpochProvisions(ctx sdk.Context, epochProvisions sdk.Dec) {
 	store := k.getOsmosisStore(ctx)
 
 	bz, err := epochProvisions.Marshal()
@@ -505,11 +505,11 @@ func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abci
 	var qresp poolincentivestypes.QueryIncentivizedPoolsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisIncentivizedPools(ctx, qresp.IncentivizedPools)
+	k.SetOsmosisIncentivizedPools(ctx, qresp.IncentivizedPools)
 	return nil
 }
 
-func (k Keeper) setOsmosisIncentivizedPools(ctx sdk.Context, pools []poolincentivestypes.IncentivizedPool) {
+func (k Keeper) SetOsmosisIncentivizedPools(ctx sdk.Context, pools []poolincentivestypes.IncentivizedPool) {
 	store := k.getOsmosisStore(ctx)
 	store.Set(types.KeyOsmosisIncentivizedPools, k.cdc.MustMarshal(&types.IncentivizedPools{IncentivizedPools: pools}))
 }
@@ -525,11 +525,11 @@ func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.Re
 	var qresp poolincentivestypes.QueryDistrInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisDistrInfo(ctx, qresp.DistrInfo)
+	k.SetOsmosisDistrInfo(ctx, qresp.DistrInfo)
 	return nil
 }
 
-func (k Keeper) setOsmosisDistrInfo(ctx sdk.Context, distrInfo poolincentivestypes.DistrInfo) {
+func (k Keeper) SetOsmosisDistrInfo(ctx sdk.Context, distrInfo poolincentivestypes.DistrInfo) {
 	store := k.getOsmosisStore(ctx)
 
 	store.Set(types.KeyOsmosisDistrInfo, k.cdc.MustMarshal(&distrInfo))
@@ -600,7 +600,7 @@ func (k Keeper) calculatePoolAPY(ctx sdk.Context, pool balancerpool.Pool, poolTV
 		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrEpochNotFound, fmt.Sprintf("could not find osmosis mint, epoch identifier: %s", mintParams.EpochIdentifier))
 	}
 
-	var poolTotalWeight sdk.Int
+	poolTotalWeight := sdk.ZeroInt()
 	for _, incentive := range k.GetOsmosisIncentivizedPools(ctx) {
 		if incentive.PoolId == pool.Id {
 			gaugeWeight, found := findGaugeWeight(ctx, incentive.GaugeId, distrInfo)
