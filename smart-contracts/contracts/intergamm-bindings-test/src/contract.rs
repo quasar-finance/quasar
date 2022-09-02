@@ -11,7 +11,7 @@ use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::msg::{AckTriggeredResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State, ACKTRIGGERED, STATE};
+use crate::state::{ACKTRIGGERED};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test-2";
@@ -21,11 +21,12 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
-    msg: InstantiateMsg,
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     // set the ack triggered to false
-    ACKTRIGGERED.save(deps.storage, &0);
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    ACKTRIGGERED.save(deps.storage, &0)?;
     Ok(Response::default())
 }
 
@@ -108,7 +109,7 @@ pub fn execute_join_pool(
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     Ok(
-        Response::new().add_message(IntergammMsg::JoinSwapExternAmountIn {
+        Response::new().add_submessage(SubMsg::new(IntergammMsg::JoinSwapExternAmountIn {
             creator: env.contract.address.to_string(),
             connection_id,
             // timeout in 10 minutes
@@ -116,7 +117,8 @@ pub fn execute_join_pool(
             pool_id: pool_id.u64(),
             share_out_min_amount,
             token_in,
-        }),
+        })),
+        
     )
 }
 
@@ -124,18 +126,14 @@ pub fn execute_register_ica(
     connection_id: String,
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(Response::new().add_submessage(SubMsg::<IntergammMsg>::new(
-        IntergammMsg::RegisterInterchainAccount {
+
+    Ok(
+        Response::new()
+        .add_submessage(SubMsg::new(IntergammMsg::RegisterInterchainAccount {
             creator: env.contract.address.to_string(),
-            connection_id,
-        },
-    )))
-    // Ok(
-    //     Response::new().add_message(IntergammMsg::RegisterInterchainAccount {
-    //         creator: env.contract.address.to_string(),
-    //         connection_id: connection_id,
-    //     }),
-    // )
+            connection_id: connection_id}))
+        
+    )
 }
 
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
@@ -159,8 +157,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_ack_triggered(deps: Deps) -> StdResult<AckTriggeredResponse> {
-    let state = ACKTRIGGERED.load(deps.storage)?;
-    Ok(AckTriggeredResponse { state })
+    let triggered = ACKTRIGGERED.load(deps.storage)?;
+    Ok(AckTriggeredResponse { triggered })
 }
 
 pub fn do_ibc_packet_ack(
