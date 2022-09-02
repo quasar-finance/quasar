@@ -130,6 +130,9 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
 	_, err = msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "send token")
+	}
 
 	// hardcode seq for POC
 	// register the packet as sent with the callback plugin

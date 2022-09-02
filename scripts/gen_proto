@@ -20,6 +20,7 @@ mkdir -p "$tmp_dir"
 trap "rm -rf ${tmp_dir}" 0
 
 cosmos_sdk_dir="$(locate_cosmos_sdk_dir)"
+echo $cosmos_sdk_dir
 
 (
   cd "$project_dir"
