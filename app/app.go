@@ -634,31 +634,41 @@ func New(
 
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(
 		app.OrionKeeper.HandleAckMsgCreateBalancerPool,
+		callback.HandleAckMsgCreateBalancerPool,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinPool(
 		app.OrionKeeper.HandleAckMsgJoinPool,
+		callback.HandleAckMsgJoinPool,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
 		app.OrionKeeper.HandleAckMsgExitPool,
+		callback.HandleAckMsgExitPool,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(
 		app.OrionKeeper.HandleAckMsgJoinSwapExternAmountIn,
+		callback.HandleAckMsgJoinSwapExternAmountIn,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(
 		app.OrionKeeper.HandleAckMsgExitSwapExternAmountOut,
+		callback.HandleAckMsgExitSwapExternAmountOut,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(
 		app.OrionKeeper.HandleAckMsgJoinSwapShareAmountOut,
+		callback.HandleAckMsgJoinSwapShareAmountOut,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(
 		app.OrionKeeper.HandleAckMsgExitSwapShareAmountIn,
+		callback.HandleAckMsgExitSwapShareAmountIn,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgLockTokens(
 		app.OrionKeeper.HandleAckMsgLockTokens,
+		callback.HandleAckMsgLockTokens,
 	)
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgBeginUnlocking(
 		app.OrionKeeper.HandleAckMsgBeginUnlocking,
+		callback.HandleAckMsgBeginUnlocking,
 	)
+	// TODO (laurens) add some more handlers for callbacks to contracts
 	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
 		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
 	)
