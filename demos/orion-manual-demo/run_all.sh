@@ -1,13 +1,38 @@
 #!/bin/sh
 
-cd ~/quasar-demo/quasar
-ignite chain serve -c demos/orion-manual-demo/quasar.yml  --reset-once --home demos/orion-manual-demo/run/home/quasarnode/  -v  > quasar.log 2>&1 &
+# trap ctrl-c and ctrl-d
+function cleanup()
+{
+    kill $COSMOS_PID
+    kill $OSMO_PID
+    kill $QUASAR_PID
+    # kill $HERMES_PID
+}
 
-cd ~/quasar-demo/gaia
-go mod tidy -go=1.16 && go mod tidy -go=1.17
-ignite chain serve -c  ~/quasar-demo/quasar/demos/orion-manual-demo/cosmos.yml  --reset-once --home  ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub/ -v > cosmos.log 2>&1 & 
+trap cleanup EXIT
 
-cd ~/quasar-demo/osmosis
-ignite chain serve -c ~/quasar-demo/quasar/demos/orion-manual-demo/osmosis.yml  --reset-once --home  ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/ -v > osmosis.log 2>&1 &
+# reset logs dir
+rm -rf ./logs
+mkdir ./logs
 
+# run cosmos and save pid
+./cosmos_localnet.sh  &
+COSMOS_PID=$!
+
+#run osmo and save pid
+./osmo_localnet.sh  &
+OSMO_PID=$!
+
+# run quasar and save pid
+./quasar_localnet.sh  &
+QUASAR_PID=$!
+
+# # wait for chains to start
+# sleep 10
+
+# # run hermes and save pid
+# ./run_hermes.sh  &
+# HERMES_PID=$!
+
+wait
 

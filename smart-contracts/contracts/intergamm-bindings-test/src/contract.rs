@@ -4,7 +4,7 @@ use std::env;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Response, StdResult, Uint64, Timestamp,
+    Response, StdResult, Uint64, Timestamp, SubMsg
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
@@ -124,12 +124,18 @@ pub fn execute_register_ica(
     connection_id: String,
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(
-        Response::new().add_message(IntergammMsg::RegisterInterchainAccount {
+    Ok(Response::new().add_submessage(SubMsg::<IntergammMsg>::new(
+        IntergammMsg::RegisterInterchainAccount {
             creator: env.contract.address.to_string(),
-            connection_id: connection_id,
-        }),
-    )
+            connection_id,
+        },
+    )))
+    // Ok(
+    //     Response::new().add_message(IntergammMsg::RegisterInterchainAccount {
+    //         creator: env.contract.address.to_string(),
+    //         connection_id: connection_id,
+    //     }),
+    // )
 }
 
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {

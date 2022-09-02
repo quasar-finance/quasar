@@ -1,3 +1,5 @@
+#!/bin/zsh
+
 # Configure variables
 BINARY=gaiad
 HOME_COSMOSHUB=$HOME/.gaia
@@ -84,4 +86,4 @@ cat $HOME_COSMOSHUB/config/genesis_original.json |
 		>$HOME_COSMOSHUB/config/genesis.json
 
 # Start
-$BINARY start
+$BINARY start >>& ./logs/gaia_localnet.log
