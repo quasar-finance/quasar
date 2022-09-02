@@ -32088,49 +32088,109 @@ paths:
                 description: params holds all the parameters of this module.
                 type: object
                 properties:
-                  osmo_token_transfer_channels:
+                  denom_to_native_zone_id_map:
                     type: object
                     additionalProperties:
                       type: string
-                    title: >-
-                      map of chain id and transfer port channel id. This should
-                      be updated via governance
-                  dest_to_intr_zone_map:
+                  complete_zone_info_map:
                     type: object
                     additionalProperties:
-                      type: string
-                  intr_rcvrs:
-                    type: array
-                    items:
                       type: object
                       properties:
-                        zone_info:
+                        zone_route_info:
                           type: object
                           properties:
-                            local_zone_id:
+                            zone_id:
                               type: string
-                            connection_id:
-                              type: string
+                              title: >-
+                                zone ID: a unique ID for source zone of this
+                                route
                             chain_id:
                               type: string
-                          description: >-
-                            Local Information of the other zone in the intergamm
-                            module.
-                        rcvr_address:
+                              title: chain ID of the source zone
+                            counterparty_zone_id:
+                              type: string
+                              title: >-
+                                counterparty zone ID: a unique ID for
+                                destination zone of this route
+                            counterparty_chain_id:
+                              type: string
+                              title: chain ID of the destination zone
+                            connection_id:
+                              type: string
+                              title: IBC connection ID from source to destination
+                            port_id:
+                              type: string
+                              title: >-
+                                IBC port ID from source to destination (usually
+                                'transfer')
+                            channel_id:
+                              type: string
+                              title: IBC channel ID from source to destination
+                            counterparty_connection_id:
+                              type: string
+                              title: >-
+                                IBC counterparty connection ID from destination
+                                to source
+                            counterparty_port_id:
+                              type: string
+                              title: >-
+                                IBC counterparty port ID from destination to
+                                source (usually 'transfer')
+                            counterparty_channel_id:
+                              type: string
+                              title: >-
+                                IBC counterparty channel ID from destination to
+                                source
+                        interchain_address:
                           type: string
                         next_zone_route_map:
                           type: object
                           additionalProperties:
                             type: object
                             properties:
-                              local_zone_id:
+                              zone_id:
                                 type: string
-                              connection_id:
-                                type: string
+                                title: >-
+                                  zone ID: a unique ID for source zone of this
+                                  route
                               chain_id:
                                 type: string
-                              transfer_channel_id:
+                                title: chain ID of the source zone
+                              counterparty_zone_id:
                                 type: string
+                                title: >-
+                                  counterparty zone ID: a unique ID for
+                                  destination zone of this route
+                              counterparty_chain_id:
+                                type: string
+                                title: chain ID of the destination zone
+                              connection_id:
+                                type: string
+                                title: IBC connection ID from source to destination
+                              port_id:
+                                type: string
+                                title: >-
+                                  IBC port ID from source to destination
+                                  (usually 'transfer')
+                              channel_id:
+                                type: string
+                                title: IBC channel ID from source to destination
+                              counterparty_connection_id:
+                                type: string
+                                title: >-
+                                  IBC counterparty connection ID from
+                                  destination to source
+                              counterparty_port_id:
+                                type: string
+                                title: >-
+                                  IBC counterparty port ID from destination to
+                                  source (usually 'transfer')
+                              counterparty_channel_id:
+                                type: string
+                                title: >-
+                                  IBC counterparty channel ID from destination
+                                  to source
                       title: IntermediateReceiver
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
@@ -58109,35 +58169,6 @@ definitions:
             current_epoch_start_height:
               type: string
               format: int64
-  quasarlabs.quasarnode.intergamm.IntermediateReceiver:
-    type: object
-    properties:
-      zone_info:
-        type: object
-        properties:
-          local_zone_id:
-            type: string
-          connection_id:
-            type: string
-          chain_id:
-            type: string
-        description: Local Information of the other zone in the intergamm module.
-      rcvr_address:
-        type: string
-      next_zone_route_map:
-        type: object
-        additionalProperties:
-          type: object
-          properties:
-            local_zone_id:
-              type: string
-            connection_id:
-              type: string
-            chain_id:
-              type: string
-            transfer_channel_id:
-              type: string
-    title: IntermediateReceiver
   quasarlabs.quasarnode.intergamm.MsgSendTokenResponse:
     type: object
     properties:
@@ -58188,61 +58219,98 @@ definitions:
       seq:
         type: string
         format: uint64
-  quasarlabs.quasarnode.intergamm.NextZoneRouteInfo:
-    type: object
-    properties:
-      local_zone_id:
-        type: string
-      connection_id:
-        type: string
-      chain_id:
-        type: string
-      transfer_channel_id:
-        type: string
   quasarlabs.quasarnode.intergamm.Params:
     type: object
     properties:
-      osmo_token_transfer_channels:
+      denom_to_native_zone_id_map:
         type: object
         additionalProperties:
           type: string
-        title: >-
-          map of chain id and transfer port channel id. This should be updated
-          via governance
-      dest_to_intr_zone_map:
+      complete_zone_info_map:
         type: object
         additionalProperties:
-          type: string
-      intr_rcvrs:
-        type: array
-        items:
           type: object
           properties:
-            zone_info:
+            zone_route_info:
               type: object
               properties:
-                local_zone_id:
+                zone_id:
                   type: string
-                connection_id:
-                  type: string
+                  title: 'zone ID: a unique ID for source zone of this route'
                 chain_id:
                   type: string
-              description: Local Information of the other zone in the intergamm module.
-            rcvr_address:
+                  title: chain ID of the source zone
+                counterparty_zone_id:
+                  type: string
+                  title: >-
+                    counterparty zone ID: a unique ID for destination zone of
+                    this route
+                counterparty_chain_id:
+                  type: string
+                  title: chain ID of the destination zone
+                connection_id:
+                  type: string
+                  title: IBC connection ID from source to destination
+                port_id:
+                  type: string
+                  title: IBC port ID from source to destination (usually 'transfer')
+                channel_id:
+                  type: string
+                  title: IBC channel ID from source to destination
+                counterparty_connection_id:
+                  type: string
+                  title: IBC counterparty connection ID from destination to source
+                counterparty_port_id:
+                  type: string
+                  title: >-
+                    IBC counterparty port ID from destination to source (usually
+                    'transfer')
+                counterparty_channel_id:
+                  type: string
+                  title: IBC counterparty channel ID from destination to source
+            interchain_address:
               type: string
             next_zone_route_map:
               type: object
               additionalProperties:
                 type: object
                 properties:
-                  local_zone_id:
+                  zone_id:
                     type: string
-                  connection_id:
-                    type: string
+                    title: 'zone ID: a unique ID for source zone of this route'
                   chain_id:
                     type: string
-                  transfer_channel_id:
+                    title: chain ID of the source zone
+                  counterparty_zone_id:
                     type: string
+                    title: >-
+                      counterparty zone ID: a unique ID for destination zone of
+                      this route
+                  counterparty_chain_id:
+                    type: string
+                    title: chain ID of the destination zone
+                  connection_id:
+                    type: string
+                    title: IBC connection ID from source to destination
+                  port_id:
+                    type: string
+                    title: >-
+                      IBC port ID from source to destination (usually
+                      'transfer')
+                  channel_id:
+                    type: string
+                    title: IBC channel ID from source to destination
+                  counterparty_connection_id:
+                    type: string
+                    title: IBC counterparty connection ID from destination to source
+                  counterparty_port_id:
+                    type: string
+                    title: >-
+                      IBC counterparty port ID from destination to source
+                      (usually 'transfer')
+                  counterparty_channel_id:
+                    type: string
+                    title: IBC counterparty channel ID from destination to source
           title: IntermediateReceiver
     description: Params defines the parameters for the module.
   quasarlabs.quasarnode.intergamm.PortInfo:
@@ -58282,59 +58350,220 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
         properties:
-          osmo_token_transfer_channels:
+          denom_to_native_zone_id_map:
             type: object
             additionalProperties:
               type: string
-            title: >-
-              map of chain id and transfer port channel id. This should be
-              updated via governance
-          dest_to_intr_zone_map:
+          complete_zone_info_map:
             type: object
             additionalProperties:
-              type: string
-          intr_rcvrs:
-            type: array
-            items:
               type: object
               properties:
-                zone_info:
+                zone_route_info:
                   type: object
                   properties:
-                    local_zone_id:
+                    zone_id:
                       type: string
-                    connection_id:
-                      type: string
+                      title: 'zone ID: a unique ID for source zone of this route'
                     chain_id:
                       type: string
-                  description: Local Information of the other zone in the intergamm module.
-                rcvr_address:
+                      title: chain ID of the source zone
+                    counterparty_zone_id:
+                      type: string
+                      title: >-
+                        counterparty zone ID: a unique ID for destination zone
+                        of this route
+                    counterparty_chain_id:
+                      type: string
+                      title: chain ID of the destination zone
+                    connection_id:
+                      type: string
+                      title: IBC connection ID from source to destination
+                    port_id:
+                      type: string
+                      title: >-
+                        IBC port ID from source to destination (usually
+                        'transfer')
+                    channel_id:
+                      type: string
+                      title: IBC channel ID from source to destination
+                    counterparty_connection_id:
+                      type: string
+                      title: >-
+                        IBC counterparty connection ID from destination to
+                        source
+                    counterparty_port_id:
+                      type: string
+                      title: >-
+                        IBC counterparty port ID from destination to source
+                        (usually 'transfer')
+                    counterparty_channel_id:
+                      type: string
+                      title: IBC counterparty channel ID from destination to source
+                interchain_address:
                   type: string
                 next_zone_route_map:
                   type: object
                   additionalProperties:
                     type: object
                     properties:
-                      local_zone_id:
+                      zone_id:
                         type: string
-                      connection_id:
-                        type: string
+                        title: 'zone ID: a unique ID for source zone of this route'
                       chain_id:
                         type: string
-                      transfer_channel_id:
+                        title: chain ID of the source zone
+                      counterparty_zone_id:
                         type: string
+                        title: >-
+                          counterparty zone ID: a unique ID for destination zone
+                          of this route
+                      counterparty_chain_id:
+                        type: string
+                        title: chain ID of the destination zone
+                      connection_id:
+                        type: string
+                        title: IBC connection ID from source to destination
+                      port_id:
+                        type: string
+                        title: >-
+                          IBC port ID from source to destination (usually
+                          'transfer')
+                      channel_id:
+                        type: string
+                        title: IBC channel ID from source to destination
+                      counterparty_connection_id:
+                        type: string
+                        title: >-
+                          IBC counterparty connection ID from destination to
+                          source
+                      counterparty_port_id:
+                        type: string
+                        title: >-
+                          IBC counterparty port ID from destination to source
+                          (usually 'transfer')
+                      counterparty_channel_id:
+                        type: string
+                        title: IBC counterparty channel ID from destination to source
               title: IntermediateReceiver
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  quasarlabs.quasarnode.intergamm.ZoneLocalInfo:
+  quasarlabs.quasarnode.intergamm.ZoneCompleteInfo:
     type: object
     properties:
-      local_zone_id:
+      zone_route_info:
+        type: object
+        properties:
+          zone_id:
+            type: string
+            title: 'zone ID: a unique ID for source zone of this route'
+          chain_id:
+            type: string
+            title: chain ID of the source zone
+          counterparty_zone_id:
+            type: string
+            title: >-
+              counterparty zone ID: a unique ID for destination zone of this
+              route
+          counterparty_chain_id:
+            type: string
+            title: chain ID of the destination zone
+          connection_id:
+            type: string
+            title: IBC connection ID from source to destination
+          port_id:
+            type: string
+            title: IBC port ID from source to destination (usually 'transfer')
+          channel_id:
+            type: string
+            title: IBC channel ID from source to destination
+          counterparty_connection_id:
+            type: string
+            title: IBC counterparty connection ID from destination to source
+          counterparty_port_id:
+            type: string
+            title: >-
+              IBC counterparty port ID from destination to source (usually
+              'transfer')
+          counterparty_channel_id:
+            type: string
+            title: IBC counterparty channel ID from destination to source
+      interchain_address:
         type: string
-      connection_id:
+      next_zone_route_map:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            zone_id:
+              type: string
+              title: 'zone ID: a unique ID for source zone of this route'
+            chain_id:
+              type: string
+              title: chain ID of the source zone
+            counterparty_zone_id:
+              type: string
+              title: >-
+                counterparty zone ID: a unique ID for destination zone of this
+                route
+            counterparty_chain_id:
+              type: string
+              title: chain ID of the destination zone
+            connection_id:
+              type: string
+              title: IBC connection ID from source to destination
+            port_id:
+              type: string
+              title: IBC port ID from source to destination (usually 'transfer')
+            channel_id:
+              type: string
+              title: IBC channel ID from source to destination
+            counterparty_connection_id:
+              type: string
+              title: IBC counterparty connection ID from destination to source
+            counterparty_port_id:
+              type: string
+              title: >-
+                IBC counterparty port ID from destination to source (usually
+                'transfer')
+            counterparty_channel_id:
+              type: string
+              title: IBC counterparty channel ID from destination to source
+    title: IntermediateReceiver
+  quasarlabs.quasarnode.intergamm.ZoneRouteInfo:
+    type: object
+    properties:
+      zone_id:
         type: string
+        title: 'zone ID: a unique ID for source zone of this route'
       chain_id:
         type: string
-    description: Local Information of the other zone in the intergamm module.
+        title: chain ID of the source zone
+      counterparty_zone_id:
+        type: string
+        title: 'counterparty zone ID: a unique ID for destination zone of this route'
+      counterparty_chain_id:
+        type: string
+        title: chain ID of the destination zone
+      connection_id:
+        type: string
+        title: IBC connection ID from source to destination
+      port_id:
+        type: string
+        title: IBC port ID from source to destination (usually 'transfer')
+      channel_id:
+        type: string
+        title: IBC channel ID from source to destination
+      counterparty_connection_id:
+        type: string
+        title: IBC counterparty connection ID from destination to source
+      counterparty_port_id:
+        type: string
+        title: >-
+          IBC counterparty port ID from destination to source (usually
+          'transfer')
+      counterparty_channel_id:
+        type: string
+        title: IBC counterparty channel ID from destination to source
   quasarlabs.quasarnode.orion.AccountInfo:
     type: object
     properties:

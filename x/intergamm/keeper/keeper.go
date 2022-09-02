@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -90,21 +90,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) GetChannelKeeper(ctx sdk.Context) types.ChannelKeeper {
 	return k.channelKeeper
-}
-
-// GetIntermediateReceiver retrieve the intermediate receiver address in the middle chain
-// for packet forwarding.
-// Arguments connectionID is the connection id of the next intermediate chain
-// NOTE - We can very well have local zone -id (chainid/connectionid) to easy the calculations
-func (k Keeper) GetIntermediateReceiver(ctx sdk.Context,
-	connectionID string) string {
-	intr_rcvrs := k.IntrRcvrs(ctx)
-	for _, v := range intr_rcvrs {
-		if v.ZoneInfo.ConnectionId == connectionId {
-			return v.RcvrAddress
-		}
-	}
-	return ""
 }
 
 func (k Keeper) GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection) {
@@ -231,103 +216,112 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 	return seq, nil
 }
 
-// SendToken will send token to the destination chain ( assuming it is only osmosis in the beggining)
-// TODO - Hardcoded values of port, channel, and connection to be determined by routing logic or config
+func (k Keeper) sendTxOverIca2(ctx sdk.Context, connectionId, portId, channelId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
+	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portId, channelId))
+	if !found {
+		return 0, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+	}
+
+	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs)
+	if err != nil {
+		return 0, err
+	}
+
+	packetData := icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: data,
+	}
+
+	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
+	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portId, packetData, timeoutNano)
+	if err != nil {
+		return 0, err
+	}
+
+	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
+
+	return seq, nil
+}
+
+func (k Keeper) GetZoneInfo(ctx sdk.Context, zoneId string) (zoneInfo types.ZoneCompleteInfo, found bool) {
+	zoneInfo, found = k.CompleteZoneInfoMap(ctx)[zoneId]
+	return
+}
+
+func (k Keeper) GetNativeZoneInfo(ctx sdk.Context, denom string) (types.ZoneCompleteInfo, bool) {
+	logger := k.Logger(ctx)
+	if nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]; found {
+		if nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId); found {
+			return nativeZoneInfo, true
+		} else {
+			logger.Info("GetNativeZoneInfo", fmt.Sprintf("warning: zone info of native zone ID '%s' (for denom '%s') is not found in CompleteZoneInfoMap.", nativeZoneId, denom))
+		}
+	}
+	return types.ZoneCompleteInfo{}, false
+}
+
+// SendToken will send token to the destination chain
 // Vault should send validated values of address, and coin
-// Current version support only uqsr as native non ibc token denom
-// NOTE - This method to be used till automated routing logic is in place.
 func (k Keeper) SendToken(ctx sdk.Context,
 	// destinationChain string, // TODO - To be used for cross validation
-	destinationLocalZoneId string,
+	destZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
 	coin sdk.Coin) (uint64, error) {
 	logger := k.Logger(ctx)
 	logger.Info("SendToken",
-		"destinationLocalZoneId", destinationLocalZoneId,
+		"destinationLocalZoneId", destZoneId,
 		"sender", sender,
 		"receiver", receiver,
 		"coin", coin,
 	)
 
-	var is_one_hop bool
-	var destinationChain string
-	var fwdChannelID string
-	if intrZone, found := k.DestToIntrZoneMap(ctx)[destinationLocalZoneId]; !found {
-		// DestToIntrZoneMap does not have a corresponding entry.
-		// This could mean that; destination zone is the intrZone for this case.
-		// And this is normal one hop token tranfer.
-
-		// Verifying is intr zone exist
-		intrRcvrs := k.IntrRcvrs(ctx)
-		for _, intrRcvr := range intrRcvrs {
-			if destinationLocalZoneId == intrRcvr.ZoneInfo.LocalZoneId {
-				is_one_hop = true
-				destinationChain = intrRcvr.ZoneInfo.ChainId
-			}
-		}
-	} else {
-		// Packet forwarding case
-		intrRcvrs := k.IntrRcvrs(ctx)
-		for _, intrRcvr := range intrRcvrs {
-			if intrZone == intrRcvr.ZoneInfo.LocalZoneId {
-				if nextZone, found := intrRcvr.NextZoneRouteMap[destinationLocalZoneId]; found {
-					fwdChannelID = nextZone.TransferChannelId
-					destinationChain = nextZone.ChainId
-				} else {
-					return 0, fmt.Errorf("packet forwarding channel not found for intr zone %s,next zone %s",
-						intrZone, destinationLocalZoneId)
-				}
-			}
-		}
-	}
-
-	if destinationChain == "" {
-		return 0, fmt.Errorf("destination chain not found for zone %s", destinationLocalZoneId)
-	}
-
-	if !is_one_hop && fwdChannelID == "" {
-		return 0, fmt.Errorf("packet forwarding channel is empty for two hop token transfer to dest zone id %s", destinationLocalZoneId)
-	}
-
-	pi, found := k.GetPortDetail(ctx, destinationChain, "transfer")
-	if !found {
-		return 0, fmt.Errorf("token transfer to osmosis not available right now, port info not found")
-	}
-
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	if is_one_hop {
-		return k.TransferIbcTokens(ctx, "transfer",
-			pi.ChannelID, coin,
+	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[coin.Denom]
+	if !found {
+		logger.Error("SendToken", fmt.Sprintf("error: native zone ID of denom '%s' not specified", coin.Denom))
+		return 0, errors.New("error: unsupported denom")
+	}
+	nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
+	if !found {
+		logger.Error("SendToken", fmt.Sprintf("error: zone info for zone ID '%s' not specified", nativeZoneId))
+		return 0, errors.New("error: zone info not found")
+	}
+	if nativeZoneId == types.QuasarZoneId || nativeZoneId == destZoneId {
+		// direct transfer
+		destZoneInfo, found := k.GetZoneInfo(ctx, destZoneId)
+		if !found {
+			msg := fmt.Sprintf("error: destination zone info for zone ID '%s' not found in CompleteZoneInfoMap for direct transfer of %s",
+				destZoneId, coin.String())
+			logger.Error("SendToken", msg)
+			return 0, errors.New(msg)
+		}
+		return k.TransferIbcTokens(ctx,
+			destZoneInfo.ZoneRouteInfo.PortId,
+			destZoneInfo.ZoneRouteInfo.ChannelId,
+			coin,
 			sender, receiver,
 			transferTimeoutHeight, connectionTimeout)
-	}
-
-	// IBC denom validations in case vaults are giving wrong arguments
-	ibcPrefix := ibctransfertypes.DenomPrefix + "/"
-	if strings.HasPrefix(coin.Denom, ibcPrefix) {
-		hexHash := coin.Denom[len(ibcPrefix):]
-		hash, err := ibctransfertypes.ParseHexHash(hexHash)
-		if err != nil {
-			return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, err.Error())
+	} else {
+		// forwarding transfer
+		// destFromNativeInfo contains IBC info needed to reach destination zone from the native zone.
+		destFromNativeInfo, found := nativeZoneInfo.NextZoneRouteMap[destZoneId]
+		if !found {
+			msg := fmt.Sprintf("error: destination zone info for zone ID '%s' not found in NextZoneRouteMap of native zone with ID '%s' for forwarding transfer of %s",
+				destZoneId, nativeZoneInfo.ZoneRouteInfo.CounterpartyZoneId, coin.String())
+			logger.Error("SendToken", msg)
+			return 0, errors.New(msg)
 		}
-
-		denomTrace, ok := k.ibcTransferKeeper.GetDenomTrace(ctx, hash)
-		if !ok {
-			return 0, sdkerrors.Wrap(ibctransfertypes.ErrTraceNotFound, hexHash)
-		}
-		logger.Info("SendToken",
-			"denomTrace", denomTrace,
-		)
-
-		return k.ForwardTransferIbcTokens(ctx, "transfer", pi.ChannelID, coin,
-			sender, "transfer",
-			fwdChannelID,
-			"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // This hardcoded address is TODO.
-			receiver, transferTimeoutHeight, connectionTimeout)
-
+		return k.ForwardTransferIbcTokens(ctx,
+			nativeZoneInfo.ZoneRouteInfo.PortId,
+			nativeZoneInfo.ZoneRouteInfo.ChannelId,
+			coin,
+			sender,
+			destFromNativeInfo.PortId,
+			destFromNativeInfo.ChannelId,
+			nativeZoneInfo.InterchainAddress,
+			receiver,
+			transferTimeoutHeight, connectionTimeout)
 	}
-
-	return 0, sdkerrors.Wrap(ibctransfertypes.ErrInvalidDenomForTransfer, "unrecognized ibc denom")
 }

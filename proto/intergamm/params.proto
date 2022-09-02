@@ -5,36 +5,69 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 
-// Local Information of the other zone in the intergamm module.
-message ZoneLocalInfo {
-  option (gogoproto.equal) = true;
-  string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
-  string connection_id = 2  
-  [(gogoproto.moretags) = "yaml:\"connection_id\""];// local connection id associated with the other chain
-  string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
-}
+// Zone ID is our own unique ID for each chain we have a connect to. This enables us to store info about 2 hains that might have the same chain ID.
 
-message NextZoneRouteInfo {
+message ZoneRouteInfo {
   option (gogoproto.equal) = true;
-  string local_zone_id = 1 [(gogoproto.moretags) = "yaml:\"local_zone_id\""];
-  string connection_id = 2
-  [(gogoproto.moretags) = "yaml:\"connection_id\""]; // local connection id associated with the other chain
-  string chain_id = 3  [(gogoproto.moretags) = "yaml:\"chain_id\""]; // other chain id
-  string transfer_channel_id = 4
-  [(gogoproto.moretags) = "yaml:\"transfer_channel_id\""]; // token transfer port to next chain
 
+  // zone ID: a unique ID for source zone of this route
+  string zone_id  = 1
+   [(gogoproto.moretags) = "yaml:\"zone_id\",  json:\"zone_id\""];
+
+  // chain ID of the source zone
+  string chain_id = 2
+   [(gogoproto.moretags) = "yaml:\"chain_id\", json:\"chain_id\""];
+
+  // counterparty zone ID: a unique ID for destination zone of this route
+  string counterparty_zone_id  = 3
+   [(gogoproto.moretags) = "yaml:\"counterparty_zone_id\",  json:\"counterparty_zone_id\""];
+
+  // chain ID of the destination zone
+  string counterparty_chain_id = 4
+   [(gogoproto.moretags) = "yaml:\"counterparty_chain_id\", json:\"counterparty_chain_id\""];
+
+  // IBC connection ID from source to destination
+  string connection_id = 5
+   [(gogoproto.moretags) = "yaml:\"connection_id\", json:\"connection_id\""];
+
+  // IBC port ID from source to destination (usually 'transfer')
+  string port_id = 6
+   [(gogoproto.moretags) = "yaml:\"port_id\", json:\"port_id\""];
+
+  // IBC channel ID from source to destination
+  string channel_id = 7
+   [(gogoproto.moretags) = "yaml:\"channel_id\", json:\"channel_id\""];
+
+  // IBC counterparty connection ID from destination to source
+  string counterparty_connection_id = 8
+   [(gogoproto.moretags) = "yaml:\"counterparty_connection_id\", json:\"counterparty_connection_id\""];
+
+  // IBC counterparty port ID from destination to source (usually 'transfer')
+  string counterparty_port_id = 9
+   [(gogoproto.moretags) = "yaml:\"counterparty_port_id\", json:\"counterparty_port_id\""];
+
+  // IBC counterparty channel ID from destination to source
+  string counterparty_channel_id = 10
+   [(gogoproto.moretags) = "yaml:\"counterparty_channel_id\", json:\"counterparty_channel_id\""];
+
+  // IBC counterparty version
+  string counterparty_version = 11
+   [(gogoproto.moretags) = "yaml:\"counterparty_version\", json:\"counterparty_version\""];
 }
 
 // IntermediateReceiver 
-message IntermediateReceiver {
+message ZoneCompleteInfo {
   option (gogoproto.equal) = true;
-  ZoneLocalInfo zone_info = 1
-  [(gogoproto.moretags) = "yaml:\"zone_info\"",
-  (gogoproto.nullable)   = false
-  ];
-  string rcvr_address = 2 [(gogoproto.moretags) = "yaml:\"rcvr_address\""];
-  map<string, NextZoneRouteInfo> next_zone_route_map = 3
-  [(gogoproto.moretags) = "yaml:\"next_zone_route_map\"", (gogoproto.nullable)   = false]; // key zone-id
+  ZoneRouteInfo zone_route_info = 1
+   [(gogoproto.moretags) = "yaml:\"zone_route_info\",json:\"zone_route_info\"",
+    (gogoproto.nullable) = false];
+
+  string interchain_address = 2
+   [(gogoproto.moretags) = "yaml:\"interchain_address\",json:\"interchain_address\""];
+
+  map<string, ZoneRouteInfo> next_zone_route_map = 3
+   [(gogoproto.moretags) = "yaml:\"next_zone_route_map\",json:\"next_zone_route_map\"",
+    (gogoproto.nullable) = false]; // key zone-id
 }
 
 // Params defines the parameters for the module.
@@ -42,19 +75,11 @@ message Params {
   option (gogoproto.goproto_stringer) = false;
   option (gogoproto.equal) = true;
 
-  // map of chain id and transfer port channel id. This should be updated via governance
-  map<string, string> osmo_token_transfer_channels = 1
-  [(gogoproto.moretags) = "yaml:\"osmo_token_transfer_channels\"",
-  (gogoproto.nullable)   = false
-  ];
+  map<string, string> denom_to_native_zone_id_map = 1
+   [(gogoproto.moretags) = "yaml:\"denom_to_native_zone_id_map\",json:\"denom_to_native_zone_id_map\"",
+    (gogoproto.nullable) = false];
 
-  map<string, string> dest_to_intr_zone_map = 2
-  [(gogoproto.moretags) = "yaml:\"dest_to_intr_zone_map\"",
-  (gogoproto.nullable)   = false
-  ];
-
-  repeated IntermediateReceiver intr_rcvrs = 3
-  [(gogoproto.moretags) = "yaml:\"intr_rcvrs\"",
-  (gogoproto.nullable)   = false
-  ];
+  map<string, ZoneCompleteInfo> complete_zone_info_map = 2
+   [(gogoproto.moretags) = "yaml:\"complete_zone_info_map\",json:\"complete_zone_info_map\"",
+    (gogoproto.nullable) = false];
 }

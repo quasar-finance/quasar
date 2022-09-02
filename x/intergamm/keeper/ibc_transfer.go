@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -69,105 +70,103 @@ func (k Keeper) ForwardTransferIbcTokens(
 	)
 }
 
-func (k Keeper) TransmitIbcTransfer(
+// TransmitICATransferGeneral sends an ICA transfer message that may be forwarded to the destination chain through a middle chain.
+// Note that the middle chain must support packet forward wrapper module (https://github.com/strangelove-ventures/packet-forward-middleware).
+func (k Keeper) TransmitICATransferGeneral(
 	ctx sdk.Context,
 	owner string,
-	connectionId string,
-	timeoutTimestamp uint64,
-	transferPort, transferChannel string,
+	icaZoneId string,
+	msgTransmitTimeoutTimestamp uint64,
 	token sdk.Coin,
-	receiver string,
-	transferTimeoutHeight ibcclienttypes.Height,
-	transferTimeoutTimestamp uint64) (uint64, error) {
-	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
+	dstZoneId string,
+	finalReceiver string,
+	icaTransferTimeoutHeight ibcclienttypes.Height,
+	icaTransferTimeoutTimestamp uint64) (uint64, error) {
+	logger := k.Logger(ctx)
+
+	icaZoneInfo, found := k.GetZoneInfo(ctx, icaZoneId)
+	if !found {
+		msg := fmt.Sprintf("error: destination zone info for zone ID '%s' not found in CompleteZoneInfoMap for direct transfer of %s",
+			icaZoneId, token.String())
+		logger.Error("SendToken", msg)
+		return 0, errors.New(msg)
+	}
+
+	qsrToIcaConnectionId := icaZoneInfo.ZoneRouteInfo.ConnectionId
+	icaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
-		ConnectionId: connectionId,
+		ConnectionId: icaZoneInfo.ZoneRouteInfo.ConnectionId,
 	})
 	if err != nil {
 		return 0, err
 	}
 
-	msgs := []sdk.Msg{
-		&ibctransfertypes.MsgTransfer{
-			SourcePort:       transferPort,
-			SourceChannel:    transferChannel,
-			Token:            token,
-			Sender:           iaResp.InterchainAccountAddress,
-			Receiver:         receiver,
-			TimeoutHeight:    transferTimeoutHeight,
-			TimeoutTimestamp: transferTimeoutTimestamp,
-		},
+	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[token.Denom]
+	if !found {
+		logger.Error("TransmitICATransferGeneral", fmt.Sprintf("error: native zone ID of denom '%s' not specified", token.Denom))
+		return 0, errors.New("error: unsupported denom")
 	}
-	return k.sendTxOverIca(ctx, owner, connectionId, msgs, timeoutTimestamp)
-}
+	nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
+	if !found {
+		logger.Error("TransmitICATransferGeneral", fmt.Sprintf("error: zone info for zone ID '%s' not specified", nativeZoneId))
+		return 0, errors.New("error: zone info not found")
+	}
 
-// TransmitForwardIbcTransfer sends a special case of ibc transfer message that will be forwarded to the destination chain through a middle chain.
-// fwdTransferPort and fwdTransferChannel are the port and channel to destination chain on the middle chain and intermidateReceiver this an account at the middle chain
-// that receives the token temporarily which then sends the token to receiver on destination chain via another ibc transfer packet.
-// Note that the middle chain must support packet forward wrapper module (https://github.com/strangelove-ventures/packet-forward-middleware).
-func (k Keeper) TransmitForwardIbcTransfer(
-	ctx sdk.Context,
-	owner string,
-	connectionId string,
-	timeoutTimestamp uint64,
-	transferPort, transferChannel string,
-	token sdk.Coin,
-	fwdTransferPort, fwdTransferChannel string,
-	intermediateReceiver string,
-	receiver string,
-	transferTimeoutHeight ibcclienttypes.Height,
-	transferTimeoutTimestamp uint64) (uint64, error) {
+	// prepare the ICA transfer message
+	var msgs []sdk.Msg
+	if nativeZoneId == icaZoneId || nativeZoneId == dstZoneId {
+		// direct ICA transfer
 
-	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
-	return k.TransmitIbcTransfer(
-		ctx,
-		owner,
-		connectionId,
-		timeoutTimestamp,
-		transferPort, transferChannel,
-		token,
-		fwdReceiver,
-		transferTimeoutHeight,
-		transferTimeoutTimestamp,
-	)
-}
+		// need to reach quasar zone from ICA zone
+		icaToQsrPortId := icaZoneInfo.ZoneRouteInfo.CounterpartyPortId
+		icaToQsrChannelId := icaZoneInfo.ZoneRouteInfo.CounterpartyChannelId
 
-// TODO - TO be replaced with upcoming token transfer wrapper.
-// Send method determin the routing logic for the coin from the caller.
-// Routing logic is based on the denom and destination chain.
-// Ex.
-// 1. If denom is ibc atom and dest chain is osmosis, multihop token xfer to osmosis via cosmos-hub.
-// 2. If denom is ibc osmos and dest chain is osmosis, do ibc token xfer to osmosis
-// It will get the details from the params for each whitelisted denoms
-// Send method also need to calculate the intermediate address
-func (k Keeper) Send(ctx sdk.Context,
-	coin sdk.Coin,
-	destinationChain string,
-	owner string,
-	destinationAddress string) (uint64, error) {
+		msgs = append(msgs, &ibctransfertypes.MsgTransfer{
+			SourcePort:       icaToQsrPortId,
+			SourceChannel:    icaToQsrChannelId,
+			Token:            token,
+			Sender:           icaResp.InterchainAccountAddress,
+			Receiver:         finalReceiver,
+			TimeoutHeight:    icaTransferTimeoutHeight,
+			TimeoutTimestamp: icaTransferTimeoutTimestamp,
+		})
+	} else {
+		// forwarding ICA transfer
 
-	// TODO - Routing logic to be written here
-	// Assuming that it is ibc atom
-	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
-	transferTimeoutHeight := ibcclienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	return k.TransmitForwardIbcTransfer(ctx,
-		owner,
-		"connection-0",
-		connectionTimeout,
-		"transfer",
-		"channel-0",
-		coin,
-		"transfer",
-		"channel-0",
-		"cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu", // alice on hub, maybe we can have a dedicated cosmos-hub interchain account for orion.
-		destinationAddress,
-		transferTimeoutHeight,
-		connectionTimeout,
-	)
+		// icaFromNativeInfo contains IBC info about the channel between ICA zone and the native zone.
+		icaFromNativeInfo, found := nativeZoneInfo.NextZoneRouteMap[icaZoneId]
+		if !found {
+			msg := fmt.Sprintf("error: ICA zone info for zone ID '%s' not found in NextZoneRouteMap of native zone with ID '%s' for forwarding transfer of %s",
+				icaZoneId, nativeZoneInfo.ZoneRouteInfo.CounterpartyZoneId, token.String())
+			logger.Error("SendToken", msg)
+			return 0, errors.New(msg)
+		}
+
+		// The fund should first go to the native zone
+		icaToNativePortId := icaFromNativeInfo.CounterpartyPortId
+		icaToNativeChannelId := icaFromNativeInfo.CounterpartyChannelId
+		nativeToQsrPortId := nativeZoneInfo.ZoneRouteInfo.CounterpartyPortId
+		nativeToQsrChannelId := nativeZoneInfo.ZoneRouteInfo.CounterpartyChannelId
+		receiverAddr := buildPacketForwardReceiver(nativeZoneInfo.InterchainAddress, nativeToQsrPortId, nativeToQsrChannelId, finalReceiver)
+
+		msgs = append(msgs, &ibctransfertypes.MsgTransfer{
+			SourcePort:       icaToNativePortId,
+			SourceChannel:    icaToNativeChannelId,
+			Token:            token,
+			Sender:           icaResp.InterchainAccountAddress,
+			Receiver:         receiverAddr,
+			TimeoutHeight:    icaTransferTimeoutHeight,
+			TimeoutTimestamp: icaTransferTimeoutTimestamp,
+		})
+	}
+	// transmit the ICA transfer message
+	qsrToIcaPortId := icaZoneInfo.ZoneRouteInfo.PortId
+	qsrToIcaChannelId := icaZoneInfo.ZoneRouteInfo.ChannelId
+	return k.sendTxOverIca2(ctx, qsrToIcaConnectionId, qsrToIcaPortId, qsrToIcaChannelId, msgs, msgTransmitTimeoutTimestamp)
 }
 
 // buildPacketForwardReceiver builds the receiver address for packet forward transfer based on the format below:
-// {intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
+// {intermediate_refund_address}|{forward_port}/{forward_channel}:{final_destination_address}
 func buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver string) string {
 	return fmt.Sprintf("%s|%s/%s:%s", intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
 }
