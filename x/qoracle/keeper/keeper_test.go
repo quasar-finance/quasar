@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
-	balancerpool "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
 	poolincentivestypes "github.com/abag/quasarnode/osmosis/v9/pool-incentives/types"
 	"github.com/abag/quasarnode/testutil"
@@ -32,9 +31,9 @@ func (suite *KeeperTestSuite) SetStablePrices(prices sdk.DecCoins) {
 	}
 }
 
-func (suite *KeeperTestSuite) SetOsmosisPools(pools []balancerpool.Pool) {
+func (suite *KeeperTestSuite) SetOsmosisPools(pools []types.OsmosisPool) {
 	for _, p := range pools {
-		suite.Keepers.QoracleKeeper.SetOsmosisPool(suite.Ctx, types.OsmosisPool{PoolInfo: p})
+		suite.Keepers.QoracleKeeper.SetOsmosisPool(suite.Ctx, p)
 	}
 }
 
