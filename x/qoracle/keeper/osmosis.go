@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
@@ -446,6 +447,30 @@ func (k Keeper) GetOsmosisPool(ctx sdk.Context, id uint64) (types.OsmosisPool, b
 	var pool types.OsmosisPool
 	k.cdc.MustUnmarshal(bz, &pool)
 	return pool, true
+}
+
+// GetOsmosisPoolsByDenom returns a list of all pools with the desired denom as asset ordered by APY in descending order.
+func (k Keeper) GetOsmosisPoolsByDenom(ctx sdk.Context, denom string) []types.OsmosisPool {
+	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
+
+	iter := store.Iterator(nil, nil)
+	defer iter.Close()
+	var pools types.OsmosisPoolsOrderedByAPY
+	for ; iter.Valid(); iter.Next() {
+		var pool types.OsmosisPool
+		k.cdc.MustUnmarshal(iter.Value(), &pool)
+
+		// Filter out pools with the desired denom as asset
+		for _, asset := range pool.PoolInfo.PoolAssets {
+			if asset.Token.Denom == denom {
+				pools = append(pools, pool)
+			}
+		}
+	}
+
+	// Order by APY in descending order
+	sort.Stable(sort.Reverse(pools))
+	return pools
 }
 
 func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {

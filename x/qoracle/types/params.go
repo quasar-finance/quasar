@@ -56,6 +56,11 @@ var (
 			OracleDenom: "ATOM",
 			Multiplier:  sdk.NewDecWithPrec(1, 6),
 		},
+		{
+			Denom:       "uosmo",
+			OracleDenom: "OSMO",
+			Multiplier:  sdk.NewDecWithPrec(1, 6),
+		},
 	}
 	DefaultOracleAccounts string                = "oracle_accounts"
 	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}

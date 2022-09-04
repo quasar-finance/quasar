@@ -7,6 +7,7 @@ import (
 	balancerpool "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
 	poolincentivestypes "github.com/abag/quasarnode/osmosis/v9/pool-incentives/types"
+	"github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -16,6 +17,75 @@ var (
 		sdk.NewInt64DecCoin("uosmo", 15),
 	)
 
+	TestOsmosisPool1 = types.OsmosisPool{
+		PoolInfo: balancerpool.Pool{
+			Id: 1,
+			PoolParams: balancerpool.PoolParams{
+				SwapFee: sdk.ZeroDec(),
+				ExitFee: sdk.ZeroDec(),
+			},
+			TotalShares: sdk.NewInt64Coin("share", 0),
+			PoolAssets: []balancerpool.PoolAsset{
+				{
+					Token: sdk.NewInt64Coin("uosmo", 200),
+				},
+				{
+					Token: sdk.NewInt64Coin("uatom", 100),
+				},
+			},
+			TotalWeight: sdk.ZeroInt(),
+		},
+		Metrics: types.OsmosisPoolMetrics{
+			APY: sdk.MustNewDecFromStr("122.879"),
+			TVL: sdk.MustNewDecFromStr("23456"),
+		},
+	}
+	TestOsmosisPool2 = types.OsmosisPool{
+		PoolInfo: balancerpool.Pool{
+			Id: 2,
+			PoolParams: balancerpool.PoolParams{
+				SwapFee: sdk.ZeroDec(),
+				ExitFee: sdk.ZeroDec(),
+			},
+			TotalShares: sdk.NewInt64Coin("share", 0),
+			PoolAssets: []balancerpool.PoolAsset{
+				{
+					Token: sdk.NewInt64Coin("ukava", 50),
+				},
+				{
+					Token: sdk.NewInt64Coin("ubnb", 300),
+				},
+			},
+			TotalWeight: sdk.ZeroInt(),
+		},
+		Metrics: types.OsmosisPoolMetrics{
+			APY: sdk.MustNewDecFromStr("299.2"),
+			TVL: sdk.MustNewDecFromStr("1568"),
+		},
+	}
+	TestOsmosisPool3 = types.OsmosisPool{
+		PoolInfo: balancerpool.Pool{
+			Id: 3,
+			PoolParams: balancerpool.PoolParams{
+				SwapFee: sdk.ZeroDec(),
+				ExitFee: sdk.ZeroDec(),
+			},
+			TotalShares: sdk.NewInt64Coin("share", 0),
+			PoolAssets: []balancerpool.PoolAsset{
+				{
+					Token: sdk.NewInt64Coin("uatom", 110),
+				},
+				{
+					Token: sdk.NewInt64Coin("uband", 1000),
+				},
+			},
+			TotalWeight: sdk.ZeroInt(),
+		},
+		Metrics: types.OsmosisPoolMetrics{
+			APY: sdk.MustNewDecFromStr("105.69"),
+			TVL: sdk.MustNewDecFromStr("11000"),
+		},
+	}
 	TestOsmosisEpochs = []epochtypes.EpochInfo{
 		{
 			Identifier: "epoch-1",
@@ -191,6 +261,54 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 				suite.Require().Error(err)
 				suite.Require().Equal(sdk.ZeroDec(), apy)
 			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
+	var denom string
+
+	testCases := []struct {
+		msg      string
+		malleate func()
+		expPools []types.OsmosisPool
+	}{
+		{
+			"success",
+			func() {
+				denom = "uatom"
+			},
+			[]types.OsmosisPool{
+				TestOsmosisPool1,
+				TestOsmosisPool3,
+			},
+		},
+		{
+			"empty result",
+			func() {
+				denom = "ufake"
+			},
+			nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		suite.Run(tc.msg, func() {
+			suite.SetupTest() // reset
+
+			suite.SetOsmosisPools([]types.OsmosisPool{
+				TestOsmosisPool3,
+				TestOsmosisPool2,
+				TestOsmosisPool1,
+			})
+
+			tc.malleate() // malleate mutates test data
+
+			pools := suite.Keepers.QoracleKeeper.GetOsmosisPoolsByDenom(suite.Ctx, denom)
+
+			suite.Require().Equal(tc.expPools, pools)
 		})
 	}
 }
