@@ -16,21 +16,6 @@ var (
 		sdk.NewInt64DecCoin("uosmo", 15),
 	)
 
-	TestOsmosisPools = []balancerpool.Pool{
-		{
-			Id: 1,
-			PoolAssets: []balancerpool.PoolAsset{
-				{
-					Token:  sdk.NewInt64Coin("uatom", 200),
-					Weight: sdk.NewInt(2),
-				},
-				{
-					Token:  sdk.NewInt64Coin("uosmo", 100),
-					Weight: sdk.NewInt(1),
-				},
-			},
-		},
-	}
 	TestOsmosisEpochs = []epochtypes.EpochInfo{
 		{
 			Identifier: "epoch-1",
@@ -73,7 +58,7 @@ var (
 )
 
 func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
-	var poolId uint64
+	var pool balancerpool.Pool
 
 	testCases := []struct {
 		msg      string
@@ -84,39 +69,37 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 		{
 			"success",
 			func() {
-				suite.SetOsmosisPools(TestOsmosisPools)
-
-				poolId = 1
+				pool = balancerpool.Pool{
+					Id: 1,
+					PoolAssets: []balancerpool.PoolAsset{
+						{
+							Token:  sdk.NewInt64Coin("uatom", 200),
+							Weight: sdk.NewInt(2),
+						},
+						{
+							Token:  sdk.NewInt64Coin("uosmo", 100),
+							Weight: sdk.NewInt(1),
+						},
+					},
+				}
 			},
 			true,
 			sdk.NewDec(11500),
 		},
 		{
-			"pool not found",
-			func() {
-				poolId = 1
-			},
-			false,
-			sdk.ZeroDec(),
-		},
-		{
 			"stable price not found",
 			func() {
-				suite.SetOsmosisPools([]balancerpool.Pool{
-					{
-						Id: 1,
-						PoolAssets: []balancerpool.PoolAsset{
-							{
-								Token: sdk.NewInt64Coin("uatom", 100),
-							},
-							{
-								Token: sdk.NewInt64Coin("ufake", 1000),
-							},
+				pool = balancerpool.Pool{
+					Id: 1,
+					PoolAssets: []balancerpool.PoolAsset{
+						{
+							Token: sdk.NewInt64Coin("uatom", 100),
+						},
+						{
+							Token: sdk.NewInt64Coin("ufake", 1000),
 						},
 					},
-				})
-
-				poolId = 1
+				}
 			},
 			false,
 			sdk.ZeroDec(),
@@ -133,7 +116,7 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 
 			tc.malleate() // malleate mutates test data
 
-			tvl, err := suite.Keepers.QoracleKeeper.CalculatePoolTVLByPoolId(suite.Ctx, poolId)
+			tvl, err := suite.Keepers.QoracleKeeper.CalculatePoolTVL(suite.Ctx, pool)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -147,7 +130,10 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 }
 
 func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
-	var poolId uint64
+	var (
+		pool balancerpool.Pool
+		tvl  sdk.Dec
+	)
 
 	testCases := []struct {
 		msg      string
@@ -158,43 +144,24 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 		{
 			"success",
 			func() {
-				suite.SetOsmosisPools(TestOsmosisPools)
-
-				poolId = 1
-			},
-			true,
-			sdk.MustNewDecFromStr("1899.130434782608695700"),
-		},
-		{
-			"pool not found",
-			func() {
-				poolId = 1
-			},
-			false,
-			sdk.ZeroDec(),
-		},
-		{
-			"stable price not found",
-			func() {
-				pools := []balancerpool.Pool{
-					{
-						Id: 1,
-						PoolAssets: []balancerpool.PoolAsset{
-							{
-								Token: sdk.NewInt64Coin("uatom", 100),
-							},
-							{
-								Token: sdk.NewInt64Coin("ufake", 1000),
-							},
+				pool = balancerpool.Pool{
+					Id: 1,
+					PoolAssets: []balancerpool.PoolAsset{
+						{
+							Token:  sdk.NewInt64Coin("uatom", 200),
+							Weight: sdk.NewInt(2),
+						},
+						{
+							Token:  sdk.NewInt64Coin("uosmo", 100),
+							Weight: sdk.NewInt(1),
 						},
 					},
 				}
-				suite.SetOsmosisPools(pools)
 
-				poolId = 1
+				tvl = sdk.NewDec(11500)
 			},
-			false,
-			sdk.ZeroDec(),
+			true,
+			sdk.MustNewDecFromStr("1899.130434782608695700"),
 		},
 	}
 
@@ -215,7 +182,7 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 
 			tc.malleate() // malleate mutates test data
 
-			apy, err := suite.Keepers.QoracleKeeper.CalculatePoolAPYByPoolId(suite.Ctx, poolId)
+			apy, err := suite.Keepers.QoracleKeeper.CalculatePoolAPY(suite.Ctx, pool, tvl)
 
 			if tc.expPass {
 				suite.Require().NoError(err)

@@ -8,6 +8,7 @@ import (
 	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
 	poolincentivestypes "github.com/abag/quasarnode/osmosis/v9/pool-incentives/types"
 	"github.com/abag/quasarnode/testutil"
+	"github.com/abag/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,7 +34,7 @@ func (suite *KeeperTestSuite) SetStablePrices(prices sdk.DecCoins) {
 
 func (suite *KeeperTestSuite) SetOsmosisPools(pools []balancerpool.Pool) {
 	for _, p := range pools {
-		suite.Keepers.QoracleKeeper.SetOsmosisPool(suite.Ctx, p)
+		suite.Keepers.QoracleKeeper.SetOsmosisPool(suite.Ctx, types.OsmosisPool{PoolInfo: p})
 	}
 }
 
