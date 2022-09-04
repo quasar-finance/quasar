@@ -371,9 +371,9 @@ func (k Keeper) SetOsmosisEpochsInfo(ctx sdk.Context, epochs []epochtypes.EpochI
 // GetOsmosisEpochsInfo returns the latest received epochs info from osmosis
 func (k Keeper) GetOsmosisEpochsInfo(ctx sdk.Context) []epochtypes.EpochInfo {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisEpochsInfoPrefix)
+
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
-
 	var epochs []epochtypes.EpochInfo
 	for ; iter.Valid(); iter.Next() {
 		var epoch epochtypes.EpochInfo
@@ -398,28 +398,52 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 		return sdkerrors.Wrapf(err, "could not unmarshal pool")
 	}
 
-	k.SetOsmosisPool(ctx, pool)
+	metrics, err := k.calculateOsmosisPoolMetrics(ctx, pool)
+	if err != nil {
+		return sdkerrors.Wrapf(err, "could not calculate pool metrics of pool %d", pool.Id)
+	}
+
+	k.SetOsmosisPool(ctx, types.OsmosisPool{
+		PoolInfo: pool,
+		Metrics:  metrics,
+	})
 	return nil
 }
 
-func (k Keeper) SetOsmosisPool(ctx sdk.Context, pool balancerpool.Pool) {
+func (k Keeper) calculateOsmosisPoolMetrics(ctx sdk.Context, pool balancerpool.Pool) (types.OsmosisPoolMetrics, error) {
+	tvl, err := k.CalculatePoolTVL(ctx, pool)
+	if err != nil {
+		return types.OsmosisPoolMetrics{}, sdkerrors.Wrap(err, "could not calculate tvl")
+	}
+	apy, err := k.CalculatePoolAPY(ctx, pool, tvl)
+	if err != nil {
+		return types.OsmosisPoolMetrics{}, sdkerrors.Wrap(err, "could not calculate apy")
+	}
+
+	return types.OsmosisPoolMetrics{
+		APY: apy,
+		TVL: tvl,
+	}, nil
+}
+
+func (k Keeper) SetOsmosisPool(ctx sdk.Context, pool types.OsmosisPool) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 
-	key := sdk.Uint64ToBigEndian(pool.Id)
+	key := sdk.Uint64ToBigEndian(pool.PoolInfo.Id)
 	store.Set(key, k.cdc.MustMarshal(&pool))
 }
 
 // GetOsmosisPool returns the pool with the given id if exists
-func (k Keeper) GetOsmosisPool(ctx sdk.Context, id uint64) (balancerpool.Pool, bool) {
+func (k Keeper) GetOsmosisPool(ctx sdk.Context, id uint64) (types.OsmosisPool, bool) {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 
 	key := sdk.Uint64ToBigEndian(id)
 	bz := store.Get(key)
 	if bz == nil {
-		return balancerpool.Pool{}, false
+		return types.OsmosisPool{}, false
 	}
 
-	var pool balancerpool.Pool
+	var pool types.OsmosisPool
 	k.cdc.MustUnmarshal(bz, &pool)
 	return pool, true
 }
@@ -549,15 +573,6 @@ func (k Keeper) handleOsmosisICQTimeout(ctx sdk.Context, packet channeltypes.Pac
 	return nil
 }
 
-func (k Keeper) CalculatePoolTVLByPoolId(ctx sdk.Context, poolId uint64) (sdk.Dec, error) {
-	pool, found := k.GetOsmosisPool(ctx, poolId)
-	if !found {
-		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrPoolNotFound, fmt.Sprintf("pool id: %d", poolId))
-	}
-
-	return k.CalculatePoolTVL(ctx, pool)
-}
-
 func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (sdk.Dec, error) {
 	tvl := sdk.ZeroDec()
 	for _, asset := range pool.PoolAssets {
@@ -571,21 +586,7 @@ func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (sdk.D
 	return tvl, nil
 }
 
-func (k Keeper) CalculatePoolAPYByPoolId(ctx sdk.Context, poolId uint64) (sdk.Dec, error) {
-	pool, found := k.GetOsmosisPool(ctx, poolId)
-	if !found {
-		return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrPoolNotFound, fmt.Sprintf("pool id: %d", poolId))
-	}
-
-	tvl, err := k.CalculatePoolTVL(ctx, pool)
-	if err != nil {
-		return sdk.ZeroDec(), err
-	}
-
-	return k.calculatePoolAPY(ctx, pool, tvl)
-}
-
-func (k Keeper) calculatePoolAPY(ctx sdk.Context, pool balancerpool.Pool, poolTVL sdk.Dec) (sdk.Dec, error) {
+func (k Keeper) CalculatePoolAPY(ctx sdk.Context, pool balancerpool.Pool, poolTVL sdk.Dec) (sdk.Dec, error) {
 	distrInfo := k.GetOsmosisDistrInfo(ctx)
 	epochProvisions := k.GetOsmosisMintEpochProvisions(ctx)
 

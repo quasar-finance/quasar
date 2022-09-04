@@ -203,7 +203,7 @@ message QueryOsmosisPoolsRequest {
 }
 
 message QueryOsmosisPoolsResponse {
-	repeated osmosis.gamm.v1beta1.Pool pools = 1 [(gogoproto.nullable) = false];
+	repeated OsmosisPool pools = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

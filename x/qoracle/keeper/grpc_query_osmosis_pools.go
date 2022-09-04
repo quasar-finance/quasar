@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	balancerpool "github.com/abag/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	"github.com/abag/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,10 +18,10 @@ func (k Keeper) OsmosisPools(goCtx context.Context, req *types.QueryOsmosisPools
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var pools []balancerpool.Pool
+	var pools []types.OsmosisPool
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 	pageRes, err := query.Paginate(store, req.Pagination, func(key []byte, value []byte) error {
-		var pool balancerpool.Pool
+		var pool types.OsmosisPool
 		if err := k.cdc.Unmarshal(value, &pool); err != nil {
 			return err
 		}
