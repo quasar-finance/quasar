@@ -11,8 +11,8 @@ ignite chain serve --reset-once -v
 3. Configure a channel for bandchain testnet
 ```
 ignite relayer configure -a \
---target-rpc "http://rpc-laozi-testnet4.bandchain.org:80" \
---target-faucet "https://laozi-testnet4.bandchain.org/faucet" \
+--target-rpc "https://rpc.laozi-testnet5.bandchain.org" \
+--target-faucet "https://laozi-testnet5.bandchain.org/faucet" \
 --target-port "oracle" \
 --target-gasprice "0uband" \
 --target-gaslimit 5000000 \
