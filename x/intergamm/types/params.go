@@ -126,10 +126,10 @@ func (info ZoneCompleteInfo) validateCompleteZoneInfo() error {
 			return err
 		}
 		if zoneId != zoneRouteInfo.CounterpartyZoneId {
-			return errors.New("error: counterparty zone ID of ZoneRouteInfo does not match the map key")
+			return errors.New("error: counterparty zone ID of next_zone_route_map member does not match the map key")
 		}
-		if QuasarZoneId != zoneRouteInfo.ZoneId {
-			return errors.New("error: zone ID of ZoneRouteInfo does not match 'quasar'")
+		if info.ZoneRouteInfo.CounterpartyZoneId != zoneRouteInfo.ZoneId {
+			return errors.New("error: zone ID of next_zone_route_map member does not match counterparty zone ID of its parent")
 		}
 	}
 	return nil

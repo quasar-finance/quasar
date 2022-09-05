@@ -62,8 +62,8 @@ message ZoneCompleteInfo {
    [(gogoproto.moretags) = "yaml:\"zone_route_info\",json:\"zone_route_info\"",
     (gogoproto.nullable) = false];
 
-  string interchain_address = 2
-   [(gogoproto.moretags) = "yaml:\"interchain_address\",json:\"interchain_address\""];
+//  string interchain_address = 2
+//   [(gogoproto.moretags) = "yaml:\"interchain_address\",json:\"interchain_address\""];
 
   map<string, ZoneRouteInfo> next_zone_route_map = 3
    [(gogoproto.moretags) = "yaml:\"next_zone_route_map\",json:\"next_zone_route_map\"",

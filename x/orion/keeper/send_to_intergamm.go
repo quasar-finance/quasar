@@ -152,7 +152,7 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	println("destAccStr: ", destAccStr)
 
 	seqNo, err := k.intergammKeeper.SendToken(ctx,
-		k.getDestinationLocalZoneId(ctx),
+		intergammtypes.OsmosisZoneId,
 		k.getOwnerAcc(),
 		destAccStr,
 		coin)

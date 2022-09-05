@@ -32142,8 +32142,9 @@ paths:
                               title: >-
                                 IBC counterparty channel ID from destination to
                                 source
-                        interchain_address:
-                          type: string
+                            counterparty_version:
+                              type: string
+                              title: IBC counterparty version
                         next_zone_route_map:
                           type: object
                           additionalProperties:
@@ -32191,6 +32192,9 @@ paths:
                                 title: >-
                                   IBC counterparty channel ID from destination
                                   to source
+                              counterparty_version:
+                                type: string
+                                title: IBC counterparty version
                       title: IntermediateReceiver
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
@@ -58268,8 +58272,9 @@ definitions:
                 counterparty_channel_id:
                   type: string
                   title: IBC counterparty channel ID from destination to source
-            interchain_address:
-              type: string
+                counterparty_version:
+                  type: string
+                  title: IBC counterparty version
             next_zone_route_map:
               type: object
               additionalProperties:
@@ -58311,6 +58316,9 @@ definitions:
                   counterparty_channel_id:
                     type: string
                     title: IBC counterparty channel ID from destination to source
+                  counterparty_version:
+                    type: string
+                    title: IBC counterparty version
           title: IntermediateReceiver
     description: Params defines the parameters for the module.
   quasarlabs.quasarnode.intergamm.PortInfo:
@@ -58400,8 +58408,9 @@ definitions:
                     counterparty_channel_id:
                       type: string
                       title: IBC counterparty channel ID from destination to source
-                interchain_address:
-                  type: string
+                    counterparty_version:
+                      type: string
+                      title: IBC counterparty version
                 next_zone_route_map:
                   type: object
                   additionalProperties:
@@ -58445,6 +58454,9 @@ definitions:
                       counterparty_channel_id:
                         type: string
                         title: IBC counterparty channel ID from destination to source
+                      counterparty_version:
+                        type: string
+                        title: IBC counterparty version
               title: IntermediateReceiver
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   quasarlabs.quasarnode.intergamm.ZoneCompleteInfo:
@@ -58487,8 +58499,9 @@ definitions:
           counterparty_channel_id:
             type: string
             title: IBC counterparty channel ID from destination to source
-      interchain_address:
-        type: string
+          counterparty_version:
+            type: string
+            title: IBC counterparty version
       next_zone_route_map:
         type: object
         additionalProperties:
@@ -58528,6 +58541,9 @@ definitions:
             counterparty_channel_id:
               type: string
               title: IBC counterparty channel ID from destination to source
+            counterparty_version:
+              type: string
+              title: IBC counterparty version
     title: IntermediateReceiver
   quasarlabs.quasarnode.intergamm.ZoneRouteInfo:
     type: object
@@ -58564,6 +58580,9 @@ definitions:
       counterparty_channel_id:
         type: string
         title: IBC counterparty channel ID from destination to source
+      counterparty_version:
+        type: string
+        title: IBC counterparty version
   quasarlabs.quasarnode.orion.AccountInfo:
     type: object
     properties:

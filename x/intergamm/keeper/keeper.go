@@ -263,7 +263,7 @@ func (k Keeper) GetNativeZoneInfo(ctx sdk.Context, denom string) (types.ZoneComp
 // SendToken will send token to the destination chain
 // Vault should send validated values of address, and coin
 func (k Keeper) SendToken(ctx sdk.Context,
-	// destinationChain string, // TODO - To be used for cross validation
+// destinationChain string, // TODO - To be used for cross validation
 	destZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
@@ -283,12 +283,8 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		logger.Error("SendToken", fmt.Sprintf("error: native zone ID of denom '%s' not specified", coin.Denom))
 		return 0, errors.New("error: unsupported denom")
 	}
-	nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
-	if !found {
-		logger.Error("SendToken", fmt.Sprintf("error: zone info for zone ID '%s' not specified", nativeZoneId))
-		return 0, errors.New("error: zone info not found")
-	}
 	if nativeZoneId == types.QuasarZoneId || nativeZoneId == destZoneId {
+		println("direct")
 		// direct transfer
 		destZoneInfo, found := k.GetZoneInfo(ctx, destZoneId)
 		if !found {
@@ -305,6 +301,13 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			transferTimeoutHeight, connectionTimeout)
 	} else {
 		// forwarding transfer
+		println("forwarding")
+		nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
+		if !found {
+			err := fmt.Errorf("error: zone info for zone ID '%s' not specified", nativeZoneId)
+			logger.Error("SendToken", err)
+			return 0, err
+		}
 		// destFromNativeInfo contains IBC info needed to reach destination zone from the native zone.
 		destFromNativeInfo, found := nativeZoneInfo.NextZoneRouteMap[destZoneId]
 		if !found {
@@ -313,6 +316,15 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			logger.Error("SendToken", msg)
 			return 0, errors.New(msg)
 		}
+
+		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, sender.String())
+		if !found {
+			msg := fmt.Sprintf("error: interchain account on native zone (zone ID '%s') for forwarding transfer of %s",
+				nativeZoneId, coin.String())
+			logger.Error("SendToken", msg)
+			return 0, errors.New(msg)
+		}
+
 		return k.ForwardTransferIbcTokens(ctx,
 			nativeZoneInfo.ZoneRouteInfo.PortId,
 			nativeZoneInfo.ZoneRouteInfo.ChannelId,
@@ -320,7 +332,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			sender,
 			destFromNativeInfo.PortId,
 			destFromNativeInfo.ChannelId,
-			nativeZoneInfo.InterchainAddress,
+			nativeIcaAddr,
 			receiver,
 			transferTimeoutHeight, connectionTimeout)
 	}

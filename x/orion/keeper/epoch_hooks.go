@@ -38,6 +38,8 @@ func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
 }
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
+	println("-------------------------------")
+	println("AfterEpochEnd")
 	// TODO get epoch identifier from params
 	// TODO review error handling of this function
 	logger := k.Logger(ctx)
@@ -52,6 +54,9 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	if !k.Enabled(ctx) {
 		return
 	}
+
+	println("epochIdentifier:  ", epochIdentifier)
+	println("OwnerAddr:  ", k.getOwnerAccStr())
 
 	// IBC Token Transfer.
 	// For testing purposes - Param should be used then.
@@ -69,6 +74,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			if !found {
 				logger.Info("AfterEpochEnd", "GetConnectionId failed.")
 			} else {
+				println("ConnId:  ", c)
+				println("OwnerAddr:  ", k.getOwnerAccStr())
 				err := k.intergammKeeper.RegisterInterchainAccount(ctx, c, k.getOwnerAccStr())
 				if err != nil {
 					// panic(err)
@@ -89,27 +96,26 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		logger.Info("AfterEpochEnd", "minutes identifier", epochIdentifier,
 			"number", epochNumber,
-			"blockheight", ctx.BlockHeight(),
+			"BlockHeight", ctx.BlockHeight(),
 			"ei", ei)
 
 		totalEpochLockupCoinsDeposit := k.qbankKeeper.GetEpochLockupCoins(ctx, uint64(epochNumber))
 		totalEpochLockupCoinsTransferred := k.GetTransferredEpochLockupCoins(ctx, uint64(epochNumber))
 
-		denomDeposits := make(map[string]sdk.Coin)    // total deposited so far
-		denomTransferred := make(map[string]sdk.Coin) // total transferred so far
+		println("totalEpochLockupCoinsDeposit: ", totalEpochLockupCoinsDeposit.String())
+		println("totalEpochLockupCoinsTransferred: ", totalEpochLockupCoinsTransferred.String())
+
+		denomDeposits := sdk.NewCoins()    // total deposited so far
+		denomTransferred := sdk.NewCoins() // total transferred so far
 
 		lockupDeposits := make(map[qbanktypes.LockupTypes]sdk.Coins)    // total a deposited for this lockup period
 		lockupTransferred := make(map[qbanktypes.LockupTypes]sdk.Coins) // total a transferred for this lockup period
 
-		diffDenoms := make(map[string]sdk.Coin)
+		//diffDenoms := sdk.NewCoins()
 		diffLockups := make(map[qbanktypes.LockupTypes]sdk.Coins)
 
 		for _, elcd := range totalEpochLockupCoinsDeposit.Infos {
-			if val, ok := denomDeposits[elcd.Coin.Denom]; ok {
-				denomDeposits[elcd.Coin.Denom] = val.Add(elcd.Coin)
-			} else {
-				denomDeposits[elcd.Coin.Denom] = elcd.Coin
-			}
+			denomDeposits = denomDeposits.Add(elcd.GetCoin())
 
 			if val, ok := lockupDeposits[elcd.LockupPeriod]; ok {
 				lockupDeposits[elcd.LockupPeriod] = val.Add(elcd.Coin)
@@ -117,13 +123,13 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				lockupDeposits[elcd.LockupPeriod] = sdk.NewCoins(elcd.Coin)
 			}
 		}
+		println("denomDeposits: ", denomDeposits.String())
+		for l, c := range lockupDeposits {
+			println(l.String(), ":", c)
+		}
 
 		for _, elct := range totalEpochLockupCoinsTransferred.Infos {
-			if val, ok := denomTransferred[elct.Coin.Denom]; ok {
-				denomTransferred[elct.Coin.Denom] = val.Add(elct.Coin)
-			} else {
-				denomTransferred[elct.Coin.Denom] = elct.Coin
-			}
+			denomTransferred = denomTransferred.Add(elct.GetCoin())
 
 			if val, ok := lockupTransferred[elct.LockupPeriod]; ok {
 				lockupTransferred[elct.LockupPeriod] = val.Add(elct.Coin)
@@ -131,14 +137,12 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				lockupTransferred[elct.LockupPeriod] = sdk.NewCoins(elct.Coin)
 			}
 		}
-
-		for d, c := range denomDeposits {
-			if v, ok := denomTransferred[d]; ok {
-				diffDenoms[d] = c.Sub(v)
-			} else {
-				diffDenoms[d] = c
-			}
+		println("denomTransferred: ", denomTransferred.String())
+		for l, c := range lockupTransferred {
+			println(l.String(), ":", c)
 		}
+
+		// diffDenoms = denomDeposits.Sub(denomTransferred)
 
 		for l, c := range lockupDeposits {
 			if v, ok := lockupTransferred[l]; ok {
@@ -146,6 +150,10 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			} else {
 				diffLockups[l] = c
 			}
+		}
+		println("lockupDeposits")
+		for l, c := range diffLockups {
+			println(l.String(), ":", c)
 		}
 
 		// Now you need to process both the maps denomDeposits and lockupDeposits
@@ -208,7 +216,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	if epochIdentifier == k.LpEpochId(ctx) {
 		logger.Info("epoch ended", "identifier", epochIdentifier,
 			"number", epochNumber,
-			"blockheight", ctx.BlockHeight())
+			"BlockHeight", ctx.BlockHeight())
 
 		if k.Enabled(ctx) && icaFound {
 			// Logic :
@@ -224,8 +232,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			////////////////////////////////////////////
 			for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
 
-				logger.Debug("Orion AfterEpochEnd", "epochday", epochNumber,
-					"blockheight", ctx.BlockHeight(),
+				logger.Debug("Orion AfterEpochEnd", "epochNumber", epochNumber,
+					"BlockHeight", ctx.BlockHeight(),
 					"lockup", lockupStr)
 				if lockupStr != "Invalid" {
 					lockupPeriod := qbanktypes.LockupTypes(lockupEnm)

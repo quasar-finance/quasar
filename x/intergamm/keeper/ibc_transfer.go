@@ -56,7 +56,10 @@ func (k Keeper) ForwardTransferIbcTokens(
 	timeoutHeight ibcclienttypes.Height,
 	timeoutTimestamp uint64,
 ) (uint64, error) {
+	println("---------------")
+	println("ForwardTransferIbcTokens")
 	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
+	println("fwdReceiver: ", fwdReceiver)
 
 	return k.TransferIbcTokens(
 		ctx,
@@ -142,12 +145,20 @@ func (k Keeper) TransmitICATransferGeneral(
 			return 0, errors.New(msg)
 		}
 
+		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
+		if !found {
+			msg := fmt.Sprintf("error: interchain account on native zone (zone ID '%s') for forwarding transfer of %s",
+				nativeZoneId, token.String())
+			logger.Error("SendToken", msg)
+			return 0, errors.New(msg)
+		}
+
 		// The fund should first go to the native zone
 		icaToNativePortId := icaFromNativeInfo.CounterpartyPortId
 		icaToNativeChannelId := icaFromNativeInfo.CounterpartyChannelId
 		nativeToQsrPortId := nativeZoneInfo.ZoneRouteInfo.CounterpartyPortId
 		nativeToQsrChannelId := nativeZoneInfo.ZoneRouteInfo.CounterpartyChannelId
-		receiverAddr := buildPacketForwardReceiver(nativeZoneInfo.InterchainAddress, nativeToQsrPortId, nativeToQsrChannelId, finalReceiver)
+		receiverAddr := buildPacketForwardReceiver(nativeIcaAddr, nativeToQsrPortId, nativeToQsrChannelId, finalReceiver)
 
 		msgs = append(msgs, &ibctransfertypes.MsgTransfer{
 			SourcePort:       icaToNativePortId,

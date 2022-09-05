@@ -96,36 +96,58 @@ cat $HOME_QSR/config/genesis_original.json |
     }' |
   jq '.app_state.intergamm = {
       "params": {
-        "dest_to_intr_zone_map": {
-          "osmosis-01": "cosmos"
+        "denom_to_native_zone_id_map": {
+          "uqsr": "quasar",
+          "ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9": "cosmos"
         },
-      "intr_rcvrs": [
-          {
-            "next_zone_route_map": {
-              "osmosis-01": {
-                "chain_id": "osmosis",
-                "connection_id": "connection-1",
-                "local_zone_id": "osmosis-1",
-                "transfer_channel_id": "channel-1"
-              },
-              "osmosis-02": {
-                "chain_id": "osmosis2",
-                "connection_id": "connection-2",
-                "local_zone_id": "osmosis-2",
-                "transfer_channel_id": "channel-2"
-              }
+        "complete_zone_info_map": {
+          "osmosis": {
+            "zone_route_info": {
+              "zone_id": "quasar",
+              "chain_id": "quasar",
+              "counterparty_zone_id": "osmosis",
+              "counterparty_chain_id": "osmosis",
+              "connection_id": "connection-1",
+              "port_id": "transfer",
+              "channel_id": "channel-3",
+              "counterparty_connection_id": "connection-0",
+              "counterparty_port_id": "transfer",
+              "counterparty_channel_id": "channel-1",
+              "counterparty_version": ""
             },
-            "rcvr_address": "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
-            "zone_info": {
-              "chain_id": "cosmos",
-              "connection_id": "connection-2"
+            "next_zone_route_map": {}
+          },
+          "cosmos": {
+            "zone_route_info": {
+              "zone_id": "quasar",
+              "chain_id": "quasar",
+              "counterparty_zone_id": "cosmos",
+              "counterparty_chain_id": "cosmos",
+              "connection_id": "connection-0",
+              "port_id": "transfer",
+              "channel_id": "channel-1",
+              "counterparty_connection_id": "connection-0",
+              "counterparty_port_id": "transfer",
+              "counterparty_channel_id": "channel-0",
+              "counterparty_version": ""
+            },
+            "next_zone_route_map": {
+              "osmosis": {
+                "zone_id": "cosmos",
+                "chain_id": "cosmos",
+                "counterparty_zone_id": "osmosis",
+                "counterparty_chain_id": "osmosis",
+                "connection_id": "connection-1",
+                "port_id": "transfer",
+                "channel_id": "channel-1",
+                "counterparty_connection_id": "connection-1",
+                "counterparty_port_id": "transfer",
+                "counterparty_channel_id": "channel-0",
+                "counterparty_version": ""
+              }
             }
           }
-        ],
-        "osmo_token_transfer_channels": {
-          "osmosis": "channel-1",
-          "osmosis-test": "channel-1"
-        }
+        },
       }
     }' |
   jq '.app_state.qbank = {
