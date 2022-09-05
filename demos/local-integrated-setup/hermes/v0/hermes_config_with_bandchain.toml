@@ -79,7 +79,15 @@ port = 3000
 [telemetry]
 
 # Whether or not to enable the telemetry service. Default: false
+<<<<<<< HEAD
 enabled = true
+=======
+<<<<<<< HEAD:demos/ica-packet-forward/hermes_config.toml
+enabled = false
+=======
+enabled = true
+>>>>>>> setup demo updated:demos/local-integrated-setup/hermes/v0/hermes_config_with_bandchain.toml
+>>>>>>> setup demo updated
 
 # Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
 # gathered by the telemetry service. Default: 127.0.0.1
@@ -90,6 +98,11 @@ host = '127.0.0.1'
 port = 3001
 
 [[chains]]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:demos/ica-packet-forward/hermes_config.toml
+=======
+>>>>>>> setup demo updated
 id = 'osmosis'
 rpc_addr = 'http://127.0.0.1:26679'
 grpc_addr = 'http://127.0.0.1:9096'
@@ -134,13 +147,25 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
+<<<<<<< HEAD
+=======
+>>>>>>> setup demo updated:demos/local-integrated-setup/hermes/v0/hermes_config_with_bandchain.toml
+>>>>>>> setup demo updated
 id = 'quasar'
 rpc_addr = 'http://127.0.0.1:26659'
 grpc_addr = 'http://127.0.0.1:9095'
 websocket_addr = 'ws://127.0.0.1:26659/websocket'
 rpc_timeout = '10s'
 account_prefix = 'quasar'
+<<<<<<< HEAD
 key_name = 'quasarkey'
+=======
+<<<<<<< HEAD:demos/ica-packet-forward/hermes_config.toml
+key_name = 'testkey1'
+=======
+key_name = 'quasarkey'
+>>>>>>> setup demo updated:demos/local-integrated-setup/hermes/v0/hermes_config_with_bandchain.toml
+>>>>>>> setup demo updated
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
@@ -156,10 +181,23 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:demos/ica-packet-forward/hermes_config.toml
+id = 'cosmos'
+rpc_addr = 'http://127.0.0.1:26559'
+grpc_addr = 'http://127.0.0.1:9096'
+websocket_addr = 'ws://127.0.0.1:26559/websocket'
+=======
+>>>>>>> setup demo updated
 id = 'band-laozi-testnet5'
 rpc_addr = 'https://rpc.laozi-testnet5.bandchain.org:443'
 grpc_addr = 'https://laozi-testnet5.bandchain.org'
 websocket_addr = 'ws://rpc.laozi-testnet5.bandchain.org:443/websocket'
+<<<<<<< HEAD
+=======
+>>>>>>> setup demo updated:demos/local-integrated-setup/hermes/v0/hermes_config_with_bandchain.toml
+>>>>>>> setup demo updated
 rpc_timeout = '10s'
 account_prefix = 'band'
 key_name = 'bandkey'
@@ -176,3 +214,27 @@ max_block_time = '10s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
+<<<<<<< HEAD
+=======
+
+[[chains]]
+id = 'osmosis'
+rpc_addr = 'http://127.0.0.1:26669'
+grpc_addr = 'http://127.0.0.1:9097'
+websocket_addr = 'ws://127.0.0.1:26669/websocket'
+rpc_timeout = '10s'
+account_prefix = 'quasar'
+key_name = 'testkey3'
+store_prefix = 'ibc'
+default_gas = 100000
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'stake' }
+gas_adjustment = 0.1
+max_msg_num = 30
+max_tx_size = 2097152
+clock_drift = '5s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'cosmos' }
+>>>>>>> setup demo updated

@@ -79,7 +79,7 @@ port = 3000
 [telemetry]
 
 # Whether or not to enable the telemetry service. Default: false
-enabled = false
+enabled = true
 
 # Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
 # gathered by the telemetry service. Default: 127.0.0.1
@@ -90,17 +90,18 @@ host = '127.0.0.1'
 port = 3001
 
 [[chains]]
-id = 'quasar'
-rpc_addr = 'http://127.0.0.1:26659'
-grpc_addr = 'http://127.0.0.1:9095'
-websocket_addr = 'ws://127.0.0.1:26659/websocket'
+id = 'osmosis'
+rpc_addr = 'http://127.0.0.1:26679'
+grpc_addr = 'http://127.0.0.1:9096'
+websocket_addr = 'ws://127.0.0.1:26679/websocket'
 rpc_timeout = '10s'
-account_prefix = 'quasar'
-key_name = 'testkey1'
+account_prefix = 'osmo'
+key_name = 'osmosiskey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'uosmo' }
+#gas_multiplier = 1.1
 gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
@@ -112,16 +113,17 @@ address_type = { derivation = 'cosmos' }
 
 [[chains]]
 id = 'cosmos'
-rpc_addr = 'http://127.0.0.1:26559'
-grpc_addr = 'http://127.0.0.1:9096'
-websocket_addr = 'ws://127.0.0.1:26559/websocket'
+rpc_addr = 'http://127.0.0.1:26669'
+grpc_addr = 'http://127.0.0.1:9097'
+websocket_addr = 'ws://127.0.0.1:26669/websocket'
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
-key_name = 'testkey2'
+key_name = 'cosmoskey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'uatom' }
+#gas_multiplier = 1.1
 gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
@@ -132,17 +134,40 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
-id = 'osmosis'
-rpc_addr = 'http://127.0.0.1:26669'
-grpc_addr = 'http://127.0.0.1:9097'
-websocket_addr = 'ws://127.0.0.1:26669/websocket'
+id = 'quasar'
+rpc_addr = 'http://127.0.0.1:26659'
+grpc_addr = 'http://127.0.0.1:9095'
+websocket_addr = 'ws://127.0.0.1:26659/websocket'
 rpc_timeout = '10s'
 account_prefix = 'quasar'
-key_name = 'testkey3'
+key_name = 'quasarkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'uqsr' }
+#gas_multiplier = 1.1
+gas_adjustment = 0.1
+max_msg_num = 30
+max_tx_size = 2097152
+clock_drift = '5s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'cosmos' }
+
+[[chains]]
+id = 'band-laozi-testnet5'
+rpc_addr = 'https://rpc.laozi-testnet5.bandchain.org:443'
+grpc_addr = 'https://laozi-testnet5.bandchain.org'
+websocket_addr = 'ws://rpc.laozi-testnet5.bandchain.org:443/websocket'
+rpc_timeout = '10s'
+account_prefix = 'band'
+key_name = 'bandkey'
+store_prefix = 'ibc'
+default_gas = 100000
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'uband' }
+#gas_multiplier = 1.1
 gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
