@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	proto "github.com/gogo/protobuf/proto"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/spf13/cobra"
 	pflag "github.com/spf13/pflag"
 )

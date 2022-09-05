@@ -7,12 +7,12 @@ import (
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
 
-	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 )
 
 func (kf KeeperFactory) OrionKeeper(

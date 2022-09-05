@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 // Hooks wrapper struct for incentives keeper.

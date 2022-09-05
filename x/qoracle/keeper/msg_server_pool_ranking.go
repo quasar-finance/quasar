@@ -3,9 +3,9 @@ package keeper
 import (
 	"context"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func (k msgServer) CreatePoolRanking(goCtx context.Context, msg *types.MsgCreatePoolRanking) (*types.MsgCreatePoolRankingResponse, error) {

@@ -3,15 +3,15 @@ package qoracle
 import (
 	"math/rand"
 
-	"github.com/quasarlabs/quasarnode/testutil/sample"
-	qoraclesimulation "github.com/quasarlabs/quasarnode/x/qoracle/simulation"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
+	qoraclesimulation "github.com/quasarlabs/quasarnode/x/qoracle/simulation"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // avoid unused import issue

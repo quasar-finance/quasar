@@ -1,9 +1,9 @@
 package orion
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/orion/keeper"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // TODO | AUDIT | Genesis state is not yet defined.

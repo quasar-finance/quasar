@@ -3,9 +3,9 @@ package keeper
 import (
 	"time"
 
-	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // OnJoinPoolAck handles the join pool acknowledgement

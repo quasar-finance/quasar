@@ -12,14 +12,14 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/client/cli"
-	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/quasarlabs/quasarnode/x/intergamm/client/cli"
+	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var (

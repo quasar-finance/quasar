@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	"github.com/spf13/cobra"
 )
 
