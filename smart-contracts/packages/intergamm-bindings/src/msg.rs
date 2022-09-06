@@ -24,18 +24,6 @@ pub enum IntergammMsg {
         creator: String,
         scenario: String,
     },
-    RegisterInterchainAccount {
-        creator: String,
-        connection_id: String,
-    },
-    JoinSwapExternAmountIn {
-        creator: String,
-        connection_id: String,
-        timeout_timestamp: u64,
-        pool_id: u64,
-        share_out_min_amount: i64,
-        token_in: Coin,
-    },
 }
 
 impl IntergammMsg {}
