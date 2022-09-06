@@ -133,6 +133,9 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
 	res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "send token")
+	}
 
 	// register the packet as sent with the callback plugin
 	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
