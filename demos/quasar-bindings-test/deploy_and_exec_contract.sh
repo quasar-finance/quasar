@@ -26,7 +26,7 @@ MSG='{"run_q_oracle_test":{}}'
 
 cd ../../smart-contracts
 
-# docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
 
 echo "Running store code"
 RES=$(quasarnoded tx wasm store artifacts/qoracle_bindings_test.wasm --from alice -y --output json -b block $TXFLAG) 
@@ -40,6 +40,6 @@ ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE
 echo "Got address of deployed contract = $ADDR"
 
 echo "Executing message... ('$MSG')"
-quasarnoded tx wasm execute $ADDR "$MSG" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasarnoded tx wasm execute $ADDR "$MSG" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
 
 cd -

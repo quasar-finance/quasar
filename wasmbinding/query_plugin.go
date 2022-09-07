@@ -22,13 +22,22 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		case contractQuery.OsmosisPoolPosition != nil:
 			poolId := contractQuery.OsmosisPoolPosition.PoolId
 
-			pool, err := qp.GetPoolPosition(ctx, poolId)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "quasar pool position query")
-			}
+			// pool, err := qp.GetPoolPosition(ctx, poolId)
+			// if err != nil {
+			// 	return nil, sdkerrors.Wrap(err, "quasar pool position query")
+			// }
 
 			res := qoracletypes.QueryGetPoolPositionResponse{
-				PoolPosition: *pool,
+				PoolPosition: qoracletypes.PoolPosition{
+					PoolId: poolId,
+					Metrics: &qoracletypes.PoolMetrics{
+						HighestAPY: "0.1",
+						TVL:        "yor mum",
+						GaugeAPYs:  []*qoracletypes.GaugeAPY{{GaugeId: 1337, APY: "0.1", Duration: "1"}},
+					},
+					LastUpdatedTime: 100000,
+					Creator:         "quasar1234",
+				},
 			}
 
 			bz, err := json.Marshal(res)

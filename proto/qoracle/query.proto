@@ -81,7 +81,6 @@ message QueryParamsResponse {
 
 message QueryGetPoolPositionRequest {
 	  string poolId = 1;
-
 }
 
 message QueryGetPoolPositionResponse {
