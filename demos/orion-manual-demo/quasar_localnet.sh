@@ -1,8 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 ## This script helps to create a basic version of the quasar chain genesis file for development purposes.
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
-
 
 # Configure variables
 BINARY=quasarnoded
@@ -132,4 +131,4 @@ cat $HOME_QSR/config/genesis_original.json |
     }' >  $HOME_QSR/config/genesis.json
 
 # Start
-$BINARY start
+$BINARY start --home $HOME_QSR >> ./logs/quasar_localnet.log 2>&1

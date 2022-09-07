@@ -28,6 +28,10 @@ Now store the contract on the quasar chain:
 ```
 EXTRA="--node tcp://localhost:26659 --chain-id quasar"
 ```
+
+```
+quasarnoded tx wasm store ./artifacts/intergamm_bindings_test.wasm --from alice --gas auto --node http://0.0.0.0:26659 --chain-id quasar
+```
 ```
 quasarnoded tx wasm instantiate 1 "{}" --label test-2 --no-admin --from alice $EXTRA --gas auto
 ```
@@ -46,12 +50,14 @@ Now we start by registering an interchain account:
 ```
 quasarnoded tx wasm execute $ADDR '{"register_interchain_account": {"connection_id": "connection-1"}}' $EXTRA --from alice --gas auto
 ```
+--------
+RESTART HERMES HERE (LAURENS' SETUP)
+--------
 
 If necessary, create a pool on osmosis
 ```
 osmosisd tx gamm create-pool --pool-file ./demos/orion-manual-demo/sample_pool.json --node tcp://localhost:26679 --from alice --keyring-backend test --chain-id osmosis --gas auto
 ```
-
 We also need to send tokens to the register interchain account, easiest way to do this is to send tokens from alice or bob on osmosis to the interchain address, to find the address that funds need to be transferred to:
 ```
 quasarnoded query intergamm interchain-account-from-address connection-1 $ADDR --node tcp://localhost:26679 --chain-id osmosis

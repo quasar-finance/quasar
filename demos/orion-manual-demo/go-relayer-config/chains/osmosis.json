@@ -1,0 +1,17 @@
+{
+  "type": "cosmos",
+  "value": {
+    "key": "osmokey",
+    "chain-id": "osmosis",
+    "rpc-addr": "http://127.0.0.1:26679",
+    "account-prefix": "osmo",
+    "bech32_prefix": "osmo",
+    "keyring-backend": "test",
+    "gas-adjustment": 1.2,
+    "gas-prices": "0.01uosmo",
+    "debug": true,
+    "timeout": "20s",
+    "output-format": "json",
+    "sign-mode": "direct"
+  }
+}

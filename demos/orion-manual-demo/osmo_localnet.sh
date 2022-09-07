@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Configure variables
 BINARY=osmosisd
@@ -104,4 +104,4 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start
-$BINARY start --home $HOME_OSMOSIS
+$BINARY start --home $HOME_OSMOSIS >> ./logs/osmo_localnet.log 2>&1
