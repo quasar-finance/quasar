@@ -2,11 +2,12 @@
 
 cp ./hermes_config.toml ~/.hermes/config.toml
 
-hermes keys restore --mnemonic "old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license" quasar
+hermes keys add --chain quasar --mnemonic-file keys/qsr.key
 
-hermes keys restore --mnemonic "ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle" cosmos
+hermes keys add --chain cosmos --mnemonic-file keys/gaia.key
 
-hermes keys restore --mnemonic "rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself" osmosis
+hermes keys add --chain osmosis --mnemonic-file keys/osmo.key
+
 
 # BANDCHAIN="band-laozi-testnet5"
 # hermes keys restore --mnemonic "machine danger crush duck always will liberty popular security shoulder bargain day repair focus fog evoke market gossip love curious question kingdom armor crazy"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet5
@@ -19,23 +20,23 @@ osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp:
 
 
 # Create connection
-hermes create connection quasar cosmos
+hermes create connection --a-chain quasar --b-chain cosmos
 
-hermes create connection quasar osmosis
+hermes create connection --a-chain quasar --b-chain osmosis
 
-hermes create connection osmosis cosmos
+hermes create connection --a-chain osmosis --b-chain cosmos
 
 # hermes create connection quasar $BANDCHAIN
 
 # Create channel
 
-hermes create channel --port-a transfer --port-b transfer cosmos connection-0
+hermes create channel --a-chain cosmos --a-connection connection-0 --a-port transfer --b-port transfer
 
-hermes create channel --port-a transfer --port-b transfer cosmos connection-1
+hermes create channel --a-chain cosmos --a-connection connection-1 --a-port transfer --b-port transfer
 
-hermes create channel --port-a transfer --port-b transfer quasar connection-1
+hermes create channel --a-chain quasar --a-connection connection-1 --a-port transfer --b-port transfer
 
 # hermes create channel --port-a qoracle --port-b oracle quasar connection-2 -v bandchain-1
 
 # start
-hermes start
+hermes start 
