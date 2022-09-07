@@ -47,8 +47,8 @@ echo "starting relaying"
 # rly start quasar_cosmos --debug-addr "localhost:7597" >> ./logs/quasar_cosmos_rly.log 2>&1  & 
 # RLY_PID_1=$!
 
-# rly start quasar_osmosis --debug-addr "localhost:7598" >> ./logs/quasar_osmosis.log 2>&1 &
-# RLY_PID_2=$!
+rly start quasar_osmosis --debug-addr "localhost:7598" >> ./logs/quasar_osmosis.log 2>&1 &
+RLY_PID_2=$!
 
 # rly start cosmos_osmosis --debug-addr "localhost:7599" >> ./logs/cosmos_osmosis.log 2>&1  &
 # RLY_PID_3=$!
