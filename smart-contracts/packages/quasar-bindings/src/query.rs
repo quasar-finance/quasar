@@ -20,5 +20,5 @@ impl CustomQuery for QuasarQuery {}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OsmosisPoolPositionResponse {
-    pub pool_position: PoolPosition,
+    pub poolPosition: PoolPosition,
 }

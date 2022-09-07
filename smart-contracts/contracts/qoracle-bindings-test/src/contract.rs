@@ -41,8 +41,8 @@ pub fn run_qoracle_test(deps: DepsMut<QuasarQuery>) -> Result<Response, Contract
     let pool_response: OsmosisPoolPositionResponse = querier.osmosis_pool("2".to_string())?;
 
     Ok(Response::new()
-        .add_attribute("pool_creator", pool_response.pool_position.creator)
-        .add_attribute("pool_metrics", pool_response.pool_position.metrics.tVL))
+        .add_attribute("pool_creator", pool_response.poolPosition.creator)
+        .add_attribute("pool_metrics", pool_response.poolPosition.metrics.tVL))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
