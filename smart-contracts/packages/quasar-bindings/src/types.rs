@@ -28,22 +28,22 @@ pub struct PageRequest {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct GaugeAPY {
-    gaugeId: u64,
-    duration: String,
-    aPY: String,
+   pub gaugeId: u64,
+   pub duration: String,
+   pub aPY: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct PoolMetrics {
-    highestAPY: String,
-    tVL: String,
-    gaugeAPYs: Vec<GaugeAPY>,
+    pub highestAPY: String,
+    pub tVL: String,
+    pub gaugeAPYs: Vec<GaugeAPY>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct PoolPosition {
-    poolId: String,
-    metrics: PoolMetrics,
-    lastUpdatedTime: u64,
-    creator: String,
+   pub poolId: String,
+   pub metrics: PoolMetrics,
+   pub lastUpdatedTime: u64,
+   pub creator: String,
 }

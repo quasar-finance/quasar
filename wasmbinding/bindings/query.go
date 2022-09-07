@@ -8,7 +8,7 @@ import (
 // See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
 type QuasarQuery struct {
 	// Query our position within a specific pool
-	OsmosisPoolPosition *qoracletypes.QueryGetPoolPositionRequest `json:"query_get_pool_position_request,omitempty"`
+	OsmosisPoolPosition *OsmosisPoolPosition `json:"osmosis_pool_position,omitempty"`
 
 	// Query a list of pool positions
 	OsmosisAllPoolPositions *qoracletypes.QueryAllPoolPositionRequest `json:"query_pool_positions_request,omitempty"`
@@ -24,4 +24,8 @@ type QuasarQuery struct {
 
 	// Query oracle prices
 	OraclePrices *qoracletypes.QueryOraclePricesRequest `json:"query_oracle_prices_request,omitempty"`
+}
+
+type OsmosisPoolPosition struct {
+	PoolId string `json:"pool_id"`
 }

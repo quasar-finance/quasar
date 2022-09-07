@@ -1,9 +1,10 @@
+use std::env;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cosmwasm_std::{
-    IbcBasicResponse, IbcChannelCloseMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse,
+    to_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
+    Response, StdResult, Uint64, Timestamp, SubMsg
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
@@ -31,27 +32,123 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     match msg {
-        ExecuteMsg::SendToken {} => execute_send_token(),
-        ExecuteMsg::JoinPool {} => {
-            todo!()
+        ExecuteMsg::SendToken {
+            destination_local_zone_id,
+        } => execute_send_token(destination_local_zone_id, env),
+        ExecuteMsg::SendTokenIbc {
+            channel_id,
+            to_address,
+            amount,
+        } => execute_send_token_ibc(channel_id, to_address, amount, env),
+        ExecuteMsg::RegisterInterchainAccount { connection_id } => {
+            execute_register_ica(connection_id, env)
         }
-        ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, _env),
+        ExecuteMsg::JoinSinglePool {
+            connection_id,
+            pool_id,
+            share_out_min_amount,
+            token_in,
+        } => execute_join_pool(connection_id, pool_id, share_out_min_amount, token_in, env),
+        ExecuteMsg::TestIcaScenario {} => execute_test_scenario(env),
+        ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, env),
+        ExecuteMsg::Deposit {} => execute_deposit(info),
     }
 }
 
-pub fn execute_send_token() -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(Response::new().add_message(IntergammMsg::SendToken {
-        creator: "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec".to_string(),
-        destination_local_zone_id: "test1".to_string(),
-        sender: "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec".to_string(),
-        receiver: "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec".to_string(),
-        coin: Coin::new(1, "denom"),
+// TODO as of 23 august, there is a bug in the go implementation of send token
+pub fn execute_send_token(
+    destination_local_zone_id: String,
+    env: Env,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(Response::new()
+        .add_message(IntergammMsg::SendToken {
+            creator: env.contract.address.to_string(),
+            destination_local_zone_id: destination_local_zone_id,
+            sender: env.contract.address.to_string(),
+            receiver: env.contract.address.to_string(),
+            coin: Coin::new(100, "uqsr"),
+        })
+        .add_attribute("sending tokens", "100 uqsr to osmosis"))
+}
+
+pub fn execute_send_token_ibc(
+    channel_id: String,
+    to_address: String,
+    amount: Coin,
+    env: Env
+) -> Result<Response<IntergammMsg>, ContractError> {
+    // timeout in 600 seconds after current block timestamp
+    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(600));
+    Ok(Response::new().add_message(IbcMsg::Transfer {
+        channel_id,
+        to_address,
+        amount,
+        timeout,
     }))
+}
+
+pub fn execute_test_scenario(env: Env) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(Response::new().add_message(IntergammMsg::TestScenario {
+        creator: env.contract.address.to_string(),
+        scenario: "registerIca".to_string(),
+    }))
+}
+
+// join pool requires us to have a pool on the remote chain
+pub fn execute_join_pool(
+    connection_id: String,
+    pool_id: Uint64,
+    share_out_min_amount: i64,
+    token_in: Coin,
+    env: Env,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(
+        Response::new().add_message(IntergammMsg::JoinSwapExternAmountIn {
+            creator: env.contract.address.to_string(),
+            connection_id,
+            // timeout in 10 minutes
+            timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
+            pool_id: pool_id.u64(),
+            share_out_min_amount,
+            token_in,
+        }),
+    )
+}
+
+pub fn execute_register_ica(
+    connection_id: String,
+    env: Env,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    Ok(Response::new().add_submessage(SubMsg::<IntergammMsg>::new(
+        IntergammMsg::RegisterInterchainAccount {
+            creator: env.contract.address.to_string(),
+            connection_id,
+        },
+    )))
+    // Ok(
+    //     Response::new().add_message(IntergammMsg::RegisterInterchainAccount {
+    //         creator: env.contract.address.to_string(),
+    //         connection_id: connection_id,
+    //     }),
+    // )
+}
+
+pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
+    let funds = cw_utils::one_coin(&info)?;
+    if funds.denom != "uqsr" && funds.denom != "stake" {
+        return Err(ContractError::PaymentError(
+            cw_utils::PaymentError::MissingDenom("uqsr/stake".into()),
+        ));
+    }
+    // we dont do anything else with the funds since we solely use them for testing and don't need to deposit
+    Ok(Response::new()
+        .add_attribute("deposit_amount", funds.amount)
+        .add_attribute("deposit_denom", funds.denom))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -66,56 +163,13 @@ pub fn query_ack_triggered(deps: Deps) -> StdResult<AckTriggeredResponse> {
     Ok(AckTriggeredResponse { state })
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-/// check if success or failure and update balance, or return funds
-pub fn ibc_packet_ack(
+pub fn do_ibc_packet_ack(
     deps: DepsMut,
     _env: Env,
-    msg: IbcPacketAckMsg,
-) -> Result<IbcBasicResponse, ContractError> {
+) -> Result<Response<IntergammMsg>, ContractError> {
     let triggered = ACKTRIGGERED.load(deps.storage)?;
     ACKTRIGGERED.save(deps.storage, &(triggered + 1))?;
-    Ok(IbcBasicResponse::new().add_attribute("ack", "succes"))
-}
-
-pub fn do_ibc_packet_ack(deps: DepsMut, _env: Env) -> Result<Response<IntergammMsg>, ContractError> {
-    let triggered = ACKTRIGGERED.load(deps.storage)?;
-    ACKTRIGGERED.save(deps.storage, &(triggered + 1))?;
-    Ok(Response::new().add_attribute("ack tiggered", (triggered+1).to_string()))
-}
-
-#[entry_point]
-/// enforces ordering and versioning constraints
-pub fn ibc_channel_open(deps: DepsMut, env: Env, msg: IbcChannelOpenMsg) -> StdResult<()> {
-    todo!()
-}
-
-#[entry_point]
-pub fn ibc_channel_close(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcChannelCloseMsg,
-) -> StdResult<IbcBasicResponse> {
-    todo!()
-}
-
-#[entry_point]
-pub fn ibc_packet_receive(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcPacketReceiveMsg,
-) -> StdResult<IbcReceiveResponse> {
-    todo!()
-}
-
-#[entry_point]
-/// never should be called as we do not send packets
-pub fn ibc_packet_timeout(
-    deps: DepsMut,
-    env: Env,
-    msg: IbcPacketTimeoutMsg,
-) -> StdResult<IbcBasicResponse> {
-    todo!()
+    Ok(Response::new().add_attribute("ack tiggered", (triggered + 1).to_string()))
 }
 
 #[cfg(test)]

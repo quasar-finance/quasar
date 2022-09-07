@@ -1,6 +1,6 @@
 pub mod msg;
 pub mod query;
-mod querier;
+pub mod querier;
 mod types;
 
 #[cfg(test)]

@@ -1,100 +1,92 @@
-# CosmWasm Starter Pack
+# Intergamm test contract
+The goal of this contract is to transmit a message from the smart contract to a local osmosis chain
 
-This is a template to build smart contracts in Rust to run inside a
-[Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
-To understand the framework better, please read the overview in the
-[cosmwasm repo](https://github.com/CosmWasm/cosmwasm/blob/master/README.md),
-and dig into the [cosmwasm docs](https://www.cosmwasm.com).
-This assumes you understand the theory and just want to get coding.
-
-## Creating a new repo from template
-
-Assuming you have a recent version of rust and cargo (v1.58.1+) installed
-(via [rustup](https://rustup.rs/)),
-then the following should get you a new repo to start a contract:
-
-Install [cargo-generate](https://github.com/ashleygwilliams/cargo-generate) and cargo-run-script.
-Unless you did that before, run this line now:
-
-```sh
-cargo install cargo-generate --features vendored-openssl
-cargo install cargo-run-script
+## setting up
+build the contract:
+```
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.6
 ```
 
-Now, use it to create your new contract.
-Go to the folder in which you want to place it and run:
-
-
-**Latest: 1.0.0**
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME
-````
-
-For cloning minimal code repo:
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --branch 1.0-minimal --name PROJECT_NAME
+Run the chains using the commands from the orion manual demo in a separate window:
+```
+./cosmos_localnet.sh 
 ```
 
-**Older Version**
-
-Pass version as branch flag:
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --branch <version> --name PROJECT_NAME
-````
-
-Example:
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --branch 0.16 --name PROJECT_NAME
+```
+./osmo_localnet.sh
 ```
 
-You will now have a new folder called `PROJECT_NAME` (I hope you changed that to something else)
-containing a simple working contract and build system that you can customize.
-
-## Create a Repo
-
-After generating, you have a initialized local git repo, but no commits, and no remote.
-Go to a server (eg. github) and create a new upstream repo (called `YOUR-GIT-URL` below).
-Then run the following:
-
-```sh
-# this is needed to create a valid Cargo.lock file (see below)
-cargo check
-git branch -M main
-git add .
-git commit -m 'Initial Commit'
-git remote add origin YOUR-GIT-URL
-git push -u origin main
+```
+./quasar_localnet.sh
 ```
 
-## CI Support
+```
+./run_hermes
+```
 
-We have template configurations for both [GitHub Actions](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/.github/workflows/Basic.yml)
-and [Circle CI](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+Now store the contract on the quasar chain:
+```
+EXTRA="--node tcp://localhost:26659 --chain-id quasar"
+```
+```
+quasarnoded tx wasm instantiate 1 "{}" --label test-2 --no-admin --from alice $EXTRA --gas auto
+```
 
-One note is that the CI runs all `cargo` commands
-with `--locked` to ensure it uses the exact same versions as you have locally. This also means
-you must have an up-to-date `Cargo.lock` file, which is not auto-generated.
-The first time you set up the project (or after adding any dep), you should ensure the
-`Cargo.lock` file is updated, so the CI will test properly. This can be done simply by
-running `cargo check` or `cargo unit-test`.
+Due to a bug, instantiate does not return the actual address of the contract, but only the hash, so we query for the address
+```
+quasarnoded query tx TX_HASH_FROM_INSTANTIATE
+```
+set the address for easy use
 
-## Using your project
+```
+ADDR="quasar1suhgf5svhu4usrurvxzlgn54ksxmn8gljarjtxqnapv8kjnp4nrsmslfn4"
+```
 
-Once you have your custom repo, you should check out [Developing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Developing.md) to explain
-more on how to run tests and develop code. Or go through the
-[online tutorial](https://docs.cosmwasm.com/) to get a better feel
-of how to develop.
+Now we start by registering an interchain account:
+```
+quasarnoded tx wasm execute $ADDR '{"register_interchain_account": {"connection_id": "connection-1"}}' $EXTRA --from alice --gas auto
+```
 
-[Publishing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Publishing.md) contains useful information on how to publish your contract
-to the world, once you are ready to deploy it on a running blockchain. And
-[Importing](quasar-finance/quasar/smart-contracts/contracts/intergamm-bindings-testt/Importing.md) contains information about pulling in other contracts or crates
-that have been published.
+If necessary, create a pool on osmosis
+```
+osmosisd tx gamm create-pool --pool-file ./demos/orion-manual-demo/sample_pool.json --node tcp://localhost:26679 --from alice --keyring-backend test --chain-id osmosis --gas auto
+```
 
-Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful referenced, but please set some
-proper description in the README.
+We also need to send tokens to the register interchain account, easiest way to do this is to send tokens from alice or bob on osmosis to the interchain address, to find the address that funds need to be transferred to:
+```
+quasarnoded query intergamm interchain-account-from-address connection-1 $ADDR --node tcp://localhost:26679 --chain-id osmosis
+```
+Funds using IBC transfer should also be sent to this address
+## Regular IBC transfer
+query the channel and port on the quasar-osmosis connection
+```
+hermes query connection channels quasar connection-1
+```
+look for the channel with the transfer port, in this case
+```
+PortChannelId {
+        channel_id: ChannelId(
+            "channel-2",
+        ),
+        port_id: PortId(
+            "transfer",
+        ),
+    },
+```
+deposit some funds to send
+```
+quasarnoded tx wasm execute $ADDR '{"deposit": {}}' --node http://0.0.0.0:26659 --amount 100000uqsr --chain-id quasar --from alice --gas auto
+```
+We now send the ibc transfer from the smart contract, we'll use alice's address on osmosis as the to_address
+```
+quuasarnoded tx wasm execute $ADDR '{"send_token_ibc": {"channel_id":"channel-2","to_address":"osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq", "amount": {"denom": "uqsr", "amount": 1000}}}' --node http://0.0.0.0:26659 --chain-id quasar --from alice --gas auto
+```
+check the balance on osmosis
+```
+osmosisd query bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679 --chain-id osmosis
+```
+There should be a new ibc denom with our funds, eg:
+```
+- amount: "1000"
+  denom: ibc/C18695C91D20F11FEE3919D7822B34651277CA84550EF33379E823AD9702B257
+```
