@@ -13,8 +13,8 @@ import (
 
 var (
 	TestStablePrices = sdk.NewDecCoins(
-		sdk.NewInt64DecCoin("uatom", 50),
-		sdk.NewInt64DecCoin("uosmo", 15),
+		sdk.NewInt64DecCoin("ATOM", 50000000),
+		sdk.NewInt64DecCoin("OSMO", 15000000),
 	)
 
 	TestOsmosisPool1 = types.OsmosisPool{
