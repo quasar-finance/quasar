@@ -70,4 +70,4 @@ cat $HOME_COSMOSHUB/config/genesis_original.json |
   >  $HOME_COSMOSHUB/config/genesis.json
 
 # Start
-$BINARY start > quasar.log 2>&1 &
+$BINARY start > cosmos.log 2>&1 &

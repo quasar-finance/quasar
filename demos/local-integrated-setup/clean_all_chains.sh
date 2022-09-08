@@ -1,4 +1,7 @@
 #!/bin/sh
+set -o xtrace
+
+echo "Cleaning all the node states" 
 
 rm -rf ~/.quasarnode 
 rm -rf ~/.osmosis

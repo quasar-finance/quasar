@@ -1,0 +1,11 @@
+#!/bin/sh
+
+mkdir -p logs/
+
+hermes query connections --chain osmosis  > tmp.log
+
+osmo_connection_0=`grep "connection-0" tmp.log` 
+osmo_connection_1=`grep "connection-1" tmp.log`
+
+echo $osmo_connection_0
+echo $osmo_connection_1
