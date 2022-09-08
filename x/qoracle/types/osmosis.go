@@ -1,8 +1,6 @@
 package types
 
 import (
-	"sort"
-
 	epochtypes "github.com/abag/quasarnode/osmosis/v9/epochs/types"
 	gammtypes "github.com/abag/quasarnode/osmosis/v9/gamm/types"
 	minttypes "github.com/abag/quasarnode/osmosis/v9/mint/types"
@@ -111,7 +109,7 @@ func (state OsmosisRequestState) Pending() bool {
 
 type OsmosisPoolsOrderedByAPY []OsmosisPool
 
-var ـ sort.Interface = (OsmosisPoolsOrderedByAPY)(nil)
+// var ـ sort.Interface = (OsmosisPoolsOrderedByAPY)(nil)
 
 func (ops OsmosisPoolsOrderedByAPY) Len() int {
 	return len(ops)
