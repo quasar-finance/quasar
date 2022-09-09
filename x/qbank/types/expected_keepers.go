@@ -1,9 +1,9 @@
 package types
 
 import (
-	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

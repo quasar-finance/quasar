@@ -3,10 +3,10 @@ package qbank
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
-	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // Cosmos handler to dispatch the qbank transaction messages

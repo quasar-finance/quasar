@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // GetTotalOrions calculates the total amount of orions for the input sdk.Coins

@@ -3,10 +3,10 @@ package keeper
 import (
 	"fmt"
 
-	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
-	"github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
+	"github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // SetUserDepositAmt set the current value of user's total deposit amount.

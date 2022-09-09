@@ -3,13 +3,13 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 

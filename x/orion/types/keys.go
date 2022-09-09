@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"strconv"
 
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 const (

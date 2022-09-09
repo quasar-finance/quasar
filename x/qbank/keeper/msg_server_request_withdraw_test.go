@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/testutil"
 	eventtest "github.com/quasarlabs/quasarnode/testutil/event"
 	"github.com/quasarlabs/quasarnode/testutil/sample"
 	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/quasarlabs/quasarnode/x/qbank/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 

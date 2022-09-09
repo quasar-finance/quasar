@@ -3,10 +3,10 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/orion/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 func (k Keeper) GetAvailableInterchainFund(ctx sdk.Context) sdk.Coins {

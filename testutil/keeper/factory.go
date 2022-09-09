@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/app"
-	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/quasarlabs/quasarnode/app"
+	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 	tmdb "github.com/tendermint/tm-db"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var scenarios map[string]func(string, sdk.Context, *Keeper) *types.MsgTestScenarioResponse
