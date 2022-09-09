@@ -171,12 +171,66 @@ func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner s
 	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner)
 }
 
+func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error {
+	nativeZoneInfo, found := k.CompleteZoneInfoMap(ctx)[zoneId]
+	if !found {
+		return errors.New(fmt.Sprintf("error: zone info for zone ID '%s' not specified", zoneId))
+	}
+	return k.RegisterInterchainAccount(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
+}
+
+func (k Keeper) RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error {
+	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]
+	if !found {
+		return errors.New(fmt.Sprintf("error: native zone ID of denom '%s' not specified", denom))
+	}
+	return k.RegisterICAOnZoneId(ctx, nativeZoneId, owner)
+}
+
 func (k Keeper) IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
 		return "", false
 	}
 	return k.icaControllerKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
+}
+
+func (k Keeper) IsICACreatedOnZoneId(ctx sdk.Context, zoneId, owner string) (string, bool) {
+	if zoneId == types.QuasarZoneId {
+		return owner, true
+	}
+	zoneInfo, found := k.CompleteZoneInfoMap(ctx)[zoneId]
+	if !found {
+		return "", false
+	}
+	return k.IsICARegistered(ctx, zoneInfo.ZoneRouteInfo.ConnectionId, owner)
+}
+
+func (k Keeper) IsICACreatedOnDenomNativeZone(ctx sdk.Context, denom, owner string) (string, bool) {
+	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]
+	if !found {
+		return "", false
+	}
+	return k.IsICACreatedOnZoneId(ctx, nativeZoneId, owner)
+}
+
+// RegisterOrReturnICA returns the address of ICA if it exists, if not attempts to create it and then returns its address.
+// If unsuccessful returns an error.
+func (k Keeper) RegisterOrReturnICA(ctx sdk.Context, connectionId, owner string) (string, error) {
+	if addr, found := k.IsICARegistered(ctx, connectionId, owner); found {
+		return addr, nil
+	} else {
+		logger := k.Logger(ctx)
+		logger.Info("RegisterOrReturnICA", fmt.Sprintf("no ICA owned by %s found on IBC connection %s, attempting creation", owner, connectionId))
+		if err := k.RegisterInterchainAccount(ctx, connectionId, owner); err != nil {
+			return "", err
+		}
+		if addr, found := k.IsICARegistered(ctx, connectionId, owner); found {
+			return addr, nil
+		} else {
+			return "", errors.New("unexpected error: RegisterInterchainAccount returned no error, but ICA still can't be found")
+		}
+	}
 }
 
 // TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
@@ -263,7 +317,7 @@ func (k Keeper) GetNativeZoneInfo(ctx sdk.Context, denom string) (types.ZoneComp
 // SendToken will send token to the destination chain
 // Vault should send validated values of address, and coin
 func (k Keeper) SendToken(ctx sdk.Context,
-// destinationChain string, // TODO - To be used for cross validation
+	// destinationChain string, // TODO - To be used for cross validation
 	destZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
@@ -284,7 +338,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		return 0, errors.New("error: unsupported denom")
 	}
 	if nativeZoneId == types.QuasarZoneId || nativeZoneId == destZoneId {
-		println("direct")
+		logger.Info("SendToken", "direct transfer")
 		// direct transfer
 		destZoneInfo, found := k.GetZoneInfo(ctx, destZoneId)
 		if !found {
@@ -301,7 +355,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			transferTimeoutHeight, connectionTimeout)
 	} else {
 		// forwarding transfer
-		println("forwarding")
+		logger.Info("SendToken", "forwarding transfer")
 		nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
 		if !found {
 			err := fmt.Errorf("error: zone info for zone ID '%s' not specified", nativeZoneId)

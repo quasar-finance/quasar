@@ -13,7 +13,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyCompleteZoneInfoMap        = []byte("CompleteZoneInfoMap")
-	KeyDenomToNativeZoneIdMap     = []byte("DenomToNativeIdMap")
+	KeyDenomToNativeZoneIdMap     = []byte("DenomToNativeZoneIdMap")
 	DefaultDenomToNativeZoneIdMap = map[string]string{}
 	DefaultCompleteZoneInfoMap    = map[string]ZoneCompleteInfo{}
 )

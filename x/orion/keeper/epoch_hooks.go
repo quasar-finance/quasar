@@ -3,6 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
@@ -27,19 +28,15 @@ func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epoch
 	h.k.AfterEpochEnd(ctx, epochIdentifier, epochNumber)
 }
 
-func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
-	c, found := k.GetConnectionId(ctx)
-	//	c, found := k.GetConnectionId(ctx, "osmosis")
+func (k Keeper) IsOrionICACreatedOnOsmosis(ctx sdk.Context) (string, bool) {
+	return k.intergammKeeper.IsICACreatedOnZoneId(ctx, intergammtypes.OsmosisZoneId, k.getOwnerAccStr())
+}
 
-	if !found {
-		return "", false
-	}
-	return k.intergammKeeper.IsICARegistered(ctx, c, k.getOwnerAccStr())
+func (k Keeper) IsOrionICACreatedForDenom(ctx sdk.Context, denom string) (string, bool) {
+	return k.intergammKeeper.IsICACreatedOnDenomNativeZone(ctx, denom, k.getOwnerAccStr())
 }
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
-	println("-------------------------------")
-	println("AfterEpochEnd")
 	// TODO get epoch identifier from params
 	// TODO review error handling of this function
 	logger := k.Logger(ctx)
@@ -55,38 +52,35 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 		return
 	}
 
-	println("epochIdentifier:  ", epochIdentifier)
-	println("OwnerAddr:  ", k.getOwnerAccStr())
+	orionAddr := k.getOwnerAccStr()
 
 	// IBC Token Transfer.
 	// For testing purposes - Param should be used then.
 	// Send tokens to destination chain.
 	if epochIdentifier == "minute" { // TODO - config ibc transfer epoch identifier.
-
-		addr, icaFound = k.IsOrionICACreated(ctx)
-		if !icaFound {
-			// Print all connections ids to console
-			logger.Info("AfterEpochEnd", "GetAllConnections", k.intergammKeeper.GetAllConnections(ctx))
-
-			//			c, found := k.GetConnectionId(ctx, "osmosis")
-			c, found := k.GetConnectionId(ctx)
-
-			if !found {
-				logger.Info("AfterEpochEnd", "GetConnectionId failed.")
-			} else {
-				println("ConnId:  ", c)
-				println("OwnerAddr:  ", k.getOwnerAccStr())
-				err := k.intergammKeeper.RegisterInterchainAccount(ctx, c, k.getOwnerAccStr())
+		newICANeeded := false
+		if _, icaFound := k.IsOrionICACreatedOnOsmosis(ctx); !icaFound {
+			newICANeeded = true
+			if err := k.intergammKeeper.RegisterICAOnZoneId(ctx, intergammtypes.OsmosisZoneId, orionAddr); err != nil {
+				logger.Info("AfterEpochEnd", "RegisterICAOnZoneId failed.", err)
+			}
+		}
+		for denom := range k.intergammKeeper.DenomToNativeZoneIdMap(ctx) {
+			if _, icaFound = k.IsOrionICACreatedForDenom(ctx, denom); !icaFound {
+				newICANeeded = true
+				err := k.intergammKeeper.RegisterICAOnDenomNativeZone(ctx, denom, orionAddr)
 				if err != nil {
 					// panic(err)
-					logger.Info("AfterEpochEnd", "RegisterInterchainAccount failed.", err)
+					logger.Info("AfterEpochEnd", "RegisterICAOnDenomNativeZone failed.", err)
 				}
+			} else {
+				logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 			}
+		}
+		if newICANeeded {
 			// return so we don't end up with calling token transfer logics, as token transfer is to be done
 			// to orion ica account.
 			return
-		} else {
-			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 		}
 
 		logger.Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
@@ -101,9 +95,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		totalEpochLockupCoinsDeposit := k.qbankKeeper.GetEpochLockupCoins(ctx, uint64(epochNumber))
 		totalEpochLockupCoinsTransferred := k.GetTransferredEpochLockupCoins(ctx, uint64(epochNumber))
-
-		println("totalEpochLockupCoinsDeposit: ", totalEpochLockupCoinsDeposit.String())
-		println("totalEpochLockupCoinsTransferred: ", totalEpochLockupCoinsTransferred.String())
 
 		denomDeposits := sdk.NewCoins()    // total deposited so far
 		denomTransferred := sdk.NewCoins() // total transferred so far
@@ -123,10 +114,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				lockupDeposits[elcd.LockupPeriod] = sdk.NewCoins(elcd.Coin)
 			}
 		}
-		println("denomDeposits: ", denomDeposits.String())
-		for l, c := range lockupDeposits {
-			println(l.String(), ":", c)
-		}
 
 		for _, elct := range totalEpochLockupCoinsTransferred.Infos {
 			denomTransferred = denomTransferred.Add(elct.GetCoin())
@@ -137,10 +124,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				lockupTransferred[elct.LockupPeriod] = sdk.NewCoins(elct.Coin)
 			}
 		}
-		println("denomTransferred: ", denomTransferred.String())
-		for l, c := range lockupTransferred {
-			println(l.String(), ":", c)
-		}
 
 		// diffDenoms = denomDeposits.Sub(denomTransferred)
 
@@ -150,10 +133,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			} else {
 				diffLockups[l] = c
 			}
-		}
-		println("lockupDeposits")
-		for l, c := range diffLockups {
-			println(l.String(), ":", c)
 		}
 
 		// Now you need to process both the maps denomDeposits and lockupDeposits

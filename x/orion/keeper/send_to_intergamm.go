@@ -139,26 +139,31 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 // Can we actually query or determine if ibc token transfer call was successful. And if it failed; tokens
 // are returned.
 func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error) {
-	println("---------------------------")
-	println("IBCTokenTransfer")
 	logger := k.Logger(ctx)
 	logger.Info("IBCTokenTransfer",
 		"coin", coin,
 	)
-	destAccStr, found := k.IsOrionICACreated(ctx)
+	_, found := k.intergammKeeper.IsICACreatedOnDenomNativeZone(ctx, coin.Denom, k.getOwnerAccStr())
 	if !found {
-		return 0, fmt.Errorf("orion ica account for orion address %s not found", k.getOwnerAccStr())
+		err := fmt.Errorf("error: orion ICA for orion address %s not found on native zone for denom '%s'", k.getOwnerAccStr(), coin.Denom)
+		logger.Error("IBCTokenTransfer", err.Error())
+		return 0, err
 	}
-	println("destAccStr: ", destAccStr)
+	destAccStr, found := k.intergammKeeper.IsICACreatedOnZoneId(ctx, intergammtypes.OsmosisZoneId, k.getOwnerAccStr())
+	if !found {
+		err := fmt.Errorf("error: orion ICA for orion address %s not found on osmosis zone", k.getOwnerAccStr())
+		logger.Error("IBCTokenTransfer", err.Error())
+		return 0, err
+	}
 
 	seqNo, err := k.intergammKeeper.SendToken(ctx,
 		intergammtypes.OsmosisZoneId,
 		k.getOwnerAcc(),
 		destAccStr,
 		coin)
-	println("seqNo: ", seqNo)
+	logger.Debug("IBCTokenTransfer", "seqNo: ", seqNo)
 	if err != nil {
-		println("err: ", err.Error())
+		logger.Error("IBCTokenTransfer", err.Error())
 	}
 	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
 		Destination: k.getDestinationLocalZoneId(ctx),

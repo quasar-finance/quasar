@@ -56,10 +56,7 @@ func (k Keeper) ForwardTransferIbcTokens(
 	timeoutHeight ibcclienttypes.Height,
 	timeoutTimestamp uint64,
 ) (uint64, error) {
-	println("---------------")
-	println("ForwardTransferIbcTokens")
 	fwdReceiver := buildPacketForwardReceiver(intermediateReceiver, fwdTransferPort, fwdTransferChannel, receiver)
-	println("fwdReceiver: ", fwdReceiver)
 
 	return k.TransferIbcTokens(
 		ctx,
@@ -147,8 +144,8 @@ func (k Keeper) TransmitICATransferGeneral(
 
 		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
 		if !found {
-			msg := fmt.Sprintf("error: interchain account on native zone (zone ID '%s') for forwarding transfer of %s",
-				nativeZoneId, token.String())
+			msg := fmt.Sprintf("error: interchain account owned by %s on native zone (zone ID '%s') for forwarding transfer of %s not found",
+				owner, nativeZoneId, token.String())
 			logger.Error("SendToken", msg)
 			return 0, errors.New(msg)
 		}
