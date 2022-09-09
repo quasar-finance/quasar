@@ -21,11 +21,6 @@ pub enum Status {
     InProgress,
 }
 
-pub struct Ack {
-    pub status: Status,
-    pub msg: IntergammMsg,
-}
-
-pub const ACKS: Map<Uint64, Ack> = Map::new("acks");
+pub const ACKS: Map<u64, IntergammMsg> = Map::new("acks");
 
 pub const STATE: Item<State> = Item::new("state");
