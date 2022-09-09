@@ -3,15 +3,16 @@ use std::env;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Response, StdResult, Uint64, SubMsg,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Reply, Response,
+    StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
+use intergamm_bindings::helper::{create_intergamm_msg, handle_reply};
 use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::msg::{AckTriggeredResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{ACKTRIGGERED};
+use crate::state::{ACKS, ACKTRIGGERED};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test-2";
@@ -28,6 +29,11 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     ACKTRIGGERED.save(deps.storage, &0)?;
     Ok(Response::default())
+}
+
+#[entry_point]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+    handle_reply(deps.storage, msg, ACKS)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -54,7 +60,14 @@ pub fn execute(
             pool_id,
             share_out_min_amount,
             token_in,
-        } => execute_join_pool(connection_id, pool_id, share_out_min_amount, token_in, env),
+        } => execute_join_pool(
+            connection_id,
+            pool_id,
+            share_out_min_amount,
+            token_in,
+            deps,
+            env,
+        ),
         ExecuteMsg::TestIcaScenario {} => execute_test_scenario(env),
         ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, env),
         ExecuteMsg::Deposit {} => execute_deposit(info),
@@ -81,7 +94,7 @@ pub fn execute_send_token_ibc(
     channel_id: String,
     to_address: String,
     amount: Coin,
-    env: Env
+    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     // timeout in 600 seconds after current block timestamp
     let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(600));
@@ -106,20 +119,19 @@ pub fn execute_join_pool(
     pool_id: Uint64,
     share_out_min_amount: i64,
     token_in: Coin,
+    deps: DepsMut,
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(
-        Response::new().add_submessage(SubMsg::new(IntergammMsg::JoinSwapExternAmountIn {
-            creator: env.contract.address.to_string(),
-            connection_id,
-            // timeout in 10 minutes
-            timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
-            pool_id: pool_id.u64(),
-            share_out_min_amount,
-            token_in,
-        })),
-        
-    )
+    let msg = IntergammMsg::JoinSwapExternAmountIn {
+        creator: env.contract.address.to_string(),
+        connection_id,
+        // timeout in 10 minutes
+        timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
+        pool_id: pool_id.u64(),
+        share_out_min_amount,
+        token_in,
+    };
+    create_intergamm_msg(deps.storage, msg).map_err(|E | ContractError::Std(E))
 }
 
 pub fn execute_register_ica(
@@ -127,11 +139,10 @@ pub fn execute_register_ica(
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     Ok(
-        Response::new()
-        .add_submessage(SubMsg::new(IntergammMsg::RegisterInterchainAccount {
+        Response::new().add_submessage(SubMsg::new(IntergammMsg::RegisterInterchainAccount {
             creator: env.contract.address.to_string(),
-            connection_id: connection_id}))
-        
+            connection_id: connection_id,
+        })),
     )
 }
 
