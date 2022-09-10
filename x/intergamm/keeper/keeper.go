@@ -174,7 +174,7 @@ func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner s
 func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error {
 	nativeZoneInfo, found := k.CompleteZoneInfoMap(ctx)[zoneId]
 	if !found {
-		return errors.New(fmt.Sprintf("error: zone info for zone ID '%s' not specified", zoneId))
+		return fmt.Errorf("error: zone info for zone ID '%s' not specified", zoneId)
 	}
 	return k.RegisterInterchainAccount(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
 }
@@ -182,7 +182,7 @@ func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error
 func (k Keeper) RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error {
 	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]
 	if !found {
-		return errors.New(fmt.Sprintf("error: native zone ID of denom '%s' not specified", denom))
+		return fmt.Errorf("error: native zone ID of denom '%s' not specified", denom)
 	}
 	return k.RegisterICAOnZoneId(ctx, nativeZoneId, owner)
 }
