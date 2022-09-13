@@ -2,7 +2,7 @@ use intergamm_bindings::msg::IntergammMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Uint64};
+use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
@@ -21,6 +21,8 @@ pub enum Status {
     InProgress,
 }
 
-pub const ACKS: Map<u64, IntergammMsg> = Map::new("acks");
+pub const PENDINGACKS: Map<u64, IntergammMsg> = Map::new("pending_acks");
+
+pub const ACKS: Map<u64, intergamm_bindings::msg::AckValue> = Map::new("acks");
 
 pub const STATE: Item<State> = Item::new("state");

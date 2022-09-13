@@ -1,4 +1,6 @@
-use cosmwasm_std::{Coin, IbcTimeout, Uint64};
+use cosmwasm_std::{Coin, Uint256, Uint64};
+use intergamm_bindings::msg::IntergammMsg;
+// use cosmwasm_std::{Coin, IbcTimeout, Uint64, Uint256};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -33,17 +35,28 @@ pub enum ExecuteMsg {
         token_in: Coin,
     },
     TestIcaScenario {},
-    AckTriggered {},
+    Ack {
+        sequence_number: u64,
+        error: Option<String>,
+        response: Option<intergamm_bindings::msg::AckResponse>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    AckTriggered {},
+    PendingAcks {},
+    Acks {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct AckTriggeredResponse {
-    pub triggered: u128,
+pub struct AcksResponse {
+    pub acks: Vec<(u64, intergamm_bindings::msg::AckValue)>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct PendingAcksResponse {
+    pub pending: Vec<(u64, IntergammMsg)>,
 }
