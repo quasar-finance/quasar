@@ -31,19 +31,21 @@ QUASAR_PID=$!
 ./osmo_localnet.sh  &
 OSMO_PID=$!
 
-# # wait for chains to start
-# sleep 10
+# wait for chains to start
+sleep 10
 
-# # run hermes and save pid, run_hermes and setup_go_relayer might not relay over the same channel out of the box due to connection creation in both scripts
+# run hermes and save pid, run_hermes and setup_go_relayer might not relay over the same channel out of the box due to connection creation in both scripts
 # ./run_hermes.sh  &
+
+# starting hermes
+# echo "starting hermes"
+# hermes start >> ./logs/hermes_start.log 2>&1
 # HERMES_PID=$!
 
-# prevent a race condition between setting up local nodes and setting up the relayer
-sleep 5
 ./setup_go_relayer.sh
 
 echo "starting relaying"
-# run an instance of go relayer for each path, thus 3 in total
+# # run an instance of go relayer for each path, thus 3 in total
 # rly start quasar_cosmos --debug-addr "localhost:7597" >> ./logs/quasar_cosmos_rly.log 2>&1  & 
 # RLY_PID_1=$!
 
