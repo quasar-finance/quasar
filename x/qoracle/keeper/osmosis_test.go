@@ -11,11 +11,31 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	TestOSMODenom  = "uosmo"
+	TestATOMDenom  = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+	TestTerraDenom = "ibc/0EF15DF2F02480ADE0BB6E85D9EBB5DAEA2836D3860E9F97F9AADE4F57A31AA0"
+	TestJunoDenom  = "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED"
+	TestFakeDenom  = "ufake"
+)
+
 var (
-	TestStablePrices = sdk.NewDecCoins(
+	TestOraclePrices = sdk.NewDecCoins(
 		sdk.NewInt64DecCoin("ATOM", 50000000),
 		sdk.NewInt64DecCoin("OSMO", 15000000),
 	)
+	TestDenomPriceMappings = []types.DenomPriceMapping{
+		{
+			Denom:       TestATOMDenom,
+			OracleDenom: "ATOM",
+			Multiplier:  sdk.NewDecWithPrec(1, 6),
+		},
+		{
+			Denom:       TestOSMODenom,
+			OracleDenom: "OSMO",
+			Multiplier:  sdk.NewDecWithPrec(1, 6),
+		},
+	}
 
 	TestOsmosisPool1 = types.OsmosisPool{
 		PoolInfo: balancerpool.Pool{
@@ -27,10 +47,10 @@ var (
 			TotalShares: sdk.NewInt64Coin("share", 0),
 			PoolAssets: []balancerpool.PoolAsset{
 				{
-					Token: sdk.NewInt64Coin("uosmo", 200),
+					Token: sdk.NewInt64Coin(TestOSMODenom, 200),
 				},
 				{
-					Token: sdk.NewInt64Coin("uatom", 100),
+					Token: sdk.NewInt64Coin(TestATOMDenom, 100),
 				},
 			},
 			TotalWeight: sdk.ZeroInt(),
@@ -50,10 +70,10 @@ var (
 			TotalShares: sdk.NewInt64Coin("share", 0),
 			PoolAssets: []balancerpool.PoolAsset{
 				{
-					Token: sdk.NewInt64Coin("ukava", 50),
+					Token: sdk.NewInt64Coin(TestTerraDenom, 50),
 				},
 				{
-					Token: sdk.NewInt64Coin("ubnb", 300),
+					Token: sdk.NewInt64Coin(TestJunoDenom, 300),
 				},
 			},
 			TotalWeight: sdk.ZeroInt(),
@@ -73,10 +93,10 @@ var (
 			TotalShares: sdk.NewInt64Coin("share", 0),
 			PoolAssets: []balancerpool.PoolAsset{
 				{
-					Token: sdk.NewInt64Coin("uatom", 110),
+					Token: sdk.NewInt64Coin(TestATOMDenom, 110),
 				},
 				{
-					Token: sdk.NewInt64Coin("uband", 1000),
+					Token: sdk.NewInt64Coin(TestJunoDenom, 1000),
 				},
 			},
 			TotalWeight: sdk.ZeroInt(),
@@ -108,7 +128,7 @@ var (
 	TestMintEpochProvisions = sdk.NewDec(1000)
 	TestOsmosisMintParams   = minttypes.Params{
 		EpochIdentifier: "epoch-1",
-		MintDenom:       "uosmo",
+		MintDenom:       TestOSMODenom,
 		DistributionProportions: minttypes.DistributionProportions{
 			PoolIncentives: sdk.NewDec(4),
 		},
@@ -143,11 +163,11 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 					Id: 1,
 					PoolAssets: []balancerpool.PoolAsset{
 						{
-							Token:  sdk.NewInt64Coin("uatom", 200),
+							Token:  sdk.NewInt64Coin(TestATOMDenom, 200),
 							Weight: sdk.NewInt(2),
 						},
 						{
-							Token:  sdk.NewInt64Coin("uosmo", 100),
+							Token:  sdk.NewInt64Coin(TestOSMODenom, 100),
 							Weight: sdk.NewInt(1),
 						},
 					},
@@ -163,10 +183,10 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 					Id: 1,
 					PoolAssets: []balancerpool.PoolAsset{
 						{
-							Token: sdk.NewInt64Coin("uatom", 100),
+							Token: sdk.NewInt64Coin(TestATOMDenom, 100),
 						},
 						{
-							Token: sdk.NewInt64Coin("ufake", 1000),
+							Token: sdk.NewInt64Coin(TestFakeDenom, 1000),
 						},
 					},
 				}
@@ -182,7 +202,8 @@ func (suite *KeeperTestSuite) TestCalculatePoolTVLByPoolId() {
 		suite.Run(tc.msg, func() {
 			suite.SetupTest() // reset
 
-			suite.SetStablePrices(TestStablePrices)
+			suite.SetOraclePrices(TestOraclePrices)
+			suite.SetDenomPriceMappings(TestDenomPriceMappings)
 
 			tc.malleate() // malleate mutates test data
 
@@ -218,11 +239,11 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 					Id: 1,
 					PoolAssets: []balancerpool.PoolAsset{
 						{
-							Token:  sdk.NewInt64Coin("uatom", 200),
+							Token:  sdk.NewInt64Coin(TestATOMDenom, 200),
 							Weight: sdk.NewInt(2),
 						},
 						{
-							Token:  sdk.NewInt64Coin("uosmo", 100),
+							Token:  sdk.NewInt64Coin(TestOSMODenom, 100),
 							Weight: sdk.NewInt(1),
 						},
 					},
@@ -241,7 +262,9 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 		suite.Run(tc.msg, func() {
 			suite.SetupTest() // reset
 
-			suite.SetStablePrices(TestStablePrices)
+			suite.SetOraclePrices(TestOraclePrices)
+			suite.SetDenomPriceMappings(TestDenomPriceMappings)
+
 			suite.SetOsmosisParams(
 				TestOsmosisEpochs,
 				TestOsmosisDistrInfo,
@@ -276,7 +299,7 @@ func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
 		{
 			"success",
 			func() {
-				denom = "uatom"
+				denom = TestATOMDenom
 			},
 			[]types.OsmosisPool{
 				TestOsmosisPool1,
@@ -286,7 +309,7 @@ func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
 		{
 			"empty result",
 			func() {
-				denom = "ufake"
+				denom = TestFakeDenom
 			},
 			nil,
 		},

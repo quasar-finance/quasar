@@ -25,10 +25,15 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.TestSetup = testutil.NewTestSetup(suite.T())
 }
 
-func (suite *KeeperTestSuite) SetStablePrices(prices sdk.DecCoins) {
-	for _, p := range prices {
-		suite.Keepers.QoracleKeeper.SetStablePrice(suite.Ctx, p.Denom, p.Amount)
-	}
+func (suite *KeeperTestSuite) SetOraclePrices(prices sdk.DecCoins) {
+	suite.Keepers.QoracleKeeper.SetOraclePrices(suite.Ctx, types.OraclePrices{
+		Prices:          prices,
+		UpdatedAtHeight: suite.Ctx.BlockHeight(),
+	})
+}
+
+func (suite *KeeperTestSuite) SetDenomPriceMappings(m []types.DenomPriceMapping) {
+	suite.Keepers.QoracleKeeper.SetDenomPriceMappings(suite.Ctx, m)
 }
 
 func (suite *KeeperTestSuite) SetOsmosisPools(pools []types.OsmosisPool) {
