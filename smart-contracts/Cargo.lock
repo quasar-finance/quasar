@@ -530,7 +530,6 @@ dependencies = [
  "cw-storage-plus 0.14.0",
  "schemars",
  "serde",
- "serde_json",
 ]
 
 [[package]]
