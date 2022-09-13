@@ -637,14 +637,20 @@ func (k Keeper) CalculatePoolAPY(ctx sdk.Context, pool balancerpool.Pool, poolTV
 		}
 	}
 
+	// Number of mint epochs occurrence in a year
 	annualMintEpochs := Year.Nanoseconds() / mintEpoch.Duration.Nanoseconds()
 	annualProvisions := epochProvisions.MulInt64(annualMintEpochs)
+	// Annual provisions share to incentivize pools is equal to "annualProvisions * poolIncentivesProportion"
 	annualPoolIncentives := annualProvisions.Mul(poolIncentivesProportion)
+	// Total annual provision share (including all gauges) of the requested pool in $
+	// is equal to "annualPoolIncentives * poolTotalWeight / distrInfo.TotalWeight * mintDenomPrice"
 	poolAnnualProvisions := annualPoolIncentives.MulInt(poolTotalWeight).QuoInt(distrInfo.TotalWeight).Mul(mintDenomPrice)
+	// APY of the requested pool is equal to "(poolAnnualProvisions / poolTVL) * 100"
 	poolAPY := poolAnnualProvisions.Quo(poolTVL).Mul(sdk.NewDec(100))
 	return poolAPY, nil
 }
 
+// findOsmosisEpochByIdentifier iterates over all osmosis epochs and returns the epoch with given identifier if exists.
 func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string) (epochtypes.EpochInfo, bool) {
 	for _, epoch := range k.GetOsmosisEpochsInfo(ctx) {
 		if epoch.Identifier == identifier {
@@ -654,6 +660,7 @@ func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string)
 	return epochtypes.EpochInfo{}, false
 }
 
+// findGaugeWeight iterates over distrInfo.Records and returns the weight of record is it finds and record with given gaugeId.
 func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdk.Int, bool) {
 	for _, record := range distrInfo.Records {
 		if record.GaugeId == gaugeId {
