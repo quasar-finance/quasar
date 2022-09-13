@@ -1,19 +1,7 @@
-use cosmwasm_std::{Response, StdError};
-use cw_storage_plus::{Map, Item};
 use crate::msg::IntergammMsg;
-use serde::{Serialize, Deserialize};
+use cosmwasm_std::{Response, StdError};
+use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
-
-
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum Status {
-    Unopened,
-    Init,
-    Open,
-    Closed,
-}
-
-pub const STATUS: Item<Status> = Item::new("intergamm-status");
+use serde::{Deserialize, Serialize};
 
 pub const REPLIES: Map<u64, IntergammMsg> = Map::new("intergamm-replies");

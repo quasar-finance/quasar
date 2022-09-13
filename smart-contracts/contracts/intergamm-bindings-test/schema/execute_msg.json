@@ -1,14 +1,69 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ExecuteMsg",
-  "anyOf": [
+  "oneOf": [
     {
       "type": "object",
       "required": [
-        "increment"
+        "send_token"
       ],
       "properties": {
-        "increment": {
+        "send_token": {
+          "type": "object",
+          "required": [
+            "destination_local_zone_id"
+          ],
+          "properties": {
+            "destination_local_zone_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "send_token_ibc"
+      ],
+      "properties": {
+        "send_token_ibc": {
+          "type": "object",
+          "required": [
+            "amount",
+            "channel_id",
+            "to_address"
+          ],
+          "properties": {
+            "amount": {
+              "description": "packet data only supports one coin https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Coin"
+                }
+              ]
+            },
+            "channel_id": {
+              "description": "exisiting channel to send the tokens over",
+              "type": "string"
+            },
+            "to_address": {
+              "description": "address on the remote chain to receive these tokens",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "deposit"
+      ],
+      "properties": {
+        "deposit": {
           "type": "object"
         }
       },
@@ -17,23 +72,258 @@
     {
       "type": "object",
       "required": [
-        "reset"
+        "register_interchain_account"
       ],
       "properties": {
-        "reset": {
+        "register_interchain_account": {
           "type": "object",
           "required": [
-            "count"
+            "connection_id"
           ],
           "properties": {
-            "count": {
+            "connection_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "join_single_pool"
+      ],
+      "properties": {
+        "join_single_pool": {
+          "type": "object",
+          "required": [
+            "connection_id",
+            "pool_id",
+            "share_out_min_amount",
+            "token_in"
+          ],
+          "properties": {
+            "connection_id": {
+              "type": "string"
+            },
+            "pool_id": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "share_out_min_amount": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
+            },
+            "token_in": {
+              "$ref": "#/definitions/Coin"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "test_ica_scenario"
+      ],
+      "properties": {
+        "test_ica_scenario": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "ack"
+      ],
+      "properties": {
+        "ack": {
+          "type": "object",
+          "required": [
+            "sequence_number"
+          ],
+          "properties": {
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "response": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/AckResponse"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sequence_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             }
           }
         }
       },
       "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "AckResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "join_swap_extern_amount_in"
+          ],
+          "properties": {
+            "join_swap_extern_amount_in": {
+              "type": "object",
+              "required": [
+                "shareOutAmount"
+              ],
+              "properties": {
+                "shareOutAmount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "exit_swap_extern_amount_out"
+          ],
+          "properties": {
+            "exit_swap_extern_amount_out": {
+              "type": "object",
+              "required": [
+                "shareInAmount"
+              ],
+              "properties": {
+                "shareInAmount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "join_swap_share_amount_out"
+          ],
+          "properties": {
+            "join_swap_share_amount_out": {
+              "type": "object",
+              "required": [
+                "tokenInAmount"
+              ],
+              "properties": {
+                "tokenInAmount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "exit_swap_share_amount_in"
+          ],
+          "properties": {
+            "exit_swap_share_amount_in": {
+              "type": "object",
+              "required": [
+                "tokenOutAmount"
+              ],
+              "properties": {
+                "tokenOutAmount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "lock_tokens"
+          ],
+          "properties": {
+            "lock_tokens": {
+              "type": "object",
+              "required": [
+                "ID"
+              ],
+              "properties": {
+                "ID": {
+                  "$ref": "#/definitions/Uint64"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "begin_unlocking"
+          ],
+          "properties": {
+            "begin_unlocking": {
+              "type": "object",
+              "required": [
+                "Success"
+              ],
+              "properties": {
+                "Success": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Coin": {
+      "type": "object",
+      "required": [
+        "amount",
+        "denom"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "denom": {
+          "type": "string"
+        }
+      }
+    },
+    "Uint128": {
+      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "type": "string"
+    },
+    "Uint256": {
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+      "type": "string"
+    },
+    "Uint64": {
+      "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+      "type": "string"
+    }
+  }
 }
