@@ -20,7 +20,39 @@ ignite chain serve -c osmosis.yml --reset-once -v
 rm -rf ~/.ignite/relayer
 ```
 
-5. Configure the relayer for icq connection between two chains
+5. Configure a channel for bandchain testnet
+```
+ignite relayer configure -a \
+--target-rpc "https://rpc.laozi-testnet5.bandchain.org" \
+--target-faucet "https://laozi-testnet5.bandchain.org/faucet" \
+--target-port "oracle" \
+--target-gasprice "0uband" \
+--target-gaslimit 5000000 \
+--target-prefix "band" \
+--target-version "bandchain-1" \
+--source-rpc "http://localhost:26657" \
+--source-faucet "http://localhost:4500" \
+--source-port "qoracle" \
+--source-gasprice "0.0stake" \
+--source-gaslimit 300000 \
+--source-prefix "quasar"  \
+--source-version "bandchain-1"
+```
+
+6. Start the relayer and wait for the channel and relayer to come online
+```
+ignite relayer connect 
+```
+
+7. Wait for a packet transmission so that the oracle prices in quasar node be updated. You can check the prices from http://localhost:1317/abag/quasarnode/qoracle/oracle_prices
+
+8. Stop the relayer and clean the ignite relayer config (**We have to reset the relayer because apparently bandchain testnet has a spam detection mechanism that removes the IBC channel if we request more than a certain packets**)
+
+```
+rm -rf ~/.ignite/relayer
+```
+
+9. Configure the relayer for icq connection between two chains
 
 ```
 ignite relayer configure -a \
@@ -41,7 +73,6 @@ ignite relayer configure -a \
 ```
 
 7. Start the relayer and wait for it to establish the connection and channel
-
 ```
 ignite relayer connect
 ```
@@ -61,3 +92,5 @@ quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26657 
 ```
 osmosisd tx gamm create-pool --pool-file demo_pool.json --home ~/.osmo --chain-id osmosis --node=http://localhost:26669 --from alice --gas=300000
 ```
+
+12. Check the pools endpoint in quasar from http://localhost:1317/abag/quasarnode/qoracle/osmosis/pools
