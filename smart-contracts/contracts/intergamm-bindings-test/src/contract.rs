@@ -1,21 +1,17 @@
-use std::env;
-
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Reply, Response,
-    StdResult, Storage, SubMsg, Uint64,
+    entry_point, to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
+    Order, Reply, Response, StdError, StdResult, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
-use intergamm_bindings::helper::{create_intergamm_msg, handle_reply};
+use intergamm_bindings::helper::create_intergamm_msg;
 use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
-use crate::msg::{AckTriggeredResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{ACKS, ACKTRIGGERED};
+use crate::msg::{AcksResponse, ExecuteMsg, InstantiateMsg, PendingAcksResponse, QueryMsg};
+use crate::state::{ACKS, PENDINGACKS};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test-2";
+const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -25,15 +21,13 @@ pub fn instantiate(
     _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    // set the ack triggered to false
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    ACKTRIGGERED.save(deps.storage, &0)?;
     Ok(Response::default())
 }
 
 #[entry_point]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    handle_reply(deps.storage, msg, ACKS)
+    intergamm_bindings::helper::handle_reply(deps.storage, msg, PENDINGACKS)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -46,31 +40,47 @@ pub fn execute(
     match msg {
         ExecuteMsg::SendToken {
             destination_local_zone_id,
-        } => execute_send_token(destination_local_zone_id, env),
+        } => {
+            return execute_send_token(destination_local_zone_id, env);
+        }
         ExecuteMsg::SendTokenIbc {
             channel_id,
             to_address,
             amount,
-        } => execute_send_token_ibc(channel_id, to_address, amount, env),
+        } => {
+            return execute_send_token_ibc(channel_id, to_address, amount, env);
+        }
         ExecuteMsg::RegisterInterchainAccount { connection_id } => {
-            execute_register_ica(connection_id, env)
+            return execute_register_ica(connection_id, deps, env);
         }
         ExecuteMsg::JoinSinglePool {
             connection_id,
             pool_id,
             share_out_min_amount,
             token_in,
-        } => execute_join_pool(
-            connection_id,
-            pool_id,
-            share_out_min_amount,
-            token_in,
-            deps,
-            env,
-        ),
-        ExecuteMsg::TestIcaScenario {} => execute_test_scenario(env),
-        ExecuteMsg::AckTriggered {} => do_ibc_packet_ack(deps, env),
-        ExecuteMsg::Deposit {} => execute_deposit(info),
+        } => {
+            return execute_join_pool(
+                connection_id,
+                pool_id,
+                share_out_min_amount,
+                token_in,
+                deps,
+                env,
+            );
+        }
+        ExecuteMsg::TestIcaScenario {} => {
+            return execute_test_scenario(env);
+        }
+        ExecuteMsg::Ack {
+            sequence_number,
+            error,
+            response,
+        } => {
+            return do_ibc_packet_ack(deps, env, sequence_number, error, response);
+        }
+        ExecuteMsg::Deposit {} => {
+            return execute_deposit(info);
+        }
     }
 }
 
@@ -113,7 +123,19 @@ pub fn execute_test_scenario(env: Env) -> Result<Response<IntergammMsg>, Contrac
     }))
 }
 
-// join pool requires us to have a pool on the remote chain
+pub fn execute_register_ica(
+    connection_id: String,
+    deps: DepsMut,
+    env: Env,
+) -> Result<Response<IntergammMsg>, ContractError> {
+    let msg = IntergammMsg::RegisterInterchainAccount {
+        creator: env.contract.address.to_string(),
+        connection_id: connection_id,
+    };
+    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+}
+
+// join pool requires us to have a pool on the remote chain and funds in the interchain account of this contract
 pub fn execute_join_pool(
     connection_id: String,
     pool_id: Uint64,
@@ -131,19 +153,7 @@ pub fn execute_join_pool(
         share_out_min_amount,
         token_in,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|E | ContractError::Std(E))
-}
-
-pub fn execute_register_ica(
-    connection_id: String,
-    env: Env,
-) -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(
-        Response::new().add_submessage(SubMsg::new(IntergammMsg::RegisterInterchainAccount {
-            creator: env.contract.address.to_string(),
-            connection_id: connection_id,
-        })),
-    )
+    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
 }
 
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
@@ -162,22 +172,46 @@ pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, Cont
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::AckTriggered {} => to_binary(&query_ack_triggered(deps)?),
+        QueryMsg::Acks {} => to_binary(&query_acks(deps)?),
+        QueryMsg::PendingAcks {} => to_binary(&query_pending_acks(deps)?),
     }
 }
 
-pub fn query_ack_triggered(deps: Deps) -> StdResult<AckTriggeredResponse> {
-    let triggered = ACKTRIGGERED.load(deps.storage)?;
-    Ok(AckTriggeredResponse { triggered })
+pub fn query_acks(deps: Deps) -> StdResult<AcksResponse> {
+    let acks: Result<Vec<(u64, intergamm_bindings::msg::AckValue)>, StdError> = ACKS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(AcksResponse { acks: acks? })
+}
+
+pub fn query_pending_acks(deps: Deps) -> StdResult<PendingAcksResponse> {
+    let pending: Result<Vec<(u64, IntergammMsg)>, StdError> = PENDINGACKS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(PendingAcksResponse { pending: pending? })
 }
 
 pub fn do_ibc_packet_ack(
     deps: DepsMut,
     _env: Env,
+    sequence: u64,
+    error: Option<String>,
+    response: Option<intergamm_bindings::msg::AckResponse>,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    let triggered = ACKTRIGGERED.load(deps.storage)?;
-    ACKTRIGGERED.save(deps.storage, &(triggered + 1))?;
-    Ok(Response::new().add_attribute("ack tiggered", (triggered + 1).to_string()))
+    // save the message as acked
+    ACKS.save(
+        deps.storage,
+        sequence,
+        &intergamm_bindings::msg::AckValue {
+            error: error.clone(),
+            response: response.clone(),
+        },
+    )?;
+    // remove the ack from pending
+    PENDINGACKS.remove(deps.storage, sequence);
+    Ok(Response::new()
+        .add_attribute("error", error.unwrap_or("none".into()))
+        .add_attribute("response", format!("{:?}", response)))
 }
 
 #[cfg(test)]

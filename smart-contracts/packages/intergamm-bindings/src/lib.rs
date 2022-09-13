@@ -1,9 +1,9 @@
-pub mod msg;
 pub mod helper;
+pub mod msg;
 mod querier;
 mod query;
-mod types;
 mod state;
+mod types;
 
 #[cfg(test)]
 mod tests {
