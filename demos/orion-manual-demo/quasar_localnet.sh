@@ -12,7 +12,8 @@ ALICE="edge victory hurry slight dog exit company bike hill erupt shield aspect 
 BOB="harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license"
+RELAYER_ACC="$(cat ./keys/qsr.key)"
+
 ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
 BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
 USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr

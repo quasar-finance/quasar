@@ -5,5 +5,8 @@
     "dst": {
       "chain-id": "cosmos"
     },
-    "src-channel-filter": {}
+    "src-channel-filter": {
+      "rule": null,
+      "channel-list": []
+    }
   }

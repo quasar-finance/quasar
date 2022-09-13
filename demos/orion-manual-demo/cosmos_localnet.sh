@@ -8,7 +8,8 @@ ALICE="blur service enlist into false certain replace arrow until fatal glory mu
 BOB="lucky surface version conduct ketchup cash unfair rival shoulder example demand upset deny tilt very clinic tribe rather renew skirt naive sweet box chicken"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle"
+RELAYER_ACC="$(cat ./keys/gaia.key)"
+
 ALICE_GENESIS_COINS=200000000uatom,2000000000stake
 BOB_GENESIS_COINS=10000000uatom,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uatom,10000000000uusd
