@@ -27,11 +27,11 @@ func (k Keeper) updateOraclePrices(ctx sdk.Context) {
 		op.Prices[i] = sdk.NewDecCoinFromDec(symbol, price)
 	}
 
-	k.setOraclePrices(ctx, op)
+	k.SetOraclePrices(ctx, op)
 }
 
-// setOraclePrices set the oracle prices
-func (k Keeper) setOraclePrices(ctx sdk.Context, op types.OraclePrices) {
+// SetOraclePrices sorts the oracle prices and stores it in key-value store.
+func (k Keeper) SetOraclePrices(ctx sdk.Context, op types.OraclePrices) {
 	// Always save oracle prices sorted
 	op.Prices.Sort()
 

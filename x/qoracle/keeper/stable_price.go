@@ -18,7 +18,7 @@ func (k Keeper) SetStablePrice(ctx sdk.Context, symbol string, price sdk.Dec) {
 
 	op := k.GetOraclePrices(ctx)
 	op.Prices = op.Prices.Add(sdk.NewDecCoinFromDec(symbol, price))
-	k.setOraclePrices(ctx, op)
+	k.SetOraclePrices(ctx, op)
 }
 
 // GetStablePrice get the stable denom for the symbol
