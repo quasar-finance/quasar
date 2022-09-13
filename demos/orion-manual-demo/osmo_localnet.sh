@@ -8,7 +8,8 @@ ALICE="cruise scene law sea push expose scorpion wire trick repair wave quote ta
 BOB="lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself"
+RELAYER_ACC="$(cat ./keys/osmo.key)"
+
 ALICE_GENESIS_COINS=20000000uosmo,2000000000stake
 BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
