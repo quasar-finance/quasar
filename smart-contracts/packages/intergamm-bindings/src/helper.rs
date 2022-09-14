@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Attribute, Deps, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, Uint64,
+    Attribute, Deps, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, Uint64, SubMsgResponse,
 };
 use cw_storage_plus::Map;
 
@@ -47,44 +47,52 @@ pub fn handle_reply(
                 .add_attribute("registered interchain acc", creator)
                 .add_attribute("connection_id", connection_id)),
             IntergammMsg::JoinSwapExternAmountIn {
-                ref creator,
+                creator: _,
                 ref connection_id,
-                ref timeout_timestamp,
-                pool_id,
-                share_out_min_amount,
-                ref token_in,
+                timeout_timestamp: _,
+                pool_id: _,
+                share_out_min_amount: _,
+                token_in: _,
             } => {
-                // to get the sequence number, we look for the event type send_packet under the key packet_sequence and register the sequence number
-                let e = ok
-                    .events
-                    .iter()
-                    .find(|e| e.ty == "send_packet")
-                    .ok_or_else(|| StdError::GenericErr {
-                        msg: "packet event not found".into(),
-                    })?;
-                // we do some sanity checks here to see if the attributes of the packet correspond with the intergamm msg
-                if connection_id.clone() != find_attr(&e.attributes, "packet_connection")?.value {
-                    return Err(StdError::GenericErr {
-                        msg: "connection_id is not equal to packet connection".into(),
-                    });
-                }
-
-                let seq = find_attr(&e.attributes, "packet_sequence")?;
-                // parse the seq value to an uin64
-                let p = seq.value.parse::<u64>().map_err(|e| StdError::ParseErr {
-                    target_type: "u64".into(),
-                    msg: e.to_string(),
-                })?;
-                // TODO once the closures are setup, add closures to for acks here
-                pending_acks.save(store, 1, &original)?;
-                Ok(Response::new().add_attribute("added pending ack", "1"))
+                store_pending_ack(ok, connection_id, pending_acks, store, &original)
             }
+            IntergammMsg::JoinPool { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _,share_out_amount: _, token_in_maxs: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::ExitPool { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::LockTokens { creator: _, ref connection_id, timeout_timestamp: _, duration: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::ExitSwapExternAmountOut { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::BeginUnlocking { creator: _, ref connection_id, timeout_timestamp: _, id: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
         }
     } else {
         Err(StdError::GenericErr {
             msg: res.unwrap_err(),
         })
     }
+}
+
+fn store_pending_ack(msg: SubMsgResponse, connection_id: &String, pending_acks: Map<u64, IntergammMsg>, store: &mut dyn Storage, original: &IntergammMsg) -> Result<Response, StdError> {
+    // to get the sequence number, we look for the event type send_packet under the key packet_sequence and register the sequence number
+    let e = msg
+        .events
+        .iter()
+        .find(|e| e.ty == "send_packet")
+        .ok_or_else(|| StdError::GenericErr {
+            msg: "packet event not found".into(),
+        })?;
+    // we do some sanity checks here to see if the attributes of the packet correspond with the intergamm msg
+    if connection_id.clone() != find_attr(&e.attributes, "packet_connection")?.value {
+        return Err(StdError::GenericErr {
+            msg: "connection_id is not equal to packet connection".into(),
+        });
+    }
+    let seq = find_attr(&e.attributes, "packet_sequence")?;
+    // parse the seq value to an uin64
+    let s = seq.value.parse::<u64>().map_err(|e| StdError::ParseErr {
+        target_type: "u64".into(),
+        msg: e.to_string(),
+    })?;
+    // TODO once the closures are setup, add closures to for acks here
+    pending_acks.save(store, s, &original)?;
+    Ok(Response::new().add_attribute("added pending ack", s.to_string()))
 }
 
 fn find_attr<'a>(attributes: &'a Vec<Attribute>, key: &str) -> Result<&'a Attribute, StdError> {

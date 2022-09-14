@@ -13,12 +13,6 @@ pub enum IntergammMsg {
         receiver: String,
         coin: Coin,
     },
-    // JoinPool {
-    //     creator: String,
-    //     connection_id: String,
-    //     timeout_timestamp: u64,
-    //     pool_id: Uint64,
-    // },
     TestScenario {
         creator: String,
         scenario: String,
@@ -27,14 +21,52 @@ pub enum IntergammMsg {
         creator: String,
         connection_id: String,
     },
+    JoinPool {
+        creator: String,
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_out_amount: i64,
+        token_in_maxs: Vec<Coin>,
+    },
+    ExitPool {
+        creator: String,
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_in_amount: i64,
+        token_out_mins: Vec<Coin>,
+    },
+    LockTokens {
+        creator: String,
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        duration: Uint64,
+        coins: Vec<Coin>,
+    },
     JoinSwapExternAmountIn {
         creator: String,
         connection_id: String,
-        timeout_timestamp: u64,
-        pool_id: u64,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
         share_out_min_amount: i64,
         token_in: Coin,
     },
+    ExitSwapExternAmountOut {
+        creator: String,
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_in_amount: i64,
+        token_out_mins: Coin,
+    },
+    BeginUnlocking {
+        creator: String,
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        id: Uint64,
+        coins: Vec<Coin>
+    }
 }
 
 impl IntergammMsg {}
