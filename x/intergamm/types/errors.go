@@ -10,6 +10,7 @@ import (
 var (
 	ErrAcknowledgementHookFailed = sdkerrors.Register(ModuleName, 2, "acknowledgement hook failed")
 	ErrTimeoutHookFailed         = sdkerrors.Register(ModuleName, 3, "timeout hook failed")
+	ErrInvalidZoneId             = sdkerrors.Register(ModuleName, 4, "invalid zone id")
 )
 
 func NewErrAcknowledgementHookFailed(msg string) error {

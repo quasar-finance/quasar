@@ -1,11 +1,11 @@
 syntax = "proto3";
 package quasarlabs.quasarnode.intergamm;
 
-import "gogoproto/gogo.proto";
-import "cosmos/base/v1beta1/coin.proto";
 import "osmosis/v9/gamm/v1beta1/tx.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 
@@ -36,11 +36,10 @@ message MsgTestScenarioResponse {
 }
 
 message MsgSendToken {
-  string creator = 1;
-  string destinationLocalZoneId = 2;
-  string sender = 3;
-  string receiver = 4;
-  cosmos.base.v1beta1.Coin coin = 5;
+  string fromAddress = 1;
+  string toZoneId = 2;
+  string toAddress = 3;
+  cosmos.base.v1beta1.Coin coin = 4 [(gogoproto.nullable) = false];
 }
 
 message MsgSendTokenResponse {

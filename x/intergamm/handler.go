@@ -17,6 +17,9 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		ctx = ctx.WithEventManager(sdk.NewEventManager())
 
 		switch msg := msg.(type) {
+		case *types.MsgSendToken:
+			res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTestScenario:
 			res, err := msgServer.TestScenario(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)

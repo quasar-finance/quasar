@@ -10,6 +10,7 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/quasarlabs/quasarnode/testutil/sample"
+	intergammsimulation "github.com/quasarlabs/quasarnode/x/intergamm/simulation"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
@@ -19,6 +20,14 @@ var (
 	_ = simappparams.StakePerAccount
 	_ = simulation.MsgEntryKind
 	_ = baseapp.Paramspace
+)
+
+const (
+	opWeightMsgSendToken = "op_weight_msg_send_token"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgSendToken int = 100
+
+	// this line is used by starport scaffolding # simapp/module/const
 )
 
 // GenerateGenesisState creates a randomized GenState of the module
@@ -50,6 +59,17 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
+
+	var weightMsgSendToken int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSendToken, &weightMsgSendToken, nil,
+		func(_ *rand.Rand) {
+			weightMsgSendToken = defaultWeightMsgSendToken
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgSendToken,
+		intergammsimulation.SimulateMsgSendToken(am.accountKeeper, am.bankKeeper, *am.keeper),
+	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
 
