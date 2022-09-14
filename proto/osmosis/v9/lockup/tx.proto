@@ -6,7 +6,7 @@ import "google/protobuf/duration.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "osmosis/v9/lockup/lock.proto";
 
-option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup";
+option go_package = "github.com/quasarlabs/quasarnode/osmosis/v9/lockup/types";
 
 // Msg defines the Msg service.
 service Msg {

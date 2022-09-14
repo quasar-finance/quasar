@@ -28,6 +28,7 @@ service Msg {
   rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
   rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
   rpc StablePrice(MsgStablePrice) returns (MsgStablePriceResponse);
+  rpc UpdateOsmosisChainParams(MsgUpdateOsmosisChainParams) returns (MsgUpdateOsmosisChainParamsResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -137,6 +138,14 @@ message MsgStablePrice {
 }
 
 message MsgStablePriceResponse {
+}
+
+message MsgUpdateOsmosisChainParams {
+  string creator = 1;
+}
+
+message MsgUpdateOsmosisChainParamsResponse {
+  uint64 packet_sequence = 1;
 }
 
 // this line is used by starport scaffolding # proto/tx/message

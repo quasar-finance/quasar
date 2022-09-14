@@ -33,6 +33,7 @@ cosmos_sdk_dir="$(locate_cosmos_sdk_dir)"
       -I "${cosmos_sdk_dir}/proto" \
       --gocosmos_out=plugins=interfacetype+grpc,\
 Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:"$tmp_dir" \
+      --grpc-gateway_out=logtostderr=true:"$tmp_dir" \
       $(find "${proto_child_dir}" -name '*.proto')
   done 3< <(collect_proto_dirs "${project_dir}/proto")
 
