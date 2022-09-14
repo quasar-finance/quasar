@@ -22,19 +22,19 @@ import (
 )
 
 // if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
-func NewCallbackPlugin(k *wasm.Keeper) *CallbackPlugin {
+func NewCallbackPlugin(k *wasm.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
 	return &CallbackPlugin{
-		wasmkeeper:     k,
 		sentMessages:   map[uint64]sdk.AccAddress{},
 		contractKeeper: wasmk.NewDefaultPermissionKeeper(k),
+		callBackAddress: callBackAddress,
 	}
 }
 
 type CallbackPlugin struct {
-	// TODO evaluate whether we need wasm keeper in the callback plugin
-	wasmkeeper     *wasm.Keeper
 	contractKeeper *wasmk.PermissionedKeeper
 	sentMessages   map[uint64]sdk.AccAddress
+	// the address from which the smart contract will be called
+	callBackAddress sdk.AccAddress
 }
 
 func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
@@ -111,7 +111,6 @@ func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
 
 // the easiest way for the smart contract to handle the response is to 
 func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, response proto.Message, caller string) error {
-	c.Logger(ctx).Error(fmt.Sprintf("trying to handle callback for sent message: %v", seq))
 	addr, exists := c.sentMessages[seq]
 	if !exists {
 		// if the address does not exist, someone other than a smart contract called intergamm, thus we return nil.
@@ -141,9 +140,10 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, response proto.Me
 	}
 	c.Logger(ctx).Info(fmt.Sprintf("Preparing callback message: %v", string(data)))
 
-	// TODO hardcode the caller to the intergamm address
-	res, err := c.contractKeeper.Execute(ctx, addr, addr, data, nil)
-	c.Logger(ctx).Debug(fmt.Sprintf("execute returned: %s", string(res)))
+	_, err = c.contractKeeper.Execute(ctx, addr, c.callBackAddress, data, nil)
+	if err != nil {
+		return sdkerrors.Wrap(err, "ack callback execute")
+	}
 
 	return nil
 }
