@@ -30,7 +30,7 @@ ignite relayer configure -a \
 --target-gaslimit 5000000 \
 --target-prefix "band" \
 --target-version "bandchain-1" \
---source-rpc "http://localhost:26657" \
+--source-rpc "http://localhost:26659" \
 --source-faucet "http://localhost:4500" \
 --source-port "qoracle" \
 --source-gasprice "0.0stake" \
@@ -44,7 +44,7 @@ ignite relayer configure -a \
 ignite relayer connect 
 ```
 
-7. Wait for a packet transmission so that the oracle prices in quasar node be updated. You can check the prices from http://localhost:1317/quasarlabs/quasarnode/qoracle/oracle_prices
+7. Wait for a packet transmission so that the oracle prices in quasar node be updated. You can check the prices from http://localhost:1311/quasarlabs/quasarnode/qoracle/oracle_prices
 
 8. Stop the relayer and clean the ignite relayer config (**We have to reset the relayer because apparently bandchain testnet has a spam detection mechanism that removes the IBC channel if we request more than a certain packets**)
 
@@ -56,7 +56,7 @@ rm -rf ~/.ignite/relayer
 
 ```
 ignite relayer configure -a \
---source-rpc "http://localhost:26657" \
+--source-rpc "http://localhost:26659" \
 --source-faucet "http://localhost:4500" \
 --source-port "qoracle" \
 --source-gasprice "0.0stake" \
@@ -80,12 +80,12 @@ ignite relayer connect
 8. Execute the following tx so quasar sends a request to update osmosis chain params to osmosis
 
 ```
-quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26657 --from alice --home ~/.quasar --chain-id quasarnode --output json
+quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasar --chain-id quasar --output json
 ```
 
-9. After the acknowledgement received by quasar you can query the osmosis chains params stored in the quasar from http://localhost:1317/quasarlabs/quasarnode/qoracle/osmosis/chain_params
+9. After the acknowledgement received by quasar you can query the osmosis chains params stored in the quasar from http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params
 
-10. Quasar will send a request to fetch incentivized pools from osmosis every minute. You can query the incentivized pools from http://localhost:1317/quasarlabs/quasarnode/qoracle/osmosis/incentivized_pools
+10. Quasar will send a request to fetch incentivized pools from osmosis every minute. You can query the incentivized pools from http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/incentivized_pools
 
 11. In order to create a pool in osmosis run the following command:
 
@@ -93,4 +93,4 @@ quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26657 
 osmosisd tx gamm create-pool --pool-file demo_pool.json --home ~/.osmo --chain-id osmosis --node=http://localhost:26669 --from alice --gas=300000
 ```
 
-12. Check the pools endpoint in quasar from http://localhost:1317/quasarlabs/quasarnode/qoracle/osmosis/pools
+12. Check the pools endpoint in quasar from http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/pools
