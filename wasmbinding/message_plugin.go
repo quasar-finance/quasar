@@ -182,7 +182,8 @@ func PerformOsmosisJoinPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return wasmvmtypes.InvalidRequest{Err: "join pool null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgTransmitIbcJoinPool(join.Creator, join.ConnectionId, join.TimeoutTimestamp, join.PoolId, join.ShareOutAmount, join.TokenInMaxs)
+	// TODO see if hardcoding creator like this works
+	sdkMsg := intergammtypes.NewMsgTransmitIbcJoinPool(contractAddr.String(), join.ConnectionId, join.TimeoutTimestamp, join.PoolId, join.ShareOutAmount, join.TokenInMaxs)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
