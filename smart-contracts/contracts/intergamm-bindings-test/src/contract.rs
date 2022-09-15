@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Order, Reply, Response, StdError, StdResult, SubMsg, Uint64,
+    Order, Reply, Response, StdError, StdResult, Uint64,
 };
 use cw2::set_contract_version;
 use intergamm_bindings::helper::create_intergamm_msg;
@@ -53,13 +53,13 @@ pub fn execute(
         ExecuteMsg::RegisterInterchainAccount { connection_id } => {
             return execute_register_ica(connection_id, deps, env);
         }
-        ExecuteMsg::JoinSinglePool {
+        ExecuteMsg::JoinSwapExternAmountIn {
             connection_id,
             pool_id,
             share_out_min_amount,
             token_in,
         } => {
-            return execute_join_pool(
+            return execute_join_swap_extern_amount_in(
                 connection_id,
                 pool_id,
                 share_out_min_amount,
@@ -136,20 +136,20 @@ pub fn execute_register_ica(
 }
 
 // join pool requires us to have a pool on the remote chain and funds in the interchain account of this contract
-pub fn execute_join_pool(
+pub fn execute_join_swap_extern_amount_in(
     connection_id: String,
     pool_id: Uint64,
     share_out_min_amount: i64,
     token_in: Coin,
-    deps: DepsMut,
+    deps: DepsMut,  
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::JoinSwapExternAmountIn {
         creator: env.contract.address.to_string(),
         connection_id,
         // timeout in 10 minutes
-        timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
-        pool_id: pool_id.u64(),
+        timeout_timestamp: Uint64::new(env.block.time.plus_seconds(600).nanos()),
+        pool_id: Uint64::new(pool_id.u64()),
         share_out_min_amount,
         token_in,
     };
