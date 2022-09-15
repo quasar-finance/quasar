@@ -1,7 +1,7 @@
 This demo demonstrates how to set intergamm params through gov procedures
-and how to test if their actually transfered to osmosis properly after deposit on quasar.
+and how to test if their actually transferred to osmosis properly after deposit on quasar.
 
-1. Runn the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
+1. Run the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
 
 2. Check the initial balances (of account alice).
 ```
@@ -77,7 +77,7 @@ quasarnoded tx qoracle stable-price ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7
 quasarnoded tx qoracle stable-price ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 1.3 --from alice --chain-id quasar --home ~/.quasarnode/ --node tcp://localhost:26659 --keyring-backend test -y
 ```
 
-13. Submit request depost txs.
+13. Submit request deposit txs.
 ```
 quasarnoded tx qbank request-deposit orion 1000uqsr Days_7 "" --from alice --chain-id quasar --home ~/.quasarnode/ --node tcp://localhost:26659 --keyring-backend test -y
 quasarnoded tx qbank request-deposit orion 1000ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B Days_7 "" --from alice --chain-id quasar --home ~/.quasarnode/ --node tcp://localhost:26659 --keyring-backend test -y

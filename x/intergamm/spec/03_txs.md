@@ -6,7 +6,7 @@ order: 3
 
 ## Transactions
 
-Intergamm allows for a couple of transactions, namely the ones smart contract strategies need to functions. The transactions are:
+Intergamm allows for a couple of transactions, namely the ones smart contract strategies need to function. The transactions are:
 ### TransmitIbcJoinPool
 ```go
 type MsgTransmitIbcJoinPool struct {
