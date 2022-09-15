@@ -7,9 +7,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/pool-models/balancer"
 	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )

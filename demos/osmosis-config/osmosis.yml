@@ -1,0 +1,83 @@
+build:
+  binary: "osmosisd"
+  main: "./cmd/osmosisd"
+accounts:
+  - name: alice
+    mnemonic: edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit
+    coins: ["20000000000uosmo", "2000000000stake"]
+  - name: bob
+    mnemonic: harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar
+    coins: ["10000000000uosmo", "1000000000stake"]
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4502"
+  name: bob
+  coins: ["1000000uosmo", "100000000stake"]
+host:
+  rpc: ":26669"
+  p2p: ":26663"
+  prof: ":6063"
+  grpc: ":9097"
+  grpc-web: ":8093"
+  api: ":1313"
+  frontend: ":8083"
+  dev-ui: ":12353"
+genesis:
+  chain_id: "osmosis"
+  app_state:
+    incentives:
+      params:
+        distr_epoch_identifier: day
+      gauges: []
+      lockable_durations:
+      - 1s
+      - 120s
+      - 180s
+      - 240s
+      last_gauge_id: '0'
+    mint:
+      minter:
+        epoch_provisions: '0.000000000000000000'
+      params:
+        mint_denom: uosmo
+        genesis_epoch_provisions: '5000000.000000000000000000'
+        epoch_identifier: day
+        reduction_period_in_epochs: '156'
+        reduction_factor: '0.500000000000000000'
+        distribution_proportions:
+          staking: '0.400000000000000000'
+          pool_incentives: '0.300000000000000000'
+          developer_rewards: '0.200000000000000000'
+          community_pool: '0.100000000000000000'
+        weighted_developer_rewards_receivers: []
+        minting_rewards_distribution_start_epoch: '0'
+      halven_started_epoch: '0'
+    poolincentives:
+      params:
+        minted_denom: uosmo
+      lockable_durations:
+        - 120s
+        - 180s
+        - 240s
+      distr_info:
+        total_weight: "11100"
+        records:
+        - {gauge_id: "0", weight: "10000"}
+        - {gauge_id: "1", weight: "1000"}
+        - {gauge_id: "2", weight: "100"}
+    interchainquery:
+      params:
+        allow_queries: 
+        - "/osmosis.epochs.v1beta1.Query/EpochInfos"
+        - "/osmosis.gamm.v1beta1.Query/Pool"
+        - "/osmosis.poolincentives.v1beta1.Query/LockableDurations"
+        - "/osmosis.mint.v1beta1.Query/Params"
+        - "/osmosis.mint.v1beta1.Query/EpochProvisions"
+        - "/osmosis.poolincentives.v1beta1.Query/IncentivizedPools"
+        - "/osmosis.poolincentives.v1beta1.Query/GaugeIds"
+        - "/osmosis.poolincentives.v1beta1.Query/DistrInfo"
+        - "/osmosis.gamm.v1beta1.Query/SpotPrice"
+init:
+  home: "$HOME/.osmo"

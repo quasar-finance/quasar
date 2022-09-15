@@ -21,6 +21,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgUpdatePoolInfo{}, "qoracle/UpdatePoolInfo", nil)
 	cdc.RegisterConcrete(&MsgDeletePoolInfo{}, "qoracle/DeletePoolInfo", nil)
 	cdc.RegisterConcrete(&MsgStablePrice{}, "qoracle/StablePrice", nil)
+	cdc.RegisterConcrete(&MsgUpdateOsmosisChainParams{}, "qoracle/UpdateOsmosisChainParams", nil)
 	// this line is used by starport scaffolding # 2
 }
 
@@ -49,6 +50,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgStablePrice{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgUpdateOsmosisChainParams{},
 	)
 	// this line is used by starport scaffolding # 3
 
