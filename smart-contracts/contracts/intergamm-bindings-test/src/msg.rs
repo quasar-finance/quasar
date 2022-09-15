@@ -28,7 +28,7 @@ pub enum ExecuteMsg {
     RegisterInterchainAccount {
         connection_id: String,
     },
-    JoinSinglePool {
+    JoinSwapExternAmountIn {
         connection_id: String,
         pool_id: Uint64,
         share_out_min_amount: i64,
