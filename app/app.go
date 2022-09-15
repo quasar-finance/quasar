@@ -321,7 +321,8 @@ type App struct {
 }
 
 // TODO wasmOpts and enabledProposals should be part of New() parameters according to cosmwasm, for now we don't
-//  allow customization of wasmOpts and enabledProposals and just hardcode it to nil
+//
+//	allow customization of wasmOpts and enabledProposals and just hardcode it to nil
 var (
 	wasmOpts         []wasm.Option       = nil
 	enabledProposals []wasm.ProposalType = wasm.EnableAllProposals
@@ -587,7 +588,7 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.IntergammKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	wasmOpts = append(owasm.RegisterCustomPlugins(app.IntergammKeeper, &app.QoracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
