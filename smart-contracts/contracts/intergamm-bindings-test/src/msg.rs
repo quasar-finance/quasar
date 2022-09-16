@@ -1,6 +1,5 @@
-use cosmwasm_std::{Coin, Uint256, Uint64};
+use cosmwasm_std::{Coin, Uint64};
 use intergamm_bindings::msg::IntergammMsg;
-// use cosmwasm_std::{Coin, IbcTimeout, Uint64, Uint256};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,11 +27,44 @@ pub enum ExecuteMsg {
     RegisterInterchainAccount {
         connection_id: String,
     },
+    JoinPool {
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_out_amount: i64,
+        token_in_maxs: Vec<Coin>,
+    },
+    ExitPool {
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_in_amount: i64,
+        token_out_mins: Vec<Coin>,
+    },
+    LockTokens {
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        duration: Uint64,
+        coins: Vec<Coin>,
+    },
     JoinSwapExternAmountIn {
         connection_id: String,
         pool_id: Uint64,
         share_out_min_amount: i64,
         token_in: Coin,
+    },
+    ExitSwapExternAmountOut {
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        pool_id: Uint64,
+        share_in_amount: i64,
+        token_out_mins: Coin,
+    },
+    BeginUnlocking {
+        connection_id: String,
+        timeout_timestamp: Uint64,
+        id: Uint64,
+        coins: Vec<Coin>,
     },
     TestIcaScenario {},
     Ack {
