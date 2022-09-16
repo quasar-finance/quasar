@@ -3,20 +3,9 @@
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"
-# STAKE_DENOM="urock"
-BECH32_HRP="quas"
-WASMD_VERSION="v0.23.0"
-CONFIG_DIR=".wasmd"
-BINARY="wasmd"
-COSMJS_VERSION="v0.27.1"
-GENESIS_URL="https://raw.githubusercontent.com/CosmWasm/testnets/master/cliffnet-1/config/genesis.json"
 RPC="http://127.0.0.1:26659"
-# RPC="https://rpc.cliffnet.cosmwasm.com:443"
-LCD="https://lcd.cliffnet.cosmwasm.com"
-FAUCET="https://faucet.cliffnet.cosmwasm.com"
 NODE="--node $RPC"
 TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3"
-echo $RPC
 echo $NODE
 INIT="{}"
 # quasar <-> osmosis channel is connection 2 in current setup

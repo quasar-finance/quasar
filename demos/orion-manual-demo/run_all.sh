@@ -37,6 +37,7 @@ sleep 10
 # run hermes and save pid, run_hermes and setup_go_relayer might not relay over the same channel out of the box due to connection creation in both scripts
 # ./run_hermes.sh  &
 
+# Currently we're not using Hermes due to an issue with relaying new channels https://github.com/informalsystems/ibc-rs/issues/2608
 # starting hermes
 # echo "starting hermes"
 # hermes start >> ./logs/hermes_start.log 2>&1
