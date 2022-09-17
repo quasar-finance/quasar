@@ -14,7 +14,7 @@ func (ms msgServer) TransmitICATransfer(goCtx context.Context, msg *types.MsgTra
 	msgTransmitTimeoutTimestamp := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	icaTransferTimeoutTimestamp := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp*2
 	icaTransferTimeoutHeight := ibcclienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	seq, err := ms.k.TransmitICATransferGeneral(ctx, msg.IcaOwnerAddress, msg.IcaZoneId, msgTransmitTimeoutTimestamp, msg.Coin, msg.ToAddress, icaTransferTimeoutHeight, icaTransferTimeoutTimestamp)
+	seq, err := ms.k.TransmitICATransfer(ctx, msg.IcaOwnerAddress, msgTransmitTimeoutTimestamp, msg.Coin, msg.ToAddress, icaTransferTimeoutHeight, icaTransferTimeoutTimestamp)
 	if err != nil {
 		return nil, err
 	}

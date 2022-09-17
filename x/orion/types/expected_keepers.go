@@ -64,7 +64,7 @@ type IntergammKeeper interface {
 	RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error
 	RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error
 	CompleteZoneInfoMap(ctx sdk.Context) (res map[string]intergammtypes.ZoneCompleteInfo)
-	DenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string)
+	QuasarDenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string)
 
 	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
 	IsICACreatedOnZoneId(ctx sdk.Context, zoneId, owner string) (string, bool)
@@ -106,10 +106,9 @@ type IntergammKeeper interface {
 		shareInAmount sdk.Int,
 		tokenOutMins []sdk.Coin) (uint64, error)
 
-	TransmitICATransferGeneral(
+	TransmitICATransfer(
 		ctx sdk.Context,
 		owner string,
-		icaZoneId string,
 		timeoutTimestamp uint64,
 		token sdk.Coin,
 		finalReceiver string,

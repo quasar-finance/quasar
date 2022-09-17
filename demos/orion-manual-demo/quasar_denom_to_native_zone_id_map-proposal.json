@@ -1,10 +1,10 @@
 {
-  "title": "denom_to_native_zone_id_map Param Change",
-  "description": "Update DenomToNativeZoneIdMap",
+  "title": "quasar_denom_to_native_zone_id_map Param Change",
+  "description": "Update QuasarDenomToNativeZoneIdMap",
   "changes": [
     {
       "subspace": "intergamm",
-      "key": "DenomToNativeZoneIdMap",
+      "key": "QuasarDenomToNativeZoneIdMap",
       "value": {
         "uqsr": "quasar",
         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "cosmos",

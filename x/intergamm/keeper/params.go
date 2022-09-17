@@ -8,7 +8,8 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.DenomToNativeZoneIdMap(ctx),
+		k.QuasarDenomToNativeZoneIdMap(ctx),
+		k.OsmosisDenomToQuasarDenomMap(ctx),
 		k.CompleteZoneInfoMap(ctx))
 }
 
@@ -17,8 +18,13 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
 }
 
-func (k Keeper) DenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string) {
-	k.paramstore.Get(ctx, types.KeyDenomToNativeZoneIdMap, &res)
+func (k Keeper) QuasarDenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string) {
+	k.paramstore.Get(ctx, types.KeyQuasarDenomToNativeZoneIdMap, &res)
+	return
+}
+
+func (k Keeper) OsmosisDenomToQuasarDenomMap(ctx sdk.Context) (res map[string]string) {
+	k.paramstore.Get(ctx, types.KeyOsmosisDenomToQuasarDenomMap, &res)
 	return
 }
 

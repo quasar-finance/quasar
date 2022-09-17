@@ -1,5 +1,6 @@
-This demo demonstrates how to set intergamm params through gov procedures
-and how to test if their actually transferred to osmosis properly after deposit on quasar.
+This demo demonstrates how to set intergamm params through gov procedures,
+make request deposit txs,
+and test if the deposits are actually transferred to osmosis properly from quasar.
 
 1. Run the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
 

@@ -15,18 +15,17 @@ var _ = strconv.Itoa(0)
 
 func CmdTransmitICATransfer() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "transmit-ica-transfer [ica-zone-id] [to-address] [amount]",
-		Short: "Transmits a message to the ICA zone that will cause a fund transfer from there to quasar",
-		Long: `Transmits a message to the ICA zone that will cause a fund transfer from there to quasar.
+		Use:   "transmit-ica-transfer [to-address] [amount]",
+		Short: "Transmits a message to osmosis that will cause a fund transfer from there to quasar",
+		Long: `Transmits a message to osmosis that will cause a fund transfer from there to quasar.
 The destination address are specified with to-address, respectively.
 The owner of the source ICA is the transaction signer
 (i.e. it will be determined by the --from flag).
 If no such ICA exists, an error will be returned, therefore the ICA must be registered first.`,
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argIcaZoneId := args[0]
-			argToAddress := args[1]
-			argAmount, err := sdk.ParseCoinNormalized(args[2])
+			argToAddress := args[0]
+			argAmount, err := sdk.ParseCoinNormalized(args[1])
 			if err != nil {
 				return err
 			}
@@ -38,7 +37,6 @@ If no such ICA exists, an error will be returned, therefore the ICA must be regi
 
 			msg := types.NewMsgTransmitICATransfer(
 				clientCtx.GetFromAddress().String(),
-				argIcaZoneId,
 				argToAddress,
 				argAmount,
 			)

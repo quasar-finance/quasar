@@ -65,7 +65,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 				logger.Info("AfterEpochEnd", "RegisterICAOnZoneId failed.", err)
 			}
 		}
-		for denom := range k.intergammKeeper.DenomToNativeZoneIdMap(ctx) {
+		for denom := range k.intergammKeeper.QuasarDenomToNativeZoneIdMap(ctx) {
 			if _, icaFound = k.IsOrionICACreatedForDenom(ctx, denom); !icaFound {
 				newICANeeded = true
 				err := k.intergammKeeper.RegisterICAOnDenomNativeZone(ctx, denom, orionAddr)

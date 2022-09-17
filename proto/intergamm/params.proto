@@ -62,9 +62,6 @@ message ZoneCompleteInfo {
    [(gogoproto.moretags) = "yaml:\"zone_route_info\",json:\"zone_route_info\"",
     (gogoproto.nullable) = false];
 
-//  string interchain_address = 2
-//   [(gogoproto.moretags) = "yaml:\"interchain_address\",json:\"interchain_address\""];
-
   map<string, ZoneRouteInfo> next_zone_route_map = 3
    [(gogoproto.moretags) = "yaml:\"next_zone_route_map\",json:\"next_zone_route_map\"",
     (gogoproto.nullable) = false]; // key zone-id
@@ -75,11 +72,15 @@ message Params {
   option (gogoproto.goproto_stringer) = false;
   option (gogoproto.equal) = true;
 
-  map<string, string> denom_to_native_zone_id_map = 1
-   [(gogoproto.moretags) = "yaml:\"denom_to_native_zone_id_map\",json:\"denom_to_native_zone_id_map\"",
+  map<string, string> quasar_denom_to_native_zone_id_map = 1
+   [(gogoproto.moretags) = "yaml:\"quasar_denom_to_native_zone_id_map\",json:\"quasar_denom_to_native_zone_id_map\"",
     (gogoproto.nullable) = false];
 
-  map<string, ZoneCompleteInfo> complete_zone_info_map = 2
+  map<string, string> osmosis_denom_to_quasar_denom_map = 2
+   [(gogoproto.moretags) = "yaml:\"osmosis_denom_to_quasar_denom_map\",json:\"osmosis_denom_to_quasar_denom_map\"",
+    (gogoproto.nullable) = false];
+
+  map<string, ZoneCompleteInfo> complete_zone_info_map = 3
    [(gogoproto.moretags) = "yaml:\"complete_zone_info_map\",json:\"complete_zone_info_map\"",
     (gogoproto.nullable) = false];
 }

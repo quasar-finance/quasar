@@ -9,10 +9,9 @@ const TypeMsgTransmitICATransfer = "transmit_ica_transfer"
 
 var _ sdk.Msg = &MsgTransmitICATransfer{}
 
-func NewMsgTransmitICATransfer(icaOwnerAddress string, icaZoneId string, toAddress string, coin sdk.Coin) *MsgTransmitICATransfer {
+func NewMsgTransmitICATransfer(icaOwnerAddress string, toAddress string, coin sdk.Coin) *MsgTransmitICATransfer {
 	return &MsgTransmitICATransfer{
 		IcaOwnerAddress: icaOwnerAddress,
-		IcaZoneId:       icaZoneId,
 		ToAddress:       toAddress,
 		Coin:            coin,
 	}
@@ -43,9 +42,6 @@ func (msg *MsgTransmitICATransfer) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.IcaOwnerAddress)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid icaOwnerAddress address (%s)", err)
-	}
-	if msg.IcaZoneId == "" {
-		return sdkerrors.Wrap(ErrInvalidZoneId, "icaZoneId cannot be empty")
 	}
 	if msg.ToAddress == "" {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "toAddress cannot be empty")

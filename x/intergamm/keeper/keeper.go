@@ -180,7 +180,7 @@ func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error
 }
 
 func (k Keeper) RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error {
-	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]
+	nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[denom]
 	if !found {
 		return sdkerrors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of denom '%s' not specified", denom)
 	}
@@ -207,7 +207,7 @@ func (k Keeper) IsICACreatedOnZoneId(ctx sdk.Context, zoneId, owner string) (str
 }
 
 func (k Keeper) IsICACreatedOnDenomNativeZone(ctx sdk.Context, denom, owner string) (string, bool) {
-	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]
+	nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[denom]
 	if !found {
 		return "", false
 	}
@@ -277,7 +277,7 @@ func (k Keeper) GetZoneInfo(ctx sdk.Context, zoneId string) (zoneInfo types.Zone
 
 func (k Keeper) GetNativeZoneInfo(ctx sdk.Context, denom string) (types.ZoneCompleteInfo, bool) {
 	logger := k.Logger(ctx)
-	if nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[denom]; found {
+	if nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[denom]; found {
 		if nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId); found {
 			return nativeZoneInfo, true
 		} else {
@@ -305,7 +305,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 
 	connectionTimeout := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	transferTimeoutHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0}
-	nativeZoneId, found := k.DenomToNativeZoneIdMap(ctx)[coin.Denom]
+	nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[coin.Denom]
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of denom '%s' not specified", coin.Denom)
 		logger.Error("SendToken", err)

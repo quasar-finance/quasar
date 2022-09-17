@@ -1,0 +1,16 @@
+{
+  "title": "osmosis_denom_to_quasar_denom_map Param Change",
+  "description": "Update OsmosisDenomToQuasarDenomMap",
+  "changes": [
+    {
+      "subspace": "intergamm",
+      "key": "OsmosisDenomToQuasarDenomMap",
+      "value": {
+        "ibc/C18695C91D20F11FEE3919D7822B34651277CA84550EF33379E823AD9702B257": "uqsr",
+        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+        "uosmo": "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B"
+      }
+    }
+  ],
+  "deposit": "1uqsr"
+}

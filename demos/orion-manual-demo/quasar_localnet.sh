@@ -69,7 +69,7 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.staking.params.bond_denom="uqsr"' |
   jq '.app_state.mint.params.mint_denom="uqsr"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
-  jq '.app_state.gov.voting_params.voting_period="90s"' |
+  jq '.app_state.gov.voting_params.voting_period="60s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
   jq ".app_state.qoracle.params.oracleAccounts=\"$($BINARY keys show alice --keyring-backend test -a)\"" |
   jq '.app_state.orion = {

@@ -131,7 +131,6 @@ message MsgTransmitIbcExitSwapExternAmountOutResponse {
 
 message MsgTransmitICATransfer {
   string icaOwnerAddress = 1;
-  string icaZoneId = 2;
   string toAddress = 3;
   cosmos.base.v1beta1.Coin coin = 4 [(gogoproto.nullable) = false];
 }

@@ -819,10 +819,9 @@ func icaTransferIbcTokensTestCoin() sdk.Coin {
 func icaTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	testCoin := icaTransferIbcTokensTestCoin()
 
-	seq, err := k.TransmitICATransferGeneral(
+	seq, err := k.TransmitICATransfer(
 		ctx,
 		owner,
-		types.OsmosisZoneId,
 		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		testCoin,
 		owner, // token to be sent to owner, via IBC

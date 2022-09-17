@@ -12,10 +12,12 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyCompleteZoneInfoMap        = []byte("CompleteZoneInfoMap")
-	KeyDenomToNativeZoneIdMap     = []byte("DenomToNativeZoneIdMap")
-	DefaultDenomToNativeZoneIdMap = map[string]string{}
-	DefaultCompleteZoneInfoMap    = map[string]ZoneCompleteInfo{}
+	KeyCompleteZoneInfoMap              = []byte("CompleteZoneInfoMap")
+	KeyQuasarDenomToNativeZoneIdMap     = []byte("QuasarDenomToNativeZoneIdMap")
+	KeyOsmosisDenomToQuasarDenomMap     = []byte("OsmosisDenomToQuasarDenomMap")
+	DefaultQuasarDenomToNativeZoneIdMap = map[string]string{}
+	DefaultOsmosisDenomToQuasarDenomMap = map[string]string{}
+	DefaultCompleteZoneInfoMap          = map[string]ZoneCompleteInfo{}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -24,35 +26,47 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(denomToNativeZoneIdMap map[string]string,
+func NewParams(quasarDenomToNativeZoneIdMap map[string]string,
+	osmosisDenomToQuasarDenomMap map[string]string,
 	completeZoneInfoMap map[string]ZoneCompleteInfo) Params {
 	return Params{
-		DenomToNativeZoneIdMap: denomToNativeZoneIdMap,
-		CompleteZoneInfoMap:    completeZoneInfoMap,
+		QuasarDenomToNativeZoneIdMap: quasarDenomToNativeZoneIdMap,
+		OsmosisDenomToQuasarDenomMap: osmosisDenomToQuasarDenomMap,
+		CompleteZoneInfoMap:          completeZoneInfoMap,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultDenomToNativeZoneIdMap,
+	return NewParams(DefaultQuasarDenomToNativeZoneIdMap,
+		DefaultOsmosisDenomToQuasarDenomMap,
 		DefaultCompleteZoneInfoMap)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyDenomToNativeZoneIdMap, &p.DenomToNativeZoneIdMap, validateDenomToNativeZoneIdMap),
+		paramtypes.NewParamSetPair(KeyQuasarDenomToNativeZoneIdMap, &p.QuasarDenomToNativeZoneIdMap, validateQuasarDenomToNativeZoneIdMap),
+		paramtypes.NewParamSetPair(KeyOsmosisDenomToQuasarDenomMap, &p.OsmosisDenomToQuasarDenomMap, validateOsmosisDenomToQuasarDenomMap),
 		paramtypes.NewParamSetPair(KeyCompleteZoneInfoMap, &p.CompleteZoneInfoMap, validateCompleteZoneInfoMap),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	for denom, nativeZoneId := range p.DenomToNativeZoneIdMap {
-		if err := sdktypes.ValidateDenom(denom); err != nil {
+	for quasarDenom, nativeZoneId := range p.QuasarDenomToNativeZoneIdMap {
+		if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
 			return err
 		}
 		if err := validateIdentifier(nativeZoneId); err != nil {
+			return err
+		}
+	}
+	for osmosisDenom, quasarDenom := range p.QuasarDenomToNativeZoneIdMap {
+		if err := sdktypes.ValidateDenom(osmosisDenom); err != nil {
+			return err
+		}
+		if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
 			return err
 		}
 	}
@@ -135,7 +149,7 @@ func (info ZoneCompleteInfo) validateCompleteZoneInfo() error {
 	return nil
 }
 
-func validateDenomToNativeZoneIdMap(i interface{}) error {
+func validateQuasarDenomToNativeZoneIdMap(i interface{}) error {
 	if m, ok := i.(map[string]string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	} else {
@@ -144,6 +158,22 @@ func validateDenomToNativeZoneIdMap(i interface{}) error {
 				return err
 			}
 			if err := validateIdentifier(nativeZoneId); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateOsmosisDenomToQuasarDenomMap(i interface{}) error {
+	if m, ok := i.(map[string]string); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	} else {
+		for osmosisDenom, quasarDenom := range m {
+			if err := sdktypes.ValidateDenom(osmosisDenom); err != nil {
+				return err
+			}
+			if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
 				return err
 			}
 		}

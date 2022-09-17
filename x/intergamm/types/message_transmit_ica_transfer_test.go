@@ -10,7 +10,6 @@ import (
 )
 
 func TestMsgTransmitICATransfer_ValidateBasic(t *testing.T) {
-	sampleICAZoneId := "osmosis"
 	sampleAmount := sdk.NewCoin("abc", sdk.NewInt(1000))
 	tests := []struct {
 		name string
@@ -21,21 +20,14 @@ func TestMsgTransmitICATransfer_ValidateBasic(t *testing.T) {
 			name: "invalid ICA owner address",
 			msg: MsgTransmitICATransfer{
 				IcaOwnerAddress: "invalid_address",
-			},
-			err: sdkerrors.ErrInvalidAddress,
-		}, {
-			name: "invalid ICA zone id",
-			msg: MsgTransmitICATransfer{
-				IcaOwnerAddress: sample.AccAddressStr(),
 				ToAddress:       sample.AccAddressStr(),
 				Coin:            sampleAmount,
 			},
-			err: ErrInvalidZoneId,
+			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "invalid to-address",
 			msg: MsgTransmitICATransfer{
 				IcaOwnerAddress: sample.AccAddressStr(),
-				IcaZoneId:       sampleICAZoneId,
 				Coin:            sampleAmount,
 			},
 			err: sdkerrors.ErrInvalidAddress,
@@ -43,7 +35,6 @@ func TestMsgTransmitICATransfer_ValidateBasic(t *testing.T) {
 			name: "missing coin",
 			msg: MsgTransmitICATransfer{
 				IcaOwnerAddress: sample.AccAddressStr(),
-				IcaZoneId:       sampleICAZoneId,
 				ToAddress:       sample.AccAddressStr(),
 			},
 			err: sdkerrors.ErrInvalidCoins,
@@ -51,7 +42,6 @@ func TestMsgTransmitICATransfer_ValidateBasic(t *testing.T) {
 			name: "invalid coin",
 			msg: MsgTransmitICATransfer{
 				IcaOwnerAddress: sample.AccAddressStr(),
-				IcaZoneId:       sampleICAZoneId,
 				ToAddress:       sample.AccAddressStr(),
 				Coin:            sdk.NewCoin("abc", sdk.NewInt(0)),
 			},
@@ -60,7 +50,6 @@ func TestMsgTransmitICATransfer_ValidateBasic(t *testing.T) {
 			name: "valid",
 			msg: MsgTransmitICATransfer{
 				IcaOwnerAddress: sample.AccAddressStr(),
-				IcaZoneId:       sampleICAZoneId,
 				ToAddress:       sample.AccAddressStr(),
 				Coin:            sampleAmount,
 			},

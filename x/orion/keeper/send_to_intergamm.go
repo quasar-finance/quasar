@@ -115,10 +115,9 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
 
-	return k.intergammKeeper.TransmitICATransferGeneral(
+	return k.intergammKeeper.TransmitICATransfer(
 		ctx,
 		owner,
-		intergammtypes.OsmosisZoneId,
 		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		coin,
 		receiverAddr,
