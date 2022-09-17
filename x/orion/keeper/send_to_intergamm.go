@@ -121,7 +121,6 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 		intergammtypes.OsmosisZoneId,
 		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		coin,
-		intergammtypes.QuasarZoneId,
 		receiverAddr,
 		ibcclienttypes.ZeroHeight(),
 		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),

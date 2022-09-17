@@ -20,6 +20,10 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgTransmitIbcExitSwapExternAmountOut{}, "intergammTransmitIbcExitSwapExternAmountOut", nil)
 
 	cdc.RegisterConcrete(&MsgSendToken{}, "intergamm/SendToken", nil)
+	cdc.RegisterConcrete(&MsgTransmitICATransfer{}, "intergamm/TransmitICATransfer", nil)
+	cdc.RegisterConcrete(&MsgRegisterICAOnZone{}, "intergamm/RegisterICAOnZone", nil)
+	cdc.RegisterConcrete(&MsgRegisterICAOnDenomNativeZone{}, "intergamm/RegisterICAOnDenomNativeZone", nil)
+	cdc.RegisterConcrete(&MsgSendTokenToICA{}, "intergamm/SendTokenToICA", nil)
 	// this line is used by starport scaffolding # 2
 
 	gammtypes.RegisterLegacyAminoCodec(cdc)
@@ -51,6 +55,18 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgSendToken{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgTransmitICATransfer{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgRegisterICAOnZone{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgRegisterICAOnDenomNativeZone{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgSendTokenToICA{},
 	)
 	// this line is used by starport scaffolding # 3
 

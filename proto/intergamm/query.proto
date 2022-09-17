@@ -26,6 +26,16 @@ service Query {
 		option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/get_port_info/{portID}/{destinationChainID}";
 	}
 
+// Queries a list of ICAAddressOnZone items.
+	rpc ICAAddressOnZone(QueryICAAddressOnZoneRequest) returns (QueryICAAddressOnZoneResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/ica_address_on_zone/{owner}/{zoneId}";
+	}
+
+// Queries a list of ICAAddressOnDenomNativeZone items.
+	rpc ICAAddressOnDenomNativeZone(QueryICAAddressOnDenomNativeZoneRequest) returns (QueryICAAddressOnDenomNativeZoneResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/intergamm/ica_address_on_denom_native_zone/{owner}/{denom}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -54,6 +64,24 @@ message QueryGetPortInfoRequest {
 
 message QueryGetPortInfoResponse {
   PortInfo portInfo = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryICAAddressOnZoneRequest {
+  string owner = 1;
+  string zoneId = 2;
+}
+
+message QueryICAAddressOnZoneResponse {
+  string icaAddress = 1;
+}
+
+message QueryICAAddressOnDenomNativeZoneRequest {
+  string owner = 1;
+  string denom = 2;
+}
+
+message QueryICAAddressOnDenomNativeZoneResponse {
+  string icaAddress = 1;
 }
 
 // this line is used by starport scaffolding # 3

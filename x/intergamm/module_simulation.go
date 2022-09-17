@@ -27,6 +27,22 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgSendToken int = 100
 
+	opWeightMsgTransmitICATransfer = "op_weight_msg_transmit_ica_transfer"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgTransmitICATransfer int = 100
+
+	opWeightMsgRegisterICAOnZone = "op_weight_msg_register_ica_on_zone"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgRegisterICAOnZone int = 100
+
+	opWeightMsgRegisterICAOnDenomNativeZone = "op_weight_msg_register_ica_on_denom_native_zone"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgRegisterICAOnDenomNativeZone int = 100
+
+	opWeightMsgSendTokenToICA = "op_weight_msg_send_token_to_ica"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgSendTokenToICA int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -69,6 +85,50 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgSendToken,
 		intergammsimulation.SimulateMsgSendToken(am.accountKeeper, am.bankKeeper, *am.keeper),
+	))
+
+	var weightMsgTransmitICATransfer int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgTransmitICATransfer, &weightMsgTransmitICATransfer, nil,
+		func(_ *rand.Rand) {
+			weightMsgTransmitICATransfer = defaultWeightMsgTransmitICATransfer
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgTransmitICATransfer,
+		intergammsimulation.SimulateMsgTransmitICATransfer(am.accountKeeper, am.bankKeeper, *am.keeper),
+	))
+
+	var weightMsgRegisterICAOnZone int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRegisterICAOnZone, &weightMsgRegisterICAOnZone, nil,
+		func(_ *rand.Rand) {
+			weightMsgRegisterICAOnZone = defaultWeightMsgRegisterICAOnZone
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgRegisterICAOnZone,
+		intergammsimulation.SimulateMsgRegisterICAOnZone(am.accountKeeper, am.bankKeeper, *am.keeper),
+	))
+
+	var weightMsgRegisterICAOnDenomNativeZone int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRegisterICAOnDenomNativeZone, &weightMsgRegisterICAOnDenomNativeZone, nil,
+		func(_ *rand.Rand) {
+			weightMsgRegisterICAOnDenomNativeZone = defaultWeightMsgRegisterICAOnDenomNativeZone
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgRegisterICAOnDenomNativeZone,
+		intergammsimulation.SimulateMsgRegisterICAOnDenomNativeZone(am.accountKeeper, am.bankKeeper, *am.keeper),
+	))
+
+	var weightMsgSendTokenToICA int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSendTokenToICA, &weightMsgSendTokenToICA, nil,
+		func(_ *rand.Rand) {
+			weightMsgSendTokenToICA = defaultWeightMsgSendTokenToICA
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgSendTokenToICA,
+		intergammsimulation.SimulateMsgSendTokenToICA(am.accountKeeper, am.bankKeeper, *am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

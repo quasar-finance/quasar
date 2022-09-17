@@ -112,7 +112,6 @@ type IntergammKeeper interface {
 		icaZoneId string,
 		timeoutTimestamp uint64,
 		token sdk.Coin,
-		dstZoneId string,
 		finalReceiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
 		transferTimeoutTimestamp uint64) (uint64, error)

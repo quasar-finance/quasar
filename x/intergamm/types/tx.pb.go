@@ -1044,6 +1044,400 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) GetSeq() uint64 {
 	return 0
 }
 
+type MsgTransmitICATransfer struct {
+	IcaOwnerAddress string     `protobuf:"bytes,1,opt,name=icaOwnerAddress,proto3" json:"icaOwnerAddress,omitempty"`
+	IcaZoneId       string     `protobuf:"bytes,2,opt,name=icaZoneId,proto3" json:"icaZoneId,omitempty"`
+	ToAddress       string     `protobuf:"bytes,3,opt,name=toAddress,proto3" json:"toAddress,omitempty"`
+	Coin            types.Coin `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
+}
+
+func (m *MsgTransmitICATransfer) Reset()         { *m = MsgTransmitICATransfer{} }
+func (m *MsgTransmitICATransfer) String() string { return proto.CompactTextString(m) }
+func (*MsgTransmitICATransfer) ProtoMessage()    {}
+func (*MsgTransmitICATransfer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{17}
+}
+func (m *MsgTransmitICATransfer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransmitICATransfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransmitICATransfer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransmitICATransfer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransmitICATransfer.Merge(m, src)
+}
+func (m *MsgTransmitICATransfer) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransmitICATransfer) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransmitICATransfer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransmitICATransfer proto.InternalMessageInfo
+
+func (m *MsgTransmitICATransfer) GetIcaOwnerAddress() string {
+	if m != nil {
+		return m.IcaOwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransfer) GetIcaZoneId() string {
+	if m != nil {
+		return m.IcaZoneId
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransfer) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransfer) GetCoin() types.Coin {
+	if m != nil {
+		return m.Coin
+	}
+	return types.Coin{}
+}
+
+type MsgTransmitICATransferResponse struct {
+	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+}
+
+func (m *MsgTransmitICATransferResponse) Reset()         { *m = MsgTransmitICATransferResponse{} }
+func (m *MsgTransmitICATransferResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgTransmitICATransferResponse) ProtoMessage()    {}
+func (*MsgTransmitICATransferResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{18}
+}
+func (m *MsgTransmitICATransferResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransmitICATransferResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransmitICATransferResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransmitICATransferResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransmitICATransferResponse.Merge(m, src)
+}
+func (m *MsgTransmitICATransferResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransmitICATransferResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransmitICATransferResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransmitICATransferResponse proto.InternalMessageInfo
+
+func (m *MsgTransmitICATransferResponse) GetSeq() uint64 {
+	if m != nil {
+		return m.Seq
+	}
+	return 0
+}
+
+type MsgRegisterICAOnZone struct {
+	OwnerAddress string `protobuf:"bytes,1,opt,name=ownerAddress,proto3" json:"ownerAddress,omitempty"`
+	ZoneId       string `protobuf:"bytes,2,opt,name=zoneId,proto3" json:"zoneId,omitempty"`
+}
+
+func (m *MsgRegisterICAOnZone) Reset()         { *m = MsgRegisterICAOnZone{} }
+func (m *MsgRegisterICAOnZone) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnZone) ProtoMessage()    {}
+func (*MsgRegisterICAOnZone) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{19}
+}
+func (m *MsgRegisterICAOnZone) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnZone) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnZone.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnZone) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnZone.Merge(m, src)
+}
+func (m *MsgRegisterICAOnZone) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnZone) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnZone.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnZone proto.InternalMessageInfo
+
+func (m *MsgRegisterICAOnZone) GetOwnerAddress() string {
+	if m != nil {
+		return m.OwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgRegisterICAOnZone) GetZoneId() string {
+	if m != nil {
+		return m.ZoneId
+	}
+	return ""
+}
+
+type MsgRegisterICAOnZoneResponse struct {
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Reset()         { *m = MsgRegisterICAOnZoneResponse{} }
+func (m *MsgRegisterICAOnZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnZoneResponse) ProtoMessage()    {}
+func (*MsgRegisterICAOnZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{20}
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnZoneResponse.Merge(m, src)
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnZoneResponse proto.InternalMessageInfo
+
+type MsgRegisterICAOnDenomNativeZone struct {
+	OwnerAddress string `protobuf:"bytes,1,opt,name=ownerAddress,proto3" json:"ownerAddress,omitempty"`
+	Denom        string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Reset()         { *m = MsgRegisterICAOnDenomNativeZone{} }
+func (m *MsgRegisterICAOnDenomNativeZone) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnDenomNativeZone) ProtoMessage()    {}
+func (*MsgRegisterICAOnDenomNativeZone) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{21}
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.Merge(m, src)
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnDenomNativeZone proto.InternalMessageInfo
+
+func (m *MsgRegisterICAOnDenomNativeZone) GetOwnerAddress() string {
+	if m != nil {
+		return m.OwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+type MsgRegisterICAOnDenomNativeZoneResponse struct {
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Reset() {
+	*m = MsgRegisterICAOnDenomNativeZoneResponse{}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnDenomNativeZoneResponse) ProtoMessage()    {}
+func (*MsgRegisterICAOnDenomNativeZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{22}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.Merge(m, src)
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse proto.InternalMessageInfo
+
+type MsgSendTokenToICA struct {
+	FromAddress string     `protobuf:"bytes,1,opt,name=fromAddress,proto3" json:"fromAddress,omitempty"`
+	ToZoneId    string     `protobuf:"bytes,2,opt,name=toZoneId,proto3" json:"toZoneId,omitempty"`
+	Coin        types.Coin `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
+}
+
+func (m *MsgSendTokenToICA) Reset()         { *m = MsgSendTokenToICA{} }
+func (m *MsgSendTokenToICA) String() string { return proto.CompactTextString(m) }
+func (*MsgSendTokenToICA) ProtoMessage()    {}
+func (*MsgSendTokenToICA) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{23}
+}
+func (m *MsgSendTokenToICA) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSendTokenToICA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSendTokenToICA.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSendTokenToICA) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSendTokenToICA.Merge(m, src)
+}
+func (m *MsgSendTokenToICA) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSendTokenToICA) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSendTokenToICA.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSendTokenToICA proto.InternalMessageInfo
+
+func (m *MsgSendTokenToICA) GetFromAddress() string {
+	if m != nil {
+		return m.FromAddress
+	}
+	return ""
+}
+
+func (m *MsgSendTokenToICA) GetToZoneId() string {
+	if m != nil {
+		return m.ToZoneId
+	}
+	return ""
+}
+
+func (m *MsgSendTokenToICA) GetCoin() types.Coin {
+	if m != nil {
+		return m.Coin
+	}
+	return types.Coin{}
+}
+
+type MsgSendTokenToICAResponse struct {
+	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+}
+
+func (m *MsgSendTokenToICAResponse) Reset()         { *m = MsgSendTokenToICAResponse{} }
+func (m *MsgSendTokenToICAResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSendTokenToICAResponse) ProtoMessage()    {}
+func (*MsgSendTokenToICAResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{24}
+}
+func (m *MsgSendTokenToICAResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSendTokenToICAResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSendTokenToICAResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSendTokenToICAResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSendTokenToICAResponse.Merge(m, src)
+}
+func (m *MsgSendTokenToICAResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSendTokenToICAResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSendTokenToICAResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSendTokenToICAResponse proto.InternalMessageInfo
+
+func (m *MsgSendTokenToICAResponse) GetSeq() uint64 {
+	if m != nil {
+		return m.Seq
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*MsgEmptyIbcResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgEmptyIbcResponse")
 	proto.RegisterType((*MsgTestScenario)(nil), "quasarlabs.quasarnode.intergamm.MsgTestScenario")
@@ -1062,70 +1456,91 @@ func init() {
 	proto.RegisterType((*MsgTransmitIbcJoinSwapExternAmountInResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcJoinSwapExternAmountInResponse")
 	proto.RegisterType((*MsgTransmitIbcExitSwapExternAmountOut)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcExitSwapExternAmountOut")
 	proto.RegisterType((*MsgTransmitIbcExitSwapExternAmountOutResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcExitSwapExternAmountOutResponse")
+	proto.RegisterType((*MsgTransmitICATransfer)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitICATransfer")
+	proto.RegisterType((*MsgTransmitICATransferResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitICATransferResponse")
+	proto.RegisterType((*MsgRegisterICAOnZone)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnZone")
+	proto.RegisterType((*MsgRegisterICAOnZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnZoneResponse")
+	proto.RegisterType((*MsgRegisterICAOnDenomNativeZone)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnDenomNativeZone")
+	proto.RegisterType((*MsgRegisterICAOnDenomNativeZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnDenomNativeZoneResponse")
+	proto.RegisterType((*MsgSendTokenToICA)(nil), "quasarlabs.quasarnode.intergamm.MsgSendTokenToICA")
+	proto.RegisterType((*MsgSendTokenToICAResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgSendTokenToICAResponse")
 }
 
 func init() { proto.RegisterFile("intergamm/tx.proto", fileDescriptor_a78c651f644a1267) }
 
 var fileDescriptor_a78c651f644a1267 = []byte{
-	// 921 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x97, 0xcf, 0x6f, 0xdc, 0x44,
-	0x14, 0xc7, 0xe3, 0xdd, 0x4d, 0xda, 0xbc, 0x84, 0xb6, 0x4c, 0x7f, 0xe0, 0x5a, 0x95, 0x77, 0xb1,
-	0x0a, 0x8a, 0x50, 0x62, 0xd3, 0x94, 0x8a, 0x06, 0x09, 0xc1, 0x26, 0x5a, 0x90, 0x51, 0x4d, 0x90,
-	0x13, 0x2e, 0xbd, 0x79, 0xed, 0xc1, 0x1d, 0x65, 0x3d, 0xb3, 0xf1, 0x8c, 0xcb, 0x86, 0x3b, 0x5c,
-	0x01, 0x09, 0x24, 0x6e, 0x88, 0x3f, 0x03, 0x89, 0x3f, 0xa0, 0xb7, 0xf6, 0xc8, 0x29, 0xa0, 0xe4,
-	0xc6, 0x91, 0xbf, 0x00, 0xd9, 0x6b, 0x7b, 0xe3, 0xdd, 0x64, 0x6b, 0x2f, 0x55, 0x95, 0xde, 0x3c,
-	0x6f, 0xde, 0xf7, 0xeb, 0x37, 0x1f, 0xcf, 0x3c, 0xdb, 0x80, 0x08, 0x15, 0x38, 0xf4, 0x9d, 0x20,
-	0x30, 0xc4, 0x40, 0xef, 0x87, 0x4c, 0x30, 0xd4, 0xdc, 0x8f, 0x1c, 0xee, 0x84, 0x3d, 0xa7, 0xcb,
-	0xf5, 0xe1, 0x25, 0x65, 0x1e, 0xd6, 0xf3, 0x4c, 0xa5, 0xc5, 0x78, 0xc0, 0x38, 0xe1, 0xc6, 0xe3,
-	0x0d, 0x23, 0x91, 0x3e, 0xbe, 0xd3, 0xc5, 0xc2, 0xb9, 0x93, 0x5b, 0x28, 0xaa, 0x9b, 0xa4, 0x18,
-	0x5d, 0x87, 0xe3, 0x7c, 0xd6, 0x65, 0x84, 0xa6, 0xf3, 0xd7, 0x7c, 0xe6, 0xb3, 0xe4, 0xd2, 0x88,
-	0xaf, 0x86, 0x51, 0xed, 0x3a, 0x5c, 0xb5, 0xb8, 0xdf, 0x09, 0xfa, 0xe2, 0xc0, 0xec, 0xba, 0x36,
-	0xe6, 0x7d, 0x46, 0x39, 0xd6, 0x3e, 0x85, 0xcb, 0x16, 0xf7, 0x77, 0x31, 0x17, 0x3b, 0x2e, 0xa6,
-	0x4e, 0x48, 0x18, 0x92, 0xe1, 0x82, 0x1b, 0x62, 0x47, 0xb0, 0x50, 0x96, 0x5a, 0xd2, 0xca, 0xa2,
-	0x9d, 0x0d, 0x91, 0x02, 0x17, 0x79, 0x9a, 0x25, 0xd7, 0x92, 0xa9, 0x7c, 0xac, 0x59, 0xf0, 0xc6,
-	0x98, 0x51, 0x76, 0x0f, 0x74, 0x03, 0x16, 0x42, 0xcc, 0xa3, 0x9e, 0x48, 0xfd, 0xd2, 0x51, 0x6c,
-	0x87, 0x07, 0x44, 0x6c, 0x31, 0x0f, 0x27, 0x76, 0x75, 0x3b, 0x1f, 0x6b, 0xbf, 0x4a, 0xb0, 0x6c,
-	0x71, 0x7f, 0x07, 0x53, 0x6f, 0x97, 0xed, 0x61, 0x8a, 0x5a, 0xb0, 0xf4, 0x55, 0xc8, 0x82, 0xb6,
-	0xe7, 0x85, 0x98, 0xf3, 0xd4, 0xe9, 0x64, 0x28, 0xb6, 0x13, 0xec, 0x21, 0xa3, 0xd8, 0xf4, 0xb2,
-	0xea, 0xb2, 0x31, 0xba, 0x05, 0x8b, 0x82, 0x65, 0xda, 0x7a, 0x32, 0x39, 0x0a, 0xa0, 0xbb, 0xd0,
-	0x88, 0xf9, 0xc9, 0x8d, 0x96, 0xb4, 0xb2, 0xb4, 0x7e, 0x53, 0x1f, 0x02, 0xd6, 0x63, 0xc0, 0x7a,
-	0x0a, 0x58, 0xdf, 0x62, 0x84, 0x6e, 0x36, 0x9e, 0x1c, 0x36, 0xe7, 0xec, 0x24, 0x59, 0x5b, 0x81,
-	0x6b, 0x27, 0x0b, 0xcc, 0x57, 0x7b, 0x05, 0xea, 0x1c, 0xef, 0x27, 0x05, 0x36, 0xec, 0xf8, 0x52,
-	0xfb, 0xb6, 0x06, 0x37, 0x62, 0x36, 0xa1, 0x43, 0x79, 0x40, 0x84, 0xd9, 0x75, 0x3f, 0x63, 0x84,
-	0x7e, 0xc1, 0x58, 0x6f, 0x0a, 0x6b, 0x0d, 0x96, 0x5d, 0x46, 0x29, 0x76, 0x05, 0x61, 0x34, 0x5f,
-	0x51, 0x21, 0x86, 0xde, 0x81, 0x2b, 0x82, 0x04, 0x98, 0x45, 0x62, 0x97, 0x04, 0x98, 0x0b, 0x27,
-	0xe8, 0x27, 0x8b, 0x6b, 0xd8, 0x13, 0xf1, 0xf8, 0x21, 0xf4, 0x19, 0xeb, 0x99, 0x5e, 0xb2, 0xca,
-	0x86, 0x9d, 0x8e, 0xd0, 0xdb, 0x70, 0x89, 0x3f, 0x72, 0x42, 0xbc, 0x1d, 0x89, 0x76, 0xc0, 0x22,
-	0x2a, 0xe4, 0xf9, 0xe4, 0x51, 0x8c, 0x45, 0x51, 0x1b, 0x96, 0x44, 0xbc, 0x4e, 0x93, 0x5a, 0xce,
-	0x80, 0xcb, 0x0b, 0xad, 0x7a, 0x19, 0x54, 0x27, 0x35, 0xda, 0x3a, 0xa8, 0xa7, 0x63, 0xa8, 0xc4,
-	0xae, 0x33, 0x20, 0xe2, 0x9c, 0xb0, 0xbb, 0x0d, 0xaf, 0x25, 0x94, 0x4c, 0x5a, 0x40, 0x57, 0x0c,
-	0xa2, 0x2d, 0x58, 0x4e, 0x28, 0x6c, 0x47, 0xc2, 0x22, 0xb4, 0x34, 0xba, 0x82, 0x68, 0x92, 0x5d,
-	0x86, 0x61, 0x0a, 0xbb, 0xef, 0x6a, 0x20, 0x17, 0x45, 0x0f, 0x98, 0xbb, 0x97, 0xec, 0x56, 0xfe,
-	0x12, 0xe9, 0x99, 0x70, 0xd1, 0x8b, 0x42, 0x27, 0x56, 0x0e, 0xf9, 0x6d, 0xae, 0xfd, 0x73, 0xd8,
-	0x44, 0x59, 0x6c, 0x95, 0x05, 0x44, 0xe0, 0xb8, 0x2f, 0xfd, 0x7b, 0xd8, 0xbc, 0x7c, 0xe0, 0x04,
-	0xbd, 0x0f, 0xb4, 0x6c, 0x4e, 0xfb, 0xe5, 0xaf, 0xa6, 0x64, 0xe7, 0x72, 0x74, 0x0f, 0xe6, 0xe3,
-	0xb3, 0xc7, 0xe5, 0xf9, 0x72, 0x0c, 0x87, 0xd9, 0xda, 0x7b, 0xd0, 0x3a, 0x8b, 0xc3, 0x14, 0x7c,
-	0x4f, 0x25, 0xb8, 0x55, 0x94, 0x6d, 0x62, 0x9f, 0xd0, 0x2f, 0x69, 0x8f, 0xb9, 0x7b, 0x84, 0xfa,
-	0x2f, 0x11, 0xe1, 0x25, 0xa8, 0x91, 0x6c, 0xf3, 0xd5, 0x88, 0x37, 0x2b, 0x87, 0xfb, 0x70, 0x7b,
-	0xda, 0x82, 0xa6, 0xb0, 0xf8, 0xb1, 0x36, 0x2e, 0x8d, 0xcf, 0xee, 0xce, 0xd7, 0x4e, 0xbf, 0x33,
-	0x10, 0x38, 0x4c, 0xb7, 0xba, 0x49, 0xcf, 0xc1, 0xa1, 0x5c, 0x85, 0xd7, 0xb3, 0xd6, 0x65, 0x91,
-	0xe2, 0xc1, 0x9c, 0x9c, 0x40, 0x1b, 0x70, 0x21, 0x6d, 0x51, 0xf2, 0x42, 0xb9, 0xee, 0x9f, 0xe5,
-	0x6b, 0x1f, 0xc3, 0x6a, 0x19, 0x24, 0x53, 0xa8, 0xfe, 0x54, 0x83, 0xb7, 0x26, 0x4f, 0xf5, 0xb8,
-	0xc5, 0x76, 0x24, 0x5e, 0xe1, 0x5e, 0x27, 0x55, 0xef, 0x75, 0x6d, 0x58, 0x2b, 0x45, 0xe5, 0x6c,
-	0xb2, 0xeb, 0x4f, 0x17, 0xa1, 0x6e, 0x71, 0x1f, 0x7d, 0x03, 0xcb, 0x85, 0x6f, 0x9b, 0x77, 0xf5,
-	0xe7, 0x7c, 0x7f, 0xe9, 0x63, 0x1f, 0x31, 0xca, 0xfd, 0xaa, 0x8a, 0xbc, 0xaa, 0xef, 0x25, 0xb8,
-	0x7a, 0xda, 0x3b, 0xff, 0xfd, 0x52, 0x8e, 0x93, 0x42, 0xe5, 0xa3, 0x19, 0x85, 0x67, 0x55, 0x94,
-	0xbf, 0x49, 0xab, 0x56, 0x94, 0x09, 0x2b, 0x57, 0x34, 0xf1, 0xd2, 0xfa, 0x59, 0x82, 0xeb, 0xa7,
-	0xbf, 0x9f, 0x36, 0x2a, 0x5a, 0x8f, 0xa4, 0x4a, 0x7b, 0x66, 0x69, 0x5e, 0xd7, 0x6f, 0x12, 0xdc,
-	0x3c, 0xbb, 0xf1, 0x7f, 0x58, 0xf1, 0x06, 0x45, 0xb9, 0xd2, 0xf9, 0x5f, 0xf2, 0xbc, 0xc6, 0xdf,
-	0x25, 0x78, 0xf3, 0xf9, 0x0d, 0xb9, 0x33, 0xc3, 0xa6, 0x99, 0xb4, 0x51, 0xac, 0x17, 0x62, 0x93,
-	0xd7, 0xfe, 0x87, 0x04, 0x5a, 0x89, 0xb6, 0xf7, 0xc9, 0x0c, 0xfb, 0xeb, 0x14, 0x1f, 0xe5, 0xf3,
-	0x17, 0xe3, 0x93, 0x97, 0xbf, 0x0f, 0x8b, 0xa3, 0x3f, 0x93, 0xb5, 0x32, 0xe6, 0x79, 0xba, 0x72,
-	0xaf, 0x52, 0x7a, 0x76, 0xcb, 0xcd, 0x07, 0x4f, 0x8e, 0x54, 0xe9, 0xd9, 0x91, 0x2a, 0xfd, 0x7d,
-	0xa4, 0x4a, 0x3f, 0x1c, 0xab, 0x73, 0xcf, 0x8e, 0xd5, 0xb9, 0x3f, 0x8f, 0xd5, 0xb9, 0x87, 0xeb,
-	0x3e, 0x11, 0x8f, 0xa2, 0xae, 0xee, 0xb2, 0xc0, 0x18, 0x59, 0x1b, 0x23, 0x6b, 0x63, 0x60, 0x9c,
-	0xf8, 0x13, 0x3d, 0xe8, 0x63, 0xde, 0x5d, 0x48, 0x7e, 0x0a, 0xef, 0xfe, 0x17, 0x00, 0x00, 0xff,
-	0xff, 0x01, 0xe7, 0x98, 0x4c, 0xa3, 0x0e, 0x00, 0x00,
+	// 1136 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xcf, 0x6f, 0x1b, 0x45,
+	0x14, 0xce, 0xd8, 0x4e, 0xda, 0xbc, 0x84, 0xa4, 0xd9, 0xa6, 0xc5, 0x59, 0x45, 0xb6, 0x59, 0x15,
+	0x08, 0x28, 0xb1, 0x69, 0x4a, 0x45, 0x53, 0xa9, 0xa2, 0x8e, 0x09, 0x60, 0x54, 0xd7, 0xc8, 0x09,
+	0x97, 0x72, 0x5a, 0xef, 0x4e, 0xb7, 0xa3, 0x78, 0x67, 0x9c, 0x9d, 0x71, 0xea, 0xf4, 0xc4, 0x85,
+	0x4a, 0x9c, 0x00, 0x09, 0x24, 0x2e, 0x08, 0x71, 0xe5, 0xca, 0x09, 0x89, 0x3f, 0xa0, 0x37, 0x7a,
+	0xe4, 0x14, 0x50, 0x72, 0xe3, 0xc8, 0x5f, 0x80, 0x76, 0xbd, 0xbb, 0xf6, 0xee, 0x3a, 0xce, 0xae,
+	0x53, 0xaa, 0xf6, 0x36, 0xf3, 0x66, 0xbe, 0x6f, 0xbf, 0xf7, 0xcd, 0xaf, 0x67, 0x83, 0x44, 0xa8,
+	0xc0, 0x96, 0xa1, 0x9a, 0x66, 0x49, 0x74, 0x8b, 0x6d, 0x8b, 0x09, 0x26, 0xe5, 0xf7, 0x3a, 0x2a,
+	0x57, 0xad, 0x96, 0xda, 0xe4, 0xc5, 0x5e, 0x93, 0x32, 0x1d, 0x17, 0xfd, 0x99, 0x72, 0x81, 0x71,
+	0x93, 0x71, 0xc2, 0x4b, 0xfb, 0x1b, 0x25, 0x07, 0xba, 0x7f, 0xb5, 0x89, 0x85, 0x7a, 0xd5, 0xa7,
+	0x90, 0x73, 0x9a, 0x33, 0xa5, 0xd4, 0x54, 0x39, 0xf6, 0x47, 0x35, 0x46, 0xa8, 0x3b, 0xbe, 0x68,
+	0x30, 0x83, 0x39, 0xcd, 0x92, 0xdd, 0xea, 0x45, 0x95, 0x4b, 0x70, 0xb1, 0xc6, 0x8d, 0x2d, 0xb3,
+	0x2d, 0x0e, 0xaa, 0x4d, 0xad, 0x81, 0x79, 0x9b, 0x51, 0x8e, 0x95, 0x8f, 0x60, 0xbe, 0xc6, 0x8d,
+	0x1d, 0xcc, 0xc5, 0xb6, 0x86, 0xa9, 0x6a, 0x11, 0x26, 0x65, 0xe1, 0x9c, 0x66, 0x61, 0x55, 0x30,
+	0x2b, 0x8b, 0x0a, 0x68, 0x65, 0xba, 0xe1, 0x75, 0x25, 0x19, 0xce, 0x73, 0x77, 0x56, 0x36, 0xe5,
+	0x0c, 0xf9, 0x7d, 0xa5, 0x06, 0xaf, 0x86, 0x88, 0xbc, 0x6f, 0x48, 0x97, 0x61, 0xca, 0xc2, 0xbc,
+	0xd3, 0x12, 0x2e, 0x9f, 0xdb, 0xb3, 0xe9, 0x70, 0x97, 0x88, 0x0a, 0xd3, 0xb1, 0x43, 0x97, 0x6e,
+	0xf8, 0x7d, 0xe5, 0x27, 0x04, 0xb3, 0x35, 0x6e, 0x6c, 0x63, 0xaa, 0xef, 0xb0, 0x5d, 0x4c, 0xa5,
+	0x02, 0xcc, 0xdc, 0xb7, 0x98, 0x59, 0xd6, 0x75, 0x0b, 0x73, 0xee, 0x32, 0x0d, 0x86, 0x6c, 0x3a,
+	0xc1, 0xee, 0x31, 0x8a, 0xab, 0xba, 0xa7, 0xce, 0xeb, 0x4b, 0xcb, 0x30, 0x2d, 0x98, 0x87, 0x4d,
+	0x3b, 0x83, 0xfd, 0x80, 0x74, 0x0d, 0x32, 0xb6, 0x7f, 0xd9, 0x4c, 0x01, 0xad, 0xcc, 0xac, 0x2f,
+	0x15, 0x7b, 0x06, 0x17, 0x6d, 0x83, 0x8b, 0xae, 0xc1, 0xc5, 0x0a, 0x23, 0x74, 0x33, 0xf3, 0xe4,
+	0x30, 0x3f, 0xd1, 0x70, 0x26, 0x2b, 0x2b, 0xb0, 0x38, 0x28, 0xd0, 0xcf, 0xf6, 0x02, 0xa4, 0x39,
+	0xde, 0x73, 0x04, 0x66, 0x1a, 0x76, 0x53, 0xf9, 0x32, 0x05, 0x97, 0x6d, 0x6f, 0x2c, 0x95, 0x72,
+	0x93, 0x88, 0x6a, 0x53, 0xfb, 0x84, 0x11, 0xfa, 0x29, 0x63, 0xad, 0x11, 0x5e, 0x2b, 0x30, 0xab,
+	0x31, 0x4a, 0xb1, 0x26, 0x08, 0xa3, 0x7e, 0x46, 0x81, 0x98, 0xf4, 0x36, 0x5c, 0x10, 0xc4, 0xc4,
+	0xac, 0x23, 0x76, 0x88, 0x89, 0xb9, 0x50, 0xcd, 0xb6, 0x93, 0x5c, 0xa6, 0x11, 0x89, 0xdb, 0x8b,
+	0xd0, 0x66, 0xac, 0x55, 0xd5, 0x9d, 0x2c, 0x33, 0x0d, 0xb7, 0x27, 0xbd, 0x01, 0x73, 0xfc, 0x81,
+	0x6a, 0xe1, 0x7a, 0x47, 0x94, 0x4d, 0xd6, 0xa1, 0x22, 0x3b, 0xe9, 0x2c, 0x45, 0x28, 0x2a, 0x95,
+	0x61, 0x46, 0xd8, 0x79, 0x56, 0x69, 0x4d, 0xed, 0xf2, 0xec, 0x54, 0x21, 0x1d, 0xc7, 0xaa, 0x41,
+	0x8c, 0xb2, 0x0e, 0xb9, 0xe1, 0x36, 0x24, 0xf2, 0x6e, 0xab, 0x4b, 0xc4, 0x0b, 0xe2, 0xdd, 0x15,
+	0x78, 0xc5, 0x71, 0xa9, 0x4a, 0x03, 0xd6, 0x05, 0x83, 0x52, 0x05, 0x66, 0x1d, 0x17, 0xea, 0x1d,
+	0x51, 0x23, 0x34, 0xb6, 0x75, 0x01, 0x50, 0xd4, 0x3b, 0xcf, 0x86, 0x11, 0xde, 0x3d, 0x4e, 0x41,
+	0x36, 0x08, 0xba, 0xc3, 0xb4, 0x5d, 0x67, 0xb7, 0xf2, 0xe7, 0xe8, 0x5e, 0x15, 0xce, 0xeb, 0x1d,
+	0x4b, 0xb5, 0x91, 0x3d, 0xff, 0x36, 0xd7, 0xfe, 0x39, 0xcc, 0x4b, 0x5e, 0x6c, 0x95, 0x99, 0x44,
+	0x60, 0xfb, 0x5e, 0xfa, 0xf7, 0x30, 0x3f, 0x7f, 0xa0, 0x9a, 0xad, 0x9b, 0x8a, 0x37, 0xa6, 0xfc,
+	0xf0, 0x57, 0x1e, 0x35, 0x7c, 0xb8, 0x74, 0x1d, 0x26, 0xed, 0xb3, 0xc7, 0xb3, 0x93, 0xf1, 0x3c,
+	0xec, 0xcd, 0x56, 0xde, 0x85, 0xc2, 0x49, 0x3e, 0x8c, 0xb0, 0xef, 0x0f, 0x04, 0xcb, 0x41, 0xd8,
+	0x26, 0x36, 0x08, 0xfd, 0x8c, 0xb6, 0x98, 0xb6, 0x4b, 0xa8, 0xf1, 0x1c, 0x2d, 0x9c, 0x83, 0x14,
+	0xf1, 0x36, 0x5f, 0x8a, 0xe8, 0xe3, 0xfa, 0x70, 0x03, 0xae, 0x8c, 0x4a, 0x68, 0x84, 0x17, 0xdf,
+	0xa6, 0xc2, 0x50, 0xfb, 0xec, 0x6e, 0x3f, 0x54, 0xdb, 0x5b, 0x5d, 0x81, 0x2d, 0x77, 0xab, 0x57,
+	0xe9, 0x0b, 0x70, 0x28, 0x57, 0x61, 0xc1, 0xbb, 0xba, 0x6a, 0x24, 0x78, 0x30, 0xa3, 0x03, 0xd2,
+	0x06, 0x9c, 0x73, 0xaf, 0xa8, 0xec, 0x54, 0xbc, 0xdb, 0xdf, 0x9b, 0xaf, 0xdc, 0x86, 0xd5, 0x38,
+	0x96, 0x8c, 0x70, 0xf5, 0xbb, 0x14, 0xbc, 0x1e, 0x3d, 0xd5, 0x61, 0x8a, 0x7a, 0x47, 0xbc, 0xc4,
+	0x77, 0x1d, 0x4a, 0x7e, 0xd7, 0x95, 0x61, 0x2d, 0x96, 0x2b, 0x23, 0x9c, 0xfd, 0x15, 0x05, 0x9f,
+	0x8d, 0x4a, 0xd9, 0x69, 0xde, 0xc7, 0x96, 0xb4, 0x02, 0xf3, 0x44, 0x53, 0xeb, 0x0f, 0x29, 0xb6,
+	0x82, 0xc5, 0x44, 0x38, 0x6c, 0x17, 0x0d, 0x44, 0x53, 0x03, 0x15, 0x45, 0x3f, 0xf0, 0x7f, 0x94,
+	0x14, 0xa1, 0x4b, 0xbe, 0x2f, 0x7a, 0x44, 0xa6, 0x0d, 0xa7, 0x0c, 0x69, 0x60, 0x83, 0x70, 0x81,
+	0xad, 0x6a, 0xa5, 0x5c, 0xa7, 0xb6, 0x40, 0x7b, 0x5f, 0xb0, 0x68, 0x8e, 0x81, 0x98, 0xbd, 0xd6,
+	0x8f, 0x06, 0xb3, 0x73, 0x7b, 0x4a, 0xce, 0xb9, 0xf8, 0x22, 0x9c, 0x7e, 0xd1, 0xf8, 0x39, 0xe4,
+	0xc3, 0xe3, 0x1f, 0x60, 0xca, 0xcc, 0xbb, 0xaa, 0x20, 0xfb, 0x38, 0xf6, 0xe7, 0x17, 0x61, 0x52,
+	0xb7, 0x61, 0xee, 0xd7, 0x7b, 0x1d, 0xe5, 0x2d, 0x78, 0xf3, 0x14, 0x72, 0x5f, 0xc7, 0x63, 0x04,
+	0x0b, 0x83, 0x35, 0xd8, 0x0e, 0xab, 0x56, 0xca, 0x67, 0xac, 0x14, 0xbd, 0x85, 0x4b, 0x27, 0x59,
+	0xb8, 0x35, 0x58, 0x8a, 0xe8, 0x38, 0x79, 0xcd, 0xd6, 0x7f, 0x9c, 0x83, 0x74, 0x8d, 0x1b, 0xd2,
+	0x23, 0x98, 0x0d, 0x54, 0xde, 0xef, 0x14, 0x4f, 0xf9, 0x75, 0x50, 0x0c, 0x95, 0xd8, 0xf2, 0x8d,
+	0xa4, 0x08, 0x5f, 0xd5, 0xd7, 0x08, 0x2e, 0x0e, 0xab, 0x48, 0xdf, 0x8b, 0xc5, 0x18, 0x05, 0xca,
+	0xef, 0x8f, 0x09, 0x3c, 0x49, 0x91, 0x5f, 0xe7, 0x25, 0x55, 0xe4, 0x01, 0x13, 0x2b, 0x8a, 0x94,
+	0x54, 0xdf, 0x23, 0xb8, 0x34, 0xbc, 0x7a, 0xda, 0x48, 0x48, 0xdd, 0x87, 0xca, 0xe5, 0xb1, 0xa1,
+	0xbe, 0xae, 0x9f, 0x11, 0x2c, 0x9d, 0x5c, 0x96, 0xdc, 0x4a, 0xf8, 0x81, 0x20, 0x5c, 0xde, 0x3a,
+	0x13, 0xdc, 0xd7, 0xf8, 0x1b, 0x82, 0xd7, 0x4e, 0x2f, 0x17, 0xb6, 0xc6, 0xd8, 0x34, 0x51, 0x1a,
+	0xb9, 0xf6, 0x4c, 0x68, 0x7c, 0xed, 0xbf, 0x23, 0x50, 0x62, 0x3c, 0xca, 0x1f, 0x8e, 0xb1, 0xbf,
+	0x86, 0xf0, 0xc8, 0x77, 0x9f, 0x0d, 0x8f, 0x2f, 0x7f, 0x0f, 0xa6, 0xfb, 0xbf, 0x9b, 0xd7, 0xe2,
+	0x90, 0xfb, 0xd3, 0xe5, 0xeb, 0x89, 0xa6, 0x0f, 0x3f, 0xbb, 0x03, 0x8f, 0x6d, 0xb2, 0xb3, 0xdb,
+	0x07, 0x26, 0x3c, 0xbb, 0x43, 0x5e, 0xca, 0xaf, 0x10, 0x2c, 0x44, 0x5f, 0xc5, 0x58, 0xe9, 0x45,
+	0x60, 0xf2, 0xad, 0xb1, 0x60, 0xbe, 0x96, 0x5f, 0x10, 0x2c, 0x8f, 0x7c, 0x2d, 0x6f, 0x27, 0xe6,
+	0x0f, 0x31, 0xc8, 0x1f, 0x9f, 0x95, 0xc1, 0x17, 0xfb, 0x05, 0x82, 0xb9, 0xd0, 0x8b, 0xba, 0x9e,
+	0x68, 0x53, 0x38, 0x18, 0xf9, 0x66, 0x72, 0x8c, 0x27, 0x61, 0xf3, 0xce, 0x93, 0xa3, 0x1c, 0x7a,
+	0x7a, 0x94, 0x43, 0x7f, 0x1f, 0xe5, 0xd0, 0x37, 0xc7, 0xb9, 0x89, 0xa7, 0xc7, 0xb9, 0x89, 0x3f,
+	0x8f, 0x73, 0x13, 0xf7, 0xd6, 0x0d, 0x22, 0x1e, 0x74, 0x9a, 0x45, 0x8d, 0x99, 0xa5, 0x3e, 0x7f,
+	0xa9, 0xcf, 0x5f, 0xea, 0x96, 0x06, 0xfe, 0x75, 0x3b, 0x68, 0x63, 0xde, 0x9c, 0x72, 0xfe, 0x00,
+	0xbb, 0xf6, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb7, 0x0d, 0x02, 0x9d, 0x8f, 0x13, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1148,6 +1563,10 @@ type MsgClient interface {
 	TransmitIbcJoinSwapExternAmountIn(ctx context.Context, in *MsgTransmitIbcJoinSwapExternAmountIn, opts ...grpc.CallOption) (*MsgTransmitIbcJoinSwapExternAmountInResponse, error)
 	TransmitIbcExitSwapExternAmountOut(ctx context.Context, in *MsgTransmitIbcExitSwapExternAmountOut, opts ...grpc.CallOption) (*MsgTransmitIbcExitSwapExternAmountOutResponse, error)
 	SendToken(ctx context.Context, in *MsgSendToken, opts ...grpc.CallOption) (*MsgSendTokenResponse, error)
+	TransmitICATransfer(ctx context.Context, in *MsgTransmitICATransfer, opts ...grpc.CallOption) (*MsgTransmitICATransferResponse, error)
+	RegisterICAOnZone(ctx context.Context, in *MsgRegisterICAOnZone, opts ...grpc.CallOption) (*MsgRegisterICAOnZoneResponse, error)
+	RegisterICAOnDenomNativeZone(ctx context.Context, in *MsgRegisterICAOnDenomNativeZone, opts ...grpc.CallOption) (*MsgRegisterICAOnDenomNativeZoneResponse, error)
+	SendTokenToICA(ctx context.Context, in *MsgSendTokenToICA, opts ...grpc.CallOption) (*MsgSendTokenToICAResponse, error)
 }
 
 type msgClient struct {
@@ -1230,6 +1649,42 @@ func (c *msgClient) SendToken(ctx context.Context, in *MsgSendToken, opts ...grp
 	return out, nil
 }
 
+func (c *msgClient) TransmitICATransfer(ctx context.Context, in *MsgTransmitICATransfer, opts ...grpc.CallOption) (*MsgTransmitICATransferResponse, error) {
+	out := new(MsgTransmitICATransferResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/TransmitICATransfer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) RegisterICAOnZone(ctx context.Context, in *MsgRegisterICAOnZone, opts ...grpc.CallOption) (*MsgRegisterICAOnZoneResponse, error) {
+	out := new(MsgRegisterICAOnZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) RegisterICAOnDenomNativeZone(ctx context.Context, in *MsgRegisterICAOnDenomNativeZone, opts ...grpc.CallOption) (*MsgRegisterICAOnDenomNativeZoneResponse, error) {
+	out := new(MsgRegisterICAOnDenomNativeZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnDenomNativeZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) SendTokenToICA(ctx context.Context, in *MsgSendTokenToICA, opts ...grpc.CallOption) (*MsgSendTokenToICAResponse, error) {
+	out := new(MsgSendTokenToICAResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/SendTokenToICA", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	TestScenario(context.Context, *MsgTestScenario) (*MsgTestScenarioResponse, error)
@@ -1240,6 +1695,10 @@ type MsgServer interface {
 	TransmitIbcJoinSwapExternAmountIn(context.Context, *MsgTransmitIbcJoinSwapExternAmountIn) (*MsgTransmitIbcJoinSwapExternAmountInResponse, error)
 	TransmitIbcExitSwapExternAmountOut(context.Context, *MsgTransmitIbcExitSwapExternAmountOut) (*MsgTransmitIbcExitSwapExternAmountOutResponse, error)
 	SendToken(context.Context, *MsgSendToken) (*MsgSendTokenResponse, error)
+	TransmitICATransfer(context.Context, *MsgTransmitICATransfer) (*MsgTransmitICATransferResponse, error)
+	RegisterICAOnZone(context.Context, *MsgRegisterICAOnZone) (*MsgRegisterICAOnZoneResponse, error)
+	RegisterICAOnDenomNativeZone(context.Context, *MsgRegisterICAOnDenomNativeZone) (*MsgRegisterICAOnDenomNativeZoneResponse, error)
+	SendTokenToICA(context.Context, *MsgSendTokenToICA) (*MsgSendTokenToICAResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -1269,6 +1728,18 @@ func (*UnimplementedMsgServer) TransmitIbcExitSwapExternAmountOut(ctx context.Co
 }
 func (*UnimplementedMsgServer) SendToken(ctx context.Context, req *MsgSendToken) (*MsgSendTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendToken not implemented")
+}
+func (*UnimplementedMsgServer) TransmitICATransfer(ctx context.Context, req *MsgTransmitICATransfer) (*MsgTransmitICATransferResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransmitICATransfer not implemented")
+}
+func (*UnimplementedMsgServer) RegisterICAOnZone(ctx context.Context, req *MsgRegisterICAOnZone) (*MsgRegisterICAOnZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterICAOnZone not implemented")
+}
+func (*UnimplementedMsgServer) RegisterICAOnDenomNativeZone(ctx context.Context, req *MsgRegisterICAOnDenomNativeZone) (*MsgRegisterICAOnDenomNativeZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterICAOnDenomNativeZone not implemented")
+}
+func (*UnimplementedMsgServer) SendTokenToICA(ctx context.Context, req *MsgSendTokenToICA) (*MsgSendTokenToICAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendTokenToICA not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -1419,6 +1890,78 @@ func _Msg_SendToken_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_TransmitICATransfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgTransmitICATransfer)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).TransmitICATransfer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/TransmitICATransfer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).TransmitICATransfer(ctx, req.(*MsgTransmitICATransfer))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_RegisterICAOnZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterICAOnZone)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterICAOnZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterICAOnZone(ctx, req.(*MsgRegisterICAOnZone))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_RegisterICAOnDenomNativeZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterICAOnDenomNativeZone)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterICAOnDenomNativeZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnDenomNativeZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterICAOnDenomNativeZone(ctx, req.(*MsgRegisterICAOnDenomNativeZone))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_SendTokenToICA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSendTokenToICA)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SendTokenToICA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/SendTokenToICA",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SendTokenToICA(ctx, req.(*MsgSendTokenToICA))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "quasarlabs.quasarnode.intergamm.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -1454,6 +1997,22 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendToken",
 			Handler:    _Msg_SendToken_Handler,
+		},
+		{
+			MethodName: "TransmitICATransfer",
+			Handler:    _Msg_TransmitICATransfer_Handler,
+		},
+		{
+			MethodName: "RegisterICAOnZone",
+			Handler:    _Msg_RegisterICAOnZone_Handler,
+		},
+		{
+			MethodName: "RegisterICAOnDenomNativeZone",
+			Handler:    _Msg_RegisterICAOnDenomNativeZone_Handler,
+		},
+		{
+			MethodName: "SendTokenToICA",
+			Handler:    _Msg_SendTokenToICA_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2183,6 +2742,283 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) MarshalToSizedBuffer(dAt
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgTransmitICATransfer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransmitICATransfer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransmitICATransfer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.IcaZoneId) > 0 {
+		i -= len(m.IcaZoneId)
+		copy(dAtA[i:], m.IcaZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.IcaZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.IcaOwnerAddress) > 0 {
+		i -= len(m.IcaOwnerAddress)
+		copy(dAtA[i:], m.IcaOwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.IcaOwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgTransmitICATransferResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransmitICATransferResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransmitICATransferResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnZone) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnZone) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnZone) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ZoneId) > 0 {
+		i -= len(m.ZoneId)
+		copy(dAtA[i:], m.ZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OwnerAddress) > 0 {
+		i -= len(m.OwnerAddress)
+		copy(dAtA[i:], m.OwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.OwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OwnerAddress) > 0 {
+		i -= len(m.OwnerAddress)
+		copy(dAtA[i:], m.OwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.OwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSendTokenToICA) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSendTokenToICA) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSendTokenToICA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if len(m.ToZoneId) > 0 {
+		i -= len(m.ToZoneId)
+		copy(dAtA[i:], m.ToZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSendTokenToICAResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSendTokenToICAResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSendTokenToICAResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -2510,6 +3346,124 @@ func (m *MsgTransmitIbcExitSwapExternAmountOut) Size() (n int) {
 }
 
 func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		n += 1 + sovTx(uint64(m.Seq))
+	}
+	return n
+}
+
+func (m *MsgTransmitICATransfer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IcaOwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.IcaZoneId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Coin.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgTransmitICATransferResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		n += 1 + sovTx(uint64(m.Seq))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnZone) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.OwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ZoneId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.OwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgSendTokenToICA) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToZoneId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Coin.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgSendTokenToICAResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -4602,6 +5556,798 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) Unmarshal(dAtA []byte) e
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgTransmitIbcExitSwapExternAmountOutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seq", wireType)
+			}
+			m.Seq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Seq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransmitICATransfer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransmitICATransfer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransmitICATransfer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IcaOwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IcaOwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IcaZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IcaZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransmitICATransferResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransmitICATransferResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransmitICATransferResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seq", wireType)
+			}
+			m.Seq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Seq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnZone) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZone: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZone: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnDenomNativeZone) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZone: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZone: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSendTokenToICA) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSendTokenToICA: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSendTokenToICA: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSendTokenToICAResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSendTokenToICAResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSendTokenToICAResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

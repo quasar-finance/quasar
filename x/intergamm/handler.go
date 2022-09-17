@@ -20,6 +20,18 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgSendToken:
 			res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSendTokenToICA:
+			res, err := msgServer.SendTokenToICA(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgRegisterICAOnZone:
+			res, err := msgServer.RegisterICAOnZone(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgRegisterICAOnDenomNativeZone:
+			res, err := msgServer.RegisterICAOnDenomNativeZone(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgTransmitICATransfer:
+			res, err := msgServer.TransmitICATransfer(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTestScenario:
 			res, err := msgServer.TestScenario(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)

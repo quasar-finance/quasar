@@ -3,44 +3,8 @@ and how to test if their actually transferred to osmosis properly after deposit 
 
 1. Run the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
 
-2. Check the initial balances (of account alice).
-```
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
-gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu --node tcp://localhost:26669
-osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
-```
-
-3. Transfer some uatom to quasar and gaia to find its ibc denoms in those chains.
-```
-gaiad tx ibc-transfer transfer transfer channel-0 "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" 10000uatom --from alice --chain-id cosmos --home ~/.gaia/  --node tcp://localhost:26669 --keyring-backend test -y
-
-gaiad tx ibc-transfer transfer transfer channel-1 "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" 100uatom --from alice --chain-id cosmos --home ~/.gaia/  --node tcp://localhost:26669 --keyring-backend test -y
-```
-
-4. Check the balances (of account alice) on quasar and osmosis and note the ibc denom of uatom in both chains.
-```
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
-osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
-```
-
-5. If ibc denom of uatom on quasar is different from "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-modify the denom_to_native_zone_id_map-proposal.json file and change it.
-
-6. Transfer some uosmo to quasar to find its ibc denom.
-```
-osmosisd tx ibc-transfer transfer transfer channel-1 "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" 10000uosmo --from alice --chain-id osmosis --home ~/.osmosis/ --node tcp://localhost:26679 --keyring-backend test -y
-```
-
-7. Check the balances (of account alice) on quasar and note the ibc denom of uosmo.
-```
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
-```
-
-8. If ibc denom of uosmo on quasar is different from "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B",
-modify the denom_to_native_zone_id_map-proposal.json file and change it.
-
-9. Next we need to verify connection and channel IDs among chains.
-All channels of a chain can be listed by:
+2. First we need to verify connection and channel IDs among chains.
+   All channels of a chain can be listed by:
 ```
 hermes query channels osmosis
 hermes query channels cosmos
@@ -64,8 +28,44 @@ cosmos->quasar  channel-0
 cosmos->osmosis channel-1
 osmosis->cosmos channel-0
 
-10. If the channel IDs found in previous step are different,
-edit the `complete_zone_info_map-proposal.json` accordingly.
+3. If the channel IDs found in previous step are different,
+    edit the `complete_zone_info_map-proposal.json` accordingly.
+
+4. Check the initial balances (of account alice).
+```
+quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu --node tcp://localhost:26669
+osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
+```
+
+5. Transfer some uatom to quasar and osmosis to find its ibc denoms in those chains.
+```
+gaiad tx ibc-transfer transfer transfer channel-0 "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" 10000uatom --from alice --chain-id cosmos --home ~/.gaia/  --node tcp://localhost:26669 --keyring-backend test -y
+
+gaiad tx ibc-transfer transfer transfer channel-1 "osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq" 100uatom --from alice --chain-id cosmos --home ~/.gaia/  --node tcp://localhost:26669 --keyring-backend test -y
+```
+
+6. Check the balances (of account alice) on quasar and osmosis and note the ibc denom of uatom in both chains.
+```
+quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
+```
+
+7. If ibc denom of uatom on quasar is different from "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+modify the denom_to_native_zone_id_map-proposal.json file and change it.
+
+8. Transfer some uosmo to quasar to find its ibc denom.
+```
+osmosisd tx ibc-transfer transfer transfer channel-1 "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec" 10000uosmo --from alice --chain-id osmosis --home ~/.osmosis/ --node tcp://localhost:26679 --keyring-backend test -y
+```
+
+9. Check the balances (of account alice) on quasar and note the ibc denom of uosmo.
+```
+quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+```
+
+10. If ibc denom of uosmo on quasar is different from "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B",
+modify the denom_to_native_zone_id_map-proposal.json file and change it.
 
 11. Run the change_quasar_param.sh script to submit param change proposals and vote on them.
 You need to wait 90 seconds until these changes takes effect.

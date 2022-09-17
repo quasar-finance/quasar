@@ -311,6 +311,202 @@ func (m *QueryGetPortInfoResponse) GetPortInfo() PortInfo {
 	return PortInfo{}
 }
 
+type QueryICAAddressOnZoneRequest struct {
+	Owner  string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	ZoneId string `protobuf:"bytes,2,opt,name=zoneId,proto3" json:"zoneId,omitempty"`
+}
+
+func (m *QueryICAAddressOnZoneRequest) Reset()         { *m = QueryICAAddressOnZoneRequest{} }
+func (m *QueryICAAddressOnZoneRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryICAAddressOnZoneRequest) ProtoMessage()    {}
+func (*QueryICAAddressOnZoneRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{6}
+}
+func (m *QueryICAAddressOnZoneRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryICAAddressOnZoneRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryICAAddressOnZoneRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryICAAddressOnZoneRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryICAAddressOnZoneRequest.Merge(m, src)
+}
+func (m *QueryICAAddressOnZoneRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryICAAddressOnZoneRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryICAAddressOnZoneRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryICAAddressOnZoneRequest proto.InternalMessageInfo
+
+func (m *QueryICAAddressOnZoneRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *QueryICAAddressOnZoneRequest) GetZoneId() string {
+	if m != nil {
+		return m.ZoneId
+	}
+	return ""
+}
+
+type QueryICAAddressOnZoneResponse struct {
+	IcaAddress string `protobuf:"bytes,1,opt,name=icaAddress,proto3" json:"icaAddress,omitempty"`
+}
+
+func (m *QueryICAAddressOnZoneResponse) Reset()         { *m = QueryICAAddressOnZoneResponse{} }
+func (m *QueryICAAddressOnZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryICAAddressOnZoneResponse) ProtoMessage()    {}
+func (*QueryICAAddressOnZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{7}
+}
+func (m *QueryICAAddressOnZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryICAAddressOnZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryICAAddressOnZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryICAAddressOnZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryICAAddressOnZoneResponse.Merge(m, src)
+}
+func (m *QueryICAAddressOnZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryICAAddressOnZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryICAAddressOnZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryICAAddressOnZoneResponse proto.InternalMessageInfo
+
+func (m *QueryICAAddressOnZoneResponse) GetIcaAddress() string {
+	if m != nil {
+		return m.IcaAddress
+	}
+	return ""
+}
+
+type QueryICAAddressOnDenomNativeZoneRequest struct {
+	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Denom string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) Reset() {
+	*m = QueryICAAddressOnDenomNativeZoneRequest{}
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryICAAddressOnDenomNativeZoneRequest) ProtoMessage()    {}
+func (*QueryICAAddressOnDenomNativeZoneRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{8}
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryICAAddressOnDenomNativeZoneRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryICAAddressOnDenomNativeZoneRequest.Merge(m, src)
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryICAAddressOnDenomNativeZoneRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryICAAddressOnDenomNativeZoneRequest proto.InternalMessageInfo
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+type QueryICAAddressOnDenomNativeZoneResponse struct {
+	IcaAddress string `protobuf:"bytes,1,opt,name=icaAddress,proto3" json:"icaAddress,omitempty"`
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) Reset() {
+	*m = QueryICAAddressOnDenomNativeZoneResponse{}
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryICAAddressOnDenomNativeZoneResponse) ProtoMessage()    {}
+func (*QueryICAAddressOnDenomNativeZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6dbccab1e37347e0, []int{9}
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryICAAddressOnDenomNativeZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryICAAddressOnDenomNativeZoneResponse.Merge(m, src)
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryICAAddressOnDenomNativeZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryICAAddressOnDenomNativeZoneResponse proto.InternalMessageInfo
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) GetIcaAddress() string {
+	if m != nil {
+		return m.IcaAddress
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "quasarlabs.quasarnode.intergamm.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "quasarlabs.quasarnode.intergamm.QueryParamsResponse")
@@ -318,50 +514,65 @@ func init() {
 	proto.RegisterType((*QueryInterchainAccountFromAddressResponse)(nil), "quasarlabs.quasarnode.intergamm.QueryInterchainAccountFromAddressResponse")
 	proto.RegisterType((*QueryGetPortInfoRequest)(nil), "quasarlabs.quasarnode.intergamm.QueryGetPortInfoRequest")
 	proto.RegisterType((*QueryGetPortInfoResponse)(nil), "quasarlabs.quasarnode.intergamm.QueryGetPortInfoResponse")
+	proto.RegisterType((*QueryICAAddressOnZoneRequest)(nil), "quasarlabs.quasarnode.intergamm.QueryICAAddressOnZoneRequest")
+	proto.RegisterType((*QueryICAAddressOnZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.QueryICAAddressOnZoneResponse")
+	proto.RegisterType((*QueryICAAddressOnDenomNativeZoneRequest)(nil), "quasarlabs.quasarnode.intergamm.QueryICAAddressOnDenomNativeZoneRequest")
+	proto.RegisterType((*QueryICAAddressOnDenomNativeZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.QueryICAAddressOnDenomNativeZoneResponse")
 }
 
 func init() { proto.RegisterFile("intergamm/query.proto", fileDescriptor_6dbccab1e37347e0) }
 
 var fileDescriptor_6dbccab1e37347e0 = []byte{
-	// 601 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x4f, 0x6b, 0x13, 0x41,
-	0x1c, 0xcd, 0x16, 0x13, 0x74, 0xaa, 0x97, 0x31, 0xd6, 0xb8, 0x94, 0x8d, 0x2e, 0x48, 0x1b, 0x0f,
-	0x3b, 0x34, 0xf5, 0xa0, 0x82, 0x60, 0x63, 0xfd, 0xb3, 0x5a, 0xa4, 0x2e, 0x9e, 0x44, 0x08, 0x93,
-	0xdd, 0xc9, 0x76, 0x21, 0x3b, 0xb3, 0x99, 0x99, 0xa8, 0xa1, 0x14, 0xc1, 0xab, 0x97, 0x82, 0x5f,
-	0xc1, 0x0f, 0xd3, 0x63, 0xc1, 0x4b, 0x4f, 0x41, 0x12, 0x3f, 0x41, 0xbf, 0x80, 0xb2, 0x3b, 0x93,
-	0x3f, 0x6d, 0x5a, 0x13, 0xc5, 0xdb, 0xce, 0xcc, 0xfb, 0xbd, 0xf7, 0x7b, 0xf3, 0x7b, 0x3b, 0xe0,
-	0x5a, 0x44, 0x25, 0xe1, 0x21, 0x8e, 0x63, 0xd4, 0xee, 0x10, 0xde, 0x75, 0x12, 0xce, 0x24, 0x83,
-	0xe5, 0x76, 0x07, 0x0b, 0xcc, 0x5b, 0xb8, 0x21, 0x1c, 0xf5, 0x49, 0x59, 0x40, 0x9c, 0x11, 0xd8,
-	0x2c, 0x86, 0x2c, 0x64, 0x19, 0x16, 0xa5, 0x5f, 0xaa, 0xcc, 0x5c, 0x0e, 0x19, 0x0b, 0x5b, 0x04,
-	0xe1, 0x24, 0x42, 0x98, 0x52, 0x26, 0xb1, 0x8c, 0x18, 0x15, 0xfa, 0xf4, 0x8e, 0xcf, 0x44, 0xcc,
-	0x04, 0x6a, 0x60, 0x41, 0x94, 0x1a, 0x7a, 0xbf, 0xd6, 0x20, 0x12, 0xaf, 0xa1, 0x04, 0x87, 0x11,
-	0xcd, 0xc0, 0x1a, 0xbb, 0x34, 0xee, 0x2b, 0xc1, 0x1c, 0xc7, 0x43, 0x8e, 0x1b, 0x13, 0xfb, 0x8c,
-	0xcb, 0x7a, 0x44, 0x9b, 0x5a, 0xdc, 0x2e, 0x02, 0xf8, 0x3a, 0x25, 0xdd, 0xce, 0xf0, 0x1e, 0x69,
-	0x77, 0x88, 0x90, 0xf6, 0x3b, 0x70, 0xf5, 0xc4, 0xae, 0x48, 0x18, 0x15, 0x04, 0x3e, 0x01, 0x05,
-	0xc5, 0x5b, 0x32, 0x6e, 0x1a, 0xab, 0x8b, 0xd5, 0x15, 0x67, 0x86, 0x63, 0x47, 0x11, 0xd4, 0x2e,
-	0x1c, 0xf4, 0xca, 0x39, 0x4f, 0x17, 0xdb, 0x9f, 0xc0, 0x6a, 0xc6, 0xee, 0xa6, 0x30, 0x7f, 0x07,
-	0x47, 0x74, 0xc3, 0xf7, 0x59, 0x87, 0xca, 0xa7, 0x9c, 0xc5, 0x1b, 0x41, 0xc0, 0x89, 0x18, 0x76,
-	0x02, 0x8b, 0x20, 0xcf, 0x3e, 0x50, 0xc2, 0x33, 0xc5, 0x4b, 0x9e, 0x5a, 0xc0, 0x87, 0xe0, 0x8a,
-	0xcf, 0x28, 0x25, 0x7e, 0x6a, 0xbe, 0x1e, 0x05, 0xa5, 0x85, 0xf4, 0xb4, 0x56, 0x3a, 0xee, 0x95,
-	0x8b, 0x5d, 0x1c, 0xb7, 0x1e, 0xd8, 0x27, 0x8e, 0x6d, 0xef, 0xf2, 0x78, 0xed, 0x06, 0xf6, 0xbe,
-	0x01, 0x2a, 0x73, 0x74, 0xa0, 0x5d, 0xfb, 0xc0, 0x8c, 0x46, 0xb8, 0x3a, 0x56, 0xc0, 0x3a, 0x56,
-	0x28, 0xd5, 0x57, 0xed, 0xf6, 0x71, 0xaf, 0x7c, 0x4b, 0x29, 0x9f, 0x8f, 0xb5, 0xbd, 0x52, 0x74,
-	0x5a, 0x50, 0x8b, 0xd9, 0x18, 0x5c, 0xcf, 0x3a, 0x7a, 0x46, 0xe4, 0x36, 0xe3, 0xd2, 0xa5, 0x4d,
-	0x36, 0xbc, 0x82, 0x25, 0x50, 0x48, 0xa7, 0xe6, 0x6e, 0xea, 0x3b, 0xd0, 0x2b, 0xe8, 0x00, 0x18,
-	0x10, 0x21, 0x75, 0x04, 0x1e, 0xa7, 0xa4, 0xee, 0xa6, 0xba, 0x09, 0xef, 0x8c, 0x13, 0x3b, 0x04,
-	0xa5, 0x69, 0x09, 0xed, 0xf1, 0x25, 0xb8, 0x98, 0xe8, 0x3d, 0x3d, 0xdb, 0xca, 0xec, 0xd9, 0xea,
-	0x02, 0x3d, 0xdd, 0x11, 0x41, 0xf5, 0x4b, 0x1e, 0xe4, 0x33, 0x25, 0xf8, 0xcd, 0x00, 0x05, 0x15,
-	0x01, 0xb8, 0x3e, 0x93, 0x6f, 0x3a, 0x87, 0xe6, 0xdd, 0xbf, 0x2b, 0x52, 0x66, 0x6c, 0xf4, 0xf9,
-	0xfb, 0xcf, 0xaf, 0x0b, 0x15, 0xb8, 0x82, 0xc6, 0xd5, 0x68, 0x5c, 0x8d, 0x4e, 0xff, 0x25, 0xf0,
-	0x97, 0x01, 0x96, 0xff, 0x14, 0x05, 0xe8, 0xce, 0xd7, 0xc7, 0x1c, 0x81, 0x36, 0x5f, 0xfc, 0x0f,
-	0x2a, 0x6d, 0xf4, 0x79, 0x66, 0xb4, 0x06, 0x1f, 0xcd, 0x34, 0x7a, 0x46, 0x28, 0x9b, 0x9c, 0xc5,
-	0xc3, 0x64, 0xc2, 0x23, 0x03, 0x2c, 0x4e, 0xe4, 0x02, 0xde, 0x9b, 0xaf, 0xcb, 0xe9, 0xb4, 0x9a,
-	0xf7, 0xff, 0xa1, 0x52, 0xdb, 0x79, 0x93, 0xd9, 0x79, 0x05, 0xb7, 0x66, 0xda, 0x09, 0x89, 0xac,
-	0x8f, 0x5e, 0x32, 0xb4, 0xab, 0x7e, 0x88, 0x3d, 0xb4, 0x3b, 0x9d, 0xfa, 0xbd, 0xda, 0xd6, 0x41,
-	0xdf, 0x32, 0x0e, 0xfb, 0x96, 0xf1, 0xa3, 0x6f, 0x19, 0xfb, 0x03, 0x2b, 0x77, 0x38, 0xb0, 0x72,
-	0x47, 0x03, 0x2b, 0xf7, 0xb6, 0x1a, 0x46, 0x72, 0xa7, 0xd3, 0x70, 0x7c, 0x16, 0x9f, 0xa3, 0xf8,
-	0x71, 0x42, 0x53, 0x76, 0x13, 0x22, 0x1a, 0x85, 0xec, 0xd9, 0x5c, 0xff, 0x1d, 0x00, 0x00, 0xff,
-	0xff, 0x88, 0x91, 0xd9, 0x53, 0x03, 0x06, 0x00, 0x00,
+	// 771 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xdd, 0x4e, 0x13, 0x41,
+	0x14, 0xee, 0x12, 0x69, 0x70, 0xd0, 0xc4, 0x8c, 0x15, 0xeb, 0x8a, 0xad, 0x6e, 0x62, 0x00, 0x2f,
+	0x3a, 0x01, 0xbc, 0x50, 0x13, 0xd4, 0x16, 0x10, 0x16, 0x11, 0x61, 0xd5, 0x0b, 0x89, 0xc9, 0x66,
+	0xba, 0x1d, 0x96, 0x4d, 0xd8, 0x99, 0xb2, 0x3b, 0x45, 0xb1, 0x69, 0x4c, 0xbc, 0x37, 0x21, 0xf1,
+	0x15, 0x7c, 0x18, 0x2e, 0x49, 0xbc, 0xe1, 0x8a, 0x10, 0xf0, 0x09, 0x78, 0x00, 0x35, 0x3b, 0x33,
+	0xfd, 0xa1, 0x2d, 0x6d, 0x21, 0xdc, 0x75, 0x66, 0xce, 0xf9, 0xce, 0xf7, 0x9d, 0xb3, 0xdf, 0x49,
+	0xc1, 0x2d, 0x8f, 0x72, 0x12, 0xb8, 0xd8, 0xf7, 0xd1, 0x66, 0x89, 0x04, 0xdb, 0x99, 0x62, 0xc0,
+	0x38, 0x83, 0xe9, 0xcd, 0x12, 0x0e, 0x71, 0xb0, 0x81, 0xf3, 0x61, 0x46, 0xfe, 0xa4, 0xac, 0x40,
+	0x32, 0xb5, 0x60, 0x3d, 0xe1, 0x32, 0x97, 0x89, 0x58, 0x14, 0xfd, 0x92, 0x69, 0xfa, 0xb0, 0xcb,
+	0x98, 0xbb, 0x41, 0x10, 0x2e, 0x7a, 0x08, 0x53, 0xca, 0x38, 0xe6, 0x1e, 0xa3, 0xa1, 0x7a, 0x7d,
+	0xe4, 0xb0, 0xd0, 0x67, 0x21, 0xca, 0xe3, 0x90, 0xc8, 0x6a, 0x68, 0x6b, 0x3c, 0x4f, 0x38, 0x1e,
+	0x47, 0x45, 0xec, 0x7a, 0x54, 0x04, 0xab, 0xd8, 0xa1, 0x3a, 0xaf, 0x22, 0x0e, 0xb0, 0x5f, 0xc5,
+	0xb8, 0xd3, 0x70, 0xcf, 0x02, 0x6e, 0x7b, 0x74, 0x4d, 0x15, 0x37, 0x12, 0x00, 0xae, 0x44, 0xa0,
+	0xcb, 0x22, 0xde, 0x22, 0x9b, 0x25, 0x12, 0x72, 0xe3, 0x13, 0xb8, 0x79, 0xea, 0x36, 0x2c, 0x32,
+	0x1a, 0x12, 0x38, 0x0b, 0xe2, 0x12, 0x37, 0xa9, 0xdd, 0xd7, 0x46, 0x07, 0x27, 0x46, 0x32, 0x5d,
+	0x14, 0x67, 0x24, 0x40, 0xee, 0xca, 0xee, 0x41, 0x3a, 0x66, 0xa9, 0x64, 0xe3, 0x1b, 0x18, 0x15,
+	0xe8, 0x66, 0x14, 0xe6, 0xac, 0x63, 0x8f, 0x66, 0x1d, 0x87, 0x95, 0x28, 0x7f, 0x15, 0x30, 0x3f,
+	0x5b, 0x28, 0x04, 0x24, 0xac, 0x32, 0x81, 0x09, 0xd0, 0xcf, 0x3e, 0x53, 0x12, 0x88, 0x8a, 0x57,
+	0x2d, 0x79, 0x80, 0x53, 0xe0, 0xba, 0xc3, 0x28, 0x25, 0x4e, 0x24, 0xde, 0xf6, 0x0a, 0xc9, 0xbe,
+	0xe8, 0x35, 0x97, 0x3c, 0x39, 0x48, 0x27, 0xb6, 0xb1, 0xbf, 0xf1, 0xcc, 0x38, 0xf5, 0x6c, 0x58,
+	0xd7, 0xea, 0x67, 0xb3, 0x60, 0xec, 0x68, 0x60, 0xac, 0x07, 0x06, 0x4a, 0xb5, 0x03, 0x74, 0xaf,
+	0x16, 0x67, 0x63, 0x19, 0x68, 0x63, 0x19, 0x25, 0x79, 0xe5, 0x1e, 0x9e, 0x1c, 0xa4, 0x1f, 0xc8,
+	0xca, 0x67, 0xc7, 0x1a, 0x56, 0xd2, 0x6b, 0x2e, 0xa8, 0x8a, 0x19, 0x18, 0xdc, 0x16, 0x8c, 0xe6,
+	0x08, 0x5f, 0x66, 0x01, 0x37, 0xe9, 0x1a, 0xab, 0xb6, 0x60, 0x08, 0xc4, 0xa3, 0xa9, 0x99, 0x33,
+	0xaa, 0x07, 0xea, 0x04, 0x33, 0x00, 0x16, 0x48, 0xc8, 0xd5, 0x27, 0x30, 0x1d, 0x81, 0x9a, 0x33,
+	0xb2, 0x13, 0x56, 0x9b, 0x17, 0xc3, 0x05, 0xc9, 0xd6, 0x12, 0x4a, 0xe3, 0x6b, 0x30, 0x50, 0x54,
+	0x77, 0x6a, 0xb6, 0x63, 0xdd, 0x67, 0xab, 0x12, 0xd4, 0x74, 0x6b, 0x00, 0xc6, 0x22, 0x18, 0x96,
+	0xdd, 0x9d, 0xce, 0x2a, 0x79, 0x6f, 0xe9, 0x2a, 0xa3, 0xa4, 0xf3, 0x4c, 0x87, 0x40, 0xfc, 0x2b,
+	0xa3, 0xc4, 0x54, 0xc3, 0xb4, 0xd4, 0xc9, 0x78, 0x01, 0xee, 0x9d, 0x81, 0xa6, 0xb8, 0xa7, 0x00,
+	0xf0, 0x1c, 0x9c, 0x6d, 0x9c, 0x87, 0xd5, 0x70, 0x63, 0x7c, 0x00, 0x23, 0x2d, 0x00, 0x33, 0x84,
+	0x32, 0x7f, 0x09, 0x73, 0x6f, 0x8b, 0x74, 0x67, 0x96, 0x00, 0xfd, 0x85, 0x28, 0x5e, 0x11, 0x93,
+	0x07, 0x63, 0xa1, 0xfa, 0x15, 0x77, 0x82, 0xed, 0x8d, 0xe2, 0xc4, 0xdf, 0x01, 0xd0, 0x2f, 0xc0,
+	0xe0, 0x2f, 0x0d, 0xc4, 0xa5, 0x69, 0xe0, 0x64, 0xd7, 0x09, 0xb4, 0x3a, 0x57, 0x7f, 0x7c, 0xbe,
+	0x24, 0xc9, 0xcf, 0x40, 0xdf, 0x7f, 0xff, 0xf9, 0xd9, 0x37, 0x06, 0x47, 0x50, 0x3d, 0x1b, 0xd5,
+	0xb3, 0x51, 0xf3, 0x5e, 0x81, 0xff, 0x34, 0x30, 0xdc, 0xc9, 0x3c, 0xd0, 0xec, 0x8d, 0x47, 0x0f,
+	0x2b, 0x40, 0x5f, 0xb8, 0x0c, 0x28, 0x25, 0x74, 0x5e, 0x08, 0xcd, 0xc1, 0x97, 0x5d, 0x85, 0xb6,
+	0xb1, 0xf1, 0x5a, 0xc0, 0xfc, 0xaa, 0x97, 0xe1, 0xbe, 0x06, 0x06, 0x1b, 0x9c, 0x04, 0x9f, 0xf4,
+	0xc6, 0xb2, 0xd5, 0xdf, 0xfa, 0xd3, 0x0b, 0x64, 0x2a, 0x39, 0xef, 0x85, 0x9c, 0x25, 0xb8, 0xd8,
+	0x55, 0x8e, 0x4b, 0xb8, 0x5d, 0xdb, 0xfd, 0xa8, 0x2c, 0x57, 0x48, 0x05, 0x95, 0x5b, 0xf7, 0x44,
+	0x05, 0x1e, 0x6a, 0xe0, 0x46, 0xb3, 0xdb, 0xe0, 0x54, 0x8f, 0x53, 0x68, 0xef, 0x79, 0xfd, 0xf9,
+	0x45, 0xd3, 0x95, 0xd2, 0x37, 0x42, 0xe9, 0x1c, 0x9c, 0xed, 0x3e, 0x38, 0x07, 0x57, 0x87, 0x64,
+	0x33, 0x6a, 0x47, 0x5b, 0x04, 0x95, 0x85, 0x91, 0x2b, 0xa8, 0x2c, 0x77, 0x4a, 0x05, 0xfe, 0xe8,
+	0x03, 0x77, 0x3b, 0x18, 0x17, 0xce, 0x9f, 0x9f, 0x6e, 0xfb, 0x95, 0xa2, 0x9b, 0x97, 0x80, 0xa4,
+	0x7a, 0xf0, 0x51, 0xf4, 0xe0, 0x1d, 0x5c, 0x39, 0x6f, 0x0f, 0xc4, 0xc2, 0xb2, 0xa9, 0x40, 0x6c,
+	0x6a, 0x88, 0x78, 0xaa, 0xe4, 0x16, 0x77, 0x8f, 0x52, 0xda, 0xde, 0x51, 0x4a, 0x3b, 0x3c, 0x4a,
+	0x69, 0x3b, 0xc7, 0xa9, 0xd8, 0xde, 0x71, 0x2a, 0xb6, 0x7f, 0x9c, 0x8a, 0xad, 0x4e, 0xb8, 0x1e,
+	0x5f, 0x2f, 0xe5, 0x33, 0x0e, 0xf3, 0xcf, 0x28, 0xfb, 0xa5, 0xa1, 0x30, 0xdf, 0x2e, 0x92, 0x30,
+	0x1f, 0x17, 0xff, 0x2d, 0x26, 0xff, 0x07, 0x00, 0x00, 0xff, 0xff, 0x13, 0xb1, 0x6a, 0x14, 0x28,
+	0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -382,6 +593,10 @@ type QueryClient interface {
 	InterchainAccountFromAddress(ctx context.Context, in *QueryInterchainAccountFromAddressRequest, opts ...grpc.CallOption) (*QueryInterchainAccountFromAddressResponse, error)
 	// Queries a list of GetPortInfo items.
 	GetPortInfo(ctx context.Context, in *QueryGetPortInfoRequest, opts ...grpc.CallOption) (*QueryGetPortInfoResponse, error)
+	// Queries a list of ICAAddressOnZone items.
+	ICAAddressOnZone(ctx context.Context, in *QueryICAAddressOnZoneRequest, opts ...grpc.CallOption) (*QueryICAAddressOnZoneResponse, error)
+	// Queries a list of ICAAddressOnDenomNativeZone items.
+	ICAAddressOnDenomNativeZone(ctx context.Context, in *QueryICAAddressOnDenomNativeZoneRequest, opts ...grpc.CallOption) (*QueryICAAddressOnDenomNativeZoneResponse, error)
 }
 
 type queryClient struct {
@@ -419,6 +634,24 @@ func (c *queryClient) GetPortInfo(ctx context.Context, in *QueryGetPortInfoReque
 	return out, nil
 }
 
+func (c *queryClient) ICAAddressOnZone(ctx context.Context, in *QueryICAAddressOnZoneRequest, opts ...grpc.CallOption) (*QueryICAAddressOnZoneResponse, error) {
+	out := new(QueryICAAddressOnZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Query/ICAAddressOnZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ICAAddressOnDenomNativeZone(ctx context.Context, in *QueryICAAddressOnDenomNativeZoneRequest, opts ...grpc.CallOption) (*QueryICAAddressOnDenomNativeZoneResponse, error) {
+	out := new(QueryICAAddressOnDenomNativeZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Query/ICAAddressOnDenomNativeZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
@@ -427,6 +660,10 @@ type QueryServer interface {
 	InterchainAccountFromAddress(context.Context, *QueryInterchainAccountFromAddressRequest) (*QueryInterchainAccountFromAddressResponse, error)
 	// Queries a list of GetPortInfo items.
 	GetPortInfo(context.Context, *QueryGetPortInfoRequest) (*QueryGetPortInfoResponse, error)
+	// Queries a list of ICAAddressOnZone items.
+	ICAAddressOnZone(context.Context, *QueryICAAddressOnZoneRequest) (*QueryICAAddressOnZoneResponse, error)
+	// Queries a list of ICAAddressOnDenomNativeZone items.
+	ICAAddressOnDenomNativeZone(context.Context, *QueryICAAddressOnDenomNativeZoneRequest) (*QueryICAAddressOnDenomNativeZoneResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -441,6 +678,12 @@ func (*UnimplementedQueryServer) InterchainAccountFromAddress(ctx context.Contex
 }
 func (*UnimplementedQueryServer) GetPortInfo(ctx context.Context, req *QueryGetPortInfoRequest) (*QueryGetPortInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPortInfo not implemented")
+}
+func (*UnimplementedQueryServer) ICAAddressOnZone(ctx context.Context, req *QueryICAAddressOnZoneRequest) (*QueryICAAddressOnZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ICAAddressOnZone not implemented")
+}
+func (*UnimplementedQueryServer) ICAAddressOnDenomNativeZone(ctx context.Context, req *QueryICAAddressOnDenomNativeZoneRequest) (*QueryICAAddressOnDenomNativeZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ICAAddressOnDenomNativeZone not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -501,6 +744,42 @@ func _Query_GetPortInfo_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ICAAddressOnZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryICAAddressOnZoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ICAAddressOnZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Query/ICAAddressOnZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ICAAddressOnZone(ctx, req.(*QueryICAAddressOnZoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ICAAddressOnDenomNativeZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryICAAddressOnDenomNativeZoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ICAAddressOnDenomNativeZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Query/ICAAddressOnDenomNativeZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ICAAddressOnDenomNativeZone(ctx, req.(*QueryICAAddressOnDenomNativeZoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "quasarlabs.quasarnode.intergamm.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -516,6 +795,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPortInfo",
 			Handler:    _Query_GetPortInfo_Handler,
+		},
+		{
+			MethodName: "ICAAddressOnZone",
+			Handler:    _Query_ICAAddressOnZone_Handler,
+		},
+		{
+			MethodName: "ICAAddressOnDenomNativeZone",
+			Handler:    _Query_ICAAddressOnDenomNativeZone_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -715,6 +1002,140 @@ func (m *QueryGetPortInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryICAAddressOnZoneRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryICAAddressOnZoneRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryICAAddressOnZoneRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ZoneId) > 0 {
+		i -= len(m.ZoneId)
+		copy(dAtA[i:], m.ZoneId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryICAAddressOnZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryICAAddressOnZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryICAAddressOnZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.IcaAddress) > 0 {
+		i -= len(m.IcaAddress)
+		copy(dAtA[i:], m.IcaAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.IcaAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.IcaAddress) > 0 {
+		i -= len(m.IcaAddress)
+		copy(dAtA[i:], m.IcaAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.IcaAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -801,6 +1222,66 @@ func (m *QueryGetPortInfoResponse) Size() (n int) {
 	_ = l
 	l = m.PortInfo.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryICAAddressOnZoneRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.ZoneId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryICAAddressOnZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IcaAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryICAAddressOnDenomNativeZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IcaAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1314,6 +1795,398 @@ func (m *QueryGetPortInfoResponse) Unmarshal(dAtA []byte) error {
 			if err := m.PortInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryICAAddressOnZoneRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryICAAddressOnZoneRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryICAAddressOnZoneRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryICAAddressOnZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryICAAddressOnZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryICAAddressOnZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IcaAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IcaAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryICAAddressOnDenomNativeZoneRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryICAAddressOnDenomNativeZoneRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryICAAddressOnDenomNativeZoneRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryICAAddressOnDenomNativeZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryICAAddressOnDenomNativeZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryICAAddressOnDenomNativeZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IcaAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IcaAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

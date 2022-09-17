@@ -825,7 +825,6 @@ func icaTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 		types.OsmosisZoneId,
 		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		testCoin,
-		types.QuasarZoneId,
 		owner, // token to be sent to owner, via IBC
 		transferTimeoutHeight,
 		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
