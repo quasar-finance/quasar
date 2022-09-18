@@ -1,0 +1,14 @@
+{
+    "name": "docs",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+      "combine": "swagger-combine ./config.json -o ../tmp-swagger-gen/swagger.yml -f yaml --continueOnConflictingPaths --includeDefinitions",
+      "convert": "swagger2openapi ../tmp-swagger-gen/swagger.yml --outfile static/openapi.yml --yaml"
+    },
+    "dependencies": {
+      "swagger-combine": "^1.4.0",
+      "swagger2openapi": "^7.0.3"
+    }
+  }

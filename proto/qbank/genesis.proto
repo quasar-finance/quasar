@@ -4,7 +4,6 @@ package quasarlabs.quasarnode.qbank;
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "qbank/params.proto";
-import "qbank/deposit.proto";
 import "qbank/common.proto";
   // this line is used by starport scaffolding # genesis/proto/import
 

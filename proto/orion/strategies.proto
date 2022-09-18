@@ -13,7 +13,7 @@ option go_package = "github.com/quasarlabs/quasarnode/x/orion/types";
 // Strategies defines the list of strategy names. This to be used for both 
 // base strategy and sub strategy names.
 message Strategies {
-   repeated string names  = 1  [(gogoproto.nullable) = false];
+   repeated string names  = 1;
 }
 
 // StrategyInfo defines the basic information of any strategy.

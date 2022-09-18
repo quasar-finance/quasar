@@ -17,7 +17,7 @@ message BandchainParams {
 
 message CoinRatesParams {
   string epoch_identifier = 1 [(gogoproto.moretags) = "yaml:\"epoch_identifier\""]; // Identifier of the epoch that we trigger the script request
-  repeated string symbols = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"symbols\""];
+  repeated string symbols = 2 [(gogoproto.moretags) = "yaml:\"symbols\""];
   OracleScriptParams script_params = 3
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"script_params\""];
 }
