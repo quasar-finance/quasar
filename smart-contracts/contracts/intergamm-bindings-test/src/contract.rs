@@ -26,8 +26,8 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    intergamm_bindings::helper::handle_reply(deps.storage, msg, PENDINGACKS)
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
+    intergamm_bindings::helper::handle_reply(deps.storage, env, msg, PENDINGACKS)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -47,7 +47,7 @@ pub fn execute(
             amount,
         } => execute_send_token_ibc(channel_id, to_address, amount, env),
         ExecuteMsg::RegisterInterchainAccount { connection_id } => {
-            execute_register_ica(connection_id, deps, env)
+            execute_register_ica(connection_id, deps)
         }
         ExecuteMsg::JoinSwapExternAmountIn {
             connection_id,
@@ -62,7 +62,7 @@ pub fn execute(
             deps,
             env,
         ),
-        ExecuteMsg::TestIcaScenario {} => execute_test_scenario(env),
+        ExecuteMsg::TestIcaScenario {} => execute_test_scenario("registerIca".to_string()),
         ExecuteMsg::Ack {
             sequence_number,
             error,
@@ -82,7 +82,6 @@ pub fn execute(
             share_out_amount,
             token_in_maxs,
             deps,
-            env,
         ),
         ExecuteMsg::ExitPool {
             connection_id,
@@ -97,14 +96,13 @@ pub fn execute(
             share_in_amount,
             token_out_mins,
             deps,
-            env,
         ),
         ExecuteMsg::LockTokens {
             connection_id,
             timeout_timestamp,
             duration,
             coins,
-        } => execute_lock_tokens(connection_id, timeout_timestamp, duration, coins, deps, env),
+        } => execute_lock_tokens(connection_id, timeout_timestamp, duration, coins, deps),
         ExecuteMsg::ExitSwapExternAmountOut {
             connection_id,
             timeout_timestamp,
@@ -118,14 +116,13 @@ pub fn execute(
             share_in_amount,
             token_out_mins,
             deps,
-            env,
         ),
         ExecuteMsg::BeginUnlocking {
             connection_id,
             timeout_timestamp,
             id,
             coins,
-        } => execute_begin_unlocking(connection_id, timeout_timestamp, id, coins, deps, env),
+        } => execute_begin_unlocking(connection_id, timeout_timestamp, id, coins, deps),
     }
 }
 
@@ -136,10 +133,8 @@ pub fn execute_exit_pool(
     share_in_amount: i64,
     token_out_mins: Vec<Coin>,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::ExitPool {
-        creator: env.contract.address.to_string(),
         connection_id,
         timeout_timestamp: timeout_timestamp.u64(),
         pool_id: pool_id.u64(),
@@ -156,10 +151,8 @@ pub fn execute_join_pool(
     share_out_amount: i64,
     token_in_maxs: Vec<Coin>,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::JoinPool {
-        creator: env.contract.address.to_string(),
         connection_id,
         timeout_timestamp: timeout_timestamp.u64(),
         pool_id: pool_id.u64(),
@@ -175,10 +168,8 @@ pub fn execute_lock_tokens(
     duration: Uint64,
     coins: Vec<Coin>,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::LockTokens {
-        creator: env.contract.address.to_string(),
         connection_id,
         timeout_timestamp: timeout_timestamp.u64(),
         duration: duration.u64(),
@@ -193,10 +184,8 @@ pub fn execute_begin_unlocking(
     id: Uint64,
     coins: Vec<Coin>,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::BeginUnlocking {
-        creator: env.contract.address.to_string(),
         connection_id,
         timeout_timestamp: timeout_timestamp.u64(),
         id: id.u64(),
@@ -212,10 +201,8 @@ pub fn execute_exit_swap_extern_amount_out(
     share_in_amount: i64,
     token_out_mins: Coin,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::ExitSwapExternAmountOut {
-        creator: env.contract.address.to_string(),
         connection_id,
         timeout_timestamp: timeout_timestamp.u64(),
         pool_id: pool_id.u64(),
@@ -232,7 +219,6 @@ pub fn execute_send_token(
 ) -> Result<Response<IntergammMsg>, ContractError> {
     Ok(Response::new()
         .add_message(IntergammMsg::SendToken {
-            creator: env.contract.address.to_string(),
             destination_local_zone_id,
             sender: env.contract.address.to_string(),
             receiver: env.contract.address.to_string(),
@@ -257,20 +243,17 @@ pub fn execute_send_token_ibc(
     }))
 }
 
-pub fn execute_test_scenario(env: Env) -> Result<Response<IntergammMsg>, ContractError> {
+pub fn execute_test_scenario(scenario: String) -> Result<Response<IntergammMsg>, ContractError> {
     Ok(Response::new().add_message(IntergammMsg::TestScenario {
-        creator: env.contract.address.to_string(),
-        scenario: "registerIca".to_string(),
+        scenario,
     }))
 }
 
 pub fn execute_register_ica(
     connection_id: String,
     deps: DepsMut,
-    env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::RegisterInterchainAccount {
-        creator: env.contract.address.to_string(),
         connection_id,
     };
     create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
@@ -286,7 +269,6 @@ pub fn execute_join_swap_extern_amount_in(
     env: Env,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::JoinSwapExternAmountIn {
-        creator: env.contract.address.to_string(),
         connection_id,
         // timeout in 10 minutes
         timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
