@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse,
+    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse, Env,
 };
 use cw_storage_plus::Map;
 
@@ -23,6 +23,7 @@ pub fn create_intergamm_msg(
 // the acks map is the map where
 pub fn handle_reply(
     store: &mut dyn Storage,
+    env: Env,
     msg: Reply,
     pending_acks: Map<u64, IntergammMsg>,
 ) -> StdResult<Response> {
@@ -32,21 +33,18 @@ pub fn handle_reply(
         let original = REPLIES.load(store, msg.id)?;
         match original {
             IntergammMsg::SendToken {
-                creator: _,
                 destination_local_zone_id,
                 sender: _,
                 receiver: _,
                 coin: _,
             } => Ok(Response::new().add_attribute("send_token", "sender").add_attribute("destination", destination_local_zone_id)),
-            IntergammMsg::TestScenario { creator: _, scenario } => Ok( Response::new().add_attribute("testing scenario", scenario)),
+            IntergammMsg::TestScenario { scenario } => Ok( Response::new().add_attribute("testing scenario", scenario)),
             IntergammMsg::RegisterInterchainAccount {
-                creator,
                 connection_id,
             } => Ok(Response::new()
-                .add_attribute("register_interchain_account", creator)
+                .add_attribute("register_interchain_account", env.contract.address)
                 .add_attribute("connection_id", connection_id)),
             IntergammMsg::JoinSwapExternAmountIn {
-                creator: _,
                 ref connection_id,
                 timeout_timestamp: _,
                 pool_id: _,
@@ -55,11 +53,11 @@ pub fn handle_reply(
             } => {
                 store_pending_ack(ok, connection_id, pending_acks, store, &original)
             }
-            IntergammMsg::JoinPool { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _,share_out_amount: _, token_in_maxs: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
-            IntergammMsg::ExitPool { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
-            IntergammMsg::LockTokens { creator: _, ref connection_id, timeout_timestamp: _, duration: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
-            IntergammMsg::ExitSwapExternAmountOut { creator: _, ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
-            IntergammMsg::BeginUnlocking { creator: _, ref connection_id, timeout_timestamp: _, id: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::JoinPool { ref connection_id, timeout_timestamp: _, pool_id: _,share_out_amount: _, token_in_maxs: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::LockTokens { ref connection_id, timeout_timestamp: _, duration: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::ExitSwapExternAmountOut { ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::BeginUnlocking { ref connection_id, timeout_timestamp: _, id: _, coins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
+            IntergammMsg::ExitPool { ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id, pending_acks, store, &original),
         }
     } else {
         Err(StdError::GenericErr {

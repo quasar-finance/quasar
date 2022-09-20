@@ -34,17 +34,14 @@ type QuasarMsg struct {
 }
 
 type TestScenario struct {
-	Creator  string `json:"creator"`
 	Scenario string `json:"scenario"`
 }
 
 type RegisterInterchainAccount struct {
-	Creator string `json:"creator"`
 	ConnectionId string `json:"connection_id"`
 }
 
 type SendToken struct {
-	Creator                string   `json:"creator"`
 	DestinationLocalZoneId string   `json:"destination_local_zone_id"`
 	Sender                 string   `json:"sender"`
 	Receiver               string   `json:"receiver"`
@@ -52,7 +49,6 @@ type SendToken struct {
 }
 
 type OsmosisJoinPool struct {
-	Creator          string     `json:"creator"`
 	ConnectionId     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
 	PoolId           uint64     `json:"pool_id"`
@@ -61,7 +57,6 @@ type OsmosisJoinPool struct {
 }
 
 type OsmosisExitPool struct {
-	Creator          string     `json:"creator"`
 	ConnectionId     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
 	PoolId           uint64     `json:"pool_id"`
@@ -70,7 +65,6 @@ type OsmosisExitPool struct {
 }
 
 type OsmosisLockTokens struct {
-	Creator          string     `json:"creator"`
 	ConnectionId     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
 	Duration         uint64     `json:"duration"`
@@ -78,7 +72,6 @@ type OsmosisLockTokens struct {
 }
 
 type OsmosisBeginUnlocking struct {
-	Creator          string     `json:"creator"`
 	ConnectionId     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
 	Id               uint64     `json:"id"`
@@ -86,7 +79,6 @@ type OsmosisBeginUnlocking struct {
 }
 
 type OsmosisJoinSwapExternAmountIn struct {
-	Creator           string   `json:"creator"`
 	ConnectionId      string   `json:"connection_id"`
 	TimeoutTimestamp  uint64   `json:"timeout_timestamp"`
 	PoolId            uint64   `json:"pool_id"`
@@ -95,7 +87,6 @@ type OsmosisJoinSwapExternAmountIn struct {
 }
 
 type OsmosisExitSwapExternAmountOut struct {
-	Creator          string   `json:"creator"`
 	ConnectionId     string   `json:"connection_id"`
 	TimeoutTimestamp uint64   `json:"timeout_timestamp"`
 	PoolId           uint64   `json:"pool_id"`

@@ -7,22 +7,18 @@ use serde::{Deserialize, Serialize};
 /// A number of Custom messages that can call into the intergamm bindings
 pub enum IntergammMsg {
     SendToken {
-        creator: String,
         destination_local_zone_id: String,
         sender: String,
         receiver: String,
         coin: Coin,
     },
     TestScenario {
-        creator: String,
         scenario: String,
     },
     RegisterInterchainAccount {
-        creator: String,
         connection_id: String,
     },
     JoinPool {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         pool_id: u64,
@@ -30,7 +26,6 @@ pub enum IntergammMsg {
         token_in_maxs: Vec<Coin>,
     },
     ExitPool {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         pool_id: u64,
@@ -38,14 +33,12 @@ pub enum IntergammMsg {
         token_out_mins: Vec<Coin>,
     },
     LockTokens {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         duration: u64,
         coins: Vec<Coin>,
     },
     JoinSwapExternAmountIn {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         pool_id: u64,
@@ -53,7 +46,6 @@ pub enum IntergammMsg {
         token_in: Coin,
     },
     ExitSwapExternAmountOut {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         pool_id: u64,
@@ -61,7 +53,6 @@ pub enum IntergammMsg {
         token_out_mins: Coin,
     },
     BeginUnlocking {
-        creator: String,
         connection_id: String,
         timeout_timestamp: u64,
         id: u64,
