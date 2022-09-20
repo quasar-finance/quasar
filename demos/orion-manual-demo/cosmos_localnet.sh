@@ -36,7 +36,9 @@ $BINARY collect-gentxs
 platform='unknown'
 unamestr=`uname`
 if [ "$unamestr" = 'Linux' ]; then
-   platform='linux'
+   	platform='linux'
+elif [ "$unamestr" = 'Darwin' ]; then
+	platform='macos'
 fi
 
 if [ $platform = 'linux' ]; then
@@ -51,8 +53,20 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8093"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
+elif [ $platform = 'macos' ]; then
+	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26669"+g' $HOME_COSMOSHUB/config/config.toml
+	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26669"+g' $HOME_COSMOSHUB/config/client.toml
+	sed -i'.original' -e 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26663"+g' $HOME_COSMOSHUB/config/config.toml
+	sed -i'.original' -e 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6063"+g' $HOME_COSMOSHUB/config/config.toml
+	sed -i'.original' -e 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9097"+g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8093"+g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
+	sed -i'.original' -e 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
 else
-	echo "only linux platforms are supported, if you are using other platforms you should probably improve this script."
+	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
