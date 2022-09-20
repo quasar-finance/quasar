@@ -75,6 +75,7 @@ fn store_pending_ack(msg: SubMsgResponse, connection_id: &str, pending_acks: Map
         .ok_or_else(|| StdError::GenericErr {
             msg: "packet event not found".into(),
         })?;
+
     // we do some sanity checks here to see if the attributes of the packet correspond with the intergamm msg
     if connection_id != find_attr(&e.attributes, "packet_connection")?.value {
         return Err(StdError::GenericErr {
@@ -82,12 +83,12 @@ fn store_pending_ack(msg: SubMsgResponse, connection_id: &str, pending_acks: Map
         });
     }
     let seq = find_attr(&e.attributes, "packet_sequence")?;
-    // parse the seq value to an uin64
+
     let s = seq.value.parse::<u64>().map_err(|e| StdError::ParseErr {
         target_type: "u64".into(),
         msg: e.to_string(),
     })?;
-    // TODO once the closures are setup, add closures to for acks here
+    
     pending_acks.save(store, s, original)?;
     Ok(Response::new().add_attribute("added pending ack", s.to_string()))
 }
