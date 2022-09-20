@@ -126,7 +126,7 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 		return sdkerrors.Wrap(err, "parse receiver")
 	}
 
-	sdkMsg := intergammtypes.NewMsgSendToken(send.Creator, send.DestinationLocalZoneId, send.Sender, receiver.String(), &send.Coin)
+	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, send.Sender, receiver.String(), &send.Coin)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -211,7 +211,7 @@ func PerformOsmosisExitPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return wasmvmtypes.InvalidRequest{Err: "exit pool null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgTransmitIbcExitPool(exit.Creator, exit.ConnectionId, exit.TimeoutTimestamp, exit.PoolId, exit.ShareInAmount, exit.TokenOutMins)
+	sdkMsg := intergammtypes.NewMsgTransmitIbcExitPool(contractAddr.String(), exit.ConnectionId, exit.TimeoutTimestamp, exit.PoolId, exit.ShareInAmount, exit.TokenOutMins)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -240,7 +240,7 @@ func PerformOsmosisLockTokens(k *intergammkeeper.Keeper, ctx sdk.Context, contra
 	}
 
 	// TODO: lets make sure the way we do durations is correct
-	sdkMsg := intergammtypes.NewMsgTransmitIbcLockTokens(lock.Creator, lock.ConnectionId, lock.TimeoutTimestamp, time.Duration(lock.Duration), lock.Coins)
+	sdkMsg := intergammtypes.NewMsgTransmitIbcLockTokens(contractAddr.String(), lock.ConnectionId, lock.TimeoutTimestamp, time.Duration(lock.Duration), lock.Coins)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -268,7 +268,7 @@ func PerformOsmosisBeginUnlocking(k *intergammkeeper.Keeper, ctx sdk.Context, co
 		return wasmvmtypes.InvalidRequest{Err: "begin unlocking null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgTransmitIbcBeginUnlocking(begin.Creator, begin.ConnectionId, begin.TimeoutTimestamp, begin.Id, begin.Coins)
+	sdkMsg := intergammtypes.NewMsgTransmitIbcBeginUnlocking(contractAddr.String(), begin.ConnectionId, begin.TimeoutTimestamp, begin.Id, begin.Coins)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -296,7 +296,7 @@ func PerformOsmosisJoinSwapExternAmountIn(k *intergammkeeper.Keeper, ctx sdk.Con
 		return wasmvmtypes.InvalidRequest{Err: "join swap extern amount in null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgTransmitIbcJoinSwapExternAmountIn(join.Creator, join.ConnectionId, join.TimeoutTimestamp, join.PoolId, join.ShareOutMinAmount, join.TokenIn)
+	sdkMsg := intergammtypes.NewMsgTransmitIbcJoinSwapExternAmountIn(contractAddr.String(), join.ConnectionId, join.TimeoutTimestamp, join.PoolId, join.ShareOutMinAmount, join.TokenIn)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -324,7 +324,7 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 		return wasmvmtypes.InvalidRequest{Err: "exit swap extern amount out null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgTransmitIbcExitSwapExternAmountOut(exit.Creator, exit.ConnectionId, exit.TimeoutTimestamp, exit.PoolId, exit.ShareInAmount, exit.TokenOutMins)
+	sdkMsg := intergammtypes.NewMsgTransmitIbcExitSwapExternAmountOut(contractAddr.String(), exit.ConnectionId, exit.TimeoutTimestamp, exit.PoolId, exit.ShareInAmount, exit.TokenOutMins)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
