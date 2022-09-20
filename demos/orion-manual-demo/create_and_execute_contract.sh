@@ -27,6 +27,6 @@ ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE
 echo "Got address of deployed contract = $ADDR"
 
 echo "Executing register ica message... ('$MSG')"
-quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 cd -
