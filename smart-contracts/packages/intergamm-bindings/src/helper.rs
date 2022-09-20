@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Attribute, Deps, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, Uint64, SubMsgResponse,
+    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse,
 };
 use cw_storage_plus::Map;
 
@@ -26,25 +26,24 @@ pub fn handle_reply(
     msg: Reply,
     pending_acks: Map<u64, IntergammMsg>,
 ) -> StdResult<Response> {
-    let mut res = msg.result.into_result();
+    let res = msg.result.into_result();
     if let Ok(ok) = res {
         // do something with the ok msg
         let original = REPLIES.load(store, msg.id)?;
         match original {
             IntergammMsg::SendToken {
-                creator,
+                creator: _,
                 destination_local_zone_id,
-                sender,
-                receiver,
-                coin,
-            } => todo!(),
-            IntergammMsg::TestScenario { creator, scenario } => todo!(),
-            // if RegisterInterchainAccount was succesful, we do not get a sequence number. The most we can do is register that we are opening the channel
+                sender: _,
+                receiver: _,
+                coin: _,
+            } => Ok(Response::new().add_attribute("send_token", "sender").add_attribute("destination", destination_local_zone_id)),
+            IntergammMsg::TestScenario { creator: _, scenario } => Ok( Response::new().add_attribute("testing scenario", scenario)),
             IntergammMsg::RegisterInterchainAccount {
                 creator,
                 connection_id,
             } => Ok(Response::new()
-                .add_attribute("registered interchain acc", creator)
+                .add_attribute("register_interchain_account", creator)
                 .add_attribute("connection_id", connection_id)),
             IntergammMsg::JoinSwapExternAmountIn {
                 creator: _,
@@ -69,7 +68,7 @@ pub fn handle_reply(
     }
 }
 
-fn store_pending_ack(msg: SubMsgResponse, connection_id: &String, pending_acks: Map<u64, IntergammMsg>, store: &mut dyn Storage, original: &IntergammMsg) -> Result<Response, StdError> {
+fn store_pending_ack(msg: SubMsgResponse, connection_id: &str, pending_acks: Map<u64, IntergammMsg>, store: &mut dyn Storage, original: &IntergammMsg) -> Result<Response, StdError> {
     // to get the sequence number, we look for the event type send_packet under the key packet_sequence and register the sequence number
     let e = msg
         .events
@@ -79,7 +78,7 @@ fn store_pending_ack(msg: SubMsgResponse, connection_id: &String, pending_acks: 
             msg: "packet event not found".into(),
         })?;
     // we do some sanity checks here to see if the attributes of the packet correspond with the intergamm msg
-    if connection_id.clone() != find_attr(&e.attributes, "packet_connection")?.value {
+    if connection_id != find_attr(&e.attributes, "packet_connection")?.value {
         return Err(StdError::GenericErr {
             msg: "connection_id is not equal to packet connection".into(),
         });
@@ -91,11 +90,11 @@ fn store_pending_ack(msg: SubMsgResponse, connection_id: &String, pending_acks: 
         msg: e.to_string(),
     })?;
     // TODO once the closures are setup, add closures to for acks here
-    pending_acks.save(store, s, &original)?;
+    pending_acks.save(store, s, original)?;
     Ok(Response::new().add_attribute("added pending ack", s.to_string()))
 }
 
-fn find_attr<'a>(attributes: &'a Vec<Attribute>, key: &str) -> Result<&'a Attribute, StdError> {
+fn find_attr<'a>(attributes: &'a [Attribute], key: &str) -> Result<&'a Attribute, StdError> {
     attributes
         .iter()
         .find(|attr| attr.key == key)

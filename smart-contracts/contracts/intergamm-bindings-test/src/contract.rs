@@ -75,7 +75,15 @@ pub fn execute(
             pool_id,
             share_out_amount,
             token_in_maxs,
-        } => todo!(),
+        } => execute_join_pool(
+            connection_id,
+            timeout_timestamp,
+            pool_id,
+            share_out_amount,
+            token_in_maxs,
+            deps,
+            env,
+        ),
         ExecuteMsg::ExitPool {
             connection_id,
             timeout_timestamp,
@@ -133,12 +141,12 @@ pub fn execute_exit_pool(
     let msg = IntergammMsg::ExitPool {
         creator: env.contract.address.to_string(),
         connection_id,
-        timeout_timestamp,
-        pool_id,
+        timeout_timestamp: timeout_timestamp.u64(),
+        pool_id: pool_id.u64(),
         share_in_amount,
         token_out_mins,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 pub fn execute_join_pool(
@@ -153,12 +161,12 @@ pub fn execute_join_pool(
     let msg = IntergammMsg::JoinPool {
         creator: env.contract.address.to_string(),
         connection_id,
-        timeout_timestamp,
-        pool_id,
+        timeout_timestamp: timeout_timestamp.u64(),
+        pool_id: pool_id.u64(),
         share_out_amount,
         token_in_maxs,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 pub fn execute_lock_tokens(
@@ -172,11 +180,11 @@ pub fn execute_lock_tokens(
     let msg = IntergammMsg::LockTokens {
         creator: env.contract.address.to_string(),
         connection_id,
-        timeout_timestamp,
-        duration,
+        timeout_timestamp: timeout_timestamp.u64(),
+        duration: duration.u64(),
         coins,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 pub fn execute_begin_unlocking(
@@ -190,11 +198,11 @@ pub fn execute_begin_unlocking(
     let msg = IntergammMsg::BeginUnlocking {
         creator: env.contract.address.to_string(),
         connection_id,
-        timeout_timestamp,
-        id,
+        timeout_timestamp: timeout_timestamp.u64(),
+        id: id.u64(),
         coins,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 pub fn execute_exit_swap_extern_amount_out(
@@ -209,12 +217,12 @@ pub fn execute_exit_swap_extern_amount_out(
     let msg = IntergammMsg::ExitSwapExternAmountOut {
         creator: env.contract.address.to_string(),
         connection_id,
-        timeout_timestamp,
-        pool_id,
+        timeout_timestamp: timeout_timestamp.u64(),
+        pool_id: pool_id.u64(),
         share_in_amount,
         token_out_mins,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 // TODO as of 23 august, there is a bug in the go implementation of send token
@@ -225,7 +233,7 @@ pub fn execute_send_token(
     Ok(Response::new()
         .add_message(IntergammMsg::SendToken {
             creator: env.contract.address.to_string(),
-            destination_local_zone_id: destination_local_zone_id,
+            destination_local_zone_id,
             sender: env.contract.address.to_string(),
             receiver: env.contract.address.to_string(),
             coin: Coin::new(100, "uqsr"),
@@ -263,9 +271,9 @@ pub fn execute_register_ica(
 ) -> Result<Response<IntergammMsg>, ContractError> {
     let msg = IntergammMsg::RegisterInterchainAccount {
         creator: env.contract.address.to_string(),
-        connection_id: connection_id,
+        connection_id,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 // join pool requires us to have a pool on the remote chain and funds in the interchain account of this contract
@@ -281,12 +289,12 @@ pub fn execute_join_swap_extern_amount_in(
         creator: env.contract.address.to_string(),
         connection_id,
         // timeout in 10 minutes
-        timeout_timestamp: Uint64::new(env.block.time.plus_seconds(600).nanos()),
-        pool_id: Uint64::new(pool_id.u64()),
+        timeout_timestamp: env.block.time.plus_seconds(600).nanos(),
+        pool_id: pool_id.u64(),
         share_out_min_amount,
         token_in,
     };
-    create_intergamm_msg(deps.storage, msg).map_err(|e| ContractError::Std(e))
+    create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
 pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, ContractError> {
@@ -343,7 +351,7 @@ pub fn do_ibc_packet_ack(
     // remove the ack from pending
     PENDINGACKS.remove(deps.storage, sequence);
     Ok(Response::new()
-        .add_attribute("error", error.unwrap_or("none".into()))
+        .add_attribute("error", error.unwrap_or_else(|| "none".into()))
         .add_attribute("response", format!("{:?}", response)))
 }
 
