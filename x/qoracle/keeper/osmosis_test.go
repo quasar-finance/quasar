@@ -288,7 +288,7 @@ func (suite *KeeperTestSuite) TestCalculatePoolAPYByPoolId() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
+func (suite *KeeperTestSuite) TestGetOsmosisPoolsRankedByAPY() {
 	var denom string
 
 	testCases := []struct {
@@ -298,6 +298,17 @@ func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
 	}{
 		{
 			"success",
+			func() {
+				denom = ""
+			},
+			[]types.OsmosisPool{
+				TestOsmosisPool2,
+				TestOsmosisPool1,
+				TestOsmosisPool3,
+			},
+		},
+		{
+			"success with denom filter",
 			func() {
 				denom = TestATOMDenom
 			},
@@ -329,7 +340,7 @@ func (suite *KeeperTestSuite) TestGetOsmosisPoolsByDenom() {
 
 			tc.malleate() // malleate mutates test data
 
-			pools := suite.Keepers.QoracleKeeper.GetOsmosisPoolsByDenom(suite.Ctx, denom)
+			pools := suite.Keepers.QoracleKeeper.GetOsmosisPoolsRankedByAPY(suite.Ctx, denom)
 
 			suite.Require().Equal(tc.expPools, pools)
 		})

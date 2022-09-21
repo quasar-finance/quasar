@@ -449,8 +449,10 @@ func (k Keeper) GetOsmosisPool(ctx sdk.Context, id uint64) (types.OsmosisPool, b
 	return pool, true
 }
 
-// GetOsmosisPoolsByDenom returns a list of all pools with the desired denom as asset ordered by APY in descending order.
-func (k Keeper) GetOsmosisPoolsByDenom(ctx sdk.Context, denom string) []types.OsmosisPool {
+// GetOsmosisPoolsRankedByAPY returns a list of all pools with ordered by APY in descending order with an optional denom filter.
+// If denom is empty the function will return all osmosis incentivized pools (for more info follow https://docs.osmosis.zone/osmosis-core/modules/spec-pool-incentives)
+// otherwise it only returns pools that have denom as their deposited asset.
+func (k Keeper) GetOsmosisPoolsRankedByAPY(ctx sdk.Context, denom string) []types.OsmosisPool {
 	store := prefix.NewStore(k.getOsmosisStore(ctx), types.KeyOsmosisPoolPrefix)
 
 	iter := store.Iterator(nil, nil)
@@ -460,17 +462,27 @@ func (k Keeper) GetOsmosisPoolsByDenom(ctx sdk.Context, denom string) []types.Os
 		var pool types.OsmosisPool
 		k.cdc.MustUnmarshal(iter.Value(), &pool)
 
-		// Filter out pools with the desired denom as asset
-		for _, asset := range pool.PoolInfo.PoolAssets {
-			if asset.Token.Denom == denom {
-				pools = append(pools, pool)
+		if denom != "" {
+			// Filter out pools with the desired denom as asset
+			if !poolHasDenom(pool.PoolInfo, denom) {
+				continue
 			}
 		}
+		pools = append(pools, pool)
 	}
 
 	// Order by APY in descending order
 	sort.Stable(sort.Reverse(pools))
 	return pools
+}
+
+func poolHasDenom(pool balancerpool.Pool, denom string) bool {
+	for _, asset := range pool.PoolAssets {
+		if asset.Token.Denom == denom {
+			return true
+		}
+	}
+	return false
 }
 
 func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
