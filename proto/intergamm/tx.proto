@@ -3,7 +3,6 @@ package quasarlabs.quasarnode.intergamm;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "osmosis/v9/gamm/v1beta1/tx.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 

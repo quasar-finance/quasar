@@ -132,7 +132,7 @@ message QueryListActiveLpsRequest {
 }
 
 message QueryListActiveLpsResponse {
-	repeated uint64 lpIds = 1 [(gogoproto.nullable) = false];
+	repeated uint64 lpIds = 1;
 }
 
 // this line is used by starport scaffolding # 3

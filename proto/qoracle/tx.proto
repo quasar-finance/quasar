@@ -1,15 +1,9 @@
 syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
-import "gogoproto/gogo.proto";
-import "qoracle/pool_position.proto";
-import "qoracle/pool_ranking.proto";
-import "qoracle/pool_spot_price.proto";
-import "qoracle/pool_info.proto";
 // this line is used by starport scaffolding # proto/tx/import
 import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
 import "qoracle/pool_metrics.proto";
-import "qoracle/denom_price_mapping.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 

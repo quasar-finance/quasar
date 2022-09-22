@@ -11,6 +11,11 @@ locate_cosmos_sdk_dir() {
   go list -f "{{ .Dir }}" -m github.com/cosmos/cosmos-sdk
 }
 
+# Get the path of the ibc-go repo from go/pkg/mod
+locate_ibc_go_dir() {
+  go list -f "{{ .Dir }}" -m github.com/cosmos/ibc-go/v3
+}
+
 # Collect all proto dirs
 collect_proto_dirs() {
   find "$@" -path -prune -o -name "*.proto" -print0 | xargs -0 -n1 dirname | sort | uniq
@@ -20,6 +25,7 @@ mkdir -p "$tmp_dir"
 trap "rm -rf ${tmp_dir}" 0
 
 cosmos_sdk_dir="$(locate_cosmos_sdk_dir)"
+ibc_go_dir="$(locate_ibc_go_dir)"
 
 (
   cd "$project_dir"
@@ -28,9 +34,9 @@ cosmos_sdk_dir="$(locate_cosmos_sdk_dir)"
   echo "$proto_child_dir"
     protoc \
       -I "${project_dir}/proto" \
-      -I "${project_dir}/third_party/proto" \
       -I "${cosmos_sdk_dir}/third_party/proto" \
       -I "${cosmos_sdk_dir}/proto" \
+      -I "${ibc_go_dir}/proto" \
       --gocosmos_out=plugins=interfacetype+grpc,\
 Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:"$tmp_dir" \
       --grpc-gateway_out=logtostderr=true:"$tmp_dir" \
