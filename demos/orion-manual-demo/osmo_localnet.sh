@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Configure variables
 BINARY=osmosisd
 HOME_OSMOSIS=$HOME/.osmosis

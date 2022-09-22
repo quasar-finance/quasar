@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cp ~/quasar-demo/quasar/demos/orion-manual-demo/hermes_config.toml ~/.hermes/config.toml
+cp hermes_config.toml ~/.hermes/config.toml
 
 hermes keys restore --mnemonic "old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license" quasar
 
@@ -25,7 +25,7 @@ hermes create connection quasar osmosis
 
 hermes create connection osmosis cosmos
 
-#hermes create connection quasar $BANDCHAIN
+hermes create connection quasar $BANDCHAIN
 
 # Create channel
 
@@ -35,7 +35,7 @@ hermes create channel --port-a transfer --port-b transfer cosmos connection-1
 
 hermes create channel --port-a transfer --port-b transfer quasar connection-1
 
-#hermes create channel --port-a qoracle --port-b oracle quasar connection-2 -v bandchain-1
+hermes create channel --port-a qoracle --port-b oracle quasar connection-2 -v bandchain-1
 
 # start
 hermes start

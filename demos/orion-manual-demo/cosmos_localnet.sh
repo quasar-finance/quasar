@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Configure variables
 BINARY=gaiad
 HOME_COSMOSHUB=$HOME/.gaia

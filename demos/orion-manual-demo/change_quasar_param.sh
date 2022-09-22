@@ -1,4 +1,4 @@
-
+#!/bin/bash
 # Configure variables
 BINARY=quasarnoded
 HOME_QSR=$HOME/.quasarnode
