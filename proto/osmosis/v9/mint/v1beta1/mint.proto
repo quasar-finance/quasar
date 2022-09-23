@@ -4,9 +4,6 @@ package osmosis.mint.v1beta1;
 option go_package = "github.com/quasarlabs/quasarnode/osmosis/v9/mint/types";
 
 import "gogoproto/gogo.proto";
-import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
-import "google/protobuf/duration.proto";
 
 // Minter represents the minting state.
 message Minter {

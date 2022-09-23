@@ -13,7 +13,7 @@ message QCoins {
 
 // QDenoms defines encoding/decoding for the slice of denoms to be used in KV stores
 message QDenoms {
-    repeated string denoms = 1  [(gogoproto.nullable) = false];
+    repeated string denoms = 1;
 }
 
 // LockupTypes defines different types of locktypes to be used in the system for users deposit

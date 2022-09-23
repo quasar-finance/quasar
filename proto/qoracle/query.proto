@@ -12,12 +12,9 @@ import "qoracle/pool_spot_price.proto";
 import "qoracle/pool_info.proto";
 import "qoracle/bandchain.proto";
 import "qoracle/osmosis.proto";
-import "qoracle/pool_metrics.proto";
-import "qoracle/denom_price_mapping.proto";
 import "osmosis/v9/epochs/genesis.proto";
 import "osmosis/v9/mint/v1beta1/mint.proto";
 import "osmosis/v9/pool-incentives/v1beta1/incentives.proto";
-import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
 import "osmosis/v9/pool-incentives/v1beta1/query.proto";
 // this line is used by starport scaffolding # 1
 

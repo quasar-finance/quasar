@@ -2,7 +2,6 @@ syntax = "proto3";
 package quasarlabs.quasarnode.intergamm;
 
 option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
-import "gogoproto/gogo.proto";  
 
 message PortInfo {
   string portID = 1;  
