@@ -12,7 +12,7 @@ CONFIG_DIR=".wasmd"
 BINARY="wasmd"
 COSMJS_VERSION="v0.27.1"
 GENESIS_URL="https://raw.githubusercontent.com/CosmWasm/testnets/master/cliffnet-1/config/genesis.json"
-RPC="http://127.0.0.1:26657"
+RPC="http://127.0.0.1:26659"
 # RPC="https://rpc.cliffnet.cosmwasm.com:443"
 LCD="https://lcd.cliffnet.cosmwasm.com"
 FAUCET="https://faucet.cliffnet.cosmwasm.com"
@@ -26,7 +26,7 @@ MSG='{"run_q_oracle_test":{}}'
 
 cd ../../smart-contracts
 
-# docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
 
 echo "Running store code"
 RES=$(quasarnoded tx wasm store artifacts/qoracle_bindings_test.wasm --from alice -y --output json -b block $TXFLAG) 

@@ -31,6 +31,16 @@ pub struct PageRequest {
     pub reverse: bool,
 }
 
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, JsonSchema)]
+pub struct PageResponse {
+    /// next_key is the key to be passed to PageRequest.key to
+    /// query the next page most efficiently
+    pub next_key: Vec<u8>,
+    /// total is total number of results available if PageRequest.count_total
+    /// was set, its value is undefined otherwise
+    pub total: u64,
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct DecCoin {
     pub amount: Decimal,
@@ -83,9 +93,9 @@ pub struct SmoothWeightChangeParams {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct PoolParams {
-   pub swapFee: Decimal,
-   pub exitFee: Decimal,
-   pub smoothWeightChangeParams: SmoothWeightChangeParams,
+    pub swapFee: Decimal,
+    pub exitFee: Decimal,
+    pub smoothWeightChangeParams: SmoothWeightChangeParams,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -106,4 +116,3 @@ pub struct PoolInfo {
     pub lastUpdatedTime: u64,
     pub creator: String,
 }
-

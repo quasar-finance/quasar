@@ -4,7 +4,7 @@ use cosmwasm_std::{CustomQuery, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{DecCoin, PageRequest, PoolInfo, PoolPosition, PoolRanking};
+use crate::types::{DecCoin, PageRequest, PoolInfo, PoolPosition, PoolRanking, PageResponse};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -28,7 +28,7 @@ pub struct OsmosisPoolPositionResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OsmosisAllPoolPositionsResponse {
     pub poolPositions: Vec<PoolPosition>,
-    pub pagination: Option<PageRequest>,
+    pub pagination: Option<PageResponse>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -44,7 +44,7 @@ pub struct OsmosisPoolInfoResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OsmosisAllPoolInfoResponse {
     pub poolInfo: Vec<PoolInfo>,
-    pub pagination: Option<PageRequest>,
+    pub pagination: Option<PageResponse>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
