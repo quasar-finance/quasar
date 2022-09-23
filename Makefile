@@ -17,7 +17,7 @@ lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
 
 proto-gen:
-	scripts/generate-docs.sh
+	scripts/generate-proto.sh
 
 build: mkdirs
 	scripts/build build_dev
