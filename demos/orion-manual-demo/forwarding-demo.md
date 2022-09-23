@@ -1,6 +1,6 @@
-This demo shows us how to setup an environment and test packet forwarding.
+This demo shows us how to set up an environment and test packet forwarding.
 
-1. Runn the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
+1. Run the steps described in the `run_integrated_testnet.md` to initialize the chains and the channels between them.
 
 2. Check the initial balances
 ```

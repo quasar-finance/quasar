@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cp ~/quasar-demo/quasar/demos/orion-manual-demo/hermes_config.toml ~/.hermes/config.toml
+cp hermes_config.toml ~/.hermes/config.toml
 
 hermes keys restore --mnemonic "old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license" quasar
 

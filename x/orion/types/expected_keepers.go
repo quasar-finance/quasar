@@ -61,17 +61,17 @@ type QoracleKeeper interface {
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
-	IntrRcvrs(ctx sdk.Context) (res []intergammtypes.IntermediateReceiver)
+	RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error
+	RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error
+	CompleteZoneInfoMap(ctx sdk.Context) (res map[string]intergammtypes.ZoneCompleteInfo)
+	QuasarDenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string)
 
 	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
+	IsICACreatedOnZoneId(ctx sdk.Context, zoneId, owner string) (string, bool)
+	IsICACreatedOnDenomNativeZone(ctx sdk.Context, denom, owner string) (string, bool)
 	GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection)
 	GetChainID(ctx sdk.Context, connectionID string) (string, error)
 	GetConnectionId(ctx sdk.Context, inChainID string) (string, bool)
-	Send(ctx sdk.Context,
-		coin sdk.Coin,
-		destinationChain string,
-		owner string,
-		destinationAddress string) (uint64, error)
 
 	SendToken(ctx sdk.Context,
 		destinationLocalZoneId string,
@@ -106,27 +106,12 @@ type IntergammKeeper interface {
 		shareInAmount sdk.Int,
 		tokenOutMins []sdk.Coin) (uint64, error)
 
-	TransmitIbcTransfer(
+	TransmitICATransfer(
 		ctx sdk.Context,
 		owner string,
-		connectionId string,
 		timeoutTimestamp uint64,
-		transferPort, transferChannel string,
 		token sdk.Coin,
-		receiver string,
-		transferTimeoutHeight ibcclienttypes.Height,
-		transferTimeoutTimestamp uint64) (uint64, error)
-
-	TransmitForwardIbcTransfer(
-		ctx sdk.Context,
-		owner string,
-		connectionId string,
-		timeoutTimestamp uint64,
-		transferPort, transferChannel string,
-		token sdk.Coin,
-		fwdTransferPort, fwdTransferChannel string,
-		intermediateReceiver string,
-		receiver string,
+		finalReceiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
 		transferTimeoutTimestamp uint64) (uint64, error)
 

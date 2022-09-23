@@ -29,6 +29,10 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdGetPortInfo())
 
+	cmd.AddCommand(CmdICAAddressOnZone())
+
+	cmd.AddCommand(CmdICAAddressOnDenomNativeZone())
+
 	// this line is used by starport scaffolding # 1
 
 	return cmd

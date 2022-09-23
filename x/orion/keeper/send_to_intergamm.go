@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
@@ -32,18 +33,6 @@ func (k Keeper) GetDestinationChainId(ctx sdk.Context) string {
 
 func (k Keeper) getDestinationLocalZoneId(ctx sdk.Context) string {
 	return k.OsmosisLocalInfo(ctx).LocalZoneId
-}
-
-// TODO :  should be a parameter. Could be orion ica account on hub.
-func (k Keeper) getIntermediateReceiver(ctx sdk.Context) string {
-	intr_rcvrs := k.intergammKeeper.IntrRcvrs(ctx)
-	osmo_connection_id := k.OsmosisLocalInfo(ctx).ConnectionId
-	for _, v := range intr_rcvrs {
-		if v.ZoneInfo.ConnectionId == osmo_connection_id {
-			return v.RcvrAddress
-		}
-	}
-	return ""
 }
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
@@ -125,28 +114,15 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	k.Logger(ctx).Info("TokenWithdrawFromOsmosis", "coin", coin)
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
-	connectionId := k.OsmosisLocalInfo(ctx).ConnectionId
-	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	transferPort := "transfer"
-	transferChannel := "channel-1" // TODO - should be a param, osmosis -> hub
-	fwdTransferPort := "transfer"
-	fwdTransferChannel := "channel-0" // TODO - should be a param; hub->quasar
-	intermediateReceiver := k.getIntermediateReceiver(ctx)
 
-	return k.intergammKeeper.TransmitForwardIbcTransfer(
+	return k.intergammKeeper.TransmitICATransfer(
 		ctx,
 		owner,
-		connectionId,
-		uint64(timeoutTimestamp),
-		transferPort,
-		transferChannel,
+		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		coin,
-		fwdTransferPort,
-		fwdTransferChannel,
-		intermediateReceiver,
 		receiverAddr,
 		ibcclienttypes.ZeroHeight(),
-		uint64(timeoutTimestamp),
+		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
 	)
 }
 
@@ -154,8 +130,8 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 // Returns the packet sequence number of the outgoing packet.
 // Logic - if denom is ibc atom then fwd it via cosmos-hub, and so on.
 // All these details is supposed to be available in a generic place independent of orion module.
-// Intergamm module should be inteligent enough to route packets based on denoms.
-// The best orion or any other module can provide to intergam is to give denom string.
+// Intergamm module should be intelligent enough to route packets based on denoms.
+// The best orion or any other module can provide to intergamm is to give denom string.
 // Assumption - IBC token transfer is robust enough to deal with failure. It will return tokens
 // in case of failure.
 // Can we actually query or determine if ibc token transfer call was successful. And if it failed; tokens
@@ -165,16 +141,28 @@ func (k Keeper) IBCTokenTransfer(ctx sdk.Context, coin sdk.Coin) (uint64, error)
 	logger.Info("IBCTokenTransfer",
 		"coin", coin,
 	)
-	destAccStr, found := k.IsOrionICACreated(ctx)
+	_, found := k.intergammKeeper.IsICACreatedOnDenomNativeZone(ctx, coin.Denom, k.getOwnerAccStr())
 	if !found {
-		return 0, fmt.Errorf("orion ica account for orion address %s not found", k.getOwnerAccStr())
+		err := fmt.Errorf("error: orion ICA for orion address %s not found on native zone for denom '%s'", k.getOwnerAccStr(), coin.Denom)
+		logger.Error("IBCTokenTransfer", err.Error())
+		return 0, err
+	}
+	destAccStr, found := k.intergammKeeper.IsICACreatedOnZoneId(ctx, intergammtypes.OsmosisZoneId, k.getOwnerAccStr())
+	if !found {
+		err := fmt.Errorf("error: orion ICA for orion address %s not found on osmosis zone", k.getOwnerAccStr())
+		logger.Error("IBCTokenTransfer", err.Error())
+		return 0, err
 	}
 
 	seqNo, err := k.intergammKeeper.SendToken(ctx,
-		k.getDestinationLocalZoneId(ctx),
+		intergammtypes.OsmosisZoneId,
 		k.getOwnerAcc(),
 		destAccStr,
 		coin)
+	logger.Debug("IBCTokenTransfer", "seqNo: ", seqNo)
+	if err != nil {
+		logger.Error("IBCTokenTransfer", err.Error())
+	}
 	ibcTransferRecord := types.IbcTokenTransfer{SeqNo: seqNo,
 		Destination: k.getDestinationLocalZoneId(ctx),
 		Sender:      k.getOwnerAccStr(),
@@ -195,7 +183,7 @@ func (k Keeper) SetIBCTokenTransferRecord(ctx sdk.Context, ibcTokenTransfer type
 	store.Set(key, value)
 }
 
-// DeleteIBCTokenTransferRecord should be called when we receive positve ack.
+// DeleteIBCTokenTransferRecord should be called when we receive positive ack.
 // It means that we are done with the seq number successfully
 func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.IBCTokenTransferKBP)

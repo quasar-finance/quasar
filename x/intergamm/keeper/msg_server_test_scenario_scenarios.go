@@ -819,17 +819,14 @@ func icaTransferIbcTokensTestCoin() sdk.Coin {
 func icaTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	testCoin := icaTransferIbcTokensTestCoin()
 
-	seq, err := k.TransmitIbcTransfer(
+	seq, err := k.TransmitICATransfer(
 		ctx,
 		owner,
-		connectionId,
-		timestamp,
-		transferPortId,
-		transferChannelId,
+		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		testCoin,
 		owner, // token to be sent to owner, via IBC
 		transferTimeoutHeight,
-		uint64(time.Now().UnixNano())+transferTimeoutTimestamp,
+		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
 	)
 	require.NoError(t, err)
 	require.NotZero(t, seq)
