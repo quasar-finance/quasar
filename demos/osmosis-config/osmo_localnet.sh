@@ -68,8 +68,6 @@ elif [ $platform = 'macos' ]; then
 else
 	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
 	exit 1
-	sed -i '' 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
-	sed -i '' 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
 fi
 
 cp $HOME_OSMOSIS/config/genesis.json $HOME_OSMOSIS/config/genesis_original.json

@@ -73,8 +73,6 @@ elif [ $platform = 'macos' ]; then
 else
 	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
 	exit 1
-	sed -i '' 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
-	sed -i '' 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
 fi
 
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
@@ -88,4 +86,4 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.qoracle.params.bandchain_params.coin_rates_params.script_params.fee_limit[0].amount="200"' >  $HOME_QSR/config/genesis.json
 
 # Start
-$BINARY start
+$BINARY start --home $HOME_QSR
