@@ -49,9 +49,14 @@ do
 	# quasarnoded q ibc channel connections connection-1  --node tcp://localhost:26659 -o json | jq 
 	# Get the number of channel under a connection-id
 	#num=`$binary_name q ibc channel connections connection-1  --node tcp://localhost:$grpc_port -o json | jq ".channels | length"`
-	declare -a conn_arr=("connection-0" "connection-1")
+	declare -a conn_arr=("connection-0" "connection-1" "connection-2")
 	for conn in "${conn_arr[@]}"
 	do
+		if [[ "$conn" == "connection-2" && "$binary_name" != "quasarnoded" ]]
+		then
+          continue   
+		fi
+		 
 		echo " " 
 		echo "### $conn ##########################"
 		nc=`$binary_name q ibc channel connections $conn  --node tcp://localhost:$grpc_port -o json | jq ".channels | length" | tr -d '"'`
