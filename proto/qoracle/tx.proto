@@ -2,7 +2,7 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 // this line is used by starport scaffolding # proto/tx/import
-import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 import "qoracle/pool_metrics.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";

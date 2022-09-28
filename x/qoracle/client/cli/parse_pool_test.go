@@ -61,8 +61,8 @@ func TestParseBalancerPoolFile(t *testing.T) {
 	// ok json
 	pool, err := parseBalancerPoolFile(okJSON.Name())
 	require.NoError(t, err, "unexpected error")
-	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.GetAddress().String())
-	require.Equal(t, uint64(1), pool.GetId())
+	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.Address)
+	require.Equal(t, uint64(1), pool.Id)
 	require.Equal(t, sdk.MustNewDecFromStr("0.003000000000000000"), pool.PoolParams.SwapFee)
 	require.Equal(t, sdk.MustNewDecFromStr("0.000000000000000000"), pool.PoolParams.ExitFee)
 

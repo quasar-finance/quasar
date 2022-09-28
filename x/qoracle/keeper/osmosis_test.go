@@ -4,10 +4,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochtypes "github.com/quasarlabs/quasarnode/osmosis/v9/epochs/types"
-	balancerpool "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/pool-models/balancer"
-	minttypes "github.com/quasarlabs/quasarnode/osmosis/v9/mint/types"
-	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/v9/pool-incentives/types"
+	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
+	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
+	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 

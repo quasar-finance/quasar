@@ -2,7 +2,7 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
-import "osmosis/v9/gamm/pool-models/balancer/balancerPool.proto";
+import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
 
 message PoolInfo {
   string poolId = 1;

@@ -2,9 +2,9 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/pool-models/balancer"
-	gammtypes "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/types"
-	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/v9/lockup/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
