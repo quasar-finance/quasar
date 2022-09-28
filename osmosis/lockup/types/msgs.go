@@ -6,6 +6,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var (
+	_ sdk.Msg = &MsgLockTokens{}
+	_ sdk.Msg = &MsgBeginUnlocking{}
+)
+
 func (msg MsgLockTokens) ValidateBasic() error {
 	panic("not implemented")
 }

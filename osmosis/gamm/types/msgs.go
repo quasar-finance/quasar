@@ -6,6 +6,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var (
+	_ sdk.Msg = &MsgSwapExactAmountIn{}
+	_ sdk.Msg = &MsgSwapExactAmountOut{}
+	_ sdk.Msg = &MsgJoinPool{}
+	_ sdk.Msg = &MsgExitPool{}
+	_ sdk.Msg = &MsgJoinSwapExternAmountIn{}
+	_ sdk.Msg = &MsgExitSwapExternAmountOut{}
+	_ sdk.Msg = &MsgJoinSwapShareAmountOut{}
+	_ sdk.Msg = &MsgExitSwapShareAmountIn{}
+)
+
 func (msg MsgSwapExactAmountIn) ValidateBasic() error {
 	panic("not implemented")
 }
