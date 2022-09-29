@@ -46,7 +46,6 @@ hermes  keys add --chain osmosis --mnemonic-file osmosis.seeds
 hermes  keys add --chain cosmos --mnemonic-file cosmos.seeds
 
 BANDCHAIN="band-laozi-testnet5"
-#hermes keys add --chain band-laozi-testnet5 --mnemonic-file band.seeds -hd-path "m/44'/494'/0'/0/0" 
 hermes keys add --chain band-laozi-testnet5 --mnemonic-file band.seeds  --hd-path "m/44'/494'/0'/0/0"
 
 ## Checking balance
@@ -69,7 +68,7 @@ hermes create connection --a-chain quasar --b-chain $BANDCHAIN
 hermes create channel --a-chain cosmos --a-connection connection-0 --a-port transfer --b-port transfer 
 hermes create channel --a-chain cosmos --a-connection connection-1 --a-port transfer --b-port transfer 
 hermes create channel --a-chain quasar --a-connection connection-1 --a-port transfer --b-port transfer
-hermes create channel --a-chain quasar --a-connection connection-2 --a-port qoracle --b-port oracle 
+hermes create channel --a-chain quasar --a-connection connection-2 --a-port qoracle --b-port oracle --channel-version bandchain-1
 
 # start
 hermes start > hermes.log 2>&1 

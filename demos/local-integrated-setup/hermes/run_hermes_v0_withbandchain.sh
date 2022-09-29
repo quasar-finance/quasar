@@ -37,12 +37,16 @@ mkdir -p ~/.hermes/
 pwd
 cp v0/hermes_config_with_bandchain.toml ~/.hermes/config.toml
 
-hermes keys restore --mnemonic "old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license" quasar
-hermes keys restore --mnemonic "ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle" cosmos
-hermes keys restore --mnemonic "rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself" osmosis
-
 BANDCHAIN="band-laozi-testnet5"
-hermes keys restore --mnemonic "machine danger crush duck always will liberty popular security shoulder bargain day repair focus fog evoke market gossip love curious question kingdom armor crazy"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet5
+
+quasar_seeds=$(cat quasar.seeds)
+cosmos_seeds=$(cat cosmos.seeds)
+osmosis_seeds=$(cat osmosis.seeds)
+band_seeds=$(cat band.seeds)
+hermes keys restore --mnemonic "$quasar_seeds" quasar
+hermes keys restore --mnemonic "$cosmos_seeds" cosmos
+hermes keys restore --mnemonic "$osmosis_seeds" osmosis
+hermes keys restore --mnemonic "$band_seeds"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet5
 
 ## Checking balance
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
