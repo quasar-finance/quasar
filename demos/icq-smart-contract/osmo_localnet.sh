@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Configure variables
 BINARY=osmosisd
@@ -41,7 +41,7 @@ unamestr=`uname`
 if [ "$unamestr" = 'Linux' ]; then
   platform='linux'
 elif [ "$unamestr" = 'Darwin' ]; then
-	platform='macos'
+  platform='mac'
 fi
 
 if [ $platform = 'linux' ]; then
@@ -56,12 +56,12 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8092"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1312"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8082"+g' $HOME_OSMOSIS/config/app.toml
-elif [ $platform = 'macos' ]; then
-	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
+elif [ $platform = 'mac' ]; then
+  sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uosmo"/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26679"+g' $HOME_OSMOSIS/config/config.toml
-	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml
+	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml	
 	sed -i'.original' -e 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26662"+g' $HOME_OSMOSIS/config/config.toml
 	sed -i'.original' -e 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6062"+g' $HOME_OSMOSIS/config/config.toml
 	sed -i'.original' -e 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9096"+g' $HOME_OSMOSIS/config/app.toml
@@ -69,7 +69,7 @@ elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1312"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's+address = ":8080"+address = ":8082"+g' $HOME_OSMOSIS/config/app.toml
 else
-	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+	echo "only linux and mac platforms are supported, if you are using other platforms you should probably improve this script."
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
@@ -80,7 +80,6 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.crisis.constant_fee.denom="uosmo"' |
   jq '.app_state.staking.params.bond_denom="uosmo"' |
   jq '.app_state.mint = {
-      halven_started_epoch: "0",
       minter: {
         epoch_provisions: "0.000000000000000000"
       },
@@ -164,4 +163,4 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start
-$BINARY start --home $HOME_OSMOSIS
+$BINARY start --home $HOME_OSMOSIS >> ./logs/osmo_localnet.log 2>&1
