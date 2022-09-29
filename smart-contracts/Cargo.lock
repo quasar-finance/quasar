@@ -624,6 +624,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "icq"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "cosmos-sdk-proto",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-storage-plus 0.14.0",
+ "cw-utils 0.14.0",
+ "cw2 0.14.0",
+ "cw20 0.14.0",
+ "prost 0.11.0",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "intergamm-bindings"
 version = "0.1.0"
 dependencies = [

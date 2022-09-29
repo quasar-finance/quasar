@@ -1,0 +1,35 @@
+[package]
+name = "icq"
+version = "0.1.0"
+authors = ["Bo Du <bo@polymerlabs.org>"]
+edition = "2018"
+description = "IBC Enabled contracts for interchain queries"
+license = "Apache-2.0"
+repository = "https://github.com/CosmWasm/cw-plus"
+homepage = "https://cosmwasm.com"
+documentation = "https://docs.cosmwasm.com"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all init/handle/query exports
+library = []
+
+[dependencies]
+cosmwasm-schema = { version = "1.0.0" }
+cosmos-sdk-proto = { version = "0.14", default-features = false }
+prost = { version = "0.11", default-features = false }
+cw-utils = { version = "0.14.0" }
+cw2 = {  version = "0.14.0" }
+cw20 = { version = "0.14.0" }
+cosmwasm-std = { version="1.0.0", features = ["stargate"] }
+cw-storage-plus = { version = "0.14.0" }
+cw-controllers = { version = "0.14.0" }
+schemars = "0.8.1"
+semver = "1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.23" }
+base64 = { version = "0.13.0", default-features = false }
+
