@@ -1,9 +1,21 @@
 use cosmwasm_std::{
-    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse, Env,
+    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse, Env, DepsMut, Deps, Addr,
 };
 use cw_storage_plus::Map;
 
-use crate::{msg::IntergammMsg, state::REPLIES};
+use crate::{msg::IntergammMsg, state::{REPLIES, CALLBACKADDRESS}, error::ContractError, };
+
+pub fn set_callback_addr(deps: DepsMut, callback_addr: &str) -> Result<(), ContractError>{
+    Ok(CALLBACKADDRESS.save(deps.storage, &deps.api.addr_validate(&callback_addr)?)?)
+}
+
+pub fn check_callback_addr(deps: Deps, sender: Addr) -> Result<(), ContractError> {
+    let callback = CALLBACKADDRESS.load(deps.storage)?;
+    if sender != callback {
+        return Err(ContractError::Unauthorized { sender: sender.to_string(), expected: callback.to_string() });
+    }
+    Ok(())
+}
 
 pub fn create_intergamm_msg(
     storage: &mut dyn Storage,
@@ -61,7 +73,7 @@ pub fn handle_reply(
         }
     } else {
         Err(StdError::GenericErr {
-            msg: res.unwrap_err(),
+            msg: format!("reply status: {}", res.unwrap_err()),
         })
     }
 }

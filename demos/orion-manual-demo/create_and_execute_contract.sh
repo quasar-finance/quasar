@@ -7,8 +7,8 @@ RPC="http://127.0.0.1:26659"
 NODE="--node $RPC"
 TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3"
 echo $NODE
-INIT="{}"
-# quasar <-> osmosis channel is connection 2 in current setup
+# the callback_address is the address of the orion module
+INIT='{"callback_address":"quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc"}'
 MSG='{"register_interchain_account":{"connection_id":"connection-0"}}'
 
 cd ../../smart-contracts

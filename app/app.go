@@ -579,7 +579,7 @@ func New(
 	)
 
 	// create the wasm callback plugin
-	callback := wasmbinding.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.CreateMeissaGlobalMacc())
+	callback := wasmbinding.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
