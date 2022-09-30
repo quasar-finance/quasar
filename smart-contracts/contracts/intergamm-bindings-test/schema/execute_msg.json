@@ -92,10 +92,125 @@
     {
       "type": "object",
       "required": [
-        "join_single_pool"
+        "join_pool"
       ],
       "properties": {
-        "join_single_pool": {
+        "join_pool": {
+          "type": "object",
+          "required": [
+            "connection_id",
+            "pool_id",
+            "share_out_amount",
+            "timeout_timestamp",
+            "token_in_maxs"
+          ],
+          "properties": {
+            "connection_id": {
+              "type": "string"
+            },
+            "pool_id": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "share_out_amount": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "timeout_timestamp": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "token_in_maxs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Coin"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "exit_pool"
+      ],
+      "properties": {
+        "exit_pool": {
+          "type": "object",
+          "required": [
+            "connection_id",
+            "pool_id",
+            "share_in_amount",
+            "timeout_timestamp",
+            "token_out_mins"
+          ],
+          "properties": {
+            "connection_id": {
+              "type": "string"
+            },
+            "pool_id": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "share_in_amount": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "timeout_timestamp": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "token_out_mins": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Coin"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "lock_tokens"
+      ],
+      "properties": {
+        "lock_tokens": {
+          "type": "object",
+          "required": [
+            "coins",
+            "connection_id",
+            "duration",
+            "timeout_timestamp"
+          ],
+          "properties": {
+            "coins": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Coin"
+              }
+            },
+            "connection_id": {
+              "type": "string"
+            },
+            "duration": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "timeout_timestamp": {
+              "$ref": "#/definitions/Uint64"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "join_swap_extern_amount_in"
+      ],
+      "properties": {
+        "join_swap_extern_amount_in": {
           "type": "object",
           "required": [
             "connection_id",
@@ -116,6 +231,78 @@
             },
             "token_in": {
               "$ref": "#/definitions/Coin"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "exit_swap_extern_amount_out"
+      ],
+      "properties": {
+        "exit_swap_extern_amount_out": {
+          "type": "object",
+          "required": [
+            "connection_id",
+            "pool_id",
+            "share_in_amount",
+            "timeout_timestamp",
+            "token_out_mins"
+          ],
+          "properties": {
+            "connection_id": {
+              "type": "string"
+            },
+            "pool_id": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "share_in_amount": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "timeout_timestamp": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "token_out_mins": {
+              "$ref": "#/definitions/Coin"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "begin_unlocking"
+      ],
+      "properties": {
+        "begin_unlocking": {
+          "type": "object",
+          "required": [
+            "coins",
+            "connection_id",
+            "id",
+            "timeout_timestamp"
+          ],
+          "properties": {
+            "coins": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Coin"
+              }
+            },
+            "connection_id": {
+              "type": "string"
+            },
+            "id": {
+              "$ref": "#/definitions/Uint64"
+            },
+            "timeout_timestamp": {
+              "$ref": "#/definitions/Uint64"
             }
           }
         }

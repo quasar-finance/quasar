@@ -3,7 +3,7 @@ use cosmwasm_std::{
     Order, Reply, Response, StdError, StdResult, Uint64,
 };
 use cw2::set_contract_version;
-use intergamm_bindings::helper::create_intergamm_msg;
+use intergamm_bindings::helper::{create_intergamm_msg, handle_reply, set_callback_addr, check_callback_addr};
 use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
@@ -19,9 +19,10 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    set_callback_addr(deps, &msg.callback_address)?;
     Ok(Response::default())
 }
 
@@ -67,7 +68,7 @@ pub fn execute(
             sequence_number,
             error,
             response,
-        } => do_ibc_packet_ack(deps, env, sequence_number, error, response),
+        } => do_ibc_packet_ack(deps, env, info, sequence_number, error, response),
         ExecuteMsg::Deposit {} => execute_deposit(info),
         ExecuteMsg::JoinPool {
             connection_id,
@@ -316,11 +317,13 @@ pub fn query_pending_acks(deps: Deps) -> StdResult<PendingAcksResponse> {
 
 pub fn do_ibc_packet_ack(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
+    info: MessageInfo,
     sequence: u64,
     error: Option<String>,
     response: Option<intergamm_bindings::msg::AckResponse>,
 ) -> Result<Response<IntergammMsg>, ContractError> {
+    check_callback_addr(deps.as_ref(), info.sender)?;
     // save the message as acked
     ACKS.save(
         deps.storage,
