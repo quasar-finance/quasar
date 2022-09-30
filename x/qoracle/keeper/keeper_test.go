@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochtypes "github.com/quasarlabs/quasarnode/osmosis/v9/epochs/types"
-	minttypes "github.com/quasarlabs/quasarnode/osmosis/v9/mint/types"
-	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/v9/pool-incentives/types"
+	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
+	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
+	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/stretchr/testify/suite"

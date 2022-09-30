@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/pool-models/balancer"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	"github.com/quasarlabs/quasarnode/testutil"
 	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
 	"github.com/quasarlabs/quasarnode/x/orion/types"

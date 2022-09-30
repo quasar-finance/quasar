@@ -8,9 +8,9 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/pool-models/balancer"
-	gammtypes "github.com/quasarlabs/quasarnode/osmosis/v9/gamm/types"
-	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/v9/lockup/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
