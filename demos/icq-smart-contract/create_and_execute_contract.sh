@@ -29,10 +29,10 @@ echo "Got address of deployed contract = $ADDR"
 echo "creating icq channel"
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icqhost --order unordered --version icq-1 --override
 CHANNEL=$(rly q channels quasar | jq -s --arg ADDR $ADDR '[.[] | select(.port_id=="wasm." + $ADDR)][0].channel_id')
-MSG="{\"query_bank\":{\"channel\":$CHANNEL, \"address\":\"osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz\"}}"
+MSG="{\"query_all_balance\":{\"channel\":$CHANNEL, \"address\":\"osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz\"}}"
 
 
 echo "sending test message"
 quasarnoded tx wasm execute "$ADDR" "$MSG" --from alice $TXFLAG
-echo "executed tx, to replay call \"quasarnoded tx wasm execute "$ADDR" "$MSG" --from alice $TXFLAG\""
+echo "executed tx, to replay call \"quasarnoded tx wasm execute "$ADDR" '"$MSG"' --from alice $TXFLAG\""
 cd -
