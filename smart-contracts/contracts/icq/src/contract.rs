@@ -1,25 +1,25 @@
-use std::vec;
-
-use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryAllBalancesRequest;
+use cosmos_sdk_proto::cosmos::bank::v1beta1::{QueryAllBalancesRequest, QueryBalanceRequest};
 use cosmos_sdk_proto::tendermint::abci::RequestQuery;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo, Order, PortIdResponse,
-    Reply, Response, StdError, StdResult, SubMsg,
+    Reply, Response, StdResult, SubMsg,
 };
+use osmosis_std::types::osmosis::gamm::v1beta1::QueryNumPoolsRequest;
 use prost::Message;
 
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
+use crate::helpers::{set_reply, Query, prepare_query, handle_reply_sample};
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
-    ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg, RequestQueryJSON,
+    ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
 use crate::state::{
-    Config, Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES,
+    Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES,
 };
 
 // version info for migration info
@@ -53,11 +53,11 @@ pub fn execute(
         ExecuteMsg::Query(msg) => execute_query(deps, env, msg),
         ExecuteMsg::QueryBalance {
             address,
-            denom: _,
+            denom,
             channel,
-        } => execute_balance_query(deps, env, address, channel),
-        ExecuteMsg::QueryBank { address, channel } => {
-            execute_bank_query(deps, env, address, channel)
+        } => execute_balance_query(deps, env, address, denom, channel),
+        ExecuteMsg::QueryAllBalance { address, channel } => {
+            execute_all_balance_query(deps, env, address, channel)
         }
         ExecuteMsg::QueryMint { channel } => execute_mint_params_query(deps, env, channel),
     }
@@ -67,58 +67,18 @@ pub fn execute_balance_query(
     deps: DepsMut,
     env: Env,
     address: String,
+    denom: String,
     channel: String,
 ) -> Result<Response, ContractError> {
-    let data = Binary::from_base64(&base64::encode(format!("{{\"address\": {}}}", address)))?;
-    let query = ICQQueryMsg {
-        channel,
-        requests: vec![RequestQueryJSON {
-            data,
-            path: "/cosmos.bank.v1beta1.Query/AllBalances".to_string(),
-            height: 1,
-            prove: false,
-        }],
-        timeout: Some(600),
-    };
-    execute_query(deps, env, query)
-}
+    let timeout = prepare_query(deps.storage, env, &channel)?;
+    let query = QueryBalanceRequest { address, denom };
+    let packet = Query::new()
+        .add_request(
+            query.encode_to_vec(),
+            "/cosmos.bank.v1beta1.Query/Balance".into(),
+        )
+        .encode_pkt();
 
-pub fn execute_bank_query(
-    deps: DepsMut,
-    env: Env,
-    address: String,
-    channel: String,
-) -> Result<Response, ContractError> {
-    // ensure the requested channel is registered
-    if !CHANNEL_INFO.has(deps.storage, &channel) {
-        return Err(ContractError::NoSuchChannel { id: channel });
-    }
-    let config = CONFIG.load(deps.storage)?;
-    // delta from user is in seconds
-    let timeout_delta = config.default_timeout;
-
-    // timeout is in nanoseconds
-    let timeout = env.block.time.plus_seconds(timeout_delta);
-    let balance_q = QueryAllBalancesRequest {
-        address,
-        pagination: None,
-    }; //Some(PageRequest{ key: , offset: 0, limit: 10, count_total: false, reverse: false }) };
-    let req = RequestQuery {
-        data: balance_q.encode_to_vec(),
-        path: "/cosmos.bank.v1beta1.Query/AllBalances".into(),
-        height: 0,
-        prove: false,
-    };
-    let q = CosmosQuery {
-        requests: vec![req],
-    };
-
-    let mut data = Vec::new();
-    if q.encode(&mut data).is_err() {
-        return Err(ContractError::EncodingFail {});
-    }
-
-    let packet = InterchainQueryPacketData { data };
     // prepare ibc message
     let send_packet_msg = IbcMsg::SendPacket {
         channel_id: channel,
@@ -126,17 +86,41 @@ pub fn execute_bank_query(
         timeout: timeout.into(),
     };
 
-    let last = REPLIES
-        .range(deps.storage, None, None, Order::Descending)
-        .next();
-    let mut id: u64 = 0;
-    if let Some(val) = last {
-        id = val?.0;
-    }
+    let id = set_reply(deps, &Origin::Sample)?;
+    let res = Response::new()
+        .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
+        .add_attribute("action", "query");
+    Ok(res)
+}
 
-    // register the message in the replies for handling
-    REPLIES.save(deps.storage, id, &Origin::Sample)?;
-    // send response
+pub fn execute_all_balance_query(
+    deps: DepsMut,
+    env: Env,
+    address: String,
+    channel: String,
+) -> Result<Response, ContractError> {
+    let timeout = prepare_query(deps.storage, env, &channel)?;
+
+    let query = QueryAllBalancesRequest {
+        address,
+        pagination: None,
+    };
+
+    let packet = Query::new()
+        .add_request(
+            query.encode_to_vec(),
+            "/cosmos.bank.v1beta1.Query/AllBalances".into(),
+        )
+        .encode_pkt();
+
+    // prepare ibc message
+    let send_packet_msg = IbcMsg::SendPacket {
+        channel_id: channel,
+        data: to_binary(&packet)?,
+        timeout: timeout.into(),
+    };
+
+    let id = set_reply(deps, &Origin::Sample)?;
     let res = Response::new()
         .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
         .add_attribute("action", "query");
@@ -148,19 +132,27 @@ fn execute_mint_params_query(
     env: Env,
     channel: String,
 ) -> Result<Response, ContractError> {
-    // encode an empty json as data, since our query doesn't need data
-    let data = Binary::from_base64(&base64::encode("{}"))?;
-    let query = ICQQueryMsg {
-        channel,
-        requests: vec![RequestQueryJSON {
-            data,
-            path: "/osmosis.mint.v1beta1.Query/Params".to_string(),
-            height: 1,
-            prove: false,
-        }],
-        timeout: Some(600),
+    let timeout = prepare_query(deps.storage, env, &channel)?;
+    let data = QueryNumPoolsRequest {};
+    let packet = Query::new()
+        .add_request(
+            data.encode_to_vec(),
+            "/osmosis.gamm.v1beta1.Query/NumPools".into(),
+        )
+        .encode_pkt();
+
+    // prepare ibc message
+    let send_packet_msg = IbcMsg::SendPacket {
+        channel_id: channel,
+        data: to_binary(&packet)?,
+        timeout: timeout.into(),
     };
-    execute_query(deps, env, query)
+
+    let id = set_reply(deps, &Origin::Sample)?;
+    let res = Response::new()
+        .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
+        .add_attribute("action", "query");
+    Ok(res)
 }
 
 pub fn execute_query(deps: DepsMut, env: Env, msg: ICQQueryMsg) -> Result<Response, ContractError> {
@@ -216,44 +208,6 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let origin = REPLIES.load(deps.storage, msg.id)?;
     match origin {
         Origin::Sample => handle_reply_sample(deps, msg),
-    }
-}
-
-fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
-    let val = msg
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr { msg })?;
-    //
-    if let Some(event) = val.events.iter().find(|e| e.ty == "send_packet") {
-        // here we can do further stuff with a succesful package if necessary, in this case we can simply
-        // save the package
-
-        let seq = event
-            .attributes
-            .iter()
-            .find(|attr| attr.key == "packet_sequence")
-            .ok_or(StdError::NotFound {
-                kind: "packet_sequence".into(),
-            })?;
-        let s = seq.value.parse::<u64>().map_err(|e| StdError::ParseErr {
-            target_type: "u64".into(),
-            msg: e.to_string(),
-        })?;
-        let channel = event
-            .attributes
-            .iter()
-            .find(|attr| attr.key == "packet_src_channel")
-            .ok_or(StdError::NotFound {
-                kind: "packet_src_channel".into(),
-            })?;
-
-        PENDING_QUERIES.save(deps.storage, (s, &channel.value), &Origin::Sample)?;
-        Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
-    } else {
-        Err(StdError::NotFound {
-            kind: "send_packet_event".into(),
-        })
     }
 }
 

@@ -24,7 +24,7 @@ pub enum ExecuteMsg {
         denom: String,
         channel: String,
     },
-    QueryBank {
+    QueryAllBalance {
         address: String,
         channel: String,
     },
