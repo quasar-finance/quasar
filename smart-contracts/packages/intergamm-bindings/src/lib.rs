@@ -3,5 +3,5 @@ pub mod msg;
 pub mod error;
 mod querier;
 mod query;
-mod state;
+pub mod state;
 mod types;

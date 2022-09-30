@@ -3,12 +3,13 @@ use cosmwasm_std::{
     Order, Reply, Response, StdError, StdResult, Uint64,
 };
 use cw2::set_contract_version;
-use intergamm_bindings::helper::{create_intergamm_msg, handle_reply, set_callback_addr, check_callback_addr};
+use intergamm_bindings::helper::{
+    check_callback_addr, create_intergamm_msg, handle_reply, set_callback_addr, ack,
+};
 use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::msg::{AcksResponse, ExecuteMsg, InstantiateMsg, PendingAcksResponse, QueryMsg};
-use crate::state::{ACKS, PENDINGACKS};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test";
@@ -26,9 +27,9 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
-    intergamm_bindings::helper::handle_reply(deps.storage, env, msg, PENDINGACKS)
+    handle_reply(deps.storage, env, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -245,18 +246,14 @@ pub fn execute_send_token_ibc(
 }
 
 pub fn execute_test_scenario(scenario: String) -> Result<Response<IntergammMsg>, ContractError> {
-    Ok(Response::new().add_message(IntergammMsg::TestScenario {
-        scenario,
-    }))
+    Ok(Response::new().add_message(IntergammMsg::TestScenario { scenario }))
 }
 
 pub fn execute_register_ica(
     connection_id: String,
     deps: DepsMut,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    let msg = IntergammMsg::RegisterInterchainAccount {
-        connection_id,
-    };
+    let msg = IntergammMsg::RegisterInterchainAccount { connection_id };
     create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
@@ -302,14 +299,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_acks(deps: Deps) -> StdResult<AcksResponse> {
-    let acks: Result<Vec<(u64, intergamm_bindings::msg::AckValue)>, StdError> = ACKS
+    let acks: Result<Vec<(u64, intergamm_bindings::msg::AckValue)>, StdError> = intergamm_bindings::state::ACKS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     Ok(AcksResponse { acks: acks? })
 }
 
 pub fn query_pending_acks(deps: Deps) -> StdResult<PendingAcksResponse> {
-    let pending: Result<Vec<(u64, IntergammMsg)>, StdError> = PENDINGACKS
+    let pending: Result<Vec<(u64, IntergammMsg)>, StdError> = intergamm_bindings::state::PENDINGACKS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     Ok(PendingAcksResponse { pending: pending? })
@@ -317,24 +314,15 @@ pub fn query_pending_acks(deps: Deps) -> StdResult<PendingAcksResponse> {
 
 pub fn do_ibc_packet_ack(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     sequence: u64,
     error: Option<String>,
     response: Option<intergamm_bindings::msg::AckResponse>,
 ) -> Result<Response<IntergammMsg>, ContractError> {
     check_callback_addr(deps.as_ref(), info.sender)?;
-    // save the message as acked
-    ACKS.save(
-        deps.storage,
-        sequence,
-        &intergamm_bindings::msg::AckValue {
-            error: error.clone(),
-            response: response.clone(),
-        },
-    )?;
-    // remove the ack from pending
-    PENDINGACKS.remove(deps.storage, sequence);
+    ack(deps, sequence, &error, &response)?;
+    // Insert any further neede logic to handle acks here
     Ok(Response::new()
         .add_attribute("error", error.unwrap_or_else(|| "none".into()))
         .add_attribute("response", format!("{:?}", response)))
