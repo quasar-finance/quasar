@@ -20,6 +20,7 @@ library = []
 [dependencies]
 cosmwasm-schema = { version = "1.0.0" }
 cosmos-sdk-proto = { version = "0.14", default-features = false }
+osmosis-std = "0.12.0"
 prost = { version = "0.11", default-features = false }
 cw-utils = { version = "0.14.0" }
 cw2 = {  version = "0.14.0" }
