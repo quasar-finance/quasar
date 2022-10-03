@@ -13,8 +13,8 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, clientKe
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, kf.DB)
+	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, kf.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(

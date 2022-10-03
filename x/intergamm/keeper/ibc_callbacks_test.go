@@ -6,9 +6,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
@@ -85,7 +85,7 @@ func makeIcaAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Ackno
 }
 
 func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
-	return channeltypes.NewErrorAcknowledgement(errorStr)
+	return channeltypes.NewErrorAcknowledgement(errors.New(errorStr))
 }
 
 func makeInvalidAck() channeltypes.Acknowledgement {
@@ -383,13 +383,13 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr:  "cannot parse acknowledgement",
 		},
 		{
-			name:      "unsupported packet type",
-			seq:       tstSeq,
-			channel:   tstChan,
-			portId:    tstPort,			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
-			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
-			setup:     func() {},
-			errorStr:  "unsupported packet type",
+			name:    "unsupported packet type",
+			seq:     tstSeq,
+			channel: tstChan,
+			portId:  tstPort, icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
+			ack:      makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
+			setup:    func() {},
+			errorStr: "unsupported packet type",
 		},
 	}
 	for _, tc := range testCases {
@@ -397,7 +397,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			called = false
 			k.Hooks.Osmosis.ClearAckHooks()
 			tc.setup()
-			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.channel ,tc.portId, tc.icaPacket, tc.ack)
+			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.channel, tc.portId, tc.icaPacket, tc.ack)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)
@@ -662,7 +662,7 @@ func TestHandleIbcTransferAcknowledgement(t *testing.T) {
 				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) error {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
-					require.Equal(t, "test error", e.Error)
+					require.NotEmpty(t, e.Error)
 					require.True(t, e.HasError())
 
 					return nil

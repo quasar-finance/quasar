@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
@@ -192,7 +192,7 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	store.Delete(key)
 }
 
-////////////
+// //////////
 func (k Keeper) SetIBCTokenTransferRecord2(ctx sdk.Context,
 	seqNo uint64,
 	e qbanktypes.EpochLockupCoinInfo) {

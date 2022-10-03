@@ -180,8 +180,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 }
 
 func EndBlockerTesting(ctx sdk.Context, k keeper.Keeper) {
-	i1 := sdk.NewInt(int64(1073741824000000)).ToDec()
-	i2 := sdk.NewInt(int64(536870912000000)).ToDec()
+	i1 := sdk.NewDec(int64(1073741824000000))
+	i2 := sdk.NewDec(int64(536870912000000))
 	r := i2.Quo(i1)
 	r2 := r.TruncateInt64()
 	logger := k.Logger(ctx)

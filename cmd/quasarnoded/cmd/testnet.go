@@ -207,7 +207,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 	g.validatorPubKeys = append(g.validatorPubKeys, validatorPubKey)
 	g.genesisFiles = append(g.genesisFiles, nodeConfig.GenesisFile())
 
-	addr, err := genTestKeyring(homeDir)
+	addr, err := genTestKeyring(homeDir, g.clientCtx)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (g *NodeConfigGenerator) AddNode() error {
 	nodeMemo := fmt.Sprintf("%s@localhost:%d", g.nodeIDs[g.nodeCount], portBaseP2p+g.nodeCount)
 	txBuilder.SetMemo(nodeMemo)
 
-	kr, err := loadTestKeyring(homeDir)
+	kr, err := loadTestKeyring(homeDir, g.clientCtx)
 	if err != nil {
 		return err
 	}
@@ -392,8 +392,8 @@ func (g *NodeConfigGenerator) cleanup() {
 	mustRemoveAll(g.tmpDir)
 }
 
-func genTestKeyring(outputDir string) (sdk.AccAddress, error) {
-	kb, err := keyring.New("quasar", keyringBackend, outputDir, nil)
+func genTestKeyring(outputDir string, clientCtx client.Context) (sdk.AccAddress, error) {
+	kb, err := keyring.New("quasar", keyringBackend, outputDir, nil, clientCtx.Codec)
 	if err != nil {
 		return nil, err
 	}
@@ -413,8 +413,8 @@ func genTestKeyring(outputDir string) (sdk.AccAddress, error) {
 	return addr, nil
 }
 
-func loadTestKeyring(dir string) (keyring.Keyring, error) {
-	kb, err := keyring.New("quasar", keyringBackend, dir, nil)
+func loadTestKeyring(dir string, clientCtx client.Context) (keyring.Keyring, error) {
+	kb, err := keyring.New("quasar", keyringBackend, dir, nil, clientCtx.Codec)
 	if err != nil {
 		return nil, err
 	}

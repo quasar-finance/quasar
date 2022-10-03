@@ -35,7 +35,7 @@ func (k msgServer) RequestDeposit(goCtx context.Context, msg *types.MsgRequestDe
 		return nil, err
 	}
 
-	dollarDepositValue := coin.Amount.ToDec().Mul(stablePrice)
+	dollarDepositValue := sdk.NewDecFromInt(coin.Amount).Mul(stablePrice)
 	if dollarDepositValue.LT(minDollarDepositValue) {
 		k.Logger(ctx).Info(
 			"RequestDeposit FAIL",

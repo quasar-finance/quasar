@@ -3,10 +3,11 @@ package types
 import (
 	time "time"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v5/modules/core/03-connection/types"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
@@ -36,7 +37,7 @@ type BankKeeper interface {
 
 // QbankKeeper defines the expected interface needed by Orion module from qbank
 type QbankKeeper interface {
-	GetStoreKey() sdk.StoreKey
+	GetStoreKey() storetypes.StoreKey
 	GetUserDepositAmt(ctx sdk.Context, uid string) (val qbanktypes.QCoins, found bool)
 	GetTotalDeposits(ctx sdk.Context) sdk.Coins
 	GetTotalEpochDeposits(ctx sdk.Context, epochday uint64) sdk.Coins

@@ -91,7 +91,7 @@ func (k Keeper) DeductVaultFees(ctx sdk.Context, sourceMacc string,
 // CalcPerFee calculate vault performance fee.
 func (k Keeper) CalcPerFee(ctx sdk.Context, profit sdk.Coin) sdk.Coin {
 	factor := k.PerfFeePer(ctx)
-	feeAmt := profit.Amount.ToDec().Mul(factor).RoundInt()
+	feeAmt := sdk.NewDecFromInt(profit.Amount).Mul(factor).RoundInt()
 	return sdk.NewCoin(profit.GetDenom(), feeAmt)
 }
 
@@ -106,7 +106,7 @@ func (k Keeper) CalculatePerformanceFeeForCoins(ctx sdk.Context, profit sdk.Coin
 // CalcMgmtFee Calculate the management fee.
 func (k Keeper) CalcMgmtFee(ctx sdk.Context, coin sdk.Coin) sdk.Coin {
 	factor := k.MgmtFeePer(ctx)
-	feeAmt := coin.Amount.ToDec().Mul(factor).RoundInt()
+	feeAmt := sdk.NewDecFromInt(coin.Amount).Mul(factor).RoundInt()
 	return sdk.NewCoin(coin.GetDenom(), feeAmt)
 
 }

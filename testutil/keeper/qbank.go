@@ -19,8 +19,8 @@ func (kf KeeperFactory) QbankKeeper(paramsKeeper paramskeeper.Keeper,
 	qoracleKeeper qoraclekeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(

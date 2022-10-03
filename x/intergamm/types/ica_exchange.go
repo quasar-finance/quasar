@@ -1,7 +1,7 @@
 package types
 
 import (
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	proto "github.com/gogo/protobuf/proto"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"

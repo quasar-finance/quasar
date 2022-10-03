@@ -184,7 +184,7 @@ func (k Keeper) CalcQSR(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	amt := coin.Amount.ToDec().Mul(p).TruncateInt()
+	amt := sdk.NewDecFromInt(coin.Amount).Mul(p).TruncateInt()
 	return sdk.NewCoin(types.QuasarDenom, amt), nil
 }
 
@@ -227,9 +227,9 @@ func CalculateCoinAllocations(
 	reserveCoins sdk.Coins,
 ) (fromEpochExit, fromReserve, excessEpochExit, totalDeficit sdk.Coins) {
 	fromEpochExit = neededCoins.Min(epochExitCoins)
-	excessEpochExit = epochExitCoins.Sub(fromEpochExit)
-	fromReserve = neededCoins.Sub(fromEpochExit).Min(reserveCoins)
-	totalDeficit = neededCoins.Sub(fromEpochExit).Sub(fromReserve)
+	excessEpochExit = epochExitCoins.Sub(fromEpochExit...)
+	fromReserve = neededCoins.Sub(fromEpochExit...).Min(reserveCoins)
+	totalDeficit = neededCoins.Sub(fromEpochExit...).Sub(fromReserve...)
 	return
 }
 
