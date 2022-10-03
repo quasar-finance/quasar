@@ -15,6 +15,7 @@ import (
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -65,10 +66,10 @@ func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessag
 	appState[distributiontypes.ModuleName] = distributionGenStateBz
 
 	// gov module genesis
-	govGenState := govtypes.DefaultGenesisState()
-	govGenState.DepositParams = genesisParams.GovParams.DepositParams
-	govGenState.TallyParams = genesisParams.GovParams.TallyParams
-	govGenState.VotingParams = genesisParams.GovParams.VotingParams
+	govGenState := govtypesv1.DefaultGenesisState()
+	govGenState.DepositParams = &genesisParams.GovParams.DepositParams
+	govGenState.TallyParams = &genesisParams.GovParams.TallyParams
+	govGenState.VotingParams = &genesisParams.GovParams.VotingParams
 	govGenStateBz, err := cdc.MarshalJSON(govGenState)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal gov genesis state: %w", err)
@@ -146,7 +147,7 @@ type GenesisParams struct {
 	StakingParams      stakingtypes.Params
 	MintParams         minttypes.Params
 	DistributionParams distributiontypes.Params
-	GovParams          govtypes.Params
+	GovParams          govtypesv1.Params
 
 	CrisisConstantFee sdk.Coin
 
@@ -162,7 +163,7 @@ type GenesisParams struct {
 func MainnetGenesisParams() GenesisParams {
 	genParams := GenesisParams{}
 
-	genParams.AirdropSupply = sdk.NewIntWithDecimal(5, 13)                // 5*10^13 uqsr, 5*10^7 (50 million) qsr
+	genParams.AirdropSupply = sdk.NewInt(5*10 ^ 13)                       // 5*10^13 uqsr, 5*10^7 (50 million) qsr
 	genParams.GenesisTime = time.Date(2021, 6, 18, 17, 0, 0, 0, time.UTC) // Jun 18, 2021 - 17:00 UTC
 
 	genParams.NativeCoinMetadatas = []banktypes.Metadata{
@@ -222,14 +223,14 @@ func MainnetGenesisParams() GenesisParams {
 	genParams.DistributionParams.CommunityTax = sdk.MustNewDecFromStr("0")
 	genParams.DistributionParams.WithdrawAddrEnabled = true
 
-	genParams.GovParams = govtypes.DefaultParams()
-	genParams.GovParams.DepositParams.MaxDepositPeriod = time.Hour * 24 * 14 // 2 weeks
+	genParams.GovParams = govtypesv1.DefaultParams()
+	*genParams.GovParams.DepositParams.MaxDepositPeriod = time.Hour * 24 * 14 // 2 weeks
 	genParams.GovParams.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(
 		genParams.NativeCoinMetadatas[0].Base,
 		sdk.NewInt(2_500_000_000),
 	))
-	genParams.GovParams.TallyParams.Quorum = sdk.MustNewDecFromStr("0.2") // 20%
-	genParams.GovParams.VotingParams.VotingPeriod = time.Hour * 24 * 3    // 3 days
+	genParams.GovParams.TallyParams.Quorum = "0.2"                      // 20%
+	*genParams.GovParams.VotingParams.VotingPeriod = time.Hour * 24 * 3 // 3 days
 
 	genParams.CrisisConstantFee = sdk.NewCoin(
 		genParams.NativeCoinMetadatas[0].Base,
@@ -306,8 +307,8 @@ func TestnetGenesisParams() GenesisParams {
 		genParams.NativeCoinMetadatas[0].Base,
 		sdk.NewInt(1_000_000), // 1 QSR
 	))
-	genParams.GovParams.TallyParams.Quorum = sdk.MustNewDecFromStr("0.0000001") // 0.00001%
-	genParams.GovParams.VotingParams.VotingPeriod = time.Second * 20            // 20 seconds
+	genParams.GovParams.TallyParams.Quorum = "0.0000001"              // 0.00001%
+	*genParams.GovParams.VotingParams.VotingPeriod = time.Second * 20 // 20 seconds
 
 	genParams.OrionParams.Enabled = false
 	genParams.OrionParams.LpEpochId = "minute"

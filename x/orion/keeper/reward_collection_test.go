@@ -95,7 +95,7 @@ func TestDeductPerformanceFee(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.True(t, fee.IsEqual(tt.fee))
-				require.True(t, oldRewardBalance.Sub(fee).IsEqual(newRewardBalance))
+				require.True(t, oldRewardBalance.Sub(fee...).IsEqual(newRewardBalance))
 				require.True(t, oldPerfFeeBalance.Add(fee...).IsEqual(newPerfFeeBalance))
 			}
 		})

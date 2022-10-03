@@ -75,8 +75,8 @@ func BankGenesisState(simState *module.SimulationState) {
 	)
 
 	numAccs := int64(len(simState.Accounts))
-	stakeSupply := sdk.NewInt(simState.InitialStake * simState.NumBonded)
-	qsrSupply := sdk.NewInt(simState.InitialStake * numAccs)
+	stakeSupply := sdk.NewInt(simState.NumBonded).Mul(simState.InitialStake)
+	qsrSupply := sdk.NewInt(numAccs).Mul(simState.InitialStake)
 	supply := sdk.NewCoins(
 		sdk.NewCoin(sdk.DefaultBondDenom, stakeSupply),
 		sdk.NewCoin("QSR", qsrSupply),
@@ -100,7 +100,7 @@ func RandomGenesisBalances(simState *module.SimulationState) []banktypes.Balance
 	for _, acc := range simState.Accounts {
 		genesisBalances = append(genesisBalances, banktypes.Balance{
 			Address: acc.Address.String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin("QSR", sdk.NewInt(simState.InitialStake))),
+			Coins:   sdk.NewCoins(sdk.NewCoin("QSR", simState.InitialStake)),
 		})
 	}
 

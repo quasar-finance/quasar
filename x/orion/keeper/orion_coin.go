@@ -25,7 +25,7 @@ func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	OrionAmt := coin.Amount.ToDec().Mul(spotPrice).TruncateInt()
+	OrionAmt := sdk.NewDecFromInt(coin.Amount).Mul(spotPrice).TruncateInt()
 	return sdk.NewCoin(types.OrionDenom, OrionAmt), nil
 }
 
@@ -75,7 +75,7 @@ func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context, epochDay uint64, userAc
 		}
 		totalOrions = totalOrions.Add(orion)
 	}
-	userShare := usersOrion.Amount.ToDec().QuoInt(totalOrions.Amount)
+	userShare := sdk.NewDecFromInt(usersOrion.Amount).QuoInt(totalOrions.Amount)
 
 	return userShare, nil
 }

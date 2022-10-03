@@ -311,9 +311,9 @@ func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, po
 		return sdk.NewCoins()
 	}
 	coin1 := sdk.NewCoin(assets[0].Token.Denom,
-		shareInAmount.ToDec().Quo(totalShare.Amount.ToDec()).TruncateInt())
+		sdk.NewDecFromInt(shareInAmount).Quo(sdk.NewDecFromInt(totalShare.Amount)).TruncateInt())
 	coin2 := sdk.NewCoin(assets[1].Token.Denom,
-		shareInAmount.ToDec().Quo(totalShare.Amount.ToDec()).TruncateInt())
+		sdk.NewDecFromInt(shareInAmount).Quo(sdk.NewDecFromInt(totalShare.Amount)).TruncateInt())
 
 	return sdk.NewCoins(coin1, coin2)
 }

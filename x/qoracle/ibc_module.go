@@ -4,11 +4,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	icqtypes "github.com/cosmos/ibc-go/v5/modules/apps/icq/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v5/modules/core/exported"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -37,9 +37,9 @@ func (im IBCModule) OnChanOpenInit(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
+) (string, error) {
 	if err := im.validateChannelParams(ctx, order, portID, counterparty, version); err != nil {
-		return err
+		return "", err
 	}
 
 	// Note: this is only for testing purposes, and should be removed in the future
@@ -59,7 +59,11 @@ func (im IBCModule) OnChanOpenInit(
 		im.keeper.Logger(ctx).Info("Osmosis ICQ authorized channel set to: ", channelID)
 	}
 
-	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))
+	if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
 
 func (im IBCModule) validateChannelParams(
@@ -158,7 +162,7 @@ func (im IBCModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	resp, err := im.keeper.OnRecvPacket(ctx, packet)
 	if err != nil {
-		return types.NewErrorAcknowledgement(err)
+		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	return channeltypes.NewResultAcknowledgement(resp)

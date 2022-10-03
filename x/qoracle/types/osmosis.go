@@ -2,7 +2,7 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
+	icqtypes "github.com/cosmos/ibc-go/v5/modules/apps/icq/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
