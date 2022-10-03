@@ -3,6 +3,7 @@ package keeper
 import (
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
@@ -23,7 +24,7 @@ func (k Keeper) TransmitIbcCreatePool(
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0,"", "", err
+		return 0, "", "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -43,7 +44,7 @@ func (k Keeper) TransmitIbcJoinPool(
 	connectionId string,
 	timeoutTimestamp uint64,
 	poolId uint64,
-	shareOutAmount sdk.Int,
+	shareOutAmount sdkmath.Int,
 	tokenInMaxs []sdk.Coin) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
@@ -70,14 +71,14 @@ func (k Keeper) TransmitIbcExitPool(
 	connectionId string,
 	timeoutTimestamp uint64,
 	poolId uint64,
-	shareInAmount sdk.Int,
+	shareInAmount sdkmath.Int,
 	tokenOutMins []sdk.Coin) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0,"", "", err
+		return 0, "", "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -98,7 +99,7 @@ func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	tokenIn sdk.Coin,
-	shareOutMinAmount sdk.Int,
+	shareOutMinAmount sdkmath.Int,
 ) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
@@ -127,7 +128,7 @@ func (k Keeper) TransmitIbcExitSwapExternAmountOut(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	tokenOut sdk.Coin,
-	shareInMaxAmount sdk.Int,
+	shareInMaxAmount sdkmath.Int,
 ) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
@@ -156,8 +157,8 @@ func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	tokenInDenom string,
-	shareOutAmount sdk.Int,
-	tokenInMaxAmount sdk.Int,
+	shareOutAmount sdkmath.Int,
+	tokenInMaxAmount sdkmath.Int,
 ) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
@@ -187,8 +188,8 @@ func (k Keeper) TransmitIbcExitSwapShareAmountIn(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	tokenOutDenom string,
-	shareInAmount sdk.Int,
-	tokenOutMinAmount sdk.Int,
+	shareInAmount sdkmath.Int,
+	tokenOutMinAmount sdkmath.Int,
 ) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,

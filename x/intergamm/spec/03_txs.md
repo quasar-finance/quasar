@@ -102,7 +102,7 @@ type IntergammKeeper interface {
 		connectionId string,
 		timeoutTimestamp uint64,
 		poolId uint64,
-		shareOutAmount sdk.Int,
+		shareOutAmount sdkmath.Int,
 		tokenInMaxs []sdk.Coin,
 	) error
 
@@ -112,7 +112,7 @@ type IntergammKeeper interface {
 		connectionId string,
 		timeoutTimestamp uint64,
 		poolId uint64,
-		shareInAmount sdk.Int,
+		shareInAmount sdkmath.Int,
 		tokenOutMins []sdk.Coin,
 	) error
 
@@ -123,7 +123,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		tokenIn sdk.Coin,
-		shareOutMinAmount sdk.Int,
+		shareOutMinAmount sdkmath.Int,
 	) (uint64, error)
 
 	TransmitIbcExitSwapExternAmountOut(
@@ -133,7 +133,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		tokenOut sdk.Coin,
-		shareInMaxAmount sdk.Int,
+		shareInMaxAmount sdkmath.Int,
 	) (uint64, error)
 
 	TransmitIbcJoinSwapShareAmountOut(
@@ -143,8 +143,8 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		tokenInDenom string,
-		shareOutAmount sdk.Int,
-		tokenInMaxAmount sdk.Int,
+		shareOutAmount sdkmath.Int,
+		tokenInMaxAmount sdkmath.Int,
 	) (uint64, error)
 
 	TransmitIbcExitSwapShareAmountIn(
@@ -154,8 +154,8 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		tokenOutDenom string,
-		shareInAmount sdk.Int,
-		tokenOutMinAmount sdk.Int,
+		shareInAmount sdkmath.Int,
+		tokenOutMinAmount sdkmath.Int,
 	) (uint64, error)
 
 	TransmitIbcLockTokens(

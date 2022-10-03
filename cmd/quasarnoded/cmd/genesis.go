@@ -8,6 +8,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -135,7 +136,7 @@ func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessag
 }
 
 type GenesisParams struct {
-	AirdropSupply sdk.Int
+	AirdropSupply sdkmath.Int
 
 	StrategicReserveAccounts []banktypes.Balance
 

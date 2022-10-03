@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
@@ -40,12 +41,12 @@ func (k Keeper) GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string
 }
 
 // MintOrion mint orions tokens from the OrionReserveMaccName
-func (k Keeper) MintOrion(ctx sdk.Context, amt sdk.Int) error {
+func (k Keeper) MintOrion(ctx sdk.Context, amt sdkmath.Int) error {
 	return k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(sdk.NewCoin(types.OrionDenom, amt)))
 }
 
 // BurnOrion will mint orions from the OrionReserveMaccName
-func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
+func (k Keeper) BurnOrion(ctx sdk.Context, amt sdkmath.Int) error {
 	return k.BankKeeper.BurnCoins(ctx, types.OrionReserveMaccName,
 		sdk.NewCoins(sdk.NewCoin(types.OrionDenom, amt)))
 }

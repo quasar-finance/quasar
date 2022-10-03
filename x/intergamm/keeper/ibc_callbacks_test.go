@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
@@ -51,19 +52,14 @@ func makeInvalidIcaPacket() icatypes.InterchainAccountPacketData {
 	}
 }
 
-func makeIcaAckRawData(t *testing.T, req sdk.Msg, raw []byte) channeltypes.Acknowledgement {
+func makeIcaAckAny(t *testing.T, req sdk.Msg, res *codectypes.Any) channeltypes.Acknowledgement {
 	var msgData *sdk.TxMsgData
 
-	if raw == nil {
+	if res == nil {
 		msgData = &sdk.TxMsgData{}
 	} else {
 		msgData = &sdk.TxMsgData{
-			Data: []*sdk.MsgData{
-				{
-					MsgType: sdk.MsgTypeURL(req),
-					Data:    raw,
-				},
-			},
+			MsgResponses: []*codectypes.Any{res},
 		}
 	}
 
@@ -78,10 +74,9 @@ func makeIbcAck() channeltypes.Acknowledgement {
 }
 
 func makeIcaAck(t *testing.T, req sdk.Msg, res proto.Message) channeltypes.Acknowledgement {
-	resData, err := proto.Marshal(res)
+	anyRes, err := codectypes.NewAnyWithValue(res)
 	require.NoError(t, err)
-
-	return makeIcaAckRawData(t, req, resData)
+	return makeIcaAckAny(t, req, anyRes)
 }
 
 func makeErrorAck(t *testing.T, errorStr string) channeltypes.Acknowledgement {
@@ -115,15 +110,8 @@ func TestParseIcaAck(t *testing.T) {
 			errorStr: "cannot unmarshall ICA acknowledgement",
 		},
 		{
-			name:     "invalid ack message bytes",
-			ack:      makeIcaAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, []byte("invalid")),
-			req:      &gammbalancer.MsgCreateBalancerPool{},
-			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
-			errorStr: "cannot unmarshall ICA acknowledgement",
-		},
-		{
 			name:     "invalid ack no message",
-			ack:      makeIcaAckRawData(t, &gammbalancer.MsgCreateBalancerPool{}, nil),
+			ack:      makeIcaAckAny(t, &gammbalancer.MsgCreateBalancerPool{}, nil),
 			req:      &gammbalancer.MsgCreateBalancerPool{},
 			resp:     &gammbalancer.MsgCreateBalancerPoolResponse{},
 			errorStr: "only single msg acks are supported",
@@ -662,7 +650,6 @@ func TestHandleIbcTransferAcknowledgement(t *testing.T) {
 				k.Hooks.IbcTransfer.AddHooksAckIbcTransfer(func(c sdk.Context, e types.AckExchange[*ibctransfertypes.FungibleTokenPacketData, *types.MsgEmptyIbcResponse]) error {
 					called = true
 					require.Equal(t, tstSeq, e.Sequence)
-					require.NotEmpty(t, e.Error)
 					require.True(t, e.HasError())
 
 					return nil
