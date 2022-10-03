@@ -10,13 +10,14 @@ import (
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Get the maximum available amount in the orion staking.
 // Input denom is osmosis equivalent denom,
-func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdk.Int {
+func (k Keeper) getMaxAvailableAmount(ctx sdk.Context, lockupPeriod qbanktypes.LockupTypes, denom string) sdkmath.Int {
 	wdenoms := k.qbankKeeper.WhiteListedDenomsInOrion(ctx)
 	for _, v := range wdenoms {
 		if v.OnehopOsmo == denom {
@@ -126,7 +127,7 @@ func (k Keeper) OnJoinSend(ctx sdk.Context,
 	poolID uint64,
 	poolShareDenom string,
 	coins sdk.Coins,
-	shareOutAmount sdk.Int,
+	shareOutAmount sdkmath.Int,
 	lockupType qbanktypes.LockupTypes) {
 	k.SetMeissaEpochLockupPoolPosition(ctx, epochDay, lockupType, poolID, coins)
 
@@ -154,7 +155,7 @@ func (k Keeper) GetMaxAvailableTokensCorrespondingToPoolAssets(ctx sdk.Context, 
 }
 
 // ComputeShareOutAmount computes the max number of shares that can be obtained given the maxAvailableTokens (in all-asset deposit mode)
-func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammbalancer.PoolAsset, maxAvailableTokens sdk.Coins) (sdk.Int, error) {
+func ComputeShareOutAmount(totalSharesAmt sdkmath.Int, poolAssets []gammbalancer.PoolAsset, maxAvailableTokens sdk.Coins) (sdkmath.Int, error) {
 	if len(poolAssets) == 0 {
 		return sdk.ZeroInt(), errors.New("error: empty pool assets")
 	}
@@ -172,7 +173,7 @@ func ComputeShareOutAmount(totalSharesAmt sdk.Int, poolAssets []gammbalancer.Poo
 }
 
 // ComputeNeededCoins computes the coins needed to obtain shareOutAmount
-func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdk.Int, poolAssets []gammbalancer.PoolAsset) (sdk.Coins, error) {
+func ComputeNeededCoins(totalSharesAmount, shareOutAmount sdkmath.Int, poolAssets []gammbalancer.PoolAsset) (sdk.Coins, error) {
 	res := sdk.NewCoins()
 	if totalSharesAmount.IsZero() && len(poolAssets) > 0 {
 		return res, errors.New("error: zero totalSharesAmount and non-empty poolAssets are illogical")
@@ -303,7 +304,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 }
 
 // computeTokenOutAmount calculate the token out amount from the recent values from the pool total share.
-func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, poolID uint64) sdk.Coins {
+func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdkmath.Int, poolID uint64) sdk.Coins {
 	pool, _ := k.qoracleKeeper.GetOsmosisPool(ctx, poolID)
 	totalShare := pool.PoolInfo.TotalShares
 	assets := pool.PoolInfo.PoolAssets

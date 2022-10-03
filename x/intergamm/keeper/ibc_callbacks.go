@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strings"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
@@ -427,21 +429,17 @@ func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response pro
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 
-	// see documentation below for SDK 0.46.x or greater as Data will MsgData will be empty (new field added)
-	if len(txMsgData.Data) != 1 {
+	if len(txMsgData.MsgResponses) != 1 {
 		return errors.New("only single msg acks are supported")
 	}
 
-	msgData := txMsgData.Data[0]
-	msgType := msgData.GetMsgType()
-
-	if msgType != sdk.MsgTypeURL(request) {
-		return errors.New("ack response does not match request")
+	if !strings.HasSuffix(txMsgData.MsgResponses[0].TypeUrl, proto.MessageName(response)) {
+		return errors.New("ack response type does not match")
 	}
 
-	err = proto.Unmarshal(msgData.GetData(), response)
+	err = proto.Unmarshal(txMsgData.MsgResponses[0].Value, response)
 	if err != nil {
-		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
+		return errors.Wrap(err, "cannot unmarshal ICA acknowledgement")
 	}
 
 	return nil
