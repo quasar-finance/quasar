@@ -86,7 +86,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolParams *gammbalancer.PoolParams,
 		poolAssets []gammbalancer.PoolAsset,
-		futurePoolGovernor string) (uint64, error)
+		futurePoolGovernor string) (uint64, string, error)
 
 	TransmitIbcJoinPool(
 		ctx sdk.Context,
@@ -95,7 +95,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareOutAmount sdk.Int,
-		tokenInMaxs []sdk.Coin) (uint64, error)
+		tokenInMaxs []sdk.Coin) (uint64, string, error)
 
 	TransmitIbcExitPool(
 		ctx sdk.Context,
@@ -104,7 +104,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareInAmount sdk.Int,
-		tokenOutMins []sdk.Coin) (uint64, error)
+		tokenOutMins []sdk.Coin) (uint64, string, error)
 
 	TransmitICATransfer(
 		ctx sdk.Context,
@@ -113,7 +113,7 @@ type IntergammKeeper interface {
 		token sdk.Coin,
 		finalReceiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
-		transferTimeoutTimestamp uint64) (uint64, error)
+		transferTimeoutTimestamp uint64) (uint64, string, error)
 
 	TransmitIbcLockTokens(
 		ctx sdk.Context,
@@ -122,7 +122,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		duration time.Duration,
 		coins sdk.Coins,
-	) (uint64, error)
+	) (uint64, string, error)
 }
 
 type EpochsKeeper interface {

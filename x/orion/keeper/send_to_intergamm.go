@@ -55,7 +55,7 @@ func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int,
 		return 0, fmt.Errorf("join pool failed due to connection id not found for ica message")
 	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	packetSeq, err := k.intergammKeeper.TransmitIbcJoinPool(
+	packetSeq, _, err := k.intergammKeeper.TransmitIbcJoinPool(
 		ctx,
 		owner,
 		connectionId,
@@ -77,7 +77,7 @@ func (k Keeper) LockLPTokens(ctx sdk.Context,
 		return 0, fmt.Errorf("lock tokens failed due to connection id not found for ica message")
 	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	packetSeq, err := k.intergammKeeper.TransmitIbcLockTokens(ctx,
+	packetSeq, _, err := k.intergammKeeper.TransmitIbcLockTokens(ctx,
 		owner, connectionId, uint64(timeoutTimestamp), duration, coins)
 
 	return packetSeq, err
@@ -96,7 +96,7 @@ func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, 
 		return 0, fmt.Errorf("exit pool failed due to connection id not found for ica message")
 	}
 	timeoutTimestamp := time.Now().Add(time.Minute).Unix()
-	seq, err := k.intergammKeeper.TransmitIbcExitPool(
+	seq, _, err := k.intergammKeeper.TransmitIbcExitPool(
 		ctx,
 		owner,
 		connectionId,
@@ -115,7 +115,7 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 	owner := k.getOwnerAccStr()
 	receiverAddr := k.getOwnerAccStr() // receiver is same as owner address
 
-	return k.intergammKeeper.TransmitICATransfer(
+	seq, _, err :=  k.intergammKeeper.TransmitICATransfer(
 		ctx,
 		owner,
 		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
@@ -124,6 +124,7 @@ func (k Keeper) TokenWithdrawFromOsmosis(ctx sdk.Context, coin sdk.Coin) (uint64
 		ibcclienttypes.ZeroHeight(),
 		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
 	)
+	return seq, err
 }
 
 // IBCTokenTransfer does the multi hop token transfer to the osmosis interchain account via middle chain.
