@@ -35,9 +35,6 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgTestScenario:
 			res, err := msgServer.TestScenario(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgSendToken:
-			res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgTransmitIbcJoinPool:
 			res, err := msgServer.TransmitIbcJoinPool(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)

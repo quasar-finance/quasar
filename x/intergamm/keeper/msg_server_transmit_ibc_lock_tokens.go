@@ -10,9 +10,9 @@ func (ms msgServer) TransmitIbcLockTokens(goCtx context.Context, tokens *types.M
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	owner := tokens.Creator
-	seq, err := ms.k.TransmitIbcLockTokens(ctx, owner, tokens.GetConnectionId(), tokens.GetTimeoutTimestamp(), tokens.GetDuration(), tokens.GetCoins())
+	seq, channel, err := ms.k.TransmitIbcLockTokens(ctx, owner, tokens.GetConnectionId(), tokens.GetTimeoutTimestamp(), tokens.GetDuration(), tokens.GetCoins())
 	if err != nil {
 		return nil, err
 	}
-	return &types.MsgTransmitIbcLockTokensResponse{Seq: seq}, nil
+	return &types.MsgTransmitIbcLockTokensResponse{Seq: seq, Channel: channel}, nil
 }

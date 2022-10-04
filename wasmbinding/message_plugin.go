@@ -126,7 +126,7 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 		return sdkerrors.Wrap(err, "parse receiver")
 	}
 
-	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, send.Sender, receiver.String(), &send.Coin)
+	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, receiver.String(), send.Coin)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -135,7 +135,7 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
 
 	// register the packet as sent with the callback plugin
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 
 	if err != nil {
 		return sdkerrors.Wrap(err, "sending tokens")
@@ -194,7 +194,7 @@ func PerformOsmosisJoinPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return sdkerrors.Wrap(err, "join pool")
 	}
 
-	cb.OnSendPacket(ctx, res.Seq, contractAddr)
+	cb.OnSendPacket(ctx, res.Seq, res.Channel, contractAddr)
 	return nil
 }
 
@@ -222,7 +222,7 @@ func PerformOsmosisExitPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return sdkerrors.Wrap(err, "exit pool")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 	return nil
 }
 
@@ -251,7 +251,7 @@ func PerformOsmosisLockTokens(k *intergammkeeper.Keeper, ctx sdk.Context, contra
 		return sdkerrors.Wrap(err, "lock tokens")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 	return nil
 }
 
@@ -279,7 +279,7 @@ func PerformOsmosisBeginUnlocking(k *intergammkeeper.Keeper, ctx sdk.Context, co
 		return sdkerrors.Wrap(err, "begin unlocking")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 	return nil
 }
 
@@ -307,7 +307,7 @@ func PerformOsmosisJoinSwapExternAmountIn(k *intergammkeeper.Keeper, ctx sdk.Con
 		return sdkerrors.Wrap(err, "join swap extern amount in")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 	return nil
 }
 
@@ -335,7 +335,7 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 		return sdkerrors.Wrap(err, "join swap extern amount out")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
 	return nil
 }
 

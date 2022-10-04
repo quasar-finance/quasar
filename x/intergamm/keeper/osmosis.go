@@ -17,13 +17,13 @@ func (k Keeper) TransmitIbcCreatePool(
 	timeoutTimestamp uint64,
 	poolParams *gammbalancer.PoolParams,
 	poolAssets []gammbalancer.PoolAsset,
-	futurePoolGovernor string) (uint64, error) {
+	futurePoolGovernor string) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0,"", err
 	}
 
 	msgs := []sdk.Msg{
@@ -44,13 +44,13 @@ func (k Keeper) TransmitIbcJoinPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareOutAmount sdk.Int,
-	tokenInMaxs []sdk.Coin) (uint64, error) {
+	tokenInMaxs []sdk.Coin) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -71,13 +71,13 @@ func (k Keeper) TransmitIbcExitPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareInAmount sdk.Int,
-	tokenOutMins []sdk.Coin) (uint64, error) {
+	tokenOutMins []sdk.Coin) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0,"", err
 	}
 
 	msgs := []sdk.Msg{
@@ -99,13 +99,13 @@ func (k Keeper) TransmitIbcJoinSwapExternAmountIn(
 	poolId uint64,
 	tokenIn sdk.Coin,
 	shareOutMinAmount sdk.Int,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -128,13 +128,13 @@ func (k Keeper) TransmitIbcExitSwapExternAmountOut(
 	poolId uint64,
 	tokenOut sdk.Coin,
 	shareInMaxAmount sdk.Int,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -158,13 +158,13 @@ func (k Keeper) TransmitIbcJoinSwapShareAmountOut(
 	tokenInDenom string,
 	shareOutAmount sdk.Int,
 	tokenInMaxAmount sdk.Int,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -189,13 +189,13 @@ func (k Keeper) TransmitIbcExitSwapShareAmountIn(
 	tokenOutDenom string,
 	shareInAmount sdk.Int,
 	tokenOutMinAmount sdk.Int,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -218,13 +218,13 @@ func (k Keeper) TransmitIbcLockTokens(
 	timeoutTimestamp uint64,
 	duration time.Duration,
 	coins sdk.Coins,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{
@@ -245,13 +245,13 @@ func (k Keeper) TransmitIbcBeginUnlocking(
 	timeoutTimestamp uint64,
 	id uint64,
 	coins sdk.Coins,
-) (uint64, error) {
+) (uint64, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgs := []sdk.Msg{

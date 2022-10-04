@@ -148,7 +148,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal IBC acknowledgement")
 	}
 
-	return im.keeper.HandleIcaAcknowledgement(ctx, packet.GetSequence(), icaPacket, ack)
+	return im.keeper.HandleIcaAcknowledgement(ctx, packet.GetSequence(), packet.SourceChannel, icaPacket, ack)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.

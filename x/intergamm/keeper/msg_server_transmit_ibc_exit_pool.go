@@ -10,9 +10,9 @@ func (ms msgServer) TransmitIbcExitPool(goCtx context.Context, pool *types.MsgTr
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	owner := pool.Creator
-	seq, err := ms.k.TransmitIbcBeginUnlocking(ctx, owner, pool.GetConnectionId(), pool.GetTimeoutTimestamp(), pool.GetPoolId(), pool.GetTokenOutMins())
+	seq, channel, err := ms.k.TransmitIbcBeginUnlocking(ctx, owner, pool.GetConnectionId(), pool.GetTimeoutTimestamp(), pool.GetPoolId(), pool.GetTokenOutMins())
 	if err != nil {
 		return nil, err
 	}
-	return &types.MsgTransmitIbcExitPoolResponse{Seq: seq}, nil
+	return &types.MsgTransmitIbcExitPoolResponse{Seq: seq, Channel: channel}, nil
 }

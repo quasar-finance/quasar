@@ -235,23 +235,23 @@ func (k Keeper) RegisterOrReturnICA(ctx sdk.Context, connectionId, owner string)
 
 // TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
 //  timeoutTimestamp should probably be used at some point
-func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
+func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, string, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	channelID, found := k.icaControllerKeeper.GetActiveChannelID(ctx, connectionId, portID)
 	if !found {
-		return 0, sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
+		return 0, "", sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
 	}
 	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !found {
-		return 0, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return 0, "", sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
 	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs)
 	if err != nil {
-		return 0, err
+		return 0,"", err
 	}
 
 	packetData := icatypes.InterchainAccountPacketData{
@@ -262,12 +262,12 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
-	return seq, nil
+	return seq, channelID, nil
 }
 
 func (k Keeper) GetZoneInfo(ctx sdk.Context, zoneId string) (zoneInfo types.ZoneCompleteInfo, found bool) {
