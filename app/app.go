@@ -10,7 +10,6 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
-	"github.com/quasarlabs/quasarnode/wasmbinding"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -580,7 +579,7 @@ func New(
 	)
 
 	// create the wasm callback plugin
-	callback := wasmbinding.NewCallbackPlugin(&app.wasmKeeper)
+	callback := owasm.NewCallbackPlugin(&app.wasmKeeper)
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)

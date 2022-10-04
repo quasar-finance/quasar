@@ -37,6 +37,7 @@ impl<'a> QuasarQuerier<'a> {
         let query = QuasarQuery::OsmosisPoolInfo { pool_id };
         let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
         self.querier.query(&request)
+        
     }
 
     pub fn all_osmosis_pool_info(

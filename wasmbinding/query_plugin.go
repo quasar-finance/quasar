@@ -22,10 +22,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		case contractQuery.OsmosisPoolPosition != nil:
 			poolId := contractQuery.OsmosisPoolPosition.PoolId
 
-			pool, err := qp.GetPoolPosition(ctx, poolId)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "quasar pool position query")
-			}
+			pool := qp.GetPoolPosition(ctx, poolId)
 
 			res := qoracletypes.QueryGetPoolPositionResponse{
 				PoolPosition: *pool,
@@ -65,11 +62,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 
 			return bz, nil
 		case contractQuery.OsmosisPoolRanking != nil:
-			ranking, err := qp.GetPoolRanking(ctx)
-
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "quasar pool ranking query")
-			}
+			ranking := qp.GetPoolRanking(ctx)
 
 			res := qoracletypes.QueryGetPoolRankingResponse{
 				PoolRanking: *ranking,
@@ -84,13 +77,10 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		case contractQuery.OsmosisPoolInfo != nil:
 			poolId := contractQuery.OsmosisPoolInfo.PoolId
 
-			pool, err := qp.GetPoolInfo(ctx, poolId)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "quasar pool info query")
-			}
+			pool := qp.GetPoolInfo(ctx, poolId)
 
-			res := qoracletypes.QueryGetPoolInfoResponse{
-				PoolInfo: *pool,
+			res := bindings.OsmosisPoolInfoResponse{
+				PoolInfo: pool,
 			}
 
 			bz, err := json.Marshal(res)

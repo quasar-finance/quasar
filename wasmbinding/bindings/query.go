@@ -2,46 +2,50 @@ package bindings
 
 import (
 	"github.com/cosmos/cosmos-sdk/types/query"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // OsmosisQuery contains osmosis custom queries.
 // See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
 type QuasarQuery struct {
 	// Query our position within a specific pool
-	OsmosisPoolPosition *OsmosisPoolPosition `json:"osmosis_pool_position,omitempty"`
+	OsmosisPoolPosition *OsmosisPoolPositionRequest `json:"osmosis_pool_position,omitempty"`
 
 	// Query a list of pool positions
-	OsmosisAllPoolPositions *OsmosisAllPoolPositions `json:"osmosis_all_pool_positions,omitempty"`
+	OsmosisAllPoolPositions *OsmosisAllPoolPositionsRequest `json:"osmosis_all_pool_positions,omitempty"`
 
 	// Query the ranking of pools
-	OsmosisPoolRanking *OsmosisPoolRanking `json:"osmosis_pool_ranking,omitempty"`
+	OsmosisPoolRanking *OsmosisPoolRankingRequest `json:"osmosis_pool_ranking,omitempty"`
 
 	// Query pool info
-	OsmosisPoolInfo *OsmosisPoolInfo `json:"osmosis_pool_info,omitempty"`
+	OsmosisPoolInfo *OsmosisPoolInfoRequest `json:"osmosis_pool_info,omitempty"`
 
 	// Query all pool info
-	OsmosisAllPoolInfo *OsmosisAllPoolInfo `json:"osmosis_all_pool_info,omitempty"`
+	OsmosisAllPoolInfo *OsmosisAllPoolInfoRequest `json:"osmosis_all_pool_info,omitempty"`
 
 	// Query oracle prices
-	OraclePrices *OraclePrices `json:"oracle_prices,omitempty"`
+	OraclePrices *OraclePricesRequest `json:"oracle_prices,omitempty"`
 }
 
-type OsmosisPoolPosition struct {
+type OsmosisPoolPositionRequest struct {
 	PoolId string `json:"pool_id"`
 }
 
-type OsmosisAllPoolPositions struct {
+type OsmosisAllPoolPositionsRequest struct {
 	Pagination *query.PageRequest `json:"pagination,omitempty"`
 }
 
-type OsmosisPoolRanking struct{}
+type OsmosisPoolRankingRequest struct{}
 
-type OsmosisPoolInfo struct {
+type OsmosisPoolInfoRequest struct {
 	PoolId string `json:"pool_id"`
 }
 
-type OsmosisAllPoolInfo struct {
+type OsmosisPoolInfoResponse struct {
+	PoolInfo *qoracletypes.PoolInfo `json:"pool_info,omitempty"`
+}
+type OsmosisAllPoolInfoRequest struct {
 	Pagination *query.PageRequest `json:"pagination,omitempty"`
 }
 
-type OraclePrices struct{}
+type OraclePricesRequest struct{}

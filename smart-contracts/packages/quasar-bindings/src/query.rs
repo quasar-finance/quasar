@@ -37,8 +37,9 @@ pub struct OsmosisPoolRankingResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct OsmosisPoolInfoResponse {
-    pub poolInfo: PoolInfo,
+    pub pool_info: Option<PoolInfo>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

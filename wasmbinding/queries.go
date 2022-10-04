@@ -1,7 +1,6 @@
 package wasmbinding
 
 import (
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -26,13 +25,13 @@ func (qp QueryPlugin) GetParams(ctx sdk.Context) types.Params {
 	return qp.qoracleKeeper.GetParams(ctx)
 }
 
-func (qp QueryPlugin) GetPoolPosition(ctx sdk.Context, poolID string) (*types.PoolPosition, error) {
+func (qp QueryPlugin) GetPoolPosition(ctx sdk.Context, poolID string) *types.PoolPosition {
 	pool, found := qp.qoracleKeeper.GetPoolPosition(ctx, poolID)
 	if !found {
-		return nil, wasmvmtypes.InvalidResponse{Err: "failed to find pool for poolID: " + poolID}
+		return nil
 	}
 
-	return &pool, nil
+	return &pool
 }
 
 func (qp QueryPlugin) GetAllPoolPosition(ctx sdk.Context) []types.PoolPosition {
@@ -40,22 +39,22 @@ func (qp QueryPlugin) GetAllPoolPosition(ctx sdk.Context) []types.PoolPosition {
 	return qp.qoracleKeeper.GetAllPoolPosition(ctx)
 }
 
-func (qp QueryPlugin) GetPoolRanking(ctx sdk.Context) (*types.PoolRanking, error) {
+func (qp QueryPlugin) GetPoolRanking(ctx sdk.Context) *types.PoolRanking {
 	poolRanking, found := qp.qoracleKeeper.GetPoolRanking(ctx)
 	if !found {
-		return nil, wasmvmtypes.InvalidResponse{Err: "failed to find pool ranking"}
+		return nil
 	}
 
-	return &poolRanking, nil
+	return &poolRanking
 }
 
-func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) (*types.PoolInfo, error) {
+func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) *types.PoolInfo {
 	pool, found := qp.qoracleKeeper.GetPoolInfo(ctx, poolID)
 	if !found {
-		return nil, wasmvmtypes.InvalidResponse{Err: "failed to find pool for poolID: " + poolID}
+		return nil
 	}
 
-	return &pool, nil
+	return &pool
 }
 
 func (qp QueryPlugin) GetAllPoolInfo(ctx sdk.Context) []types.PoolInfo {
