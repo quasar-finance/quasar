@@ -361,23 +361,12 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			errorStr:  "expected single message in packet",
 		},
 		{
-			name:      "invalid ack bytes",
+			name:      "unsupported packet type",
 			seq:       tstSeq,
-			channel:   tstChan,
-			portId:    tstPort,
-			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
+			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
-			errorStr:  "cannot parse acknowledgement",
-		},
-		{
-			name:    "unsupported packet type",
-			seq:     tstSeq,
-			channel: tstChan,
-			portId:  tstPort, icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
-			ack:      makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
-			setup:    func() {},
-			errorStr: "unsupported packet type",
+			errorStr:  "unsupported packet type",
 		},
 	}
 	for _, tc := range testCases {
