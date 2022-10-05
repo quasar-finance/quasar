@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"strings"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
@@ -431,10 +429,6 @@ func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response pro
 
 	if len(txMsgData.MsgResponses) != 1 {
 		return errors.New("only single msg acks are supported")
-	}
-
-	if !strings.HasSuffix(txMsgData.MsgResponses[0].TypeUrl, proto.MessageName(response)) {
-		return errors.New("ack response type does not match")
 	}
 
 	err = proto.Unmarshal(txMsgData.MsgResponses[0].Value, response)

@@ -169,7 +169,7 @@ func (k *Keeper) NewCapability(ctx sdk.Context, name string) (*capabilitytypes.C
 }
 
 func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error {
-	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner, icatypes.Version)
+	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner, "") // Empty version means default because we don't want to implement ICS29
 }
 
 func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error {
