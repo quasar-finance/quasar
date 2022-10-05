@@ -3,10 +3,10 @@ package qoracle
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // NewHandler ...
@@ -55,6 +55,9 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgStablePrice:
 			res, err := msgServer.StablePrice(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgUpdateOsmosisChainParams:
+			res, err := msgServer.UpdateOsmosisChainParams(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 			// this line is used by starport scaffolding # 1
 		default:

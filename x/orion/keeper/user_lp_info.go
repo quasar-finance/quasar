@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/orion/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
 // ProcessDepositDayLockupPair process the list of pairs <deposit epoch day, lockup period>

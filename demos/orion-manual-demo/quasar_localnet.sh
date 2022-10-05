@@ -85,7 +85,7 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.staking.params.bond_denom="uqsr"' |
   jq '.app_state.mint.params.mint_denom="uqsr"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
-  jq '.app_state.gov.voting_params.voting_period="30s"' |
+  jq '.app_state.gov.voting_params.voting_period="60s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
   jq ".app_state.qoracle.params.oracleAccounts=\"$($BINARY keys show alice --keyring-backend test -a)\"" |
   jq '.app_state.orion = {
@@ -109,40 +109,6 @@ cat $HOME_QSR/config/genesis_original.json |
         ]
       },
       "rewardCollection": null
-    }' |
-  jq '.app_state.intergamm = {
-      "params": {
-        "dest_to_intr_zone_map": {
-          "osmosis-01": "cosmos"
-        },
-      "intr_rcvrs": [
-          {
-            "next_zone_route_map": {
-              "osmosis-01": {
-                "chain_id": "osmosis",
-                "connection_id": "connection-1",
-                "local_zone_id": "osmosis-1",
-                "transfer_channel_id": "channel-1"
-              },
-              "osmosis-02": {
-                "chain_id": "osmosis2",
-                "connection_id": "connection-2",
-                "local_zone_id": "osmosis-2",
-                "transfer_channel_id": "channel-2"
-              }
-            },
-            "rcvr_address": "cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu",
-            "zone_info": {
-              "chain_id": "cosmos",
-              "connection_id": "connection-2"
-            }
-          }
-        ],
-        "osmo_token_transfer_channels": {
-          "osmosis": "channel-1",
-          "osmosis-test": "channel-1"
-        }
-      }
     }' |
   jq '.app_state.qbank = {
       "claimableRewards": [],

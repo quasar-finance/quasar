@@ -1,9 +1,10 @@
 package keeper
 
 import (
-	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // EpochHooks wrapper struct
@@ -27,14 +28,12 @@ func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epoch
 	h.k.AfterEpochEnd(ctx, epochIdentifier, epochNumber)
 }
 
-func (k Keeper) IsOrionICACreated(ctx sdk.Context) (string, bool) {
-	c, found := k.GetConnectionId(ctx)
-	//	c, found := k.GetConnectionId(ctx, "osmosis")
+func (k Keeper) IsOrionICACreatedOnOsmosis(ctx sdk.Context) (string, bool) {
+	return k.intergammKeeper.IsICACreatedOnZoneId(ctx, intergammtypes.OsmosisZoneId, k.getOwnerAccStr())
+}
 
-	if !found {
-		return "", false
-	}
-	return k.intergammKeeper.IsICARegistered(ctx, c, k.getOwnerAccStr())
+func (k Keeper) IsOrionICACreatedForDenom(ctx sdk.Context, denom string) (string, bool) {
+	return k.intergammKeeper.IsICACreatedOnDenomNativeZone(ctx, denom, k.getOwnerAccStr())
 }
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
@@ -53,33 +52,35 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 		return
 	}
 
+	orionAddr := k.getOwnerAccStr()
+
 	// IBC Token Transfer.
 	// For testing purposes - Param should be used then.
 	// Send tokens to destination chain.
 	if epochIdentifier == "minute" { // TODO - config ibc transfer epoch identifier.
-
-		addr, icaFound = k.IsOrionICACreated(ctx)
-		if !icaFound {
-			// Print all connections ids to console
-			logger.Info("AfterEpochEnd", "GetAllConnections", k.intergammKeeper.GetAllConnections(ctx))
-
-			//			c, found := k.GetConnectionId(ctx, "osmosis")
-			c, found := k.GetConnectionId(ctx)
-
-			if !found {
-				logger.Info("AfterEpochEnd", "GetConnectionId failed.")
-			} else {
-				err := k.intergammKeeper.RegisterInterchainAccount(ctx, c, k.getOwnerAccStr())
+		newICANeeded := false
+		if _, icaFound := k.IsOrionICACreatedOnOsmosis(ctx); !icaFound {
+			newICANeeded = true
+			if err := k.intergammKeeper.RegisterICAOnZoneId(ctx, intergammtypes.OsmosisZoneId, orionAddr); err != nil {
+				logger.Info("AfterEpochEnd", "RegisterICAOnZoneId failed.", err)
+			}
+		}
+		for denom := range k.intergammKeeper.QuasarDenomToNativeZoneIdMap(ctx) {
+			if _, icaFound = k.IsOrionICACreatedForDenom(ctx, denom); !icaFound {
+				newICANeeded = true
+				err := k.intergammKeeper.RegisterICAOnDenomNativeZone(ctx, denom, orionAddr)
 				if err != nil {
 					// panic(err)
-					logger.Info("AfterEpochEnd", "RegisterInterchainAccount failed.", err)
+					logger.Info("AfterEpochEnd", "RegisterICAOnDenomNativeZone failed.", err)
 				}
+			} else {
+				logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 			}
+		}
+		if newICANeeded {
 			// return so we don't end up with calling token transfer logics, as token transfer is to be done
 			// to orion ica account.
 			return
-		} else {
-			logger.Info("AfterEpochEnd", "Orion Interchain Account Found", addr)
 		}
 
 		logger.Info("AfterEpochEnd", "available fund", k.GetAvailableInterchainFund(ctx))
@@ -89,27 +90,23 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		logger.Info("AfterEpochEnd", "minutes identifier", epochIdentifier,
 			"number", epochNumber,
-			"blockheight", ctx.BlockHeight(),
+			"BlockHeight", ctx.BlockHeight(),
 			"ei", ei)
 
 		totalEpochLockupCoinsDeposit := k.qbankKeeper.GetEpochLockupCoins(ctx, uint64(epochNumber))
 		totalEpochLockupCoinsTransferred := k.GetTransferredEpochLockupCoins(ctx, uint64(epochNumber))
 
-		denomDeposits := make(map[string]sdk.Coin)    // total deposited so far
-		denomTransferred := make(map[string]sdk.Coin) // total transferred so far
+		denomDeposits := sdk.NewCoins()    // total deposited so far
+		denomTransferred := sdk.NewCoins() // total transferred so far
 
 		lockupDeposits := make(map[qbanktypes.LockupTypes]sdk.Coins)    // total a deposited for this lockup period
 		lockupTransferred := make(map[qbanktypes.LockupTypes]sdk.Coins) // total a transferred for this lockup period
 
-		diffDenoms := make(map[string]sdk.Coin)
+		//diffDenoms := sdk.NewCoins()
 		diffLockups := make(map[qbanktypes.LockupTypes]sdk.Coins)
 
 		for _, elcd := range totalEpochLockupCoinsDeposit.Infos {
-			if val, ok := denomDeposits[elcd.Coin.Denom]; ok {
-				denomDeposits[elcd.Coin.Denom] = val.Add(elcd.Coin)
-			} else {
-				denomDeposits[elcd.Coin.Denom] = elcd.Coin
-			}
+			denomDeposits = denomDeposits.Add(elcd.GetCoin())
 
 			if val, ok := lockupDeposits[elcd.LockupPeriod]; ok {
 				lockupDeposits[elcd.LockupPeriod] = val.Add(elcd.Coin)
@@ -119,11 +116,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 		}
 
 		for _, elct := range totalEpochLockupCoinsTransferred.Infos {
-			if val, ok := denomTransferred[elct.Coin.Denom]; ok {
-				denomTransferred[elct.Coin.Denom] = val.Add(elct.Coin)
-			} else {
-				denomTransferred[elct.Coin.Denom] = elct.Coin
-			}
+			denomTransferred = denomTransferred.Add(elct.GetCoin())
 
 			if val, ok := lockupTransferred[elct.LockupPeriod]; ok {
 				lockupTransferred[elct.LockupPeriod] = val.Add(elct.Coin)
@@ -132,13 +125,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			}
 		}
 
-		for d, c := range denomDeposits {
-			if v, ok := denomTransferred[d]; ok {
-				diffDenoms[d] = c.Sub(v)
-			} else {
-				diffDenoms[d] = c
-			}
-		}
+		// diffDenoms = denomDeposits.Sub(denomTransferred)
 
 		for l, c := range lockupDeposits {
 			if v, ok := lockupTransferred[l]; ok {
@@ -208,7 +195,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	if epochIdentifier == k.LpEpochId(ctx) {
 		logger.Info("epoch ended", "identifier", epochIdentifier,
 			"number", epochNumber,
-			"blockheight", ctx.BlockHeight())
+			"BlockHeight", ctx.BlockHeight())
 
 		if k.Enabled(ctx) && icaFound {
 			// Logic :
@@ -224,8 +211,8 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 			////////////////////////////////////////////
 			for lockupEnm, lockupStr := range qbanktypes.LockupTypes_name {
 
-				logger.Debug("Orion AfterEpochEnd", "epochday", epochNumber,
-					"blockheight", ctx.BlockHeight(),
+				logger.Debug("Orion AfterEpochEnd", "epochNumber", epochNumber,
+					"BlockHeight", ctx.BlockHeight(),
 					"lockup", lockupStr)
 				if lockupStr != "Invalid" {
 					lockupPeriod := qbanktypes.LockupTypes(lockupEnm)

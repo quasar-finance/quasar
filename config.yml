@@ -76,3 +76,5 @@ client:
 faucet:
   name: bob
   coins: ["5token", "100000stake", "10000uqsr"]
+init:
+  home: "$HOME/.quasar"

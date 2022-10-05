@@ -1,14 +1,15 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.BandchainParams(ctx),
+		k.OsmosisParams(ctx),
 		k.GetDenomPriceMappings(ctx),
 		k.OracleAccounts(ctx),
 		k.StableDenoms(ctx),
@@ -29,6 +30,15 @@ func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
 
 func (k Keeper) SetBandchainParams(ctx sdk.Context, params types.BandchainParams) {
 	k.paramstore.Set(ctx, types.KeyBandchainParams, &params)
+}
+
+func (k Keeper) OsmosisParams(ctx sdk.Context) (res types.OsmosisParams) {
+	k.paramstore.Get(ctx, types.KeyOsmosisParams, &res)
+	return
+}
+
+func (k Keeper) SetOsmosisParams(ctx sdk.Context, params types.OsmosisParams) {
+	k.paramstore.Set(ctx, types.KeyOsmosisParams, &params)
 }
 
 func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMapping) {

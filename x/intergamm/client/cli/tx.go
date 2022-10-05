@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 var cmds []*cobra.Command
@@ -25,6 +25,11 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 	cmd.AddCommand(cmds...)
+	cmd.AddCommand(CmdSendToken())
+	cmd.AddCommand(CmdTransmitICATransfer())
+	cmd.AddCommand(CmdRegisterICAOnZone())
+	cmd.AddCommand(CmdRegisterICAOnDenomNativeZone())
+	cmd.AddCommand(CmdSendTokenToICA())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

@@ -3,15 +3,15 @@ package qoracle
 import (
 	"math/rand"
 
-	"github.com/quasarlabs/quasarnode/testutil/sample"
-	qoraclesimulation "github.com/quasarlabs/quasarnode/x/qoracle/simulation"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
+	qoraclesimulation "github.com/quasarlabs/quasarnode/x/qoracle/simulation"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // avoid unused import issue
@@ -75,6 +75,10 @@ const (
 	opWeightMsgStablePrice = "op_weight_msg_stable_price"
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgStablePrice int = 100
+
+	opWeightMsgUpdateOsmosisChainParams = "op_weight_msg_update_osmosis_params"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgUpdateOsmosisChainParams int = 100
 
 	// this line is used by starport scaffolding # simapp/module/const
 )
@@ -288,6 +292,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgStablePrice,
 		qoraclesimulation.SimulateMsgStablePrice(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgUpdateOsmosisChainParams int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUpdateOsmosisChainParams, &weightMsgUpdateOsmosisChainParams, nil,
+		func(_ *rand.Rand) {
+			weightMsgUpdateOsmosisChainParams = defaultWeightMsgUpdateOsmosisChainParams
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgUpdateOsmosisChainParams,
+		qoraclesimulation.SimulateMsgUpdateOsmosisChainParams(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

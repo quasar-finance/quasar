@@ -3,8 +3,8 @@ package keeper
 import (
 	"context"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,6 +16,9 @@ func (k Keeper) State(goCtx context.Context, req *types.QueryStateRequest) (*typ
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	return &types.QueryStateResponse{
-		CoinRatesState: k.GetCoinRatesState(ctx),
+		CoinRatesState:                k.GetCoinRatesState(ctx),
+		OsmosisParamsRequestState:     k.GetOsmosisParamsRequestState(ctx),
+		OsmosisIncentivizedPoolsState: k.GetOsmosisIncentivizedPoolsRequestState(ctx),
+		OsmosisPoolsState:             k.GetOsmosisPoolsRequestState(ctx),
 	}, nil
 }

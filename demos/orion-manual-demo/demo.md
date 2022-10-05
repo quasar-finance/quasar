@@ -180,7 +180,7 @@ Success: Connection {
 }
 
 
-- Post conection - check the relayer balances aganin; You will observe gas fee deduction
+- Post connection - check the relayer balances aganin; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
 `
 hermes query connections quasar
@@ -280,7 +280,7 @@ Success: Connection {
     },
 }
 
-- Post conection - check the relayer balances aganin; You will observe gas fee deduction
+- Post connection - check the relayer balances again; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
 `
 hermes query connections quasar
@@ -381,7 +381,7 @@ Success: Connection {
     },
 }
 
-- Post conection - check the relayer balances aganin; You will observe gas fee deduction
+- Post connection - check the relayer balances aganin; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
 `
 hermes query connections quasar
@@ -613,7 +613,7 @@ hermes query channels osmosis
 With queries you should be able to track the associated self connection-id, self client-id, counterparty chain-id, counterparty client id, and counterparty connection-id
 
 Tracking Hint 
-- Channel ID - > [ Self - Connection ID, Counterparty port id, Counterparty channel id ]-> [ Client -ID, Counterparty clientid, Counterparty connection -id ] -> counterpar party Chain-ID
+- Channel ID - > [ Self - Connection ID, Counterparty port id, Counterparty channel id ]-> [ Client -ID, Counterparty clientid, Counterparty connection -id ] -> counterparty party Chain-ID
 
 
 `

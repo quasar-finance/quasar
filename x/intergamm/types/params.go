@@ -1,8 +1,10 @@
 package types
 
 import (
-	fmt "fmt"
+	"errors"
+	"fmt"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -10,12 +12,12 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyOsmoTokenTransferChannels        = []byte("OsmoTokenTransferChannels")
-	KeyIntrRcvrs                        = []byte("IntrRcvrs")
-	KeyDestToIntrZoneMap                = []byte("DestToIntrZoneMap")
-	DefaultOsmoTokenTransferChannelsMap = map[string]string{"osmosis-test": "channel-1"}
-	DefaultDestToIntrZoneMap            = map[string]string{}
-	DefaultIntrRcvrs                    = []IntermediateReceiver{}
+	KeyCompleteZoneInfoMap              = []byte("CompleteZoneInfoMap")
+	KeyQuasarDenomToNativeZoneIdMap     = []byte("QuasarDenomToNativeZoneIdMap")
+	KeyOsmosisDenomToQuasarDenomMap     = []byte("OsmosisDenomToQuasarDenomMap")
+	DefaultQuasarDenomToNativeZoneIdMap = map[string]string{}
+	DefaultOsmosisDenomToQuasarDenomMap = map[string]string{}
+	DefaultCompleteZoneInfoMap          = map[string]ZoneCompleteInfo{}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -24,40 +26,57 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(m map[string]string,
-	destIntrZone map[string]string,
-	intrRcvrs []IntermediateReceiver) Params {
-	return Params{OsmoTokenTransferChannels: m,
-		DestToIntrZoneMap: destIntrZone,
-		IntrRcvrs:         intrRcvrs}
+func NewParams(quasarDenomToNativeZoneIdMap map[string]string,
+	osmosisDenomToQuasarDenomMap map[string]string,
+	completeZoneInfoMap map[string]ZoneCompleteInfo) Params {
+	return Params{
+		QuasarDenomToNativeZoneIdMap: quasarDenomToNativeZoneIdMap,
+		OsmosisDenomToQuasarDenomMap: osmosisDenomToQuasarDenomMap,
+		CompleteZoneInfoMap:          completeZoneInfoMap,
+	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultOsmoTokenTransferChannelsMap,
-		DefaultDestToIntrZoneMap,
-		DefaultIntrRcvrs)
+	return NewParams(DefaultQuasarDenomToNativeZoneIdMap,
+		DefaultOsmosisDenomToQuasarDenomMap,
+		DefaultCompleteZoneInfoMap)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyOsmoTokenTransferChannels, &p.OsmoTokenTransferChannels, validateOsmoTokenTransferChannels),
-		paramtypes.NewParamSetPair(KeyDestToIntrZoneMap, &p.DestToIntrZoneMap, validateDestToIntrZoneMap),
-		paramtypes.NewParamSetPair(KeyIntrRcvrs, &p.IntrRcvrs, validateIntermediateReceivers),
+		paramtypes.NewParamSetPair(KeyQuasarDenomToNativeZoneIdMap, &p.QuasarDenomToNativeZoneIdMap, validateQuasarDenomToNativeZoneIdMap),
+		paramtypes.NewParamSetPair(KeyOsmosisDenomToQuasarDenomMap, &p.OsmosisDenomToQuasarDenomMap, validateOsmosisDenomToQuasarDenomMap),
+		paramtypes.NewParamSetPair(KeyCompleteZoneInfoMap, &p.CompleteZoneInfoMap, validateCompleteZoneInfoMap),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateOsmoTokenTransferChannels(p.OsmoTokenTransferChannels); err != nil {
-		return err
+	for quasarDenom, nativeZoneId := range p.QuasarDenomToNativeZoneIdMap {
+		if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
+			return err
+		}
+		if err := validateIdentifier(nativeZoneId); err != nil {
+			return err
+		}
 	}
-	if err := validateIntermediateReceivers(p.IntrRcvrs); err != nil {
-		return err
+	for osmosisDenom, quasarDenom := range p.QuasarDenomToNativeZoneIdMap {
+		if err := sdktypes.ValidateDenom(osmosisDenom); err != nil {
+			return err
+		}
+		if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
+			return err
+		}
 	}
-	if err := validateDestToIntrZoneMap(p.DestToIntrZoneMap); err != nil {
-		return err
+	for zoneId, completeZoneInfo := range p.CompleteZoneInfoMap {
+		if err := validateIdentifier(zoneId); err != nil {
+			return err
+		}
+		if err := completeZoneInfo.validateCompleteZoneInfo(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -68,29 +87,112 @@ func (p Params) String() string {
 	return string(out)
 }
 
-func validateOsmoTokenTransferChannels(i interface{}) error {
-	_, ok := i.(map[string]string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+func validateIdentifier(id string) error {
+	if id == "" {
+		return errors.New("error: ID can not be empty")
 	}
-
 	return nil
 }
 
-func validateIntermediateReceivers(i interface{}) error {
-	_, ok := i.([]IntermediateReceiver)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+func (info ZoneRouteInfo) validateZoneRouteInfo() error {
+	if err := validateIdentifier(info.ZoneId); err != nil {
+		return err
 	}
-
+	if err := validateIdentifier(info.ChainId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.CounterpartyZoneId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.CounterpartyChainId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.ConnectionId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.PortId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.ChannelId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.CounterpartyConnectionId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.CounterpartyPortId); err != nil {
+		return err
+	}
+	if err := validateIdentifier(info.CounterpartyChannelId); err != nil {
+		return err
+	}
 	return nil
 }
 
-func validateDestToIntrZoneMap(i interface{}) error {
-	_, ok := i.(map[string]string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+func (info ZoneCompleteInfo) validateCompleteZoneInfo() error {
+	if err := info.ZoneRouteInfo.validateZoneRouteInfo(); err != nil {
+		return err
 	}
+	for zoneId, zoneRouteInfo := range info.NextZoneRouteMap {
+		if err := validateIdentifier(zoneId); err != nil {
+			return err
+		}
+		if err := zoneRouteInfo.validateZoneRouteInfo(); err != nil {
+			return err
+		}
+		if zoneId != zoneRouteInfo.CounterpartyZoneId {
+			return errors.New("error: counterparty zone ID of next_zone_route_map member does not match the map key")
+		}
+		if info.ZoneRouteInfo.CounterpartyZoneId != zoneRouteInfo.ZoneId {
+			return errors.New("error: zone ID of next_zone_route_map member does not match counterparty zone ID of its parent")
+		}
+	}
+	return nil
+}
 
+func validateQuasarDenomToNativeZoneIdMap(i interface{}) error {
+	if m, ok := i.(map[string]string); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	} else {
+		for denom, nativeZoneId := range m {
+			if err := sdktypes.ValidateDenom(denom); err != nil {
+				return err
+			}
+			if err := validateIdentifier(nativeZoneId); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateOsmosisDenomToQuasarDenomMap(i interface{}) error {
+	if m, ok := i.(map[string]string); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	} else {
+		for osmosisDenom, quasarDenom := range m {
+			if err := sdktypes.ValidateDenom(osmosisDenom); err != nil {
+				return err
+			}
+			if err := sdktypes.ValidateDenom(quasarDenom); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateCompleteZoneInfoMap(i interface{}) error {
+	if m, ok := i.(map[string]ZoneCompleteInfo); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	} else {
+		for zoneId, completeZoneInfo := range m {
+			if err := validateIdentifier(zoneId); err != nil {
+				return err
+			}
+			if err := completeZoneInfo.validateCompleteZoneInfo(); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

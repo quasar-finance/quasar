@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
+	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -819,17 +819,14 @@ func icaTransferIbcTokensTestCoin() sdk.Coin {
 func icaTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	testCoin := icaTransferIbcTokensTestCoin()
 
-	seq, err := k.TransmitIbcTransfer(
+	seq, err := k.TransmitICATransfer(
 		ctx,
 		owner,
-		connectionId,
-		timestamp,
-		transferPortId,
-		transferChannelId,
+		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		testCoin,
 		owner, // token to be sent to owner, via IBC
 		transferTimeoutHeight,
-		uint64(time.Now().UnixNano())+transferTimeoutTimestamp,
+		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
 	)
 	require.NoError(t, err)
 	require.NotZero(t, seq)

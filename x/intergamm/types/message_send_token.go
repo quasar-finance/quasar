@@ -9,13 +9,12 @@ const TypeMsgSendToken = "send_token"
 
 var _ sdk.Msg = &MsgSendToken{}
 
-func NewMsgSendToken(creator string, destination_local_zone_id string, sender string, receiver string, coin *sdk.Coin) *MsgSendToken {
+func NewMsgSendToken(fromAddress string, toZoneId string, toAddress string, coin sdk.Coin) *MsgSendToken {
 	return &MsgSendToken{
-		Creator:                creator,
-		DestinationLocalZoneId: destination_local_zone_id,
-		Sender:                 sender,
-		Receiver:               receiver,
-		Coin:                   coin,
+		FromAddress: fromAddress,
+		ToZoneId:    toZoneId,
+		ToAddress:   toAddress,
+		Coin:        coin,
 	}
 }
 
@@ -24,15 +23,15 @@ func (msg *MsgSendToken) Route() string {
 }
 
 func (msg *MsgSendToken) Type() string {
-	return TypeMsgTransmitIbcJoinPool
+	return TypeMsgSendToken
 }
 
 func (msg *MsgSendToken) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
+	fromAddress, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
 		panic(err)
 	}
-	return []sdk.AccAddress{creator}
+	return []sdk.AccAddress{fromAddress}
 }
 
 func (msg *MsgSendToken) GetSignBytes() []byte {
@@ -41,21 +40,21 @@ func (msg *MsgSendToken) GetSignBytes() []byte {
 }
 
 func (msg *MsgSendToken) ValidateBasic() error {
-	_, err := sdk.AccAddressFromBech32(msg.Creator)
+	_, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid fromAddress address (%s)", err)
 	}
-	if msg.DestinationLocalZoneId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "destination_local_zone_id cannot be empty")
+	if msg.ToZoneId == "" {
+		return sdkerrors.Wrap(ErrInvalidZoneId, "toZoneId cannot be empty")
 	}
-	if msg.Coin == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be nil")
+	if msg.ToAddress == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "toAddress cannot be empty")
 	}
-	if msg.Sender == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "sender cannot be empty")
+	if !msg.Coin.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be valid", msg.Coin.String())
 	}
-	if msg.Receiver == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "receiver cannot be empty")
+	if !msg.Coin.IsPositive() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be positive", msg.Coin.String())
 	}
 	return nil
 }

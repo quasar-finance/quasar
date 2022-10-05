@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/quasarlabs/quasarnode/x/orion/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/x/orion/types"
+	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
 
 // NewLP create a new LPPosition object with input arguments.

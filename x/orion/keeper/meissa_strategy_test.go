@@ -5,13 +5,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	"github.com/quasarlabs/quasarnode/testutil"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbankmoduletypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func createSampleValidPoolAssetsSlice() []gammbalancer.PoolAsset {

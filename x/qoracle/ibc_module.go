@@ -1,15 +1,16 @@
 package qoracle
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 var _ porttypes.IBCModule = IBCModule{}
@@ -49,7 +50,13 @@ func (im IBCModule) OnChanOpenInit(
 		bandchainParams.OracleIbcParams.AuthorizedChannel = channelID
 		im.keeper.SetBandchainParams(ctx, bandchainParams)
 
-		im.keeper.Logger(ctx).Info("bandchain authorized channel set to: ", channelID)
+		im.keeper.Logger(ctx).Info("Bandchain authorized channel set to: ", channelID)
+	case icqtypes.PortID:
+		osmosisParams := im.keeper.OsmosisParams(ctx)
+		osmosisParams.ICQParams.AuthorizedChannel = channelID
+		im.keeper.SetOsmosisParams(ctx, osmosisParams)
+
+		im.keeper.Logger(ctx).Info("Osmosis ICQ authorized channel set to: ", channelID)
 	}
 
 	return im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID))
@@ -77,7 +84,10 @@ func (im IBCModule) validateChannelParams(
 		if version != types.BandchainOracleVersion {
 			return sdkerrors.Wrapf(types.ErrInvalidCounterpartyVersion, "got %s, expected %s", version, types.BandchainOracleVersion)
 		}
-	// TODO: Add other ports like icq, and ica once we merged intergamm with qoracle
+	case icqtypes.PortID:
+		if version != icqtypes.Version {
+			return sdkerrors.Wrapf(types.ErrInvalidCounterpartyVersion, "got %s, expected %s", version, icqtypes.Version)
+		}
 	default:
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid counterparty port: %s", counterparty.GetPortID())
 	}

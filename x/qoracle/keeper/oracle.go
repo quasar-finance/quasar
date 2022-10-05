@@ -3,12 +3,12 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/bandprotocol/bandchain-packet/obi"
 	bandpacket "github.com/bandprotocol/bandchain-packet/packet"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
@@ -34,7 +34,7 @@ func (k Keeper) TryUpdateCoinRates(ctx sdk.Context) {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeCoinRatesRequest,
-			sdk.NewAttribute(types.AtributePacketSequence, fmt.Sprintf("%d", seq)),
+			sdk.NewAttribute(types.AttributePacketSequence, fmt.Sprintf("%d", seq)),
 		))
 }
 

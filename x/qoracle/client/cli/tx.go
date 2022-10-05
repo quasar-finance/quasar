@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 const (
@@ -36,6 +36,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdUpdatePoolInfo())
 	cmd.AddCommand(CmdDeletePoolInfo())
 	cmd.AddCommand(CmdStablePrice())
+	cmd.AddCommand(CmdUpdateOsmosisChainParams())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

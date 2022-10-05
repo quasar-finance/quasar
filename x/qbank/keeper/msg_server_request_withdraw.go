@@ -3,9 +3,9 @@ package keeper
 import (
 	"context"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/quasarlabs/quasarnode/x/qbank/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RequestWithdraw withdraw of previously deposited funds by the depositors from the

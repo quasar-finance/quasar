@@ -1,11 +1,11 @@
 package types
 
 import (
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	proto "github.com/gogo/protobuf/proto"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 )
 
 type ibcExchangeRequest interface {

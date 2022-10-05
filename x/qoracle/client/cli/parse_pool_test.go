@@ -15,9 +15,9 @@ func samplePoolFile1() string {
 	"address": "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t",
 	"id": 1,
 	"pool_params": {
-		"swapFee": "0.003000000000000000",
-		"exitFee": "0.000000000000000000",
-		"smoothWeightChangeParams": null
+		"swap_fee": "0.003000000000000000",
+		"exit_fee": "0.000000000000000000",
+		"smooth_weight_change_params": null
 	},
 	"future_pool_governor": "24h",
 	"total_shares": {
@@ -61,8 +61,8 @@ func TestParseBalancerPoolFile(t *testing.T) {
 	// ok json
 	pool, err := parseBalancerPoolFile(okJSON.Name())
 	require.NoError(t, err, "unexpected error")
-	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.GetAddress().String())
-	require.Equal(t, uint64(1), pool.GetId())
+	require.Equal(t, "osmo1mw0ac6rwlp5r8wapwk3zs6g29h8fcscxqakdzw9emkne6c8wjp9q0t3v8t", pool.Address)
+	require.Equal(t, uint64(1), pool.Id)
 	require.Equal(t, sdk.MustNewDecFromStr("0.003000000000000000"), pool.PoolParams.SwapFee)
 	require.Equal(t, sdk.MustNewDecFromStr("0.000000000000000000"), pool.PoolParams.ExitFee)
 

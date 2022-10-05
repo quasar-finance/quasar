@@ -3,10 +3,10 @@ package cli
 import (
 	"strconv"
 
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/spf13/cobra"
 )
 

@@ -1,12 +1,12 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byte, error) {
@@ -22,10 +22,13 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byt
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	bandchainParams := k.BandchainParams(ctx)
+	osmosisParams := k.OsmosisParams(ctx)
 
 	switch {
 	case packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOracleAcknowledgment(ctx, packet, ack)
+	case packet.SourceChannel == osmosisParams.ICQParams.AuthorizedChannel:
+		return k.handleOsmosisICQAcknowledgment(ctx, packet, ack)
 	default:
 		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC acknowledgment handler for packet with path: %s", host.ChannelPath(packet.SourcePort, packet.SourceChannel))
 	}
@@ -33,10 +36,13 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
 	bandchainParams := k.BandchainParams(ctx)
+	osmosisParams := k.OsmosisParams(ctx)
 
 	switch {
 	case packet.SourceChannel == bandchainParams.OracleIbcParams.AuthorizedChannel:
 		return k.handleOracleTimeout(ctx, packet)
+	case packet.SourceChannel == osmosisParams.ICQParams.AuthorizedChannel:
+		return k.handleOsmosisICQTimeout(ctx, packet)
 	default:
 		return sdkerrors.Wrapf(types.ErrUnauthorizedIBCPacket, "could not find any authorized IBC timeout handler for packet with path: %s", host.ChannelPath(packet.SourcePort, packet.SourceChannel))
 	}

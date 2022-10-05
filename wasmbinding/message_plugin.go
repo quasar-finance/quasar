@@ -49,9 +49,6 @@ func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddre
 		if contractMsg.SendToken != nil {
 			return m.sendToken(ctx, contractAddr, contractMsg.SendToken)
 		}
-		if contractMsg.RegisterInterchainAccount != nil {
-			return m.RegisterInterchainAccount(ctx, contractAddr, contractMsg.RegisterInterchainAccount)
-		}
 		if contractMsg.OsmosisJoinPool != nil {
 			return m.OsmosisJoinPool(ctx, contractAddr, contractMsg.OsmosisJoinPool)
 		}
@@ -126,7 +123,7 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 		return sdkerrors.Wrap(err, "parse receiver")
 	}
 
-	sdkMsg := intergammtypes.NewMsgSendToken(send.Creator, send.DestinationLocalZoneId, send.Sender, receiver.String(), &send.Coin)
+	sdkMsg := intergammtypes.NewMsgSendToken(send.Creator, send.DestinationLocalZoneId, receiver.String(), send.Coin)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
@@ -142,32 +139,6 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 
 	if err != nil {
 		return sdkerrors.Wrap(err, "sending tokens")
-	}
-	return nil
-}
-
-func (m *CustomMessenger) RegisterInterchainAccount(ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterInterchainAccount) ([]sdk.Event, [][]byte, error) {
-	err := PerformRegisterInterchainAccount(m.intergammKeeper, ctx, contractAddr, register)
-	if err != nil {
-		return nil, nil, sdkerrors.Wrap(err, "register ica account")
-	}
-	return nil, nil, nil
-}
-
-func PerformRegisterInterchainAccount(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterInterchainAccount) error {
-	if register == nil {
-		return wasmvmtypes.InvalidRequest{Err: "register interchain account null"}
-	}
-
-	sdkMsg := intergammtypes.NewMsgRegisterInterchainAccount(contractAddr.String(), register.ConnectionId)
-	if err := sdkMsg.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "basic validate msg")
-	}
-
-	msgServer := intergammkeeper.NewMsgServerImpl(k)
-	_, err := msgServer.RegisterInterchainAccount(sdk.WrapSDKContext(ctx), sdkMsg)
-	if err != nil {
-		return sdkerrors.Wrap(err, "register interchain account")
 	}
 	return nil
 }

@@ -6,11 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/testutil/nullify"
 	"github.com/quasarlabs/quasarnode/x/orion/keeper"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func createTestRewardCollection(keeper *keeper.Keeper, ctx sdk.Context) (types.RewardCollection, uint64) {

@@ -1,10 +1,10 @@
 package keeper
 
 import (
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 func (kf KeeperFactory) EpochsKeeper(paramsKeeper paramskeeper.Keeper) *keeper.Keeper {

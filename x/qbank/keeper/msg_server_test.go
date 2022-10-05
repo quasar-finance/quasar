@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"context"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/qbank/keeper"
 	"github.com/quasarlabs/quasarnode/x/qbank/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func setupMsgServer(ctx sdk.Context, k keeper.Keeper) (types.MsgServer, context.Context) {
