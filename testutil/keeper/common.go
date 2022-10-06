@@ -30,7 +30,7 @@ func (kf KeeperFactory) AccountKeeper(paramsKeeper paramskeeper.Keeper, maccPerm
 
 	subspace := paramsKeeper.Subspace(authtypes.ModuleName)
 	accountKeeper := authkeeper.NewAccountKeeper(
-		kf.EncodingConfig.Marshaler, storeKey, subspace, authtypes.ProtoBaseAccount, maccPerms, "quasar",
+		kf.EncodingConfig.Marshaler, storeKey, subspace, authtypes.ProtoBaseAccount, maccPerms, sdk.GetConfig().GetBech32AccountAddrPrefix(),
 	)
 
 	return accountKeeper
