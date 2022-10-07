@@ -57,16 +57,15 @@ pub fn handle_reply(
         match original {
             IntergammMsg::SendToken {
                 destination_local_zone_id,
-                sender: _,
                 receiver: _,
                 coin: _,
             } => Ok(Response::new().add_attribute("send_token", "sender").add_attribute("destination", destination_local_zone_id)),
             IntergammMsg::TestScenario { scenario } => Ok( Response::new().add_attribute("testing scenario", scenario)),
-            IntergammMsg::RegisterInterchainAccount {
-                connection_id,
+            IntergammMsg::RegisterIcaOnZone {
+                zone_id,
             } => Ok(Response::new()
                 .add_attribute("register_interchain_account", env.contract.address)
-                .add_attribute("connection_id", connection_id)),
+                .add_attribute("zone_id", zone_id)),
             IntergammMsg::JoinSwapExternAmountIn {
                 ref connection_id,
                 timeout_timestamp: _,

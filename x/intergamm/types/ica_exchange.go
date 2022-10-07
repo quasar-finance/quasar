@@ -41,7 +41,8 @@ type ibcExchangeResponse interface {
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {
-	Channel string
+	Channel  string
+	PortId   string
 	Sequence uint64
 	Error    string
 	Request  REQ

@@ -8,15 +8,14 @@ use serde::{Deserialize, Serialize};
 pub enum IntergammMsg {
     SendToken {
         destination_local_zone_id: String,
-        sender: String,
         receiver: String,
         coin: Coin,
     },
     TestScenario {
         scenario: String,
     },
-    RegisterInterchainAccount {
-        connection_id: String,
+    RegisterIcaOnZone {
+        zone_id: String,
     },
     JoinPool {
         connection_id: String,

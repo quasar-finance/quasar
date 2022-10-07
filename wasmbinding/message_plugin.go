@@ -49,8 +49,8 @@ func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddre
 		if contractMsg.SendToken != nil {
 			return m.sendToken(ctx, contractAddr, contractMsg.SendToken)
 		}
-		if contractMsg.RegisterInterchainAccount != nil {
-			return m.RegisterInterchainAccount(ctx, contractAddr, contractMsg.RegisterInterchainAccount)
+		if contractMsg.RegisterICAOnZone != nil {
+			return m.RegisterICAOnZone(ctx, contractAddr, contractMsg.RegisterICAOnZone)
 		}
 		if contractMsg.OsmosisJoinPool != nil {
 			return m.OsmosisJoinPool(ctx, contractAddr, contractMsg.OsmosisJoinPool)
@@ -121,48 +121,43 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	if send == nil {
 		return wasmvmtypes.InvalidRequest{Err: "send token null"}
 	}
-	receiver, err := parseAddress(send.Receiver) // where to use?
-	if err != nil {
-		return sdkerrors.Wrap(err, "parse receiver")
-	}
 
-	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, receiver.String(), send.Coin)
+	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, send.Receiver, send.Coin)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
 
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
 	res, err := msgServer.SendToken(sdk.WrapSDKContext(ctx), sdkMsg)
-
-	// register the packet as sent with the callback plugin
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
-
 	if err != nil {
 		return sdkerrors.Wrap(err, "sending tokens")
 	}
+
+	// register the packet as sent with the callback plugin
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
-func (m *CustomMessenger) RegisterInterchainAccount(ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterInterchainAccount) ([]sdk.Event, [][]byte, error) {
-	err := PerformRegisterInterchainAccount(m.intergammKeeper, ctx, contractAddr, register)
+func (m *CustomMessenger) RegisterICAOnZone(ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterICAOnZone) ([]sdk.Event, [][]byte, error) {
+	err := PerformRegisterICAOnZone(m.intergammKeeper, ctx, contractAddr, register)
 	if err != nil {
 		return nil, nil, sdkerrors.Wrap(err, "register ica account")
 	}
 	return nil, nil, nil
 }
 
-func PerformRegisterInterchainAccount(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterInterchainAccount) error {
+func PerformRegisterICAOnZone(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterICAOnZone) error {
 	if register == nil {
 		return wasmvmtypes.InvalidRequest{Err: "register interchain account null"}
 	}
 
-	sdkMsg := intergammtypes.NewMsgRegisterInterchainAccount(contractAddr.String(), register.ConnectionId)
+	sdkMsg := intergammtypes.NewMsgRegisterICAOnZone(contractAddr.String(), register.ZoneId)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
 	}
 
 	msgServer := intergammkeeper.NewMsgServerImpl(k)
-	_, err := msgServer.RegisterInterchainAccount(sdk.WrapSDKContext(ctx), sdkMsg)
+	_, err := msgServer.RegisterICAOnZone(sdk.WrapSDKContext(ctx), sdkMsg)
 	if err != nil {
 		return sdkerrors.Wrap(err, "register interchain account")
 	}
@@ -194,7 +189,7 @@ func PerformOsmosisJoinPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return sdkerrors.Wrap(err, "join pool")
 	}
 
-	cb.OnSendPacket(ctx, res.Seq, res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.Seq, res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
@@ -222,7 +217,7 @@ func PerformOsmosisExitPool(k *intergammkeeper.Keeper, ctx sdk.Context, contract
 		return sdkerrors.Wrap(err, "exit pool")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
@@ -251,7 +246,7 @@ func PerformOsmosisLockTokens(k *intergammkeeper.Keeper, ctx sdk.Context, contra
 		return sdkerrors.Wrap(err, "lock tokens")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
@@ -279,7 +274,7 @@ func PerformOsmosisBeginUnlocking(k *intergammkeeper.Keeper, ctx sdk.Context, co
 		return sdkerrors.Wrap(err, "begin unlocking")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId,contractAddr)
 	return nil
 }
 
@@ -307,7 +302,7 @@ func PerformOsmosisJoinSwapExternAmountIn(k *intergammkeeper.Keeper, ctx sdk.Con
 		return sdkerrors.Wrap(err, "join swap extern amount in")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
@@ -335,7 +330,7 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 		return sdkerrors.Wrap(err, "join swap extern amount out")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId,contractAddr)
 	return nil
 }
 

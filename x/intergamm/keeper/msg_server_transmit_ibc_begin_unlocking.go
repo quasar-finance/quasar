@@ -10,9 +10,9 @@ func (ms msgServer) TransmitIbcBeginUnlocking(goCtx context.Context, unlocking *
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	owner := unlocking.Creator
-	seq, channel, err := ms.k.TransmitIbcBeginUnlocking(ctx, owner, unlocking.GetConnectionId(), unlocking.GetTimeoutTimestamp(), unlocking.GetId(), unlocking.GetCoins())
+	seq, channel, portId, err := ms.k.TransmitIbcBeginUnlocking(ctx, owner, unlocking.GetConnectionId(), unlocking.GetTimeoutTimestamp(), unlocking.GetId(), unlocking.GetCoins())
 	if err != nil {
 		return nil, err
 	}
-	return &types.MsgTransmitIbcBeginUnlockingResponse{Seq: seq, Channel: channel}, nil
+	return &types.MsgTransmitIbcBeginUnlockingResponse{Seq: seq, Channel: channel, PortId: portId}, nil
 }

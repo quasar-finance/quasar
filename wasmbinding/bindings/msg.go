@@ -12,7 +12,7 @@ type QuasarMsg struct {
 	SendToken *SendToken `json:"send_token,omitempty"`
 
 	// Contracts can register interchain accounts
-	RegisterInterchainAccount *RegisterInterchainAccount `json:"register_interchain_account,omitempty"`
+	RegisterICAOnZone *RegisterICAOnZone `json:"register_ica_on_zone,omitempty"`
 
 	/// Contracts can transmit JoinPool Messages over IBC
 	OsmosisJoinPool *OsmosisJoinPool `json:"join_pool,omitempty"`
@@ -37,13 +37,12 @@ type TestScenario struct {
 	Scenario string `json:"scenario"`
 }
 
-type RegisterInterchainAccount struct {
-	ConnectionId string `json:"connection_id"`
+type RegisterICAOnZone struct {
+	ZoneId string `json:"zone_id"`
 }
 
 type SendToken struct {
 	DestinationLocalZoneId string   `json:"destination_local_zone_id"`
-	Sender                 string   `json:"sender"`
 	Receiver               string   `json:"receiver"`
 	Coin                   sdk.Coin `json:"coin"`
 }

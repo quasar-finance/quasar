@@ -16,9 +16,9 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 )
 
 // if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
@@ -40,6 +40,7 @@ type CallbackPlugin struct {
 type key struct {
 	seq uint64
 	channel string
+	portId string
 }
 
 func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
@@ -47,63 +48,63 @@ func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (c *CallbackPlugin) Handle(ctx sdk.Context, ex intergammtypes.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "handle")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response,"handle")
 }
 
 func (c *CallbackPlugin) HandleAckMsgCreateBalancerPool(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "create_balancer_pool")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "create_balancer_pool")
 }
 
 func (c *CallbackPlugin) HandleAckMsgJoinPool(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "join_pool")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "join_pool")
 }
 
 func (c *CallbackPlugin) HandleAckMsgExitPool(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "exit_pool")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "exit_pool")
 }
 
 func (c *CallbackPlugin) HandleAckMsgJoinSwapExternAmountIn(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "join_swap_extern_amount_in")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "join_swap_extern_amount_in")
 }
 
 func (c *CallbackPlugin) HandleAckMsgExitSwapExternAmountOut(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "exit_swap_extern_amount_out")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "exit_swap_extern_amount_out")
 }
 
 func (c *CallbackPlugin) HandleAckMsgJoinSwapShareAmountOut(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "join_swap_share_amount_out")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "join_swap_share_amount_out")
 }
 
 func (c *CallbackPlugin) HandleAckMsgExitSwapShareAmountIn(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "exit_swap_share_amount_in")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "exit_swap_share_amount_in")
 }
 
 func (c *CallbackPlugin) HandleAckMsgLockTokens(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "lock_tokens")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "lock_tokens")
 
 }
 
@@ -111,12 +112,12 @@ func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.Response, "begin_unlocking")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId ,ex.Response,"begin_unlocking")
 }
 
 // the easiest way for the smart contract to handle the response is to 
-func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, response proto.Message, caller string) error {
-	addr, exists := c.sentMessages[key{seq, channel}]
+func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, portId string, response proto.Message, caller string) error {
+	addr, exists := c.sentMessages[key{seq, channel, portId}]
 	if !exists {
 		// if the address does not exist, someone other than a smart contract called intergamm, thus we return nil.
 		c.Logger(ctx).Error(fmt.Sprintf("wasm callback plugin called: no sent message found for: %v", seq))
@@ -162,10 +163,10 @@ type ContractAck struct {
 }
 
 // OnSendPacket registers a packet's sequence number and address of the corresponding wasm contract
-func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel string, addr sdk.AccAddress) {
+func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel string, portID string, addr sdk.AccAddress) {
 	if c.sentMessages == nil {
 		c.sentMessages = make(map[key]sdk.AccAddress)
 	}
-	c.sentMessages[key{seq, channel}] = addr
+	c.sentMessages[key{seq, channel, portID}] = addr
 	c.Logger(ctx).Info("Registering SEQ for contract addr", strconv.FormatUint(seq, 10), addr.String())
 }
