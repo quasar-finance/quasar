@@ -9,7 +9,6 @@ TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-ad
 echo $NODE
 # the callback_address is the address of the orion module
 INIT='{"callback_address":"quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc"}'
-
 MSG='{"register_ica_on_zone":{"zone_id":"osmosis"}}'
 
 cd ../../smart-contracts

@@ -121,7 +121,6 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	if send == nil {
 		return wasmvmtypes.InvalidRequest{Err: "send token null"}
 	}
-
 	sdkMsg := intergammtypes.NewMsgSendToken(contractAddr.String(), send.DestinationLocalZoneId, send.Receiver, send.Coin)
 	if err := sdkMsg.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "basic validate msg")
@@ -303,6 +302,7 @@ func PerformOsmosisJoinSwapExternAmountIn(k *intergammkeeper.Keeper, ctx sdk.Con
 	}
 
 	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
+
 	return nil
 }
 
@@ -331,6 +331,7 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 	}
 
 	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId,contractAddr)
+
 	return nil
 }
 

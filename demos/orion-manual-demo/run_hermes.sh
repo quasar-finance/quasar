@@ -1,6 +1,7 @@
 #!/bin/sh
 
-cp hermes_config.toml ~/.hermes/config.toml
+
+cp ./hermes_config.toml ~/.hermes/config.toml
 
 hermes keys add --chain quasar --mnemonic-file keys/qsr.key
 

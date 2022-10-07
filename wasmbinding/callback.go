@@ -42,7 +42,6 @@ type key struct {
 	channel string
 	portId string
 }
-
 func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("wasm callback plugin")
 }
@@ -105,7 +104,6 @@ func (c *CallbackPlugin) HandleAckMsgLockTokens(
 	ex intergammtypes.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse],
 ) error {
 	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "lock_tokens")
-
 }
 
 func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
@@ -168,5 +166,6 @@ func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel strin
 		c.sentMessages = make(map[key]sdk.AccAddress)
 	}
 	c.sentMessages[key{seq, channel, portID}] = addr
+
 	c.Logger(ctx).Info("Registering SEQ for contract addr", strconv.FormatUint(seq, 10), addr.String())
 }

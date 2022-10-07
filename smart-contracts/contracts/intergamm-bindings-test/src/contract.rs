@@ -45,6 +45,7 @@ pub fn execute(
             receiver,
             coin
         } => execute_send_token(destination_local_zone_id, receiver, coin),
+
         ExecuteMsg::SendTokenIbc {
             channel_id,
             to_address,
@@ -229,6 +230,7 @@ pub fn execute_send_token(
             receiver: receiver,
             coin: coin,
         }))
+
 }
 
 pub fn execute_send_token_ibc(

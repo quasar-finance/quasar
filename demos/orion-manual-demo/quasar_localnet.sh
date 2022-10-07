@@ -74,6 +74,7 @@ elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's+address = ":8080"+address = ":8081"+g' $HOME_QSR/config/app.toml
 else
 	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
