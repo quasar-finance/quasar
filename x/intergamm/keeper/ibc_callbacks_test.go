@@ -10,12 +10,12 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/stretchr/testify/require"
 )
@@ -151,11 +151,15 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 	makeIcaPacket := makeIcaPacketPartial(t, setup.Cdc)
 	makeEmptyIcaPacket := makeEmptyIcaPacketPartial(t, setup.Cdc)
 	tstSeq := uint64(42)
+	tstChan := "tstChan"
+	tstPort := "tstPort"
 
 	var called bool
 	testCases := []struct {
 		name      string
 		seq       uint64
+		channel   string
+		portId    string
 		icaPacket icatypes.InterchainAccountPacketData
 		ack       channeltypes.Acknowledgement
 		setup     func()
@@ -164,6 +168,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgCreateBalancerPool",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
 			ack:       makeIcaAck(t, &gammbalancer.MsgCreateBalancerPool{}, &gammbalancer.MsgCreateBalancerPoolResponse{}),
 			setup: func() {
@@ -179,6 +185,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid Ica MsgTransfer",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&ibctransfertypes.MsgTransfer{}),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup: func() {
@@ -194,6 +202,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgJoinPool",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinPool{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgJoinPool{}, &gammtypes.MsgJoinPoolResponse{}),
 			setup: func() {
@@ -209,6 +219,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgExitPool",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitPool{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgExitPool{}, &gammtypes.MsgExitPoolResponse{}),
 			setup: func() {
@@ -224,6 +236,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgJoinSwapExternAmountIn",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapExternAmountIn{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgJoinSwapExternAmountIn{}, &gammtypes.MsgJoinSwapExternAmountInResponse{}),
 			setup: func() {
@@ -239,6 +253,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgExitSwapExternAmountOut",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapExternAmountOut{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgExitSwapExternAmountOut{}, &gammtypes.MsgExitSwapExternAmountOutResponse{}),
 			setup: func() {
@@ -254,6 +270,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgJoinSwapShareAmountOut",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgJoinSwapShareAmountOut{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgJoinSwapShareAmountOut{}, &gammtypes.MsgJoinSwapShareAmountOutResponse{}),
 			setup: func() {
@@ -269,6 +287,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgExitSwapShareAmountIn",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammtypes.MsgExitSwapShareAmountIn{}),
 			ack:       makeIcaAck(t, &gammtypes.MsgExitSwapShareAmountIn{}, &gammtypes.MsgExitSwapShareAmountInResponse{}),
 			setup: func() {
@@ -284,6 +304,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgLockTokens",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
 			ack:       makeIcaAck(t, &lockuptypes.MsgLockTokens{}, &lockuptypes.MsgLockTokensResponse{}),
 			setup: func() {
@@ -299,6 +321,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "valid MsgBeginUnlocking",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&lockuptypes.MsgBeginUnlocking{}),
 			ack:       makeIcaAck(t, &lockuptypes.MsgBeginUnlocking{}, &lockuptypes.MsgBeginUnlockingResponse{}),
 			setup: func() {
@@ -314,6 +338,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "error in hook MsgLockTokens",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&lockuptypes.MsgLockTokens{}),
 			ack:       makeIcaAck(t, &lockuptypes.MsgLockTokens{}, &lockuptypes.MsgLockTokensResponse{}),
 			setup: func() {
@@ -329,6 +355,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "invalid ica packet",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeInvalidIcaPacket(),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
@@ -337,6 +365,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "empty ica packet",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeEmptyIcaPacket(),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
@@ -345,6 +375,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "invalid ack bytes",
 			seq:       tstSeq,
+			channel:   tstChan,
+			portId:    tstPort,
 			icaPacket: makeIcaPacket(&gammbalancer.MsgCreateBalancerPool{}),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
@@ -353,7 +385,8 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 		{
 			name:      "unsupported packet type",
 			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
+			channel:   tstChan,
+			portId:    tstPort,			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
 			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
 			setup:     func() {},
 			errorStr:  "unsupported packet type",
@@ -364,7 +397,7 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			called = false
 			k.Hooks.Osmosis.ClearAckHooks()
 			tc.setup()
-			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.icaPacket, tc.ack)
+			err := k.HandleIcaAcknowledgement(ctx, tc.seq, tc.channel ,tc.portId, tc.icaPacket, tc.ack)
 
 			if tc.errorStr != "" {
 				require.ErrorContains(t, err, tc.errorStr)

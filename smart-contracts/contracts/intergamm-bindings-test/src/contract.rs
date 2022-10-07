@@ -42,14 +42,17 @@ pub fn execute(
     match msg {
         ExecuteMsg::SendToken {
             destination_local_zone_id,
-        } => execute_send_token(destination_local_zone_id, env),
+            receiver,
+            coin
+        } => execute_send_token(destination_local_zone_id, receiver, coin),
+
         ExecuteMsg::SendTokenIbc {
             channel_id,
             to_address,
             amount,
         } => execute_send_token_ibc(channel_id, to_address, amount, env),
-        ExecuteMsg::RegisterInterchainAccount { connection_id } => {
-            execute_register_ica(connection_id, deps)
+        ExecuteMsg::RegisterIcaOnZone { zone_id } => {
+            execute_register_ica_on_zone(zone_id, deps)
         }
         ExecuteMsg::JoinSwapExternAmountIn {
             connection_id,
@@ -214,19 +217,20 @@ pub fn execute_exit_swap_extern_amount_out(
     create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 
-// TODO as of 23 august, there is a bug in the go implementation of send token
 pub fn execute_send_token(
     destination_local_zone_id: String,
-    env: Env,
+    receiver: String,
+    coin: Coin,
 ) -> Result<Response<IntergammMsg>, ContractError> {
+    // receiver is an address on a different chain, so we can't parse it.
     Ok(Response::new()
+        .add_attribute("send_tokens", format!("{} {} to {}", coin.amount, coin.denom, destination_local_zone_id))
         .add_message(IntergammMsg::SendToken {
             destination_local_zone_id,
-            sender: env.contract.address.to_string(),
-            receiver: env.contract.address.to_string(),
-            coin: Coin::new(100, "uqsr"),
-        })
-        .add_attribute("sending tokens", "100 uqsr to osmosis"))
+            receiver: receiver,
+            coin: coin,
+        }))
+
 }
 
 pub fn execute_send_token_ibc(
@@ -249,11 +253,11 @@ pub fn execute_test_scenario(scenario: String) -> Result<Response<IntergammMsg>,
     Ok(Response::new().add_message(IntergammMsg::TestScenario { scenario }))
 }
 
-pub fn execute_register_ica(
-    connection_id: String,
+pub fn execute_register_ica_on_zone(
+    zone_id: String,
     deps: DepsMut,
 ) -> Result<Response<IntergammMsg>, ContractError> {
-    let msg = IntergammMsg::RegisterInterchainAccount { connection_id };
+    let msg = IntergammMsg::RegisterIcaOnZone { zone_id };
     create_intergamm_msg(deps.storage, msg).map_err(ContractError::Std)
 }
 

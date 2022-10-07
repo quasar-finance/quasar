@@ -39,9 +39,9 @@ $BINARY collect-gentxs
 platform='unknown'
 unamestr=$(uname)
 if [ "$unamestr" = 'Linux' ]; then
-	platform='linux'
+   	platform='linux'
 elif [ "$unamestr" = 'Darwin' ]; then
-	platform='mac'
+	platform='macos'
 fi
 
 if [ $platform = 'linux' ]; then
@@ -56,7 +56,7 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8093"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
-elif [ $platform = 'mac' ]; then
+elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_COSMOSHUB/config/app.toml
@@ -69,7 +69,8 @@ elif [ $platform = 'mac' ]; then
 	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
 else
-	echo "only linux and mac platforms are supported, if you are using other platforms you should probably improve this script."
+	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml

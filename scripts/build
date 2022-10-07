@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -Cue -o pipefail
+set -o xtrace
 
 project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
 build_dir="${BUILD_DIR:-"${project_dir}/build"}"
@@ -12,7 +13,8 @@ build_with_tags() {
 }
 
 build_dev() {
-  build_with_tags "test"
+  go build -gcflags='all=-N -l' -tags "test" -o "${build_dir}/quasarnoded" "${project_dir}/cmd/quasarnoded"
+  # build_with_tags "test"
 }
 
 install_with_tags() {
@@ -20,7 +22,9 @@ install_with_tags() {
 }
 
 install_dev() {
-  install_with_tags "test"
+  ## -gcflags='all=-N -l' is added to have debug symbols in the binary
+  go install -gcflags='all=-N -l' -tags "test" "${project_dir}/cmd/quasarnoded" 
+  #install_with_tags "test"
 }
 
 (

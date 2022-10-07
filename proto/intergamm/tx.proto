@@ -1,11 +1,9 @@
 syntax = "proto3";
 package quasarlabs.quasarnode.intergamm;
 
-import "gogoproto/gogo.proto";
-import "cosmos/base/v1beta1/coin.proto";
-import "osmosis/v9/gamm/v1beta1/tx.proto";
-
 // this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/intergamm/types";
 
@@ -19,7 +17,10 @@ service Msg {
   rpc TransmitIbcJoinSwapExternAmountIn(MsgTransmitIbcJoinSwapExternAmountIn) returns (MsgTransmitIbcJoinSwapExternAmountInResponse);
   rpc TransmitIbcExitSwapExternAmountOut(MsgTransmitIbcExitSwapExternAmountOut) returns (MsgTransmitIbcExitSwapExternAmountOutResponse);
   rpc SendToken(MsgSendToken) returns (MsgSendTokenResponse);
-  rpc RegisterInterchainAccount(MsgRegisterInterchainAccount) returns (MsgRegisterInterchainAccountResponse);
+  rpc TransmitICATransfer(MsgTransmitICATransfer) returns (MsgTransmitICATransferResponse);
+  rpc RegisterICAOnZone(MsgRegisterICAOnZone) returns (MsgRegisterICAOnZoneResponse);
+  rpc RegisterICAOnDenomNativeZone(MsgRegisterICAOnDenomNativeZone) returns (MsgRegisterICAOnDenomNativeZoneResponse);
+  rpc SendTokenToICA(MsgSendTokenToICA) returns (MsgSendTokenToICAResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -37,15 +38,24 @@ message MsgTestScenarioResponse {
 }
 
 message MsgSendToken {
-  string creator = 1 [(gogoproto.moretags) = "yaml:\"creator\" json:\"creator\""];
-  string destinationLocalZoneId = 2 [(gogoproto.moretags) = "yaml:\"destination_local_zone_id\" json:\"destination_local_zone_id\""];
-  string sender = 3 [(gogoproto.moretags) = "yaml:\"sender\" json:\"sender\""];
-  string receiver = 4 [(gogoproto.moretags) = "yaml:\"receiver\" json:\"receiver\""];
-  cosmos.base.v1beta1.Coin coin = 5 [(gogoproto.moretags) = "yaml:\"coin\" json:\"coin\""];
+  string fromAddress = 1;
+  string toZoneId = 2;
+  string toAddress = 3;
+  cosmos.base.v1beta1.Coin coin = 4 [(gogoproto.nullable) = false];
 }
 
 message MsgSendTokenResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
+}
+
+message MsgRegisterInterchainAccount {
+  string creator = 1;
+  string connectionId = 2;
+}
+
+message MsgRegisterInterchainAccountResponse {
 }
 
 message MsgRegisterInterchainAccount {
@@ -67,6 +77,8 @@ message MsgTransmitIbcJoinPool {
 
 message MsgTransmitIbcJoinPoolResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcExitPool {
@@ -80,6 +92,8 @@ message MsgTransmitIbcExitPool {
 
 message MsgTransmitIbcExitPoolResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcLockTokens {
@@ -95,6 +109,8 @@ message MsgTransmitIbcLockTokens {
 
 message MsgTransmitIbcLockTokensResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcBeginUnlocking {
@@ -107,6 +123,8 @@ message MsgTransmitIbcBeginUnlocking {
 
 message MsgTransmitIbcBeginUnlockingResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcJoinSwapExternAmountIn {
@@ -120,6 +138,8 @@ message MsgTransmitIbcJoinSwapExternAmountIn {
 
 message MsgTransmitIbcJoinSwapExternAmountInResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcExitSwapExternAmountOut{
@@ -133,6 +153,48 @@ message MsgTransmitIbcExitSwapExternAmountOut{
 
 message MsgTransmitIbcExitSwapExternAmountOutResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
+}
+
+message MsgTransmitICATransfer {
+  string icaOwnerAddress = 1;
+  string toAddress = 3;
+  cosmos.base.v1beta1.Coin coin = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgTransmitICATransferResponse {
+  uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
+}
+
+message MsgRegisterICAOnZone {
+  string ownerAddress = 1;
+  string zoneId = 2;
+}
+
+message MsgRegisterICAOnZoneResponse {
+}
+
+message MsgRegisterICAOnDenomNativeZone {
+  string ownerAddress = 1;
+  string denom = 2;
+}
+
+message MsgRegisterICAOnDenomNativeZoneResponse {
+}
+
+message MsgSendTokenToICA {
+  string fromAddress = 1;
+  string toZoneId = 2;
+  cosmos.base.v1beta1.Coin coin = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgSendTokenToICAResponse {
+  uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 // this line is used by starport scaffolding # proto/tx/message

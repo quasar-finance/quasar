@@ -10,10 +10,10 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -177,7 +177,7 @@ func createPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	poolParams := createTestPoolParams()
 	poolAssets := createTestPoolAssets()
 
-	_, err := k.TransmitIbcCreatePool(
+	_,_,_, err := k.TransmitIbcCreatePool(
 		ctx,
 		owner,
 		connectionId,
@@ -244,7 +244,7 @@ func joinPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("1000000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcJoinPool(
+	_,_,_, err := k.TransmitIbcJoinPool(
 		ctx,
 		owner,
 		connectionId,
@@ -305,7 +305,7 @@ func exitPool(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("1000000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcExitPool(
+	_,_,_, err := k.TransmitIbcExitPool(
 		ctx,
 		owner,
 		connectionId,
@@ -370,7 +370,7 @@ func joinSwapExternAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("500000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcJoinSwapExternAmountIn(
+	_,_,_, err := k.TransmitIbcJoinSwapExternAmountIn(
 		ctx,
 		owner,
 		connectionId,
@@ -431,7 +431,7 @@ func exitSwapExternAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("10000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcExitSwapExternAmountOut(
+	_,_,_, err := k.TransmitIbcExitSwapExternAmountOut(
 		ctx,
 		owner,
 		connectionId,
@@ -493,7 +493,7 @@ func joinSwapShareAmountOut(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("500000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcJoinSwapShareAmountOut(
+	_,_,_, err := k.TransmitIbcJoinSwapShareAmountOut(
 		ctx,
 		owner,
 		connectionId,
@@ -556,7 +556,7 @@ func exitSwapShareAmountIn(t *testing.T, ctx sdk.Context, k *Keeper) {
 	shares, ok := sdk.NewIntFromString("10000000000000000")
 	require.True(t, ok)
 
-	_, err := k.TransmitIbcExitSwapShareAmountIn(
+	_,_,_, err := k.TransmitIbcExitSwapShareAmountIn(
 		ctx,
 		owner,
 		connectionId,
@@ -623,7 +623,7 @@ func lockTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	lockupPeriod := 1 * time.Hour
 	testCoins := lockTokensTestCoins()
 
-	_, err := k.TransmitIbcLockTokens(
+	_,_,_, err := k.TransmitIbcLockTokens(
 		ctx,
 		owner,
 		connectionId,
@@ -681,7 +681,7 @@ func testLockTokensTimeoutChecks(ctx sdk.Context, k *Keeper) func(t *testing.T) 
 func beginUnlocking(t *testing.T, ctx sdk.Context, k *Keeper) {
 	testCoins := lockTokensTestCoins()
 
-	_, err := k.TransmitIbcBeginUnlocking(
+	_,_,_, err := k.TransmitIbcBeginUnlocking(
 		ctx,
 		owner,
 		connectionId,
@@ -819,17 +819,14 @@ func icaTransferIbcTokensTestCoin() sdk.Coin {
 func icaTransferIbcTokens(t *testing.T, ctx sdk.Context, k *Keeper) {
 	testCoin := icaTransferIbcTokensTestCoin()
 
-	seq, err := k.TransmitIbcTransfer(
+	seq, _,_, err := k.TransmitICATransfer(
 		ctx,
 		owner,
-		connectionId,
-		timestamp,
-		transferPortId,
-		transferChannelId,
+		uint64(ctx.BlockTime().Add(time.Minute).UnixNano()),
 		testCoin,
 		owner, // token to be sent to owner, via IBC
 		transferTimeoutHeight,
-		uint64(time.Now().UnixNano())+transferTimeoutTimestamp,
+		uint64(ctx.BlockTime().Add(2*time.Minute).UnixNano()),
 	)
 	require.NoError(t, err)
 	require.NotZero(t, seq)

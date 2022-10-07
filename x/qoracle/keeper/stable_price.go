@@ -18,14 +18,14 @@ func (k Keeper) SetStablePrice(ctx sdk.Context, symbol string, price sdk.Dec) {
 
 	op := k.GetOraclePrices(ctx)
 	op.Prices = op.Prices.Add(sdk.NewDecCoinFromDec(symbol, price))
-	k.setOraclePrices(ctx, op)
+	k.SetOraclePrices(ctx, op)
 }
 
 // GetStablePrice get the stable denom for the symbol
 func (k Keeper) GetStablePrice(ctx sdk.Context, symbol string) (price sdk.Dec, found bool) {
 	denomMapping := k.GetDenomPriceMappings(ctx)
 	for _, d := range denomMapping {
-		if d.OracleDenom == symbol {
+		if d.Denom == symbol {
 			op := k.GetOraclePrices(ctx)
 			amount := op.Prices.AmountOf(d.OracleDenom)
 			if amount.IsZero() {

@@ -13,6 +13,8 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     SendToken {
         destination_local_zone_id: String,
+        receiver: String,
+        coin: Coin
     },
     SendTokenIbc {
         /// exisiting channel to send the tokens over
@@ -26,8 +28,8 @@ pub enum ExecuteMsg {
         // timeout: IbcTimeout,
     },
     Deposit {},
-    RegisterInterchainAccount {
-        connection_id: String,
+    RegisterIcaOnZone {
+        zone_id: String,
     },
     JoinPool {
         connection_id: String,

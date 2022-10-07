@@ -3,9 +3,9 @@ package types
 import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	proto "github.com/gogo/protobuf/proto"
-	gammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
-	lockuptypes "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/lockup"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
+	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
 )
 
 type ibcExchangeRequest interface {
@@ -41,6 +41,8 @@ type ibcExchangeResponse interface {
 }
 
 type AckExchange[REQ ibcExchangeRequest, RES ibcExchangeResponse] struct {
+	Channel  string
+	PortId   string
 	Sequence uint64
 	Error    string
 	Request  REQ

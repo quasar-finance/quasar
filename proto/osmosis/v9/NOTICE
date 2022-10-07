@@ -1,2 +1,0 @@
-Proto files taken from Osmosis repo: https://github.com/osmosis-labs/osmosis/tree/v9.0.0
-Necessary go files were also taken from the Osmosis repo, mostly for the sdk.Msg and gamm.PoolI interface implementations.

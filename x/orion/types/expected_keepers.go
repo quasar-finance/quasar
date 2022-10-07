@@ -7,9 +7,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -61,23 +61,23 @@ type QoracleKeeper interface {
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module
 type IntergammKeeper interface {
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
-	IntrRcvrs(ctx sdk.Context) (res []intergammtypes.IntermediateReceiver)
+	RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error
+	RegisterICAOnDenomNativeZone(ctx sdk.Context, denom, owner string) error
+	CompleteZoneInfoMap(ctx sdk.Context) (res map[string]intergammtypes.ZoneCompleteInfo)
+	QuasarDenomToNativeZoneIdMap(ctx sdk.Context) (res map[string]string)
 
 	IsICARegistered(ctx sdk.Context, connectionID, owner string) (string, bool)
+	IsICACreatedOnZoneId(ctx sdk.Context, zoneId, owner string) (string, bool)
+	IsICACreatedOnDenomNativeZone(ctx sdk.Context, denom, owner string) (string, bool)
 	GetAllConnections(ctx sdk.Context) (connections []connectiontypes.IdentifiedConnection)
 	GetChainID(ctx sdk.Context, connectionID string) (string, error)
 	GetConnectionId(ctx sdk.Context, inChainID string) (string, bool)
-	Send(ctx sdk.Context,
-		coin sdk.Coin,
-		destinationChain string,
-		owner string,
-		destinationAddress string) (uint64, error)
 
 	SendToken(ctx sdk.Context,
 		destination_local_zone_id string,
 		sender sdk.AccAddress,
 		receiver string,
-		coin sdk.Coin) (uint64, error)
+		coin sdk.Coin) (uint64, string, string, error)
 
 	TransmitIbcCreatePool(
 		ctx sdk.Context,
@@ -86,7 +86,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolParams *gammbalancer.PoolParams,
 		poolAssets []gammbalancer.PoolAsset,
-		futurePoolGovernor string) (uint64, error)
+		futurePoolGovernor string) (uint64, string, string, error)
 
 	TransmitIbcJoinPool(
 		ctx sdk.Context,
@@ -95,7 +95,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareOutAmount sdk.Int,
-		tokenInMaxs []sdk.Coin) (uint64, error)
+		tokenInMaxs []sdk.Coin) (uint64, string, string, error)
 
 	TransmitIbcExitPool(
 		ctx sdk.Context,
@@ -104,31 +104,16 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		poolId uint64,
 		shareInAmount sdk.Int,
-		tokenOutMins []sdk.Coin) (uint64, error)
+		tokenOutMins []sdk.Coin) (uint64, string, string, error)
 
-	TransmitIbcTransfer(
+	TransmitICATransfer(
 		ctx sdk.Context,
 		owner string,
-		connectionId string,
 		timeoutTimestamp uint64,
-		transferPort, transferChannel string,
 		token sdk.Coin,
-		receiver string,
+		finalReceiver string,
 		transferTimeoutHeight ibcclienttypes.Height,
-		transferTimeoutTimestamp uint64) (uint64, error)
-
-	TransmitForwardIbcTransfer(
-		ctx sdk.Context,
-		owner string,
-		connectionId string,
-		timeoutTimestamp uint64,
-		transferPort, transferChannel string,
-		token sdk.Coin,
-		fwdTransferPort, fwdTransferChannel string,
-		intermediateReceiver string,
-		receiver string,
-		transferTimeoutHeight ibcclienttypes.Height,
-		transferTimeoutTimestamp uint64) (uint64, error)
+		transferTimeoutTimestamp uint64) (uint64, string, string, error)
 
 	TransmitIbcLockTokens(
 		ctx sdk.Context,
@@ -137,7 +122,7 @@ type IntergammKeeper interface {
 		timeoutTimestamp uint64,
 		duration time.Duration,
 		coins sdk.Coins,
-	) (uint64, error)
+	) (uint64, string, string, error)
 }
 
 type EpochsKeeper interface {

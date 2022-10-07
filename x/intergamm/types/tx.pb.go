@@ -10,7 +10,6 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
-	_ "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -173,11 +172,10 @@ func (m *MsgTestScenarioResponse) GetExitCode() int64 {
 }
 
 type MsgSendToken struct {
-	Creator                string      `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty" yaml:"creator" json:"creator"`
-	DestinationLocalZoneId string      `protobuf:"bytes,2,opt,name=destinationLocalZoneId,proto3" json:"destinationLocalZoneId,omitempty" yaml:"destination_local_zone_id" json:"destination_local_zone_id"`
-	Sender                 string      `protobuf:"bytes,3,opt,name=sender,proto3" json:"sender,omitempty" yaml:"sender" json:"sender"`
-	Receiver               string      `protobuf:"bytes,4,opt,name=receiver,proto3" json:"receiver,omitempty" yaml:"receiver" json:"receiver"`
-	Coin                   *types.Coin `protobuf:"bytes,5,opt,name=coin,proto3" json:"coin,omitempty" yaml:"coin" json:"coin"`
+	FromAddress string     `protobuf:"bytes,1,opt,name=fromAddress,proto3" json:"fromAddress,omitempty"`
+	ToZoneId    string     `protobuf:"bytes,2,opt,name=toZoneId,proto3" json:"toZoneId,omitempty"`
+	ToAddress   string     `protobuf:"bytes,3,opt,name=toAddress,proto3" json:"toAddress,omitempty"`
+	Coin        types.Coin `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
 }
 
 func (m *MsgSendToken) Reset()         { *m = MsgSendToken{} }
@@ -213,43 +211,38 @@ func (m *MsgSendToken) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSendToken proto.InternalMessageInfo
 
-func (m *MsgSendToken) GetCreator() string {
+func (m *MsgSendToken) GetFromAddress() string {
 	if m != nil {
-		return m.Creator
+		return m.FromAddress
 	}
 	return ""
 }
 
-func (m *MsgSendToken) GetDestinationLocalZoneId() string {
+func (m *MsgSendToken) GetToZoneId() string {
 	if m != nil {
-		return m.DestinationLocalZoneId
+		return m.ToZoneId
 	}
 	return ""
 }
 
-func (m *MsgSendToken) GetSender() string {
+func (m *MsgSendToken) GetToAddress() string {
 	if m != nil {
-		return m.Sender
+		return m.ToAddress
 	}
 	return ""
 }
 
-func (m *MsgSendToken) GetReceiver() string {
-	if m != nil {
-		return m.Receiver
-	}
-	return ""
-}
-
-func (m *MsgSendToken) GetCoin() *types.Coin {
+func (m *MsgSendToken) GetCoin() types.Coin {
 	if m != nil {
 		return m.Coin
 	}
-	return nil
+	return types.Coin{}
 }
 
 type MsgSendTokenResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgSendTokenResponse) Reset()         { *m = MsgSendTokenResponse{} }
@@ -292,6 +285,19 @@ func (m *MsgSendTokenResponse) GetSeq() uint64 {
 	return 0
 }
 
+func (m *MsgSendTokenResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgSendTokenResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
+}
 type MsgRegisterInterchainAccount struct {
 	Creator      string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	ConnectionId string `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
@@ -465,7 +471,9 @@ func (m *MsgTransmitIbcJoinPool) GetTokenInMaxs() []types.Coin {
 }
 
 type MsgTransmitIbcJoinPoolResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcJoinPoolResponse) Reset()         { *m = MsgTransmitIbcJoinPoolResponse{} }
@@ -506,6 +514,20 @@ func (m *MsgTransmitIbcJoinPoolResponse) GetSeq() uint64 {
 		return m.Seq
 	}
 	return 0
+}
+
+func (m *MsgTransmitIbcJoinPoolResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcJoinPoolResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
 }
 
 type MsgTransmitIbcExitPool struct {
@@ -593,7 +615,9 @@ func (m *MsgTransmitIbcExitPool) GetTokenOutMins() []types.Coin {
 }
 
 type MsgTransmitIbcExitPoolResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcExitPoolResponse) Reset()         { *m = MsgTransmitIbcExitPoolResponse{} }
@@ -634,6 +658,20 @@ func (m *MsgTransmitIbcExitPoolResponse) GetSeq() uint64 {
 		return m.Seq
 	}
 	return 0
+}
+
+func (m *MsgTransmitIbcExitPoolResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcExitPoolResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
 }
 
 type MsgTransmitIbcLockTokens struct {
@@ -713,7 +751,9 @@ func (m *MsgTransmitIbcLockTokens) GetCoins() []types.Coin {
 }
 
 type MsgTransmitIbcLockTokensResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcLockTokensResponse) Reset()         { *m = MsgTransmitIbcLockTokensResponse{} }
@@ -754,6 +794,20 @@ func (m *MsgTransmitIbcLockTokensResponse) GetSeq() uint64 {
 		return m.Seq
 	}
 	return 0
+}
+
+func (m *MsgTransmitIbcLockTokensResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcLockTokensResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
 }
 
 type MsgTransmitIbcBeginUnlocking struct {
@@ -833,7 +887,9 @@ func (m *MsgTransmitIbcBeginUnlocking) GetCoins() []types.Coin {
 }
 
 type MsgTransmitIbcBeginUnlockingResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcBeginUnlockingResponse) Reset()         { *m = MsgTransmitIbcBeginUnlockingResponse{} }
@@ -874,6 +930,20 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) GetSeq() uint64 {
 		return m.Seq
 	}
 	return 0
+}
+
+func (m *MsgTransmitIbcBeginUnlockingResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcBeginUnlockingResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
 }
 
 type MsgTransmitIbcJoinSwapExternAmountIn struct {
@@ -961,7 +1031,9 @@ func (m *MsgTransmitIbcJoinSwapExternAmountIn) GetTokenIn() types.Coin {
 }
 
 type MsgTransmitIbcJoinSwapExternAmountInResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) Reset() {
@@ -1006,6 +1078,20 @@ func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) GetSeq() uint64 {
 		return m.Seq
 	}
 	return 0
+}
+
+func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
 }
 
 type MsgTransmitIbcExitSwapExternAmountOut struct {
@@ -1093,7 +1179,9 @@ func (m *MsgTransmitIbcExitSwapExternAmountOut) GetTokenOutMins() types.Coin {
 }
 
 type MsgTransmitIbcExitSwapExternAmountOutResponse struct {
-	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
 }
 
 func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) Reset() {
@@ -1140,6 +1228,443 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) GetSeq() uint64 {
 	return 0
 }
 
+func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
+}
+
+type MsgTransmitICATransfer struct {
+	IcaOwnerAddress string     `protobuf:"bytes,1,opt,name=icaOwnerAddress,proto3" json:"icaOwnerAddress,omitempty"`
+	ToAddress       string     `protobuf:"bytes,3,opt,name=toAddress,proto3" json:"toAddress,omitempty"`
+	Coin            types.Coin `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
+
+}
+
+func (m *MsgTransmitICATransfer) Reset()         { *m = MsgTransmitICATransfer{} }
+func (m *MsgTransmitICATransfer) String() string { return proto.CompactTextString(m) }
+func (*MsgTransmitICATransfer) ProtoMessage()    {}
+func (*MsgTransmitICATransfer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{19}
+}
+func (m *MsgTransmitICATransfer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransmitICATransfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransmitICATransfer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransmitICATransfer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransmitICATransfer.Merge(m, src)
+}
+func (m *MsgTransmitICATransfer) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransmitICATransfer) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransmitICATransfer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransmitICATransfer proto.InternalMessageInfo
+
+func (m *MsgTransmitICATransfer) GetIcaOwnerAddress() string {
+	if m != nil {
+		return m.IcaOwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransfer) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransfer) GetCoin() types.Coin {
+	if m != nil {
+		return m.Coin
+	}
+	return types.Coin{}
+}
+
+type MsgTransmitICATransferResponse struct {
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
+}
+
+func (m *MsgTransmitICATransferResponse) Reset()         { *m = MsgTransmitICATransferResponse{} }
+func (m *MsgTransmitICATransferResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgTransmitICATransferResponse) ProtoMessage()    {}
+func (*MsgTransmitICATransferResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{20}
+}
+func (m *MsgTransmitICATransferResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransmitICATransferResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransmitICATransferResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransmitICATransferResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransmitICATransferResponse.Merge(m, src)
+}
+func (m *MsgTransmitICATransferResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransmitICATransferResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransmitICATransferResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransmitICATransferResponse proto.InternalMessageInfo
+
+func (m *MsgTransmitICATransferResponse) GetSeq() uint64 {
+	if m != nil {
+		return m.Seq
+	}
+	return 0
+}
+
+func (m *MsgTransmitICATransferResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgTransmitICATransferResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
+
+}
+
+type MsgRegisterICAOnZone struct {
+	OwnerAddress string `protobuf:"bytes,1,opt,name=ownerAddress,proto3" json:"ownerAddress,omitempty"`
+	ZoneId       string `protobuf:"bytes,2,opt,name=zoneId,proto3" json:"zoneId,omitempty"`
+}
+
+func (m *MsgRegisterICAOnZone) Reset()         { *m = MsgRegisterICAOnZone{} }
+func (m *MsgRegisterICAOnZone) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnZone) ProtoMessage()    {}
+func (*MsgRegisterICAOnZone) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{21}
+}
+func (m *MsgRegisterICAOnZone) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnZone) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnZone.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnZone) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnZone.Merge(m, src)
+}
+func (m *MsgRegisterICAOnZone) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnZone) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnZone.DiscardUnknown(m)
+}
+func (*UnimplementedMsgServer) RegisterInterchainAccount(ctx context.Context, req *MsgRegisterInterchainAccount) (*MsgRegisterInterchainAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterInterchainAccount not implemented")
+}
+
+var xxx_messageInfo_MsgRegisterICAOnZone proto.InternalMessageInfo
+
+func (m *MsgRegisterICAOnZone) GetOwnerAddress() string {
+	if m != nil {
+		return m.OwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgRegisterICAOnZone) GetZoneId() string {
+	if m != nil {
+		return m.ZoneId
+	}
+	return ""
+}
+
+type MsgRegisterICAOnZoneResponse struct {
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Reset()         { *m = MsgRegisterICAOnZoneResponse{} }
+func (m *MsgRegisterICAOnZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnZoneResponse) ProtoMessage()    {}
+func (*MsgRegisterICAOnZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{22}
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnZoneResponse.Merge(m, src)
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnZoneResponse proto.InternalMessageInfo
+
+type MsgRegisterICAOnDenomNativeZone struct {
+	OwnerAddress string `protobuf:"bytes,1,opt,name=ownerAddress,proto3" json:"ownerAddress,omitempty"`
+	Denom        string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Reset()         { *m = MsgRegisterICAOnDenomNativeZone{} }
+func (m *MsgRegisterICAOnDenomNativeZone) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnDenomNativeZone) ProtoMessage()    {}
+func (*MsgRegisterICAOnDenomNativeZone) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{23}
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.Merge(m, src)
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnDenomNativeZone) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZone.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnDenomNativeZone proto.InternalMessageInfo
+
+func (m *MsgRegisterICAOnDenomNativeZone) GetOwnerAddress() string {
+	if m != nil {
+		return m.OwnerAddress
+	}
+	return ""
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) GetDenom() string {
+	if m != nil {
+		return m.Denom
+	}
+	return ""
+}
+
+type MsgRegisterICAOnDenomNativeZoneResponse struct {
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Reset() {
+	*m = MsgRegisterICAOnDenomNativeZoneResponse{}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterICAOnDenomNativeZoneResponse) ProtoMessage()    {}
+func (*MsgRegisterICAOnDenomNativeZoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{24}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.Merge(m, src)
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterICAOnDenomNativeZoneResponse proto.InternalMessageInfo
+
+type MsgSendTokenToICA struct {
+	FromAddress string     `protobuf:"bytes,1,opt,name=fromAddress,proto3" json:"fromAddress,omitempty"`
+	ToZoneId    string     `protobuf:"bytes,2,opt,name=toZoneId,proto3" json:"toZoneId,omitempty"`
+	Coin        types.Coin `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
+}
+
+func (m *MsgSendTokenToICA) Reset()         { *m = MsgSendTokenToICA{} }
+func (m *MsgSendTokenToICA) String() string { return proto.CompactTextString(m) }
+func (*MsgSendTokenToICA) ProtoMessage()    {}
+func (*MsgSendTokenToICA) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{25}
+}
+func (m *MsgSendTokenToICA) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSendTokenToICA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSendTokenToICA.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSendTokenToICA) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSendTokenToICA.Merge(m, src)
+}
+func (m *MsgSendTokenToICA) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSendTokenToICA) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSendTokenToICA.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSendTokenToICA proto.InternalMessageInfo
+
+func (m *MsgSendTokenToICA) GetFromAddress() string {
+	if m != nil {
+		return m.FromAddress
+	}
+	return ""
+}
+
+func (m *MsgSendTokenToICA) GetToZoneId() string {
+	if m != nil {
+		return m.ToZoneId
+	}
+	return ""
+}
+
+func (m *MsgSendTokenToICA) GetCoin() types.Coin {
+	if m != nil {
+		return m.Coin
+	}
+	return types.Coin{}
+}
+
+type MsgSendTokenToICAResponse struct {
+	Seq     uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
+	PortId  string `protobuf:"bytes,3,opt,name=portId,proto3" json:"portId,omitempty"`
+}
+
+func (m *MsgSendTokenToICAResponse) Reset()         { *m = MsgSendTokenToICAResponse{} }
+func (m *MsgSendTokenToICAResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSendTokenToICAResponse) ProtoMessage()    {}
+func (*MsgSendTokenToICAResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a78c651f644a1267, []int{26}
+}
+func (m *MsgSendTokenToICAResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSendTokenToICAResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSendTokenToICAResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSendTokenToICAResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSendTokenToICAResponse.Merge(m, src)
+}
+func (m *MsgSendTokenToICAResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSendTokenToICAResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSendTokenToICAResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSendTokenToICAResponse proto.InternalMessageInfo
+
+func (m *MsgSendTokenToICAResponse) GetSeq() uint64 {
+	if m != nil {
+		return m.Seq
+	}
+	return 0
+}
+
+func (m *MsgSendTokenToICAResponse) GetChannel() string {
+	if m != nil {
+		return m.Channel
+	}
+	return ""
+}
+
+func (m *MsgSendTokenToICAResponse) GetPortId() string {
+	if m != nil {
+		return m.PortId
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*MsgEmptyIbcResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgEmptyIbcResponse")
 	proto.RegisterType((*MsgTestScenario)(nil), "quasarlabs.quasarnode.intergamm.MsgTestScenario")
@@ -1160,80 +1685,94 @@ func init() {
 	proto.RegisterType((*MsgTransmitIbcJoinSwapExternAmountInResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcJoinSwapExternAmountInResponse")
 	proto.RegisterType((*MsgTransmitIbcExitSwapExternAmountOut)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcExitSwapExternAmountOut")
 	proto.RegisterType((*MsgTransmitIbcExitSwapExternAmountOutResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitIbcExitSwapExternAmountOutResponse")
+	proto.RegisterType((*MsgTransmitICATransfer)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitICATransfer")
+	proto.RegisterType((*MsgTransmitICATransferResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgTransmitICATransferResponse")
+	proto.RegisterType((*MsgRegisterICAOnZone)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnZone")
+	proto.RegisterType((*MsgRegisterICAOnZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnZoneResponse")
+	proto.RegisterType((*MsgRegisterICAOnDenomNativeZone)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnDenomNativeZone")
+	proto.RegisterType((*MsgRegisterICAOnDenomNativeZoneResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgRegisterICAOnDenomNativeZoneResponse")
+	proto.RegisterType((*MsgSendTokenToICA)(nil), "quasarlabs.quasarnode.intergamm.MsgSendTokenToICA")
+	proto.RegisterType((*MsgSendTokenToICAResponse)(nil), "quasarlabs.quasarnode.intergamm.MsgSendTokenToICAResponse")
 }
 
 func init() { proto.RegisterFile("intergamm/tx.proto", fileDescriptor_a78c651f644a1267) }
 
 var fileDescriptor_a78c651f644a1267 = []byte{
-	// 1082 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xdf, 0x6f, 0xdb, 0xd4,
-	0x17, 0xaf, 0x93, 0x34, 0xeb, 0xce, 0xfa, 0xdd, 0xf6, 0xf5, 0xb6, 0xce, 0xf3, 0x20, 0xce, 0xcc,
-	0x98, 0x2a, 0xd4, 0xda, 0xac, 0x30, 0x6d, 0x05, 0xa1, 0x91, 0x54, 0x01, 0x65, 0xaa, 0x29, 0x72,
-	0xcb, 0xcb, 0x84, 0x54, 0x39, 0xf6, 0x95, 0x7b, 0x69, 0x7c, 0x6f, 0xea, 0x7b, 0x53, 0xd2, 0x49,
-	0x3c, 0xc2, 0x2b, 0x43, 0x02, 0x89, 0x57, 0xfe, 0x0c, 0x24, 0xfe, 0x80, 0xbd, 0xb1, 0x47, 0x9e,
-	0x02, 0x6a, 0xdf, 0x78, 0x0c, 0xff, 0x00, 0xf2, 0xcf, 0xfc, 0x6a, 0xd2, 0x24, 0x9b, 0xa6, 0xf1,
-	0xe6, 0x73, 0xef, 0xf9, 0x7c, 0xce, 0xc9, 0xe7, 0x9c, 0x7b, 0xae, 0x1d, 0x10, 0x31, 0xe1, 0xc8,
-	0x77, 0x2d, 0xcf, 0xd3, 0x79, 0x4b, 0x6b, 0xf8, 0x94, 0x53, 0x51, 0x39, 0x68, 0x5a, 0xcc, 0xf2,
-	0xeb, 0x56, 0x8d, 0x69, 0xd1, 0x23, 0xa1, 0x0e, 0xd2, 0x52, 0x4f, 0xf9, 0xaa, 0x4b, 0x5d, 0x1a,
-	0xfa, 0xea, 0xc1, 0x53, 0x04, 0x93, 0x0b, 0x36, 0x65, 0x1e, 0x65, 0x7a, 0xcd, 0x62, 0x48, 0x3f,
-	0xbc, 0x5b, 0x43, 0xdc, 0xba, 0xab, 0xdb, 0x14, 0x93, 0x78, 0xbf, 0x18, 0x6e, 0x63, 0xa6, 0x1f,
-	0xae, 0xeb, 0x61, 0xc0, 0xc4, 0x27, 0x09, 0xac, 0x5e, 0x83, 0x2b, 0x06, 0x73, 0x2b, 0x5e, 0x83,
-	0x1f, 0x55, 0x6b, 0xb6, 0x89, 0x58, 0x83, 0x12, 0x86, 0xd4, 0x4f, 0xe1, 0x92, 0xc1, 0xdc, 0x1d,
-	0xc4, 0xf8, 0xb6, 0x8d, 0x88, 0xe5, 0x63, 0x2a, 0x4a, 0x70, 0xce, 0xf6, 0x91, 0xc5, 0xa9, 0x2f,
-	0x09, 0x45, 0x61, 0xf9, 0xbc, 0x99, 0x98, 0xa2, 0x0c, 0x0b, 0x2c, 0xf6, 0x92, 0x32, 0xe1, 0x56,
-	0x6a, 0xab, 0x06, 0x5c, 0x1f, 0x20, 0x4a, 0x62, 0x88, 0x4b, 0x90, 0xf7, 0x11, 0x6b, 0xd6, 0x79,
-	0xcc, 0x17, 0x5b, 0x01, 0x1d, 0x6a, 0x61, 0xbe, 0x41, 0x1d, 0x14, 0xd2, 0x65, 0xcd, 0xd4, 0x56,
-	0x9f, 0x66, 0x61, 0xd1, 0x60, 0xee, 0x36, 0x22, 0xce, 0x0e, 0xdd, 0x47, 0x44, 0xfc, 0x70, 0x20,
-	0xab, 0xf2, 0xad, 0x4e, 0x5b, 0x79, 0xf3, 0xc8, 0xf2, 0xea, 0x1f, 0xa8, 0xf1, 0x86, 0x5a, 0xfc,
-	0x8a, 0x51, 0xd2, 0x35, 0xbb, 0x89, 0x7f, 0x03, 0x4b, 0x0e, 0x62, 0x1c, 0x13, 0x8b, 0x63, 0x4a,
-	0x36, 0xa9, 0x6d, 0xd5, 0x1f, 0x53, 0x82, 0xaa, 0x4e, 0xf4, 0x33, 0xca, 0x95, 0x4e, 0x5b, 0x29,
-	0x45, 0x5c, 0x3d, 0x7e, 0xbb, 0xf5, 0xc0, 0x71, 0xf7, 0x09, 0x25, 0x68, 0x17, 0x3b, 0x09, 0xfb,
-	0x68, 0x07, 0x73, 0x44, 0x10, 0xf1, 0x3e, 0xe4, 0x19, 0x22, 0x0e, 0xf2, 0xa5, 0x6c, 0x18, 0x4e,
-	0xe9, 0xb4, 0x95, 0x9b, 0x51, 0xb8, 0x68, 0x3d, 0xe1, 0x8e, 0x2d, 0x33, 0x76, 0x17, 0x1f, 0xc2,
-	0x82, 0x8f, 0x6c, 0x84, 0x0f, 0x91, 0x2f, 0xe5, 0x42, 0xe8, 0x5b, 0x9d, 0xb6, 0xa2, 0x44, 0xd0,
-	0x64, 0x27, 0x01, 0xa7, 0xb6, 0x99, 0x82, 0xc4, 0x47, 0x90, 0x0b, 0xba, 0x44, 0x9a, 0x2f, 0x0a,
-	0xcb, 0x17, 0xd6, 0x6e, 0x68, 0x51, 0x1b, 0x69, 0x41, 0x1b, 0x69, 0x71, 0x8b, 0x68, 0x1b, 0x14,
-	0x93, 0xf2, 0xcd, 0x4e, 0x5b, 0xb9, 0x1e, 0xab, 0x49, 0x31, 0x49, 0xa5, 0x0c, 0x9e, 0xcd, 0x90,
-	0x43, 0x5d, 0x86, 0xab, 0xbd, 0x15, 0x49, 0xcb, 0x7b, 0x19, 0xb2, 0x0c, 0x1d, 0x84, 0x55, 0xc9,
-	0x99, 0xc1, 0xa3, 0xfa, 0x25, 0xbc, 0x61, 0x30, 0xd7, 0x44, 0x2e, 0x66, 0x1c, 0xf9, 0xd5, 0xa0,
-	0xb7, 0xed, 0x3d, 0x0b, 0x93, 0x92, 0x6d, 0xd3, 0x26, 0xe1, 0x63, 0x3a, 0x4c, 0x85, 0x45, 0x9b,
-	0x12, 0x82, 0xec, 0x40, 0xc2, 0xa4, 0x3c, 0x66, 0xdf, 0x9a, 0x7a, 0x07, 0x6e, 0x8f, 0x63, 0x4f,
-	0x5b, 0xfb, 0xdb, 0x0c, 0x2c, 0x05, 0x2d, 0xe9, 0x5b, 0x84, 0x79, 0x98, 0x57, 0x6b, 0xf6, 0x23,
-	0x8a, 0xc9, 0xe7, 0x94, 0xd6, 0x5f, 0x2c, 0x01, 0xf1, 0x1d, 0xb8, 0xcc, 0xb1, 0x87, 0x68, 0x93,
-	0xef, 0x60, 0x0f, 0x31, 0x6e, 0x79, 0x8d, 0xb0, 0xb0, 0x39, 0x73, 0x68, 0x3d, 0xe8, 0xfd, 0x06,
-	0xa5, 0xf5, 0xaa, 0x13, 0xd6, 0x2f, 0x67, 0xc6, 0x96, 0x78, 0x07, 0x2e, 0xb2, 0x3d, 0xcb, 0x47,
-	0x5b, 0x4d, 0x5e, 0xf2, 0x82, 0xb4, 0xc3, 0x12, 0x65, 0xcd, 0x81, 0x55, 0xb1, 0x04, 0x17, 0x78,
-	0xa0, 0x76, 0x95, 0x18, 0x56, 0x8b, 0x49, 0xf9, 0x62, 0x76, 0x7c, 0x1d, 0x73, 0xcf, 0xda, 0xca,
-	0x9c, 0xd9, 0x8b, 0x51, 0xd7, 0xa0, 0x70, 0xba, 0x0c, 0x63, 0x2a, 0x38, 0xac, 0x5d, 0xa5, 0x85,
-	0xf9, 0x6b, 0xa2, 0xdd, 0x6d, 0xf8, 0x5f, 0xa8, 0x52, 0x95, 0xf4, 0x49, 0xd7, 0xbf, 0x28, 0x6e,
-	0xc0, 0x62, 0xa8, 0xc2, 0x56, 0x93, 0x1b, 0x98, 0x4c, 0x2c, 0x5d, 0x1f, 0x68, 0x58, 0xbb, 0x44,
-	0x86, 0x31, 0xda, 0x7d, 0x97, 0x01, 0xa9, 0x1f, 0xb4, 0x49, 0xed, 0xfd, 0xf0, 0xcc, 0xb0, 0x57,
-	0xa8, 0x5e, 0x15, 0x16, 0x9c, 0xa6, 0x1f, 0xce, 0xa2, 0x48, 0xbf, 0xf2, 0xea, 0xdf, 0x6d, 0x45,
-	0x4c, 0xd6, 0x56, 0xa8, 0x87, 0x39, 0x0a, 0xae, 0x83, 0x4e, 0x5b, 0xb9, 0x14, 0xcf, 0xbe, 0x78,
-	0x4f, 0xfd, 0xf9, 0x4f, 0x45, 0x30, 0x53, 0xb8, 0x78, 0x0f, 0xe6, 0x83, 0x09, 0xc0, 0xa4, 0xf9,
-	0xc9, 0x34, 0x8c, 0xbc, 0xd5, 0xf7, 0xa1, 0x38, 0x4a, 0x87, 0x31, 0xf2, 0xfd, 0x2e, 0x84, 0xd3,
-	0xa3, 0x07, 0x56, 0x46, 0x2e, 0x26, 0x5f, 0x90, 0x3a, 0xb5, 0xf7, 0x31, 0x71, 0x5f, 0xa1, 0x84,
-	0x17, 0x21, 0x83, 0x93, 0xe6, 0xcb, 0x60, 0x67, 0x56, 0x1d, 0x1e, 0x84, 0x03, 0x6b, 0xe4, 0x0f,
-	0x1a, 0xa3, 0xc5, 0x0f, 0x99, 0x41, 0x68, 0x70, 0x76, 0xb7, 0xbf, 0xb6, 0x1a, 0x95, 0x16, 0x47,
-	0x7e, 0xdc, 0xea, 0x55, 0xf2, 0x1a, 0x1c, 0xca, 0x15, 0xf8, 0x7f, 0x32, 0xba, 0x0c, 0xdc, 0x7f,
-	0x30, 0x87, 0x37, 0xc4, 0x75, 0x38, 0x17, 0x8f, 0x28, 0x29, 0x7f, 0xd6, 0xd5, 0x14, 0x69, 0x99,
-	0xf8, 0xab, 0x1f, 0xc3, 0xca, 0x24, 0x92, 0x8c, 0x51, 0xf5, 0xc7, 0x0c, 0xbc, 0x3d, 0x7c, 0xaa,
-	0x07, 0x29, 0xb6, 0x9a, 0xfc, 0x3f, 0x3c, 0xeb, 0x84, 0xe9, 0x67, 0x5d, 0x09, 0x56, 0x27, 0x52,
-	0x65, 0xb4, 0xb2, 0x6b, 0xff, 0x00, 0x64, 0x0d, 0xe6, 0x8a, 0x4f, 0x60, 0xb1, 0xef, 0x95, 0xf2,
-	0x5d, 0xed, 0x8c, 0xd7, 0x5e, 0x6d, 0xe0, 0xdd, 0x51, 0x7e, 0x30, 0x2d, 0x22, 0xcd, 0xea, 0x7b,
-	0x01, 0xae, 0x9c, 0x76, 0xe7, 0xdf, 0x9f, 0x88, 0x71, 0x18, 0x28, 0x3f, 0x9c, 0x11, 0x38, 0x2a,
-	0xa3, 0xf4, 0x26, 0x9d, 0x36, 0xa3, 0x04, 0x38, 0x75, 0x46, 0x43, 0x97, 0xd6, 0x4f, 0x02, 0x5c,
-	0x3b, 0xfd, 0x7e, 0x5a, 0x9f, 0x92, 0xba, 0x0b, 0x95, 0x4b, 0x33, 0x43, 0xd3, 0xbc, 0x7e, 0x11,
-	0xe0, 0xc6, 0xe8, 0xc1, 0xff, 0xd1, 0x94, 0x01, 0xfa, 0xe1, 0x72, 0xe5, 0x85, 0xe0, 0x69, 0x8e,
-	0xbf, 0x0a, 0x70, 0xeb, 0xec, 0x81, 0x5c, 0x99, 0xa1, 0x69, 0x86, 0x69, 0x64, 0xe3, 0xa5, 0xd0,
-	0xa4, 0xb9, 0xff, 0x26, 0x80, 0x3a, 0xc1, 0xd8, 0xfb, 0x64, 0x86, 0xfe, 0x3a, 0x85, 0x47, 0xfe,
-	0xec, 0xe5, 0xf0, 0xa4, 0xe9, 0x1f, 0xc0, 0xf9, 0xee, 0x07, 0xe1, 0xea, 0x24, 0xe4, 0xa9, 0xbb,
-	0x7c, 0x6f, 0x2a, 0xf7, 0xbe, 0x8e, 0x1c, 0xfd, 0x21, 0x33, 0x51, 0x47, 0x8e, 0x84, 0x4f, 0xd6,
-	0x91, 0x67, 0x7e, 0xe8, 0x94, 0x37, 0x9f, 0x1d, 0x17, 0x84, 0xe7, 0xc7, 0x05, 0xe1, 0xaf, 0xe3,
-	0x82, 0xf0, 0xf4, 0xa4, 0x30, 0xf7, 0xfc, 0xa4, 0x30, 0xf7, 0xc7, 0x49, 0x61, 0xee, 0xf1, 0x9a,
-	0x8b, 0xf9, 0x5e, 0xb3, 0xa6, 0xd9, 0xd4, 0xd3, 0xbb, 0xa1, 0xf4, 0x6e, 0x28, 0xbd, 0xa5, 0xf7,
-	0xfc, 0x49, 0x71, 0xd4, 0x40, 0xac, 0x96, 0x0f, 0xff, 0x2f, 0x78, 0xef, 0xdf, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0x26, 0xa2, 0xb1, 0x9f, 0xbe, 0x10, 0x00, 0x00,
+	// 1174 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x41, 0x6f, 0x1b, 0x45,
+	0x14, 0xce, 0xd8, 0x4e, 0xda, 0xbc, 0x84, 0xa4, 0xd9, 0xa6, 0xc5, 0x59, 0x45, 0x76, 0x58, 0x95,
+	0x12, 0x50, 0x62, 0xd3, 0x54, 0x15, 0xb4, 0x52, 0x05, 0x8e, 0x09, 0xb0, 0xa8, 0xae, 0x91, 0x13,
+	0x2e, 0x01, 0x09, 0xad, 0x77, 0x27, 0x9b, 0x21, 0xde, 0x19, 0x67, 0x67, 0xdc, 0x3a, 0x3d, 0x71,
+	0xa1, 0x12, 0x27, 0x40, 0xa2, 0x12, 0x17, 0x84, 0xb8, 0xf2, 0x0f, 0x90, 0xf8, 0x01, 0xbd, 0xd1,
+	0x23, 0xa7, 0x80, 0x92, 0x1b, 0x47, 0x7e, 0x01, 0xda, 0xf5, 0xee, 0xda, 0xeb, 0x75, 0x92, 0x5d,
+	0xc7, 0x54, 0xe5, 0xb6, 0xef, 0xed, 0xbc, 0x6f, 0xbe, 0xf9, 0xde, 0xec, 0x9b, 0x37, 0x0b, 0x12,
+	0xa1, 0x02, 0xdb, 0xa6, 0x66, 0x59, 0x45, 0xd1, 0x2e, 0x34, 0x6d, 0x26, 0x98, 0x94, 0xdf, 0x6f,
+	0x69, 0x5c, 0xb3, 0x1b, 0x5a, 0x9d, 0x17, 0x3a, 0x8f, 0x94, 0x19, 0xb8, 0x10, 0x8c, 0x94, 0x73,
+	0x3a, 0xe3, 0x16, 0xe3, 0xc5, 0xba, 0xc6, 0x71, 0xf1, 0xc1, 0x8d, 0x3a, 0x16, 0xda, 0x8d, 0xa2,
+	0xce, 0x08, 0xed, 0x00, 0xc8, 0xf3, 0x26, 0x33, 0x99, 0xfb, 0x58, 0x74, 0x9e, 0x3a, 0x5e, 0xe5,
+	0x0a, 0x5c, 0xae, 0x70, 0x73, 0xc3, 0x6a, 0x8a, 0x03, 0xb5, 0xae, 0xd7, 0x30, 0x6f, 0x32, 0xca,
+	0xb1, 0xf2, 0x01, 0xcc, 0x56, 0xb8, 0xb9, 0x85, 0xb9, 0xd8, 0xd4, 0x31, 0xd5, 0x6c, 0xc2, 0xa4,
+	0x2c, 0x5c, 0xd0, 0x6d, 0xac, 0x09, 0x66, 0x67, 0xd1, 0x12, 0x5a, 0x9e, 0xac, 0xf9, 0xa6, 0x24,
+	0xc3, 0x45, 0xee, 0x8d, 0xca, 0xa6, 0xdc, 0x57, 0x81, 0xad, 0x54, 0xe0, 0xe5, 0x3e, 0x20, 0x7f,
+	0x0e, 0xe9, 0x2a, 0x4c, 0xd8, 0x98, 0xb7, 0x1a, 0xc2, 0xc3, 0xf3, 0x2c, 0x07, 0x0e, 0xb7, 0x89,
+	0x28, 0x33, 0x03, 0xbb, 0x70, 0xe9, 0x5a, 0x60, 0x2b, 0x3f, 0x21, 0x98, 0xae, 0x70, 0x73, 0x13,
+	0x53, 0x63, 0x8b, 0xed, 0x61, 0x2a, 0x2d, 0xc1, 0xd4, 0x8e, 0xcd, 0xac, 0x92, 0x61, 0xd8, 0x98,
+	0x73, 0x0f, 0xa9, 0xd7, 0xe5, 0xc0, 0x09, 0xb6, 0xcd, 0x28, 0x56, 0x0d, 0x9f, 0x9d, 0x6f, 0x4b,
+	0x8b, 0x30, 0x29, 0x98, 0x1f, 0x9b, 0x76, 0x5f, 0x76, 0x1d, 0xd2, 0x4d, 0xc8, 0x38, 0xfa, 0x65,
+	0x33, 0x4b, 0x68, 0x79, 0x6a, 0x6d, 0xa1, 0xd0, 0x11, 0xb8, 0xe0, 0x08, 0x5c, 0xf0, 0x04, 0x2e,
+	0x94, 0x19, 0xa1, 0xeb, 0x99, 0xa7, 0x87, 0xf9, 0xb1, 0x9a, 0x3b, 0x58, 0xd9, 0x86, 0xf9, 0x5e,
+	0x82, 0xc1, 0x6a, 0x2f, 0x41, 0x9a, 0xe3, 0x7d, 0x97, 0x60, 0xa6, 0xe6, 0x3c, 0xba, 0x82, 0xee,
+	0x6a, 0x94, 0xe2, 0x86, 0xc7, 0xcb, 0x37, 0x1d, 0x65, 0x9a, 0xcc, 0x16, 0xaa, 0xe1, 0x71, 0xf2,
+	0x2c, 0xe5, 0x33, 0x58, 0xac, 0x70, 0xb3, 0x86, 0x4d, 0xc2, 0x05, 0xb6, 0x55, 0x27, 0xf5, 0xfa,
+	0xae, 0x46, 0x68, 0x49, 0xd7, 0x59, 0x8b, 0x8a, 0x53, 0x52, 0xa4, 0xc0, 0xb4, 0xce, 0x28, 0xc5,
+	0xba, 0x20, 0x8c, 0x06, 0x42, 0x84, 0x7c, 0xca, 0x75, 0xb8, 0x76, 0x1a, 0x7a, 0xb0, 0x37, 0xbe,
+	0x4a, 0xc1, 0x55, 0x27, 0xa7, 0xb6, 0x46, 0xb9, 0x45, 0x84, 0x5a, 0xd7, 0x3f, 0x62, 0x84, 0x7e,
+	0xcc, 0x58, 0xe3, 0x7c, 0x04, 0xa4, 0x37, 0xe0, 0x92, 0x20, 0x16, 0x66, 0x2d, 0xb1, 0x45, 0x2c,
+	0xcc, 0x85, 0x66, 0x35, 0x5d, 0x01, 0x32, 0xb5, 0x88, 0xbf, 0x23, 0x11, 0x6b, 0xa8, 0x86, 0x9b,
+	0x9d, 0x4c, 0xcd, 0xb3, 0xa4, 0xeb, 0x30, 0xc3, 0x77, 0x35, 0x1b, 0x57, 0x5b, 0xa2, 0x64, 0x39,
+	0xb4, 0xb3, 0xe3, 0xee, 0x16, 0xea, 0xf3, 0x4a, 0x25, 0x98, 0x12, 0x4e, 0x7e, 0x54, 0x5a, 0xd1,
+	0xda, 0x3c, 0x3b, 0xb1, 0x94, 0x8e, 0x93, 0xe2, 0xde, 0x18, 0xc5, 0x80, 0xdc, 0x60, 0x19, 0x46,
+	0x9a, 0xf3, 0xa8, 0xda, 0x1b, 0x6d, 0x22, 0x5e, 0x10, 0xb5, 0xaf, 0xc1, 0x4b, 0xae, 0xae, 0x2a,
+	0x0d, 0x89, 0x1d, 0x76, 0x4a, 0x65, 0x98, 0x76, 0x75, 0xab, 0xb6, 0x44, 0x85, 0xd0, 0xd8, 0x62,
+	0x87, 0x82, 0xa2, 0x6a, 0xfb, 0x32, 0x8c, 0x54, 0xed, 0xc7, 0x29, 0xc8, 0x86, 0xa7, 0xb9, 0xc7,
+	0xf4, 0x3d, 0xf7, 0x4b, 0xe6, 0xcf, 0x51, 0x6f, 0x15, 0x2e, 0x1a, 0x2d, 0x5b, 0x73, 0x22, 0x3b,
+	0x8a, 0xaf, 0xaf, 0xfe, 0x7d, 0x98, 0x97, 0x7c, 0xdf, 0x0a, 0xb3, 0x88, 0xc0, 0x4e, 0xcd, 0xfe,
+	0xe7, 0x30, 0x3f, 0x7b, 0xa0, 0x59, 0x8d, 0x3b, 0x8a, 0xff, 0x4e, 0xf9, 0xe1, 0xcf, 0x3c, 0xaa,
+	0x05, 0xe1, 0xd2, 0x2d, 0x18, 0x77, 0xea, 0x12, 0xcf, 0x8e, 0xc7, 0x53, 0xbd, 0x33, 0x5a, 0xd9,
+	0x81, 0xa5, 0x93, 0x74, 0x18, 0xa9, 0xe0, 0xbf, 0x23, 0xb7, 0xa6, 0xf5, 0x4c, 0xb4, 0x8e, 0x4d,
+	0x42, 0x3f, 0xa1, 0x0d, 0xa6, 0xef, 0x11, 0x6a, 0x3e, 0x47, 0xd1, 0x67, 0x20, 0x45, 0xfc, 0x0d,
+	0x9e, 0x22, 0xc6, 0xb0, 0xca, 0x7d, 0xe1, 0x96, 0xd1, 0x13, 0x17, 0x34, 0x52, 0xf5, 0xbe, 0x4b,
+	0xf5, 0x4f, 0xe6, 0xd4, 0xa0, 0xcd, 0x87, 0x5a, 0x73, 0xa3, 0x2d, 0xb0, 0xed, 0x7d, 0x80, 0x2a,
+	0x7d, 0x01, 0x4a, 0xc5, 0x0a, 0xcc, 0xf9, 0x25, 0xb8, 0x42, 0xc2, 0xe5, 0x22, 0xfa, 0x42, 0xba,
+	0x0d, 0x17, 0xbc, 0x52, 0x9b, 0x9d, 0x88, 0x77, 0xfa, 0xfa, 0xe3, 0x15, 0x1b, 0x56, 0xe2, 0x48,
+	0x32, 0xd2, 0x3c, 0x7c, 0x9f, 0x82, 0x57, 0xa3, 0xd5, 0xa9, 0x7f, 0xd2, 0x6a, 0x4b, 0xfc, 0x8f,
+	0x6b, 0x36, 0x4a, 0x5e, 0xb3, 0x39, 0xac, 0xc6, 0x52, 0x65, 0xa4, 0xb9, 0x78, 0x82, 0xc2, 0x07,
+	0x66, 0xb9, 0xe4, 0x3e, 0xee, 0x60, 0x5b, 0x5a, 0x86, 0x59, 0xa2, 0x6b, 0xd5, 0x87, 0x14, 0xdb,
+	0xe1, 0x86, 0xb1, 0xdf, 0xfd, 0x5f, 0x34, 0x86, 0x7d, 0x07, 0x58, 0x97, 0xd6, 0x48, 0x57, 0x5f,
+	0x73, 0xdb, 0xcf, 0xa0, 0x89, 0x2b, 0x97, 0xaa, 0xd4, 0xe9, 0x75, 0x9d, 0xdd, 0xc5, 0xa2, 0xeb,
+	0x0e, 0xf9, 0x1c, 0xcc, 0x47, 0xbd, 0x7d, 0xb2, 0x67, 0x29, 0xb9, 0x70, 0xdb, 0xe9, 0x63, 0x06,
+	0x0d, 0xe1, 0xa7, 0x90, 0xef, 0x7f, 0xff, 0x1e, 0xa6, 0xcc, 0xba, 0xaf, 0x09, 0xf2, 0x00, 0xc7,
+	0x9e, 0x7e, 0x1e, 0xc6, 0x0d, 0x27, 0xcc, 0x9b, 0xbd, 0x63, 0x28, 0xaf, 0xc3, 0x6b, 0x67, 0x80,
+	0x07, 0x3c, 0x1e, 0x23, 0x98, 0xeb, 0xed, 0xbd, 0xb7, 0x98, 0x5a, 0x2e, 0x9d, 0xf3, 0x86, 0xe0,
+	0xa7, 0x3a, 0x9d, 0x24, 0xd5, 0x9f, 0xc3, 0x42, 0x84, 0xc7, 0x28, 0xb3, 0xbc, 0xf6, 0xe3, 0x0c,
+	0xa4, 0x2b, 0xdc, 0x94, 0x1e, 0xc1, 0x74, 0xe8, 0x8e, 0xf6, 0x66, 0xe1, 0x8c, 0x5b, 0x62, 0xa1,
+	0xef, 0x32, 0x26, 0xbf, 0x9d, 0x34, 0x22, 0x58, 0xc7, 0x37, 0x08, 0x2e, 0x0f, 0xba, 0x03, 0xbc,
+	0x15, 0x0b, 0x31, 0x1a, 0x28, 0xbf, 0x33, 0x64, 0xe0, 0x49, 0x8c, 0x82, 0x3e, 0x39, 0x29, 0x23,
+	0x3f, 0x30, 0x31, 0xa3, 0x48, 0x4b, 0xfa, 0x04, 0xc1, 0x95, 0xc1, 0xbd, 0xe4, 0xed, 0x84, 0xd0,
+	0xdd, 0x50, 0xb9, 0x34, 0x74, 0x68, 0xc0, 0xeb, 0x67, 0x04, 0x0b, 0x27, 0xb7, 0x5c, 0x77, 0x13,
+	0x4e, 0x10, 0x0e, 0x97, 0x37, 0xce, 0x15, 0x1e, 0x70, 0xfc, 0x15, 0xc1, 0x2b, 0x67, 0x37, 0x36,
+	0x1b, 0x43, 0x6c, 0x9a, 0x28, 0x8c, 0x5c, 0x19, 0x09, 0x4c, 0xc0, 0xfd, 0x37, 0x04, 0x4a, 0x8c,
+	0x66, 0xe0, 0xfd, 0x21, 0xf6, 0xd7, 0x00, 0x1c, 0xf9, 0xfe, 0x68, 0x70, 0x02, 0xfa, 0xfb, 0x30,
+	0xd9, 0xfd, 0xc3, 0xb2, 0x1a, 0x07, 0x3c, 0x18, 0x2e, 0xdf, 0x4a, 0x34, 0x7c, 0xf0, 0xb7, 0xdb,
+	0x73, 0x64, 0x27, 0xfb, 0x76, 0xbb, 0x81, 0x09, 0xbf, 0xdd, 0x01, 0xa7, 0xf1, 0xd7, 0x08, 0xe6,
+	0xa2, 0xe7, 0x68, 0xac, 0xe5, 0x45, 0xc2, 0xe4, 0xbb, 0x43, 0x85, 0x05, 0x5c, 0x7e, 0x41, 0xb0,
+	0x78, 0xea, 0xf9, 0xfa, 0x6e, 0x62, 0xfc, 0x3e, 0x04, 0xf9, 0xc3, 0xf3, 0x22, 0x04, 0x64, 0xbf,
+	0x44, 0x30, 0xd3, 0x77, 0x06, 0xaf, 0x25, 0xda, 0x14, 0x6e, 0x8c, 0x7c, 0x27, 0x79, 0x8c, 0x4f,
+	0x61, 0xfd, 0xde, 0xd3, 0xa3, 0x1c, 0x7a, 0x76, 0x94, 0x43, 0x7f, 0x1d, 0xe5, 0xd0, 0xb7, 0xc7,
+	0xb9, 0xb1, 0x67, 0xc7, 0xb9, 0xb1, 0x3f, 0x8e, 0x73, 0x63, 0xdb, 0x6b, 0x26, 0x11, 0xbb, 0xad,
+	0x7a, 0x41, 0x67, 0x56, 0xb1, 0x8b, 0x5f, 0xec, 0xe2, 0x17, 0xdb, 0xc5, 0x9e, 0xbf, 0xaf, 0x07,
+	0x4d, 0xcc, 0xeb, 0x13, 0xee, 0xaf, 0xd2, 0x9b, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0xde, 0x53,
+	0xa6, 0x95, 0x97, 0x15, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1256,7 +1795,10 @@ type MsgClient interface {
 	TransmitIbcJoinSwapExternAmountIn(ctx context.Context, in *MsgTransmitIbcJoinSwapExternAmountIn, opts ...grpc.CallOption) (*MsgTransmitIbcJoinSwapExternAmountInResponse, error)
 	TransmitIbcExitSwapExternAmountOut(ctx context.Context, in *MsgTransmitIbcExitSwapExternAmountOut, opts ...grpc.CallOption) (*MsgTransmitIbcExitSwapExternAmountOutResponse, error)
 	SendToken(ctx context.Context, in *MsgSendToken, opts ...grpc.CallOption) (*MsgSendTokenResponse, error)
-	RegisterInterchainAccount(ctx context.Context, in *MsgRegisterInterchainAccount, opts ...grpc.CallOption) (*MsgRegisterInterchainAccountResponse, error)
+	TransmitICATransfer(ctx context.Context, in *MsgTransmitICATransfer, opts ...grpc.CallOption) (*MsgTransmitICATransferResponse, error)
+	RegisterICAOnZone(ctx context.Context, in *MsgRegisterICAOnZone, opts ...grpc.CallOption) (*MsgRegisterICAOnZoneResponse, error)
+	RegisterICAOnDenomNativeZone(ctx context.Context, in *MsgRegisterICAOnDenomNativeZone, opts ...grpc.CallOption) (*MsgRegisterICAOnDenomNativeZoneResponse, error)
+	SendTokenToICA(ctx context.Context, in *MsgSendTokenToICA, opts ...grpc.CallOption) (*MsgSendTokenToICAResponse, error)
 }
 
 type msgClient struct {
@@ -1339,9 +1881,36 @@ func (c *msgClient) SendToken(ctx context.Context, in *MsgSendToken, opts ...grp
 	return out, nil
 }
 
-func (c *msgClient) RegisterInterchainAccount(ctx context.Context, in *MsgRegisterInterchainAccount, opts ...grpc.CallOption) (*MsgRegisterInterchainAccountResponse, error) {
-	out := new(MsgRegisterInterchainAccountResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/RegisterInterchainAccount", in, out, opts...)
+func (c *msgClient) TransmitICATransfer(ctx context.Context, in *MsgTransmitICATransfer, opts ...grpc.CallOption) (*MsgTransmitICATransferResponse, error) {
+	out := new(MsgTransmitICATransferResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/TransmitICATransfer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) RegisterICAOnZone(ctx context.Context, in *MsgRegisterICAOnZone, opts ...grpc.CallOption) (*MsgRegisterICAOnZoneResponse, error) {
+	out := new(MsgRegisterICAOnZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) RegisterICAOnDenomNativeZone(ctx context.Context, in *MsgRegisterICAOnDenomNativeZone, opts ...grpc.CallOption) (*MsgRegisterICAOnDenomNativeZoneResponse, error) {
+	out := new(MsgRegisterICAOnDenomNativeZoneResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnDenomNativeZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) SendTokenToICA(ctx context.Context, in *MsgSendTokenToICA, opts ...grpc.CallOption) (*MsgSendTokenToICAResponse, error) {
+	out := new(MsgSendTokenToICAResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.intergamm.Msg/SendTokenToICA", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1358,7 +1927,10 @@ type MsgServer interface {
 	TransmitIbcJoinSwapExternAmountIn(context.Context, *MsgTransmitIbcJoinSwapExternAmountIn) (*MsgTransmitIbcJoinSwapExternAmountInResponse, error)
 	TransmitIbcExitSwapExternAmountOut(context.Context, *MsgTransmitIbcExitSwapExternAmountOut) (*MsgTransmitIbcExitSwapExternAmountOutResponse, error)
 	SendToken(context.Context, *MsgSendToken) (*MsgSendTokenResponse, error)
-	RegisterInterchainAccount(context.Context, *MsgRegisterInterchainAccount) (*MsgRegisterInterchainAccountResponse, error)
+	TransmitICATransfer(context.Context, *MsgTransmitICATransfer) (*MsgTransmitICATransferResponse, error)
+	RegisterICAOnZone(context.Context, *MsgRegisterICAOnZone) (*MsgRegisterICAOnZoneResponse, error)
+	RegisterICAOnDenomNativeZone(context.Context, *MsgRegisterICAOnDenomNativeZone) (*MsgRegisterICAOnDenomNativeZoneResponse, error)
+	SendTokenToICA(context.Context, *MsgSendTokenToICA) (*MsgSendTokenToICAResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -1389,8 +1961,17 @@ func (*UnimplementedMsgServer) TransmitIbcExitSwapExternAmountOut(ctx context.Co
 func (*UnimplementedMsgServer) SendToken(ctx context.Context, req *MsgSendToken) (*MsgSendTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendToken not implemented")
 }
-func (*UnimplementedMsgServer) RegisterInterchainAccount(ctx context.Context, req *MsgRegisterInterchainAccount) (*MsgRegisterInterchainAccountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterInterchainAccount not implemented")
+func (*UnimplementedMsgServer) TransmitICATransfer(ctx context.Context, req *MsgTransmitICATransfer) (*MsgTransmitICATransferResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransmitICATransfer not implemented")
+}
+func (*UnimplementedMsgServer) RegisterICAOnZone(ctx context.Context, req *MsgRegisterICAOnZone) (*MsgRegisterICAOnZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterICAOnZone not implemented")
+}
+func (*UnimplementedMsgServer) RegisterICAOnDenomNativeZone(ctx context.Context, req *MsgRegisterICAOnDenomNativeZone) (*MsgRegisterICAOnDenomNativeZoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterICAOnDenomNativeZone not implemented")
+}
+func (*UnimplementedMsgServer) SendTokenToICA(ctx context.Context, req *MsgSendTokenToICA) (*MsgSendTokenToICAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendTokenToICA not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -1541,20 +2122,74 @@ func _Msg_SendToken_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_RegisterInterchainAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgRegisterInterchainAccount)
+func _Msg_TransmitICATransfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgTransmitICATransfer)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).RegisterInterchainAccount(ctx, in)
+		return srv.(MsgServer).TransmitICATransfer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/RegisterInterchainAccount",
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/TransmitICATransfer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).RegisterInterchainAccount(ctx, req.(*MsgRegisterInterchainAccount))
+		return srv.(MsgServer).TransmitICATransfer(ctx, req.(*MsgTransmitICATransfer))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_RegisterICAOnZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterICAOnZone)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterICAOnZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterICAOnZone(ctx, req.(*MsgRegisterICAOnZone))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_RegisterICAOnDenomNativeZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterICAOnDenomNativeZone)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterICAOnDenomNativeZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/RegisterICAOnDenomNativeZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterICAOnDenomNativeZone(ctx, req.(*MsgRegisterICAOnDenomNativeZone))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_SendTokenToICA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSendTokenToICA)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SendTokenToICA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.intergamm.Msg/SendTokenToICA",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SendTokenToICA(ctx, req.(*MsgSendTokenToICA))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1596,8 +2231,20 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_SendToken_Handler,
 		},
 		{
-			MethodName: "RegisterInterchainAccount",
-			Handler:    _Msg_RegisterInterchainAccount_Handler,
+			MethodName: "TransmitICATransfer",
+			Handler:    _Msg_TransmitICATransfer_Handler,
+		},
+		{
+			MethodName: "RegisterICAOnZone",
+			Handler:    _Msg_RegisterICAOnZone_Handler,
+		},
+		{
+			MethodName: "RegisterICAOnDenomNativeZone",
+			Handler:    _Msg_RegisterICAOnDenomNativeZone_Handler,
+		},
+		{
+			MethodName: "SendTokenToICA",
+			Handler:    _Msg_SendTokenToICA_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1719,43 +2366,34 @@ func (m *MsgSendToken) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Coin != nil {
-		{
-			size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintTx(dAtA, i, uint64(size))
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x2a
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
 	}
-	if len(m.Receiver) > 0 {
-		i -= len(m.Receiver)
-		copy(dAtA[i:], m.Receiver)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Receiver)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Sender) > 0 {
-		i -= len(m.Sender)
-		copy(dAtA[i:], m.Sender)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Sender)))
+	i--
+	dAtA[i] = 0x22
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.DestinationLocalZoneId) > 0 {
-		i -= len(m.DestinationLocalZoneId)
-		copy(dAtA[i:], m.DestinationLocalZoneId)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.DestinationLocalZoneId)))
+	if len(m.ToZoneId) > 0 {
+		i -= len(m.ToZoneId)
+		copy(dAtA[i:], m.ToZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToZoneId)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Creator) > 0 {
-		i -= len(m.Creator)
-		copy(dAtA[i:], m.Creator)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1782,6 +2420,20 @@ func (m *MsgSendTokenResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -1936,6 +2588,20 @@ func (m *MsgTransmitIbcJoinPoolResponse) MarshalToSizedBuffer(dAtA []byte) (int,
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2030,6 +2696,20 @@ func (m *MsgTransmitIbcExitPoolResponse) MarshalToSizedBuffer(dAtA []byte) (int,
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2119,6 +2799,20 @@ func (m *MsgTransmitIbcLockTokensResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2208,6 +2902,20 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) MarshalToSizedBuffer(dAtA []byte)
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2298,6 +3006,20 @@ func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) MarshalToSizedBuffer(dAtA
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2388,6 +3110,318 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) MarshalToSizedBuffer(dAt
 	_ = i
 	var l int
 	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Seq != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgTransmitICATransfer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransmitICATransfer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransmitICATransfer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.IcaOwnerAddress) > 0 {
+		i -= len(m.IcaOwnerAddress)
+		copy(dAtA[i:], m.IcaOwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.IcaOwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgTransmitICATransferResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransmitICATransferResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransmitICATransferResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Seq != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnZone) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnZone) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnZone) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ZoneId) > 0 {
+		i -= len(m.ZoneId)
+		copy(dAtA[i:], m.ZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OwnerAddress) > 0 {
+		i -= len(m.OwnerAddress)
+		copy(dAtA[i:], m.OwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.OwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OwnerAddress) > 0 {
+		i -= len(m.OwnerAddress)
+		copy(dAtA[i:], m.OwnerAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.OwnerAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSendTokenToICA) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSendTokenToICA) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSendTokenToICA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if len(m.ToZoneId) > 0 {
+		i -= len(m.ToZoneId)
+		copy(dAtA[i:], m.ToZoneId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToZoneId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSendTokenToICAResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSendTokenToICAResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSendTokenToICAResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PortId) > 0 {
+		i -= len(m.PortId)
+		copy(dAtA[i:], m.PortId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PortId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Channel) > 0 {
+		i -= len(m.Channel)
+		copy(dAtA[i:], m.Channel)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Channel)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Seq != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Seq))
 		i--
@@ -2455,26 +3489,20 @@ func (m *MsgSendToken) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Creator)
+	l = len(m.FromAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.DestinationLocalZoneId)
+	l = len(m.ToZoneId)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.Sender)
+	l = len(m.ToAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.Receiver)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	if m.Coin != nil {
-		l = m.Coin.Size()
-		n += 1 + l + sovTx(uint64(l))
-	}
+	l = m.Coin.Size()
+	n += 1 + l + sovTx(uint64(l))
 	return n
 }
 
@@ -2486,6 +3514,14 @@ func (m *MsgSendTokenResponse) Size() (n int) {
 	_ = l
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
+	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
@@ -2557,6 +3593,14 @@ func (m *MsgTransmitIbcJoinPoolResponse) Size() (n int) {
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
 	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	return n
 }
 
@@ -2601,6 +3645,14 @@ func (m *MsgTransmitIbcExitPoolResponse) Size() (n int) {
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
 	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	return n
 }
 
@@ -2641,6 +3693,14 @@ func (m *MsgTransmitIbcLockTokensResponse) Size() (n int) {
 	_ = l
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
+	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
@@ -2683,6 +3743,14 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) Size() (n int) {
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
 	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	return n
 }
 
@@ -2723,6 +3791,14 @@ func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) Size() (n int) {
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
 	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	return n
 }
 
@@ -2762,6 +3838,144 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) Size() (n int) {
 	_ = l
 	if m.Seq != 0 {
 		n += 1 + sovTx(uint64(m.Seq))
+	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgTransmitICATransfer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IcaOwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Coin.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgTransmitICATransferResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		n += 1 + sovTx(uint64(m.Seq))
+	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnZone) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.OwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ZoneId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgRegisterICAOnDenomNativeZone) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.OwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgSendTokenToICA) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToZoneId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Coin.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgSendTokenToICAResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Seq != 0 {
+		n += 1 + sovTx(uint64(m.Seq))
+	}
+	l = len(m.Channel)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PortId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
@@ -3068,7 +4282,7 @@ func (m *MsgSendToken) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3096,11 +4310,11 @@ func (m *MsgSendToken) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Creator = string(dAtA[iNdEx:postIndex])
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DestinationLocalZoneId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ToZoneId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3128,11 +4342,11 @@ func (m *MsgSendToken) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DestinationLocalZoneId = string(dAtA[iNdEx:postIndex])
+			m.ToZoneId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Sender", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3160,41 +4374,9 @@ func (m *MsgSendToken) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Sender = string(dAtA[iNdEx:postIndex])
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Receiver", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Receiver = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
 			}
@@ -3222,9 +4404,6 @@ func (m *MsgSendToken) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Coin == nil {
-				m.Coin = &types.Coin{}
 			}
 			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3299,6 +4478,70 @@ func (m *MsgSendTokenResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -3737,6 +4980,70 @@ func (m *MsgTransmitIbcJoinPoolResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -4011,6 +5318,70 @@ func (m *MsgTransmitIbcExitPoolResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -4266,6 +5637,70 @@ func (m *MsgTransmitIbcLockTokensResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -4521,6 +5956,70 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -4542,6 +6041,7 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *MsgTransmitIbcJoinSwapExternAmountIn) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4794,6 +6294,70 @@ func (m *MsgTransmitIbcJoinSwapExternAmountInResponse) Unmarshal(dAtA []byte) er
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -5067,6 +6631,958 @@ func (m *MsgTransmitIbcExitSwapExternAmountOutResponse) Unmarshal(dAtA []byte) e
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransmitICATransfer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransmitICATransfer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransmitICATransfer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IcaOwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IcaOwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransmitICATransferResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransmitICATransferResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransmitICATransferResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seq", wireType)
+			}
+			m.Seq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Seq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnZone) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZone: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZone: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnDenomNativeZone) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZone: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZone: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterICAOnDenomNativeZoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterICAOnDenomNativeZoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSendTokenToICA) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSendTokenToICA: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSendTokenToICA: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToZoneId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToZoneId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSendTokenToICAResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSendTokenToICAResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSendTokenToICAResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seq", wireType)
+			}
+			m.Seq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Seq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Channel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PortId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PortId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

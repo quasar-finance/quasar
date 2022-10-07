@@ -1,0 +1,50 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Quasar - GRPC Gateway Docs",
+        "description": "A REST interface for state queries, legacy transactions",
+        "version": "1.0.0"
+    },
+    "apis": [
+        {
+            "url": "../tmp-swagger-gen/epochs/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "EpochsParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/intergamm/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "IntergammParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/orion/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "IncentivesParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/qbank/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "LockupParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/qoracle/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "MintParams"
+                }
+            }
+        }
+    ]
+}

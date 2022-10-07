@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	gammbalancer "github.com/quasarlabs/quasarnode/x/intergamm/types/osmosis/v9/gamm/pool-models/balancer"
+	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 
@@ -18,6 +18,7 @@ import (
 // TODO - Need to optimize all these getters to reduce the KV store calls
 
 // Get pool info
+//
 //lint:ignore U1000 Ignore unused function temporarily
 func (k Keeper) getPoolInfo(ctx sdk.Context, poolID uint64) qoracletypes.PoolInfo {
 	poolIDStr := strconv.FormatUint(poolID, 10)
@@ -93,20 +94,20 @@ func (k Keeper) ExecuteMeissa(ctx sdk.Context, epochday uint64, lockupPeriod qba
 }
 
 // MeissaCoinDistribution is Meissa algorithm to distribute coins among osmosis pools
-//// Logic -
-//// 1. Get the list of pools with APY ranks from the oracle module.
-//// 2. Iterate apy_ranked_pools with highest apy pool picked first.
-//// 3. Get the list of pool assets.
-//// 4. Collect the max available tokens (corresponding to the pool assets) from the Orion module staking pool.
-//// 5. Calculate the max share (shareOutAmount) that can be obtained in all-asset deposit mode.
-//// 6. Calculate the coins needed to obtain the shareOutAmount
-//// 7. Send the coins using IBC call to osmosis from the quasar custom sender module account (intergamm module.)
-//// 8. Provide liquidity to osmosis via IBC for this pool.
-//// 9. TODO [1] Calculate user lp share amount for this new lp position.
-//// 10. TODO [2] Create an lp position object for this LP activity.
-//// 11. Update chain state to reduce staking pool amount for the coins.
-//// 12. Update the amount deployed on osmosis in the appropriate KV store.
-//// Go to the next pool and repeat [3 - 12]
+// // Logic -
+// // 1. Get the list of pools with APY ranks from the oracle module.
+// // 2. Iterate apy_ranked_pools with highest apy pool picked first.
+// // 3. Get the list of pool assets.
+// // 4. Collect the max available tokens (corresponding to the pool assets) from the Orion module staking pool.
+// // 5. Calculate the max share (shareOutAmount) that can be obtained in all-asset deposit mode.
+// // 6. Calculate the coins needed to obtain the shareOutAmount
+// // 7. Send the coins using IBC call to osmosis from the quasar custom sender module account (intergamm module.)
+// // 8. Provide liquidity to osmosis via IBC for this pool.
+// // 9. TODO [1] Calculate user lp share amount for this new lp position.
+// // 10. TODO [2] Create an lp position object for this LP activity.
+// // 11. Update chain state to reduce staking pool amount for the coins.
+// // 12. Update the amount deployed on osmosis in the appropriate KV store.
+// // Go to the next pool and repeat [3 - 12]
 // NOTE - At the end of the iterations; the quasar Orion staking account may still have a sufficient amount of
 // denoms for which we don't have pool pairs.
 func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupType qbanktypes.LockupTypes) error {
@@ -302,7 +303,9 @@ func (k Keeper) MeissaExit(ctx sdk.Context, epochDay uint64, lockupType qbanktyp
 // MeissaWithdraw checks for exit pool conditions for the meissa strategy.
 // Logic -
 // If the strategy did exit any position lockup period ago ( say 7 day ago) then
-//  call withdraw which will initial IBC transfer from escrow account to strategy account
+//
+//	call withdraw which will initial IBC transfer from escrow account to strategy account
+//
 // Note - Orion may not need this func; withdrawal can be handled in join pool
 func (k Keeper) MeissaWithdraw(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes) error {
 	return nil
@@ -322,7 +325,6 @@ func (k Keeper) MeissaAuditorFunction(ctx sdk.Context, lockupPeriod qbanktypes.L
 	return k.SendCoinsFromModuleToReserve(ctx, types.CreateOrionStakingMaccName(lockupPeriod), coins)
 }
 
-//
 func (k Keeper) SetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes, poolID uint64, coins sdk.Coins) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.MeissaStrategyPoolPosKBP)
 	key := types.CreateMeissaPoolPositionKey(epochday, lockupType, poolID)
@@ -332,7 +334,6 @@ func (k Keeper) SetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 	store.Set(key, value)
 }
 
-//
 func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint64, lockupType qbanktypes.LockupTypes, poolID uint64) sdk.Coins {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.MeissaStrategyPoolPosKBP)
 	key := types.CreateMeissaPoolPositionKey(epochday, lockupType, poolID)

@@ -1,0 +1,82 @@
+// This file contains dummy implementation of ValidateBasic and GetSigners method for Msg types
+// so that they implement sdk.Msg interface.
+package types
+
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
+var (
+	_ sdk.Msg = &MsgSwapExactAmountIn{}
+	_ sdk.Msg = &MsgSwapExactAmountOut{}
+	_ sdk.Msg = &MsgJoinPool{}
+	_ sdk.Msg = &MsgExitPool{}
+	_ sdk.Msg = &MsgJoinSwapExternAmountIn{}
+	_ sdk.Msg = &MsgExitSwapExternAmountOut{}
+	_ sdk.Msg = &MsgJoinSwapShareAmountOut{}
+	_ sdk.Msg = &MsgExitSwapShareAmountIn{}
+)
+
+func (msg MsgSwapExactAmountIn) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgSwapExactAmountIn) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgSwapExactAmountOut) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgSwapExactAmountOut) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgJoinPool) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgJoinPool) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgExitPool) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgExitPool) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgJoinSwapExternAmountIn) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgJoinSwapExternAmountIn) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgJoinSwapShareAmountOut) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgJoinSwapShareAmountOut) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgExitSwapExternAmountOut) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgExitSwapExternAmountOut) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
+
+func (msg MsgExitSwapShareAmountIn) ValidateBasic() error {
+	panic("not implemented")
+}
+
+func (msg MsgExitSwapShareAmountIn) GetSigners() []sdk.AccAddress {
+	panic("not implemented")
+}
