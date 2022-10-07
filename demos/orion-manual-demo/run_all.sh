@@ -43,17 +43,31 @@ sleep 10
 # hermes start >> ./logs/hermes_start.log 2>&1
 # HERMES_PID=$!
 
+echo "setting up go relayer"
 ./setup_go_relayer.sh
 
-echo "starting relaying"
+echo "starting go relaying"
 # # run an instance of go relayer for each path, thus 3 in total
-# rly start quasar_cosmos --debug-addr "localhost:7597" >> ./logs/quasar_cosmos_rly.log 2>&1  & 
-# RLY_PID_1=$!
+rly start quasar_cosmos --debug-addr "localhost:7597" -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
+RLY_PID_1=$!
 
 rly start quasar_osmosis --debug-addr "localhost:7598" -p events >> ./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_2=$!
 
-# rly start cosmos_osmosis --debug-addr "localhost:7599" >> ./logs/cosmos_osmosis.log 2>&1  &
-# RLY_PID_3=$!
+rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmos_osmosis.log 2>&1  &
+RLY_PID_3=$!
+
+echo "submitting zone info proposal"
+./change_quasar_param.sh
+
+echo "waiting for governance proposal before confirming succesful param change"
+
+sleep 90
+
+echo "checking for succesful param change"
+
+quasarnoded query intergamm params -o json | jq ".params.complete_zone_info_map.osmosis"
 
 wait
+
+
