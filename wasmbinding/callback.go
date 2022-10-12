@@ -124,7 +124,11 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 
 	m := jsonpb.Marshaler{}
 	resp := new(bytes.Buffer)
-	m.Marshal(resp, response)
+	err := m.Marshal(resp, response)
+	if err != nil {
+		return sdkerrors.Wrap(err, "ibc ack callback marshalling")
+	}
+
 
 	data, err := json.Marshal(ContractAck{
 		AckTriggered: struct {
