@@ -335,14 +335,3 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 	return nil
 }
 
-func parseAddress(addr string) (sdk.AccAddress, error) {
-	parsed, err := sdk.AccAddressFromBech32(addr)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "address from bech32")
-	}
-	err = sdk.VerifyAddressFormat(parsed)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "verify address format")
-	}
-	return parsed, nil
-}
