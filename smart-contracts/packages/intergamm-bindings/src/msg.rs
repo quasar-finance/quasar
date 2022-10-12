@@ -69,14 +69,14 @@ impl From<IntergammMsg> for CosmosMsg<IntergammMsg> {
 
 impl CustomMsg for IntergammMsg {}
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct AckValue {
     pub error: Option<String>,
     pub response: Option<AckResponse>,
 }
 
 // AckResponse is the response message received by an intergamm ack message, see quasarnode/x/intergamm/types for the corresponding types
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AckResponse {
     JoinSwapExternAmountIn {

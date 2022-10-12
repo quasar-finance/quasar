@@ -227,8 +227,8 @@ pub fn execute_send_token(
         .add_attribute("send_tokens", format!("{} {} to {}", coin.amount, coin.denom, destination_local_zone_id))
         .add_message(IntergammMsg::SendToken {
             destination_local_zone_id,
-            receiver: receiver,
-            coin: coin,
+            receiver,
+            coin,
         }))
 
 }
