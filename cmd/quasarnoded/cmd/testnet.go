@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -451,7 +450,7 @@ func mustWriteFile(path string, contents []byte) {
 	mustMkdirAll(parentDir)
 
 	tmpFile := filepath.Join(parentDir, fmt.Sprintf(".%s.tmp", uuid.New()))
-	err = ioutil.WriteFile(tmpFile, contents, defaultFilePerm)
+	err = os.WriteFile(tmpFile, contents, defaultFilePerm)
 	if err != nil {
 		panic(err)
 	}

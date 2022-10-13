@@ -2,13 +2,13 @@ package cli
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 )
 
 func parseBalancerPoolFile(poolFile string) (*gammbalancer.Pool, error) {
-	contents, err := ioutil.ReadFile(poolFile)
+	contents, err := os.ReadFile(poolFile)
 	if err != nil {
 		return nil, err
 	}

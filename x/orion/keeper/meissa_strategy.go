@@ -12,41 +12,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
-
-// TODO - Need to optimize all these getters to reduce the KV store calls
-
-// Get pool info
-//
-//lint:ignore U1000 Ignore unused function temporarily
-func (k Keeper) getPoolInfo(ctx sdk.Context, poolID uint64) qoracletypes.PoolInfo {
-	poolIDStr := strconv.FormatUint(poolID, 10)
-	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
-	return poolInfo
-}
-
-// Get pool assets from pool ID
-func (k Keeper) getPoolAssets(ctx sdk.Context, poolID uint64) (ps []gammbalancer.PoolAsset) {
-	poolIDStr := strconv.FormatUint(poolID, 10)
-	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
-	return poolInfo.Info.PoolAssets
-}
-
-// Get APY ranked pool list
-// func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []uint64) {
-// TODO : Store the uint64 values inside the KV store
-func (k Keeper) getAPYRankedPools(ctx sdk.Context) (poolIDs []string) {
-	pr, _ := k.qoracleKeeper.GetPoolRanking(ctx)
-	return pr.PoolIdsSortedByAPY
-}
-
-// Get APY ranked pool list
-func (k Keeper) getTotalShare(ctx sdk.Context, poolID uint64) (totalShare sdk.Coin) {
-	poolIDStr := strconv.FormatUint(poolID, 10)
-	poolInfo, _ := k.qoracleKeeper.GetPoolInfo(ctx, poolIDStr)
-	return poolInfo.Info.TotalShares
-}
 
 // Get the maximum available amount in the orion staking.
 // Input denom is osmosis equivalent denom,
@@ -114,27 +80,20 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaCoinDistribution|epochDay=%v|lockupType=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
-	poolIDs := k.getAPYRankedPools(ctx)
-	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolIds=%v\n",
-		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolIDs))
-	for _, poolIDStr := range poolIDs {
-		poolID, _ := strconv.ParseUint(poolIDStr, 10, 64)
-		poolInfo := k.getPoolInfo(ctx, poolID)
-		poolShareDenom := poolInfo.Info.TotalShares.Denom
-		poolAssets := k.getPoolAssets(ctx, poolID)
-
-		if len(poolAssets) != 2 {
+	pools := k.qoracleKeeper.GetOsmosisPoolsRankedByAPY(ctx, "")
+	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolsCount=%v\n",
+		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], len(pools)))
+	for _, pool := range pools {
+		if len(pool.PoolInfo.PoolAssets) != 2 {
 			// Initially strategy want to LP only in the pool with 2 assets
 			continue
 		}
 
-		poolTotalShare := k.getTotalShare(ctx, poolID)
-
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolId=%v|share=%v|poolAssets=%v\n",
-			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], poolID, poolTotalShare, poolAssets))
+			epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], pool.PoolInfo.Id, pool.PoolInfo.TotalShares, pool.PoolInfo.PoolAssets))
 
-		maxAvailableTokens := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, poolAssets)
-		shareOutAmount, err := ComputeShareOutAmount(poolTotalShare.Amount, poolAssets, maxAvailableTokens)
+		maxAvailableTokens := k.GetMaxAvailableTokensCorrespondingToPoolAssets(ctx, lockupType, pool.PoolInfo.PoolAssets)
+		shareOutAmount, err := ComputeShareOutAmount(pool.PoolInfo.TotalShares.Amount, pool.PoolInfo.PoolAssets, maxAvailableTokens)
 		if err != nil {
 			continue
 		}
@@ -142,7 +101,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|shareOutAmount=%v\n",
 			shareOutAmount))
 
-		coins, err := ComputeNeededCoins(poolTotalShare.Amount, shareOutAmount, poolAssets)
+		coins, err := ComputeNeededCoins(pool.PoolInfo.TotalShares.Amount, shareOutAmount, pool.PoolInfo.PoolAssets)
 		if err != nil {
 			continue
 		}
@@ -150,11 +109,11 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 		// AUDIT TODO - Cross validation if funds are available in AvailableInterchainFundKBP
 
 		if shareOutAmount.IsPositive() {
-			packetSeq, err := k.JoinPool(ctx, poolID, shareOutAmount, maxAvailableTokens)
+			packetSeq, err := k.JoinPool(ctx, pool.PoolInfo.Id, shareOutAmount, maxAvailableTokens)
 			if err != nil {
 				return err
 			}
-			k.OnJoinSend(ctx, packetSeq, epochDay, poolID, poolShareDenom, coins, shareOutAmount, lockupType)
+			k.OnJoinSend(ctx, packetSeq, epochDay, pool.PoolInfo.Id, pool.PoolInfo.TotalShares.Denom, coins, shareOutAmount, lockupType)
 			k.SubAvailableInterchainFund(ctx, coins)
 		}
 	}
@@ -345,9 +304,9 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 
 // computeTokenOutAmount calculate the token out amount from the recent values from the pool total share.
 func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdk.Int, poolID uint64) sdk.Coins {
-	poolInfo := k.getPoolInfo(ctx, poolID)
-	totalShare := poolInfo.Info.TotalShares
-	assets := poolInfo.Info.PoolAssets
+	pool, _ := k.qoracleKeeper.GetOsmosisPool(ctx, poolID)
+	totalShare := pool.PoolInfo.TotalShares
+	assets := pool.PoolInfo.PoolAssets
 	if len(assets) != 2 {
 		return sdk.NewCoins()
 	}

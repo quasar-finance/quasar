@@ -6,10 +6,6 @@ import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qoracle/params.proto";
-import "qoracle/pool_position.proto";
-import "qoracle/pool_ranking.proto";
-import "qoracle/pool_spot_price.proto";
-import "qoracle/pool_info.proto";
 import "qoracle/bandchain.proto";
 import "qoracle/osmosis.proto";
 import "osmosis/epochs/genesis.proto";
@@ -22,42 +18,9 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // Query defines the gRPC querier service.
 service Query {
-  // Parameters queries the parameters of the module.
-  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
-  }
-  // Queries a PoolPosition by index.
-	rpc PoolPosition(QueryGetPoolPositionRequest) returns (QueryGetPoolPositionResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_position/{poolId}";
-	}
-
-	// Queries a list of PoolPosition items.
-	rpc PoolPositionAll(QueryAllPoolPositionRequest) returns (QueryAllPoolPositionResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_position";
-	}
-
-// Queries a PoolRanking by index.
-	rpc PoolRanking(QueryGetPoolRankingRequest) returns (QueryGetPoolRankingResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_ranking";
-	}
-// Queries a PoolSpotPrice by index.
-	rpc PoolSpotPrice(QueryGetPoolSpotPriceRequest) returns (QueryGetPoolSpotPriceResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_spot_price/{poolId}/{denomIn}/{denomOut}";
-	}
-
-	// Queries a list of PoolSpotPrice items.
-	rpc PoolSpotPriceAll(QueryAllPoolSpotPriceRequest) returns (QueryAllPoolSpotPriceResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_spot_price";
-	}
-
-// Queries a PoolInfo by index.
-	rpc PoolInfo(QueryGetPoolInfoRequest) returns (QueryGetPoolInfoResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_info/{poolId}";
-	}
-
-	// Queries a list of PoolInfo items.
-	rpc PoolInfoAll(QueryAllPoolInfoRequest) returns (QueryAllPoolInfoResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pool_info";
+// Parameters queries the parameters of the module.
+	rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
 	}
 
 // Queries a list of State items.
@@ -95,66 +58,6 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryGetPoolPositionRequest {
-	  string poolId = 1;
-}
-
-message QueryGetPoolPositionResponse {
-	PoolPosition poolPosition = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllPoolPositionRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllPoolPositionResponse {
-	repeated PoolPosition poolPosition = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryGetPoolRankingRequest {}
-
-message QueryGetPoolRankingResponse {
-	PoolRanking PoolRanking = 1 [(gogoproto.nullable) = false];
-}
-message QueryGetPoolSpotPriceRequest {
-	  string poolId = 1;
-  string denomIn = 2;
-  string denomOut = 3;
-
-}
-
-message QueryGetPoolSpotPriceResponse {
-	PoolSpotPrice poolSpotPrice = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllPoolSpotPriceRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllPoolSpotPriceResponse {
-	repeated PoolSpotPrice poolSpotPrice = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryGetPoolInfoRequest {
-	  string poolId = 1;
-
-}
-
-message QueryGetPoolInfoResponse {
-	PoolInfo poolInfo = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllPoolInfoRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllPoolInfoResponse {
-	repeated PoolInfo poolInfo = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryStateRequest {
