@@ -229,32 +229,6 @@ func validateDenomPriceMappings(v interface{}) error {
 	return nil
 }
 
-// validateOracleAccounts validates the OracleAccounts param
-func validateOracleAccounts(v interface{}) error {
-	oracleAccounts, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	// TODO implement validation
-	_ = oracleAccounts
-
-	return nil
-}
-
-// validateStableDenoms validates the StableDenoms param
-func validateStableDenoms(v interface{}) error {
-	stableDenoms, ok := v.([]string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	// TODO implement validation
-	_ = stableDenoms
-
-	return nil
-}
-
 // validateOneHopDenomMaps validates the StableDenoms param
 func validateOneHopDenomMaps(v interface{}) error {
 	oneHopDenomMaps, ok := v.([]*OneHopIbcDenomMapping)
