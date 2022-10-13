@@ -18,8 +18,6 @@ var (
 	KeyBandchainParams    = []byte("BandchainParams")
 	KeyOsmosisParams      = []byte("OsmosisParams")
 	KeyDenomPriceMappings = []byte("DenomPriceMappings")
-	KeyOracleAccounts     = []byte("OracleAccounts")
-	KeyStableDenoms       = []byte("stableDenoms")
 	KeyOneHopDenomMap     = []byte("oneHopDenomMap")
 
 	// TODO: Determine the default value
@@ -62,10 +60,8 @@ var (
 			Multiplier:  sdk.NewDecWithPrec(1, 6),
 		},
 	}
-	DefaultOracleAccounts string                = "oracle_accounts"
-	DefaultStableDenoms                         = []string{"UST", "USTTESTA"}
-	denom1                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
-	denom2                OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uosmo", Quasar: "IBC/TESTOSMO", Osmo: "uosmo"}
+	denom1 OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uatom", Quasar: "IBC/TESTATOM", Osmo: "IBC/TESTOSMO"}
+	denom2 OneHopIbcDenomMapping = OneHopIbcDenomMapping{OriginName: "uosmo", Quasar: "IBC/TESTOSMO", Osmo: "uosmo"}
 
 	DefaultOneHopDenomMap = []*OneHopIbcDenomMapping{&denom1, &denom2}
 )
@@ -80,16 +76,12 @@ func NewParams(
 	bandchainParams BandchainParams,
 	osmosisParams OsmosisParams,
 	denomPriceMappings []DenomPriceMapping,
-	oracleAccounts string,
-	stableDenoms []string,
 	onehopDenoms []*OneHopIbcDenomMapping,
 ) Params {
 	return Params{
 		BandchainParams:    bandchainParams,
 		OsmosisParams:      osmosisParams,
 		DenomPriceMappings: denomPriceMappings,
-		OracleAccounts:     oracleAccounts,
-		StableDenoms:       stableDenoms, // AUDIT slice copy
 		OneHopDenomMap:     onehopDenoms,
 	}
 }
@@ -100,8 +92,6 @@ func DefaultParams() Params {
 		DefaultBandchainParams,
 		DefaultOsmosisParams,
 		DefaultDenomPriceMappings,
-		DefaultOracleAccounts,
-		DefaultStableDenoms,
 		DefaultOneHopDenomMap,
 	)
 }
@@ -112,8 +102,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyBandchainParams, &p.BandchainParams, validateBandchainParams),
 		paramtypes.NewParamSetPair(KeyOsmosisParams, &p.OsmosisParams, validateOsmosisParams),
 		paramtypes.NewParamSetPair(KeyDenomPriceMappings, &p.DenomPriceMappings, validateDenomPriceMappings),
-		paramtypes.NewParamSetPair(KeyOracleAccounts, &p.OracleAccounts, validateOracleAccounts),
-		paramtypes.NewParamSetPair(KeyStableDenoms, &p.StableDenoms, validateStableDenoms),
 		paramtypes.NewParamSetPair(KeyOneHopDenomMap, &p.OneHopDenomMap, validateOneHopDenomMaps),
 	}
 }
@@ -129,14 +117,6 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateDenomPriceMappings(p.DenomPriceMappings); err != nil {
-		return err
-	}
-
-	if err := validateOracleAccounts(p.OracleAccounts); err != nil {
-		return err
-	}
-
-	if err := validateStableDenoms(p.StableDenoms); err != nil {
 		return err
 	}
 

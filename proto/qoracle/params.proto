@@ -24,7 +24,5 @@ message Params {
   BandchainParams bandchain_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_params\"", (gogoproto.nullable) = false];
   OsmosisParams osmosis_params = 2 [(gogoproto.moretags) = "yaml:\"osmosis_params\"", (gogoproto.nullable) = false];
   repeated DenomPriceMapping denom_price_mappings = 3 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
-  string oracleAccounts = 4 [(gogoproto.moretags) = "yaml:\"oracle_accounts\""];
-  repeated  string stableDenoms = 5 [(gogoproto.moretags) = "yaml:\"stable_denoms\""];
   repeated OneHopIbcDenomMapping oneHopDenomMap = 6 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
 }
