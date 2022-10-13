@@ -178,11 +178,4 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 	return []abci.ValidatorUpdate{}
 }
 
-func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
-	logger := k.Logger(ctx)
-	logger.Info(fmt.Sprintf("Entered Qoracle EndBlocker|modulename=%s|blockheight=%d", types.ModuleName, ctx.BlockHeight()))
-	pr, _ := k.GetPoolRanking(ctx)
-	logger.Info(fmt.Sprintf("All PoolInfo Qoracle|modulename=%s|blockheight=%d|poolinfo=%v|poolranking=%v|poolspotprices=%v",
-		types.ModuleName, ctx.BlockHeight(), k.GetAllPoolInfo(ctx), pr, k.GetAllPoolSpotPrice(ctx)))
-
-}
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) {}

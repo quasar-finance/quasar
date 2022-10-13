@@ -2,136 +2,13 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 // this line is used by starport scaffolding # proto/tx/import
-import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
-import "qoracle/pool_metrics.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc CreatePoolPosition(MsgCreatePoolPosition) returns (MsgCreatePoolPositionResponse);
-  rpc UpdatePoolPosition(MsgUpdatePoolPosition) returns (MsgUpdatePoolPositionResponse);
-  rpc DeletePoolPosition(MsgDeletePoolPosition) returns (MsgDeletePoolPositionResponse);
-  rpc CreatePoolRanking(MsgCreatePoolRanking) returns (MsgCreatePoolRankingResponse);
-  rpc UpdatePoolRanking(MsgUpdatePoolRanking) returns (MsgUpdatePoolRankingResponse);
-  rpc DeletePoolRanking(MsgDeletePoolRanking) returns (MsgDeletePoolRankingResponse);
-  rpc CreatePoolSpotPrice(MsgCreatePoolSpotPrice) returns (MsgCreatePoolSpotPriceResponse);
-  rpc UpdatePoolSpotPrice(MsgUpdatePoolSpotPrice) returns (MsgUpdatePoolSpotPriceResponse);
-  rpc DeletePoolSpotPrice(MsgDeletePoolSpotPrice) returns (MsgDeletePoolSpotPriceResponse);
-  rpc CreatePoolInfo(MsgCreatePoolInfo) returns (MsgCreatePoolInfoResponse);
-  rpc UpdatePoolInfo(MsgUpdatePoolInfo) returns (MsgUpdatePoolInfoResponse);
-  rpc DeletePoolInfo(MsgDeletePoolInfo) returns (MsgDeletePoolInfoResponse);
-  rpc StablePrice(MsgStablePrice) returns (MsgStablePriceResponse);
   rpc UpdateOsmosisChainParams(MsgUpdateOsmosisChainParams) returns (MsgUpdateOsmosisChainParamsResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
-}
-
-message MsgCreatePoolPosition {
-  string creator = 1;
-  string poolId = 2;
-
-  PoolMetrics metrics = 3;
-  uint64 lastUpdatedTime = 4;
-}
-message MsgCreatePoolPositionResponse {}
-
-message MsgUpdatePoolPosition {
-  string creator = 1;
-  string poolId = 2;
-
-  PoolMetrics metrics = 3;
-  uint64 lastUpdatedTime = 4;
-}
-message MsgUpdatePoolPositionResponse {}
-
-message MsgDeletePoolPosition {
-  string creator = 1;
-  string poolId = 2;
-}
-message MsgDeletePoolPositionResponse {}
-
-message MsgCreatePoolRanking {
-  string creator = 1;
-  repeated string poolIdsSortedByAPY = 3;
-  repeated string poolIdsSortedByTVL = 4;
-  uint64 lastUpdatedTime = 5;
-}
-message MsgCreatePoolRankingResponse {}
-
-message MsgUpdatePoolRanking {
-  string creator = 1;
-  repeated string poolIdsSortedByAPY = 3;
-  repeated string poolIdsSortedByTVL = 4;
-  uint64 lastUpdatedTime = 5;
-}
-message MsgUpdatePoolRankingResponse {}
-
-message MsgDeletePoolRanking {
-  string creator = 1;
-}
-message MsgDeletePoolRankingResponse {}
-
-message MsgCreatePoolSpotPrice {
-  string creator = 1;
-  string poolId = 2;
-  string denomIn = 3;
-  string denomOut = 4;
-
-  string price = 5;
-  uint64 lastUpdatedTime = 6;
-}
-message MsgCreatePoolSpotPriceResponse {}
-
-message MsgUpdatePoolSpotPrice {
-  string creator = 1;
-  string poolId = 2;
-  string denomIn = 3;
-  string denomOut = 4;
-
-  string price = 5;
-  uint64 lastUpdatedTime = 6;
-}
-message MsgUpdatePoolSpotPriceResponse {}
-
-message MsgDeletePoolSpotPrice {
-  string creator = 1;
-  string poolId = 2;
-  string denomIn = 3;
-  string denomOut = 4;
-}
-message MsgDeletePoolSpotPriceResponse {}
-
-message MsgCreatePoolInfo {
-  string creator = 1;
-  string poolId = 2;
-
-  osmosis.gamm.v1beta1.Pool info = 3;
-  uint64 lastUpdatedTime = 4;
-}
-message MsgCreatePoolInfoResponse {}
-
-message MsgUpdatePoolInfo {
-  string creator = 1;
-  string poolId = 2;
-
-  osmosis.gamm.v1beta1.Pool info = 3;
-  uint64 lastUpdatedTime = 4;
-}
-message MsgUpdatePoolInfoResponse {}
-
-message MsgDeletePoolInfo {
-  string creator = 1;
-  string poolId = 2;
-}
-message MsgDeletePoolInfoResponse {}
-
-message MsgStablePrice {
-  string creator = 1;
-  string denom = 2;
-  string price = 3;
-}
-
-message MsgStablePriceResponse {
 }
 
 message MsgUpdateOsmosisChainParams {

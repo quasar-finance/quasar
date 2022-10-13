@@ -11,8 +11,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.BandchainParams(ctx),
 		k.OsmosisParams(ctx),
 		k.GetDenomPriceMappings(ctx),
-		k.OracleAccounts(ctx),
-		k.StableDenoms(ctx),
 		k.OneHopDenomMap(ctx),
 	)
 }
@@ -48,18 +46,6 @@ func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMa
 
 func (k Keeper) SetDenomPriceMappings(ctx sdk.Context, mappings []types.DenomPriceMapping) {
 	k.paramstore.Set(ctx, types.KeyDenomPriceMappings, &mappings)
-}
-
-// OracleAccounts returns the OracleAccounts param
-func (k Keeper) OracleAccounts(ctx sdk.Context) (res string) {
-	k.paramstore.Get(ctx, types.KeyOracleAccounts, &res)
-	return
-}
-
-// StableDenoms returns the StableDenoms param
-func (k Keeper) StableDenoms(ctx sdk.Context) (res []string) {
-	k.paramstore.Get(ctx, types.KeyStableDenoms, &res)
-	return
 }
 
 // OneHopDenomMap returns the OneHopIbcDenomMapping param
