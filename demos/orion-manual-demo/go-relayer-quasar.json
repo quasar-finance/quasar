@@ -4,7 +4,7 @@
     "key": "quasarkey",
     "chain-id": "quasar",
     "rpc-addr": "http://localhost:26659",
-    "account-prefix": "cosmos",
+    "account-prefix": "quasar",
     "keyring-backend": "test",
     "gas-adjustment": 1.2,
     "gas-prices": "0.01uqsr",

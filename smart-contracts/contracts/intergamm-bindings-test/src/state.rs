@@ -1,13 +1,12 @@
-use intergamm_bindings::msg::IntergammMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Uint64};
-use cw_storage_plus::{Item, Map};
+use cosmwasm_std::Addr;
+use cw_storage_plus::Item;
 
 use crate::ContractError;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct State {
     pub count: i32,
     pub owner: Addr,
@@ -20,12 +19,5 @@ pub enum Status {
     Error { reason: ContractError },
     InProgress,
 }
-
-pub struct Ack {
-    pub status: Status,
-    pub msg: IntergammMsg,
-}
-
-pub const ACKS: Map<Uint64, Ack> = Map::new("acks");
 
 pub const STATE: Item<State> = Item::new("state");

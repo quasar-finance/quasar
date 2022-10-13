@@ -19,50 +19,8 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		}
 
 		switch {
-		case contractQuery.OsmosisPoolPosition != nil:
-			poolId := contractQuery.OsmosisPoolPosition.PoolId
-
-			pool := qp.GetPoolPosition(ctx, poolId)
-
-			res := qoracletypes.QueryGetPoolPositionResponse{
-				PoolPosition: *pool,
-			}
-			// res := qoracletypes.QueryGetPoolPositionResponse{
-			// 	PoolPosition: qoracletypes.PoolPosition{
-			// 		PoolId: poolId,
-			// 		Metrics: &qoracletypes.PoolMetrics{
-			// 			HighestAPY: "0.1",
-			// 			TVL:        "yor mum",
-			// 			GaugeAPYs:  []*qoracletypes.GaugeAPY{{GaugeId: 1337, APY: "0.1", Duration: "1"}},
-			// 		},
-			// 		LastUpdatedTime: 100000,
-			// 		Creator:         "quasar1234",
-			// 	},
-			// }
-
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool position query response")
-			}
-
-			return bz, nil
-		case contractQuery.OsmosisAllPoolPositions != nil:
-			positions := qp.GetAllPoolPosition(ctx)
-
-			// TODO: this type has a pagination, but the implementation of the query is not paginated yet
-			// TODO: Should PoolPosition be renamed to PoolPositions?
-			res := qoracletypes.QueryAllPoolPositionResponse{
-				PoolPosition: positions,
-			}
-
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool position query response")
-			}
-
-			return bz, nil
-		case contractQuery.OsmosisPoolRanking != nil:
-			ranking := qp.GetPoolRanking(ctx)
+		case contractQuery.OsmosisRankedPools != nil:
+			ranking := qp.GetRankedPools(ctx)
 
 			res := qoracletypes.QueryGetPoolRankingResponse{
 				PoolRanking: *ranking,
@@ -77,7 +35,11 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		case contractQuery.OsmosisPoolInfo != nil:
 			poolId := contractQuery.OsmosisPoolInfo.PoolId
 
-			pool := qp.GetPoolInfo(ctx, poolId)
+			pool, found := qp.GetPool(ctx, poolId)
+
+			if !found {
+				return nil, sdkerrors.ErrKeyNotFound
+			}
 
 			res := bindings.OsmosisPoolInfoResponse{
 				PoolInfo: pool,
@@ -89,21 +51,9 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			return bz, nil
-		case contractQuery.OsmosisAllPoolInfo != nil:
-			pools := qp.GetAllPoolInfo(ctx)
 
-			res := qoracletypes.QueryAllPoolInfoResponse{
-				PoolInfo: pools,
-			}
-
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool info query response")
-			}
-
-			return bz, nil
 		case contractQuery.OraclePrices != nil:
-			oraclePrices := qp.GetOraclePrices(ctx)
+			oraclePrices := qp.GetStablePrices(ctx)
 
 			res := qoracletypes.QueryOraclePricesResponse(oraclePrices)
 

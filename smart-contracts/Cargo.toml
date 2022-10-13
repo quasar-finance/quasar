@@ -5,8 +5,8 @@ members = [
     "contracts/strategy",
     "contracts/ibc-transfer-test",
     "contracts/intergamm-bindings-test",
-    "contracts/qoracle-bindings-test",
-    "packages/intergamm-bindings",
+    "contracts/ica",
     "packages/quasar-traits",
-    "packages/quasar-types"
+    "packages/quasar-types",
+    "packages/intergamm-bindings",
 ]

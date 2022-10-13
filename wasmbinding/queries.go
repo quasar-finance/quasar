@@ -1,7 +1,10 @@
 package wasmbinding
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	balancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
@@ -20,26 +23,7 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper, qk *qoraclekeeper.Keeper) *Query
 	}
 }
 
-func (qp QueryPlugin) GetParams(ctx sdk.Context) types.Params {
-	// TODO: Can this ever error??
-	return qp.qoracleKeeper.GetParams(ctx)
-}
-
-func (qp QueryPlugin) GetPoolPosition(ctx sdk.Context, poolID string) *types.PoolPosition {
-	pool, found := qp.qoracleKeeper.GetPoolPosition(ctx, poolID)
-	if !found {
-		return nil
-	}
-
-	return &pool
-}
-
-func (qp QueryPlugin) GetAllPoolPosition(ctx sdk.Context) []types.PoolPosition {
-	// TODO: Can this ever error??
-	return qp.qoracleKeeper.GetAllPoolPosition(ctx)
-}
-
-func (qp QueryPlugin) GetPoolRanking(ctx sdk.Context) *types.PoolRanking {
+func (qp QueryPlugin) GetRankedPools(ctx sdk.Context) *types.PoolRanking {
 	poolRanking, found := qp.qoracleKeeper.GetPoolRanking(ctx)
 	if !found {
 		return nil
@@ -48,21 +32,23 @@ func (qp QueryPlugin) GetPoolRanking(ctx sdk.Context) *types.PoolRanking {
 	return &poolRanking
 }
 
-func (qp QueryPlugin) GetPoolInfo(ctx sdk.Context, poolID string) *types.PoolInfo {
-	pool, found := qp.qoracleKeeper.GetPoolInfo(ctx, poolID)
-	if !found {
-		return nil
+func (qp QueryPlugin) GetPool(ctx sdk.Context, poolID string) (*balancer.Pool, bool) {
+	poolIdUint64, err := strconv.ParseUint(poolID, 10, 64)
+
+	if err != nil {
+		return nil, false
 	}
 
-	return &pool
+	pool, found := qp.qoracleKeeper.GetOsmosisPool(ctx, poolIdUint64)
+
+	if !found {
+		return nil, false
+	}
+
+	return &pool.PoolInfo, true
 }
 
-func (qp QueryPlugin) GetAllPoolInfo(ctx sdk.Context) []types.PoolInfo {
-	// TODO: Can this ever error??
-	return qp.qoracleKeeper.GetAllPoolInfo(ctx)
-}
-
-func (qp QueryPlugin) GetOraclePrices(ctx sdk.Context) types.OraclePrices {
+func (qp QueryPlugin) GetStablePrices(ctx sdk.Context) types.OraclePrices {
 	// TODO: Can this ever error??
 	return qp.qoracleKeeper.GetOraclePrices(ctx)
 }
