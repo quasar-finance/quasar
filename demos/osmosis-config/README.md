@@ -10,7 +10,7 @@ make install
 ```
 Clone the forked version of `osmosis` and install the binary with the following commands:
 ```bash
-git clone https://github.com/quasar-finance/osmosis.git -b feature/icq_integration --depth 1
+git clone https://github.com/quasar-finance/osmosis.git -b v12.0.0-icq --depth 1
 
 cd ./osmosis
 
