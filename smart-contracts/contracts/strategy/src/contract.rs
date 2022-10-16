@@ -19,8 +19,8 @@ const LOGO_SIZE_CAP: usize = 5 * 1024;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
-    env: Env,
+    deps: DepsMut,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -49,8 +49,8 @@ pub fn execute(
 }
 
 pub fn execute_deposit(
-    deps: DepsMut,
-    env: Env,
+    _deps: DepsMut,
+    _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     // do things here with the funds. This is where the actual strategy starts placing funds on a new deposit
@@ -132,7 +132,7 @@ fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, Co
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {}
     todo!()
 }
@@ -149,18 +149,18 @@ mod tests {
     const BUYER: &str = "buyer";
 
     fn default_instantiate(
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) -> InstantiateMsg {
         InstantiateMsg {}
     }
 
     fn setup_test(
-        deps: DepsMut,
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _deps: DepsMut,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) {
     }
 

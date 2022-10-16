@@ -1,17 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::CosmosMsg::Bank;
+
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, SubMsg, Uint128,
+    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
-use std::cmp::min;
+
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
-    deduct_allowance, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
+    execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
@@ -24,7 +24,7 @@ use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
 use quasar_traits::traits::Curve;
-use quasar_types::curve::{CurveType, DecimalPlaces};
+use quasar_types::curve::{DecimalPlaces};
 use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
 use crate::error::ContractError;
@@ -33,7 +33,7 @@ use crate::msg::{
     MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse,
 };
 use crate::state::{VaultInfo, VAULT_CURVE, VAULT_INFO};
-use crate::ContractError::{PaymentError, Std};
+
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -105,7 +105,7 @@ fn verify_logo(logo: &Logo) -> Result<(), cw20_base::ContractError> {
 // TODO add the curve of the vault here
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -339,11 +339,11 @@ pub fn execute_withdraw(
 // in the cw20 contract. The underlying reserve tokens should be returned to who? probably the sender
 // and not the owner
 pub fn execute_burn_from(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    owner: String,
-    amount: Uint128,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _owner: String,
+    _amount: Uint128,
 ) -> Result<Response, ContractError> {
     todo!()
 }
@@ -371,7 +371,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalAssets {} => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
-        QueryMsg::MaxDeposit { receiver } => {
+        QueryMsg::MaxDeposit { receiver: _ } => {
             // max deposit needs to check the underlying cw-20 token for the maximum supply, convert that
             // to the amout
             todo!()

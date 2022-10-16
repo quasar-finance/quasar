@@ -9,9 +9,7 @@ use cosmwasm_std::{
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
 };
 
-use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::{
-    InterchainAccountPacketData, Metadata,
-};
+
 
 use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
@@ -84,7 +82,7 @@ pub fn ibc_channel_connect(
 
 fn enforce_order_and_version(
     channel: &IbcChannel,
-    counterparty_version: Option<&str>,
+    _counterparty_version: Option<&str>,
 ) -> Result<(), ContractError> {
     // if channel.version != ICA_VERSION {
     //     return Err(ContractError::InvalidIbcVersion {

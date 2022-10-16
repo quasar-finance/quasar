@@ -2,7 +2,7 @@ use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAcco
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
     PortIdResponse, Reply, Response, StdResult, SubMsg, Timestamp, Uint64,
 };
 use prost::Message;
@@ -13,12 +13,12 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
+use crate::helpers::{handle_reply_sample, set_reply};
 use crate::msg::{
-    ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
+    ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
-use crate::proto::CosmosQuery;
+
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info
@@ -44,7 +44,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -153,11 +153,11 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::msg::RequestQueryJSON;
+    
     use crate::test_helpers::*;
 
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{from_binary, CosmosMsg, StdError};
+    use cosmwasm_std::testing::{mock_env};
+    use cosmwasm_std::{from_binary, StdError};
 
     #[test]
     fn setup_and_query() {
