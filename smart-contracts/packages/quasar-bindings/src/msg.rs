@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Timestamp, Uint64};
+use cosmwasm_std::{Coin, CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

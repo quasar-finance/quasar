@@ -1,17 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Timestamp,
-    Uint128,
+    Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
+
+
 use cw2::set_contract_version;
-use quasar_bindings::querier::{self, QuasarQuerier};
 use quasar_bindings::query::QuasarQuery;
 
 use crate::error::ContractError;
 use crate::execute::{demo_fetch_oracle_prices, demo_fetch_pool_info, demo_fetch_pools};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State, ACKTRIGGERED, STATE};
+
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test-2";
@@ -21,9 +21,10 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
-    msg: InstantiateMsg,
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
 
@@ -31,7 +32,7 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut<QuasarQuery>,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
@@ -42,7 +43,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {}
 }
 

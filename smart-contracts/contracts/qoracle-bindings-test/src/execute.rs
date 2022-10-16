@@ -1,16 +1,14 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
+
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Timestamp,
-    Uint128,
+    DepsMut, Response,
 };
-use cw2::set_contract_version;
-use quasar_bindings::querier::{self, QuasarQuerier};
+
+use quasar_bindings::querier::{QuasarQuerier};
 use quasar_bindings::query::QuasarQuery;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State, ACKTRIGGERED, STATE};
+
+
 
 pub fn demo_fetch_pools(deps: DepsMut<QuasarQuery>) -> Result<Response, ContractError> {
     let querier = QuasarQuerier::new(&deps.querier);

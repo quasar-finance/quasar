@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
-use cosmwasm_std::{CustomQuery, Decimal};
+use cosmwasm_std::{CustomQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    DecCoin, OsmosisPoolInfo, PageRequest, PageResponse, PoolPosition, PoolRanking,
+    DecCoin, OsmosisPoolInfo, PageRequest, PageResponse,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
