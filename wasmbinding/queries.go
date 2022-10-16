@@ -24,15 +24,6 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper, qk *qoraclekeeper.Keeper) *Query
 	}
 }
 
-// func (qp QueryPlugin) GetRankedPools(ctx sdk.Context) *types.PoolRanking {
-// 	poolRanking, found := qp.qoracleKeeper.GetOsmosisPoolsRankedByAPY(ctx,)
-// 	if !found {
-// 		return nil
-// 	}
-
-// 	return &poolRanking
-// }
-
 func (qp QueryPlugin) GetAllPools(ctx sdk.Context) ([]types.OsmosisPool, error) {
 	wrappedContext := sdk.WrapSDKContext(ctx)
 	pools, err := qp.qoracleKeeper.OsmosisPools(wrappedContext, nil)
