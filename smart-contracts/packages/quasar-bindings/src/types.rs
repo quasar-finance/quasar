@@ -47,24 +47,23 @@ pub struct DecCoin {
     pub denom: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct GaugeAPY {
-    pub gaugeId: u64,
-    pub duration: String,
-    pub aPY: String,
-}
+// #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+// pub struct GaugeAPY {
+//     pub gaugeId: u64,
+//     pub duration: String,
+//     pub aPY: String,
+// }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct PoolMetrics {
-    pub highestAPY: String,
-    pub tVL: String,
-    pub gaugeAPYs: Vec<GaugeAPY>,
+pub struct OsmosisPoolMetrics {
+    pub APY: Decimal,
+    pub TVL: Decimal,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct PoolPosition {
     pub poolId: String,
-    pub metrics: PoolMetrics,
+    pub metrics: OsmosisPoolMetrics,
     pub lastUpdatedTime: u64,
     pub creator: String,
 }
@@ -110,7 +109,13 @@ pub struct Pool {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct PoolInfo {
+pub struct OsmosisPool {
+pub pool_info: OsmosisPoolInfo,
+pub metrics: OsmosisPoolMetrics
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct OsmosisPoolInfo {
     pub poolId: String,
     pub info: Pool,
     pub lastUpdatedTime: u64,

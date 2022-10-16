@@ -19,16 +19,33 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		}
 
 		switch {
-		case contractQuery.OsmosisRankedPools != nil:
-			ranking := qp.GetRankedPools(ctx)
+		// case contractQuery.OsmosisRankedPools != nil:
+		// 	ranking := qp.GetRankedPools(ctx)
 
-			res := qoracletypes.QueryGetPoolRankingResponse{
-				PoolRanking: *ranking,
+		// 	res := qoracletypes.QueryGetPoolRankingResponse{
+		// 		PoolRanking: *ranking,
+		// 	}
+
+		// 	bz, err := json.Marshal(res)
+		// 	if err != nil {
+		// 		return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool ranking query response")
+		// 	}
+
+		// 	return bz, nil
+		case contractQuery.OsmosisPools != nil:
+			pools, err := qp.GetAllPools(ctx)
+
+			if err != nil {
+				return nil, sdkerrors.Wrap(err, "failed to get all pools")
+			}
+
+			res := qoracletypes.QueryOsmosisPoolsResponse{
+				Pools: pools,
 			}
 
 			bz, err := json.Marshal(res)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool ranking query response")
+				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool query response")
 			}
 
 			return bz, nil

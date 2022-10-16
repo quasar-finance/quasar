@@ -1,6 +1,9 @@
 use cosmwasm_std::{QuerierWrapper, QueryRequest, StdResult};
 
-use crate::{query::{OsmosisPoolPositionResponse, QuasarQuery, OsmosisAllPoolPositionsResponse, OsmosisPoolRankingResponse, OsmosisPoolInfoResponse, OsmosisAllPoolInfoResponse, OraclePricesResponse}, types::PageRequest};
+use crate::{
+    query::{OraclePricesResponse, OsmosisPoolInfoResponse, OsmosisPoolsResponse, QuasarQuery},
+    types::PageRequest,
+};
 
 /// This is a helper wrapper to easily use our custom queries
 pub struct QuasarQuerier<'a> {
@@ -12,39 +15,17 @@ impl<'a> QuasarQuerier<'a> {
         QuasarQuerier { querier }
     }
 
-    pub fn osmosis_pool(&self, pool_id: String) -> StdResult<OsmosisPoolPositionResponse> {
-        let query = QuasarQuery::OsmosisPoolPosition { pool_id };
-        let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
-        self.querier.query(&request)
-    }
-
-    pub fn all_osmosis_pools(
+    pub fn osmosis_pools(
         &self,
         pagination: Option<PageRequest>,
-    ) -> StdResult<OsmosisAllPoolPositionsResponse> {
-        let query = QuasarQuery::OsmosisAllPoolPositions { pagination };
-        let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
-        self.querier.query(&request)
-    }
-
-    pub fn osmosis_pool_ranking(&self) -> StdResult<OsmosisPoolRankingResponse> {
-        let query = QuasarQuery::OsmosisPoolRanking {};
+    ) -> StdResult<OsmosisPoolsResponse> {
+        let query = QuasarQuery::OsmosisPools { pagination };
         let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
         self.querier.query(&request)
     }
 
     pub fn osmosis_pool_info(&self, pool_id: String) -> StdResult<OsmosisPoolInfoResponse> {
         let query = QuasarQuery::OsmosisPoolInfo { pool_id };
-        let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
-        self.querier.query(&request)
-        
-    }
-
-    pub fn all_osmosis_pool_info(
-        &self,
-        pagination: Option<PageRequest>,
-    ) -> StdResult<OsmosisAllPoolInfoResponse> {
-        let query = QuasarQuery::OsmosisAllPoolInfo { pagination };
         let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
         self.querier.query(&request)
     }

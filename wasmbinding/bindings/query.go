@@ -10,6 +10,9 @@ type QuasarQuery struct {
 	// Query the ranking of pools
 	OsmosisRankedPools *OsmosisRankedPoolsRequest `json:"osmosis_pool_ranking,omitempty"`
 
+	// Query all pools
+	OsmosisPools *OsmosisPoolsRequest `json:"osmosis_pools,omitempty"`
+
 	// Query pool info
 	OsmosisPoolInfo *OsmosisPoolInfoRequest `json:"osmosis_pool_info,omitempty"`
 
@@ -18,6 +21,12 @@ type QuasarQuery struct {
 }
 
 type OsmosisRankedPoolsRequest struct{}
+
+type OsmosisPoolsRequest struct{}
+
+// type OsmosisPoolsResponse struct {
+// 	Pools []types.OsmosisPool `json:"pools"`
+// }
 
 type OsmosisPoolInfoRequest struct {
 	PoolId string `json:"pool_id"`

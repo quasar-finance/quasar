@@ -1,13 +1,15 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{ Timestamp,
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+use cosmwasm_std::{
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Timestamp,
+    Uint128,
 };
 use cw2::set_contract_version;
 use quasar_bindings::querier::{self, QuasarQuerier};
-use quasar_bindings::query::{OsmosisPoolPositionResponse, QuasarQuery};
+use quasar_bindings::query::QuasarQuery;
 
 use crate::error::ContractError;
+use crate::execute::{demo_fetch_oracle_prices, demo_fetch_pool_info, demo_fetch_pools};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{State, ACKTRIGGERED, STATE};
 
@@ -33,41 +35,10 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::RunQOracleTest {} => run_qoracle_test(deps),
+        ExecuteMsg::DemoOsmosisPools {} => demo_fetch_pools(deps),
+        ExecuteMsg::DemoOsmosisPoolInfo {} => demo_fetch_pool_info(deps),
+        ExecuteMsg::DemoOraclePrices {} => demo_fetch_oracle_prices(deps),
     }
-}
-
-pub fn run_qoracle_test(deps: DepsMut<QuasarQuery>) -> Result<Response, ContractError> {
-    let querier = QuasarQuerier::new(&deps.querier);
-
-    // let pool_response = querier.osmosis_pool("2".to_string())?;
-    // let all_pool_response = querier.all_osmosis_pools(Option::None)?;
-    // let pool_ranking = querier.osmosis_pool_ranking()?;
-    let pool_info = match querier.osmosis_pool_info("1".to_string())?.pool_info {
-        Some(pool_info) => pool_info,
-        None => return Err(ContractError::CustomError { val: "No pool info".into() }),
-    };
-    // let pool_info_all = querier.all_osmosis_pool_info(Option::None)?;
-    // let oracle_prices = querier.oracle_prices()?;
-
-    Ok(Response::new()
-        // .add_attribute("pool_creator", pool_response.poolPosition.creator)
-        // .add_attribute("pool_metrics", pool_response.poolPosition.metrics.tVL)
-        // .add_attribute(
-        //     "num_pool_positions",
-        //     all_pool_response.poolPositions.len().to_string(),
-        // )
-        // .add_attribute(
-        //     "pool_ranking",
-        //     pool_ranking.poolRanking.poolIdsSortedByAPY.first().unwrap(),
-        // )
-        .add_attribute("pool_ranking", Uint128::from(pool_info.info.id))
-        // .add_attribute("num_pool_info", pool_info_all.poolInfo.len().to_string())
-        // .add_attribute(
-        //     "oracle_prices",
-        //     oracle_prices.prices.first().unwrap().denom.clone(),
-        // )
-    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

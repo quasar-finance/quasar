@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	balancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -23,13 +24,24 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper, qk *qoraclekeeper.Keeper) *Query
 	}
 }
 
-func (qp QueryPlugin) GetRankedPools(ctx sdk.Context) *types.PoolRanking {
-	poolRanking, found := qp.qoracleKeeper.GetPoolRanking(ctx)
-	if !found {
-		return nil
+// func (qp QueryPlugin) GetRankedPools(ctx sdk.Context) *types.PoolRanking {
+// 	poolRanking, found := qp.qoracleKeeper.GetOsmosisPoolsRankedByAPY(ctx,)
+// 	if !found {
+// 		return nil
+// 	}
+
+// 	return &poolRanking
+// }
+
+func (qp QueryPlugin) GetAllPools(ctx sdk.Context) ([]types.OsmosisPool, error) {
+	wrappedContext := sdk.WrapSDKContext(ctx)
+	pools, err := qp.qoracleKeeper.OsmosisPools(wrappedContext, nil)
+
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "failed to get all pools")
 	}
 
-	return &poolRanking
+	return pools.Pools, nil
 }
 
 func (qp QueryPlugin) GetPool(ctx sdk.Context, poolID string) (*balancer.Pool, bool) {

@@ -4,48 +4,31 @@ use cosmwasm_std::{CustomQuery, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{DecCoin, PageRequest, PoolInfo, PoolPosition, PoolRanking, PageResponse};
+use crate::types::{
+    DecCoin, OsmosisPoolInfo, PageRequest, PageResponse, PoolPosition, PoolRanking,
+};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 /// A number of Custom quer that can call into the quasar bindings
 pub enum QuasarQuery {
-    OsmosisPoolPosition { pool_id: String },
-    OsmosisAllPoolPositions { pagination: Option<PageRequest> },
-    OsmosisPoolRanking {},
+    OsmosisPools { pagination: Option<PageRequest> },
     OsmosisPoolInfo { pool_id: String },
-    OsmosisAllPoolInfo { pagination: Option<PageRequest> },
     OraclePrices {},
 }
 
 impl CustomQuery for QuasarQuery {}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct OsmosisPoolPositionResponse {
-    pub poolPosition: PoolPosition,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct OsmosisAllPoolPositionsResponse {
-    pub poolPositions: Vec<PoolPosition>,
+pub struct OsmosisPoolsResponse {
+    pub pools: Vec<OsmosisPoolInfo>,
     pub pagination: Option<PageResponse>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct OsmosisPoolRankingResponse {
-    pub poolRanking: PoolRanking,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct OsmosisPoolInfoResponse {
-    pub pool_info: Option<PoolInfo>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct OsmosisAllPoolInfoResponse {
-    pub poolInfo: Vec<PoolInfo>,
-    pub pagination: Option<PageResponse>,
+    pub pool_info: Option<OsmosisPoolInfo>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
