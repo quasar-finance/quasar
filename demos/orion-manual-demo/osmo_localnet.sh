@@ -8,7 +8,8 @@ ALICE="cruise scene law sea push expose scorpion wire trick repair wave quote ta
 BOB="lizard garlic canyon winner cheese tent drip task because ecology clay bridge junk critic track artefact gather harsh deliver unit vacant earth diesel stool"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="rabbit garlic monitor wish pony magic budget someone room torch celery empower word assume digital rack electric weapon urban foot sketch jelly wet myself"
+RELAYER_ACC="$(cat ./keys/osmo.key)"
+
 ALICE_GENESIS_COINS=20000000uosmo,2000000000stake
 BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
@@ -40,7 +41,7 @@ unamestr=`uname`
 if [ "$unamestr" = 'Linux' ]; then
   platform='linux'
 elif [ "$unamestr" = 'Darwin' ]; then
-	platform='mac'
+	platform='macos'
 fi
 
 if [ $platform = 'linux' ]; then
@@ -55,12 +56,12 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8092"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1312"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8082"+g' $HOME_OSMOSIS/config/app.toml
-elif [ $platform = 'mac' ]; then
-  sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
+elif [ $platform = 'macos' ]; then
+	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uosmo"/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26679"+g' $HOME_OSMOSIS/config/config.toml
-	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml	
+	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml
 	sed -i'.original' -e 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26662"+g' $HOME_OSMOSIS/config/config.toml
 	sed -i'.original' -e 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6062"+g' $HOME_OSMOSIS/config/config.toml
 	sed -i'.original' -e 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9096"+g' $HOME_OSMOSIS/config/app.toml
@@ -68,7 +69,8 @@ elif [ $platform = 'mac' ]; then
 	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1312"+g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's+address = ":8080"+address = ":8082"+g' $HOME_OSMOSIS/config/app.toml
 else
-	echo "only linux and mac platforms are supported, if you are using other platforms you should probably improve this script."
+	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
@@ -104,4 +106,4 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start
-$BINARY start --home $HOME_OSMOSIS >>& ./logs/osmo_localnet.log
+$BINARY start --home $HOME_OSMOSIS >> ./logs/osmo_localnet.log 2>&1

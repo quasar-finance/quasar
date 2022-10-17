@@ -83,13 +83,13 @@ func (k Keeper) TransmitICATransfer(
 	token sdk.Coin,
 	finalReceiver string,
 	icaTransferTimeoutHeight ibcclienttypes.Height,
-	icaTransferTimeoutTimestamp uint64) (uint64, error) {
+	icaTransferTimeoutTimestamp uint64) (uint64, string, string, error) {
 	logger := k.Logger(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(finalReceiver); err != nil {
 		err := sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid final receiver address (%s) for quasar zone", err)
 		logger.Error("TransmitICATransfer", err)
-		return 0, err
+		return 0, "", "", err
 	}
 
 	icaZoneInfo, found := k.GetZoneInfo(ctx, types.OsmosisZoneId)
@@ -97,7 +97,7 @@ func (k Keeper) TransmitICATransfer(
 		err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not found in CompleteZoneInfoMap for direct transfer of %s",
 			token.String())
 		logger.Error("TransmitICATransfer", err)
-		return 0, err
+		return 0, "", "", err
 	}
 
 	qsrToIcaConnectionId := icaZoneInfo.ZoneRouteInfo.ConnectionId
@@ -106,7 +106,7 @@ func (k Keeper) TransmitICATransfer(
 		ConnectionId: icaZoneInfo.ZoneRouteInfo.ConnectionId,
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", "", err
 	}
 
 	osmosisDenom := token.Denom
@@ -114,13 +114,13 @@ func (k Keeper) TransmitICATransfer(
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrInvalidDenom, "corresponding quasar denom for osmosis denom %s not found", osmosisDenom)
 		logger.Error("TransmitICATransfer", err)
-		return 0, err
+		return 0, "", "", err
 	}
 	nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[quasarDenom]
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of quasar denom '%s' not specified", quasarDenom)
 		logger.Error("TransmitICATransfer", err)
-		return 0, err
+		return 0, "", "", err
 	}
 
 	// prepare the ICA transfer message
@@ -148,7 +148,7 @@ func (k Keeper) TransmitICATransfer(
 		if !found {
 			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for zone ID '%s' not specified", nativeZoneId)
 			logger.Error("TransmitICATransfer", err)
-			return 0, err
+			return 0, "", "", err
 		}
 
 		// icaFromNativeInfo contains IBC info about the channel between ICA zone and the native zone.
@@ -157,7 +157,7 @@ func (k Keeper) TransmitICATransfer(
 			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not specified in NextZoneRouteMap of zone '%s' (native zone of %s)",
 				nativeZoneInfo.ZoneRouteInfo.CounterpartyZoneId, token.String())
 			logger.Error("TransmitICATransfer", err)
-			return 0, err
+			return 0, "", "", err
 		}
 
 		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
@@ -165,7 +165,7 @@ func (k Keeper) TransmitICATransfer(
 			err := sdkerrors.Wrapf(types.ErrICANotFound, "no inter-chain account owned by %s found on zone '%s' (native zone of %s)",
 				owner, nativeZoneId, token.String())
 			logger.Error("TransmitICATransfer", err)
-			return 0, err
+			return 0, "", "", err
 		}
 
 		// The fund should first go to the native zone

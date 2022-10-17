@@ -8,7 +8,8 @@ ALICE="blur service enlist into false certain replace arrow until fatal glory mu
 BOB="lucky surface version conduct ketchup cash unfair rival shoulder example demand upset deny tilt very clinic tribe rather renew skirt naive sweet box chicken"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle"
+RELAYER_ACC="$(cat ./keys/gaia.key)"
+
 ALICE_GENESIS_COINS=200000000uatom,2000000000stake
 BOB_GENESIS_COINS=10000000uatom,1000000000stake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uatom,10000000000uusd
@@ -38,9 +39,9 @@ $BINARY collect-gentxs
 platform='unknown'
 unamestr=$(uname)
 if [ "$unamestr" = 'Linux' ]; then
-	platform='linux'
+   	platform='linux'
 elif [ "$unamestr" = 'Darwin' ]; then
-	platform='mac'
+	platform='macos'
 fi
 
 if [ $platform = 'linux' ]; then
@@ -55,7 +56,7 @@ if [ $platform = 'linux' ]; then
 	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8093"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
-elif [ $platform = 'mac' ]; then
+elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_COSMOSHUB/config/app.toml
@@ -68,7 +69,8 @@ elif [ $platform = 'mac' ]; then
 	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1313"+g' $HOME_COSMOSHUB/config/app.toml
 	sed -i'.original' -e 's+address = ":8080"+address = ":8083"+g' $HOME_COSMOSHUB/config/app.toml
 else
-	echo "only linux and mac platforms are supported, if you are using other platforms you should probably improve this script."
+	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_COSMOSHUB/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_COSMOSHUB/config/app.toml
@@ -86,4 +88,4 @@ cat $HOME_COSMOSHUB/config/genesis_original.json |
 		>$HOME_COSMOSHUB/config/genesis.json
 
 # Start
-$BINARY start >>& ./logs/gaia_localnet.log
+$BINARY start --home $HOME_COSMOSHUB >> ./logs/cosmos_localnet.log 2>&1
