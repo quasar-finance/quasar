@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	balancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -24,12 +25,14 @@ func NewQueryPlugin(gk *intergammkeeper.Keeper, qk *qoraclekeeper.Keeper) *Query
 	}
 }
 
-func (qp QueryPlugin) GetAllPools(ctx sdk.Context) ([]types.OsmosisPool, error) {
+func (qp QueryPlugin) GetAllPools(ctx sdk.Context, pagination *query.PageRequest) ([]types.OsmosisPool, error) {
 	wrappedContext := sdk.WrapSDKContext(ctx)
-	pools, err := qp.qoracleKeeper.OsmosisPools(wrappedContext, nil)
+	pools, err := qp.qoracleKeeper.OsmosisPools(wrappedContext, &types.QueryOsmosisPoolsRequest{
+		Pagination: pagination,
+	})
 
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to get all pools")
+		return nil, sdkerrors.Wrap(err, "failed to get pools")
 	}
 
 	return pools.Pools, nil

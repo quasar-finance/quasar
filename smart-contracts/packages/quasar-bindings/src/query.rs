@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    DecCoin, OsmosisPoolInfo, PageRequest, PageResponse,
+    DecCoin, OsmosisPool, OsmosisBalancerPool, PageRequest, PageResponse,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -20,19 +20,20 @@ pub enum QuasarQuery {
 impl CustomQuery for QuasarQuery {}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct OsmosisPoolsResponse {
-    pub pools: Vec<OsmosisPoolInfo>,
+    pub pools: Option<Vec<OsmosisPool>>,
     pub pagination: Option<PageResponse>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct OsmosisPoolInfoResponse {
-    pub pool_info: Option<OsmosisPoolInfo>,
+pub struct OsmosisPoolResponse {
+    pub pool_info: Option<OsmosisBalancerPool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OraclePricesResponse {
     pub prices: Vec<DecCoin>,
-    pub updatedAtHeight: i64,
+    pub updated_at_height: i64,
 }
