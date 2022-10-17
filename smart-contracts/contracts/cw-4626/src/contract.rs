@@ -506,8 +506,9 @@ pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg};
+    use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg, BankMsg};
     use cw_utils::PaymentError;
+    use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;
 
     const DENOM: &str = "satoshi";
