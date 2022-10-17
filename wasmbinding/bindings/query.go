@@ -1,15 +1,13 @@
 package bindings
 
 import (
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 )
 
 // OsmosisQuery contains osmosis custom queries.
 // See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
 type QuasarQuery struct {
-	// Query the ranking of pools
-	OsmosisRankedPools *OsmosisRankedPoolsRequest `json:"osmosis_pool_ranking,omitempty"`
-
 	// Query all pools
 	OsmosisPools *OsmosisPoolsRequest `json:"osmosis_pools,omitempty"`
 
@@ -20,9 +18,9 @@ type QuasarQuery struct {
 	OraclePrices *OraclePricesRequest `json:"oracle_prices,omitempty"`
 }
 
-type OsmosisRankedPoolsRequest struct{}
-
-type OsmosisPoolsRequest struct{}
+type OsmosisPoolsRequest struct {
+	Pagination *query.PageRequest `json:"pagination,omitempty"`
+}
 
 // type OsmosisPoolsResponse struct {
 // 	Pools []types.OsmosisPool `json:"pools"`

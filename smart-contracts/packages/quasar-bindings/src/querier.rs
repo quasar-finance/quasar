@@ -1,7 +1,7 @@
 use cosmwasm_std::{QuerierWrapper, QueryRequest, StdResult};
 
 use crate::{
-    query::{OraclePricesResponse, OsmosisPoolInfoResponse, OsmosisPoolsResponse, QuasarQuery},
+    query::{OraclePricesResponse, OsmosisPoolResponse, OsmosisPoolsResponse, QuasarQuery},
     types::PageRequest,
 };
 
@@ -24,7 +24,7 @@ impl<'a> QuasarQuerier<'a> {
         self.querier.query(&request)
     }
 
-    pub fn osmosis_pool_info(&self, pool_id: String) -> StdResult<OsmosisPoolInfoResponse> {
+    pub fn osmosis_pool(&self, pool_id: String) -> StdResult<OsmosisPoolResponse> {
         let query = QuasarQuery::OsmosisPoolInfo { pool_id };
         let request: QueryRequest<QuasarQuery> = QuasarQuery::into(query);
         self.querier.query(&request)

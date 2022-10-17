@@ -20,7 +20,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 
 		switch {
 		case contractQuery.OsmosisPools != nil:
-			pools, err := qp.GetAllPools(ctx)
+			pools, err := qp.GetAllPools(ctx, contractQuery.OsmosisPools.Pagination)
 
 			if err != nil {
 				return nil, sdkerrors.Wrap(err, "failed to get all pools")

@@ -15,10 +15,10 @@ func (ms msgServer) SendToken(goCtx context.Context, msg *types.MsgSendToken) (*
 		return nil, err
 	}
 
-	seq, err := ms.k.SendToken(ctx, msg.ToZoneId, fromAddress, msg.ToAddress, msg.Coin)
+	seq, channel, portId, err := ms.k.SendToken(ctx, msg.ToZoneId, fromAddress, msg.ToAddress, msg.Coin)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.MsgSendTokenResponse{Seq: seq}, nil
+	return &types.MsgSendTokenResponse{Seq: seq, Channel: channel, PortId: portId}, nil
 }

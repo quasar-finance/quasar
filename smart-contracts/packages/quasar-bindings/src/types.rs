@@ -47,33 +47,10 @@ pub struct DecCoin {
     pub denom: String,
 }
 
-// #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-// pub struct GaugeAPY {
-//     pub gaugeId: u64,
-//     pub duration: String,
-//     pub aPY: String,
-// }
-
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OsmosisPoolMetrics {
-    pub APY: Decimal,
-    pub TVL: Decimal,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct PoolPosition {
-    pub poolId: String,
-    pub metrics: OsmosisPoolMetrics,
-    pub lastUpdatedTime: u64,
-    pub creator: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct PoolRanking {
-    pub poolIdsSortedByAPY: Vec<String>,
-    pub poolIdsSortedByTVL: Vec<String>,
-    pub lastUpdatedTime: u64,
-    pub creator: String,
+    pub apy: Decimal,
+    pub tvl: Decimal,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -84,40 +61,32 @@ pub struct PoolAsset {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct SmoothWeightChangeParams {
-    pub startTime: Timestamp,
+    pub start_time: Timestamp,
     pub duration: Duration,
-    pub poolAsset: Vec<PoolAsset>,
-    pub targetPoolWeights: Vec<PoolAsset>,
+    pub pool_asset: Vec<PoolAsset>,
+    pub target_pool_weights: Vec<PoolAsset>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct PoolParams {
-    pub swapFee: Decimal,
-    pub exitFee: Decimal,
-    pub smoothWeightChangeParams: SmoothWeightChangeParams,
+    pub swap_fee: Decimal,
+    pub exit_fee: Decimal,
+    pub smooth_weight_change_params: Option<SmoothWeightChangeParams>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct Pool {
+pub struct OsmosisBalancerPool {
     pub address: String,
     pub id: u64,
-    pub poolParams: PoolParams,
-    pub futurePoolGoverner: String,
-    pub totalShares: Coin,
-    pub poolAssets: Vec<PoolAsset>,
-    pub totalWeight: Uint256,
+    pub pool_params: PoolParams,
+    pub future_pool_governer: Option<String>,
+    pub total_shares: Coin,
+    pub pool_assets: Vec<PoolAsset>,
+    pub total_weight: Uint256,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct OsmosisPool {
-pub pool_info: OsmosisPoolInfo,
-pub metrics: OsmosisPoolMetrics
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct OsmosisPoolInfo {
-    pub poolId: String,
-    pub info: Pool,
-    pub lastUpdatedTime: u64,
-    pub creator: String,
+    pub pool_info: OsmosisBalancerPool,
+    pub metrics: OsmosisPoolMetrics,
 }

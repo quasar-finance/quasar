@@ -46,6 +46,16 @@ message MsgSendToken {
 
 message MsgSendTokenResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
+}
+
+message MsgRegisterInterchainAccount {
+  string creator = 1;
+  string connectionId = 2;
+}
+
+message MsgRegisterInterchainAccountResponse {
 }
 
 message MsgRegisterInterchainAccount {
@@ -67,6 +77,8 @@ message MsgTransmitIbcJoinPool {
 
 message MsgTransmitIbcJoinPoolResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcExitPool {
@@ -80,6 +92,8 @@ message MsgTransmitIbcExitPool {
 
 message MsgTransmitIbcExitPoolResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcLockTokens {
@@ -95,6 +109,8 @@ message MsgTransmitIbcLockTokens {
 
 message MsgTransmitIbcLockTokensResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcBeginUnlocking {
@@ -107,6 +123,8 @@ message MsgTransmitIbcBeginUnlocking {
 
 message MsgTransmitIbcBeginUnlockingResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcJoinSwapExternAmountIn {
@@ -120,6 +138,8 @@ message MsgTransmitIbcJoinSwapExternAmountIn {
 
 message MsgTransmitIbcJoinSwapExternAmountInResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitIbcExitSwapExternAmountOut{
@@ -133,6 +153,8 @@ message MsgTransmitIbcExitSwapExternAmountOut{
 
 message MsgTransmitIbcExitSwapExternAmountOutResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgTransmitICATransfer {
@@ -143,6 +165,8 @@ message MsgTransmitICATransfer {
 
 message MsgTransmitICATransferResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 message MsgRegisterICAOnZone {
@@ -169,6 +193,8 @@ message MsgSendTokenToICA {
 
 message MsgSendTokenToICAResponse {
   uint64 seq = 1;
+  string channel = 2;
+  string portId = 3;
 }
 
 // this line is used by starport scaffolding # proto/tx/message
