@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 .DS_Store
+.env
 tmp/
 *.tmp
 *.log
@@ -13,4 +14,6 @@ run/
 node_modules/
 vue/
 
+smart-contracts/**/artifacts
+smart-contracts/**/target
 local_testnet_run-*nodes/

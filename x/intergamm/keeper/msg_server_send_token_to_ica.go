@@ -15,10 +15,10 @@ func (ms msgServer) SendTokenToICA(goCtx context.Context, msg *types.MsgSendToke
 		return nil, err
 	}
 
-	seq, err := ms.k.SendTokenToICA(ctx, msg.ToZoneId, fromAddress, msg.Coin)
+	seq, channel, portId, err := ms.k.SendTokenToICA(ctx, msg.ToZoneId, fromAddress, msg.Coin)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.MsgSendTokenToICAResponse{Seq: seq}, nil
+	return &types.MsgSendTokenToICAResponse{Seq: seq, Channel: channel, PortId: portId}, nil
 }
