@@ -28,10 +28,11 @@ echo "Got address of deployed contract = $ADDR"
 echo "setting up channel"
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
 
-
-# MSG='{"join_pool":{"channel":}}'
+CHANNEL=$(rly q channels quasar | jq  -s --arg ADDR $ADDR '.[] | select(.port_id=="wasm." + $ADDR).channel_id')
+SENDER=$(rly q channels quasar | jq  -s --arg ADDR $ADDR '.[] | select(.port_id=="wasm." + $ADDR).version | fromjson | .address')
+MSG='{"join_pool":{"channel": '$CHANNEL', "sender": '$SENDER', "pool_id": "1", "share_out_amount": "1", "token_in_maxs":[{"denom": "uosmo", "amount": "1"}]}}'
 
 # echo "Executing register ica message... ('$MSG')"
-# quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 cd -
