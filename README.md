@@ -84,6 +84,19 @@ make docs-serve
 
 See [this document](LOCALNET.md) to run a Quasar testnet locally.
 
+## Project Dependencies
+This documents provides a list of packages, libraries and projects which this project at current state relies on.
+
+| **Dependency** | **Description** | **Version** | **License** |
+|---|---|---|---|
+| [cosmos-sdk](https://github.com/cosmos/cosmos-sdk/tree/v0.45.6) | World’s most popular framework for building application-specific blockchains. | v0.45.6 | Apache 2.0 |
+| [ibc-go](https://github.com/strangelove-ventures/ibc-go/tree/v3.3.0-icq)* | Interblockchain Communication Protocol (IBC) implementation in Golang. (Unofficial version with ICQ module implementation) | v3.3.0 | MIT |
+| [wasmd](https://github.com/CosmWasm/wasmd/tree/v0.27.0) | First implementation of a cosmos zone with wasm smart contracts enabled. | v0.27.0 | Apache 2.0 |
+| [osmosis](https://github.com/quasar-finance/osmosis/tree/v12.0.0-icq)* | A fair-launched, customizable automated market maker for interchain assets that allows the creation and management of non-custodial, self-balancing, interchain token index similar to one of Balancer. (Unofficial ICQ enabled fork) | v12 | Apache 2.0 |
+| [bandchain](https://github.com/bandprotocol/chain/tree/v2.4.0) | High-performance Blockchain Built for Data Oracle. | v2.4.0 | GPL 3.0 |
+
+*\* Marks the unofficial, unstable or forked dependencies*
+
 ## Learn more
 
 - [Ignite](https://ignite.com)
