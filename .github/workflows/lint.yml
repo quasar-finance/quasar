@@ -31,7 +31,7 @@ jobs:
         with:
           toolchain: 1.59.0
           target: wasm32-unknown-unknown
-          profile: minimal
+          profile: default
           override: true
       - name: Show versions
         run: rustc -V && cargo -V
