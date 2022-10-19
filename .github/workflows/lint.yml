@@ -35,3 +35,6 @@ jobs:
           override: true
       - name: Show versions
         run: rustc -V && cargo -V
+      - name: Rust lint
+        run: cargo clippy -Dwarnings  
+      
