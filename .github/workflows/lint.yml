@@ -10,7 +10,7 @@ on:
 # This workflow makes x86_64 binaries for linux.
 # TODO: add darwin later
 jobs:
-  lint:
+  lint-go:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -23,3 +23,15 @@ jobs:
         run: go version
       - name: Go lint
         run: make lint
+  lint-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.59.0
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - name: Show versions
+        run: rustc -V && cargo -V
