@@ -36,5 +36,5 @@ jobs:
       - name: Show versions
         run: rustc -V && cargo -V
       - name: Rust lint
-        run: cargo clippy -Dwarnings  
+        run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings  
       
