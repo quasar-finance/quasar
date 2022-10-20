@@ -200,7 +200,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 
 	var ackData icqtypes.InterchainQueryPacketAck
 	if err := types.ModuleCdc.UnmarshalJSON(ack.GetResult(), &ackData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet acknowledgement data")
+		return sdkerrors.Wrapf(err, "could not unmarshal icq packet acknowledgement data")
 	}
 	resps, err := icqtypes.DeserializeCosmosResponse(ackData.Data)
 	if err != nil {
@@ -209,7 +209,7 @@ func (k Keeper) handleOsmosisICQAcknowledgment(ctx sdk.Context, packet channelty
 
 	var packetData icqtypes.InterchainQueryPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
+		return sdkerrors.Wrapf(err, "could not unmarshal icq packet data")
 	}
 	reqs, err := icqtypes.DeserializeCosmosQuery(packetData.Data)
 	if err != nil {
