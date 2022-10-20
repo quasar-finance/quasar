@@ -9,10 +9,6 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
-const (
-	listSeparator = ","
-)
-
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -23,19 +19,6 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(CmdCreatePoolPosition())
-	cmd.AddCommand(CmdUpdatePoolPosition())
-	cmd.AddCommand(CmdDeletePoolPosition())
-	cmd.AddCommand(CmdCreatePoolRanking())
-	cmd.AddCommand(CmdUpdatePoolRanking())
-	cmd.AddCommand(CmdDeletePoolRanking())
-	cmd.AddCommand(CmdCreatePoolSpotPrice())
-	cmd.AddCommand(CmdUpdatePoolSpotPrice())
-	cmd.AddCommand(CmdDeletePoolSpotPrice())
-	cmd.AddCommand(CmdCreatePoolInfo())
-	cmd.AddCommand(CmdUpdatePoolInfo())
-	cmd.AddCommand(CmdDeletePoolInfo())
-	cmd.AddCommand(CmdStablePrice())
 	cmd.AddCommand(CmdUpdateOsmosisChainParams())
 	// this line is used by starport scaffolding # 1
 

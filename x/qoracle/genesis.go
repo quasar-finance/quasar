@@ -24,22 +24,6 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		}
 	}
 
-	// Set all the poolPosition
-	for _, elem := range genState.PoolPositionList {
-		k.SetPoolPosition(ctx, elem)
-	}
-	// Set if defined
-	if genState.PoolRanking != nil {
-		k.SetPoolRanking(ctx, *genState.PoolRanking)
-	}
-	// Set all the poolSpotPrice
-	for _, elem := range genState.PoolSpotPriceList {
-		k.SetPoolSpotPrice(ctx, elem)
-	}
-	// Set all the poolInfo
-	for _, elem := range genState.PoolInfoList {
-		k.SetPoolInfo(ctx, elem)
-	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -50,14 +34,6 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.PortId = k.GetPort(ctx)
 	genesis.Params = k.GetParams(ctx)
 
-	genesis.PoolPositionList = k.GetAllPoolPosition(ctx)
-	// Get all poolRanking
-	poolRanking, found := k.GetPoolRanking(ctx)
-	if found {
-		genesis.PoolRanking = &poolRanking
-	}
-	genesis.PoolSpotPriceList = k.GetAllPoolSpotPrice(ctx)
-	genesis.PoolInfoList = k.GetAllPoolInfo(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
