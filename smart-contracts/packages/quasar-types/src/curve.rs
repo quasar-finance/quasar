@@ -56,7 +56,7 @@ impl Curve for Constant {
     /// returns the amount of shares gotten for amount of reserve tokens, equal to F(x)
     fn deposit(&self, amount: &Uint128) -> Uint128 {
         // f(x) = supply * self.value
-        let shares = self.normalize.from_supply(amount.clone()) * self.value;
+        let shares = self.normalize.from_supply(*amount) * self.value;
         self.normalize.to_reserve(shares)
     }
 
