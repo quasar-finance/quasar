@@ -31,6 +31,28 @@ pub struct PageRequest {
     pub reverse: bool,
 }
 
+impl PageRequest {
+    pub fn with_key(key: Vec<u8>) -> Self {
+        Self {
+            key,
+            offset: 0,
+            limit: 0,
+            count_total: false,
+            reverse: false,
+        }
+    }
+
+    pub fn with_offset(offset: u64) -> Self {
+        Self {
+            key: vec![],
+            offset,
+            limit: 0,
+            count_total: false,
+            reverse: false,
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug, JsonSchema)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to

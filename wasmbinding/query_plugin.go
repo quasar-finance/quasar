@@ -46,7 +46,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 			}
 
 			res := bindings.OsmosisPoolInfoResponse{
-				PoolInfo: pool,
+				Pool: pool,
 			}
 
 			bz, err := json.Marshal(res)

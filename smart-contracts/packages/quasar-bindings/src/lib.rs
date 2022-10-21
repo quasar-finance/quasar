@@ -1,7 +1,7 @@
 pub mod msg;
 pub mod query;
 pub mod querier;
-mod types;
+pub mod types;
 
 #[cfg(test)]
 mod tests {
