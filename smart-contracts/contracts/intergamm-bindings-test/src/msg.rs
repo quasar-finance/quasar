@@ -8,7 +8,7 @@ pub struct InstantiateMsg {
     pub callback_address: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     SendToken {
@@ -91,7 +91,7 @@ pub struct AcksResponse {
     pub acks: Vec<(u64, intergamm_bindings::msg::AckValue)>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingAcksResponse {
     pub pending: Vec<(u64, IntergammMsg)>,

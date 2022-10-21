@@ -9,7 +9,7 @@ use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
-    deduct_allowance, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
+    execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
@@ -21,7 +21,7 @@ use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
-use quasar_types::curve::{CurveType, DecimalPlaces};
+use quasar_types::curve::{DecimalPlaces};
 use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
 use crate::error::ContractError;
@@ -101,7 +101,7 @@ fn verify_logo(logo: &Logo) -> Result<(), cw20_base::ContractError> {
 // TODO add the curve of the vault here
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -295,14 +295,14 @@ pub fn execute_withdraw(
     let curve = curve_fn(vault_info.decimals);
 
     // if amount is None, sell all shares of sender
-    let shares = if amount.is_some() {
-        amount.unwrap()
+    let shares = if let Some(value) = amount {
+        value
     } else {
-        // TODO remove clone
-        query_balance(deps.as_ref(), info.clone().sender.into_string())?.balance
+        let addr = &info.sender.to_string(); 
+        query_balance(deps.as_ref(), addr.clone())?.balance
     };
 
-    let amount = curve.withdraw(&shares);
+    let withdraw_amount = curve.withdraw(&shares);
 
     // TODO here we need to withdraw from the strategy, if the strategy has the funds, we can simply withdraw
     //  if the withdraw is queued, do we already burn and mint again if we need to reverse or not burn at all?
@@ -311,12 +311,11 @@ pub fn execute_withdraw(
         env.clone(),
         info.clone(),
         info.sender.to_string(),
-        vault_info.reserve_denom.clone(),
-        amount,
+        vault_info.reserve_denom,
+        withdraw_amount,
     )?;
 
     // execute_burn will error if the sender does not have enough tokens to burn
-    // TODO remove clone
     // TODO make sure that we can discard the result of execute_burn
     execute_burn(deps.branch(), env, info.clone(), shares)?;
 
@@ -335,11 +334,11 @@ pub fn execute_withdraw(
 // in the cw20 contract. The underlying reserve tokens should be returned to who? probably the sender
 // and not the owner
 pub fn execute_burn_from(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    owner: String,
-    amount: Uint128,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _owner: String,
+    _amount: Uint128,
 ) -> Result<Response, ContractError> {
     todo!()
 }
@@ -367,10 +366,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalAssets {} => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
-        QueryMsg::MaxDeposit { receiver } => {
+        QueryMsg::MaxDeposit { receiver: _receiver } => {
             // max deposit needs to check the underlying cw-20 token for the maximum supply, convert that
-            // to the amout
-            todo!()
+            // to the amount
+            to_binary(&query_max_deposit(deps)?)
         }
         QueryMsg::PreviewDeposit { .. } => {
             todo!()
@@ -460,9 +459,8 @@ fn query_max_deposit(deps: Deps) -> StdResult<MaxDepositResponse> {
     let curve = curve_fn(vault_info.decimals);
 
     let minter = query_minter(deps)?;
-    let mut free_tokens = Uint128::zero();
-    if minter.is_some() {
-        let min = minter.unwrap();
+    let free_tokens:Uint128;
+    if let Some(min) = minter {
         // calculate the outstanding tokens
         let accounts = query_all_accounts(deps, None, None)?;
         let mut outstanding = Uint128::zero();
@@ -504,6 +502,7 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg, BankMsg};
     use cw_utils::PaymentError;
+    use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;
 
     const DENOM: &str = "satoshi";
