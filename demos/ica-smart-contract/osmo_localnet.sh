@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 # Configure variables
 BINARY=osmosisd
@@ -80,87 +80,28 @@ cp $HOME_OSMOSIS/config/genesis.json $HOME_OSMOSIS/config/genesis_original.json
 cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.crisis.constant_fee.denom="uosmo"' |
   jq '.app_state.staking.params.bond_denom="uosmo"' |
-  jq '.app_state.mint = {
-      halven_started_epoch: "0",
-      minter: {
-        epoch_provisions: "0.000000000000000000"
-      },
-      params: {
-        distribution_proportions: {
-          community_pool: "0.100000000000000000",
-          developer_rewards: "0.200000000000000000",
-          pool_incentives: "0.300000000000000000",
-          staking: "0.400000000000000000"
-        },
-        epoch_identifier: "day",
-        genesis_epoch_provisions: "5000000.000000000000000000",
-        mint_denom: "uosmo",
-        minting_rewards_distribution_start_epoch: "0",
-        reduction_factor: "0.500000000000000000",
-        reduction_period_in_epochs: "156",
-        weighted_developer_rewards_receivers: []
-    }
-  }' |
-  jq '.app_state.incentives = {
-    last_gauge_id: "0",
-    lockable_durations: [
-      "1s",
-      "120s",
-      "180s",
-      "240s"
-    ],
-    params: {
-      distr_epoch_identifier: "day"
-    }
-  }' |
-  jq '.app_state.poolincentives = {
-    distr_info: {
-      records: [
-        {
-          gauge_id: "0",
-          weight: "10000"
-        },
-        {
-          gauge_id: "1",
-          weight: "1000"
-        },
-        {
-          gauge_id: "2",
-          weight: "100"
-        }
-      ],
-      total_weight: "11100"
-    },
-    lockable_durations: [
-      "120s",
-      "180s",
-      "240s"
-    ],
-    params: {
-      minted_denom: "uosmo"
-    }
-  }' |
+  jq '.app_state.mint.params.mint_denom="uosmo"' |
+  jq '.app_state.poolincentives.params.minted_denom="uosmo"' |
   jq '.app_state.txfees.basedenom="uosmo"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uosmo",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
-  jq '.app_state.interchainquery = {
-    host_port: "icqhost",
-    params: {
-      host_enabled: true,
-      allow_queries: [
-        "/cosmos.bank.v1beta1.Query/AllBalances",
-        "/cosmos.bank.v1beta1.Query/Balance",
-        "/osmosis.epochs.v1beta1.Query/EpochInfos",
-        "/osmosis.gamm.v1beta1.Query/Pool",
-        "/osmosis.poolincentives.v1beta1.Query/LockableDurations",
-        "/osmosis.mint.v1beta1.Query/Params",
-        "/osmosis.mint.v1beta1.Query/EpochProvisions",
-        "/osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
-        "/osmosis.poolincentives.v1beta1.Query/GaugeIds",
-        "/osmosis.poolincentives.v1beta1.Query/DistrInfo"
-      ]
-    }
+  jq '.app_state.interchainaccounts.host_genesis_state.port="icahost"' |
+  jq '.app_state.interchainaccounts.host_genesis_state.params=
+  {
+    host_enabled:true,
+    allow_messages: [
+      "/ibc.applications.transfer.v1.MsgTransfer",
+      "/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
+      "/osmosis.gamm.v1beta1.MsgJoinPool",
+      "/osmosis.gamm.v1beta1.MsgExitPool",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+      "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+      "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+      "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+      "/osmosis.lockup.MsgLockTokens",
+      "/osmosis.lockup.MsgBeginUnlocking"
+    ]
   }' \
   >  $HOME_OSMOSIS/config/genesis.json
 

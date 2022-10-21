@@ -14,8 +14,8 @@ use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
 
-pub const ICA_VERSION: &str = "{\"version\":\"ics-20\"}";
-pub const ICA_ORDERING: IbcOrder = IbcOrder::Ordered;
+pub const ICQ_VERSION: &str = "icq-1";
+pub const ICQ_ORDERING: IbcOrder = IbcOrder::Unordered;
 
 /// This is compatible with the JSON serialization
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
@@ -79,21 +79,19 @@ fn enforce_order_and_version(
     channel: &IbcChannel,
     counterparty_version: Option<&str>,
 ) -> Result<(), ContractError> {
-    // if channel.version != ICA_VERSION {
-    //     return Err(ContractError::InvalidIbcVersion {
-    //         contract_version: ICA_VERSION.to_string(),
-    //         version: channel.version.clone(),
-    //     });
-    // }
-    // if let Some(version) = counterparty_version {
-    //     if version != ICA_VERSION {
-    //         return Err(ContractError::InvalidIbcVersion {
-    //             contract_version: ICA_VERSION.to_string(),
-    //             version: version.to_string(),
-    //         });
-    //     }
-    // }
-    if channel.order != ICA_ORDERING {
+    if channel.version != ICQ_VERSION {
+        return Err(ContractError::InvalidIbcVersion {
+            version: channel.version.clone(),
+        });
+    }
+    if let Some(version) = counterparty_version {
+        if version != ICQ_VERSION {
+            return Err(ContractError::InvalidIbcVersion {
+                version: version.to_string(),
+            });
+        }
+    }
+    if channel.order != ICQ_ORDERING {
         return Err(ContractError::OnlyOrderedChannel {});
     }
     Ok(())
