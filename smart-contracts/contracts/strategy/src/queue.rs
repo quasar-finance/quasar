@@ -2,7 +2,6 @@ use cosmwasm_std::{
     DepsMut, Order, OverflowError, OverflowOperation, StdError, StdResult,
 };
 use std::collections::VecDeque;
-use cosmwasm_std::Storage;
 
 use crate::state::{WithdrawRequest, WITHDRAW_QUEUE};
 
@@ -66,6 +65,7 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_dependencies_with_balance};
     use cosmwasm_std::Uint128;
+    use cosmwasm_std::Storage;
 
     #[test]
     fn enqueue_dequeue_one_works() {
