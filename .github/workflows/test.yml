@@ -39,14 +39,14 @@ jobs:
           override: true
       - name: Install cosmwasm check
         run: cargo install cosmwasm-check
-      - name: Compile wasm code
-        uses: docker://cosmwasm/rust-optimizer:0.12.6
-        with:
-          args: >-
-            --rm -v "$(pwd)":/code 
-            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
       # - name: Compile wasm code
-      #   run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
+      #   uses: docker://cosmwasm/rust-optimizer:0.12.6
+      #   with:
+      #     args: >-
+      #       --rm -v "$(pwd)":/code 
+      #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
+      #       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+      - name: Compile wasm code
+        run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
       - name: Run cosmwasm check
         run: cd smart-contracts && cosmwasm-check artifacts/*.wasm
