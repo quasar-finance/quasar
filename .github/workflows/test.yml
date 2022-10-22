@@ -10,7 +10,7 @@ on:
 # This workflow makes x86_64 binaries for linux.
 # TODO: add darwin later
 jobs:
-  test:
+  test-go:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -25,3 +25,28 @@ jobs:
         run: make test-cover
       - name: Code coverage report
         uses: codecov/codecov-action@v1.5.2
+  test-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.59.0
+          target: wasm32-unknown-unknown
+          profile: default
+          override: true
+      - name: Install cosmwasm check
+        run: cargo install cosmwasm-check
+      - name: Compile wasm code
+        uses: docker://cosmwasm/rust-optimizer:0.12.6
+        with:
+          args: >-
+            --rm -v "$(pwd)":/code 
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+      # - name: Compile wasm code
+      #   run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
+      - name: Run cosmwasm check
+        run: cd smart-contracts && cosmwasm-check artifacts/*.wasm
