@@ -4,6 +4,7 @@ use cosmwasm_std::{
     coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
@@ -61,6 +62,7 @@ pub fn execute_deposit(
     // Assume we have Atom from the vault contract, later we can add other tokens and add a swap route or something
     // transfer the tokens to our ICA on cosmos
     let ica =  ICA_STATE.load(deps.storage)?;
+    let msg = IntergammMsg::RegisterIcaOnZone { zone_id: ica.zone_id };
 
     // Stake them in a validator, we can add logic to spread over multiple later
 

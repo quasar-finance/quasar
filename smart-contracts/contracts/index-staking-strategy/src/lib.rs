@@ -3,6 +3,7 @@ pub mod error;
 mod msg;
 mod queue;
 mod state;
+mod ibc_builder;
 
 #[cfg(test)]
 mod tests {
