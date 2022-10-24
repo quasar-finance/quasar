@@ -427,14 +427,19 @@ func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response pro
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 
-	if len(txMsgData.MsgResponses) != 1 {
+	// The following switch will check if the acknowledgment is based on (cosmos-sdk >= v0.46.x) or old deprecated structure.
+	switch {
+	case len(txMsgData.MsgResponses) == 1:
+		// MsgResponses is the new field introduced in cosmos-sdk v0.46.x
+		err = proto.Unmarshal(txMsgData.MsgResponses[0].Value, response)
+	case len(txMsgData.Data) == 1:
+		// Data is the deprecated field
+		err = proto.Unmarshal(txMsgData.Data[0].GetData(), response)
+	default:
 		return errors.New("only single msg acks are supported")
 	}
-
-	err = proto.Unmarshal(txMsgData.MsgResponses[0].Value, response)
 	if err != nil {
 		return errors.Wrap(err, "cannot unmarshal ICA acknowledgement")
 	}
-
 	return nil
 }
