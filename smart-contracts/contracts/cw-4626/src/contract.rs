@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
@@ -21,7 +21,7 @@ use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
-use quasar_types::curve::{DecimalPlaces};
+use quasar_types::curve::DecimalPlaces;
 use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
 use crate::error::ContractError;
@@ -298,7 +298,7 @@ pub fn execute_withdraw(
     let shares = if let Some(value) = amount {
         value
     } else {
-        let addr = &info.sender.to_string(); 
+        let addr = &info.sender.to_string();
         query_balance(deps.as_ref(), addr.clone())?.balance
     };
 
@@ -366,7 +366,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalAssets {} => to_binary(&query_total_assets(deps, env)?),
         QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
         QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
-        QueryMsg::MaxDeposit { receiver: _receiver } => {
+        QueryMsg::MaxDeposit {
+            receiver: _receiver,
+        } => {
             // max deposit needs to check the underlying cw-20 token for the maximum supply, convert that
             // to the amount
             to_binary(&query_max_deposit(deps)?)
@@ -459,7 +461,7 @@ fn query_max_deposit(deps: Deps) -> StdResult<MaxDepositResponse> {
     let curve = curve_fn(vault_info.decimals);
 
     let minter = query_minter(deps)?;
-    let free_tokens:Uint128;
+    let free_tokens: Uint128;
     if let Some(min) = minter {
         // calculate the outstanding tokens
         let accounts = query_all_accounts(deps, None, None)?;
@@ -500,7 +502,9 @@ pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg, BankMsg};
+    use cosmwasm_std::{
+        coin, BankMsg, Decimal, OverflowError, OverflowOperation, StdError, SubMsg,
+    };
     use cw_utils::PaymentError;
     use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;

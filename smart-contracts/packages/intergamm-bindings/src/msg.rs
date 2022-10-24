@@ -55,8 +55,8 @@ pub enum IntergammMsg {
         connection_id: String,
         timeout_timestamp: u64,
         id: u64,
-        coins: Vec<Coin>
-    }
+        coins: Vec<Coin>,
+    },
 }
 
 impl IntergammMsg {}

@@ -1,11 +1,14 @@
 use crate::{
     msg::InterchainQueryPacketData,
     proto::{CosmosQuery, CosmosResponse},
-    state::{Origin, QUERY_RESULT_COUNTER, REPLIES, CHANNEL_INFO, CONFIG, PENDING_QUERIES},
+    state::{Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
     ContractError,
 };
 use cosmos_sdk_proto::tendermint::abci::RequestQuery;
-use cosmwasm_std::{attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Timestamp, Storage, Reply, StdResult, Response, StdError};
+use cosmwasm_std::{
+    attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult,
+    Storage, Timestamp,
+};
 use prost::Message;
 
 pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
@@ -47,17 +50,21 @@ pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Respon
     Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
 }
 
-pub fn prepare_query(storage: &dyn Storage, env: Env, channel: &str) -> Result<Timestamp, ContractError> {
-        // ensure the requested channel is registered
-        if !CHANNEL_INFO.has(storage, channel) {
-            return Err(ContractError::NoSuchChannel { id: channel.into() });
-        }
-        let config = CONFIG.load(storage)?;
-        // delta from user is in seconds
-        let timeout_delta = config.default_timeout;
-    
-        // timeout is in nanoseconds
-        Ok(env.block.time.plus_seconds(timeout_delta))
+pub fn prepare_query(
+    storage: &dyn Storage,
+    env: Env,
+    channel: &str,
+) -> Result<Timestamp, ContractError> {
+    // ensure the requested channel is registered
+    if !CHANNEL_INFO.has(storage, channel) {
+        return Err(ContractError::NoSuchChannel { id: channel.into() });
+    }
+    let config = CONFIG.load(storage)?;
+    // delta from user is in seconds
+    let timeout_delta = config.default_timeout;
+
+    // timeout is in nanoseconds
+    Ok(env.block.time.plus_seconds(timeout_delta))
 }
 
 pub fn set_reply(deps: DepsMut, origin: &Origin) -> Result<u64, ContractError> {

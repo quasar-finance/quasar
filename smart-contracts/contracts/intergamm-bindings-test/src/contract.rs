@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use intergamm_bindings::helper::{
-    check_callback_addr, create_intergamm_msg, handle_reply, set_callback_addr, ack,
+    ack, check_callback_addr, create_intergamm_msg, handle_reply, set_callback_addr,
 };
 use intergamm_bindings::msg::IntergammMsg;
 
@@ -43,7 +43,7 @@ pub fn execute(
         ExecuteMsg::SendToken {
             destination_local_zone_id,
             receiver,
-            coin
+            coin,
         } => execute_send_token(destination_local_zone_id, receiver, coin),
 
         ExecuteMsg::SendTokenIbc {
@@ -51,9 +51,7 @@ pub fn execute(
             to_address,
             amount,
         } => execute_send_token_ibc(channel_id, to_address, amount, env),
-        ExecuteMsg::RegisterIcaOnZone { zone_id } => {
-            execute_register_ica_on_zone(zone_id, deps)
-        }
+        ExecuteMsg::RegisterIcaOnZone { zone_id } => execute_register_ica_on_zone(zone_id, deps),
         ExecuteMsg::JoinSwapExternAmountIn {
             connection_id,
             pool_id,
@@ -224,13 +222,18 @@ pub fn execute_send_token(
 ) -> Result<Response<IntergammMsg>, ContractError> {
     // receiver is an address on a different chain, so we can't parse it.
     Ok(Response::new()
-        .add_attribute("send_tokens", format!("{} {} to {}", coin.amount, coin.denom, destination_local_zone_id))
+        .add_attribute(
+            "send_tokens",
+            format!(
+                "{} {} to {}",
+                coin.amount, coin.denom, destination_local_zone_id
+            ),
+        )
         .add_message(IntergammMsg::SendToken {
             destination_local_zone_id,
             receiver,
             coin,
         }))
-
 }
 
 pub fn execute_send_token_ibc(
@@ -303,16 +306,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_acks(deps: Deps) -> StdResult<AcksResponse> {
-    let acks: Result<Vec<(u64, intergamm_bindings::msg::AckValue)>, StdError> = intergamm_bindings::state::ACKS
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
+    let acks: Result<Vec<(u64, intergamm_bindings::msg::AckValue)>, StdError> =
+        intergamm_bindings::state::ACKS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
     Ok(AcksResponse { acks: acks? })
 }
 
 pub fn query_pending_acks(deps: Deps) -> StdResult<PendingAcksResponse> {
-    let pending: Result<Vec<(u64, IntergammMsg)>, StdError> = intergamm_bindings::state::PENDINGACKS
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
+    let pending: Result<Vec<(u64, IntergammMsg)>, StdError> =
+        intergamm_bindings::state::PENDINGACKS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
     Ok(PendingAcksResponse { pending: pending? })
 }
 

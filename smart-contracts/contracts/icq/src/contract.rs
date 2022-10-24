@@ -12,15 +12,13 @@ use prost::Message;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{set_reply, Query, prepare_query, handle_reply_sample};
+use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
-use crate::state::{
-    Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES,
-};
+use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:icq";

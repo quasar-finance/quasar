@@ -15,7 +15,6 @@ use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS};
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,

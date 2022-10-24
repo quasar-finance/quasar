@@ -1,10 +1,11 @@
 use crate::{
-    proto::{CosmosResponse},
+    proto::CosmosResponse,
     state::{Origin, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
     ContractError,
 };
 use cosmwasm_std::{
-    attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult};
+    attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult,
+};
 
 pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
     let val = msg
@@ -45,7 +46,6 @@ pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Respon
     Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
 }
 
-
 pub fn set_reply(deps: DepsMut, origin: &Origin) -> Result<u64, ContractError> {
     let last = REPLIES
         .range(deps.storage, None, None, Order::Descending)
@@ -80,7 +80,6 @@ pub fn handle_sample_callback(
     QUERY_RESULT_COUNTER.save(deps.storage, &counter)?;
     Ok(IbcBasicResponse::new().add_attributes(attrs))
 }
-
 
 #[cfg(test)]
 mod test {

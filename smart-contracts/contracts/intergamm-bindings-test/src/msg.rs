@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
     SendToken {
         destination_local_zone_id: String,
         receiver: String,
-        coin: Coin
+        coin: Coin,
     },
     SendTokenIbc {
         /// exisiting channel to send the tokens over
