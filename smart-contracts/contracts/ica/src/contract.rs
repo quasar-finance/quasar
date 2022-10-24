@@ -190,6 +190,6 @@ mod test {
             },
         )
         .unwrap_err();
-        assert_eq!(err, StdError::not_found("icq::state::ChannelInfo"));
+        assert_eq!(err, StdError::not_found("ica::state::ChannelInfo"));
     }
 }

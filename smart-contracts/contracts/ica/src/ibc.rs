@@ -209,6 +209,8 @@ mod test {
             channel_id: "channel-1".to_string(),
         };
         let packet = IbcPacket::new(Binary::default(), src, dest, 0, timeout);
+        // save the sequence number for the callback
+        PENDING_QUERIES.save(deps.as_mut().storage, (0, "channel-0"), &Origin::Sample)?;
         let ack = IbcAcknowledgement::new(Binary::from_base64(
             "eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmRaU1VWcmFXUnpaMFU5SW4wPSJ9",
         )?);
