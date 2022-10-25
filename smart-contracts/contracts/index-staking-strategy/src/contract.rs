@@ -1,16 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
 
 use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
+use crate::helpers::parse_seq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS, ICA_STATE, WITHDRAW_QUEUE};
+use crate::state::{WithdrawRequest, ICA_STATE, OUTSTANDING_FUNDS, REPLIES, WITHDRAW_QUEUE, PENDING_ACK};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:index-staking-strategy";
@@ -28,6 +30,16 @@ pub fn instantiate(
     msg.validate()?;
 
     // TODO fill in the instantiation
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+    // Save the ibc message together with the sequence number, to be handled properly later at the ack
+    let original = REPLIES.load(deps.storage, msg.id)?;
+    let seq = parse_seq(msg)?;
+    PENDING_ACK.save(deps.storage, seq, &original)?;
     Ok(Response::default())
 }
 
@@ -61,8 +73,10 @@ pub fn execute_deposit(
     // TODO see if we can package this logic a bit better by moving it to strategy.rs
     // Assume we have Atom from the vault contract, later we can add other tokens and add a swap route or something
     // transfer the tokens to our ICA on cosmos
-    let ica =  ICA_STATE.load(deps.storage)?;
-    let msg = IntergammMsg::RegisterIcaOnZone { zone_id: ica.zone_id };
+    let ica = ICA_STATE.load(deps.storage)?;
+    let msg = IntergammMsg::RegisterIcaOnZone {
+        zone_id: ica.zone_id,
+    };
 
     // Stake them in a validator, we can add logic to spread over multiple later
 
@@ -70,13 +84,10 @@ pub fn execute_deposit(
 
     // profit
 
-
     // if funds are sent to an outside contract, OUTSTANDING funds should be updated here
     // TODO add some more sensible attributes here
     Ok(Response::new().add_attribute("deposit", info.sender))
 }
-
-
 
 pub fn execute_withdraw_request(
     mut deps: DepsMut,

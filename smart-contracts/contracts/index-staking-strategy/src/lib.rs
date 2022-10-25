@@ -1,9 +1,10 @@
 pub mod contract;
 pub mod error;
+mod ibc_builder;
+mod helpers;
 mod msg;
 mod queue;
 mod state;
-mod ibc_builder;
 
 #[cfg(test)]
 mod tests {
