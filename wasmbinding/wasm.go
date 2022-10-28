@@ -5,14 +5,16 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 )
 
 func RegisterCustomPlugins(
 	intergammKeeper *intergammkeeper.Keeper,
+	qoracleKeeper *qoraclekeeper.Keeper,
 	bank *bankkeeper.BaseKeeper,
 	callback *CallbackPlugin,
 ) []wasmkeeper.Option {
-	wasmQueryPlugin := NewQueryPlugin(intergammKeeper)
+	wasmQueryPlugin := NewQueryPlugin(intergammKeeper, qoracleKeeper)
 
 	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
 		Custom: CustomQuerier(wasmQueryPlugin),

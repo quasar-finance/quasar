@@ -7,6 +7,7 @@ members = [
     "contracts/icq",
     "packages/intergamm-bindings",
     "contracts/intergamm-bindings-test",
+    "contracts/qoracle-bindings-test",
     "contracts/ica",
     "packages/quasar-traits",
     "packages/quasar-types",
