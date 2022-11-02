@@ -44,7 +44,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -57,6 +57,7 @@ pub fn execute(
             token_in_maxs,
         } => execute_bank_send(
             deps,
+            env,
             channel,
             sender,
             pool_id,
@@ -68,6 +69,7 @@ pub fn execute(
 
 fn execute_bank_send(
     deps: DepsMut,
+    env: Env,
     channel: String,
     sender: String,
     pool_id: Uint64,
@@ -89,7 +91,7 @@ fn execute_bank_send(
     let send_packet_msg = IbcMsg::SendPacket {
         channel_id: channel,
         data: to_binary(&packet.encode_to_vec())?,
-        timeout: IbcTimeout::with_timestamp(Timestamp::from_seconds(300)),
+        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     };
 
     let id = set_reply(deps, &Origin::Sample)?;

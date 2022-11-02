@@ -2,7 +2,7 @@ package bindings
 
 import (
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // OsmosisQuery contains osmosis custom queries.
@@ -22,16 +22,12 @@ type OsmosisPoolsRequest struct {
 	Pagination *query.PageRequest `json:"pagination,omitempty"`
 }
 
-// type OsmosisPoolsResponse struct {
-// 	Pools []types.OsmosisPool `json:"pools"`
-// }
-
 type OsmosisPoolInfoRequest struct {
 	PoolId string `json:"pool_id"`
 }
 
 type OsmosisPoolInfoResponse struct {
-	PoolInfo *balancer.Pool `json:"pool_info,omitempty"`
+	Pool *types.OsmosisPool `json:"pool,omitempty"`
 }
 
 type OraclePricesRequest struct{}

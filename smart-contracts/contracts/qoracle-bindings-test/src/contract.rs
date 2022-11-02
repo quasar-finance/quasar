@@ -1,9 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-};
-
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use cw2::set_contract_version;
 use quasar_bindings::query::QuasarQuery;
@@ -11,7 +8,6 @@ use quasar_bindings::query::QuasarQuery;
 use crate::error::ContractError;
 use crate::execute::{demo_fetch_oracle_prices, demo_fetch_pool_info, demo_fetch_pools};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:intergamm-bindings-test-2";

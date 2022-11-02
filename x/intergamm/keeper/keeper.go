@@ -234,8 +234,7 @@ func (k Keeper) RegisterOrReturnICA(ctx sdk.Context, connectionId, owner string)
 }
 
 // TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
-//
-//	timeoutTimestamp should probably be used at some point
+// timeoutTimestamp should probably be used at some point
 func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, string, string, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {

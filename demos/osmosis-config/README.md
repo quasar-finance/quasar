@@ -10,7 +10,7 @@ make install
 ```
 Clone the forked version of `osmosis` and install the binary with the following commands:
 ```bash
-git clone https://github.com/quasar-finance/osmosis.git -b feature/icq_integration --depth 1
+git clone https://github.com/quasar-finance/osmosis.git -b v12.0.0-icq --depth 1
 
 cd ./osmosis
 
@@ -215,7 +215,7 @@ To create a pool in osmosis simply run the following command which will create a
 ```bash
 cd ./demos/osmosis-config
 
-osmosisd tx gamm create-pool --pool-fi\le demo_pool.json --home ~/.osmosis --chain-id osmosis --node=http://localhost:26679 --from alice --gas=300000 --output json --keyring-backend test
+osmosisd tx gamm create-pool --pool-file demo_pool.json --home ~/.osmosis --chain-id osmosis --node=http://localhost:26679 --from alice --gas=300000 --output json --keyring-backend test
 ```
 On successful execution of tx you should see the pool in response of http://localhost:1312/osmosis/gamm/v1beta1/pools
 ```json

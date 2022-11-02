@@ -4,7 +4,6 @@ use std::fmt::Debug;
 
 use cosmwasm_std::{Uint128};
 use cw_storage_plus::{Item};
-
 use quasar_types::curve::{CurveType, DecimalPlaces};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

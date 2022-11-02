@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 cp ./hermes_config.toml ~/.hermes/config.toml
 
@@ -20,27 +20,25 @@ osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp:
 
 
 # Create connection
-hermes create connection --a-chain quasar --b-chain cosmos
+echo "creating connection for quasar cosmos"
+hermes create connection --a-chain quasar --b-chain cosmos >> ./logs/hermes_qc.log 2>&1
 
-hermes create connection --a-chain quasar --b-chain osmosis
+echo "creating connection for quasar osmosis"
+hermes create connection --a-chain quasar --b-chain osmosis >> ./logs/hermes_qc.log 2>&1
 
-hermes create connection --a-chain osmosis --b-chain cosmos
+echo "creating connection for osmosis cosmos"
+hermes create connection --a-chain osmosis --b-chain cosmos >> ./logs/hermes_oc.log 2>&1
 
 # hermes create connection quasar $BANDCHAIN
 
 # Create channel
+echo "creating default channel for quasar cosmos"
+hermes create channel --a-chain cosmos --a-connection connection-0 --a-port transfer --b-port transfer >> ./logs/hermes_qc.log 2>&1
 
-hermes create channel --a-chain cosmos --a-connection connection-0 --a-port transfer --b-port transfer
+echo "creating default channel for cosmos osmosis"
+hermes create channel --a-chain cosmos --a-connection connection-1 --a-port transfer --b-port transfer >> ./logs/hermes_oc.log 2>&1
 
-hermes create channel --a-chain cosmos --a-connection connection-1 --a-port transfer --b-port transfer
-
-hermes create channel --a-chain quasar --a-connection connection-1 --a-port transfer --b-port transfer
+echo "creating default channel for quasar osmosis"
+hermes create channel --a-chain quasar --a-connection connection-1 --a-port transfer --b-port transfer >> ./logs/hermes_qo.log 2>&1
 
 # hermes create channel --port-a qoracle --port-b oracle quasar connection-2 -v bandchain-1
-
-# start
-<<<<<<< HEAD:demos/orion-manual-demo/run_hermes_0.14.0_old.sh
-hermes start >>& ./logs/run_hermes.log
-=======
-hermes start 
->>>>>>> 64a8fc658148f38292448fbade83f9a10405025b:demos/orion-manual-demo/run_hermes.sh

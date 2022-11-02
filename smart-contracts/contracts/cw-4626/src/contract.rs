@@ -1,13 +1,11 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-
 use cosmwasm_std::{
-    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
-
 
 // TODO decide if we want to use deduct allowance
 use cw20_base::allowances::{
@@ -24,7 +22,7 @@ use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
 use quasar_traits::traits::Curve;
-use quasar_types::curve::{DecimalPlaces};
+use quasar_types::curve::{CurveType, DecimalPlaces};
 use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
 use crate::error::ContractError;
@@ -33,7 +31,6 @@ use crate::msg::{
     MaxDepositResponse, QueryMsg, TotalAssetResponse, VaultInfoResponse,
 };
 use crate::state::{VaultInfo, VAULT_CURVE, VAULT_INFO};
-
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
@@ -506,8 +503,10 @@ pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{SubMsg, BankMsg};
-    
+    use cosmwasm_std::{
+        coin, BankMsg, Decimal, OverflowError, OverflowOperation, StdError, SubMsg,
+    };
+    use cw_utils::PaymentError;
     use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;
 

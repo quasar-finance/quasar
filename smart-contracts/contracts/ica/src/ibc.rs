@@ -9,8 +9,6 @@ use cosmwasm_std::{
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
 };
 
-
-
 use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
@@ -73,9 +71,6 @@ pub fn ibc_channel_connect(
         connection_id: channel.connection_id,
     };
     CHANNEL_INFO.save(deps.storage, &info.id, &info)?;
-
-    // let pkt = InterchainAccountPacketData{ r#type: todo!(), data: todo!(), memo: todo!() };
-    // let meta = Metadata{ version: todo!(), controller_connection_id: todo!(), host_connection_id: todo!(), address: todo!(), encoding: todo!(), tx_type: todo!() };
 
     Ok(IbcBasicResponse::default())
 }

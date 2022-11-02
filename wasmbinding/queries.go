@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	balancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
@@ -38,7 +37,7 @@ func (qp QueryPlugin) GetAllPools(ctx sdk.Context, pagination *query.PageRequest
 	return pools.Pools, nil
 }
 
-func (qp QueryPlugin) GetPool(ctx sdk.Context, poolID string) (*balancer.Pool, bool) {
+func (qp QueryPlugin) GetPool(ctx sdk.Context, poolID string) (*types.OsmosisPool, bool) {
 	poolIdUint64, err := strconv.ParseUint(poolID, 10, 64)
 
 	if err != nil {
@@ -51,7 +50,7 @@ func (qp QueryPlugin) GetPool(ctx sdk.Context, poolID string) (*balancer.Pool, b
 		return nil, false
 	}
 
-	return &pool.PoolInfo, true
+	return &pool, true
 }
 
 func (qp QueryPlugin) GetStablePrices(ctx sdk.Context) types.OraclePrices {

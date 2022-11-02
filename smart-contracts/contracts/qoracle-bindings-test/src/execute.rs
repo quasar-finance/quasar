@@ -25,7 +25,7 @@ pub fn demo_fetch_pools(deps: DepsMut<QuasarQuery>) -> Result<Response, Contract
 pub fn demo_fetch_pool_info(deps: DepsMut<QuasarQuery>) -> Result<Response, ContractError> {
     let querier = QuasarQuerier::new(&deps.querier);
 
-    let pool_info = match querier.osmosis_pool("1".to_string())?.pool_info {
+    let pool = match querier.osmosis_pool("1".to_string())?.pool {
         Some(pool_info) => pool_info,
         None => {
             return Err(ContractError::CustomError {
@@ -34,7 +34,7 @@ pub fn demo_fetch_pool_info(deps: DepsMut<QuasarQuery>) -> Result<Response, Cont
         }
     };
 
-    Ok(Response::new().add_attribute("pool_info_id", pool_info.id.to_string()))
+    Ok(Response::new().add_attribute("pool_info_id", pool.pool_info.id.to_string()))
 }
 
 pub fn demo_fetch_oracle_prices(deps: DepsMut<QuasarQuery>) -> Result<Response, ContractError> {
