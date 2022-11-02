@@ -22,7 +22,7 @@ use cw20_base::state::{MinterData, TokenInfo, LOGO, MARKETING_INFO, TOKEN_INFO};
 use cw_utils::{must_pay, nonpayable};
 
 use quasar_traits::traits::Curve;
-use quasar_types::curve::{CurveType, DecimalPlaces};
+use quasar_types::curve::{DecimalPlaces};
 use strategy::contract::{execute_deposit as execute_strategy_deposit, execute_withdraw_request};
 
 use crate::error::ContractError;
@@ -504,9 +504,9 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{
-        coin, BankMsg, Decimal, OverflowError, OverflowOperation, StdError, SubMsg,
+        BankMsg, SubMsg,
     };
-    use cw_utils::PaymentError;
+    
     use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;
 

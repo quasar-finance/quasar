@@ -3,7 +3,7 @@ use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAcco
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
-    PortIdResponse, Reply, Response, StdResult, SubMsg, Timestamp, Uint64,
+    PortIdResponse, Reply, Response, StdResult, SubMsg, Uint64,
 };
 use prost::Message;
 

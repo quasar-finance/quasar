@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    DecCoin, OsmosisPool, OsmosisBalancerPool, PageRequest, PageResponse,
+    DecCoin, OsmosisPool, PageRequest, PageResponse,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
