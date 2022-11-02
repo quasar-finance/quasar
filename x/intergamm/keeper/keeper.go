@@ -234,7 +234,7 @@ func (k Keeper) RegisterOrReturnICA(ctx sdk.Context, connectionId, owner string)
 }
 
 // TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
-//  timeoutTimestamp should probably be used at some point
+// timeoutTimestamp should probably be used at some point
 func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, string, string, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
@@ -251,7 +251,7 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 
 	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs)
 	if err != nil {
-		return 0,"", "", err
+		return 0, "", "", err
 	}
 
 	packetData := icatypes.InterchainAccountPacketData{
@@ -355,7 +355,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			return 0, "", "", err
 		}
 
-		seq, err :=  k.ForwardTransferIbcTokens(ctx,
+		seq, err := k.ForwardTransferIbcTokens(ctx,
 			nativeZoneInfo.ZoneRouteInfo.PortId,
 			nativeZoneInfo.ZoneRouteInfo.ChannelId,
 			coin,
@@ -365,7 +365,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			nativeIcaAddr,
 			receiver,
 			transferTimeoutHeight, connectionTimeout)
-		return seq, nativeZoneInfo.ZoneRouteInfo.ChannelId, nativeZoneInfo.ZoneRouteInfo.PortId ,err
+		return seq, nativeZoneInfo.ZoneRouteInfo.ChannelId, nativeZoneInfo.ZoneRouteInfo.PortId, err
 	}
 }
 

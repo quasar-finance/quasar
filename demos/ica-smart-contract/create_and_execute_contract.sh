@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"

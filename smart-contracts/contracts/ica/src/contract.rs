@@ -15,7 +15,7 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
 use crate::msg::{
-    ChannelResponse, ConfigResponse,     ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
+    ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
