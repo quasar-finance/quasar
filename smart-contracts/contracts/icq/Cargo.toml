@@ -1,7 +1,7 @@
 [package]
 name = "icq"
 version = "0.1.0"
-authors = ["Bo Du <bo@polymerlabs.org>"]
+authors = ["Bo Du <bo@polymerlabs.org>, Laurens Kubat <Laurens@Quasar.fi>"]
 edition = "2018"
 description = "IBC Enabled contracts for interchain queries"
 license = "Apache-2.0"

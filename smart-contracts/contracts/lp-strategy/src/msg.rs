@@ -4,21 +4,13 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
-pub struct InstantiateMarketingInfo {
-    pub project: Option<String>,
-    pub description: Option<String>,
-    pub marketing: Option<String>,
-    pub logo: Option<Logo>,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
     // TODO write the instantiate msg
 }
 
 impl InstantiateMsg {
     pub fn validate(&self) -> StdResult<()> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -56,4 +48,5 @@ pub enum ExecuteMsg {
     Deposit { owner: String },
     // A request for a withdraw, this has to be a request and cannot be an immediate withdraw since funds might be locked
     WithdrawRequest {},
+    Transfer { channel: String, to_address: String },
 }

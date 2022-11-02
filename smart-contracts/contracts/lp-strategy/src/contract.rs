@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    Uint128,
+    coins, BankMsg, Binary, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Reply, Response,
+    StdError, StdResult, Timestamp, Uint128,
 };
 use cw2::set_contract_version;
 use intergamm_bindings::msg::IntergammMsg;
@@ -12,10 +12,12 @@ use crate::error::ContractError::PaymentError;
 use crate::helpers::parse_seq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{WithdrawRequest, ICA_STATE, OUTSTANDING_FUNDS, REPLIES, WITHDRAW_QUEUE, PENDING_ACK};
+use crate::state::{
+    WithdrawRequest, ICA_STATE, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE,
+};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:index-staking-strategy";
+const CONTRACT_NAME: &str = "crates.io:lp-strategy";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -34,7 +36,6 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-#[entry_point]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack
     let original = REPLIES.load(deps.storage, msg.id)?;
@@ -56,7 +57,36 @@ pub fn execute(
         ExecuteMsg::WithdrawRequest { .. } => {
             todo!()
         }
+        ExecuteMsg::Transfer {
+            channel,
+            to_address,
+        } => execute_transfer(deps, env, info, channel, to_address),
     }
+}
+
+pub fn execute_transfer(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    channel: String,
+    to_address: String,
+) -> Result<Response, ContractError> {
+    if info.funds.len() != 1 {
+        return Err(ContractError::PaymentError(
+            cw_utils::PaymentError::MultipleDenoms {},
+        ));
+    }
+    let funds = info.funds[0].clone();
+    let transfer = IbcMsg::Transfer {
+        channel_id: channel.clone(),
+        to_address: to_address.clone(),
+        amount: funds,
+        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+    };
+    Ok(Response::new()
+        .add_message(transfer)
+        .add_attribute("ibc-tranfer-channel", channel)
+        .add_attribute("ibc-transfer-receiver", to_address))
 }
 
 pub fn execute_deposit(

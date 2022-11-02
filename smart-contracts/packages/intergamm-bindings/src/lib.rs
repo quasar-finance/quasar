@@ -4,4 +4,4 @@ pub mod error;
 mod querier;
 mod query;
 pub mod state;
-mod types;
+pub mod types;

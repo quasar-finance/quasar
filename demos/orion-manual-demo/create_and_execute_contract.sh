@@ -9,14 +9,15 @@ TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-ad
 echo $NODE
 # the callback_address is the address of the orion module
 INIT='{"callback_address":"quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc"}'
-MSG='{"register_ica_on_zone":{"zone_id":"osmosis"}}'
+# just use any to_address, channel has to be specified weirdly
+MSG='{"transfer":{"channel":"channel-0", "to_address": "cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89|transfer/channel-1:osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d"}}'
 
 cd ../../smart-contracts
 
 docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/intergamm_bindings_test.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
 echo "Got CODE_ID = $CODE_ID"
 
@@ -26,7 +27,7 @@ OUT=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT" --from alice --keyring-ba
 ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR"
 
-echo "Executing register ica message... ('$MSG')"
-quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+echo "transferring funds over ibc message... ('$MSG')"
+quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000uqsr
 
 cd -

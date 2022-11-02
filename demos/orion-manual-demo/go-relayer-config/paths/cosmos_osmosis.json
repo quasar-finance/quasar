@@ -1,9 +1,9 @@
 {
     "src": {
-      "chain-id": "cosmos"
+      "chain-id": "osmosis"
     },
     "dst": {
-      "chain-id": "osmosis"
+      "chain-id": "cosmos"
     },
     "src-channel-filter": {
       "rule": null,

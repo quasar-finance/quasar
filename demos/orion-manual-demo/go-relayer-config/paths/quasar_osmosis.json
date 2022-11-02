@@ -1,9 +1,9 @@
 {
     "src": {
-      "chain-id": "quasar"
+      "chain-id": "osmosis"
     },
     "dst": {
-      "chain-id": "osmosis"
+      "chain-id": "quasar"
     },
     "src-channel-filter": {
       "rule": null,

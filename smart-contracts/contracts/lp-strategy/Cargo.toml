@@ -1,10 +1,16 @@
 [package]
-name = "index-staking-strategy"
+name = "lp-strategy"
 version = "0.1.0"
+authors = ["Laurens Kubat <Laurens@Quasar.fi>"]
 edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
 library = []
 
 
@@ -15,7 +21,7 @@ cw2 = "0.16.0"
 cw20 = "0.16.0"
 cw20-base = { version = "0.16.0", features = ["library"]}
 cw-storage-plus = "0.16.0"
-cosmwasm-std = { version = "1.0.0", features = ["abort"]}
+cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"]}
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.81", default-features = false, features = ["alloc"]}
