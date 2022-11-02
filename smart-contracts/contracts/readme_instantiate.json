@@ -1,0 +1,17 @@
+{
+  "name":"test-vault",
+  "symbol":"TEV",
+  "reserve_denom":"uqsar",
+  "reserve_total_supply":"100000",
+  "reserve_decimals":6,
+  "supply_decimals":6,
+  "initial_balances":[],
+  "mint":null,
+  "marketing":null,
+  "curve_type": {
+    "constant":{
+      "value":"15",
+      "scale":1
+    }
+  }
+}
