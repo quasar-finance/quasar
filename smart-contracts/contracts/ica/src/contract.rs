@@ -13,16 +13,16 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
+use crate::helpers::{handle_reply_sample, prepare_query, set_reply};
 use crate::msg::{
-    ChannelResponse, ConfigResponse,     ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
+    ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icq";
+const CONTRACT_NAME: &str = "crates.io:ica";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -55,7 +55,7 @@ pub fn execute(
             pool_id,
             share_out_amount,
             token_in_maxs,
-        } => execute_bank_send(
+        } => execute_join_pool(
             deps,
             env,
             channel,
@@ -67,7 +67,7 @@ pub fn execute(
     }
 }
 
-fn execute_bank_send(
+fn execute_join_pool(
     deps: DepsMut,
     env: Env,
     channel: String,
@@ -155,11 +155,10 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::msg::RequestQueryJSON;
     use crate::test_helpers::*;
 
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{from_binary, CosmosMsg, StdError};
+    use cosmwasm_std::testing::{mock_env};
+    use cosmwasm_std::{from_binary, StdError};
 
     #[test]
     fn setup_and_query() {

@@ -14,7 +14,32 @@ use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
 
-pub const ICA_VERSION: &str = "{\"version\":\"ics-20\"}";
+// TODO move all ica generic types to quasar types
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+pub struct IcaMetadata {
+    version: String,
+    encoding: String,
+    tx_type: String,
+    controller_connection_id: Option<String>,
+    host_connection_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+pub struct CounterPartyIcaMetadata {
+    pub(crate) version: String,
+    pub(crate) encoding: String,
+    pub(crate) tx_type: String,
+    pub(crate) controller_connection_id: Option<String>,
+    pub(crate) host_connection_id: Option<String>,
+    pub(crate) address: Option<String>,
+}
+
+
+pub(crate) const VERSION: &str = "ics27-1";
+pub(crate) const ENCODING: &str = "proto3";
+pub(crate) const TX_TYPE: &str = "sdk_multi_msg";
+
+
 pub const ICA_ORDERING: IbcOrder = IbcOrder::Ordered;
 
 /// This is compatible with the JSON serialization
@@ -45,6 +70,7 @@ pub enum IcsAck {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints
+// TODO save ica address here
 pub fn ibc_channel_open(
     _deps: DepsMut,
     _env: Env,
@@ -54,6 +80,11 @@ pub fn ibc_channel_open(
     Ok(())
 }
 
+fn get_counterpary_ica_address(counterparty_version: &str) -> Result<String, ContractError> {
+    let counterparty_metadata: CounterPartyIcaMetadata = serde_json_wasm::from_str(counterparty_version).map_err(|err| ContractError::InvalidCounterpartyIcaMetadata { raw_metadata: counterparty_version.to_string(), error: err.to_string() })?;
+     counterparty_metadata.address.ok_or(ContractError::NoCounterpartyIcaAddress {  })
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// record the channel in CHANNEL_INFO
 pub fn ibc_channel_connect(
@@ -61,14 +92,16 @@ pub fn ibc_channel_connect(
     _env: Env,
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
+    let counterparty_version = msg.counterparty_version().ok_or(ContractError::NoCounterpartyVersion {})?;
     // we need to check the counter party version in try and ack (sometimes here)
-    enforce_order_and_version(msg.channel(), msg.counterparty_version())?;
+    enforce_order_and_version(msg.channel(), Some(counterparty_version))?;
 
-    let channel: IbcChannel = msg.into();
+    let channel: &IbcChannel = msg.channel();
     let info = ChannelInfo {
-        id: channel.endpoint.channel_id,
-        counterparty_endpoint: channel.counterparty_endpoint,
-        connection_id: channel.connection_id,
+        id: channel.endpoint.channel_id.to_string(),
+        counterparty_endpoint: channel.counterparty_endpoint.clone(),
+        connection_id: channel.connection_id.to_string(),
+        address: get_counterpary_ica_address(counterparty_version)?
     };
     CHANNEL_INFO.save(deps.storage, &info.id, &info)?;
 
@@ -77,22 +110,36 @@ pub fn ibc_channel_connect(
 
 fn enforce_order_and_version(
     channel: &IbcChannel,
-    counterparty_version: Option<&str>,
+    counterparty_metadata: Option<&str>,
 ) -> Result<(), ContractError> {
-    // if channel.version != ICA_VERSION {
-    //     return Err(ContractError::InvalidIbcVersion {
-    //         contract_version: ICA_VERSION.to_string(),
-    //         version: channel.version.clone(),
-    //     });
-    // }
-    // if let Some(version) = counterparty_version {
-    //     if version != ICA_VERSION {
-    //         return Err(ContractError::InvalidIbcVersion {
-    //             contract_version: ICA_VERSION.to_string(),
-    //             version: version.to_string(),
-    //         });
-    //     }
-    // }
+    // we find the ica metadata in the
+    let metadata: IcaMetadata = serde_json_wasm::from_str(channel.version.as_str()).map_err(|err| {
+        ContractError::InvalidIcaMetadata {
+            raw_metadata: channel.version.clone(),
+            error: err.to_string()
+        }
+    })?;
+
+    if metadata.version != VERSION {
+        return Err(ContractError::InvalidIcaVersion { version: metadata.version.into(), contract_version: VERSION.into() });
+    }
+    if metadata.encoding != ENCODING {
+        return Err(ContractError::InvalidIcaEncoding{ encoding: metadata.encoding.into(), contract_encoding: ENCODING.into() });
+    }
+    if metadata.tx_type != TX_TYPE {
+        return Err(ContractError::InvalidIcaTxType { tx_type: metadata.tx_type.into(), contract_tx_type: TX_TYPE.into() });
+    }
+
+    if let Some(metadata) = counterparty_metadata {
+        let counterparty_metadata: CounterPartyIcaMetadata = serde_json_wasm::from_str(metadata).map_err(|err| {
+            ContractError::InvalidCounterpartyIcaMetadata {
+                raw_metadata: metadata.to_string(),
+                error:  err.to_string()
+            }
+        })?;
+    }
+
+
     if channel.order != ICA_ORDERING {
         return Err(ContractError::OnlyOrderedChannel {});
     }

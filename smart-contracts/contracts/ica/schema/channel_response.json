@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChannelResponse",
+  "type": "object",
+  "required": [
+    "info"
+  ],
+  "properties": {
+    "info": {
+      "description": "Information on the channel's connection",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ChannelInfo"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ChannelInfo": {
+      "type": "object",
+      "required": [
+        "address",
+        "connection_id",
+        "counterparty_endpoint",
+        "id"
+      ],
+      "properties": {
+        "address": {
+          "description": "the address of the ica on the counterparty chain",
+          "type": "string"
+        },
+        "connection_id": {
+          "description": "the connection this exists on (you can use to query client/consensus info)",
+          "type": "string"
+        },
+        "counterparty_endpoint": {
+          "description": "the remote channel/port we connect to",
+          "allOf": [
+            {
+              "$ref": "#/definitions/IbcEndpoint"
+            }
+          ]
+        },
+        "id": {
+          "description": "id of this channel",
+          "type": "string"
+        }
+      }
+    },
+    "IbcEndpoint": {
+      "type": "object",
+      "required": [
+        "channel_id",
+        "port_id"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string"
+        },
+        "port_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
