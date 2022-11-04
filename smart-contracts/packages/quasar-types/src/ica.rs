@@ -7,7 +7,7 @@ use serde_json_wasm;
 use crate::error::Error;
 
 pub fn enforce_ica_order_and_metadata(channel: &IbcChannel, counterparty_metadata: Option<&str>) -> Result<(), Error> {
-    enforce_order_and_version(channel, counterparty_metadata, &Version::Ica27_1, &Encoding::Proto3, &TxType::SdkMultiMsg, IbcOrder::Ordered)
+    enforce_order_and_version(channel, counterparty_metadata, &Version::Ics27_1, &Encoding::Proto3, &TxType::SdkMultiMsg, IbcOrder::Ordered)
 }
 
 // TODO add tests for all wrappers around types
@@ -89,7 +89,7 @@ impl IcaMetadata {
         host_connection_id: String,
     ) -> IcaMetadata {
         IcaMetadata {
-            version: Version::Ica27_1,
+            version: Version::Ics27_1,
             encoding: Encoding::Proto3,
             tx_type: TxType::SdkMultiMsg,
             controller_connection_id: Some(controller_connection_id),
@@ -126,7 +126,7 @@ impl CounterPartyIcaMetadata {
         host_connection_id: String,
     ) -> IcaMetadata {
         IcaMetadata {
-            version: Version::Ica27_1,
+            version: Version::Ics27_1,
             encoding: Encoding::Proto3,
             tx_type: TxType::SdkMultiMsg,
             controller_connection_id: Some(controller_connection_id),
@@ -135,28 +135,38 @@ impl CounterPartyIcaMetadata {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default, Display)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
 pub enum Version {
-    #[serde(rename = "ica27-1")]
-    #[display(fmt = "ica27-1")]
-    #[default]
-    Ica27_1,
+    #[serde(rename = "ics27-1")]
+    #[display(fmt = "ics27-1")]
+    Ics27_1,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default, Display)]
+
+impl Default for Version {
+    fn default() -> Self { Version::Ics27_1 }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
 pub enum Encoding {
     #[serde(rename = "proto3")]
     #[display(fmt = "proto3")]
-    #[default]
     Proto3,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default, Display)]
+impl Default for Encoding {
+    fn default() -> Self { Encoding::Proto3 }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
 pub enum TxType {
     #[serde(rename = "sdk_multi_msg")]
     #[display(fmt = "sdk_multi_msg")]
-    #[default]
     SdkMultiMsg,
+}
+
+impl Default for TxType {
+    fn default() -> Self { TxType::SdkMultiMsg }
 }
 
 impl CounterPartyIcaMetadata {

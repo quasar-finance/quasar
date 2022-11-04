@@ -121,21 +121,14 @@ fn on_packet_success(
     original: IbcPacket,
     env: Env,
 ) -> Result<IbcBasicResponse, ContractError> {
-    todo!()
-    // let ack: InterchainQueryPacketAck = from_binary(&data)?;
-
-    // let buf = Bytes::copy_from_slice(ack.data.as_slice());
-    // let resp: CosmosResponse = match CosmosResponse::decode(buf) {
-    //     Ok(resp) => resp,
-    //     Err(_) => return Err(ContractError::DecodingFail {}),
-    // };
-
-    // // load the msg from the pending queries so we know what to do
-    // let origin =
-    //     PENDING_QUERIES.load(deps.storage, (original.sequence, &original.src.channel_id))?;
-    // match origin {
-    //     Origin::Sample => Ok(handle_sample_callback(deps, env, resp, original)?),
-    // }
+    let resp: CosmosResponse = CosmosResponse::decode(data.as_slice()).map_err(|error| ContractError::DecodingFail {error})?;
+    
+    // load the msg from the pending queries so we know what to do
+    let origin =
+        PENDING_QUERIES.load(deps.storage, (original.sequence, &original.src.channel_id))?;
+    match origin {
+        Origin::Sample => Ok(handle_sample_callback(deps, env, resp, original)?),
+    }
 }
 
 fn on_packet_failure(

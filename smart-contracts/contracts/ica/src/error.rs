@@ -1,4 +1,5 @@
 use std::string::FromUtf8Error;
+use prost::DecodeError;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
@@ -41,7 +42,7 @@ pub enum ContractError {
     EncodingFail,
 
     #[error("Failed to proto decode")]
-    DecodingFail,
+    DecodingFail {error: DecodeError},
 
     #[error("Only the governance contract can do this")]
     Unauthorized,
