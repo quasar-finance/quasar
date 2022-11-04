@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20::{EmbeddedLogo, Logo, LogoInfo, MarketingInfoResponse};
@@ -502,7 +502,9 @@ pub fn query_vault_info(deps: Deps) -> StdResult<VaultInfoResponse> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Decimal, OverflowError, OverflowOperation, StdError, SubMsg, BankMsg};
+    use cosmwasm_std::{
+        coin, BankMsg, Decimal, OverflowError, OverflowOperation, StdError, SubMsg,
+    };
     use cw_utils::PaymentError;
     use std::borrow::BorrowMut;
 
