@@ -3,7 +3,6 @@ mod error;
 mod helpers;
 pub mod ibc;
 pub mod msg;
-mod proto;
 pub mod state;
 mod test_helpers;
 

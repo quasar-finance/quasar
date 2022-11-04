@@ -57,7 +57,7 @@ pub fn enforce_order_and_version(
     }
 
     if channel.order != ordering {
-        return Err(Error::OnlyOrderedChannel {});
+        return Err(Error::IncorrectIbcOrder { expected: ordering, got: channel.order.clone() });
     }
     Ok(())
 }

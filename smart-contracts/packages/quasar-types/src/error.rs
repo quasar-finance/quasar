@@ -1,3 +1,4 @@
+use cosmwasm_std::IbcOrder;
 use thiserror::Error;
 
 use crate::ica::{Encoding, TxType, Version};
@@ -31,6 +32,12 @@ pub enum Error {
         contract_tx_type: TxType,
     },
 
-    #[error("Only supports unordered channel")]
-    OnlyOrderedChannel {},
+    #[error("Incorrect IbcOrder")]
+    IncorrectIbcOrder {
+        expected: IbcOrder,
+        got: IbcOrder
+    },
+
+    #[error("invalid Ibc version")]
+    InvalidIbcVersion {version: String},
 }

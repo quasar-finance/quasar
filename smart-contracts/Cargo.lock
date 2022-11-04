@@ -710,6 +710,7 @@ dependencies = [
  "cw20 0.14.0",
  "osmosis-std",
  "prost 0.11.0",
+ "quasar-types",
  "schemars",
  "semver",
  "serde",
@@ -989,9 +990,11 @@ dependencies = [
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
+ "cosmos-sdk-proto",
  "cosmwasm-std",
  "cw20 0.13.4",
  "derive_more",
+ "prost 0.11.0",
  "quasar-traits",
  "rust_decimal",
  "schemars",

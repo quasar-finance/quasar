@@ -1,6 +1,8 @@
 use std::string::FromUtf8Error;
 use thiserror::Error;
-
+use quasar_types::{
+    error::Error as QtypesError,};
+    
 use cosmwasm_std::StdError;
 
 /// Never is a placeholder to ensure we don't return any errors
@@ -14,6 +16,9 @@ pub enum ContractError {
 
     #[error("Channel doesn't exist: {id}")]
     NoSuchChannel { id: String },
+
+    #[error("{0}")]
+    IcaTypeError(#[from] QtypesError),
 
     #[error("Only supports channel with ibc version icq-1, got {version}")]
     InvalidIbcVersion { version: String },

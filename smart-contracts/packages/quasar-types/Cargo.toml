@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 quasar-traits = { version = "0.1.0", path = "../quasar-traits"}
+cosmos-sdk-proto = { version = "0.14", default-features = false }
+prost = { version = "0.11", default-features = false }
 thiserror = { version = "1.0.23" }
 serde-json-wasm = { version = "0.4.1", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["display"]}
