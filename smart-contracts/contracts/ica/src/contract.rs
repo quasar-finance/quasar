@@ -15,8 +15,8 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::helpers::{handle_reply_sample, prepare_query, set_reply};
 use crate::msg::{
-    ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
-    ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
+    ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
+    PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
@@ -157,7 +157,7 @@ mod test {
     use super::*;
     use crate::test_helpers::*;
 
-    use cosmwasm_std::testing::{mock_env};
+    use cosmwasm_std::testing::mock_env;
     use cosmwasm_std::{from_binary, StdError};
 
     #[test]

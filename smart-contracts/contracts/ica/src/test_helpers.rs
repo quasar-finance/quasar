@@ -1,14 +1,16 @@
 #![cfg(test)]
 use crate::contract::instantiate;
-use crate::ibc::{ibc_channel_connect, ibc_channel_open, ICA_ORDERING, CounterPartyIcaMetadata, VERSION, ENCODING, TX_TYPE};
+
+use crate::ibc::{ibc_channel_connect, ibc_channel_open};
 use crate::state::ChannelInfo;
 
 use cosmwasm_std::testing::{
     mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
 };
 use cosmwasm_std::{
-    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
+    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps, IbcOrder,
 };
+use quasar_types::ica::CounterPartyIcaMetadata;
 
 use crate::msg::InitMsg;
 
@@ -27,7 +29,7 @@ pub fn mock_channel(channel_id: &str) -> IbcChannel {
             port_id: REMOTE_PORT.into(),
             channel_id: format!("{}5", channel_id),
         },
-        ICA_ORDERING,
+        IbcOrder::Ordered,
         r#"{
             "version":"ics27-1",
             "encoding":"proto3",
@@ -56,7 +58,14 @@ pub fn add_channel(mut deps: DepsMut, channel_id: &str) {
     let channel = mock_channel(channel_id);
     let open_msg = IbcChannelOpenMsg::new_init(channel.clone());
     ibc_channel_open(deps.branch(), mock_env(), open_msg).unwrap();
-    let connect_msg = IbcChannelConnectMsg::new_ack(channel, serde_json_wasm::to_string(&CounterPartyIcaMetadata { version: VERSION.into(), encoding: ENCODING.into(), tx_type: TX_TYPE.into(), controller_connection_id: Some("connection-0".to_string()), host_connection_id: Some("connection-0".to_string()), address: None }).unwrap());
+    let connect_msg = IbcChannelConnectMsg::new_ack(
+        channel,
+        serde_json_wasm::to_string(&CounterPartyIcaMetadata::with_connections(
+            "connection-0".into(),
+            "connection-0".into(),
+        ))
+        .unwrap(),
+    );
     ibc_channel_connect(deps.branch(), mock_env(), connect_msg).unwrap();
 }
 

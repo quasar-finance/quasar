@@ -2,6 +2,10 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
+use quasar_types::{
+    error::Error as QtypesError,
+    ica::{Encoding, TxType, Version},
+};
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -15,29 +19,11 @@ pub enum ContractError {
     #[error("Channel doesn't exist: {id}")]
     NoSuchChannel { id: String },
 
-    #[error("Could not deserialize ica metadata, got {raw_metadata}, error: {error}")]
-    InvalidIcaMetadata { raw_metadata: String, error: String },
-
-    #[error("Incorrect ICA version, got {version}, want {contract_version}")]
-    InvalidIcaVersion { version: String, contract_version: String},
-
-    #[error("Incorrect ICA version, got {encoding}, want {contract_encoding}")]
-    InvalidIcaEncoding { encoding: String, contract_encoding: String },
-
-    #[error("Incorrect ICA version, got {tx_type}, want {contract_tx_type}")]
-    InvalidIcaTxType { tx_type: String, contract_tx_type: String },
-
-    #[error("Could not deserialize counterparty ica metadata, got {raw_metadata}, error: {error}")]
-    InvalidCounterpartyIcaMetadata { raw_metadata: String, error: String },
-
-    #[error("No Counterparty Ica Address")]
-    NoCounterpartyIcaAddress {},
+    #[error("{0}")]
+    IcaTypeError(#[from] QtypesError),
 
     #[error("No Counterparty Version")]
     NoCounterpartyVersion {},
-
-    #[error("Only supports unordered channel")]
-    OnlyOrderedChannel {},
 
     #[error("Parsed port from denom ({port}) doesn't match packet")]
     FromOtherPort { port: String },
