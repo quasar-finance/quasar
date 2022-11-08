@@ -73,7 +73,7 @@ pub fn execute_transfer(
 ) -> Result<Response, ContractError> {
     if info.funds.len() != 1 {
         return Err(ContractError::PaymentError(
-            cw_utils::PaymentError::MultipleDenoms {},
+            cw_utils::PaymentError::InvalidDenomAmount {},
         ));
     }
     let funds = info.funds[0].clone();

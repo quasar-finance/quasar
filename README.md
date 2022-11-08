@@ -91,3 +91,8 @@ See [this document](LOCALNET.md) to run a Quasar testnet locally.
 - [Ignite docs](https://docs.ignite.com)
 - [Cosmos SDK docs](https://docs.cosmos.network)
 - [Developer Chat](https://discord.gg/H6wGTY8sxw)
+
+
+## Attributions
+
+* Neutron: IBC Transfer module wrapper to enable re-entry into smart contracts after ibc transfer (`x/transfer`)

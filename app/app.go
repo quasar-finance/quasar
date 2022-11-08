@@ -85,7 +85,6 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v3/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
@@ -130,6 +129,9 @@ import (
 	intergammmodule "github.com/quasarlabs/quasarnode/x/intergamm"
 	intergammmodulekeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	intergammmoduletypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
+
+	transfermodule "github.com/quasarlabs/quasarnode/x/transfer"
+	transfermodulekeeper "github.com/quasarlabs/quasarnode/x/transfer/keeper"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -287,7 +289,7 @@ type App struct {
 	ParamsKeeper     paramskeeper.Keeper
 	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
+	TransferKeeper   transfermodulekeeper.KeeperTransferWrapper
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	wasmKeeper       wasm.Keeper
 
@@ -455,13 +457,13 @@ func New(
 
 	// IBC Modules & Keepers
 
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+	app.TransferKeeper = transfermodulekeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	transferModule := transfermodule.NewAppModule(app.TransferKeeper)
+	transferIbcModule := transfermodule.NewIBCModule(app.TransferKeeper, &app.wasmKeeper)
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
