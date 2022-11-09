@@ -50,3 +50,19 @@ jobs:
         run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
       - name: Run cosmwasm check
         run: cd smart-contracts && cosmwasm-check artifacts/*.wasm
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - name: Display go version
+        run: go version
+      - name: Build Docker Image
+        run: make docker-build
+      - name: Test E2E
+        run: make test-e2e

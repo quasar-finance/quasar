@@ -52,8 +52,8 @@ var (
 		ChainID: "osmosis",
 		Images: []ibc.DockerImage{
 			{
-				Repository: "osmosis-amd64",
-				Version:    "latest",
+				Repository: "osmolabs/osmosis",
+				Version:    "12.2.1",
 			},
 		},
 		Bin:            "osmosisd",
