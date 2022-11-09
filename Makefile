@@ -174,10 +174,10 @@ $(MOCKSDIR)/:
 ###                           Tests & Simulation                            ###
 ###############################################################################
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
-PACKAGES_E2E=$(shell go list ./... | grep '/e2e')
-PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
-TEST_PACKAGES=./...
+PACKAGES_UNIT = $(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+E2EDIR = $(CURDIR)/tests/e2e
+PACKAGES_SIM = $(shell go list ./... | grep '/tests/simulator')
+TEST_PACKAGES = ./...
 
 test: test-unit test-build
 
@@ -185,6 +185,9 @@ test-all: check test-race test-cover
 
 test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
+
+test-e2e:
+	@VERSION=$(VERSION) cd $(E2EDIR); go test -mod=readonly -timeout=25m -v .
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)
