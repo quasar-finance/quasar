@@ -8,7 +8,7 @@ use cosmwasm_std::testing::{
     mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
 };
 use cosmwasm_std::{
-    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps, IbcOrder,
+    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, IbcOrder, OwnedDeps,
 };
 use quasar_types::ica::CounterPartyIcaMetadata;
 

@@ -10,7 +10,7 @@ echo $NODE
 # the callback_address is the address of the orion module
 INIT='{"callback_address":"quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc"}'
 # just use any to_address, channel has to be specified weirdly
-MSG='{"transfer":{"channel":"channel-0", "to_address": "cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89|transfer/channel-1:osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d"}}'
+# MSG='{"transfer":{"channel":"channel-0", "to_address": "cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89|transfer/channel-1:osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d"}}'
 
 cd ../../smart-contracts
 
@@ -27,7 +27,10 @@ OUT=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT" --from alice --keyring-ba
 ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR"
 
-echo "transferring funds over ibc message... ('$MSG')"
+# rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icqhost --order unordered --version icq-1 --override
+rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
+
+# echo "transferring funds over ibc message... to replay: \"quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000uqsr\""
 quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000uqsr
 
 cd -

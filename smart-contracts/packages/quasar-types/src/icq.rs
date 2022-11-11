@@ -1,8 +1,11 @@
-use cosmwasm_std::Binary;
+use cosmos_sdk_proto::tendermint::abci::{RequestQuery, ResponseQuery};
+use cosmwasm_std::{Binary, IbcOrder};
 use prost::Message;
 use schemars::JsonSchema;
-use serde::{Serialize, Deserialize};
-use cosmos_sdk_proto::tendermint::abci::{RequestQuery, ResponseQuery};
+use serde::{Deserialize, Serialize};
+
+pub const ICQ_VERSION: &str = "icq-1";
+pub const ICQ_ORDERING: IbcOrder = IbcOrder::Unordered;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InterchainQueryPacketData {

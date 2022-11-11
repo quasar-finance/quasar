@@ -6,13 +6,26 @@ use serde_json_wasm;
 
 use crate::error::Error;
 
-pub fn enforce_ica_order_and_metadata(channel: &IbcChannel, counterparty_metadata: Option<&str>) -> Result<(), Error> {
-    enforce_order_and_version(channel, counterparty_metadata, &Version::Ics27_1, &Encoding::Proto3, &TxType::SdkMultiMsg, IbcOrder::Ordered)
+pub fn enforce_ica_order_and_metadata(
+    channel: &IbcChannel,
+    counterparty_metadata: Option<&str>,
+    metadata: &IcaMetadata
+) -> Result<(), Error> {
+    enforce_order_and_version(
+        channel,
+        metadata,
+        counterparty_metadata,
+        &Version::Ics27_1,
+        &Encoding::Proto3,
+        &TxType::SdkMultiMsg,
+        IbcOrder::Ordered,
+    )
 }
 
 // TODO add tests for all wrappers around types
-pub fn enforce_order_and_version(
+fn enforce_order_and_version(
     channel: &IbcChannel,
+    metadata: &IcaMetadata,
     counterparty_metadata: Option<&str>,
     version: &Version,
     encoding: &Encoding,
@@ -20,14 +33,6 @@ pub fn enforce_order_and_version(
     ordering: IbcOrder,
 ) -> Result<(), Error> {
     // we find the ica metadata in the version field as a string
-    let metadata: IcaMetadata =
-        serde_json_wasm::from_str(channel.version.as_str()).map_err(|err| {
-            Error::InvalidIcaMetadata {
-                raw_metadata: channel.version.clone(),
-                error: err.to_string(),
-            }
-        })?;
-
     if metadata.version() != version {
         return Err(Error::InvalidIcaVersion {
             version: metadata.version().clone(),
@@ -57,7 +62,10 @@ pub fn enforce_order_and_version(
     }
 
     if channel.order != ordering {
-        return Err(Error::IncorrectIbcOrder { expected: ordering, got: channel.order.clone() });
+        return Err(Error::IncorrectIbcOrder {
+            expected: ordering,
+            got: channel.order.clone(),
+        });
     }
     Ok(())
 }
@@ -142,9 +150,10 @@ pub enum Version {
     Ics27_1,
 }
 
-
 impl Default for Version {
-    fn default() -> Self { Version::Ics27_1 }
+    fn default() -> Self {
+        Version::Ics27_1
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
@@ -155,7 +164,9 @@ pub enum Encoding {
 }
 
 impl Default for Encoding {
-    fn default() -> Self { Encoding::Proto3 }
+    fn default() -> Self {
+        Encoding::Proto3
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
@@ -166,7 +177,9 @@ pub enum TxType {
 }
 
 impl Default for TxType {
-    fn default() -> Self { TxType::SdkMultiMsg }
+    fn default() -> Self {
+        TxType::SdkMultiMsg
+    }
 }
 
 impl CounterPartyIcaMetadata {

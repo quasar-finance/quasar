@@ -811,7 +811,7 @@ dependencies = [
  "quasar-types",
  "schemars",
  "serde",
- "serde_json",
+ "serde-json-wasm",
  "thiserror",
  "uuid",
 ]

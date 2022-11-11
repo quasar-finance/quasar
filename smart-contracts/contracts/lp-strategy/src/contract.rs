@@ -13,7 +13,7 @@ use crate::helpers::parse_seq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
 use crate::state::{
-    WithdrawRequest, ICA_STATE, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE,
+    WithdrawRequest, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE,
 };
 
 // version info for migration info
@@ -103,10 +103,10 @@ pub fn execute_deposit(
     // TODO see if we can package this logic a bit better by moving it to strategy.rs
     // Assume we have Atom from the vault contract, later we can add other tokens and add a swap route or something
     // transfer the tokens to our ICA on cosmos
-    let ica = ICA_STATE.load(deps.storage)?;
-    let msg = IntergammMsg::RegisterIcaOnZone {
-        zone_id: ica.zone_id,
-    };
+    // let ica = ICA_STATE.load(deps.storage)?;
+    // let msg = IntergammMsg::RegisterIcaOnZone {
+    //     zone_id: ica.zone_id,
+    // };
 
     // Stake them in a validator, we can add logic to spread over multiple later
 

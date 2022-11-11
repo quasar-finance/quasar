@@ -33,11 +33,8 @@ pub enum Error {
     },
 
     #[error("Incorrect IbcOrder")]
-    IncorrectIbcOrder {
-        expected: IbcOrder,
-        got: IbcOrder
-    },
+    IncorrectIbcOrder { expected: IbcOrder, got: IbcOrder },
 
     #[error("invalid Ibc version")]
-    InvalidIbcVersion {version: String},
+    InvalidIbcVersion { version: String },
 }

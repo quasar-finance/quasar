@@ -13,7 +13,11 @@ use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
-use quasar_types::ica::{CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version, enforce_ica_order_and_metadata};
+use quasar_types::ica::{
+    enforce_ica_order_and_metadata, CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version,
+};
+
+use quasar_types::error::Error as QError;
 
 /// This is a generic ICS acknowledgement format.
 /// Proto defined here: https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/core/channel/v1/channel.proto#L141-L147
@@ -33,7 +37,14 @@ pub fn ibc_channel_open(
     _env: Env,
     msg: IbcChannelOpenMsg,
 ) -> Result<(), ContractError> {
-    enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version())?;
+    let metadata: IcaMetadata = serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
+        QError::InvalidIcaMetadata {
+            raw_metadata: msg.channel().version.clone(),
+            error: error.to_string(),
+        }
+    })?;
+
+    enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &metadata)?;
     Ok(())
 }
 
@@ -44,11 +55,18 @@ pub fn ibc_channel_connect(
     _env: Env,
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
+    let metadata: IcaMetadata = serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
+        QError::InvalidIcaMetadata {
+            raw_metadata: msg.channel().version.clone(),
+            error: error.to_string(),
+        }
+    })?;
+
     let counterparty_version = msg
         .counterparty_version()
         .ok_or(ContractError::NoCounterpartyVersion {})?;
     // we need to check the counter party version in try and ack (sometimes here)
-    enforce_ica_order_and_metadata(msg.channel(), Some(counterparty_version))?;
+    enforce_ica_order_and_metadata(msg.channel(), Some(counterparty_version), &metadata)?;
 
     let channel: &IbcChannel = msg.channel();
     let info = ChannelInfo {
@@ -121,8 +139,9 @@ fn on_packet_success(
     original: IbcPacket,
     env: Env,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let resp: CosmosResponse = CosmosResponse::decode(data.as_slice()).map_err(|error| ContractError::DecodingFail {error})?;
-    
+    let resp: CosmosResponse = CosmosResponse::decode(data.as_slice())
+        .map_err(|error| ContractError::DecodingFail { error })?;
+
     // load the msg from the pending queries so we know what to do
     let origin =
         PENDING_QUERIES.load(deps.storage, (original.sequence, &original.src.channel_id))?;

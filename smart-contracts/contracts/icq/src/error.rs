@@ -1,8 +1,7 @@
+use quasar_types::error::Error as QtypesError;
 use std::string::FromUtf8Error;
 use thiserror::Error;
-use quasar_types::{
-    error::Error as QtypesError,};
-    
+
 use cosmwasm_std::StdError;
 
 /// Never is a placeholder to ensure we don't return any errors

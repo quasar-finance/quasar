@@ -1,10 +1,10 @@
-use std::string::FromUtf8Error;
 use prost::DecodeError;
+use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
 use quasar_types::{
-    error::Error as QtypesError,
+    error::Error as QError,
     ica::{Encoding, TxType, Version},
 };
 
@@ -21,7 +21,7 @@ pub enum ContractError {
     NoSuchChannel { id: String },
 
     #[error("{0}")]
-    IcaTypeError(#[from] QtypesError),
+    IcaTypeError(#[from] QError),
 
     #[error("No Counterparty Version")]
     NoCounterpartyVersion {},
@@ -42,7 +42,7 @@ pub enum ContractError {
     EncodingFail,
 
     #[error("Failed to proto decode")]
-    DecodingFail {error: DecodeError},
+    DecodingFail { error: DecodeError },
 
     #[error("Only the governance contract can do this")]
     Unauthorized,
