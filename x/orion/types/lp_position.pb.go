@@ -6,12 +6,11 @@ package types
 import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
+	types1 "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/gogo/protobuf/types"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	_ "google.golang.org/protobuf/types/known/durationpb"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -218,7 +217,7 @@ type LpPosition struct {
 	UnbondingStartEpochDay uint64                                   `protobuf:"varint,8,opt,name=unbondingStartEpochDay,proto3" json:"unbondingStartEpochDay,omitempty"`
 	UnbondingDuration      uint64                                   `protobuf:"varint,9,opt,name=unbondingDuration,proto3" json:"unbondingDuration,omitempty"`
 	PoolID                 uint64                                   `protobuf:"varint,10,opt,name=poolID,proto3" json:"poolID,omitempty"`
-	Lptoken                types.Coin                               `protobuf:"bytes,11,opt,name=lptoken,proto3" json:"lptoken"`
+	Lptoken                types1.Coin                              `protobuf:"bytes,11,opt,name=lptoken,proto3" json:"lptoken"`
 	Coins                  github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,12,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
 	Gaugelocks             []*GaugeLockInfo                         `protobuf:"bytes,13,rep,name=gaugelocks,proto3" json:"gaugelocks,omitempty"`
 }
@@ -326,11 +325,11 @@ func (m *LpPosition) GetPoolID() uint64 {
 	return 0
 }
 
-func (m *LpPosition) GetLptoken() types.Coin {
+func (m *LpPosition) GetLptoken() types1.Coin {
 	if m != nil {
 		return m.Lptoken
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 func (m *LpPosition) GetCoins() github_com_cosmos_cosmos_sdk_types.Coins {
@@ -351,7 +350,7 @@ type LockInfo struct {
 	LpID     uint64        `protobuf:"varint,1,opt,name=lpID,proto3" json:"lpID,omitempty"`
 	LockID   uint64        `protobuf:"varint,2,opt,name=lockID,proto3" json:"lockID,omitempty"`
 	Duration time.Duration `protobuf:"bytes,3,opt,name=duration,proto3,stdduration" json:"duration,omitempty" yaml:"duration"`
-	LpToken  types.Coin    `protobuf:"bytes,4,opt,name=lpToken,proto3" json:"lpToken"`
+	LpToken  types1.Coin   `protobuf:"bytes,4,opt,name=lpToken,proto3" json:"lpToken"`
 }
 
 func (m *LockInfo) Reset()         { *m = LockInfo{} }
@@ -408,11 +407,11 @@ func (m *LockInfo) GetDuration() time.Duration {
 	return 0
 }
 
-func (m *LockInfo) GetLpToken() types.Coin {
+func (m *LockInfo) GetLpToken() types1.Coin {
 	if m != nil {
 		return m.LpToken
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 func init() {
@@ -1438,7 +1437,7 @@ func (m *LpPosition) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Coins = append(m.Coins, types.Coin{})
+			m.Coins = append(m.Coins, types1.Coin{})
 			if err := m.Coins[len(m.Coins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
