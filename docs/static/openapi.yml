@@ -843,7 +843,7 @@ paths:
   /quasarlabs/quasarnode/orion/params:
     get:
       summary: Parameters queries the parameters of the module.
-      operationId: IncentivesParams
+      operationId: OrionParams
       responses:
         "200":
           description: A successful response.
@@ -1133,7 +1133,7 @@ paths:
   /quasarlabs/quasarnode/qbank/params:
     get:
       summary: Parameters queries the parameters of the module.
-      operationId: LockupParams
+      operationId: QBankParams
       responses:
         "200":
           description: A successful response.
@@ -2874,7 +2874,7 @@ paths:
   /quasarlabs/quasarnode/qoracle/params:
     get:
       summary: Parameters queries the parameters of the module.
-      operationId: MintParams
+      operationId: QOracleParams
       responses:
         "200":
           description: A successful response.
