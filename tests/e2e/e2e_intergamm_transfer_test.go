@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -12,6 +13,7 @@ import (
 	testconfig "github.com/quasarlabs/quasarnode/tests/e2e/config"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
+	"github.com/strangelove-ventures/ibctest/v5/ibc"
 	"github.com/strangelove-ventures/ibctest/v5/test"
 	"github.com/stretchr/testify/suite"
 )
@@ -198,6 +200,7 @@ func ibcDenomFromChannelCounterparty(ch *channeltypes.IdentifiedChannel, baseDen
 // 3. Transmit a transfer command to ICA account to transfer back all the transferred tokens.
 func (s *IntergammTestSuite) TestICATransfer_SuccessfulTransfer() {
 	t := s.T()
+	t.Parallel()
 	ctx := context.Background()
 
 	// Setup an account of quasar
@@ -270,5 +273,105 @@ func (s *IntergammTestSuite) TestICATransfer_SuccessfulTransfer() {
 		balance, err := s.Osmosis().GetBalance(ctx, qusasrICAAddessonOsmosis, s.QuasarDenomInOsmosis)
 		s.Require().NoError(err)
 		s.Require().Zero(balance)
+	})
+}
+
+// TestForwardTransfer_SuccessfulTransfer tests intergamm ability to transfer uatoms from
+// quasar to osmosis chain forwarded by cosmos-hub so that the ibc denom of uatom in osmosis
+// become a one-hop ibc denom.
+func (s *IntergammTestSuite) TestForwardTransfer_SuccessfulTransfer() {
+	t := s.T()
+	// TODO: Fix the problem with packet forwarder in gaia docker image
+	t.Skip()
+	t.Parallel()
+
+	ctx := context.Background()
+
+	// Setup an account of cosmos-hub
+	cosmosAccount := s.CreateUserAndFund(ctx, s.Cosmos(), StartingTokenAmount)
+	cosmosAddress := cosmosAccount.Bech32Address(s.Cosmos().Config().Bech32Prefix)
+	// Setup an account of quasar
+	quasarAccount := s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
+	quasarAddress := quasarAccount.Bech32Address(s.Quasar().Config().Bech32Prefix)
+	// Setup an account of osmosis
+	osmosisAccount := s.CreateUserAndFund(ctx, s.Osmosis(), StartingTokenAmount)
+	osmosisAddress := osmosisAccount.Bech32Address(s.Osmosis().Config().Bech32Prefix)
+
+	t.Run("RegisterICAAccountOnCosmos", func(t *testing.T) {
+		txhash := s.ExecTx(ctx, s.Quasar(), quasarAccount.KeyName, "intergamm", "register-ica-on-zone", "cosmos")
+		s.AssertSuccessfulResultTx(ctx, s.Quasar(), txhash, nil)
+
+		t.Log("Wait for quasar and cosmos chain to settle up the ICA account creation")
+		err := test.WaitForBlocks(ctx, 5, s.Quasar(), s.Cosmos())
+		s.Require().NoError(err)
+
+		// Query the ICA account address
+		s.ExecQuery(
+			ctx,
+			s.Quasar(),
+			nil,
+			"intergamm",
+			"ica-address-on-zone",
+			quasarAddress,
+			"cosmos",
+		)
+	})
+
+	t.Run("TransferAtomsFromCosmosToQuasar", func(t *testing.T) {
+		// Default ibc transfer timeout
+		ibcTransferTimeout := &ibc.IBCTimeout{
+			NanoSeconds: uint64(time.Minute.Nanoseconds()),
+		}
+
+		tx, err := s.Cosmos().SendIBCTransfer(
+			ctx,
+			s.Quasar2CosmosTransferChan.Counterparty.ChannelId,
+			cosmosAccount.KeyName,
+			ibc.WalletAmount{
+				Address: quasarAddress,
+				Denom:   s.Cosmos().Config().Denom,
+				Amount:  IBCTransferAmount,
+			},
+			ibcTransferTimeout)
+		s.Require().NoError(err)
+		s.Require().NotZero(tx.Packet.Sequence)
+
+		t.Log("Wait for cosmos and quasar chains to settle up the ibc transfer")
+		err = test.WaitForBlocks(ctx, 5, s.Cosmos(), s.Quasar())
+		s.Require().NoError(err)
+
+		cosmosBalance, err := s.Cosmos().GetBalance(ctx, cosmosAddress, s.Cosmos().Config().Denom)
+		s.Require().NoError(err)
+		s.Require().EqualValues(StartingTokenAmount-IBCTransferAmount, cosmosBalance)
+
+		quasarBalance, err := s.Quasar().GetBalance(ctx, quasarAddress, s.CosmosDenomInQuasar)
+		s.Require().NoError(err)
+		s.Require().EqualValues(IBCTransferAmount, quasarBalance)
+	})
+
+	t.Run("ForwardTransferAtomsFromQuasarToOsmosis", func(t *testing.T) {
+		txhash := s.ExecTx(
+			ctx,
+			s.Quasar(),
+			quasarAccount.KeyName,
+			"intergamm",
+			"send-token",
+			"osmosis",
+			osmosisAddress,
+			sdk.NewInt64Coin(s.CosmosDenomInQuasar, IBCTransferAmount).String(),
+		)
+		s.AssertSuccessfulResultTx(ctx, s.Quasar(), txhash, nil)
+
+		t.Log("Wait for quasar, cosmos and osmosis to settle up the ibc transfer")
+		err := test.WaitForBlocks(ctx, 10, s.Quasar(), s.Cosmos(), s.Osmosis())
+		s.Require().NoError(err)
+
+		quasarBalance, err := s.Quasar().GetBalance(ctx, quasarAddress, s.CosmosDenomInQuasar)
+		s.Require().NoError(err)
+		s.Require().Zero(quasarBalance)
+
+		osmosisBalance, err := s.Osmosis().GetBalance(ctx, osmosisAddress, s.CosmosDenomInOsmosis)
+		s.Require().NoError(err)
+		s.Require().EqualValues(IBCTransferAmount, osmosisBalance)
 	})
 }
