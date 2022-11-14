@@ -76,7 +76,7 @@ pub fn ibc_channel_connect(
     // try to fetch the connecting channel, we should error if it does not exist\
     let info: ChannelInfo = CHANNELS.load(deps.storage, msg.channel().endpoint.channel_id.clone()).map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
     // we need to check the counter party version in try and ack (sometimes here)
-    enforce_order_and_version(&msg.channel(), msg.counterparty_version(), msg.channel().version.as_str(), msg.channel().order.clone()).map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
+    // enforce_order_and_version(&msg.channel(), msg.counterparty_version(), msg.channel().version.as_str(), msg.channel().order.clone()).map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
     CHANNELS.save(deps.storage, msg.channel().endpoint.channel_id.clone(), &info)?;
 
     Ok(IbcBasicResponse::default())
