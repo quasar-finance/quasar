@@ -6,7 +6,7 @@ use cosmwasm_std::{Coin, Decimal, Timestamp, Uint256};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, JsonSchema, Debug)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
@@ -53,7 +53,7 @@ impl PageRequest {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Debug, JsonSchema)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
     /// query the next page most efficiently
@@ -63,25 +63,25 @@ pub struct PageResponse {
     pub total: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct DecCoin {
     pub amount: Decimal,
     pub denom: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct OsmosisPoolMetrics {
     pub apy: Decimal,
     pub tvl: Decimal,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct PoolAsset {
     pub token: Coin,
     pub weight: Uint256,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct SmoothWeightChangeParams {
     pub start_time: Timestamp,
     pub duration: Duration,
@@ -89,14 +89,14 @@ pub struct SmoothWeightChangeParams {
     pub target_pool_weights: Vec<PoolAsset>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct PoolParams {
     pub swap_fee: Decimal,
     pub exit_fee: Decimal,
     pub smooth_weight_change_params: Option<SmoothWeightChangeParams>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct OsmosisBalancerPool {
     pub address: String,
     pub id: u64,
@@ -107,7 +107,7 @@ pub struct OsmosisBalancerPool {
     pub total_weight: Uint256,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct OsmosisPool {
     pub pool_info: OsmosisBalancerPool,
     pub metrics: OsmosisPoolMetrics,
