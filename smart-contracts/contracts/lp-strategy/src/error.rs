@@ -23,6 +23,9 @@ pub enum ContractError {
     #[error("{0}")]
     QueueError(String),
 
+    #[error("no counterpart ica address found")]
+    NoCounterpartyIcaAddress,
+
     #[error("not enough funds in the strategy to withdraw")]
     InsufficientOutStandingFunds,
 }

@@ -37,12 +37,13 @@ pub fn ibc_channel_open(
     _env: Env,
     msg: IbcChannelOpenMsg,
 ) -> Result<(), ContractError> {
-    let metadata: IcaMetadata = serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
-        QError::InvalidIcaMetadata {
-            raw_metadata: msg.channel().version.clone(),
-            error: error.to_string(),
-        }
-    })?;
+    let metadata: IcaMetadata =
+        serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
+            QError::InvalidIcaMetadata {
+                raw_metadata: msg.channel().version.clone(),
+                error: error.to_string(),
+            }
+        })?;
 
     enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &metadata)?;
     Ok(())
@@ -55,12 +56,13 @@ pub fn ibc_channel_connect(
     _env: Env,
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let metadata: IcaMetadata = serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
-        QError::InvalidIcaMetadata {
-            raw_metadata: msg.channel().version.clone(),
-            error: error.to_string(),
-        }
-    })?;
+    let metadata: IcaMetadata =
+        serde_json_wasm::from_str(msg.channel().version.as_str()).map_err(|error| {
+            QError::InvalidIcaMetadata {
+                raw_metadata: msg.channel().version.clone(),
+                error: error.to_string(),
+            }
+        })?;
 
     let counterparty_version = msg
         .counterparty_version()

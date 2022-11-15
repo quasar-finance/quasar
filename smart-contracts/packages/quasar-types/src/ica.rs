@@ -9,8 +9,8 @@ use crate::error::Error;
 pub fn enforce_ica_order_and_metadata(
     channel: &IbcChannel,
     counterparty_metadata: Option<&str>,
-    metadata: &IcaMetadata
-) -> Result<(), Error> {
+    metadata: &IcaMetadata,
+) -> Result<Option<CounterPartyIcaMetadata>, Error> {
     enforce_order_and_version(
         channel,
         metadata,
@@ -31,7 +31,7 @@ fn enforce_order_and_version(
     encoding: &Encoding,
     tx_type: &TxType,
     ordering: IbcOrder,
-) -> Result<(), Error> {
+) -> Result<Option<CounterPartyIcaMetadata>, Error> {
     // we find the ica metadata in the version field as a string
     if metadata.version() != version {
         return Err(Error::InvalidIcaVersion {
@@ -52,6 +52,13 @@ fn enforce_order_and_version(
         });
     }
 
+    if channel.order != ordering {
+        return Err(Error::IncorrectIbcOrder {
+            expected: ordering,
+            got: channel.order.clone(),
+        });
+    }
+
     // TODO expand counterparty metadata parsing
     if let Some(metadata) = counterparty_metadata {
         let counterparty_metadata: CounterPartyIcaMetadata = serde_json_wasm::from_str(metadata)
@@ -59,15 +66,10 @@ fn enforce_order_and_version(
                 raw_metadata: metadata.to_string(),
                 error: err.to_string(),
             })?;
+            Ok(Some(counterparty_metadata))
+    } else {
+        Ok(None)
     }
-
-    if channel.order != ordering {
-        return Err(Error::IncorrectIbcOrder {
-            expected: ordering,
-            got: channel.order.clone(),
-        });
-    }
-    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
@@ -127,6 +129,10 @@ impl CounterPartyIcaMetadata {
 
     pub fn tx_type(&self) -> &TxType {
         &self.tx_type
+    }
+
+    pub fn address(&self) -> &Option<String> {
+        &self.address
     }
 
     pub fn with_connections(

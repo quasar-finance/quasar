@@ -12,9 +12,7 @@ use crate::error::ContractError::PaymentError;
 use crate::helpers::parse_seq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{
-    WithdrawRequest, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE,
-};
+use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";

@@ -1,15 +1,18 @@
 use crate::error::{ContractError, Never};
 use crate::state::CHANNELS;
 use quasar_types::error::Error as QError;
-use quasar_types::ibc::{ChannelInfo, ChannelType, HandshakeState, enforce_order_and_version, IcsAck};
-use quasar_types::ica::{enforce_ica_order_and_metadata};
+use quasar_types::ibc::{
+    enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
+};
+use quasar_types::ica::enforce_ica_order_and_metadata;
+use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::IcaMetadata, icq::ICQ_VERSION};
-
 
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
-    IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelOpenMsg, IbcEndpoint, IbcOrder,
-    IbcPacket, IbcReceiveResponse, StdResult, Uint128, WasmMsg, IbcPacketTimeoutMsg, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcChannelConnectMsg, StdError, IbcChannelCloseMsg,
+    IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
+    IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError, StdResult, Uint128, WasmMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -18,7 +21,7 @@ pub fn ibc_channel_open(
     deps: DepsMut,
     _env: Env,
     msg: IbcChannelOpenMsg,
-) -> Result<(), ContractError>  {
+) -> Result<(), ContractError> {
     // save the channel as an channel in ChanOpenInit, we support inits from icq and ica channels
     if msg.channel().version == ICQ_VERSION {
         handle_icq_channel(deps, msg.channel().clone())?;
@@ -36,7 +39,9 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         id: channel.endpoint.channel_id.clone(),
         counterparty_endpoint: channel.counterparty_endpoint,
         connection_id: channel.connection_id,
-        channel_type: ChannelType::Icq { channel_ty: channel.version },
+        channel_type: ChannelType::Icq {
+            channel_ty: channel.version,
+        },
         handshake_state: HandshakeState::Open,
     };
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
@@ -51,7 +56,7 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         }
     })?;
 
-    enforce_ica_order_and_metadata(&channel, None, &metadata)?;
+    let counter_party = enforce_ica_order_and_metadata(&channel, None, &metadata)?;
     // save the current state of the initializing channel
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -59,6 +64,7 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         connection_id: channel.connection_id,
         channel_type: ChannelType::Ica {
             channel_ty: metadata,
+            counter_party,
         },
         handshake_state: HandshakeState::Open,
     };
@@ -74,10 +80,39 @@ pub fn ibc_channel_connect(
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // try to fetch the connecting channel, we should error if it does not exist\
-    let info: ChannelInfo = CHANNELS.load(deps.storage, msg.channel().endpoint.channel_id.clone()).map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
+    let mut info: ChannelInfo = CHANNELS
+        .load(deps.storage, msg.channel().endpoint.channel_id.clone())
+        .map_err(|err| StdError::GenericErr {
+            msg: err.to_string(),
+        })?;
     // we need to check the counter party version in try and ack (sometimes here)
-    // enforce_order_and_version(&msg.channel(), msg.counterparty_version(), msg.channel().version.as_str(), msg.channel().order.clone()).map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
-    CHANNELS.save(deps.storage, msg.channel().endpoint.channel_id.clone(), &info)?;
+    // TODO we can wrap this match in a function in our ibc package
+
+
+    match info.channel_type {
+        ChannelType::Icq { ref channel_ty } => enforce_order_and_version(
+            msg.channel(),
+            msg.counterparty_version(),
+            channel_ty.as_str(),
+            ICQ_ORDERING,
+        )?,
+        ChannelType::Ica { channel_ty, counter_party: _  } => {
+            let mut counter_party = enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &channel_ty)?;
+            if counter_party.is_none() {
+                return Err(ContractError::QError(QError::NoCounterpartyIcaAddress));
+            }
+            info.channel_type = ChannelType::Ica { channel_ty, counter_party }
+        },
+        ChannelType::Ics20 { ref channel_ty } => todo!(),
+    }
+
+
+    
+    CHANNELS.save(
+        deps.storage,
+        msg.channel().endpoint.channel_id.clone(),
+        &info,
+    )?;
 
     Ok(IbcBasicResponse::default())
 }
@@ -111,7 +146,7 @@ pub fn ibc_packet_ack(
     deps: DepsMut,
     env: Env,
     msg: IbcPacketAckMsg,
-) -> Result<IbcBasicResponse, ContractError>  {
+) -> Result<IbcBasicResponse, ContractError> {
     // TODO: trap error like in receive?
     let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
     todo!()
@@ -129,7 +164,11 @@ pub fn ibc_packet_timeout(
     Ok(IbcBasicResponse::default())
 }
 
-fn on_packet_failure(deps: DepsMut, packet: IbcPacket, error: String) -> Result<IbcBasicResponse, ContractError> {
+fn on_packet_failure(
+    deps: DepsMut,
+    packet: IbcPacket,
+    error: String,
+) -> Result<IbcBasicResponse, ContractError> {
     todo!()
 }
 

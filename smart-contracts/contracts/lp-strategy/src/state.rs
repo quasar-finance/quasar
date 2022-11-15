@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-use cosmwasm_std::{CosmosMsg, IbcPacket, Uint128, IbcEndpoint};
+use cosmwasm_std::{CosmosMsg, IbcEndpoint, IbcPacket, Uint128};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]

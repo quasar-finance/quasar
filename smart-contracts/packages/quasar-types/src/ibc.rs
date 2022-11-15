@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
-    ica::{self, IcaMetadata},
+    ica::{self, IcaMetadata, CounterPartyIcaMetadata},
 };
 
 /// This is a generic ICS acknowledgement format.
@@ -21,7 +21,7 @@ pub enum IcsAck {
 #[serde(rename_all = "snake_case")]
 pub enum ChannelType {
     Icq { channel_ty: String },
-    Ica { channel_ty: IcaMetadata },
+    Ica { channel_ty: IcaMetadata, counter_party: Option<CounterPartyIcaMetadata> },
     Ics20 { channel_ty: String },
 }
 
