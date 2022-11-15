@@ -602,21 +602,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-transfer-test"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-multi-test 0.13.4",
- "cw-storage-plus 0.13.4",
- "cw2 0.13.4",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "ica"
 version = "0.1.0"
 dependencies = [

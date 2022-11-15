@@ -2,8 +2,8 @@ use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAcco
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
-    PortIdResponse, Reply, Response, StdResult, SubMsg, Timestamp, Uint64,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
+    PortIdResponse, Reply, Response, StdResult, SubMsg, Uint64,
 };
 use prost::Message;
 
@@ -13,12 +13,11 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
+use crate::helpers::{handle_reply_sample, set_reply};
 use crate::msg::{
-    ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
-    ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
+    ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
+    PortResponse, QueryMsg,
 };
-use crate::proto::CosmosQuery;
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info

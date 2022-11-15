@@ -1,14 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "InstantiateMsg",
+  "title": "PortResponse",
   "type": "object",
   "required": [
-    "count"
+    "port_id"
   ],
   "properties": {
-    "count": {
-      "type": "integer",
-      "format": "int32"
+    "port_id": {
+      "type": "string"
     }
   }
 }

@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use cosmwasm_std::Uint128;
 use cw_storage_plus::{Item, Map};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct WithdrawRequest {
     pub denom: String,
