@@ -1,12 +1,10 @@
 #![allow(non_snake_case)]
 
-use cosmwasm_std::{CustomQuery};
+use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    DecCoin, OsmosisPool, PageRequest, PageResponse,
-};
+use crate::types::{DecCoin, OsmosisPool, PageRequest, PageResponse};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

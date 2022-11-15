@@ -17,7 +17,6 @@ use crate::helpers::{handle_reply_sample, set_reply};
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
     PortResponse, QueryMsg,
-
 };
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
