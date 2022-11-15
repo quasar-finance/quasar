@@ -21,7 +21,7 @@ pub enum IcsAck {
 #[serde(rename_all = "snake_case")]
 pub enum ChannelType {
     Icq { channel_ty: String },
-    Ica { channel_ty: IcaMetadata, counter_party: Option<CounterPartyIcaMetadata> },
+    Ica { channel_ty: IcaMetadata, counter_party_address: Option<String>,  },
     Ics20 { channel_ty: String },
 }
 

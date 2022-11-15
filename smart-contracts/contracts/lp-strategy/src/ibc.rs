@@ -42,7 +42,7 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         channel_type: ChannelType::Icq {
             channel_ty: channel.version,
         },
-        handshake_state: HandshakeState::Open,
+        handshake_state: HandshakeState::Init,
     };
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
     Ok(())
@@ -64,9 +64,9 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         connection_id: channel.connection_id,
         channel_type: ChannelType::Ica {
             channel_ty: metadata,
-            counter_party,
+            counter_party_address: None,
         },
-        handshake_state: HandshakeState::Open,
+        handshake_state: HandshakeState::Init,
     };
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
     Ok(())
@@ -89,6 +89,7 @@ pub fn ibc_channel_connect(
     // TODO we can wrap this match in a function in our ibc package
 
 
+    // TODO think of a better datastructure so we dont have to parse ICA channels like this
     match info.channel_type {
         ChannelType::Icq { ref channel_ty } => enforce_order_and_version(
             msg.channel(),
@@ -96,12 +97,20 @@ pub fn ibc_channel_connect(
             channel_ty.as_str(),
             ICQ_ORDERING,
         )?,
-        ChannelType::Ica { channel_ty, counter_party: _  } => {
-            let mut counter_party = enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &channel_ty)?;
+        ChannelType::Ica { channel_ty, counter_party_address: _  } => {
+            let counter_party = enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &channel_ty)?;
             if counter_party.is_none() {
                 return Err(ContractError::QError(QError::NoCounterpartyIcaAddress));
             }
-            info.channel_type = ChannelType::Ica { channel_ty, counter_party }
+            // at this point, we expect a counterparty address, if it's none, we have to error
+            if counter_party.is_none() {
+                return Err(ContractError::NoCounterpartyIcaAddress);
+            }
+            let addr = counter_party.unwrap().address();
+            if addr.is_none() {
+                return Err(ContractError::NoCounterpartyIcaAddress);
+            }
+            info.channel_type = ChannelType::Ica { channel_ty, counter_party_address: addr.clone() }
         },
         ChannelType::Ics20 { ref channel_ty } => todo!(),
     }
