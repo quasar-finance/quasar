@@ -234,24 +234,24 @@ func (k Keeper) RegisterOrReturnICA(ctx sdk.Context, connectionId, owner string)
 }
 
 // TODO timeoutTimestamp is ignored here and defaults to DefaultSendTxRelativeTimeoutTimestamp, which is ~10 seconds.
-//  timeoutTimestamp should probably be used at some point
-func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, error) {
+// timeoutTimestamp should probably be used at some point
+func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs []sdk.Msg, timeoutTimestamp uint64) (uint64, string, string, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
-		return 0, err
+		return 0, "", "", err
 	}
 	channelID, found := k.icaControllerKeeper.GetActiveChannelID(ctx, connectionId, portID)
 	if !found {
-		return 0, sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
+		return 0, "", "", sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
 	}
 	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !found {
-		return 0, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return 0, "", "", sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
 	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs)
 	if err != nil {
-		return 0, err
+		return 0, "", "", err
 	}
 
 	packetData := icatypes.InterchainAccountPacketData{
@@ -262,12 +262,12 @@ func (k Keeper) sendTxOverIca(ctx sdk.Context, owner, connectionId string, msgs 
 	timeoutNano := uint64(ctx.BlockTime().UnixNano()) + DefaultSendTxRelativeTimeoutTimestamp
 	seq, err := k.icaControllerKeeper.SendTx(ctx, chanCap, connectionId, portID, packetData, timeoutNano)
 	if err != nil {
-		return 0, err
+		return 0, "", "", err
 	}
 
 	k.Logger(ctx).Info("sendTx ICA", "seq", seq)
 
-	return seq, nil
+	return seq, channelID, portID, nil
 }
 
 func (k Keeper) GetZoneInfo(ctx sdk.Context, zoneId string) (zoneInfo types.ZoneCompleteInfo, found bool) {
@@ -294,7 +294,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	destZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
-	coin sdk.Coin) (uint64, error) {
+	coin sdk.Coin) (uint64, string, string, error) {
 	logger := k.Logger(ctx)
 	logger.Info("SendToken",
 		"destinationLocalZoneId", destZoneId,
@@ -309,7 +309,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of denom '%s' not specified", coin.Denom)
 		logger.Error("SendToken", err)
-		return 0, err
+		return 0, "", "", err
 	}
 	if nativeZoneId == types.QuasarZoneId || nativeZoneId == destZoneId {
 		logger.Info("SendToken", "direct transfer of ", coin.String())
@@ -319,14 +319,15 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "destination zone info for zone ID '%s' not specified in CompleteZoneInfoMap",
 				destZoneId)
 			logger.Error("SendToken", err)
-			return 0, err
+			return 0, "", "", err
 		}
-		return k.TransferIbcTokens(ctx,
+		seq, err := k.TransferIbcTokens(ctx,
 			destZoneInfo.ZoneRouteInfo.PortId,
 			destZoneInfo.ZoneRouteInfo.ChannelId,
 			coin,
 			sender, receiver,
 			transferTimeoutHeight, connectionTimeout)
+		return seq, destZoneInfo.ZoneRouteInfo.ChannelId, destZoneInfo.ZoneRouteInfo.PortId, err
 	} else {
 		// forwarding transfer
 		logger.Info("SendToken", fmt.Sprintf("forwarding transfer of %s via zone %s", coin.String(), nativeZoneId))
@@ -334,7 +335,7 @@ func (k Keeper) SendToken(ctx sdk.Context,
 		if !found {
 			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "no zone info specified for zone ID '%s'", nativeZoneId)
 			logger.Error("SendToken", err)
-			return 0, err
+			return 0, "", "", err
 		}
 		// destFromNativeInfo contains IBC info needed to reach destination zone from the native zone.
 		destFromNativeInfo, found := nativeZoneInfo.NextZoneRouteMap[destZoneId]
@@ -342,7 +343,8 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "destination zone info for zone ID '%s' not specified in NextZoneRouteMap of zone '%s' (native zone of %s)",
 				destZoneId, nativeZoneInfo.ZoneRouteInfo.CounterpartyZoneId, coin.String())
 			logger.Error("SendToken", err)
-			return 0, err
+			return 0, "", "", err
+
 		}
 
 		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, sender.String())
@@ -350,10 +352,10 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			err := sdkerrors.Wrapf(types.ErrICANotFound, "no inter-chain account owned by %s found on zone '%s' (native zone of %s)",
 				sender.String(), nativeZoneId, coin.String())
 			logger.Error("SendToken", err)
-			return 0, err
+			return 0, "", "", err
 		}
 
-		return k.ForwardTransferIbcTokens(ctx,
+		seq, err := k.ForwardTransferIbcTokens(ctx,
 			nativeZoneInfo.ZoneRouteInfo.PortId,
 			nativeZoneInfo.ZoneRouteInfo.ChannelId,
 			coin,
@@ -363,26 +365,27 @@ func (k Keeper) SendToken(ctx sdk.Context,
 			nativeIcaAddr,
 			receiver,
 			transferTimeoutHeight, connectionTimeout)
+		return seq, nativeZoneInfo.ZoneRouteInfo.ChannelId, nativeZoneInfo.ZoneRouteInfo.PortId, err
 	}
 }
 
 // SendTokenToICA is similar to SendToken.
 // The only difference is that the receiver is the ICA owned by the sender on destZoneId.
-func (k Keeper) SendTokenToICA(ctx sdk.Context, destZoneId string, sender sdk.AccAddress, coin sdk.Coin) (uint64, error) {
+func (k Keeper) SendTokenToICA(ctx sdk.Context, destZoneId string, sender sdk.AccAddress, coin sdk.Coin) (uint64, string, string, error) {
 	logger := ctx.Logger()
 	destZoneInfo, found := k.GetZoneInfo(ctx, destZoneId)
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "error: destination zone info for zone ID '%s' not specified in CompleteZoneInfoMap",
 			destZoneId)
 		logger.Error("SendTokenToICA", err)
-		return 0, err
+		return 0, "", "", err
 	}
 	icaAddr, found := k.IsICARegistered(ctx, destZoneInfo.ZoneRouteInfo.ConnectionId, sender.String())
 	if !found {
 		err := sdkerrors.Wrapf(types.ErrICANotFound, "inter-chain account on destination zone (zone ID '%s') not found",
 			destZoneId)
 		logger.Error("SendTokenToICA", err)
-		return 0, err
+		return 0, "", "", err
 	}
 	return k.SendToken(ctx, destZoneId, sender, icaAddr, coin)
 }

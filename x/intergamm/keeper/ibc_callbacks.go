@@ -17,6 +17,8 @@ import (
 func (k *Keeper) HandleIcaAcknowledgement(
 	ctx sdk.Context,
 	sequence uint64,
+	channel string,
+	portId string,
 	icaPacket icatypes.InterchainAccountPacketData,
 	ack channeltypes.Acknowledgement,
 ) error {
@@ -39,6 +41,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -57,6 +61,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -75,6 +81,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -93,6 +101,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -111,6 +121,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -129,6 +141,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -147,6 +161,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -165,6 +181,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -183,6 +201,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -201,6 +221,8 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 		ex := types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]{
 			Sequence: sequence,
+			Channel: channel,
+			PortId: portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,

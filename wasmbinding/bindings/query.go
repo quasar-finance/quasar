@@ -1,0 +1,33 @@
+package bindings
+
+import (
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
+)
+
+// OsmosisQuery contains osmosis custom queries.
+// See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
+type QuasarQuery struct {
+	// Query all pools
+	OsmosisPools *OsmosisPoolsRequest `json:"osmosis_pools,omitempty"`
+
+	// Query pool info
+	OsmosisPoolInfo *OsmosisPoolInfoRequest `json:"osmosis_pool_info,omitempty"`
+
+	// Query oracle prices
+	OraclePrices *OraclePricesRequest `json:"oracle_prices,omitempty"`
+}
+
+type OsmosisPoolsRequest struct {
+	Pagination *query.PageRequest `json:"pagination,omitempty"`
+}
+
+type OsmosisPoolInfoRequest struct {
+	PoolId string `json:"pool_id"`
+}
+
+type OsmosisPoolInfoResponse struct {
+	Pool *types.OsmosisPool `json:"pool,omitempty"`
+}
+
+type OraclePricesRequest struct{}

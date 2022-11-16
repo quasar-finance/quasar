@@ -12,11 +12,11 @@ cd gaia
 3. Clone osmosis and band, and build them with `make install`. Also rebuild quasar if not updated.
 ```
 cd ..
-clone git@github.com:bandprotocol/chain.git band
+git clone git@github.com:bandprotocol/chain.git band
 cd band
 make install
 cd ..
-clone git@github.com:osmosis-labs/osmosis.git
+git clone git@github.com:osmosis-labs/osmosis.git
 cd osmosis
 make install
 ```

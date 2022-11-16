@@ -1,8 +1,7 @@
-#!/bin/bash
+#!/bin/zsh
 
 ## This script helps to create a basic version of the quasar chain genesis file for development purposes.
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
-
 
 # Configure variables
 BINARY=quasarnoded
@@ -12,12 +11,13 @@ ALICE="edge victory hurry slight dog exit company bike hill erupt shield aspect 
 BOB="harvest ill mean warfare gospel slide tragic palace model excess surprise distance voyage change bus grant special artwork win width group dwarf today jar"
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-RELAYER_ACC="old cinnamon boy hurry pipe upset exhibit title copy squirrel grit eye love toy cotton connect inhale cost quarter mistake ahead endless bless license"
+RELAYER_ACC="$(cat ./keys/qsr.key)"
+
 ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
 BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
 USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
 USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
-RELAYER_ACC_GENESIS_COINS=10000000uqsr
+RELAYER_ACC_GENESIS_COINS=10000000uqsr,10000000000stake
 
 # Remove previous setup
 rm -rf $HOME_QSR
@@ -74,6 +74,7 @@ elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's+address = ":8080"+address = ":8081"+g' $HOME_QSR/config/app.toml
 else
 	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
+
 	exit 1
 	sed -i '' 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i '' 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
@@ -132,4 +133,4 @@ cat $HOME_QSR/config/genesis_original.json |
     }' >  $HOME_QSR/config/genesis.json
 
 # Start
-$BINARY start
+$BINARY start --home $HOME_QSR >> ./logs/quasar_localnet.log 2>&1
