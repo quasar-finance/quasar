@@ -19,17 +19,17 @@ pub const PENDING_QUERIES: Map<(u64, &str), Origin> = Map::new("pending_queries"
 
 pub const REPLIES: Map<u64, Origin> = Map::new("replies");
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub enum Origin {
     Sample,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     pub default_timeout: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct ChannelInfo {
     /// id of this channel
     pub id: String,

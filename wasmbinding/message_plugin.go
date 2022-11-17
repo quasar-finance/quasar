@@ -273,7 +273,7 @@ func PerformOsmosisBeginUnlocking(k *intergammkeeper.Keeper, ctx sdk.Context, co
 		return sdkerrors.Wrap(err, "begin unlocking")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId,contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
 
@@ -330,8 +330,7 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 		return sdkerrors.Wrap(err, "join swap extern amount out")
 	}
 
-	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId,contractAddr)
+	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 
 	return nil
 }
-

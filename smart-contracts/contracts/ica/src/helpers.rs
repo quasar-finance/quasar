@@ -5,7 +5,6 @@ use crate::{
 };
 use cosmwasm_std::{
     attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult,
-    Storage, Timestamp,
 };
 
 pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
@@ -45,23 +44,6 @@ pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Respon
 
     PENDING_QUERIES.save(deps.storage, (s, &channel.value), &Origin::Sample)?;
     Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
-}
-
-pub fn prepare_query(
-    storage: &dyn Storage,
-    env: Env,
-    channel: &str,
-) -> Result<Timestamp, ContractError> {
-    // ensure the requested channel is registered
-    if !CHANNEL_INFO.has(storage, channel) {
-        return Err(ContractError::NoSuchChannel { id: channel.into() });
-    }
-    let config = CONFIG.load(storage)?;
-    // delta from user is in seconds
-    let timeout_delta = config.default_timeout;
-
-    // timeout is in nanoseconds
-    Ok(env.block.time.plus_seconds(timeout_delta))
 }
 
 pub fn set_reply(deps: DepsMut, origin: &Origin) -> Result<u64, ContractError> {

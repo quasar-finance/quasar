@@ -1,84 +1,292 @@
+#!/usr/bin/make -f
+
+VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
+COMMIT := $(shell git log -1 --format='%H')
+LEDGER_ENABLED ?= true
+SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
+GO_VERSION := $(shell cat go.mod | grep -E 'go [0-9].[0-9]+' | cut -d ' ' -f 2)
+DOCKER := $(shell which docker)
 GOMOD := $(shell go list -m)
-BUILD_DIR ?= $(CURDIR)/build/
-MOCKS_DIR = $(CURDIR)/testutil/mock
+BUILDDIR ?= $(CURDIR)/build
+MOCKSDIR = $(CURDIR)/testutil/mock
 
-# Install & build
+export GO111MODULE = on
 
-mkdirs:
-	@mkdir -p $(BUILD_DIR)
-	@mkdir -p $(MOCKS_DIR)
+# process build tags
 
-go-mod:
-	go mod tidy
-	go mod verify
-	go mod download
+build_tags = netgo
+ifeq ($(LEDGER_ENABLED),true)
+  ifeq ($(OS),Windows_NT)
+    GCCEXE = $(shell where gcc.exe 2> NUL)
+    ifeq ($(GCCEXE),)
+      $(error gcc.exe not installed for ledger support, please install or set LEDGER_ENABLED=false)
+    else
+      build_tags += ledger
+    endif
+  else
+    UNAME_S = $(shell uname -s)
+    ifeq ($(UNAME_S),OpenBSD)
+      $(warning OpenBSD detected, disabling ledger support (https://github.com/cosmos/cosmos-sdk/issues/1988))
+    else
+      GCC = $(shell command -v gcc 2> /dev/null)
+      ifeq ($(GCC),)
+        $(error gcc not installed for ledger support, please install or set LEDGER_ENABLED=false)
+      else
+        build_tags += ledger
+      endif
+    endif
+  endif
+endif
 
-lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
+ifeq (cleveldb,$(findstring cleveldb,$(QUASAR_BUILD_OPTIONS)))
+  build_tags += gcc
+else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
+  build_tags += gcc
+endif
+build_tags += $(BUILD_TAGS)
+build_tags := $(strip $(build_tags))
+
+whitespace :=
+whitespace += $(whitespace)
+comma := ,
+build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+
+# process linker flags
+
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=quasar \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=quasarnoded \
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+
+ifeq (cleveldb,$(findstring cleveldb,$(QUASAR_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
+else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
+endif
+ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
+  ldflags += -w -s
+endif
+ifeq ($(LINK_STATICALLY),true)
+	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static"
+endif
+ldflags += $(LDFLAGS)
+ldflags := $(strip $(ldflags))
+
+BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+# check for nostrip option
+ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
+  BUILD_FLAGS += -trimpath
+endif
+
+###############################################################################
+###                                  Build                                  ###
+###############################################################################
+
+all: install lint test
+
+BUILD_TARGETS := build install
+
+build: BUILD_ARGS=-o $(BUILDDIR)/
+
+$(BUILD_TARGETS): go.sum $(BUILDDIR)/
+	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
+
+$(BUILDDIR)/:
+	mkdir -p $(BUILDDIR)/
+
+# Cross-building for arm64 from amd64 (or viceversa) takes
+# a lot of time due to QEMU virtualization but it's the only way (afaik)
+# to get a statically linked binary with CosmWasm
+
+build-reproducible: build-reproducible-amd64 build-reproducible-arm64
+
+build-reproducible-amd64: $(BUILDDIR)/
+	$(DOCKER) buildx create --name quasarbuilder || true
+	$(DOCKER) buildx use quasarbuilder
+	$(DOCKER) buildx build \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		--platform linux/amd64 \
+		-t quasar-amd64 \
+		--load \
+		-f Dockerfile .
+	$(DOCKER) rm -f quasarbinary || true
+	$(DOCKER) create -ti --name quasarbinary quasar-amd64
+	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-amd64
+	$(DOCKER) rm -f quasarbinary
+
+build-reproducible-arm64: $(BUILDDIR)/
+	$(DOCKER) buildx create --name quasarbuilder || true
+	$(DOCKER) buildx use quasarbuilder
+	$(DOCKER) buildx build \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		--platform linux/arm64 \
+		-t quasar-arm64 \
+		--load \
+		-f Dockerfile .
+	$(DOCKER) rm -f quasarbinary || true
+	$(DOCKER) create -ti --name quasarbinary quasar-arm64
+	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-arm64
+	$(DOCKER) rm -f quasarbinary
+
+build-linux: go.sum
+	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build
+
+go.sum: go.mod
+	@echo "--> Ensure dependencies have not been modified"
+	@go mod verify
+
+###############################################################################
+###                         Proto & Mock Generation                         ###
+###############################################################################
+
+proto-all: proto-format proto-gen
+
+proto:
+	@echo
+	@echo "=========== Generate Message ============"
+	@echo
+	./scripts/protocgen.sh
+	@echo
+	@echo "=========== Generate Complete ============"
+	@echo
+
+docs:
+	@echo
+	@echo "=========== Generate Message ============"
+	@echo
+	./scripts/generate-docs.sh
+
+	statik -src=client/docs/static -dest=client/docs -f -m
+	@if [ -n "$(git status --porcelain)" ]; then \
+        echo "\033[91mSwagger docs are out of sync!!!\033[0m";\
+        exit 1;\
+    else \
+        echo "\033[92mSwagger docs are in sync\033[0m";\
+    fi
+	@echo
+	@echo "=========== Generate Complete ============"
+	@echo
+.PHONY: docs
+
+mocks: $(MOCKSDIR)/ 
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
+
+$(MOCKSDIR)/:
+	mkdir -p $(MOCKSDIR)/
+
+protoVer=v0.8
+protoImageName=qsr-proto-gen:$(protoVer)
+containerProtoGen=cosmos-sdk-proto-gen-$(protoVer)
+containerProtoFmt=cosmos-sdk-proto-fmt-$(protoVer)
 
 proto-gen:
-	scripts/generate-proto.sh
+	@echo "Generating Protobuf files"
+	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
+		sh ./scripts/protocgen.sh; fi
 
-build: mkdirs
-	scripts/build build_dev
+proto-format:
+	@echo "Formatting Protobuf files"
+	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoFmt}$$"; then docker start -a $(containerProtoFmt); else docker run --name $(containerProtoFmt) -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
+		find ./ -not -path "./third_party/*" -name "*.proto" -exec clang-format -i {} \; ; fi
 
-build-prod: mkdirs
-	scripts/build build_with_tags prod
+proto-image-build:
+	@DOCKER_BUILDKIT=1 docker build -t $(protoImageName) -f ./proto/Dockerfile ./proto
 
-install: mkdirs
-	scripts/build install_dev
-
-install-prod: mkdirs
-	scripts/build install_with_tags prod
-
-.PHONY: mkdirs go-mod lint proto-gen build build-artifacts install install-prod
-
-# Testing
+###############################################################################
+###                           Tests & Simulation                            ###
+###############################################################################
 
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_E2E=$(shell go list ./... | grep '/e2e')
+PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
+TEST_PACKAGES=./...
 
-mocks: mkdirs
-	mockgen -package=mock -destination=./testutil/mock/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
-	mockgen -package=mock -destination=./testutil/mock/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
-	mockgen -package=mock -destination=./testutil/mock/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
-	mockgen -package=mock -destination=./testutil/mock/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
-	mockgen -package=mock -destination=./testutil/mock/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
-	mockgen -package=mock -destination=./testutil/mock/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
-	mockgen -package=mock -destination=./testutil/mock/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
+test: test-unit test-build
 
-test:
-	go test -mod=readonly -v $(PACKAGES_UNIT)
+test-all: check test-race test-cover
 
-test-path:
-	go test -mod=readonly -v $(path)
+test-unit:
+	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
 
-test-ibc-transfer:
-	go test -mod=readonly -v -timeout 99999s demos/ibc-test-framework/ibc_transfer_test.go
+test-race:
+	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)
 
-test-cover: mkdirs
-	go test -mod=readonly -timeout 30m -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic $(PACKAGES_UNIT)
+test-cover:
+	@VERSION=$(VERSION) go test -mod=readonly -timeout 30m -coverprofile=coverage.txt -tags='norace' -covermode=atomic $(PACKAGES_UNIT)
 
-test-simulation:
-	ignite chain simulate -v
+test-sim-suite:
+	@VERSION=$(VERSION) go test -mod=readonly $(PACKAGES_SIM)
 
-.PHONY: mocks $(MOCKS_DIR) test test-path test-cover test-simulation
+test-sim-app:
+	@VERSION=$(VERSION) go test -mod=readonly -run ^TestFullAppSimulation -v $(PACKAGES_SIM)
 
-# Documentation
+test-sim-determinism:
+	@VERSION=$(VERSION) go test -mod=readonly -run ^TestAppStateDeterminism -v $(PACKAGES_SIM)
 
-doc-gen:
-	scripts/generate-docs.sh
+test-sim-bench:
+	@VERSION=$(VERSION) go test -benchmem -run ^BenchmarkFullAppSimulation -bench ^BenchmarkFullAppSimulation -cpuprofile cpu.out $(PACKAGES_SIM)
 
-doc-serve:
-	scripts/serve_doc_docker
+benchmark:
+	@go test -mod=readonly -bench=. $(PACKAGES_UNIT)
 
-.PHONY: doc-gen doc-serve
+###############################################################################
+###                                Docker                                  ###
+###############################################################################
 
-# Run targets
+RUNNER_BASE_IMAGE_DISTROLESS := gcr.io/distroless/static
+RUNNER_BASE_IMAGE_ALPINE := alpine:3.16
+RUNNER_BASE_IMAGE_NONROOT := gcr.io/distroless/static:nonroot
 
-run: proto-gen
-	scripts/run
+docker-build:
+	@DOCKER_BUILDKIT=1 docker build \
+		-t quasar:local \
+		-t quasar:local-distroless \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		-f Dockerfile .
 
-run-silent:
-	scripts/run > q.log 2>&1
+docker-build-distroless: docker-build
 
-.PHONY: run run-silent
+docker-build-alpine:
+	@DOCKER_BUILDKIT=1 docker build \
+		-t quasar:local-alpine \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_ALPINE) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		-f Dockerfile .
+
+docker-build-nonroot:
+	@DOCKER_BUILDKIT=1 docker build \
+		-t quasar:local-nonroot \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_NONROOT) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		-f Dockerfile .
+
+###############################################################################
+###                                Linting                                  ###
+###############################################################################
+
+lint:
+	@echo "--> Running linter"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
+
+.PHONY: all build-linux install format lint build \
+	test test-all test-build test-cover test-unit test-race benchmark

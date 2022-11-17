@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -15,17 +15,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
-	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
+	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 // if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
 func NewCallbackPlugin(k *wasm.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
 	return &CallbackPlugin{
-		sentMessages:   map[key]sdk.AccAddress{},
-		contractKeeper: wasmk.NewDefaultPermissionKeeper(k),
+		sentMessages:    map[key]sdk.AccAddress{},
+		contractKeeper:  wasmk.NewDefaultPermissionKeeper(k),
 		callBackAddress: callBackAddress,
 	}
 }
@@ -38,16 +38,17 @@ type CallbackPlugin struct {
 }
 
 type key struct {
-	seq uint64
+	seq     uint64
 	channel string
-	portId string
+	portId  string
 }
+
 func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("wasm callback plugin")
 }
 
 func (c *CallbackPlugin) Handle(ctx sdk.Context, ex intergammtypes.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response,"handle")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "handle")
 }
 
 func (c *CallbackPlugin) HandleAckMsgCreateBalancerPool(
@@ -110,10 +111,10 @@ func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
 	ctx sdk.Context,
 	ex intergammtypes.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse],
 ) error {
-	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId ,ex.Response,"begin_unlocking")
+	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "begin_unlocking")
 }
 
-// the easiest way for the smart contract to handle the response is to 
+// the easiest way for the smart contract to handle the response is to
 func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, portId string, response proto.Message, caller string) error {
 	addr, exists := c.sentMessages[key{seq, channel, portId}]
 	if !exists {
@@ -129,13 +130,12 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 		return sdkerrors.Wrap(err, "ibc ack callback marshalling")
 	}
 
-
 	data, err := json.Marshal(ContractAck{
 		AckTriggered: struct {
-			Sequence uint64 `json:"sequence_number"`
-			Error string `json:"error,omitempty"`
+			Sequence uint64                     `json:"sequence_number"`
+			Error    string                     `json:"error,omitempty"`
 			Response map[string]json.RawMessage `json:"response,omitempty"`
-			}{
+		}{
 			Sequence: seq,
 			Response: map[string]json.RawMessage{
 				caller: resp.Bytes(),
@@ -158,8 +158,8 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 
 type ContractAck struct {
 	AckTriggered struct {
-		Sequence uint64 `json:"sequence_number"`
-		Error string `json:"error,omitempty"`
+		Sequence uint64                     `json:"sequence_number"`
+		Error    string                     `json:"error,omitempty"`
 		Response map[string]json.RawMessage `json:"response,omitempty"`
 	} `json:"ack"`
 }

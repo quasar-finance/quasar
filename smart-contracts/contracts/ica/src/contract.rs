@@ -2,8 +2,8 @@ use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAcco
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
-    PortIdResponse, Reply, Response, StdResult, SubMsg, Timestamp, Uint64,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
+    PortIdResponse, Reply, Response, StdResult, SubMsg, Uint64,
 };
 use prost::Message;
 
@@ -18,7 +18,6 @@ use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
     PortResponse, QueryMsg,
 };
-use crate::proto::CosmosQuery;
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info

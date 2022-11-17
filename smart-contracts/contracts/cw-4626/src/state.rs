@@ -6,7 +6,7 @@ use cosmwasm_std::Uint128;
 use cw_storage_plus::Item;
 use quasar_types::curve::{CurveType, DecimalPlaces};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct VaultInfo {
     // reserve_denom is the denomination accepted by this vault. If the accepted token should be

@@ -981,6 +981,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "qoracle-bindings-test"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test 0.13.4",
+ "cw-storage-plus 0.13.4",
+ "cw2 0.13.4",
+ "quasar-bindings",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "quasar-bindings"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "quasar-traits"
 version = "0.1.0"
 dependencies = [

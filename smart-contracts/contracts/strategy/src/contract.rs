@@ -15,12 +15,10 @@ use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS};
 const CONTRACT_NAME: &str = "crates.io:cw-4626";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const LOGO_SIZE_CAP: usize = 5 * 1024;
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
-    env: Env,
+    deps: DepsMut,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -49,8 +47,8 @@ pub fn execute(
 }
 
 pub fn execute_deposit(
-    deps: DepsMut,
-    env: Env,
+    _deps: DepsMut,
+    _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     // do things here with the funds. This is where the actual strategy starts placing funds on a new deposit
@@ -95,7 +93,7 @@ fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> 
     let free_balance = deps
         .querier
         .query_balance(env.contract.address, w.denom.clone())
-        .map_err(|error| ContractError::Std(error))?;
+        .map_err(ContractError::Std)?;
     // if the contract has enough free balance, execute the withdraw
     if w.amount <= free_balance.amount {
         // remove the peeked withdraw request
@@ -132,8 +130,7 @@ fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, Co
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {}
+pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
     todo!()
 }
 

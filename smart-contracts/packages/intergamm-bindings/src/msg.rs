@@ -2,7 +2,7 @@ use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Uint256, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 /// A number of Custom messages that can call into the intergamm bindings
 pub enum IntergammMsg {

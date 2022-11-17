@@ -21,41 +21,47 @@ const (
 )
 
 func NewOsmosisParamsICQPacketData() icqtypes.InterchainQueryPacketData {
-	return icqtypes.InterchainQueryPacketData{
-		Requests: []abcitypes.RequestQuery{
-			{
-				Path: OsmosisQueryEpochsInfoPath,
-				Data: ModuleCdc.MustMarshal(&epochtypes.QueryEpochsInfoRequest{}),
-			},
-			{
-				Path: OsmosisQueryLockableDurationsPath,
-				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryLockableDurationsRequest{}),
-			},
-			{
-				Path: OsmosisQueryMintParamsPath,
-				Data: ModuleCdc.MustMarshal(&minttypes.QueryParamsRequest{}),
-			},
-			{
-				Path: OsmosisQueryMintEpochProvisionsPath,
-				Data: ModuleCdc.MustMarshal(&minttypes.QueryEpochProvisionsRequest{}),
-			},
-			{
-				Path: OsmosisQueryDistrInfoPath,
-				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryDistrInfoRequest{}),
-			},
+	data, err := icqtypes.SerializeCosmosQuery([]abcitypes.RequestQuery{
+		{
+			Path: OsmosisQueryEpochsInfoPath,
+			Data: ModuleCdc.MustMarshal(&epochtypes.QueryEpochsInfoRequest{}),
 		},
+		{
+			Path: OsmosisQueryLockableDurationsPath,
+			Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryLockableDurationsRequest{}),
+		},
+		{
+			Path: OsmosisQueryMintParamsPath,
+			Data: ModuleCdc.MustMarshal(&minttypes.QueryParamsRequest{}),
+		},
+		{
+			Path: OsmosisQueryMintEpochProvisionsPath,
+			Data: ModuleCdc.MustMarshal(&minttypes.QueryEpochProvisionsRequest{}),
+		},
+		{
+			Path: OsmosisQueryDistrInfoPath,
+			Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryDistrInfoRequest{}),
+		},
+	})
+	if err != nil {
+		panic(err)
 	}
+
+	return icqtypes.InterchainQueryPacketData{Data: data}
 }
 
 func NewOsmosisIncentivizedPoolsICQPacketData() icqtypes.InterchainQueryPacketData {
-	return icqtypes.InterchainQueryPacketData{
-		Requests: []abcitypes.RequestQuery{
-			{
-				Path: OsmosisQueryIncentivizedPoolsPath,
-				Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryIncentivizedPoolsRequest{}),
-			},
+	data, err := icqtypes.SerializeCosmosQuery([]abcitypes.RequestQuery{
+		{
+			Path: OsmosisQueryIncentivizedPoolsPath,
+			Data: ModuleCdc.MustMarshal(&poolincentivestypes.QueryIncentivizedPoolsRequest{}),
 		},
+	})
+	if err != nil {
+		panic(err)
 	}
+
+	return icqtypes.InterchainQueryPacketData{Data: data}
 }
 
 func NewOsmosisPoolsICQPacketData(poolIds []uint64) icqtypes.InterchainQueryPacketData {
@@ -69,9 +75,11 @@ func NewOsmosisPoolsICQPacketData(poolIds []uint64) icqtypes.InterchainQueryPack
 		}
 	}
 
-	return icqtypes.InterchainQueryPacketData{
-		Requests: reqs,
+	data, err := icqtypes.SerializeCosmosQuery(reqs)
+	if err != nil {
+		panic(err)
 	}
+	return icqtypes.InterchainQueryPacketData{Data: data}
 }
 
 // UniquePoolIdsFromIncentivizedPools returns the unique pool ids from an array of incentivized pools.
