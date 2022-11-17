@@ -1,5 +1,8 @@
+use crate::contract::do_ibc_lock_tokens;
 use crate::error::{ContractError, Never};
-use crate::state::CHANNELS;
+use crate::helpers::{create_reply, create_submsg, MsgKind, IbcMsgKind, IcaMessages};
+use crate::state::{CHANNELS, PENDING_ACK};
+use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
     enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
@@ -12,7 +15,7 @@ use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
     IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
     IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError, StdResult, Uint128, WasmMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError, StdResult, Uint128, WasmMsg, Response, SubMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -56,7 +59,7 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         }
     })?;
 
-    let counter_party = enforce_ica_order_and_metadata(&channel, None, &metadata)?;
+    enforce_ica_order_and_metadata(&channel, None, &metadata)?;
     // save the current state of the initializing channel
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -88,7 +91,6 @@ pub fn ibc_channel_connect(
     // we need to check the counter party version in try and ack (sometimes here)
     // TODO we can wrap this match in a function in our ibc package
 
-
     // TODO think of a better datastructure so we dont have to parse ICA channels like this
     match info.channel_type {
         ChannelType::Icq { ref channel_ty } => enforce_order_and_version(
@@ -97,26 +99,38 @@ pub fn ibc_channel_connect(
             channel_ty.as_str(),
             ICQ_ORDERING,
         )?,
-        ChannelType::Ica { channel_ty, counter_party_address: _  } => {
-            let counter_party = enforce_ica_order_and_metadata(msg.channel(), msg.counterparty_version(), &channel_ty)?;
-            if counter_party.is_none() {
+        ChannelType::Ica {
+            channel_ty,
+            counter_party_address: _,
+        } => {
+            let counter_party_metadata = enforce_ica_order_and_metadata(
+                msg.channel(),
+                msg.counterparty_version(),
+                &channel_ty,
+            )?;
+
+            if counter_party_metadata.is_none() {
                 return Err(ContractError::QError(QError::NoCounterpartyIcaAddress));
             }
+            let counter_party = counter_party_metadata.unwrap();
             // at this point, we expect a counterparty address, if it's none, we have to error
-            if counter_party.is_none() {
+            if counter_party.address().is_none() {
                 return Err(ContractError::NoCounterpartyIcaAddress);
             }
-            let addr = counter_party.unwrap().address();
+            let addr = counter_party.address();
             if addr.is_none() {
                 return Err(ContractError::NoCounterpartyIcaAddress);
             }
-            info.channel_type = ChannelType::Ica { channel_ty, counter_party_address: addr.clone() }
-        },
+            info.channel_type = ChannelType::Ica {
+                channel_ty,
+                counter_party_address: addr,
+            }
+        }
         ChannelType::Ics20 { ref channel_ty } => todo!(),
     }
 
+    info.handshake_state = HandshakeState::Open;
 
-    
     CHANNELS.save(
         deps.storage,
         msg.channel().endpoint.channel_id.clone(),
@@ -158,6 +172,42 @@ pub fn ibc_packet_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO: trap error like in receive?
     let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    match ack {
+        IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
+        IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
+    }
+}
+
+pub fn handle_succesful_ack(
+    deps: DepsMut,
+    env: Env,
+    pkt: IbcPacketAckMsg,
+    ack_bin: Binary,
+) -> Result<IbcBasicResponse, ContractError> {
+    let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?; 
+    match kind {
+        crate::helpers::IbcMsgKind::Transfer => todo!(),
+        crate::helpers::IbcMsgKind::Ica(ica_kind) => {
+            match ica_kind {
+                crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
+                    let response: MsgJoinSwapExternAmountInResponse = from_binary(&ack_bin)?;
+                    let msg = do_ibc_lock_tokens(deps.storage, response.share_out_amount)?;
+                    let msg_kind = MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::LockTokens));
+                    Ok(IbcBasicResponse::new().add_submessage(create_submsg(deps.storage, msg_kind, msg)?))
+                },
+                crate::helpers::IcaMessages::LockTokens => todo!(),
+            }
+        },
+        crate::helpers::IbcMsgKind::Icq => todo!(),
+    }
+}
+
+pub fn handle_failing_ack(
+    deps: DepsMut,
+    env: Env,
+    pkt: IbcPacketAckMsg,
+    error: String,
+) -> Result<IbcBasicResponse, ContractError> {
     todo!()
 }
 

@@ -800,6 +800,8 @@ dependencies = [
 name = "lp-strategy"
 version = "0.1.0"
 dependencies = [
+ "cosmos-sdk-proto",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 0.16.0",
  "cw-utils 0.16.0",
@@ -807,6 +809,8 @@ dependencies = [
  "cw20 0.16.0",
  "cw20-base 0.16.0",
  "intergamm-bindings",
+ "osmosis-std",
+ "prost 0.11.0",
  "quasar-traits",
  "quasar-types",
  "schemars",

@@ -82,6 +82,7 @@ fn execute_join_pool(
         share_out_amount,
         token_in_maxs,
     };
+    
     let packet = InterchainAccountPacketData {
         r#type: 1,
         data: msg.encode_to_vec(),

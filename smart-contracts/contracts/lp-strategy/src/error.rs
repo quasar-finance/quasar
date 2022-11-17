@@ -26,6 +26,9 @@ pub enum ContractError {
     #[error("no counterpart ica address found")]
     NoCounterpartyIcaAddress,
 
+    #[error("channel is not an ica channel")]
+    NoIcaChannel,
+
     #[error("not enough funds in the strategy to withdraw")]
     InsufficientOutStandingFunds,
 }

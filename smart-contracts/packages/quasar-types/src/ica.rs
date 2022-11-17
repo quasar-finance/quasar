@@ -131,8 +131,8 @@ impl CounterPartyIcaMetadata {
         &self.tx_type
     }
 
-    pub fn address(&self) -> &Option<String> {
-        &self.address
+    pub fn address(&self) -> Option<String> {
+        self.address.clone()
     }
 
     pub fn with_connections(

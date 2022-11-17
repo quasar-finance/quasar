@@ -1,18 +1,24 @@
+use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAccountPacketData;
+use cosmos_sdk_proto::traits::Message;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, BankMsg, Binary, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Reply, Response,
-    StdError, StdResult, Timestamp, Uint128,
+    coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order,
+    Reply, Response, StdError, StdResult, Timestamp, Uint128, CosmosMsg, Empty, Storage,
 };
 use cw2::set_contract_version;
-use intergamm_bindings::msg::IntergammMsg;
+use osmosis_std::types::cosmos::base::v1beta1::Coin;
+use quasar_types::ibc::{ChannelInfo, ChannelType};
 
 use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
-use crate::helpers::parse_seq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::helpers::{create_reply, parse_seq, IbcMsgKind, MsgKind, IcaMessages};
+use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queue::{dequeue, enqueue};
-use crate::state::{WithdrawRequest, OUTSTANDING_FUNDS, PENDING_ACK, REPLIES, WITHDRAW_QUEUE};
+use crate::state::{
+    Tmp, WithdrawRequest, CHANNELS, OUTSTANDING_FUNDS, PENDING_ACK, REPLACEME, REPLIES,
+    WITHDRAW_QUEUE,
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -36,9 +42,13 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack
-    let original = REPLIES.load(deps.storage, msg.id)?;
-    let seq = parse_seq(msg)?;
-    PENDING_ACK.save(deps.storage, seq, &original)?;
+    let kind = REPLIES.load(deps.storage, msg.id)?;
+    match kind {
+        MsgKind::Ibc(ibc_kind) => {
+            let seq = parse_seq(msg)?;
+            PENDING_ACK.save(deps.storage, seq, &ibc_kind)?;
+        }
+    }
     Ok(Response::default())
 }
 
@@ -50,16 +60,86 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        // TODO decide if we want to do something with deposit
         ExecuteMsg::Deposit { .. } => execute_deposit(deps, env, info),
-        ExecuteMsg::WithdrawRequest { .. } => {
-            todo!()
-        }
         ExecuteMsg::Transfer {
             channel,
             to_address,
         } => execute_transfer(deps, env, info, channel, to_address),
+        ExecuteMsg::DepositAndLockTokens {
+            channel,
+            pool_id,
+            amount,
+            lock_period,
+            denom,
+            share_out_min_amount,
+        } => execute_deposit_and_lock_tokens(
+            deps,
+            env,
+            info,
+            channel,
+            pool_id,
+            denom,
+            amount,
+            lock_period,
+            share_out_min_amount,
+        ),
     }
+}
+
+pub fn execute_deposit_and_lock_tokens(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    channel_id: String,
+    pool_id: u64,
+    denom: String,
+    amount: Uint128,
+    lock_period: Uint128,
+    share_out_min_amount: Uint128,
+) -> Result<Response, ContractError> {
+    let channel = CHANNELS.load(deps.storage, channel_id.clone())?;
+    if let ChannelType::Ica {
+        channel_ty,
+        counter_party_address,
+    } = channel.channel_type
+    {
+        if counter_party_address.is_none() {
+            return Err(ContractError::NoCounterpartyIcaAddress);
+        }
+        // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
+        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
+            sender: counter_party_address.unwrap(),
+            pool_id,
+            token_in: Some(Coin {
+                denom,
+                amount: amount.to_string(),
+            }),
+            share_out_min_amount: share_out_min_amount.to_string(),
+        };
+
+        let packet = InterchainAccountPacketData {
+            r#type: 1,
+            data: join.encode_to_vec(),
+            memo: "".into(),
+        };
+
+        let send_packet_msg = IbcMsg::SendPacket {
+            channel_id: channel_id,
+            data: to_binary(&packet.encode_to_vec())?,
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        };
+
+        // save the left over data so we can access everything we need in the ack to lock the tokens
+        REPLACEME.save(deps.storage, &Tmp { lock_period })?;
+        let resp = create_reply(deps.storage, MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn)), send_packet_msg)?;
+        Ok(resp.add_attribute("joining_swap_extern_amount_in_on_pool", pool_id.to_string()))
+    } else {
+        Err(ContractError::NoIcaChannel)
+    }
+}
+
+pub fn do_ibc_lock_tokens(deps: &mut dyn Storage, token_amount: String) -> Result<CosmosMsg, ContractError> {
+    todo!()
 }
 
 pub fn execute_transfer(
@@ -74,6 +154,30 @@ pub fn execute_transfer(
             cw_utils::PaymentError::MultipleDenoms {},
         ));
     }
+
+    // we want to check that we send funds to our ica address, we check that the address exists as in our channels
+    if !CHANNELS
+        .range(deps.storage, None, None, Order::Ascending)
+        .any(|channel| {
+            let (_, chan) = channel.unwrap();
+            if let ChannelType::Ica {
+                channel_ty: _,
+                counter_party_address,
+            } = chan.channel_type
+            {
+                if counter_party_address.is_some() {
+                    return counter_party_address.unwrap() == to_address;
+                } else {
+                    return false;
+                }
+            } else {
+                false
+            }
+        })
+    {
+        return Err(ContractError::NoCounterpartyIcaAddress);
+    }
+
     let funds = info.funds[0].clone();
     let transfer = IbcMsg::Transfer {
         channel_id: channel.clone(),
@@ -188,15 +292,23 @@ fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, Co
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {}
-    todo!()
+    match msg {
+        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
+    }
+}
+
+pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
+    let channels: Vec<ChannelInfo> = CHANNELS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|kv| kv.unwrap().1)
+        .collect();
+    Ok(ChannelsResponse { channels })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::SubMsg;
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
