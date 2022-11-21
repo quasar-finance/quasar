@@ -3,6 +3,7 @@ package suite
 import (
 	"context"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/strangelove-ventures/ibctest/v5/chain/cosmos"
 	"github.com/strangelove-ventures/ibctest/v5/ibc"
@@ -62,6 +63,16 @@ func (s E2ETestSuite) QueryConnectionChannels(ctx context.Context, chain ibc.Cha
 	s.Require().NoError(err)
 
 	return resp.Channels
+}
+
+// QueryWasmCodes returns a list of all wasm codes stored in the chain.
+func (s E2ETestSuite) QueryWasmCodes(ctx context.Context, chain ibc.Chain) []wasmtypes.CodeInfoResponse {
+	cc := s.GetGRPCClient(chain)
+	qc := wasmtypes.NewQueryClient(cc)
+	resp, err := qc.Codes(ctx, &wasmtypes.QueryCodesRequest{})
+	s.Require().NoError(err)
+
+	return resp.CodeInfos
 }
 
 // GetGRPCClient returns a persistent grpc connection to the requested chain.
