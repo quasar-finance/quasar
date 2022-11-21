@@ -281,10 +281,7 @@ func (s *IntergammTestSuite) TestICATransfer_SuccessfulTransfer() {
 // become a one-hop ibc denom.
 func (s *IntergammTestSuite) TestForwardTransfer_SuccessfulTransfer() {
 	t := s.T()
-	// TODO: Fix the problem with packet forwarder in gaia docker image
-	t.Skip()
 	t.Parallel()
-
 	ctx := context.Background()
 
 	// Setup an account of cosmos-hub
