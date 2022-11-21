@@ -33,8 +33,8 @@ var (
 		ChainID: "cosmos",
 		Images: []ibc.DockerImage{
 			{
-				Repository: "ghcr.io/cosmos/gaia",
-				Version:    "sha-fca0a63",
+				Repository: "ghcr.io/quasar-finance/gaia",
+				Version:    "v7.1.0-router",
 			},
 		},
 		Bin:            "gaiad",
@@ -52,8 +52,8 @@ var (
 		ChainID: "osmosis",
 		Images: []ibc.DockerImage{
 			{
-				Repository: "osmolabs/osmosis",
-				Version:    "12.2.1",
+				Repository: "ghcr.io/quasar-finance/osmosis",
+				Version:    "v12.0.0-icq",
 			},
 		},
 		Bin:            "osmosisd",
