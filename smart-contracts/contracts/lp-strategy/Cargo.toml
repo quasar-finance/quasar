@@ -24,7 +24,7 @@ cw-storage-plus = "0.16.0"
 cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"]}
 cosmwasm-schema = { version = "1.0.0" }
 osmosis-std = {version = "0.12.0"}
-cosmos-sdk-proto = { version = "0.14", default-features = false }
+cosmos-sdk-proto = { version = "0.15", default-features = false }
 prost = { version = "0.11", default-features = false }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }

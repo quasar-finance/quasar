@@ -1,6 +1,6 @@
 use crate::contract::do_ibc_lock_tokens;
 use crate::error::{ContractError, Never};
-use crate::helpers::{create_reply, create_submsg, MsgKind, IbcMsgKind, IcaMessages};
+use crate::helpers::{create_reply, create_submsg, IbcMsgKind, IcaMessages, MsgKind};
 use crate::state::{CHANNELS, PENDING_ACK};
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::error::Error as QError;
@@ -15,7 +15,8 @@ use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
     IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
     IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError, StdResult, Uint128, WasmMsg, Response, SubMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, Response, StdError, StdResult, SubMsg, Uint128,
+    WasmMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -184,19 +185,21 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?; 
+    let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match kind {
         crate::helpers::IbcMsgKind::Transfer => todo!(),
-        crate::helpers::IbcMsgKind::Ica(ica_kind) => {
-            match ica_kind {
-                crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
-                    let response: MsgJoinSwapExternAmountInResponse = from_binary(&ack_bin)?;
-                    let msg = do_ibc_lock_tokens(deps.storage, response.share_out_amount)?;
-                    let msg_kind = MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::LockTokens));
-                    Ok(IbcBasicResponse::new().add_submessage(create_submsg(deps.storage, msg_kind, msg)?))
-                },
-                crate::helpers::IcaMessages::LockTokens => todo!(),
+        crate::helpers::IbcMsgKind::Ica(ica_kind) => match ica_kind {
+            crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
+                let response: MsgJoinSwapExternAmountInResponse = from_binary(&ack_bin)?;
+                let msg = do_ibc_lock_tokens(deps.storage, response.share_out_amount)?;
+                let msg_kind = MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::LockTokens));
+                Ok(IbcBasicResponse::new().add_submessage(create_submsg(
+                    deps.storage,
+                    msg_kind,
+                    msg,
+                )?))
             }
+            crate::helpers::IcaMessages::LockTokens => todo!(),
         },
         crate::helpers::IbcMsgKind::Icq => todo!(),
     }
@@ -208,7 +211,8 @@ pub fn handle_failing_ack(
     pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    todo!()
+    // TODO we can expand error handling here to fetch the packet by the
+    Ok(IbcBasicResponse::new().add_attribute("ibc-error", error.as_str()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
