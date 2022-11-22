@@ -66,7 +66,7 @@ fn enforce_order_and_version(
                 raw_metadata: metadata.to_string(),
                 error: err.to_string(),
             })?;
-            Ok(Some(counterparty_metadata))
+        Ok(Some(counterparty_metadata))
     } else {
         Ok(None)
     }

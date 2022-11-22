@@ -13,7 +13,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply};
+use crate::helpers::{handle_reply_sample, set_reply};
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
     PortResponse, QueryMsg,
@@ -81,7 +81,7 @@ fn execute_join_pool(
         share_out_amount,
         token_in_maxs,
     };
-    
+
     let packet = InterchainAccountPacketData {
         r#type: 1,
         data: msg.encode_to_vec(),
