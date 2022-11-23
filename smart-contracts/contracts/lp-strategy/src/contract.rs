@@ -105,6 +105,14 @@ pub struct InterchainAccountPacketData {
     pub memo: ::prost::alloc::string::String,
 }
 
+#[derive(Clone, PartialEq,   Serialize, Deserialize)]
+pub struct MyInterchainAccountPacketData {
+    #[serde(rename="type")]
+    pub r#type: String,
+    pub data: Vec<u8>,
+    pub memo: String,
+}
+
 /// Type defines a classification of message issued from a controller chain to its associated interchain accounts
 /// host
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration, Serialize, Deserialize)]
@@ -162,17 +170,17 @@ pub fn execute_deposit_and_lock_tokens(
 
         let anys: Vec<Any>= vec![Any{ type_url: osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL.to_string(), value: join.encode_to_vec() }];
 
-        let packet = InterchainAccountPacketData {
-            r#type: 1,
+        let packet = MyInterchainAccountPacketData {
+            r#type: "TYPE_EXECUTE_TX".to_string(),
             // TODO data needs to be a cosmos tx
-            data,
+            data: base64::decode("CrABCiMvY29zbW9zLnN0YWtpbmcudjFiZXRhMS5Nc2dEZWxlZ2F0ZRKIAQpBY29zbW9zMTVjY3NoaG1wMGdzeDI5cXBxcTZnNHptbHRubnZnbXl1OXVldWFkaDl5Mm5jNXpqMHN6bHM1Z3RkZHoSNGNvc21vc3ZhbG9wZXIxcW5rMm40bmxrcHc5eGZxbnRsYWRoNzR3NnVqdHVsd25teG5oM2saDQoFc3Rha2USBDEwMDA=").map_err(|err| StdError::SerializeErr{source_type : "base64".into(), msg: err.to_string()})?,
             memo: "".into(),
         };
 // 
 // &serde_json_wasm::to_vec(&packet).map_err(|err| ContractError::Std(StdError::SerializeErr { source_type: "serialize intechain packet".into(), msg: err.to_string() }))?)
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: channel_id,
-            data: to_binary("Cl0KLy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dKb2luU3dhcEV4dGVybkFtb3VudEluEioKFWNvdW50ZXJfcGFydHlfYWRkcmVzcxABGgwKBHVxc3ISBDEwMDAiATE=")?,
+            data: to_binary(&serde_json_wasm::to_vec(&packet).map_err(|err| StdError::SerializeErr { source_type: "encode packet".into(), msg: err.to_string() })?)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };
 
