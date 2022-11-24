@@ -1,17 +1,25 @@
 use cosmwasm_std::{
-    Attribute, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResponse, Env, DepsMut, Deps, Addr,
+    Addr, Attribute, Deps, DepsMut, Env, Order, Reply, Response, StdError, StdResult, Storage,
+    SubMsg, SubMsgResponse,
 };
 
-use crate::{msg::{IntergammMsg, AckResponse, AckValue}, state::{REPLIES, CALLBACKADDRESS, PENDINGACKS, ACKS}, error::ContractError, };
+use crate::{
+    error::ContractError,
+    msg::{AckResponse, AckValue, IntergammMsg},
+    state::{ACKS, CALLBACKADDRESS, PENDINGACKS, REPLIES},
+};
 
-pub fn set_callback_addr(deps: DepsMut, callback_addr: &str) -> Result<(), ContractError>{
+pub fn set_callback_addr(deps: DepsMut, callback_addr: &str) -> Result<(), ContractError> {
     Ok(CALLBACKADDRESS.save(deps.storage, &deps.api.addr_validate(callback_addr)?)?)
 }
 
 pub fn check_callback_addr(deps: Deps, sender: Addr) -> Result<(), ContractError> {
     let callback = CALLBACKADDRESS.load(deps.storage)?;
     if sender != callback {
-        return Err(ContractError::Unauthorized { sender: sender.to_string(), expected: callback.to_string() });
+        return Err(ContractError::Unauthorized {
+            sender: sender.to_string(),
+            expected: callback.to_string(),
+        });
     }
     Ok(())
 }
@@ -30,7 +38,12 @@ pub fn create_intergamm_msg(
     Ok(Response::new().add_submessage(SubMsg::reply_always(msg, id)))
 }
 
-pub fn ack(deps: DepsMut, sequence: u64, error: &Option<String>, response: &Option<AckResponse>) -> Result<(), ContractError> {
+pub fn ack(
+    deps: DepsMut,
+    sequence: u64,
+    error: &Option<String>,
+    response: &Option<AckResponse>,
+) -> Result<(), ContractError> {
     ACKS.save(
         deps.storage,
         sequence,
@@ -45,11 +58,7 @@ pub fn ack(deps: DepsMut, sequence: u64, error: &Option<String>, response: &Opti
 
 // handle_reply provides a basic handle function for responses to intergamm messages
 // the acks map is the map where
-pub fn handle_reply(
-    store: &mut dyn Storage,
-    env: Env,
-    msg: Reply,
-) -> StdResult<Response> {
+pub fn handle_reply(store: &mut dyn Storage, env: Env, msg: Reply) -> StdResult<Response> {
     let res = msg.result.into_result();
     if let Ok(ok) = res {
         // do something with the ok msg
@@ -59,11 +68,13 @@ pub fn handle_reply(
                 destination_local_zone_id,
                 receiver: _,
                 coin: _,
-            } => Ok(Response::new().add_attribute("send_token", "sender").add_attribute("destination", destination_local_zone_id)),
-            IntergammMsg::TestScenario { scenario } => Ok( Response::new().add_attribute("testing scenario", scenario)),
-            IntergammMsg::RegisterIcaOnZone {
-                zone_id,
             } => Ok(Response::new()
+                .add_attribute("send_token", "sender")
+                .add_attribute("destination", destination_local_zone_id)),
+            IntergammMsg::TestScenario { scenario } => {
+                Ok(Response::new().add_attribute("testing scenario", scenario))
+            }
+            IntergammMsg::RegisterIcaOnZone { zone_id } => Ok(Response::new()
                 .add_attribute("register_interchain_account", env.contract.address)
                 .add_attribute("zone_id", zone_id)),
             IntergammMsg::JoinSwapExternAmountIn {
@@ -72,14 +83,40 @@ pub fn handle_reply(
                 pool_id: _,
                 share_out_min_amount: _,
                 token_in: _,
-            } => {
-                store_pending_ack(ok, connection_id, store, &original)
-            }
-            IntergammMsg::JoinPool { ref connection_id, timeout_timestamp: _, pool_id: _,share_out_amount: _, token_in_maxs: _ } => store_pending_ack(ok, connection_id,  store, &original),
-            IntergammMsg::LockTokens { ref connection_id, timeout_timestamp: _, duration: _, coins: _ } => store_pending_ack(ok, connection_id,  store, &original),
-            IntergammMsg::ExitSwapExternAmountOut { ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id,  store, &original),
-            IntergammMsg::BeginUnlocking { ref connection_id, timeout_timestamp: _, id: _, coins: _ } => store_pending_ack(ok, connection_id,  store, &original),
-            IntergammMsg::ExitPool { ref connection_id, timeout_timestamp: _, pool_id: _, share_in_amount: _, token_out_mins: _ } => store_pending_ack(ok, connection_id,  store, &original),
+            } => store_pending_ack(ok, connection_id, store, &original),
+            IntergammMsg::JoinPool {
+                ref connection_id,
+                timeout_timestamp: _,
+                pool_id: _,
+                share_out_amount: _,
+                token_in_maxs: _,
+            } => store_pending_ack(ok, connection_id, store, &original),
+            IntergammMsg::LockTokens {
+                ref connection_id,
+                timeout_timestamp: _,
+                duration: _,
+                coins: _,
+            } => store_pending_ack(ok, connection_id, store, &original),
+            IntergammMsg::ExitSwapExternAmountOut {
+                ref connection_id,
+                timeout_timestamp: _,
+                pool_id: _,
+                share_in_amount: _,
+                token_out_mins: _,
+            } => store_pending_ack(ok, connection_id, store, &original),
+            IntergammMsg::BeginUnlocking {
+                ref connection_id,
+                timeout_timestamp: _,
+                id: _,
+                coins: _,
+            } => store_pending_ack(ok, connection_id, store, &original),
+            IntergammMsg::ExitPool {
+                ref connection_id,
+                timeout_timestamp: _,
+                pool_id: _,
+                share_in_amount: _,
+                token_out_mins: _,
+            } => store_pending_ack(ok, connection_id, store, &original),
         }
     } else {
         Err(StdError::GenericErr {
@@ -88,7 +125,12 @@ pub fn handle_reply(
     }
 }
 
-fn store_pending_ack(msg: SubMsgResponse, connection_id: &str, store: &mut dyn Storage, original: &IntergammMsg) -> Result<Response, StdError> {
+fn store_pending_ack(
+    msg: SubMsgResponse,
+    connection_id: &str,
+    store: &mut dyn Storage,
+    original: &IntergammMsg,
+) -> Result<Response, StdError> {
     // to get the sequence number, we look for the event type send_packet under the key packet_sequence and register the sequence number
     let e = msg
         .events
@@ -110,7 +152,7 @@ fn store_pending_ack(msg: SubMsgResponse, connection_id: &str, store: &mut dyn S
         target_type: "u64".into(),
         msg: e.to_string(),
     })?;
-    
+
     PENDINGACKS.save(store, s, original)?;
     Ok(Response::new().add_attribute("added pending ack", s.to_string()))
 }

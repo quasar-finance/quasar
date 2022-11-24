@@ -1,13 +1,11 @@
-use cosmwasm_std::{
-    DepsMut, Order, OverflowError, OverflowOperation, StdError, StdResult, Storage,
-};
+use cosmwasm_std::{DepsMut, Order, OverflowError, OverflowOperation, StdError, StdResult};
 use std::collections::VecDeque;
 
 use crate::state::{WithdrawRequest, WITHDRAW_QUEUE};
 
 pub fn enqueue(deps: DepsMut, value: WithdrawRequest) -> StdResult<()> {
     // find the last element in the queue and extract key
-    let mut queue: VecDeque<_> = WITHDRAW_QUEUE
+    let queue: VecDeque<_> = WITHDRAW_QUEUE
         .range(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<_>>()
         .unwrap();
@@ -64,6 +62,7 @@ fn handle_dequeue(deps: DepsMut) -> Option<WithdrawRequest> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_dependencies_with_balance};
+    use cosmwasm_std::Storage;
     use cosmwasm_std::Uint128;
 
     #[test]

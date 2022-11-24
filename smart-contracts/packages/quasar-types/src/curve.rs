@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str::FromStr;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CurveType {
     Constant { value: Uint128, scale: u32 },
@@ -75,7 +75,7 @@ impl Constant {
 }
 
 /// DecimalPlaces should be passed into curve constructors
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, JsonSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, JsonSchema, Default)]
 pub struct DecimalPlaces {
     /// Number of decimal places for the supply token (this is what was passed in cw20-base instantiate
     pub supply: u32,

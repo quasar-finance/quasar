@@ -1,15 +1,11 @@
 use crate::{
-    msg::InterchainQueryPacketData,
-    proto::{CosmosQuery, CosmosResponse},
-    state::{Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
+    proto::CosmosResponse,
+    state::{Origin, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
     ContractError,
 };
-use cosmos_sdk_proto::tendermint::abci::RequestQuery;
 use cosmwasm_std::{
     attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult,
-    Storage, Timestamp,
 };
-use prost::Message;
 
 pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
     let val = msg
@@ -50,23 +46,6 @@ pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Respon
     Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
 }
 
-pub fn prepare_query(
-    storage: &dyn Storage,
-    env: Env,
-    channel: &str,
-) -> Result<Timestamp, ContractError> {
-    // ensure the requested channel is registered
-    if !CHANNEL_INFO.has(storage, channel) {
-        return Err(ContractError::NoSuchChannel { id: channel.into() });
-    }
-    let config = CONFIG.load(storage)?;
-    // delta from user is in seconds
-    let timeout_delta = config.default_timeout;
-
-    // timeout is in nanoseconds
-    Ok(env.block.time.plus_seconds(timeout_delta))
-}
-
 pub fn set_reply(deps: DepsMut, origin: &Origin) -> Result<u64, ContractError> {
     let last = REPLIES
         .range(deps.storage, None, None, Order::Descending)
@@ -102,103 +81,7 @@ pub fn handle_sample_callback(
     Ok(IbcBasicResponse::new().add_attributes(attrs))
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Query {
-    requests: Vec<RequestQuery>,
-}
-
-impl Query {
-    pub fn new() -> Query {
-        Query {
-            requests: Vec::new(),
-        }
-    }
-
-    pub fn add_request(mut self, data: Vec<u8>, path: String) -> Self {
-        self.requests.push(RequestQuery {
-            data,
-            path,
-            height: 0,
-            prove: false,
-        });
-        self
-    }
-
-    pub fn encode(self) -> Vec<u8> {
-        CosmosQuery {
-            requests: self.requests,
-        }
-        .encode_to_vec()
-    }
-
-    pub fn encode_pkt(self) -> InterchainQueryPacketData {
-        InterchainQueryPacketData {
-            data: self.encode(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    pub fn single_query_works() {
-        let req = RequestQuery {
-            data: vec![1, 0, 1, 0],
-            path: "/cosmos.bank.v1beta1.Query/AllBalances".into(),
-            height: 0,
-            prove: false,
-        };
-
-        let data = Query::new().add_request(req.data.clone(), req.path.clone());
-
-        assert_eq!(
-            data,
-            Query {
-                requests: vec![req.clone()]
-            }
-        );
-        assert_eq!(
-            data.encode(),
-            CosmosQuery {
-                requests: vec![req]
-            }
-            .encode_to_vec()
-        )
-    }
-
-    #[test]
-    pub fn multiple_query_works() {
-        let req1 = RequestQuery {
-            data: vec![1, 0, 1, 0],
-            path: "/cosmos.bank.v1beta1.Query/AllBalances".into(),
-            height: 0,
-            prove: false,
-        };
-        let req2 = RequestQuery {
-            data: vec![1, 0, 0, 0],
-            path: "/cosmos.bank.v1beta1.Query/Balance".into(),
-            height: 0,
-            prove: false,
-        };
-
-        let data = Query::new()
-            .add_request(req1.data.clone(), req1.path.clone())
-            .add_request(req2.data.clone(), req2.path.clone());
-
-        assert_eq!(
-            data,
-            Query {
-                requests: vec![req1.clone(), req2.clone()]
-            }
-        );
-        assert_eq!(
-            data.encode(),
-            CosmosQuery {
-                requests: vec![req1, req2]
-            }
-            .encode_to_vec()
-        )
-    }
 }

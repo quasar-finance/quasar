@@ -10,7 +10,7 @@ pub fn demo_fetch_pools(deps: DepsMut<QuasarQuery>) -> Result<Response, Contract
 
     let pools_response = querier.osmosis_pools(Option::None)?;
 
-    let pools = pools_response.pools.unwrap_or(vec![]);
+    let pools = pools_response.pools.unwrap_or_default();
 
     let first_pool_id = match pools.first() {
         Some(pool) => pool.pool_info.id.to_string(),
