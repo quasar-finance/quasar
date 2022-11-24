@@ -15,7 +15,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/tendermint/tendermint/libs/log"
 
-	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
+	ibctransfer "github.com/quasarlabs/quasarnode/x/transfer"
 )
 
 var _ porttypes.IBCModule = IBCTransferModuleDecorator{}
@@ -92,7 +92,8 @@ func (im IBCTransferModuleDecorator) OnChanOpenAck(
 		return im.m.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 	}
 
-	pi := types.PortInfo{PortID: portID,
+	pi := types.PortInfo{
+		PortID:                portID,
 		ChannelID:             channelID,
 		CounterpartyChannelID: counterpartyChannelID,
 		ConnectionID:          connectionID,

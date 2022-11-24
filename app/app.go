@@ -455,51 +455,6 @@ func New(
 
 	// TODO AUDIT Above lines
 
-	// IBC Modules & Keepers
-
-	app.TransferKeeper = transfermodulekeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	)
-	transferModule := transfermodule.NewAppModule(app.TransferKeeper)
-	transferIbcModule := transfermodule.NewIBCModule(app.TransferKeeper, &app.wasmKeeper)
-
-	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
-		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, scopedICAControllerKeeper, app.MsgServiceRouter(),
-	)
-	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
-	)
-	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
-
-	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
-		appCodec,
-		keys[intergammmoduletypes.StoreKey],
-		keys[intergammmoduletypes.MemStoreKey],
-		scopedIntergammKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.ICAControllerKeeper,
-		app.TransferKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.GetSubspace(intergammmoduletypes.ModuleName),
-	)
-	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
-	intergammIBCModule := intergammmodule.NewIBCModule(app.IntergammKeeper)
-
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
-
-	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
-		&transferIbcModule,
-		app.IntergammKeeper,
-	)
-
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
@@ -614,6 +569,51 @@ func New(
 		wasmOpts...,
 	)
 
+	// IBC Modules & Keepers
+
+	app.TransferKeeper = transfermodulekeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+	)
+	transferModule := transfermodule.NewAppModule(app.TransferKeeper)
+	transferIbcModule := transfermodule.NewIBCModule(app.TransferKeeper, &app.wasmKeeper)
+
+	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
+		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, scopedICAControllerKeeper, app.MsgServiceRouter(),
+	)
+	app.ICAHostKeeper = icahostkeeper.NewKeeper(
+		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
+	)
+	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
+
+	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
+		appCodec,
+		keys[intergammmoduletypes.StoreKey],
+		keys[intergammmoduletypes.MemStoreKey],
+		scopedIntergammKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.ICAControllerKeeper,
+		app.TransferKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.GetSubspace(intergammmoduletypes.ModuleName),
+	)
+	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
+	intergammIBCModule := intergammmodule.NewIBCModule(app.IntergammKeeper)
+
+	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
+	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+
+	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
+		&transferIbcModule,
+		app.IntergammKeeper,
+	)
+
 	// Set Intergamm hooks
 
 	// IBC
@@ -717,7 +717,7 @@ func New(
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
 	// we prefer to be more strict in what arguments the modules expect.
-	var skipGenesisInvariants = cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.

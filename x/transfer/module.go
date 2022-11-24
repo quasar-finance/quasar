@@ -7,10 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	"github.com/quasarlabs/quasarnode/internal/sudo"
 	transfermodulekeeper "github.com/quasarlabs/quasarnode/x/transfer/keeper"
 	transfermoduletypes "github.com/quasarlabs/quasarnode/x/transfer/types"
 )
@@ -21,17 +19,17 @@ import (
 */
 
 type IBCModule struct {
-	keeper      keeper.Keeper
-	sudoHandler sudo.Handler
+	keeper     keeper.Keeper
+	wasmKeeper *wasm.Keeper
 	transfer.IBCModule
 }
 
 // NewIBCModule creates a new IBCModule given the keeper
 func NewIBCModule(k transfermodulekeeper.KeeperTransferWrapper, wasmKeeper *wasm.Keeper) IBCModule {
 	return IBCModule{
-		keeper:      k.Keeper,
-		IBCModule:   transfer.NewIBCModule(k.Keeper),
-		sudoHandler: sudo.NewSudoHandler(wasmKeeper, types.ModuleName),
+		keeper:     k.Keeper,
+		IBCModule:  transfer.NewIBCModule(k.Keeper),
+		wasmKeeper: wasmKeeper,
 	}
 }
 
@@ -47,8 +45,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 	if err != nil {
 		return sdkerrors.Wrap(err, "failed to process original OnAcknowledgementPacket")
 	}
-	return im.HandleAcknowledgement(ctx, packet, acknowledgement)
-
+	return im.HandleAcknowledgement(ctx, packet, acknowledgement, relayer)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
@@ -61,7 +58,7 @@ func (im IBCModule) OnTimeoutPacket(
 	if err != nil {
 		return sdkerrors.Wrap(err, "failed to process original OnTimeoutPacket")
 	}
-	return im.HandleTimeout(ctx, packet)
+	return im.HandleTimeout(ctx, packet, relayer)
 }
 
 type AppModule struct {

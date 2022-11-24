@@ -1,0 +1,64 @@
+{
+  "fileName": "ica",
+  "buildName": "ica",
+  "codes": [
+    {
+      "codeID": "18",
+      "deployedContracts": [
+        {
+          "address": "quasar153vp64h0jlenzwspje0qza5lz8px9sdf63hcdaljtqcghewgl32s8ccus4",
+          "executeMsgs": [],
+          "queryMsgs": []
+        }
+      ]
+    },
+    {
+      "codeID": "20",
+      "deployedContracts": [
+        {
+          "address": "quasar17q90gwd9279une6fagsxqrak87fmc3gtusv9dglwc0ezcxufrtdssqxyue",
+          "executeMsgs": [],
+          "queryMsgs": []
+        },
+        {
+          "address": "quasar1nyuryl5u5z04dx4zsqgvsuw7fe8gl2f77yufynauuhklnnmnjncqgzf23w",
+          "executeMsgs": [],
+          "queryMsgs": []
+        },
+        {
+          "address": "quasar19ggagldquvaltewhvxss94jd49zmy9gqeuwfzvm86glfmwjqvvnqyut4s5",
+          "executeMsgs": [],
+          "queryMsgs": []
+        }
+      ]
+    },
+    {
+      "codeID": "1",
+      "deployedContracts": [
+        {
+          "address": "quasar14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sy9numu",
+          "executeMsgs": [],
+          "queryMsgs": []
+        }
+      ]
+    }
+  ],
+  "initMsgs": [
+    {
+      "title": "good init",
+      "msg": "{\"default_timeout\": 3000}"
+    }
+  ],
+  "executeMsgs": [
+    {
+      "title": "deposit\t",
+      "msg": "{\"deposit\":\"some_funds\"}"
+    }
+  ],
+  "queryMsgs": [
+    {
+      "title": "ica's query message",
+      "msg": "{\"port\":{}}"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fileName": "icq",
+  "buildName": "icq",
+  "codes": [
+    {
+      "codeID": "21",
+      "deployedContracts": []
+    }
+  ],
+  "initMsgs": [],
+  "executeMsgs": [],
+  "queryMsgs": []
+}

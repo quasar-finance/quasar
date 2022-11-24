@@ -1,6 +1,10 @@
 package transfer
 
 import (
+	"strings"
+
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -9,7 +13,8 @@ import (
 )
 
 // HandleAcknowledgement passes the acknowledgement data to the appropriate contract via a Sudo call.
-func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte) error {
+func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte,
+	relayer sdk.AccAddress) error {
 	var ack channeltypes.Acknowledgement
 	if err := channeltypes.SubModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet acknowledgement: %v", err)
@@ -19,18 +24,29 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	senderAddress, err := sdk.AccAddressFromBech32(data.GetSender())
+	contractAddr, err := ContractFromPortID(packet.SourcePort)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
+		return sdkerrors.Wrapf(err, "contract port id")
 	}
 
 	if ack.Success() {
-		_, err = im.sudoHandler.SudoResponse(ctx, senderAddress, packet, ack.GetResult())
+
+		im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
+			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
+			OriginalPacket:  newIBCPacket(packet),
+			Relayer:         relayer.String(),
+		})
+
 	} else {
 		// Actually we have only one kind of error returned from acknowledgement
 		// maybe later we'll retrieve actual errors from events
 		im.keeper.Logger(ctx).Error(ack.GetError(), "CheckTx", ctx.IsCheckTx())
-		_, err = im.sudoHandler.SudoError(ctx, senderAddress, packet, ack.GetError())
+
+		im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
+			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
+			OriginalPacket:  newIBCPacket(packet),
+			Relayer:         relayer.String(),
+		})
 	}
 
 	if err != nil {
@@ -43,24 +59,55 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 	return nil
 }
 
+const portIDPrefix = "wasm."
+
+// todo: will someone please tell me how i can use this function without redefining it here, it exists in wasm: https://github.com/CosmWasm/wasmd/blob/a9ce273e3c1c4f7224e1293fcf1bfd5a50e4fe17/x/wasm/keeper/ibc.go#L40
+func ContractFromPortID(portID string) (sdk.AccAddress, error) {
+	if !strings.HasPrefix(portID, portIDPrefix) {
+		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalid, "without prefix")
+	}
+	return sdk.AccAddressFromBech32(portID[len(portIDPrefix):])
+}
+
+// todo: same as above!!!
+func newIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
+	timeout := wasmvmtypes.IBCTimeout{
+		Timestamp: packet.TimeoutTimestamp,
+	}
+	if !packet.TimeoutHeight.IsZero() {
+		timeout.Block = &wasmvmtypes.IBCTimeoutBlock{
+			Height:   packet.TimeoutHeight.RevisionHeight,
+			Revision: packet.TimeoutHeight.RevisionNumber,
+		}
+	}
+
+	return wasmvmtypes.IBCPacket{
+		Data:     packet.Data,
+		Src:      wasmvmtypes.IBCEndpoint{ChannelID: packet.SourceChannel, PortID: packet.SourcePort},
+		Dest:     wasmvmtypes.IBCEndpoint{ChannelID: packet.DestinationChannel, PortID: packet.DestinationPort},
+		Sequence: packet.Sequence,
+		Timeout:  timeout,
+	}
+}
+
 // HandleTimeout passes the timeout data to the appropriate contract via a Sudo call.
 // Since all ICA channels are ORDERED, a single timeout shuts down a channel.
 // The affected zone should be paused after a timeout.
-func (im IBCModule) HandleTimeout(ctx sdk.Context, packet channeltypes.Packet) error {
+func (im IBCModule) HandleTimeout(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
 	var data transfertypes.FungibleTokenPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	senderAddress, err := sdk.AccAddressFromBech32(data.GetSender())
+	contractAddr, err := ContractFromPortID(packet.SourcePort)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
+		return sdkerrors.Wrapf(err, "contract port id")
 	}
 
-	_, err = im.sudoHandler.SudoTimeout(ctx, senderAddress, packet)
-	if err != nil {
-		im.keeper.Logger(ctx).Error("failed to Sudo contract on packet timeout", err)
-		return sdkerrors.Wrap(err, "failed to Sudo the contract on packet timeout")
+	err2 := im.wasmKeeper.OnTimeoutPacket(ctx, contractAddr, wasmvmtypes.IBCPacketTimeoutMsg{Packet: newIBCPacket(packet), Relayer: relayer.String()})
+	if err2 != nil {
+		im.keeper.Logger(ctx).Error("failed to Sudo contract on packet timeout", err2)
+		return sdkerrors.Wrap(err2, "failed to Sudo the contract on packet timeout")
 	}
 
 	return nil
