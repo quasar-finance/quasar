@@ -1,0 +1,12 @@
+{
+    "src": {
+      "chain-id": "simd"
+    },
+    "dst": {
+      "chain-id": "osmosis"
+    },
+    "src-channel-filter": {
+      "rule": null,
+      "channel-list": []
+    }
+  }
