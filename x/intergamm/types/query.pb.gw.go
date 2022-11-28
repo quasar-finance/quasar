@@ -581,15 +581,15 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "intergamm", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "intergamm", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_InterchainAccountFromAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "intergamm", "interchain_account_from_address"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_InterchainAccountFromAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "intergamm", "interchain_account_from_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetPortInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "get_port_info", "portID", "destinationChainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_GetPortInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "get_port_info", "portID", "destinationChainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ICAAddressOnZone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "ica_address_on_zone", "owner", "zoneId"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ICAAddressOnZone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "ica_address_on_zone", "owner", "zoneId"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ICAAddressOnDenomNativeZone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "ica_address_on_denom_native_zone", "owner", "denom"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ICAAddressOnDenomNativeZone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "intergamm", "ica_address_on_denom_native_zone", "owner", "denom"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
