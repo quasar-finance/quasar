@@ -735,11 +735,9 @@ dependencies = [
  "cw20 0.14.0",
  "osmosis-std",
  "prost 0.11.0",
- "quasar-types",
  "schemars",
  "semver",
  "serde",
- "serde-json-wasm",
  "thiserror",
 ]
 
@@ -758,7 +756,6 @@ dependencies = [
  "cw20 0.14.0",
  "osmosis-std",
  "prost 0.11.0",
- "quasar-types",
  "schemars",
  "semver",
  "serde",

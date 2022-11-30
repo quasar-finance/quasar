@@ -213,7 +213,7 @@ pub fn execute_transfer(
 ) -> Result<Response, ContractError> {
     if info.funds.len() != 1 {
         return Err(ContractError::PaymentError(
-            cw_utils::PaymentError::InvalidDenomAmount {},
+            cw_utils::PaymentError::MultipleDenoms {},
         ));
     }
 
@@ -247,7 +247,7 @@ pub fn execute_transfer(
         channel_id: channel.clone(),
         to_address: to_address.clone(),
         amount: funds,
-        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(20)),
+        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     };
     Ok(Response::new()
         .add_message(transfer)
@@ -352,34 +352,6 @@ fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, Co
         return Err(ContractError::InsufficientOutStandingFunds);
     }
     todo!()
-}
-
-#[entry_point]
-pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> StdResult<Response> {
-    match msg {
-        SudoMsg::Response { request, data } => sudo_response(deps, request, data),
-        _ => todo!(),
-    }
-}
-
-
-fn sudo_response(deps: DepsMut, req: RequestPacket, data: Binary) -> StdResult<Response> {
-    deps.api.debug(
-        format!(
-            "WASMDEBUG: sudo_response: sudo received: {:?} {}",
-            req, data
-        )
-        .as_str(),
-    );
-    let seq_id = req
-        .sequence
-        .ok_or_else(|| StdError::generic_err("sequence not found"))?;
-    let channel_id = req
-        .source_channel
-        .ok_or_else(|| StdError::generic_err("channel_id not found"))?;
-    Ok(Response::new())
-    // at this place we can safely remove the data under (channel_id, seq_id) key
-    // but it costs an extra gas, so its on you how to use the storage
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

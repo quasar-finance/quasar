@@ -1,12 +1,7 @@
-use prost::DecodeError;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
-use quasar_types::{
-    error::Error as QError,
-    ica::{Encoding, TxType, Version},
-};
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -20,29 +15,14 @@ pub enum ContractError {
     #[error("Channel doesn't exist: {id}")]
     NoSuchChannel { id: String },
 
-    #[error("Could not deserialize ica metadata, got {raw_metadata}, error: {error}")]
-    InvalidIcaMetadata { raw_metadata: String, error: String },
+    #[error("Only supports channel with ibc version {contract_version}, got {version}")]
+    InvalidIbcVersion {
+        contract_version: String,
+        version: String,
+    },
 
-    #[error("Incorrect ICA version, got {version}, want {contract_version}")]
-    InvalidIcaVersion { version: String, contract_version: String},
-
-    #[error("Incorrect ICA version, got {encoding}, want {contract_encoding}")]
-    InvalidIcaEncoding { encoding: String, contract_encoding: String },
-
-    #[error("Incorrect ICA version, got {tx_type}, want {contract_tx_type}")]
-    InvalidIcaTxType { tx_type: String, contract_tx_type: String },
-
-    #[error("Could not deserialize counterparty ica metadata, got {raw_metadata}, error: {error}")]
-    InvalidCounterpartyIcaMetadata { raw_metadata: String, error: String },
-
-    #[error("No Counterparty Ica Address")]
-    NoCounterpartyIcaAddress {},
-
-    #[error("No Counterparty Version")]
-    NoCounterpartyVersion {},
-
-    #[error("No Counterparty Version")]
-    NoCounterpartyVersion {},
+    #[error("Only supports unordered channel")]
+    OnlyOrderedChannel {},
 
     #[error("Parsed port from denom ({port}) doesn't match packet")]
     FromOtherPort { port: String },
@@ -60,7 +40,7 @@ pub enum ContractError {
     EncodingFail,
 
     #[error("Failed to proto decode")]
-    DecodingFail { error: DecodeError },
+    DecodingFail,
 
     #[error("Only the governance contract can do this")]
     Unauthorized,

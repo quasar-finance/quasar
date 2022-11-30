@@ -1,31 +1,22 @@
 # ICQ
 
-This is an *IBC Enabled* contract that allows us to use ICA to ica enabled chains. The 
-counterparty ibc-go version needs to be either [3.4.x, 4.2.x, 5.1.x, 6.0.x]
+This is an *IBC Enabled* contract that allows us to send ICQ queries from one chain over the standard ICQ
+protocol to the bank module of another chain.
 
 ## Workflow
 
 The contract starts with minimal state. It just stores a default timeout in seconds for all packets it sends.
 Most importantly it binds a local IBC port to enable channel connections.
 
-An external party first needs to make one or more channels using this contract as one endpoint. It will use 
-ordered channels for the version negotiation. Once established, it manages a list of known channels.
-The version set in the channel opening needs to be the json of the ica metadata, eg:
-```json
-{
-  "version":"ics27-1",
-  "encoding":"proto3",
-  "tx_type":"sdk_multi_msg",
-  "controller_connection_id":"connection-0",
-  "host_connection_id":"connection-0"
-}
-```
+An external party first needs to make one or more channels using this contract as one endpoint. It will use standard 
+unordered channels for the version negotiation. Once established, it manages a list of known channels. 
 
-After there is at least one channel, you can send any ICA transaction to this contract.
+After there is at least one channel, you can send any ICQ query to this contract. It may optionally include a custom timeout.
 
 ## Messages
 
-It only accepts a hardcoded osmosis join pool messages. This should be used as an example of how to send tx to the counterparty chain
+It only accepts ICQQueryMsg. The data sent along with that message must be a JSON-serialized
+TransferMsg:
 
 ## Queries
 
