@@ -10,14 +10,14 @@ use osmosis_std::types::osmosis::gamm::v1beta1::QueryNumPoolsRequest;
 use prost::Message;
 
 use cw2::set_contract_version;
+use quasar_types::icq::{CosmosQuery, InterchainQueryPacketData, Query};
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
+use crate::helpers::{handle_reply_sample, prepare_query, set_reply};
 use crate::msg::{
-    ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
-    ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
+    ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, ListChannelsResponse,
+    MigrateMsg, PortResponse, QueryMsg,
 };
-use crate::proto::CosmosQuery;
 use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
 
 // version info for migration info

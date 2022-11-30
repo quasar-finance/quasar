@@ -1,5 +1,6 @@
-use prost::bytes::Bytes;
 use prost::Message;
+use quasar_types::ibc::{enforce_order_and_version, IcsAck};
+use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING, ICQ_VERSION};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -11,37 +12,7 @@ use cosmwasm_std::{
 
 use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
-use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
-
-pub const ICQ_VERSION: &str = "icq-1";
-pub const ICQ_ORDERING: IbcOrder = IbcOrder::Unordered;
-
-/// This is compatible with the JSON serialization
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
-pub struct InterchainQueryPacketAck {
-    pub data: Binary,
-}
-
-impl InterchainQueryPacketAck {
-    pub fn new(data: Binary) -> Self {
-        InterchainQueryPacketAck { data }
-    }
-
-    pub fn validate(&self) -> Result<(), ContractError> {
-        Ok(())
-    }
-}
-
-/// This is a generic ICS acknowledgement format.
-/// Proto defined here: https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/core/channel/v1/channel.proto#L141-L147
-/// This is compatible with the JSON serialization
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum IcsAck {
-    Result(Binary),
-    Error(String),
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints
@@ -50,7 +21,12 @@ pub fn ibc_channel_open(
     _env: Env,
     msg: IbcChannelOpenMsg,
 ) -> Result<(), ContractError> {
-    enforce_order_and_version(msg.channel(), msg.counterparty_version())?;
+    enforce_order_and_version(
+        msg.channel(),
+        msg.counterparty_version(),
+        ICQ_VERSION,
+        ICQ_ORDERING,
+    )?;
     Ok(())
 }
 
@@ -62,7 +38,12 @@ pub fn ibc_channel_connect(
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // we need to check the counter party version in try and ack (sometimes here)
-    enforce_order_and_version(msg.channel(), msg.counterparty_version())?;
+    enforce_order_and_version(
+        msg.channel(),
+        msg.counterparty_version(),
+        ICQ_VERSION,
+        ICQ_ORDERING,
+    )?;
 
     let channel: IbcChannel = msg.into();
     let info = ChannelInfo {
@@ -73,28 +54,6 @@ pub fn ibc_channel_connect(
     CHANNEL_INFO.save(deps.storage, &info.id, &info)?;
 
     Ok(IbcBasicResponse::default())
-}
-
-fn enforce_order_and_version(
-    channel: &IbcChannel,
-    counterparty_version: Option<&str>,
-) -> Result<(), ContractError> {
-    if channel.version != ICQ_VERSION {
-        return Err(ContractError::InvalidIbcVersion {
-            version: channel.version.clone(),
-        });
-    }
-    if let Some(version) = counterparty_version {
-        if version != ICQ_VERSION {
-            return Err(ContractError::InvalidIbcVersion {
-                version: version.to_string(),
-            });
-        }
-    }
-    if channel.order != ICQ_ORDERING {
-        return Err(ContractError::OnlyOrderedChannel {});
-    }
-    Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -157,8 +116,7 @@ fn on_packet_success(
 ) -> Result<IbcBasicResponse, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&data)?;
 
-    let buf = Bytes::copy_from_slice(ack.data.as_slice());
-    let resp: CosmosResponse = match CosmosResponse::decode(buf) {
+    let resp: CosmosResponse = match CosmosResponse::decode(ack.data.as_slice()) {
         Ok(resp) => resp,
         Err(_) => return Err(ContractError::DecodingFail {}),
     };

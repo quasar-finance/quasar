@@ -1,7 +1,12 @@
+use prost::DecodeError;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
+use quasar_types::{
+    error::Error as QError,
+    ica::{Encoding, TxType, Version},
+};
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -15,14 +20,11 @@ pub enum ContractError {
     #[error("Channel doesn't exist: {id}")]
     NoSuchChannel { id: String },
 
-    #[error("Only supports channel with ibc version {contract_version}, got {version}")]
-    InvalidIbcVersion {
-        contract_version: String,
-        version: String,
-    },
+    #[error("{0}")]
+    IcaTypeError(#[from] QError),
 
-    #[error("Only supports unordered channel")]
-    OnlyOrderedChannel {},
+    #[error("No Counterparty Version")]
+    NoCounterpartyVersion {},
 
     #[error("Parsed port from denom ({port}) doesn't match packet")]
     FromOtherPort { port: String },
@@ -40,7 +42,7 @@ pub enum ContractError {
     EncodingFail,
 
     #[error("Failed to proto decode")]
-    DecodingFail,
+    DecodingFail { error: DecodeError },
 
     #[error("Only the governance contract can do this")]
     Unauthorized,

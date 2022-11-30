@@ -1,6 +1,6 @@
 {
     "src": {
-      "chain-id": "quasar"
+      "chain-id": "simd"
     },
     "dst": {
       "chain-id": "osmosis"
@@ -9,4 +9,4 @@
       "rule": null,
       "channel-list": []
     }
-}
+  }

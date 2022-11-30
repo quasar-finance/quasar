@@ -1,15 +1,16 @@
 #![cfg(test)]
-
 use crate::contract::instantiate;
-use crate::ibc::{ibc_channel_connect, ibc_channel_open, ICA_ORDERING, ICA_VERSION};
+
+use crate::ibc::{ibc_channel_connect, ibc_channel_open};
 use crate::state::ChannelInfo;
 
 use cosmwasm_std::testing::{
     mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
 };
 use cosmwasm_std::{
-    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
+    DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, IbcOrder, OwnedDeps,
 };
+use quasar_types::ica::CounterPartyIcaMetadata;
 
 use crate::msg::InitMsg;
 
@@ -28,8 +29,14 @@ pub fn mock_channel(channel_id: &str) -> IbcChannel {
             port_id: REMOTE_PORT.into(),
             channel_id: format!("{}5", channel_id),
         },
-        ICA_ORDERING,
-        ICA_VERSION,
+        IbcOrder::Ordered,
+        r#"{
+            "version":"ics27-1",
+            "encoding":"proto3",
+            "tx_type":"sdk_multi_msg",
+            "controller_connection_id":"connection-0",
+            "host_connection_id":"connection-0"
+          }"#,
         CONNECTION_ID,
     )
 }
@@ -42,6 +49,7 @@ pub fn mock_channel_info(channel_id: &str) -> ChannelInfo {
             channel_id: format!("{}5", channel_id),
         },
         connection_id: CONNECTION_ID.into(),
+        address: "osmo1qj7gcx4m2zzcsy4y9frwd405xdm78ax48rkq5ep05k4358mdp8cskjye07".to_string(),
     }
 }
 
@@ -50,7 +58,14 @@ pub fn add_channel(mut deps: DepsMut, channel_id: &str) {
     let channel = mock_channel(channel_id);
     let open_msg = IbcChannelOpenMsg::new_init(channel.clone());
     ibc_channel_open(deps.branch(), mock_env(), open_msg).unwrap();
-    let connect_msg = IbcChannelConnectMsg::new_ack(channel, ICA_VERSION);
+    let connect_msg = IbcChannelConnectMsg::new_ack(
+        channel,
+        serde_json_wasm::to_string(&CounterPartyIcaMetadata::with_connections(
+            "connection-0".into(),
+            "connection-0".into(),
+        ))
+        .unwrap(),
+    );
     ibc_channel_connect(deps.branch(), mock_env(), connect_msg).unwrap();
 }
 

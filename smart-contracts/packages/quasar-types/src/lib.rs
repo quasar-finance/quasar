@@ -1,3 +1,5 @@
 pub mod curve;
-pub mod proto_types;
-pub mod sudo;
+pub mod error;
+pub mod ibc;
+pub mod ica;
+pub mod icq;

@@ -1,8 +1,9 @@
 pub mod contract;
 pub mod error;
 mod helpers;
+mod ibc;
 mod ibc_builder;
-mod msg;
+pub mod msg;
 mod queue;
 mod state;
 

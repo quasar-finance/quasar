@@ -1,6 +1,62 @@
-use crate::error::ContractError;
-use cosmwasm_std::{Addr, Deps, Order, Reply, StdError, Uint128};
+use crate::{error::ContractError, state::REPLIES};
+use cosmwasm_std::{
+    Addr, CosmosMsg, Deps, Order, Reply, Response, StdError, Storage, SubMsg, Uint128,
+};
 use quasar_traits::traits::Curve;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+pub fn create_reply(
+    storage: &mut dyn Storage,
+    msg_kind: MsgKind,
+    msg: impl Into<CosmosMsg>,
+) -> Result<Response, StdError> {
+    let last = REPLIES.range(storage, None, None, Order::Descending).next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0;
+    }
+    // register the message in the replies for handling
+    REPLIES.save(storage, id, &msg_kind)?;
+    Ok(Response::new().add_submessage(SubMsg::reply_always(msg, id)))
+}
+
+pub fn create_submsg(
+    storage: &mut dyn Storage,
+    msg_kind: MsgKind,
+    msg: impl Into<CosmosMsg>,
+) -> Result<SubMsg, StdError> {
+    let last = REPLIES.range(storage, None, None, Order::Descending).next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0;
+    }
+    // register the message in the replies for handling
+    REPLIES.save(storage, id, &msg_kind)?;
+    Ok(SubMsg::reply_always(msg, id))
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum IbcMsgKind {
+    Transfer,
+    Ica(IcaMessages),
+    Icq,
+}
+
+// All enums supported by this contract
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum IcaMessages {
+    JoinSwapExternAmountIn,
+    LockTokens,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum MsgKind {
+    Ibc(IbcMsgKind),
+}
 
 pub(crate) fn parse_seq(reply: Reply) -> Result<u64, StdError> {
     reply

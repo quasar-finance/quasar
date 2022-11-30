@@ -19,11 +19,16 @@
     "ChannelInfo": {
       "type": "object",
       "required": [
+        "address",
         "connection_id",
         "counterparty_endpoint",
         "id"
       ],
       "properties": {
+        "address": {
+          "description": "the address of the ica on the counterparty chain",
+          "type": "string"
+        },
         "connection_id": {
           "description": "the connection this exists on (you can use to query client/consensus info)",
           "type": "string"

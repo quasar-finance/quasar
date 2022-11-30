@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::contract::instantiate;
-use crate::ibc::{ibc_channel_connect, ibc_channel_open, ICQ_ORDERING, ICQ_VERSION};
+use crate::ibc::{ibc_channel_connect, ibc_channel_open};
 use crate::state::ChannelInfo;
 
 use cosmwasm_std::testing::{
@@ -10,6 +10,7 @@ use cosmwasm_std::testing::{
 use cosmwasm_std::{
     DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
 };
+use quasar_types::icq::{ICQ_ORDERING, ICQ_VERSION};
 
 use crate::msg::InitMsg;
 

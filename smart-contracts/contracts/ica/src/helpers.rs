@@ -1,6 +1,6 @@
 use crate::{
     proto::CosmosResponse,
-    state::{Origin, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
+    state::{Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
     ContractError,
 };
 use cosmwasm_std::{
@@ -82,6 +82,4 @@ pub fn handle_sample_callback(
 }
 
 #[cfg(test)]
-mod test {
-    use super::*;
-}
+mod test {}
