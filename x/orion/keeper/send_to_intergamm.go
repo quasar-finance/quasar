@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
@@ -45,7 +46,7 @@ func (k Keeper) GetConnectionId(ctx sdk.Context) (string, bool) {
 }
 
 // Intergamm module method wrappers
-func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdk.Int, tokenInMaxs []sdk.Coin) (uint64, error) {
+func (k Keeper) JoinPool(ctx sdk.Context, poolID uint64, shareOutAmount sdkmath.Int, tokenInMaxs []sdk.Coin) (uint64, error) {
 	k.Logger(ctx).Info(fmt.Sprintf("Entered JoinPool|poolID=%v|shareOutAmount=%v|tokenInMaxs=%v\n",
 		poolID, shareOutAmount, tokenInMaxs))
 
@@ -83,7 +84,7 @@ func (k Keeper) LockLPTokens(ctx sdk.Context,
 	return packetSeq, err
 }
 
-func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdk.Int, tokenOutMins []sdk.Coin) (uint64, error) {
+func (k Keeper) ExitPool(ctx sdk.Context, poolID uint64, shareInAmount sdkmath.Int, tokenOutMins []sdk.Coin) (uint64, error) {
 
 	k.Logger(ctx).Info("Entered JoinPool",
 		"PoolID", poolID,
@@ -192,7 +193,7 @@ func (k Keeper) DeleteIBCTokenTransferRecord(ctx sdk.Context, seqNo uint64) {
 	store.Delete(key)
 }
 
-////////////
+// //////////
 func (k Keeper) SetIBCTokenTransferRecord2(ctx sdk.Context,
 	seqNo uint64,
 	e qbanktypes.EpochLockupCoinInfo) {

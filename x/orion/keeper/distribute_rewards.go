@@ -53,7 +53,7 @@ func (k Keeper) RewardDistribution(ctx sdk.Context, epochDay uint64) error {
 		return err
 	}
 	// rc.Coins to be used for further reward distribution so needs to be subtracted by perFees
-	rc.Coins = rc.Coins.Sub(perFees)
+	rc.Coins = rc.Coins.Sub(perFees...)
 
 	totalLPV := k.CalculateTotalLPV(ctx, epochDay-1) // Total LP in deployment
 
@@ -110,7 +110,7 @@ func (k Keeper) CalculateDenomLPWeights(ctx sdk.Context, totalLPV sdk.Coins) (ma
 		if err != nil {
 			return weights, err
 		}
-		weights[coin.Denom] = equivalentReceipt.Amount.ToDec().Quo(totalEquivalentReceipt.Amount.ToDec())
+		weights[coin.Denom] = sdk.NewDecFromInt(equivalentReceipt.Amount).Quo(sdk.NewDecFromInt(totalEquivalentReceipt.Amount))
 	}
 	return weights, nil
 }
@@ -145,7 +145,7 @@ func CalculateUserRewards(activeUserDepositsMap map[string]sdk.Coins, totalLPV s
 		userDenomInfoMap := make(map[string]types.UserDenomInfo)
 		for _, coin := range totalActiveDeposits {
 			denom := coin.Denom
-			weight := coin.Amount.ToDec().QuoInt(totalLPV.AmountOf(denom))
+			weight := sdk.NewDecFromInt(coin.Amount).QuoInt(totalLPV.AmountOf(denom))
 			reward, _ := sdk.NewDecCoinsFromCoins(denomActualReward[denom]...).MulDec(weight).TruncateDecimal()
 			totalReward = totalReward.Add(reward...)
 			userDenomInfoMap[denom] = types.UserDenomInfo{

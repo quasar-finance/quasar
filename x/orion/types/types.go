@@ -1,6 +1,7 @@
 package types
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 )
@@ -51,7 +52,7 @@ type DepositDayLockupPair struct {
 type UserDenomInfo struct {
 	Denom  string
 	Weight sdk.Dec
-	Amt    sdk.Int
+	Amt    sdkmath.Int
 	Reward sdk.Coins
 }
 

@@ -6,16 +6,16 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v5/modules/core/exported"
 	"github.com/tendermint/tendermint/libs/log"
 
-	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
+	ibctransfer "github.com/cosmos/ibc-go/v5/modules/apps/transfer"
 )
 
 var _ porttypes.IBCModule = IBCTransferModuleDecorator{}
@@ -44,7 +44,7 @@ func (im IBCTransferModuleDecorator) OnChanOpenInit(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
+) (string, error) {
 	return im.m.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
 }
 

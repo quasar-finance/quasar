@@ -83,7 +83,7 @@ func (k Keeper) AddUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
 func (k Keeper) SubUserDeposit(ctx sdk.Context, uid string, coin sdk.Coin) {
 	deposit, found := k.GetUserDepositAmt(ctx, uid)
 	if found {
-		deposit.Coins = deposit.Coins.Sub(sdk.NewCoins(coin))
+		deposit.Coins = deposit.Coins.Sub(coin)
 	} else {
 		panic(fmt.Sprintf("method SubUserDeposit |kv store does not have uid=%s", uid))
 	}

@@ -5,36 +5,37 @@
 package mock
 
 import (
-	types "github.com/cosmos/cosmos-sdk/types"
-	types0 "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	types "github.com/cosmos/cosmos-sdk/types"
+	types0 "github.com/cosmos/ibc-go/v5/modules/core/03-connection/types"
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockConnectionKeeper is a mock of ConnectionKeeper interface
+// MockConnectionKeeper is a mock of ConnectionKeeper interface.
 type MockConnectionKeeper struct {
 	ctrl     *gomock.Controller
 	recorder *MockConnectionKeeperMockRecorder
 }
 
-// MockConnectionKeeperMockRecorder is the mock recorder for MockConnectionKeeper
+// MockConnectionKeeperMockRecorder is the mock recorder for MockConnectionKeeper.
 type MockConnectionKeeperMockRecorder struct {
 	mock *MockConnectionKeeper
 }
 
-// NewMockConnectionKeeper creates a new mock instance
+// NewMockConnectionKeeper creates a new mock instance.
 func NewMockConnectionKeeper(ctrl *gomock.Controller) *MockConnectionKeeper {
 	mock := &MockConnectionKeeper{ctrl: ctrl}
 	mock.recorder = &MockConnectionKeeperMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConnectionKeeper) EXPECT() *MockConnectionKeeperMockRecorder {
 	return m.recorder
 }
 
-// GetAllConnections mocks base method
+// GetAllConnections mocks base method.
 func (m *MockConnectionKeeper) GetAllConnections(arg0 types.Context) []types0.IdentifiedConnection {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllConnections", arg0)
@@ -42,13 +43,13 @@ func (m *MockConnectionKeeper) GetAllConnections(arg0 types.Context) []types0.Id
 	return ret0
 }
 
-// GetAllConnections indicates an expected call of GetAllConnections
+// GetAllConnections indicates an expected call of GetAllConnections.
 func (mr *MockConnectionKeeperMockRecorder) GetAllConnections(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllConnections", reflect.TypeOf((*MockConnectionKeeper)(nil).GetAllConnections), arg0)
 }
 
-// GetConnection mocks base method
+// GetConnection mocks base method.
 func (m *MockConnectionKeeper) GetConnection(arg0 types.Context, arg1 string) (types0.ConnectionEnd, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", arg0, arg1)
@@ -57,7 +58,7 @@ func (m *MockConnectionKeeper) GetConnection(arg0 types.Context, arg1 string) (t
 	return ret0, ret1
 }
 
-// GetConnection indicates an expected call of GetConnection
+// GetConnection indicates an expected call of GetConnection.
 func (mr *MockConnectionKeeperMockRecorder) GetConnection(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockConnectionKeeper)(nil).GetConnection), arg0, arg1)

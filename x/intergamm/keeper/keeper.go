@@ -8,18 +8,19 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	connectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v5/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v5/modules/light-clients/07-tendermint/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
@@ -35,8 +36,8 @@ type GammHooks struct {
 
 type Keeper struct {
 	cdc                 codec.BinaryCodec
-	storeKey            sdk.StoreKey
-	memKey              sdk.StoreKey
+	storeKey            storetypes.StoreKey
+	memKey              storetypes.StoreKey
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 	channelKeeper       types.ChannelKeeper
 	icaControllerKeeper types.ICAControllerKeeper
@@ -51,7 +52,7 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey,
-	memKey sdk.StoreKey,
+	memKey storetypes.StoreKey,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper types.ChannelKeeper,
 	iaKeeper types.ICAControllerKeeper,
@@ -168,7 +169,7 @@ func (k *Keeper) NewCapability(ctx sdk.Context, name string) (*capabilitytypes.C
 }
 
 func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error {
-	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner)
+	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner, "") // Empty version means default because we don't want to implement ICS29
 }
 
 func (k Keeper) RegisterICAOnZoneId(ctx sdk.Context, zoneId, owner string) error {

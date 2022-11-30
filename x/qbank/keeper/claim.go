@@ -82,7 +82,7 @@ func (k Keeper) SubUserClaimReward(ctx sdk.Context, uid, vaultID string, coin sd
 		k.cdc.MustUnmarshal(b, &qcoins)
 		// Make sure that the stored coin set is in sorted order.
 		// As the single coin element is always sorted, so the Add will never panic
-		qcoins.Coins = qcoins.Coins.Sub(sdk.NewCoins(coin))
+		qcoins.Coins = qcoins.Coins.Sub(coin)
 		value := k.cdc.MustMarshal(&qcoins)
 		store.Set(key, value)
 	}

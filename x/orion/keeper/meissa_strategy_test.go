@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	"github.com/quasarlabs/quasarnode/testutil"
@@ -105,11 +106,11 @@ func TestGetMaxAvailableTokensCorrespondingToPoolAssets(t *testing.T) {
 func TestComputeShareOutAmount(t *testing.T) {
 	var tests = []struct {
 		name           string
-		totalShares    sdk.Int
+		totalShares    sdkmath.Int
 		poolAssets     []gammbalancer.PoolAsset
 		maxCoins       sdk.Coins
 		error          bool
-		shareOutAmount sdk.Int
+		shareOutAmount sdkmath.Int
 	}{
 		{
 			name:  "empty pool assets",
@@ -209,8 +210,8 @@ func TestComputeShareOutAmount(t *testing.T) {
 func TestComputeNeededCoins(t *testing.T) {
 	var tests = []struct {
 		name              string
-		totalSharesAmount sdk.Int
-		shareOutAmount    sdk.Int
+		totalSharesAmount sdkmath.Int
+		shareOutAmount    sdkmath.Int
 		poolAssets        []gammbalancer.PoolAsset
 		error             bool
 		neededCoins       sdk.Coins

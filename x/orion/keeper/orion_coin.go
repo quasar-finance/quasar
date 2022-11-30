@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
@@ -25,7 +26,7 @@ func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	OrionAmt := coin.Amount.ToDec().Mul(spotPrice).TruncateInt()
+	OrionAmt := sdk.NewDecFromInt(coin.Amount).Mul(spotPrice).TruncateInt()
 	return sdk.NewCoin(types.OrionDenom, OrionAmt), nil
 }
 
@@ -40,12 +41,12 @@ func (k Keeper) GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string
 }
 
 // MintOrion mint orions tokens from the OrionReserveMaccName
-func (k Keeper) MintOrion(ctx sdk.Context, amt sdk.Int) error {
+func (k Keeper) MintOrion(ctx sdk.Context, amt sdkmath.Int) error {
 	return k.BankKeeper.MintCoins(ctx, types.OrionReserveMaccName, sdk.NewCoins(sdk.NewCoin(types.OrionDenom, amt)))
 }
 
 // BurnOrion will mint orions from the OrionReserveMaccName
-func (k Keeper) BurnOrion(ctx sdk.Context, amt sdk.Int) error {
+func (k Keeper) BurnOrion(ctx sdk.Context, amt sdkmath.Int) error {
 	return k.BankKeeper.BurnCoins(ctx, types.OrionReserveMaccName,
 		sdk.NewCoins(sdk.NewCoin(types.OrionDenom, amt)))
 }
@@ -75,7 +76,7 @@ func (k Keeper) GetEpochUsersOrionShare(ctx sdk.Context, epochDay uint64, userAc
 		}
 		totalOrions = totalOrions.Add(orion)
 	}
-	userShare := usersOrion.Amount.ToDec().QuoInt(totalOrions.Amount)
+	userShare := sdk.NewDecFromInt(usersOrion.Amount).QuoInt(totalOrions.Amount)
 
 	return userShare, nil
 }

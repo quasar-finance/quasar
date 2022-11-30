@@ -3,9 +3,9 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
@@ -427,22 +427,19 @@ func ParseIcaAck(ack channeltypes.Acknowledgement, request sdk.Msg, response pro
 		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
 	}
 
-	// see documentation below for SDK 0.46.x or greater as Data will MsgData will be empty (new field added)
-	if len(txMsgData.Data) != 1 {
+	// The following switch will check if the acknowledgment is based on (cosmos-sdk >= v0.46.x) or old deprecated structure.
+	switch {
+	case len(txMsgData.MsgResponses) == 1:
+		// MsgResponses is the new field introduced in cosmos-sdk v0.46.x
+		err = proto.Unmarshal(txMsgData.MsgResponses[0].Value, response)
+	case len(txMsgData.Data) == 1:
+		// Data is the deprecated field
+		err = proto.Unmarshal(txMsgData.Data[0].GetData(), response)
+	default:
 		return errors.New("only single msg acks are supported")
 	}
-
-	msgData := txMsgData.Data[0]
-	msgType := msgData.GetMsgType()
-
-	if msgType != sdk.MsgTypeURL(request) {
-		return errors.New("ack response does not match request")
-	}
-
-	err = proto.Unmarshal(msgData.GetData(), response)
 	if err != nil {
-		return errors.Wrap(err, "cannot unmarshall ICA acknowledgement")
+		return errors.Wrap(err, "cannot unmarshal ICA acknowledgement")
 	}
-
 	return nil
 }
