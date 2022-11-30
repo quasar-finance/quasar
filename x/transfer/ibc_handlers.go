@@ -1,9 +1,6 @@
 package transfer
 
 import (
-	"strings"
-
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -12,7 +9,7 @@ import (
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 )
 
-// HandleAcknowledgement passes the acknowledgement data to the appropriate contract via a Sudo call.
+// HandleAcknowledgement passes the acknowledgement data to the onAckPacket function of the contract.
 func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte,
 	relayer sdk.AccAddress) error {
 	var ack channeltypes.Acknowledgement
@@ -24,18 +21,23 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	contractAddr, err := ContractFromPortID(packet.SourcePort)
+	contractAddr, err := sdk.AccAddressFromBech32(data.GetSender())
 	if err != nil {
-		return sdkerrors.Wrapf(err, "contract port id")
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
 	}
 
 	if ack.Success() {
 
-		im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
+		err := im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
 			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
 			OriginalPacket:  newIBCPacket(packet),
 			Relayer:         relayer.String(),
 		})
+
+		if err != nil {
+			im.keeper.Logger(ctx).Error("failed to re-enter contract on packet acknowledgement", err)
+			return sdkerrors.Wrap(err, "failed to re-enter the contract on packet acknowledgement")
+		}
 
 	} else {
 		// Actually we have only one kind of error returned from acknowledgement
@@ -59,17 +61,9 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 	return nil
 }
 
-const portIDPrefix = "wasm."
+const portIDPrefix = ""
 
 // todo: will someone please tell me how i can use this function without redefining it here, it exists in wasm: https://github.com/CosmWasm/wasmd/blob/a9ce273e3c1c4f7224e1293fcf1bfd5a50e4fe17/x/wasm/keeper/ibc.go#L40
-func ContractFromPortID(portID string) (sdk.AccAddress, error) {
-	if !strings.HasPrefix(portID, portIDPrefix) {
-		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalid, "without prefix")
-	}
-	return sdk.AccAddressFromBech32(portID[len(portIDPrefix):])
-}
-
-// todo: same as above!!!
 func newIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
 	timeout := wasmvmtypes.IBCTimeout{
 		Timestamp: packet.TimeoutTimestamp,
@@ -99,15 +93,15 @@ func (im IBCModule) HandleTimeout(ctx sdk.Context, packet channeltypes.Packet, r
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	contractAddr, err := ContractFromPortID(packet.SourcePort)
+	contractAddr, err := sdk.AccAddressFromBech32(data.GetSender())
 	if err != nil {
-		return sdkerrors.Wrapf(err, "contract port id")
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
 	}
 
 	err2 := im.wasmKeeper.OnTimeoutPacket(ctx, contractAddr, wasmvmtypes.IBCPacketTimeoutMsg{Packet: newIBCPacket(packet), Relayer: relayer.String()})
 	if err2 != nil {
-		im.keeper.Logger(ctx).Error("failed to Sudo contract on packet timeout", err2)
-		return sdkerrors.Wrap(err2, "failed to Sudo the contract on packet timeout")
+		im.keeper.Logger(ctx).Error("failed to re-enter contract on packet timeout", err2)
+		return sdkerrors.Wrap(err2, "failed to re-enter the contract on packet timeout")
 	}
 
 	return nil

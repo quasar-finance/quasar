@@ -453,6 +453,45 @@ func New(
 		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
 	}
 
+	// IBC Modules & Keepers
+
+	app.TransferKeeper = transfermodulekeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+	)
+	transferModule := transfermodule.NewAppModule(app.TransferKeeper)
+
+	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
+		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, scopedICAControllerKeeper, app.MsgServiceRouter(),
+	)
+	app.ICAHostKeeper = icahostkeeper.NewKeeper(
+		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
+	)
+	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
+
+	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
+		appCodec,
+		keys[intergammmoduletypes.StoreKey],
+		keys[intergammmoduletypes.MemStoreKey],
+		scopedIntergammKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.ICAControllerKeeper,
+		app.TransferKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.GetSubspace(intergammmoduletypes.ModuleName),
+	)
+	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
+	intergammIBCModule := intergammmodule.NewIBCModule(app.IntergammKeeper)
+
+	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
+	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+
 	// TODO AUDIT Above lines
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
@@ -569,45 +608,7 @@ func New(
 		wasmOpts...,
 	)
 
-	// IBC Modules & Keepers
-
-	app.TransferKeeper = transfermodulekeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	)
-	transferModule := transfermodule.NewAppModule(app.TransferKeeper)
 	transferIbcModule := transfermodule.NewIBCModule(app.TransferKeeper, &app.wasmKeeper)
-
-	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
-		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, scopedICAControllerKeeper, app.MsgServiceRouter(),
-	)
-	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
-	)
-	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
-
-	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
-		appCodec,
-		keys[intergammmoduletypes.StoreKey],
-		keys[intergammmoduletypes.MemStoreKey],
-		scopedIntergammKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.ICAControllerKeeper,
-		app.TransferKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.GetSubspace(intergammmoduletypes.ModuleName),
-	)
-	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
-	intergammIBCModule := intergammmodule.NewIBCModule(app.IntergammKeeper)
-
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
 		&transferIbcModule,

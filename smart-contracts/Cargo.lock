@@ -681,6 +681,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc_transfer"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.14.0",
+ "cw-utils 0.16.0",
+ "protobuf",
+ "quasar-bindings",
+ "quasar-types",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "ica"
 version = "0.1.0"
 dependencies = [
