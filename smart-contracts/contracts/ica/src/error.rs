@@ -20,8 +20,26 @@ pub enum ContractError {
     #[error("Channel doesn't exist: {id}")]
     NoSuchChannel { id: String },
 
-    #[error("{0}")]
-    IcaTypeError(#[from] QError),
+    #[error("Could not deserialize ica metadata, got {raw_metadata}, error: {error}")]
+    InvalidIcaMetadata { raw_metadata: String, error: String },
+
+    #[error("Incorrect ICA version, got {version}, want {contract_version}")]
+    InvalidIcaVersion { version: String, contract_version: String},
+
+    #[error("Incorrect ICA version, got {encoding}, want {contract_encoding}")]
+    InvalidIcaEncoding { encoding: String, contract_encoding: String },
+
+    #[error("Incorrect ICA version, got {tx_type}, want {contract_tx_type}")]
+    InvalidIcaTxType { tx_type: String, contract_tx_type: String },
+
+    #[error("Could not deserialize counterparty ica metadata, got {raw_metadata}, error: {error}")]
+    InvalidCounterpartyIcaMetadata { raw_metadata: String, error: String },
+
+    #[error("No Counterparty Ica Address")]
+    NoCounterpartyIcaAddress {},
+
+    #[error("No Counterparty Version")]
+    NoCounterpartyVersion {},
 
     #[error("No Counterparty Version")]
     NoCounterpartyVersion {},

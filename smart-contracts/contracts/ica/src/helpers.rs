@@ -1,5 +1,5 @@
 use crate::{
-    proto::CosmosResponse,
+    proto::{CosmosResponse},
     state::{Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
     ContractError,
 };
@@ -82,4 +82,6 @@ pub fn handle_sample_callback(
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+   
+}
