@@ -468,17 +468,17 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_State_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "state"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_State_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "state"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_OraclePrices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "oracle_prices"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_OraclePrices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qoracle", "oracle_prices"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_OsmosisChainParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "chain_params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_OsmosisChainParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "chain_params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_OsmosisIncentivizedPools_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "incentivized_pools"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_OsmosisIncentivizedPools_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "incentivized_pools"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_OsmosisPools_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "pools"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_OsmosisPools_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "osmosis", "pools"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

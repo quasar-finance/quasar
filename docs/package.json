@@ -4,7 +4,7 @@
     "main": "index.js",
     "license": "MIT",
     "scripts": {
-      "combine": "swagger-combine ./config.json -o ../tmp-swagger-gen/swagger.yml -f yaml --continueOnConflictingPaths --includeDefinitions",
+      "combine": "swagger-combine ./swagger-combine.config.json -o ../tmp-swagger-gen/swagger.yml -f yaml --continueOnConflictingPaths --includeDefinitions",
       "convert": "swagger2openapi ../tmp-swagger-gen/swagger.yml --outfile static/openapi.yml --yaml"
     },
     "dependencies": {

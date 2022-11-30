@@ -626,21 +626,21 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LpPosition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_position"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LpPosition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_position"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_RewardCollection_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "reward_collection"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_RewardCollection_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "reward_collection"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LpStat_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_stat"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LpStat_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_stat"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ReserveBalanceAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "reserve_balance_all"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ReserveBalanceAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "reserve_balance_all"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LpEpochPairs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_epoch_pairs"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LpEpochPairs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "lp_epoch_pairs"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ListModuleAccounts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "list_module_accounts"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ListModuleAccounts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "list_module_accounts"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ListActiveLps_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "list_active_lps"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ListActiveLps_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "orion", "list_active_lps"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

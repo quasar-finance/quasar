@@ -5,11 +5,11 @@ package types
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
+	types1 "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/gogo/protobuf/types"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -29,13 +29,13 @@ var _ = time.Kitchen
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type IbcTokenTransfer struct {
-	SeqNo       uint64     `protobuf:"varint,1,opt,name=seqNo,proto3" json:"seqNo,omitempty"`
-	Destination string     `protobuf:"bytes,2,opt,name=destination,proto3" json:"destination,omitempty"`
-	Sender      string     `protobuf:"bytes,3,opt,name=sender,proto3" json:"sender,omitempty"`
-	Receiver    string     `protobuf:"bytes,4,opt,name=receiver,proto3" json:"receiver,omitempty"`
-	StartTime   time.Time  `protobuf:"bytes,5,opt,name=startTime,proto3,stdtime" json:"startTime"`
-	EpochDay    uint64     `protobuf:"varint,6,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
-	Coin        types.Coin `protobuf:"bytes,7,opt,name=coin,proto3" json:"coin"`
+	SeqNo       uint64      `protobuf:"varint,1,opt,name=seqNo,proto3" json:"seqNo,omitempty"`
+	Destination string      `protobuf:"bytes,2,opt,name=destination,proto3" json:"destination,omitempty"`
+	Sender      string      `protobuf:"bytes,3,opt,name=sender,proto3" json:"sender,omitempty"`
+	Receiver    string      `protobuf:"bytes,4,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	StartTime   time.Time   `protobuf:"bytes,5,opt,name=startTime,proto3,stdtime" json:"startTime"`
+	EpochDay    uint64      `protobuf:"varint,6,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
+	Coin        types1.Coin `protobuf:"bytes,7,opt,name=coin,proto3" json:"coin"`
 }
 
 func (m *IbcTokenTransfer) Reset()         { *m = IbcTokenTransfer{} }
@@ -113,17 +113,17 @@ func (m *IbcTokenTransfer) GetEpochDay() uint64 {
 	return 0
 }
 
-func (m *IbcTokenTransfer) GetCoin() types.Coin {
+func (m *IbcTokenTransfer) GetCoin() types1.Coin {
 	if m != nil {
 		return m.Coin
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 type IbcIcaWithdraw struct {
-	SeqNo        uint64     `protobuf:"varint,1,opt,name=seqNo,proto3" json:"seqNo,omitempty"`
-	ExitEpochDay uint64     `protobuf:"varint,2,opt,name=exitEpochDay,proto3" json:"exitEpochDay,omitempty"`
-	Coin         types.Coin `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
+	SeqNo        uint64      `protobuf:"varint,1,opt,name=seqNo,proto3" json:"seqNo,omitempty"`
+	ExitEpochDay uint64      `protobuf:"varint,2,opt,name=exitEpochDay,proto3" json:"exitEpochDay,omitempty"`
+	Coin         types1.Coin `protobuf:"bytes,3,opt,name=coin,proto3" json:"coin"`
 }
 
 func (m *IbcIcaWithdraw) Reset()         { *m = IbcIcaWithdraw{} }
@@ -173,11 +173,11 @@ func (m *IbcIcaWithdraw) GetExitEpochDay() uint64 {
 	return 0
 }
 
-func (m *IbcIcaWithdraw) GetCoin() types.Coin {
+func (m *IbcIcaWithdraw) GetCoin() types1.Coin {
 	if m != nil {
 		return m.Coin
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 func init() {

@@ -908,21 +908,21 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qbank", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"quasarlabs", "quasarnode", "qbank", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UserDenomDeposit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_denom_deposit", "userAcc"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UserDenomDeposit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_denom_deposit", "userAcc"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UserDeposit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_deposit", "userAcc"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UserDeposit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_deposit", "userAcc"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UserClaimRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_claim_rewards", "userAcc"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UserClaimRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "user_claim_rewards", "userAcc"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Withdrawable_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "withdrawable", "userAccount", "denom"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Withdrawable_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "withdrawable", "userAccount", "denom"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_TotalWithdraw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "total_withdraw", "userAcc", "vaultID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_TotalWithdraw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "total_withdraw", "userAcc", "vaultID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_TotalClaimed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "total_claimed", "userAcc", "vaultID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_TotalClaimed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"quasarlabs", "quasarnode", "qbank", "total_claimed", "userAcc", "vaultID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetAllDepsoitInfos_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "get_all_depsoit_infos", "vaultID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_GetAllDepsoitInfos_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"quasarlabs", "quasarnode", "qbank", "get_all_depsoit_infos", "vaultID"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
