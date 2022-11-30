@@ -4,4 +4,4 @@ pub mod msg;
 mod querier;
 mod query;
 pub mod state;
-mod types;
+pub mod types;
