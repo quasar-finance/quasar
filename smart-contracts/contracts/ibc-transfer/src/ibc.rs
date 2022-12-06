@@ -1,6 +1,6 @@
 use crate::contract::do_ibc_lock_tokens;
 use crate::error::{ContractError, Never};
-use crate::helpers::{create_reply, create_submsg, IbcMsgKind, IcaMessages, MsgKind};
+use crate::helpers::{create_submsg, IbcMsgKind, IcaMessages, MsgKind};
 use crate::state::{CHANNELS, PENDING_ACK};
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::error::Error as QError;
@@ -12,11 +12,9 @@ use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
-    IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
-    IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
+    entry_point, from_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
+    IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -127,7 +125,7 @@ pub fn ibc_channel_connect(
                 counter_party_address: addr,
             }
         }
-        ChannelType::Ics20 { ref channel_ty } => todo!(),
+        ChannelType::Ics20 { channel_ty: _ } => todo!(),
     }
 
     info.handshake_state = HandshakeState::Open;
@@ -181,7 +179,7 @@ pub fn ibc_packet_ack(
 
 pub fn handle_succesful_ack(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<IbcBasicResponse, ContractError> {
@@ -206,9 +204,9 @@ pub fn handle_succesful_ack(
 }
 
 pub fn handle_failing_ack(
-    deps: DepsMut,
-    env: Env,
-    pkt: IbcPacketAckMsg,
+    _deps: DepsMut,
+    _env: Env,
+    _pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the
@@ -228,9 +226,9 @@ pub fn ibc_packet_timeout(
 }
 
 fn on_packet_failure(
-    deps: DepsMut,
-    packet: IbcPacket,
-    error: String,
+    _deps: DepsMut,
+    _packet: IbcPacket,
+    _error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     todo!()
 }

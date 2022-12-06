@@ -2,8 +2,8 @@ use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::IbcEndpoint;
-use cw_storage_plus::{Item, Map};
+
+use cw_storage_plus::{Map};
 
 use crate::helpers::{IbcMsgKind, MsgKind};
 

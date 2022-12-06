@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, Storage,
+    entry_point, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout,
+    MessageInfo, Reply, Response, StdError, StdResult, Storage,
 };
 
 use crate::{helpers::{parse_seq,  MsgKind, create_reply, IbcMsgKind}, error::ContractError};
@@ -74,8 +74,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 }
 
 pub fn do_ibc_lock_tokens(
-    deps: &mut dyn Storage,
-    token_amount: String,
+    _deps: &mut dyn Storage,
+    _token_amount: String,
 ) -> Result<CosmosMsg, ContractError> {
     todo!()
 }

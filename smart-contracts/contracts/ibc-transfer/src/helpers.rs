@@ -1,8 +1,8 @@
-use crate::{error::ContractError, state::REPLIES};
+use crate::{state::REPLIES};
 use cosmwasm_std::{
-    Addr, CosmosMsg, Deps, Order, Reply, Response, StdError, Storage, SubMsg, Uint128,
+    CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg,
 };
-use quasar_traits::traits::Curve;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

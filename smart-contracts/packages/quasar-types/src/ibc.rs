@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
-    ica::{self, CounterPartyIcaMetadata, IcaMetadata},
+    ica::{IcaMetadata},
 };
 
 /// This is a generic ICS acknowledgement format.

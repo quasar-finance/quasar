@@ -3,8 +3,8 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use intergamm_bindings_test::msg::{ExecuteMsg, GetCountResponse, InstantiateMsg, QueryMsg};
-use intergamm_bindings_test::state::State;
+use qoracle_bindings_test::msg::{ExecuteMsg, GetCountResponse, InstantiateMsg, QueryMsg};
+use qoracle_bindings_test::state::State;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
