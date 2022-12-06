@@ -1,7 +1,7 @@
-use crate::contract::do_ibc_lock_tokens;
+use crate::contract::{do_ibc_lock_tokens, confirm_transfer};
 use crate::error::{ContractError, Never};
 use crate::helpers::{create_submsg, IbcMsgKind, IcaMessages, MsgKind};
-use crate::state::{CHANNELS, PENDING_ACK};
+use crate::state::{CHANNELS, PENDING_ACK, STATE};
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
@@ -12,9 +12,9 @@ use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
-    IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, StdError,
+    entry_point, from_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, StdError,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -185,7 +185,7 @@ pub fn handle_succesful_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match kind {
-        crate::helpers::IbcMsgKind::Transfer => todo!(),
+        crate::helpers::IbcMsgKind::Transfer => confirm_transfer(deps),
         crate::helpers::IbcMsgKind::Ica(ica_kind) => match ica_kind {
             crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
                 let response: MsgJoinSwapExternAmountInResponse = from_binary(&ack_bin)?;
