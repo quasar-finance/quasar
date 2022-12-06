@@ -38,9 +38,14 @@ schemars = "0.8.10"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 cw-storage-plus = { version = "0.14.0", features = ["iterator"]}
 quasar-types = { path = "../../packages/quasar-types", version = "0.1.0"}
+quasar-traits = { path = "../../packages/quasar-traits", version = "0.1.0"}
 quasar-bindings = { path = "../../packages/quasar-bindings", version = "0.1.0"}
 protobuf = { version = "3", features = ["with-bytes"] }
 cw-utils = "0.16.0"
+osmosis-std = {version = "0.12.0"}
+thiserror = { version = "1.0.23" }
+cw20-base = { version = "0.16.0", features = ["library"]}
+serde-json-wasm = { version = "0.4.1", default-features = false }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0", default-features = false }

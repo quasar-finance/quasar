@@ -1,6 +1,25 @@
-use cosmwasm_std::{from_binary, to_vec, Binary, StdResult, Storage};
-use cw_storage_plus::{Item, Map};
-use cosmwasm_std::{CosmosMsg, IbcPacket, Uint128};
+use quasar_types::ibc::ChannelInfo;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-pub(crate) const REPLIES: Map<u64, IbcPacket> = Map::new("replies");
-pub(crate) const PENDING_ACK: Map<u64, IbcPacket> = Map::new("pending_acks");
+use cosmwasm_std::IbcEndpoint;
+use cw_storage_plus::{Item, Map};
+
+use crate::helpers::{IbcMsgKind, MsgKind};
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub enum Origin {
+    Sample,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub struct Config {
+    pub default_timeout: u64,
+}
+
+pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
+
+pub(crate) const REPLIES: Map<u64, MsgKind> = Map::new("replies");
+
+pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
+

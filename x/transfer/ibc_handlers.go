@@ -16,6 +16,7 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 	if err := channeltypes.SubModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet acknowledgement: %v", err)
 	}
+
 	var data transfertypes.FungibleTokenPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
@@ -26,14 +27,17 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
 	}
 
-	if ack.Success() {
+	contractInfo := im.wasmKeeper.GetContractInfo(ctx, contractAddr)
+	if contractInfo.IBCPortID == "" {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "contract %s is not a valid IBC contract", contractAddr)
+	}
 
+	if ack.Success() {
 		err := im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
 			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
 			OriginalPacket:  newIBCPacket(packet),
 			Relayer:         relayer.String(),
 		})
-
 		if err != nil {
 			im.keeper.Logger(ctx).Error("failed to re-enter contract on packet acknowledgement", err)
 			return sdkerrors.Wrap(err, "failed to re-enter the contract on packet acknowledgement")
@@ -52,8 +56,8 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 	}
 
 	if err != nil {
-		im.keeper.Logger(ctx).Error("failed to Sudo contract on packet acknowledgement", err)
-		return sdkerrors.Wrap(err, "failed to Sudo the contract on packet acknowledgement")
+		im.keeper.Logger(ctx).Error("failed to re-enter contract on packet acknowledgement", err)
+		return sdkerrors.Wrap(err, "failed to re-enter the contract on packet acknowledgement")
 	}
 
 	im.keeper.Logger(ctx).Debug("acknowledgement received", "Packet data", data, "CheckTx", ctx.IsCheckTx())
@@ -61,9 +65,6 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 	return nil
 }
 
-const portIDPrefix = ""
-
-// todo: will someone please tell me how i can use this function without redefining it here, it exists in wasm: https://github.com/CosmWasm/wasmd/blob/a9ce273e3c1c4f7224e1293fcf1bfd5a50e4fe17/x/wasm/keeper/ibc.go#L40
 func newIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
 	timeout := wasmvmtypes.IBCTimeout{
 		Timestamp: packet.TimeoutTimestamp,
@@ -84,9 +85,6 @@ func newIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
 	}
 }
 
-// HandleTimeout passes the timeout data to the appropriate contract via a Sudo call.
-// Since all ICA channels are ORDERED, a single timeout shuts down a channel.
-// The affected zone should be paused after a timeout.
 func (im IBCModule) HandleTimeout(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
 	var data transfertypes.FungibleTokenPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
@@ -98,10 +96,15 @@ func (im IBCModule) HandleTimeout(ctx sdk.Context, packet channeltypes.Packet, r
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
 	}
 
-	err2 := im.wasmKeeper.OnTimeoutPacket(ctx, contractAddr, wasmvmtypes.IBCPacketTimeoutMsg{Packet: newIBCPacket(packet), Relayer: relayer.String()})
-	if err2 != nil {
-		im.keeper.Logger(ctx).Error("failed to re-enter contract on packet timeout", err2)
-		return sdkerrors.Wrap(err2, "failed to re-enter the contract on packet timeout")
+	contractInfo := im.wasmKeeper.GetContractInfo(ctx, contractAddr)
+	if contractInfo.IBCPortID == "" {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "contract %s is not a valid IBC contract", contractAddr)
+	}
+
+	err = im.wasmKeeper.OnTimeoutPacket(ctx, contractAddr, wasmvmtypes.IBCPacketTimeoutMsg{Packet: newIBCPacket(packet), Relayer: relayer.String()})
+	if err != nil {
+		im.keeper.Logger(ctx).Error("failed to re-enter contract on packet timeout", err)
+		return sdkerrors.Wrap(err, "failed to re-enter the contract on packet timeout")
 	}
 
 	return nil

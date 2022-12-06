@@ -8,19 +8,19 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	transferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	wrappedtypes "github.com/quasarlabs/quasarnode/x/transfer/types"
 )
 
 // KeeperTransferWrapper is a wrapper for original ibc keeper to override response for "Transfer" method
 type KeeperTransferWrapper struct {
-	keeper.Keeper
-	channelKeeper types.ChannelKeeper
+	transferkeeper.Keeper
+	channelKeeper transfertypes.ChannelKeeper
 }
 
-func (k KeeperTransferWrapper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*wrappedtypes.MsgTransferResponse, error) {
+func (k KeeperTransferWrapper) Transfer(goCtx context.Context, msg *transfertypes.MsgTransfer) (*wrappedtypes.MsgTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, msg.SourcePort, msg.SourceChannel)
 	if !found {
@@ -44,11 +44,11 @@ func (k KeeperTransferWrapper) Transfer(goCtx context.Context, msg *types.MsgTra
 // NewKeeper creates a new IBC transfer Keeper(KeeperTransferWrapper) instance
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	ics4Wrapper types.ICS4Wrapper, channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
-	authKeeper types.AccountKeeper, bankKeeper types.BankKeeper, scopedKeeper capabilitykeeper.ScopedKeeper,
+	ics4Wrapper transfertypes.ICS4Wrapper, channelKeeper transfertypes.ChannelKeeper, portKeeper transfertypes.PortKeeper,
+	authKeeper transfertypes.AccountKeeper, bankKeeper transfertypes.BankKeeper, scopedKeeper capabilitykeeper.ScopedKeeper,
 ) KeeperTransferWrapper {
 	return KeeperTransferWrapper{
-		Keeper: keeper.NewKeeper(cdc, key, paramSpace, ics4Wrapper, channelKeeper, portKeeper,
+		Keeper: transferkeeper.NewKeeper(cdc, key, paramSpace, ics4Wrapper, channelKeeper, portKeeper,
 			authKeeper, bankKeeper, scopedKeeper),
 		channelKeeper: channelKeeper,
 	}

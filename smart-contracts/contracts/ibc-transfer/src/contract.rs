@@ -1,11 +1,9 @@
 use cosmwasm_std::{
     coin, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg,
+    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, Storage,
 };
 
-use quasar_bindings::helpers::parse_seq;
-use quasar_types::proto_types::transfer::MsgTransferResponse;
-use quasar_types::sudo::msg::{RequestPacket, SudoMsg};
+use crate::{helpers::{parse_seq,  MsgKind, create_reply, IbcMsgKind}, error::ContractError};
 
 use protobuf::Message as ProtoMessage;
 use schemars::JsonSchema;
@@ -46,7 +44,7 @@ pub fn execute(
         ExecuteMsg::Transfer {
             to_address,
             channel,
-        } => execute_transfer(env, info, channel, to_address),
+        } => execute_transfer(deps, env, info, channel, to_address),
     }
 }
 
@@ -65,13 +63,25 @@ pub struct Type2 {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack
-    let original = REPLIES.load(deps.storage, msg.id)?;
-    let seq = parse_seq(msg)?;
-    PENDING_ACK.save(deps.storage, seq, &original)?;
-    Ok(Response::default().add_attribute("sequence_number", seq.to_string()))
+    let kind = REPLIES.load(deps.storage, msg.id)?;
+    match kind {
+        MsgKind::Ibc(ibc_kind) => {
+            let seq = parse_seq(msg)?;
+            PENDING_ACK.save(deps.storage, seq, &ibc_kind)?;
+        }
+    }
+    Ok(Response::default())
+}
+
+pub fn do_ibc_lock_tokens(
+    deps: &mut dyn Storage,
+    token_amount: String,
+) -> Result<CosmosMsg, ContractError> {
+    todo!()
 }
 
 fn execute_transfer(
+    deps:DepsMut,
     env: Env,
     info: MessageInfo,
     channel: String,
@@ -88,10 +98,9 @@ fn execute_transfer(
         channel_id: channel.clone(),
         to_address: to_address.clone(),
         amount: funds,
-        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(20)),
+        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     };
-    Ok(Response::new()
-        .add_message(transfer)
+    Ok(create_reply(deps.storage, MsgKind::Ibc(IbcMsgKind::Transfer), transfer)?
         .add_attribute("ibc-tranfer-channel", channel)
         .add_attribute("ibc-transfer-receiver", to_address))
 }

@@ -1,11 +1,17 @@
-# Neutron demo contracts
+# ibc-transfer demo contract
+This contract is modified from Neutrons ibc-transfer demo contract.
+
+The main difference is they use a Sudo message to re-enter the contract, while we comply with the ibc standards for it
+
 ## IBC transfer contract
 Interacting with counterpart chain via ibc transfer is two phases process.
 1. Send ibc transfer message
-2. Accept and process ibc acknowlegement(sudo_response call)
+2. Accept and process ibc acknowlegement(ibc_packet_ack call)
 
-to run the contract you need to init two chain network connected with hermes relayer. We use a neutron nodes as both ends.
+to run the contract you need to init two chain network connected with go relayer
 
+
+## Below is neutron's demo writeup
 1) Install hermes `cargo install --version 0.14.1 ibc-relayer-cli --bin hermes --locked`
 2) Clone the neutron repo next to the demo contracts - `git clone git@github.com:neutron-org/neutron.git` (at this moment we have to use https://github.com/neutron-org/neutron/tree/feat/ibc-transfer-ack branch)
 3) init nodes and hermes in the neutron dir, create a transfer channel then run hermes  `make init && hermes -c ./network/hermes/config.toml create channel --port-a transfer --port-b transfer test-1 connection-0 && make start-rly`
