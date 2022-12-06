@@ -1,7 +1,7 @@
 use crate::contract::{do_ibc_lock_tokens, confirm_transfer};
 use crate::error::{ContractError, Never};
 use crate::helpers::{create_submsg, IbcMsgKind, IcaMessages, MsgKind};
-use crate::state::{CHANNELS, PENDING_ACK, STATE};
+use crate::state::{CHANNELS, PENDING_ACK};
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
