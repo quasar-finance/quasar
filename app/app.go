@@ -1024,6 +1024,8 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 // addresses.
 func (app *App) BlockedModuleAccountAddrs() map[string]bool {
 	modAccAddrs := app.ModuleAccountAddrs()
+	// TODO: Investigate why gov module in removed from blocked list
+	// https://github.com/cosmos/gaia/blob/main/app/app.go#L280
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
