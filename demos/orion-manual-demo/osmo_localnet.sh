@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/zsh
 
 # Configure variables
 BINARY=osmosisd
@@ -81,6 +81,7 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.crisis.constant_fee.denom="uosmo"' |
   jq '.app_state.staking.params.bond_denom="uosmo"' |
   jq '.app_state.mint = {
+      halven_started_epoch: "0",
       minter: {
         epoch_provisions: "0.000000000000000000"
       },

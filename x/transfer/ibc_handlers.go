@@ -48,11 +48,15 @@ func (im IBCModule) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.P
 		// maybe later we'll retrieve actual errors from events
 		im.keeper.Logger(ctx).Error(ack.GetError(), "CheckTx", ctx.IsCheckTx())
 
-		im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
+		err := im.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
 			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
 			OriginalPacket:  newIBCPacket(packet),
 			Relayer:         relayer.String(),
 		})
+		if err != nil {
+			im.keeper.Logger(ctx).Error("failed to re-enter contract on packet timeout", err)
+			return sdkerrors.Wrap(err, "failed to re-enter the contract on packet timeout")
+		}
 	}
 
 	if err != nil {
