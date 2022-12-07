@@ -44,7 +44,7 @@ Conceptually, we can split the e2e setup into 2 parts:
 
 2. Running the tests
 
-    Each `TestSuite` should embed the `E2ETestSuite` struct to be able to interact with chains and use helper functions. Note that as long as each test creates and uses it's own accounts they can be run in parallel using the flag function `t.Parallel()` at the beginning of the fuction.
+    Each `TestSuite` should embed the `E2ETestSuite` struct to be able to interact with chains and use helper functions. Note that as long as each test creates and uses it's own accounts they can be run in parallel using the flag function `t.Parallel()` at the beginning of the function.
 
 ## `suite` Package
 
