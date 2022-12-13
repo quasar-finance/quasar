@@ -10,6 +10,7 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
+	"github.com/quasarlabs/quasarnode/decorators"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -607,8 +608,12 @@ func New(
 		wasmOpts...,
 	)
 
-	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
+	var decoratedTransferIBCModule ibcporttypes.IBCModule
+	decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
 		app.IntergammKeeper,
+		transferIbcModule,
+	)
+	decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
 		&app.wasmKeeper,
 		transferIbcModule,
 	)
