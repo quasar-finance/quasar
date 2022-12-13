@@ -3,7 +3,6 @@ package decorators
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
@@ -17,11 +16,11 @@ var _ porttypes.IBCModule = IBCTransferIntergammDecorator{}
 // IBCModule implements the ICS26 interface for interchain accounts controller chains
 type IBCTransferIntergammDecorator struct {
 	k *intergammkeeper.Keeper
-	ibctransfer.IBCModule
+	porttypes.IBCModule
 }
 
 // NewIBCModule creates a new IBCModule given the intergamm keeper
-func NewIBCTransferIntergammDecorator(k *intergammkeeper.Keeper, m ibctransfer.IBCModule) IBCTransferIntergammDecorator {
+func NewIBCTransferIntergammDecorator(k *intergammkeeper.Keeper, m porttypes.IBCModule) IBCTransferIntergammDecorator {
 	return IBCTransferIntergammDecorator{
 		k:         k,
 		IBCModule: m,

@@ -5,7 +5,6 @@ import (
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibctransfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -13,7 +12,7 @@ import (
 
 var _ porttypes.IBCModule = IBCTransferWasmDecorator{}
 
-// IBCTransferWasmDecorator implements is a decorator for ibc transfer module that will
+// IBCTransferWasmDecorator is a decorator for ibc transfer module that will
 // pass ack and timeout callbacks of wasm contracts that were the sender of packet to them.
 // Note that the contracts should implement the IBC interface to receive the callbacks
 // otherwise they won't receive any callbacks from this decorator and will be treated like
@@ -21,11 +20,11 @@ var _ porttypes.IBCModule = IBCTransferWasmDecorator{}
 // NOTICE: Potential Security Issue
 type IBCTransferWasmDecorator struct {
 	k *wasm.Keeper
-	ibctransfer.IBCModule
+	porttypes.IBCModule
 }
 
 // NewIBCTransferWasmDecorator returns a new IBCTransferWasmDecorator with the given wasm keeper and transfer ibc module.
-func NewIBCTransferWasmDecorator(k *wasm.Keeper, m ibctransfer.IBCModule) IBCTransferWasmDecorator {
+func NewIBCTransferWasmDecorator(k *wasm.Keeper, m porttypes.IBCModule) IBCTransferWasmDecorator {
 	return IBCTransferWasmDecorator{
 		k:         k,
 		IBCModule: m,

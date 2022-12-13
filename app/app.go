@@ -615,7 +615,7 @@ func New(
 	)
 	decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
 		&app.wasmKeeper,
-		transferIbcModule,
+		decoratedTransferIBCModule,
 	)
 
 	// Set Intergamm hooks
