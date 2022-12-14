@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Reply, Response, StdError, StdResult, Storage, IbcBasicResponse,
+    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcBasicResponse, IbcMsg,
+    IbcTimeout, MessageInfo, Reply, Response, StdError, StdResult, Storage,
 };
 
 use crate::{
@@ -9,7 +9,6 @@ use crate::{
     state::{State, STATE},
 };
 
-use protobuf::Message as ProtoMessage;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

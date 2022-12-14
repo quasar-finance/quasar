@@ -1,7 +1,5 @@
-use crate::{state::REPLIES};
-use cosmwasm_std::{
-    CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg,
-};
+use crate::state::REPLIES;
+use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

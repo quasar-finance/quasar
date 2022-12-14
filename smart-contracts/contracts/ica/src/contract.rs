@@ -154,11 +154,11 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::msg::RequestQueryJSON;
+
     use crate::test_helpers::*;
 
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{from_binary, CosmosMsg, StdError};
+    use cosmwasm_std::testing::mock_env;
+    use cosmwasm_std::{from_binary, StdError};
 
     #[test]
     fn setup_and_query() {

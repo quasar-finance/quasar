@@ -23,10 +23,10 @@ Build the ibc-transfer-test contract using your favorite build strategy:
 `cd contracts/ibc-transfer && RUSTFLAGS='-C link-arg=-s' cargo wasm && cd -`
 
 ### Store
-`~/go/bin/quasarnoded tx wasm  store ./target/wasm32-unknown-unknown/release/ibc_transfer.wasm --from alice --gas auto --chain-id quasar`
+`quasarnoded tx wasm  store ./target/wasm32-unknown-unknown/release/ibc_transfer.wasm --from alice --gas auto --chain-id quasar`
 
 ### Instantiate
-`~/go/bin/quasarnoded tx wasm instantiate 1  "{}" --from alice --label "my first contract" --gas-prices 10uqsr --gas auto --gas-adjustment 1.3 -b block -y --no-admin --chain-id quasar`
+`quasarnoded tx wasm instantiate 1  "{}" --from alice --label "my first contract" --gas-prices 10uqsr --gas auto --gas-adjustment 1.3 -b block -y --no-admin --chain-id quasar`
 
 Make sure to replace code ID with the correct one above
 

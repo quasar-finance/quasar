@@ -82,6 +82,4 @@ pub fn handle_sample_callback(
 }
 
 #[cfg(test)]
-mod test {
-    use super::*;
-}
+mod test {}

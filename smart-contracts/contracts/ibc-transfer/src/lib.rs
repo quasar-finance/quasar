@@ -15,7 +15,7 @@
 #![warn(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod contract;
-pub mod state;
-pub mod ibc;
-pub mod helpers;
 mod error;
+pub mod helpers;
+pub mod ibc;
+pub mod state;

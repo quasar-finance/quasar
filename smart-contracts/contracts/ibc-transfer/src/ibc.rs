@@ -1,4 +1,4 @@
-use crate::contract::{do_ibc_lock_tokens, confirm_transfer};
+use crate::contract::{confirm_transfer, do_ibc_lock_tokens};
 use crate::error::{ContractError, Never};
 use crate::helpers::{create_submsg, IbcMsgKind, IcaMessages, MsgKind};
 use crate::state::{CHANNELS, PENDING_ACK};
@@ -108,10 +108,8 @@ pub fn ibc_channel_connect(
                 &channel_ty,
             )?;
 
-            if counter_party_metadata.is_none() {
-                return Err(ContractError::QError(QError::NoCounterpartyIcaAddress));
-            }
-            let counter_party = counter_party_metadata.unwrap();
+            let counter_party = counter_party_metadata
+                .ok_or(ContractError::QError(QError::NoCounterpartyIcaAddress))?;
             // at this point, we expect a counterparty address, if it's none, we have to error
             if counter_party.address().is_none() {
                 return Err(ContractError::NoCounterpartyIcaAddress);

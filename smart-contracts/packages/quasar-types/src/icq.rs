@@ -76,6 +76,12 @@ impl Query {
     }
 }
 
+impl Default for Query {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
