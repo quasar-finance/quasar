@@ -10,6 +10,7 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
+	"github.com/quasarlabs/quasarnode/decorators"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -451,8 +452,6 @@ func New(
 		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
 	}
 
-	// TODO AUDIT Above lines
-
 	// IBC Modules & Keepers
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -493,10 +492,7 @@ func New(
 	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
-	decoratedTransferIBCModule := intergammmodule.NewIBCTransferModuleDecorator(
-		&transferIbcModule,
-		app.IntergammKeeper,
-	)
+	// TODO AUDIT Above lines
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -612,6 +608,16 @@ func New(
 		wasmOpts...,
 	)
 
+	var decoratedTransferIBCModule ibcporttypes.IBCModule
+	decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
+		app.IntergammKeeper,
+		transferIbcModule,
+	)
+	decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
+		&app.wasmKeeper,
+		decoratedTransferIBCModule,
+	)
+
 	// Set Intergamm hooks
 
 	// IBC
@@ -715,7 +721,7 @@ func New(
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
 	// we prefer to be more strict in what arguments the modules expect.
-	var skipGenesisInvariants = cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.

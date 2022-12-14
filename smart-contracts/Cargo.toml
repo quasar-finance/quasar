@@ -4,6 +4,8 @@ members = [
     "contracts/cw-4626",
     "contracts/strategy",
     "contracts/icq",
+    "contracts/ica",
+    "contracts/ibc-transfer",
     "packages/intergamm-bindings",
     "contracts/intergamm-bindings-test",
     "contracts/qoracle-bindings-test",
