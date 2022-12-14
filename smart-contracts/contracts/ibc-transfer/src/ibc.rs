@@ -7,9 +7,9 @@ use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
     enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
 };
-use quasar_types::ica::enforce_ica_order_and_metadata;
+use quasar_types::ica::handshake::{enforce_ica_order_and_metadata, IcaMetadata};
 use quasar_types::icq::ICQ_ORDERING;
-use quasar_types::{ibc, ica::IcaMetadata, icq::ICQ_VERSION};
+use quasar_types::{ibc, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
     entry_point, from_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,

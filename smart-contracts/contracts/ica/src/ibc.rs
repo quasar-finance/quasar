@@ -1,4 +1,5 @@
 use prost::Message;
+use prost::bytes::Bytes;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
