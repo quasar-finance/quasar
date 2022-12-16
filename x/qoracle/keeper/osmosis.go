@@ -5,11 +5,12 @@ import (
 	"sort"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	icqtypes "github.com/cosmos/ibc-go/v5/modules/apps/icq/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
@@ -626,7 +627,7 @@ func (k Keeper) CalculatePoolTVL(ctx sdk.Context, pool balancerpool.Pool) (sdk.D
 			return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrStablePriceNotFound, fmt.Sprintf("denom: %s", asset.Token.Denom))
 		}
 
-		tvl = tvl.Add(asset.Token.Amount.ToDec().Mul(price))
+		tvl = tvl.Add(sdk.NewDecFromInt(asset.Token.Amount).Mul(price))
 	}
 	return tvl, nil
 }
@@ -681,7 +682,7 @@ func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string)
 }
 
 // findGaugeWeight iterates over distrInfo.Records and returns the weight of record is it finds and record with given gaugeId.
-func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdk.Int, bool) {
+func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdkmath.Int, bool) {
 	for _, record := range distrInfo.Records {
 		if record.GaugeId == gaugeId {
 			return record.Weight, true

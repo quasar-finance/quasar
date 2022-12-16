@@ -38,7 +38,7 @@ func (k Keeper) ProcessDepositDayLockupPair(
 	// Process user coin map
 	for user, coins := range userCoinsMap {
 		for _, coin := range coins {
-			weight := coin.Amount.ToDec().QuoInt(totalCoins.AmountOf(coin.Denom))
+			weight := sdk.NewDecFromInt(coin.Amount).QuoInt(totalCoins.AmountOf(coin.Denom))
 			udw := types.EpochUserDenomWeight{UserAcc: user, Weight: weight, Coin: coin}
 			udws = append(udws, udw)
 		}

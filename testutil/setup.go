@@ -11,10 +11,9 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/quasarlabs/quasarnode/app"
-	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
@@ -24,14 +23,25 @@ import (
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 )
 
 func init() {
-	cosmoscmd.SetPrefixes(appParams.AccountAddressPrefix)
+	// Set prefixes
+	accountPubKeyPrefix := app.AccountAddressPrefix + "pub"
+	validatorAddressPrefix := app.AccountAddressPrefix + "valoper"
+	validatorPubKeyPrefix := app.AccountAddressPrefix + "valoperpub"
+	consNodeAddressPrefix := app.AccountAddressPrefix + "valcons"
+	consNodePubKeyPrefix := app.AccountAddressPrefix + "valconspub"
+
+	// Set and seal config
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount(app.AccountAddressPrefix, accountPubKeyPrefix)
+	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
+	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
+	config.Seal()
 }
 
 func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
@@ -46,7 +56,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	stateStore := store.NewCommitMultiStore(db)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, logger)
-	encodingConfig := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
+	encodingConfig := app.MakeEncodingConfig()
 
 	// Mocks
 

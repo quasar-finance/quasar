@@ -129,7 +129,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 
 		for l, c := range lockupDeposits {
 			if v, ok := lockupTransferred[l]; ok {
-				diffLockups[l] = c.Sub(v)
+				diffLockups[l] = c.Sub(v...)
 			} else {
 				diffLockups[l] = c
 			}

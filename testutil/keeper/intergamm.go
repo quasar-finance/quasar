@@ -20,8 +20,8 @@ func (kf KeeperFactory) IntergammKeeper(
 ) *keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+	kf.StateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 
 	scopedKeeper := capabilityKeeper.ScopeToModule(types.ModuleName)
 
