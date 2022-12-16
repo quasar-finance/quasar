@@ -19,7 +19,7 @@ func (k Keeper) OsmosisChainParams(goCtx context.Context, req *types.QueryOsmosi
 		EpochsInfo:          k.GetOsmosisEpochsInfo(ctx),
 		LockableDurations:   k.GetOsmosisLockableDurations(ctx),
 		MintParams:          k.GetOsmosisMintParams(ctx),
-		MintEpochProvisions: k.GetOsmosisMintEpochProvisions(ctx).String(), // TODO: Investigate why this throws a marshal panic when MintEpochProvisions is of type sdk.Dec
+		MintEpochProvisions: k.GetOsmosisMintEpochProvisions(ctx),
 		DistrInfo:           k.GetOsmosisDistrInfo(ctx),
 	}, nil
 }
