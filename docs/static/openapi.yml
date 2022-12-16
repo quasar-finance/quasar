@@ -1996,6 +1996,7 @@ paths:
                     description: Params holds parameters for the x/mint module.
                   mint_epoch_provisions:
                     type: string
+                    format: byte
                   distr_info:
                     type: object
                     properties:
@@ -7310,6 +7311,7 @@ components:
           description: Params holds parameters for the x/mint module.
         mint_epoch_provisions:
           type: string
+          format: byte
         distr_info:
           type: object
           properties:

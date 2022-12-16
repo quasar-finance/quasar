@@ -86,7 +86,7 @@ message QueryOsmosisChainParamsResponse {
 	repeated osmosis.epochs.v1beta1.EpochInfo epochs_info = 1 [(gogoproto.nullable) = false];
 	repeated int64 lockable_durations = 2 [(gogoproto.casttype) = "time.Duration"];
 	osmosis.mint.v1beta1.Params mint_params = 3 [(gogoproto.nullable) = false];
-	string mint_epoch_provisions = 4;
+	bytes mint_epoch_provisions = 4 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
 	osmosis.poolincentives.v1beta1.DistrInfo distr_info = 5 [(gogoproto.nullable) = false];
 }
 
