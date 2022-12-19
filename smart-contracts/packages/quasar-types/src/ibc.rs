@@ -2,7 +2,10 @@ use cosmwasm_std::{Binary, IbcChannel, IbcEndpoint, IbcOrder};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, ica::IcaMetadata};
+use crate::{
+    error::Error,
+    ica::{ handshake::{IcaMetadata}},
+};
 
 /// This is a generic ICS acknowledgement format.
 /// Proto defined here: https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/core/channel/v1/channel.proto#L141-L147
