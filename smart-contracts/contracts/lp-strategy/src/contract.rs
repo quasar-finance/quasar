@@ -1,4 +1,5 @@
 use cosmos_sdk_proto::traits::Message;
+use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -6,10 +7,13 @@ use cosmwasm_std::{
     MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, Timestamp, Uint128,
 };
 use cw2::set_contract_version;
-use osmosis_std::shim::Any;
+use osmosis_std::shim::Duration;
 use osmosis_std::types::cosmos::base::v1beta1::Coin;
+use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn;
+use osmosis_std::types::osmosis::lockup::MsgLockTokens;
 use quasar_types::ibc::{ChannelInfo, ChannelType};
-use serde::{Serialize, Deserialize};
+use quasar_types::ica::packet::{InterchainAccountPacketData, Type};
+use quasar_types::ica::traits::Pack;
 
 use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
@@ -87,56 +91,6 @@ pub fn execute(
     }
 }
 
-/// CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
-#[derive(Clone, PartialEq, ::prost::Message, Serialize, Deserialize)]
-pub struct CosmosTx {
-    #[prost(message, repeated, tag = "1")]
-    pub messages: Vec<Any>,
-}
-
-/// InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
-#[derive(Clone, PartialEq, ::prost::Message,  Serialize, Deserialize)]
-pub struct InterchainAccountPacketData {
-    #[prost(enumeration = "Type", tag = "1")]
-    pub r#type: i32,
-    #[prost(bytes = "vec", tag = "2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(string, tag = "3")]
-    pub memo: ::prost::alloc::string::String,
-}
-
-#[derive(Clone, PartialEq,   Serialize, Deserialize)]
-pub struct MyInterchainAccountPacketData {
-    #[serde(rename="type")]
-    pub r#type: String,
-    pub data: Vec<u8>,
-    pub memo: String,
-}
-
-/// Type defines a classification of message issued from a controller chain to its associated interchain accounts
-/// host
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration, Serialize, Deserialize)]
-#[repr(i32)]
-pub enum Type {
-    /// Default zero value enumeration
-    Unspecified = 0,
-    /// Execute a transaction on an interchain accounts host chain
-    ExecuteTx = 1,
-}
-impl Type {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            Type::Unspecified => "TYPE_UNSPECIFIED",
-            Type::ExecuteTx => "TYPE_EXECUTE_TX",
-        }
-    }
-}
-
-
 pub fn execute_deposit_and_lock_tokens(
     deps: DepsMut,
     env: Env,
@@ -150,49 +104,44 @@ pub fn execute_deposit_and_lock_tokens(
 ) -> Result<Response, ContractError> {
     let channel = CHANNELS.load(deps.storage, channel_id.clone())?;
     if let ChannelType::Ica {
-        channel_ty,
+        channel_ty: _,
         counter_party_address,
     } = channel.channel_type
     {
+        // make sure we have a counterparty address
         if counter_party_address.is_none() {
             return Err(ContractError::NoCounterpartyIcaAddress);
         }
-        let delegate = CosmosMsg::Staking(cosmwasm_std::StakingMsg::Delegate { validator: (), amount: () })
+
         // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
-        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
+        let join = MsgJoinSwapExternAmountIn {
             sender: counter_party_address.unwrap(),
             pool_id,
             token_in: Some(Coin {
-                denom,
+                denom: denom.clone(),
                 amount: amount.to_string(),
             }),
             share_out_min_amount: share_out_min_amount.to_string(),
         };
 
-        let anys: Vec<Any>= vec![Any{ type_url: osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL.to_string(), value: join.encode_to_vec() }];
+        let packet = InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.pack()], None);
 
-        let packet = MyInterchainAccountPacketData {
-            r#type: "TYPE_EXECUTE_TX".to_string(),
-            // TODO data needs to be a cosmos tx
-            data: base64::decode("CrABCiMvY29zbW9zLnN0YWtpbmcudjFiZXRhMS5Nc2dEZWxlZ2F0ZRKIAQpBY29zbW9zMTVjY3NoaG1wMGdzeDI5cXBxcTZnNHptbHRubnZnbXl1OXVldWFkaDl5Mm5jNXpqMHN6bHM1Z3RkZHoSNGNvc21vc3ZhbG9wZXIxcW5rMm40bmxrcHc5eGZxbnRsYWRoNzR3NnVqdHVsd25teG5oM2saDQoFc3Rha2USBDEwMDA=").map_err(|err| StdError::SerializeErr{source_type : "base64".into(), msg: err.to_string()})?,
-            memo: "".into(),
-        };
-// 
-// &serde_json_wasm::to_vec(&packet).map_err(|err| ContractError::Std(StdError::SerializeErr { source_type: "serialize intechain packet".into(), msg: err.to_string() }))?)
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: channel_id,
-            data: to_binary(&serde_json_wasm::to_vec(&packet).map_err(|err| StdError::SerializeErr { source_type: "encode packet".into(), msg: err.to_string() })?)?,
+            data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };
 
         // save the left over data so we can access everything we need in the ack to lock the tokens
-        REPLACEME.save(deps.storage, &Tmp { lock_period })?;
+        REPLACEME.save(deps.storage, &Tmp { lock_period, pool_id })?;
         let resp = create_reply(
             deps.storage,
             MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn)),
             send_packet_msg,
         )?;
-        Ok(resp.add_attribute("joining_swap_extern_amount_in_on_pool", pool_id.to_string()))
+        Ok(resp
+            .add_attribute("joining_swap_extern_amount_in_on_pool", pool_id.to_string())
+            .add_attribute("denom", denom))
     } else {
         Err(ContractError::NoIcaChannel)
     }
@@ -200,9 +149,15 @@ pub fn execute_deposit_and_lock_tokens(
 
 pub fn do_ibc_lock_tokens(
     deps: &mut dyn Storage,
-    token_amount: String,
-) -> Result<CosmosMsg, ContractError> {
-    todo!()
+    owner: String,
+    coins: Vec<Coin>,
+) -> Result<InterchainAccountPacketData, ContractError> {
+    // denom in this case is expected to be something like gamm/pool/1
+    // duration is  60 sec/min * 60 min/hr * 24hr * 14days
+    // TODO move the duration to a package and make it settable
+    let lock = MsgLockTokens{ owner, duration: Some(Duration{ seconds: 1209600, nanos: 0 }), coins };
+    Ok(InterchainAccountPacketData::new(Type::ExecuteTx, vec![lock.pack()], None))
+
 }
 
 pub fn execute_transfer(
@@ -373,12 +328,70 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        IbcTimeoutBlock,
+    };
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
     const INVESTOR: &str = "investor";
     const BUYER: &str = "buyer";
+
+    #[test]
+    fn interchain_packet_serialization_works() {
+        let expected: Vec<u8> = vec![
+            123, 34, 64, 116, 121, 112, 101, 34, 58, 34, 84, 89, 80, 69, 95, 69, 88, 69, 67, 85,
+            84, 69, 95, 84, 88, 34, 44, 34, 100, 97, 116, 97, 34, 58, 91, 49, 48, 44, 49, 51, 54,
+            44, 49, 44, 49, 48, 44, 52, 55, 44, 52, 55, 44, 49, 49, 49, 44, 49, 49, 53, 44, 49, 48,
+            57, 44, 49, 49, 49, 44, 49, 49, 53, 44, 49, 48, 53, 44, 49, 49, 53, 44, 52, 54, 44, 49,
+            48, 51, 44, 57, 55, 44, 49, 48, 57, 44, 49, 48, 57, 44, 52, 54, 44, 49, 49, 56, 44, 52,
+            57, 44, 57, 56, 44, 49, 48, 49, 44, 49, 49, 54, 44, 57, 55, 44, 52, 57, 44, 52, 54, 44,
+            55, 55, 44, 49, 49, 53, 44, 49, 48, 51, 44, 55, 52, 44, 49, 49, 49, 44, 49, 48, 53, 44,
+            49, 49, 48, 44, 56, 51, 44, 49, 49, 57, 44, 57, 55, 44, 49, 49, 50, 44, 54, 57, 44, 49,
+            50, 48, 44, 49, 49, 54, 44, 49, 48, 49, 44, 49, 49, 52, 44, 49, 49, 48, 44, 54, 53, 44,
+            49, 48, 57, 44, 49, 49, 49, 44, 49, 49, 55, 44, 49, 49, 48, 44, 49, 49, 54, 44, 55, 51,
+            44, 49, 49, 48, 44, 49, 56, 44, 56, 53, 44, 49, 48, 44, 54, 51, 44, 49, 49, 49, 44, 49,
+            49, 53, 44, 49, 48, 57, 44, 49, 49, 49, 44, 52, 57, 44, 49, 48, 50, 44, 49, 49, 50, 44,
+            49, 49, 52, 44, 49, 48, 52, 44, 49, 48, 49, 44, 49, 49, 48, 44, 49, 48, 51, 44, 49, 48,
+            55, 44, 49, 50, 48, 44, 52, 56, 44, 53, 49, 44, 53, 49, 44, 49, 49, 55, 44, 49, 48, 57,
+            44, 53, 48, 44, 49, 49, 53, 44, 49, 49, 50, 44, 49, 48, 49, 44, 49, 49, 51, 44, 49, 48,
+            49, 44, 53, 49, 44, 49, 48, 51, 44, 49, 49, 48, 44, 53, 55, 44, 53, 49, 44, 49, 48, 55,
+            44, 53, 48, 44, 53, 53, 44, 53, 54, 44, 49, 48, 52, 44, 49, 48, 57, 44, 52, 56, 44, 49,
+            48, 48, 44, 53, 52, 44, 53, 53, 44, 53, 48, 44, 49, 49, 57, 44, 49, 49, 56, 44, 49, 48,
+            48, 44, 49, 49, 54, 44, 53, 52, 44, 53, 55, 44, 49, 48, 52, 44, 49, 49, 54, 44, 49, 49,
+            57, 44, 49, 48, 52, 44, 49, 48, 56, 44, 49, 48, 52, 44, 49, 49, 50, 44, 49, 49, 55, 44,
+            53, 48, 44, 49, 49, 53, 44, 49, 50, 48, 44, 49, 48, 56, 44, 49, 49, 55, 44, 49, 49, 50,
+            44, 49, 48, 51, 44, 49, 49, 57, 44, 49, 54, 44, 49, 44, 50, 54, 44, 49, 51, 44, 49, 48,
+            44, 53, 44, 49, 49, 55, 44, 49, 49, 49, 44, 49, 48, 57, 44, 49, 49, 53, 44, 49, 49, 49,
+            44, 49, 56, 44, 52, 44, 52, 57, 44, 52, 56, 44, 52, 56, 44, 52, 56, 44, 51, 52, 44, 49,
+            44, 52, 57, 93, 44, 34, 109, 101, 109, 111, 34, 58, 34, 34, 125,
+        ];
+        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
+            sender: "osmo1fprhengkx033um2speqe3gn93k278hm0d672wvdt69htwhlhpu2sxlupgw".to_string(),
+            pool_id: 1,
+            token_in: Some(Coin {
+                denom: "uomso".to_string(),
+                amount: "1000".to_string(),
+            }),
+            share_out_min_amount: "1".to_string(),
+        };
+
+        let anys: Vec<Any> = vec![Any {
+            type_url:
+                osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL
+                    .to_string(),
+            value: join.encode_to_vec(),
+        }];
+
+        let packet = InterchainAccountPacketData {
+            r#type: Type::ExecuteTx,
+            // TODO data needs to be a cosmos tx
+            data: CosmosTx { messages: anys }.encode_to_vec(),
+            memo: "".into(),
+        };
+        assert_eq!(expected, to_binary(&packet).unwrap())
+    }
 
     fn default_instantiate(
         supply_decimals: u8,
@@ -410,45 +423,24 @@ mod tests {
 
         let proto_join = join.encode_to_vec();
         // a serialization in done in Go and Cosmos sdk
-        let go_proto: Vec<u8> = vec![10, 93, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46, 118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112, 69, 120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 42, 10, 21, 99, 111, 117, 110, 116, 101, 114, 95, 112, 97, 114, 116, 121, 95, 97, 100, 100, 114, 101, 115, 115, 16, 1, 26, 12, 10, 4, 117, 113, 115, 114, 18, 4, 49, 48, 48, 48, 34, 1, 49];
+        let go_proto: Vec<u8> = vec![
+            10, 93, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46, 118,
+            49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112, 69,
+            120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 42, 10, 21, 99, 111,
+            117, 110, 116, 101, 114, 95, 112, 97, 114, 116, 121, 95, 97, 100, 100, 114, 101, 115,
+            115, 16, 1, 26, 12, 10, 4, 117, 113, 115, 114, 18, 4, 49, 48, 48, 48, 34, 1, 49,
+        ];
 
-
-        let anys: Vec<Any>= vec![Any{ type_url: osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL.to_string(), value: proto_join }];
-        let data = CosmosTx{ messages: anys }.encode_to_vec();
+        let anys: Vec<Any> = vec![Any {
+            type_url:
+                osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL
+                    .to_string(),
+            value: proto_join,
+        }];
+        let data = CosmosTx { messages: anys }.encode_to_vec();
 
         assert_eq!(data, go_proto)
     }
-
-    #[test]
-    fn serialize_interchain_packet_works() {
-        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
-            sender: "counter_party_address".into(),
-            pool_id: 1,
-            token_in: Some(Coin {
-                denom: "uqsr".to_string(),
-                amount: "1000".to_string(),
-            }),
-            share_out_min_amount: "1".to_string(),
-        };
-
-        let proto_join = join.encode_to_vec();
-        // a serialization in done in Go and Cosmos sdk
-
-
-        let anys: Vec<Any>= vec![Any{ type_url: osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL.to_string(), value: proto_join }];
-        let data = CosmosTx{ messages: anys }.encode_to_vec();
-
-        let ica_packet = InterchainAccountPacketData{ r#type: 1, data, memo: "".into() };
-        
-        let go_proto: Vec<u8> = vec![123, 34, 100, 97, 116, 97, 34, 58, 34, 67, 108, 48, 75, 76, 121, 57, 118, 99, 50, 49, 118, 99, 50, 108, 122, 76, 109, 100, 104, 98, 87, 48, 117, 100, 106, 70, 105, 90, 88, 82, 104, 77, 83, 53, 78, 99, 50, 100, 75, 98, 50, 108, 117, 85, 51, 100, 104, 99, 69, 86, 52, 100, 71, 86, 121, 98, 107, 70, 116, 98, 51, 86, 117, 100, 69, 108, 117, 69, 105, 111, 75, 70, 87, 78, 118, 100, 87, 53, 48, 90, 88, 74, 102, 99, 71, 70, 121, 100, 72, 108, 102, 89, 87, 82, 107, 99, 109, 86, 122, 99, 120, 65, 66, 71, 103, 119, 75, 66, 72, 86, 120, 99, 51, 73, 83, 66, 68, 69, 119, 77, 68, 65, 105, 65 ,84, 69, 61, 34, 44, 34, 109, 101, 109, 111, 34, 58, 34, 34, 44, 34, 116, 121, 112, 101, 34, 58, 34, 84, 89, 80, 69, 95, 69, 88, 69, 67, 85, 84, 69, 95, 84, 88, 34, 125];
-        let go_string = "{\"data\":\"[10,93,10,47,47,111,115,109,111,115,105,115,46,103,97,109,109,46,118,49,98,101,116,97,49,46,77,115,103,74,111,105,110,83,119,97,112,69,120,116,101,114,110,65,109,111,117,110,116,73,110,18,42,10,21,99,111,117,110,116,101,114,95,112,97,114,116,121,95,97,100,100,114,101,115,115,16,1,26,12,10,4,117,113,115,114,18,4,49,48,48,48,34,1,49]\",\"memo\":\"\",\"type\":\"TYPE_EXECUTE_TX\"}";
-        let rust_string = serde_json_wasm::to_string(&ica_packet).unwrap();
-
-        println!("{}", rust_string);
-        assert_eq!(go_string, rust_string);
-        assert_eq!(go_proto, serde_json_wasm::to_vec(&ica_packet).unwrap())
-    }
-    
 
     // #[test]
     // fn deposit_works() {
