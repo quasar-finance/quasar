@@ -10,6 +10,7 @@ use cosmwasm_std::testing::{
 use cosmwasm_std::{
     DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
 };
+use quasar_types::ica::handshake::CounterPartyIcaMetadata;
 
 use crate::msg::InitMsg;
 

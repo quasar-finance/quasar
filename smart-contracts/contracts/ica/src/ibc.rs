@@ -13,6 +13,9 @@ use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
+use quasar_types::ica::{
+    handshake::{enforce_ica_order_and_metadata, CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version,}
+};
 
 pub const ICA_VERSION: &str = "{\"version\":\"ics-20\"}";
 pub const ICA_ORDERING: IbcOrder = IbcOrder::Ordered;
@@ -196,30 +199,4 @@ mod test {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use cosmwasm_std::{Binary, IbcAcknowledgement, IbcEndpoint, IbcPacket, IbcTimeout, Timestamp};
 
-    #[test]
-    fn test_ibc_packet_ack() -> Result<(), ContractError> {
-        let mut deps = mock_dependencies();
-        let timeout = IbcTimeout::with_timestamp(Timestamp::from_nanos(0));
-        let src = IbcEndpoint {
-            port_id: "port-0".to_string(),
-            channel_id: "channel-0".to_string(),
-        };
-        let dest = IbcEndpoint {
-            port_id: "port-1".to_string(),
-            channel_id: "channel-1".to_string(),
-        };
-        let packet = IbcPacket::new(Binary::default(), src, dest, 0, timeout);
-        let ack = IbcAcknowledgement::new(Binary::from_base64(
-            "eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmRaU1VWcmFXUnpaMFU5SW4wPSJ9",
-        )?);
-        let msg = IbcPacketAckMsg::new(ack, packet);
-        QUERY_RESULT_COUNTER.save(deps.as_mut().storage, &0)?; // Save a 0
-        match ibc_packet_ack(deps.as_mut(), mock_env(), msg) {
-            Ok(_) => {
-                assert_eq!(QUERY_RESULT_COUNTER.load(deps.as_mut().storage)?, 1);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
-    }
 }
