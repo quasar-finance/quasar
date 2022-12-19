@@ -1,7 +1,8 @@
 use cosmwasm_std::IbcOrder;
+use prost::DecodeError;
 use thiserror::Error;
 
-use crate::ica::{Encoding, TxType, Version};
+use crate::ica::{ handshake::{Encoding, TxType, Version}};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
@@ -37,4 +38,10 @@ pub enum Error {
 
     #[error("invalid Ibc version")]
     InvalidIbcVersion { version: String },
+
+    #[error("invalid type url, expected {expected}  and found {actual}")]
+    UnpackInvalidTypeUrl{ expected: String, actual: String },
+
+    #[error("{0}")]
+    DecodeError(#[from] DecodeError),
 }
