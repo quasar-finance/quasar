@@ -29,6 +29,9 @@ pub enum ContractError {
     #[error("channel is not an ica channel")]
     NoIcaChannel,
 
+    #[error("Could not deserialize ack: {err}, payload was {b64_bin}")]
+    DeserializeIcaAck{ b64_bin: String, err: String },
+
     #[error("not enough funds in the strategy to withdraw")]
     InsufficientOutStandingFunds,
 }
