@@ -44,6 +44,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+
+[[package]]
 name = "base64ct"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -170,7 +176,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46bf9157d060abbc55152aeadcace799d03dc630575daa66604079a1206cb060"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "cosmwasm-crypto",
  "cosmwasm-derive",
  "derivative",
@@ -700,7 +706,7 @@ dependencies = [
  "cw-storage-plus 0.14.0",
  "cw-utils 0.16.0",
  "cw20-base 0.16.0",
- "osmosis-std",
+ "osmosis-std 0.12.0",
  "quasar-bindings",
  "quasar-traits",
  "quasar-types",
@@ -714,7 +720,7 @@ dependencies = [
 name = "ica"
 version = "0.1.0"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "cosmos-sdk-proto",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -723,7 +729,7 @@ dependencies = [
  "cw-utils 0.14.0",
  "cw2 0.14.0",
  "cw20 0.14.0",
- "osmosis-std",
+ "osmosis-std 0.12.0",
  "prost 0.11.0",
  "schemars",
  "semver",
@@ -735,7 +741,7 @@ dependencies = [
 name = "icq"
 version = "0.1.0"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "cosmos-sdk-proto",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -744,7 +750,7 @@ dependencies = [
  "cw-utils 0.14.0",
  "cw2 0.14.0",
  "cw20 0.14.0",
- "osmosis-std",
+ "osmosis-std 0.12.0",
  "prost 0.11.0",
  "schemars",
  "semver",
@@ -890,7 +896,23 @@ checksum = "d2b3792977036dc49cfc9af9fd7a6c021fd48dfffc8ebf09324201506c65a47a"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive",
+ "osmosis-std-derive 0.12.0",
+ "prost 0.11.0",
+ "prost-types",
+ "schemars",
+ "serde",
+ "serde-cw-value",
+]
+
+[[package]]
+name = "osmosis-std"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10d6fe6ac7fcba45ed61d738091d33c838c4cabbcf4892dc7aa56d19d39cc976"
+dependencies = [
+ "chrono",
+ "cosmwasm-std",
+ "osmosis-std-derive 0.13.2",
  "prost 0.11.0",
  "prost-types",
  "schemars",
@@ -903,6 +925,18 @@ name = "osmosis-std-derive"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c501f2b8ff88b1c60ab671d7b808e947f384fa2524fe4ec8c06f63ef4be29979"
+dependencies = [
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "osmosis-std-derive"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a455e262a6fdfd3914f3a4e11e6bc0ce491901cb9d507d7856d7ef6e129e90c6"
 dependencies = [
  "itertools",
  "proc-macro2",
@@ -1031,16 +1065,19 @@ dependencies = [
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
+ "base64 0.20.0",
  "cosmos-sdk-proto",
  "cosmwasm-std",
  "cw20 0.13.4",
  "derive_more",
+ "osmosis-std 0.13.2",
  "prost 0.11.0",
  "quasar-traits",
  "rust_decimal",
  "schemars",
  "serde",
  "serde-json-wasm",
+ "serde_test",
  "thiserror",
 ]
 
@@ -1206,6 +1243,15 @@ checksum = "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
 dependencies = [
  "itoa",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_test"
+version = "1.0.151"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8f77be7305dac4f250891d2f7444276315f3c288176d35746b6a4ca786dacb3"
+dependencies = [
  "serde",
 ]
 
