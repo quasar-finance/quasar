@@ -4,7 +4,7 @@ use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, IbcMsg, IbcTimeout,
-    MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, Timestamp, Uint128,
+    MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, Timestamp, Uint128, SubMsg,
 };
 use cw2::set_contract_version;
 use osmosis_std::shim::Duration;
@@ -16,8 +16,7 @@ use quasar_types::ica::packet::{InterchainAccountPacketData, Type};
 use quasar_types::ica::traits::Pack;
 
 use crate::error::ContractError;
-use crate::error::ContractError::PaymentError;
-use crate::helpers::{create_reply, parse_seq, IbcMsgKind, IcaMessages, MsgKind};
+use crate::helpers::{create_reply, parse_seq, IbcMsgKind, IcaMessages, MsgKind, create_submsg};
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
     Tmp, WithdrawRequest, CHANNELS, OUTSTANDING_FUNDS, PENDING_ACK, REPLACEME, REPLIES,
@@ -45,7 +44,8 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    // Save the ibc message together with the sequence number, to be handled properly later at the ack
+    // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
+    // TODO this needs and error check and error handling
     let kind = REPLIES.load(deps.storage, msg.id)?;
     match kind {
         MsgKind::Ibc(ibc_kind) => {
@@ -175,6 +175,8 @@ pub fn do_ibc_lock_tokens(
     ))
 }
 
+// transfer funds sent to the contract to an address on osmosis, this needs an extra change to always 
+// always send funds to the contracts ICA address
 pub fn execute_transfer(
     deps: DepsMut,
     env: Env,
@@ -188,40 +190,18 @@ pub fn execute_transfer(
         ));
     }
 
-    // TODO implement this check with more advanced logic
-    // we want to check that we send funds to our ica address, we check that the address exists as in our channels
-    // if !CHANNELS
-    //     .range(deps.storage, None, None, Order::Ascending)
-    //     .any(|channel| {
-    //         let (_, chan) = channel.unwrap();
-    //         if let ChannelType::Ica {
-    //             channel_ty: _,
-    //             counter_party_address,
-    //         } = chan.channel_type
-    //         {
-    //             if counter_party_address.is_some() {
-    //                 // this check does not play nice with packet forwarding addresses; to fix we should support (at least) up to two hops
-    //                 return counter_party_address.unwrap() == to_address;
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             false
-    //         }
-    //     })
-    // {
-    //     return Err(ContractError::NoCounterpartyIcaAddress);
-    // }
-
     let funds = info.funds[0].clone();
+    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(300));
+
     let transfer = IbcMsg::Transfer {
         channel_id: channel.clone(),
         to_address: to_address.clone(),
         amount: funds,
-        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        timeout,
     };
+    
     Ok(Response::new()
-        .add_message(transfer)
+        .add_submessage(create_submsg(deps.storage, MsgKind::Ibc(IbcMsgKind::Transfer), transfer)?)
         .add_attribute("ibc-tranfer-channel", channel)
         .add_attribute("ibc-transfer-receiver", to_address))
 }
@@ -234,7 +214,7 @@ pub fn execute_deposit(
     // do things here with the funds. This is where the actual strategy starts placing funds on a new deposit
     // in the template version of the contract, all we do is check that funds are present
     if info.funds.is_empty() {
-        return Err(PaymentError(cw_utils::PaymentError::NoFunds {}));
+        return Err(ContractError::PaymentError(cw_utils::PaymentError::NoFunds {}));
     }
 
     // TODO see if we can package this logic a bit better by moving it to strategy.rs
