@@ -1,9 +1,12 @@
 use crate::contract::do_ibc_lock_tokens;
 use crate::error::{ContractError, Never};
-use crate::helpers::{create_reply, create_submsg, IbcMsgKind, IcaMessages, MsgKind, get_ica_address};
+use crate::helpers::{
+    create_reply, create_submsg, get_ica_address, IbcMsgKind, IcaMessages, MsgKind,
+};
 use crate::state::{CHANNELS, PENDING_ACK};
 use osmosis_std::types::cosmos::base::v1beta1::Coin;
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
+use osmosis_std::types::osmosis::lockup::{MsgLockTokens, MsgLockTokensResponse};
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
     enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
@@ -17,9 +20,9 @@ use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
     IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
-    IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg, IbcMsg, IbcTimeout,
+    IbcChannelOpenMsg, IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, Response, StdError,
+    StdResult, SubMsg, Uint128, WasmMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -195,23 +198,36 @@ pub fn handle_succesful_ack(
             crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
                 // TODO move the below locking logic to a separate function
                 // get the ica address of the channel id
-                let ica_addr = get_ica_address(deps.storage, pkt.original_packet.src.channel_id.clone())?;
+                let ica_addr =
+                    get_ica_address(deps.storage, pkt.original_packet.src.channel_id.clone())?;
                 deps.api.debug(ack_bin.to_base64().as_ref());
                 let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                 let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
 
-                let ica_pkt = do_ibc_lock_tokens(deps.storage, ica_addr,vec![Coin{ denom: "gamm/pool/1".to_string(), amount: resp.share_out_amount }])?;
-                let ibc_pkt =  IbcMsg::SendPacket {
+                let ica_pkt = do_ibc_lock_tokens(
+                    deps.storage,
+                    ica_addr,
+                    vec![Coin {
+                        denom: "gamm/pool/1".to_string(),
+                        amount: resp.share_out_amount,
+                    }],
+                )?;
+                let ibc_pkt = IbcMsg::SendPacket {
                     channel_id: pkt.original_packet.src.channel_id,
                     data: to_binary(&ica_pkt)?,
                     timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-                };  
-                
+                };
+
                 let msg_kind = MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::LockTokens));
                 let msg = create_submsg(deps.storage, msg_kind, ibc_pkt)?;
                 Ok(IbcBasicResponse::new().add_submessage(msg))
             }
-            crate::helpers::IcaMessages::LockTokens => todo!(),
+            crate::helpers::IcaMessages::LockTokens => {
+                let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
+                let resp = MsgLockTokensResponse::unpack(ack)?;
+
+                Ok(IbcBasicResponse::new().add_attribute("locked_tokens", ack_bin.to_base64()).add_attribute("lock_id", resp.id.to_string()))
+            }
         },
         crate::helpers::IbcMsgKind::Icq => todo!(),
     }
@@ -250,11 +266,9 @@ fn on_packet_failure(
 #[cfg(test)]
 mod test {
     use super::*;
-    use cosmos_sdk_proto::Any;
-    use prost::Message;
     use cosmos_sdk_proto::ibc::core::channel::v1::Acknowledgement;
+    use cosmos_sdk_proto::Any;
     use cosmwasm_std::testing::mock_env;
     use cosmwasm_std::{coins, to_vec, IbcEndpoint};
-
-    
+    use prost::Message;
 }
