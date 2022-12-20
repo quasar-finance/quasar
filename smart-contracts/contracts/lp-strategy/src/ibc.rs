@@ -226,7 +226,9 @@ pub fn handle_succesful_ack(
                 let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                 let resp = MsgLockTokensResponse::unpack(ack)?;
 
-                Ok(IbcBasicResponse::new().add_attribute("locked_tokens", ack_bin.to_base64()).add_attribute("lock_id", resp.id.to_string()))
+                Ok(IbcBasicResponse::new()
+                    .add_attribute("locked_tokens", ack_bin.to_base64())
+                    .add_attribute("lock_id", resp.id.to_string()))
             }
         },
         crate::helpers::IbcMsgKind::Icq => todo!(),

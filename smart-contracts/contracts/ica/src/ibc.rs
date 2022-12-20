@@ -1,4 +1,3 @@
-use prost::bytes::Bytes;
 use prost::Message;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -13,8 +12,8 @@ use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
-use quasar_types::ica::{
-    handshake::{enforce_ica_order_and_metadata, CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version,}
+use quasar_types::ica::handshake::{
+    enforce_ica_order_and_metadata, CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version,
 };
 
 pub const ICA_VERSION: &str = "{\"version\":\"ics-20\"}";
@@ -198,5 +197,4 @@ mod test {
 
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use cosmwasm_std::{Binary, IbcAcknowledgement, IbcEndpoint, IbcPacket, IbcTimeout, Timestamp};
-
 }
