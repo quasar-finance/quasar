@@ -1,17 +1,20 @@
-use crate::{error::ContractError, state::{REPLIES, CHANNELS}};
-use cosmwasm_std::{
-    CosmosMsg, Deps, Order, Reply, Response, StdError, Storage, SubMsg, Uint128,
+use crate::{
+    error::ContractError,
+    state::{CHANNELS, REPLIES},
 };
+use cosmwasm_std::{CosmosMsg, Deps, Order, Reply, Response, StdError, Storage, SubMsg, Uint128};
 use quasar_traits::traits::Curve;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
 
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
     match chan.channel_type {
         quasar_types::ibc::ChannelType::Icq { channel_ty } => Err(ContractError::NoIcaChannel),
-        quasar_types::ibc::ChannelType::Ica { channel_ty, counter_party_address } => {
+        quasar_types::ibc::ChannelType::Ica {
+            channel_ty,
+            counter_party_address,
+        } => {
             if let Some(addr) = counter_party_address {
                 Ok(addr)
             } else {

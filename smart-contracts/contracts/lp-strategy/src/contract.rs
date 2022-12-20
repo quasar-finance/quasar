@@ -19,7 +19,6 @@ use crate::error::ContractError;
 use crate::error::ContractError::PaymentError;
 use crate::helpers::{create_reply, parse_seq, IbcMsgKind, IcaMessages, MsgKind};
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::queue::{dequeue, enqueue};
 use crate::state::{
     Tmp, WithdrawRequest, CHANNELS, OUTSTANDING_FUNDS, PENDING_ACK, REPLACEME, REPLIES,
     WITHDRAW_QUEUE,
@@ -133,7 +132,13 @@ pub fn execute_deposit_and_lock_tokens(
         };
 
         // save the left over data so we can access everything we need in the ack to lock the tokens
-        REPLACEME.save(deps.storage, &Tmp { lock_period, pool_id })?;
+        REPLACEME.save(
+            deps.storage,
+            &Tmp {
+                lock_period,
+                pool_id,
+            },
+        )?;
         let resp = create_reply(
             deps.storage,
             MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn)),
@@ -155,9 +160,19 @@ pub fn do_ibc_lock_tokens(
     // denom in this case is expected to be something like gamm/pool/1
     // duration is  60 sec/min * 60 min/hr * 24hr * 14days
     // TODO move the duration to a package and make it settable
-    let lock = MsgLockTokens{ owner, duration: Some(Duration{ seconds: 1209600, nanos: 0 }), coins };
-    Ok(InterchainAccountPacketData::new(Type::ExecuteTx, vec![lock.pack()], None))
-
+    let lock = MsgLockTokens {
+        owner,
+        duration: Some(Duration {
+            seconds: 1209600,
+            nanos: 0,
+        }),
+        coins,
+    };
+    Ok(InterchainAccountPacketData::new(
+        Type::ExecuteTx,
+        vec![lock.pack()],
+        None,
+    ))
 }
 
 pub fn execute_transfer(
@@ -249,64 +264,6 @@ pub fn execute_withdraw_request(
     denom: String,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    enqueue::<WithdrawRequest>(
-        deps.branch(),
-        WithdrawRequest {
-            denom,
-            amount,
-            owner,
-        },
-        WITHDRAW_QUEUE,
-    )?;
-    let res = try_withdraw(deps, env)?;
-    Ok(res)
-}
-
-fn try_withdraw(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    let withdraw = dequeue::<WithdrawRequest>(deps.branch(), WITHDRAW_QUEUE);
-    if withdraw.is_none() {
-        return Err(ContractError::QueueError(
-            "dequeue was none while queue should be some".to_string(),
-        ));
-    }
-    let w = withdraw.unwrap();
-    // check the free balance of the contract
-    let free_balance = deps
-        .querier
-        .query_balance(env.contract.address, w.denom.clone())
-        .map_err(|error| ContractError::Std(error))?;
-    // if the contract has enough free balance, execute the withdraw
-    if w.amount <= free_balance.amount {
-        // remove the peeked withdraw request
-        do_withdraw(w)
-    } else {
-        // else we start to unlock funds and return a response
-        // TODO determine whether we need to dequeue the withdraw at this point or a later point
-        unlock_funds(deps, w)
-    }
-}
-
-// do_withdraw sends funds from the contract to the owner of the funds according to the withdraw request
-fn do_withdraw(withdraw: WithdrawRequest) -> Result<Response, ContractError> {
-    let msg = BankMsg::Send {
-        to_address: withdraw.owner.clone(),
-        amount: coins(withdraw.amount.u128(), withdraw.denom.clone()),
-    };
-    Ok(Response::new()
-        .add_message(msg)
-        .add_attribute("withdraw", "executed")
-        .add_attribute("amount", withdraw.amount)
-        .add_attribute("denom", withdraw.denom)
-        .add_attribute("owner", withdraw.owner))
-}
-
-fn unlock_funds(deps: DepsMut, withdraw: WithdrawRequest) -> Result<Response, ContractError> {
-    // TODO this is where funds are locked or not present within the strategy contract. The withdraw happens 'async' here
-    // the strategy needs to know where the funds are located, unlock the funds there(or do so)
-    let outstanding = OUTSTANDING_FUNDS.load(deps.storage)?;
-    if withdraw.amount > outstanding {
-        return Err(ContractError::InsufficientOutStandingFunds);
-    }
     todo!()
 }
 
