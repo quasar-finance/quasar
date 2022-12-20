@@ -1,18 +1,18 @@
 use std::fmt;
 
-use cosmos_sdk_proto::{Any, ibc::applications::interchain_accounts::v1::CosmosTx};
-use prost::{Message, bytes::Buf, DecodeError};
-use serde::{Serialize, Deserialize, de::{Visitor, self, Unexpected}};
+use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
+use prost::{bytes::Buf, DecodeError, Message};
+use serde::{
+    de::{self, Unexpected, Visitor},
+    Deserialize, Serialize,
+};
 
 use crate::error::Error;
-
-
-
 
 // TODO implement serialize for ICA packets to serialize type as string to json
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct InterchainAccountPacketData {
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub r#type: Type,
     pub data: Vec<u8>,
     pub memo: String,
@@ -22,7 +22,7 @@ impl InterchainAccountPacketData {
     pub fn new(r#type: Type, msgs: Vec<Any>, memo: Option<String>) -> InterchainAccountPacketData {
         InterchainAccountPacketData {
             r#type,
-            data: CosmosTx{ messages: msgs }.encode_to_vec(),
+            data: CosmosTx { messages: msgs }.encode_to_vec(),
             memo: memo.unwrap_or("".into()),
         }
     }
@@ -55,16 +55,18 @@ impl Type {
 impl Serialize for Type {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
-            serializer.serialize_str(self.as_str_name())
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str_name())
     }
 }
 
-impl <'de> Deserialize<'de>  for Type {
+impl<'de> Deserialize<'de> for Type {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de> {
-        deserializer.deserialize_str(TypeVisitor{})
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(TypeVisitor {})
     }
 }
 
@@ -83,7 +85,7 @@ impl<'de> Visitor<'de> for TypeVisitor {
     {
         if s == Type::Unspecified.as_str_name() {
             Ok(Type::Unspecified)
-        } else if  s == Type::ExecuteTx.as_str_name() {
+        } else if s == Type::ExecuteTx.as_str_name() {
             Ok(Type::ExecuteTx)
         } else {
             Err(de::Error::invalid_value(Unexpected::Str(s), &self))
@@ -91,73 +93,90 @@ impl<'de> Visitor<'de> for TypeVisitor {
     }
 }
 
-    #[derive(Message)]
-    pub struct AckBody {
-        #[prost(bytes = "vec", tag = "1")]
-        pub body: ::prost::alloc::vec::Vec<u8>,
+#[derive(Message)]
+pub struct AckBody {
+    #[prost(bytes = "vec", tag = "1")]
+    pub body: ::prost::alloc::vec::Vec<u8>,
+}
+
+impl AckBody {
+    pub fn to_any(self) -> Result<Any, Error> {
+        let res: Any = Message::decode(self.body.as_ref())?;
+        Ok(res)
     }
 
-    impl AckBody {
-        pub fn to_any(self) -> Result<Any, Error> {
-            let res: Any = Message::decode(self.body.as_ref())?;
-            Ok(res)
-        }
-
-        pub fn from_bytes<B>(mut buf: B) -> Result<Self, Error> 
-        where 
-            B: Buf
-        {
-            let val = Message::decode(buf)?;
-            Ok(val) 
-        }
-
+    pub fn from_bytes<B>(mut buf: B) -> Result<Self, Error>
+    where
+        B: Buf,
+    {
+        let val = Message::decode(buf)?;
+        Ok(val)
     }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{to_binary, IbcAcknowledgement, Binary};
-    use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse}};
-    use serde_test::{assert_ser_tokens, assert_tokens, Token};
     use crate::ica::traits::{Pack, Unpack};
-
+    use cosmwasm_std::{to_binary, Binary, IbcAcknowledgement};
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin,
+        osmosis::gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse},
+    };
+    use serde_test::{assert_ser_tokens, assert_tokens, Token};
 
     #[test]
     fn ack_de() {
-    let raw_ack = IbcAcknowledgement::new(Binary::from_base64(
+        let raw_ack = IbcAcknowledgement::new(Binary::from_base64(
         "CkcKLy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dKb2luU3dhcEV4dGVybkFtb3VudEluEhQKEjQ5MzgwNTU0OTg1NDc5OTQ5Mg==",
     ).unwrap());
-    let ack = AckBody::from_bytes(raw_ack.data.as_ref()).unwrap().to_any().unwrap();
-    let resp = MsgJoinSwapExternAmountInResponse::unpack(ack).unwrap(); 
-    assert_eq!(resp.share_out_amount, "493805549854799492".to_string())
-}
-
+        let ack = AckBody::from_bytes(raw_ack.data.as_ref())
+            .unwrap()
+            .to_any()
+            .unwrap();
+        let resp = MsgJoinSwapExternAmountInResponse::unpack(ack).unwrap();
+        assert_eq!(resp.share_out_amount, "493805549854799492".to_string())
+    }
 
     #[test]
     fn quasar_osmo_formats() {
         let join = MsgJoinSwapExternAmountIn {
             sender: "osmo1mhh5z5h6ja09pv7tc6rwqtz6zsrpx3geqx0636kf5wq0lggym4zsf5ffh8".to_string(),
             pool_id: 1,
-            token_in: Some(Coin { denom: "stake".to_string(), amount: "1000".to_string() }),
-            share_out_min_amount: "1".to_string(), 
+            token_in: Some(Coin {
+                denom: "stake".to_string(),
+                amount: "1000".to_string(),
+            }),
+            share_out_min_amount: "1".to_string(),
         };
 
-        let expected = InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.clone().pack()], None);
-        
-        let qvec: Vec<u8> = vec![10,
-        136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,
-        118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97,
-        112, 69, 120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 85,
-        10, 63, 111, 115, 109, 111, 49, 109, 104, 104, 53, 122, 53, 104, 54, 106, 97, 48,
-        57, 112, 118, 55, 116, 99, 54, 114, 119, 113, 116, 122, 54, 122, 115, 114, 112,
-        120, 51, 103, 101, 113, 120, 48, 54, 51, 54, 107, 102, 53, 119, 113, 48, 108, 103,
-        103, 121, 109, 52, 122, 115, 102, 53, 102, 102, 104, 56, 16, 1, 26, 13, 10, 5, 117,
-        111, 109, 115, 111, 18, 4, 49, 48, 48, 48, 34, 1, 49];
+        let expected =
+            InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.clone().pack()], None);
+
+        let qvec: Vec<u8> = vec![
+            10, 136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,
+            118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112,
+            69, 120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 85, 10, 63, 111,
+            115, 109, 111, 49, 109, 104, 104, 53, 122, 53, 104, 54, 106, 97, 48, 57, 112, 118, 55,
+            116, 99, 54, 114, 119, 113, 116, 122, 54, 122, 115, 114, 112, 120, 51, 103, 101, 113,
+            120, 48, 54, 51, 54, 107, 102, 53, 119, 113, 48, 108, 103, 103, 121, 109, 52, 122, 115,
+            102, 53, 102, 102, 104, 56, 16, 1, 26, 13, 10, 5, 117, 111, 109, 115, 111, 18, 4, 49,
+            48, 48, 48, 34, 1, 49,
+        ];
 
         println!("{:?}", base64::encode(&expected.data));
         println!("{:?}", base64::encode(&qvec));
 
-        let osmovec: Vec<u8> = vec![10,136,1,10,47,47,111,115,109,111,115,105,115,46,103,97,109,109,46,118,49,98,101,116,97,49,46,77,115,103,74,111,105,110,83,119,97,112,69,120,116,101,114,110,65,109,111,117,110,116,73,110,18,85,10,63,111,115,109,111,49,109,104,104,53,122,53,104,54,106,97,48,57,112,118,55,116,99,54,114,119,113,116,122,54,122,115,114,112,120,51,103,101,113,120,48,54,51,54,107,102,53,119,113,48,108,103,103,121,109,52,122,115,102,53,102,102,104,56,16,1,26,13,10,5,117,111,109,115,111,18,4,49,48,48,48,34,1,49];
+        let osmovec: Vec<u8> = vec![
+            10, 136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,
+            118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112,
+            69, 120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 85, 10, 63, 111,
+            115, 109, 111, 49, 109, 104, 104, 53, 122, 53, 104, 54, 106, 97, 48, 57, 112, 118, 55,
+            116, 99, 54, 114, 119, 113, 116, 122, 54, 122, 115, 114, 112, 120, 51, 103, 101, 113,
+            120, 48, 54, 51, 54, 107, 102, 53, 119, 113, 48, 108, 103, 103, 121, 109, 52, 122, 115,
+            102, 53, 102, 102, 104, 56, 16, 1, 26, 13, 10, 5, 117, 111, 109, 115, 111, 18, 4, 49,
+            48, 48, 48, 34, 1, 49,
+        ];
         assert_eq!(qvec, osmovec);
         for (i, val) in expected.data.iter().enumerate() {
             assert_eq!(val, &qvec[i], "loc {:?}", i)
@@ -166,16 +185,26 @@ mod tests {
     }
 
     #[test]
-    fn ica_packet_ser_de(){ 
+    fn ica_packet_ser_de() {
         let join = MsgJoinSwapExternAmountIn {
             sender: "somebody".to_string(),
             pool_id: 1,
-            token_in: Some(Coin { denom: "uosmo".to_string(), amount: "1000".to_string() }),
-            share_out_min_amount: "1".to_string(), 
+            token_in: Some(Coin {
+                denom: "uosmo".to_string(),
+                amount: "1000".to_string(),
+            }),
+            share_out_min_amount: "1".to_string(),
         };
 
-        let pkt = InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.clone().pack()], None);
-        assert_eq!(pkt.data, CosmosTx { messages: vec![join.pack()] }.encode_to_vec())
+        let pkt =
+            InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.clone().pack()], None);
+        assert_eq!(
+            pkt.data,
+            CosmosTx {
+                messages: vec![join.pack()]
+            }
+            .encode_to_vec()
+        )
     }
 
     #[test]
@@ -183,8 +212,11 @@ mod tests {
         let join = MsgJoinSwapExternAmountIn {
             sender: "somebody".to_string(),
             pool_id: 1,
-            token_in: Some(Coin { denom: "uosmo".to_string(), amount: "1000".to_string() }),
-            share_out_min_amount: "1".to_string(), 
+            token_in: Some(Coin {
+                denom: "uosmo".to_string(),
+                amount: "1000".to_string(),
+            }),
+            share_out_min_amount: "1".to_string(),
         };
         let msg = join.encode_to_vec();
         let join_msg: MsgJoinSwapExternAmountIn = prost::Message::decode::<&[u8]>(&msg).unwrap();
@@ -196,11 +228,26 @@ mod tests {
         let join = MsgJoinSwapExternAmountIn {
             sender: "osmo1al8z78h82cmvt3mc9mha5fpk68njkexe6khgmk8kutvqk0sam7dsdeknyd".to_string(),
             pool_id: 1,
-            token_in: Some(Coin { denom: "uosmo".to_string(), amount: "1000".to_string() }),
-            share_out_min_amount: "1".to_string(), 
+            token_in: Some(Coin {
+                denom: "uosmo".to_string(),
+                amount: "1000".to_string(),
+            }),
+            share_out_min_amount: "1".to_string(),
         };
-        let encoded = CosmosTx { messages: vec![join.pack()] }.encode_to_vec();
-        let msg: Vec<u8> = vec![10,136,1,10,47,47,111,115,109,111,115,105,115,46,103,97,109,109,46,118,49,98,101,116,97,49,46,77,115,103,74,111,105,110,83,119,97,112,69,120,116,101,114,110,65,109,111,117,110,116,73,110,18,85,10,63,111,115,109,111,49,97,108,56,122,55,56,104,56,50,99,109,118,116,51,109,99,57,109,104,97,53,102,112,107,54,56,110,106,107,101,120,101,54,107,104,103,109,107,56,107,117,116,118,113,107,48,115,97,109,55,100,115,100,101,107,110,121,100,16,1,26,13,10,5,117,111,109,115,111,18,4,49,48,48,48,34,1,49];
+        let encoded = CosmosTx {
+            messages: vec![join.pack()],
+        }
+        .encode_to_vec();
+        let msg: Vec<u8> = vec![
+            10, 136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,
+            118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112,
+            69, 120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 85, 10, 63, 111,
+            115, 109, 111, 49, 97, 108, 56, 122, 55, 56, 104, 56, 50, 99, 109, 118, 116, 51, 109,
+            99, 57, 109, 104, 97, 53, 102, 112, 107, 54, 56, 110, 106, 107, 101, 120, 101, 54, 107,
+            104, 103, 109, 107, 56, 107, 117, 116, 118, 113, 107, 48, 115, 97, 109, 55, 100, 115,
+            100, 101, 107, 110, 121, 100, 16, 1, 26, 13, 10, 5, 117, 111, 109, 115, 111, 18, 4, 49,
+            48, 48, 48, 34, 1, 49,
+        ];
         for (i, val) in encoded.iter().enumerate() {
             assert_eq!(val, &msg[i], "loc {:?}", i)
         }
@@ -216,4 +263,3 @@ mod tests {
         assert_tokens(&Type::ExecuteTx, &[Token::Str("TYPE_EXECUTE_TX")])
     }
 }
-

@@ -1,6 +1,4 @@
-use cosmwasm_std::{
-    DepsMut, Order, OverflowError, OverflowOperation, StdError, StdResult,
-};
+use cosmwasm_std::{DepsMut, Order, OverflowError, OverflowOperation, StdError, StdResult};
 use cw_storage_plus::Map;
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::VecDeque;
@@ -64,8 +62,8 @@ where
 mod tests {
     use super::*;
     use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::Uint128;
     use cosmwasm_std::Coin;
+    use cosmwasm_std::Uint128;
 
     #[test]
     fn enqueue_dequeue_one_works() {
