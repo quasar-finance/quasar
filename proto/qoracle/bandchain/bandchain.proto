@@ -1,0 +1,35 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle.bandchain;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types";
+
+message OracleScriptState {
+    string client_id = 1;
+    google.protobuf.Any call_data = 2;
+    uint64 request_packet_sequence = 3;
+    uint64 oracle_request_id = 4;
+    uint64 result_packet_sequence = 5;
+    google.protobuf.Any result = 6;
+    bool failed = 7;
+    int64 started_at_height = 8;
+    int64 updated_at_height = 9;
+}
+
+message CoinRatesCallData {
+  repeated string symbols = 1;
+  uint64 multiplier = 2;
+}
+
+message CoinRatesResult {
+  repeated uint64 rates = 1;
+}
+
+message OraclePrices {
+  repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  int64 updated_at_height = 2;
+}

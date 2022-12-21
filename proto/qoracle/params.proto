@@ -2,8 +2,6 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
-import "qoracle/bandchain.proto";
-import "qoracle/osmosis.proto";
 import "qoracle/denom_price_mapping.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
@@ -21,8 +19,6 @@ message OneHopIbcDenomMapping {
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  BandchainParams bandchain_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_params\"", (gogoproto.nullable) = false];
-  OsmosisParams osmosis_params = 2 [(gogoproto.moretags) = "yaml:\"osmosis_params\"", (gogoproto.nullable) = false];
-  repeated DenomPriceMapping denom_price_mappings = 3 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
-  repeated OneHopIbcDenomMapping oneHopDenomMap = 6 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
+  repeated DenomPriceMapping denom_price_mappings = 1 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
+  repeated OneHopIbcDenomMapping oneHopDenomMap = 2 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
 }
