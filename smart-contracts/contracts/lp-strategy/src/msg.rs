@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
-    // TODO write the instantiate msg
+    pub lock_period: Uint128,
+    pub pool_id: u64,
+    pub pool_denom: String,
+    pub denom: String
 }
 
 impl InstantiateMsg {

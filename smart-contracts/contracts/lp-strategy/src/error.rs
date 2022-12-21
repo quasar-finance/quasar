@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use cosmwasm_std::StdError;
 use quasar_types::error::Error as QError;
 use thiserror::Error;
@@ -34,4 +36,10 @@ pub enum ContractError {
 
     #[error("not enough funds in the strategy to withdraw")]
     InsufficientOutStandingFunds,
+
+    #[error("{0}")]
+    DecodeError(#[from] prost::DecodeError),
+
+    #[error("{0}")]
+    ParseIntError(#[from] ParseIntError)
 }
