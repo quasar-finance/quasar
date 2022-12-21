@@ -107,9 +107,6 @@ func (im IBCTransferWasmDecorator) OnTimeoutPacket(
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "failed to decode address from bech32: %v", err)
 	}
 	contractInfo := im.k.GetContractInfo(ctx, contractAddr)
-	if contractInfo.IBCPortID == "" {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "contract %s is not a valid IBC contract", contractAddr)
-	}
 	// Skip if there's no contract with this address (it's a regular address) or the contract doesn't support IBC
 	if contractInfo == nil || contractInfo.IBCPortID == "" {
 		return nil
