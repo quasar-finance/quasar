@@ -1,0 +1,11 @@
+# This is the Quasar main repo Code Owners file
+# Most of the folder will remain unprotected except but go related files and smart-contracts
+
+# This rules cover mostly Go code managed by our go devs 
+/app/ @akure @Ehsan-saradar
+/cmd/ @akure @Ehsan-saradar
+/wasmbindings/ @akure @Ehsan-saradar
+/x/ @akure @Ehsan-saradar
+
+# This rules cover mostly our Rust (cosmwasm) code managed by our rust devs
+/smart-contracts/ @LaurensKubat @njerschow
