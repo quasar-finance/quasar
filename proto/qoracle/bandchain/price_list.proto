@@ -1,0 +1,15 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle.bandchain;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types";
+
+message PriceList {
+  repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  int64 updated_at_height = 2;
+  google.protobuf.Timestamp updated_at_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}

@@ -10,6 +10,7 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/quasarlabs/quasarnode/testutil/sample"
+	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 	qoraclesimulation "github.com/quasarlabs/quasarnode/x/qoracle/simulation"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -37,7 +38,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	for i, acc := range simState.Accounts {
 		accs[i] = acc.Address.String()
 	}
-	qoracleGenesis := types.GenesisState{
+	qoracleGenesis := genesistypes.GenesisState{
 		// this line is used by starport scaffolding # simapp/module/genesisState
 	}
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&qoracleGenesis)
@@ -68,7 +69,7 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgUpdateOsmosisChainParams,
-		qoraclesimulation.SimulateMsgUpdateOsmosisChainParams(am.accountKeeper, am.bankKeeper, am.keeper),
+		qoraclesimulation.SimulateMsgUpdateOsmosisChainParams(am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

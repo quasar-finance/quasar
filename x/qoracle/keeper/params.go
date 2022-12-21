@@ -8,8 +8,6 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.BandchainParams(ctx),
-		k.OsmosisParams(ctx),
 		k.GetDenomPriceMappings(ctx),
 		k.OneHopDenomMap(ctx),
 	)
@@ -18,25 +16,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
-}
-
-// BandchainIBCParams returns the BandchainIBCParams param
-func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
-	k.paramstore.Get(ctx, types.KeyBandchainParams, &res)
-	return
-}
-
-func (k Keeper) SetBandchainParams(ctx sdk.Context, params types.BandchainParams) {
-	k.paramstore.Set(ctx, types.KeyBandchainParams, &params)
-}
-
-func (k Keeper) OsmosisParams(ctx sdk.Context) (res types.OsmosisParams) {
-	k.paramstore.Get(ctx, types.KeyOsmosisParams, &res)
-	return
-}
-
-func (k Keeper) SetOsmosisParams(ctx sdk.Context, params types.OsmosisParams) {
-	k.paramstore.Set(ctx, types.KeyOsmosisParams, &params)
 }
 
 func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMapping) {

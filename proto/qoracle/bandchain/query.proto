@@ -1,0 +1,56 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle.bandchain;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "qoracle/bandchain/params.proto";
+import "qoracle/bandchain/bandchain.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types";
+
+// Query defines the gRPC querier service.
+service Query {
+    // Parameters queries the parameters of the module.
+	rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/bandchain/params";
+	}
+
+	// Queries the state of oracle requests.
+	rpc State(QueryStateRequest) returns (QueryStateResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/bandchain/state";
+	}
+
+    // Queries the price list.
+	rpc PriceList(QueryPriceListRequest) returns (QueryPriceListResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/bandchain/price-list";
+	}
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryStateRequest {
+}
+
+message QueryStateResponse {
+	OracleScriptState coin_rates_state = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPriceListRequest {
+}
+
+message QueryPriceListResponse {
+	repeated cosmos.base.v1beta1.DecCoin prices = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
+  	int64 updated_at_height = 2;
+	google.protobuf.Timestamp updated_at_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
