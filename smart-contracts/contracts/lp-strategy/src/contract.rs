@@ -1,10 +1,12 @@
+use std::ops::Sub;
+
 use cosmos_sdk_proto::traits::Message;
 use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, IbcMsg, IbcTimeout,
-    MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, Timestamp, Uint128, SubMsg,
+    MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, Timestamp, Uint128,
 };
 use cw2::set_contract_version;
 use osmosis_std::shim::Duration;
@@ -16,11 +18,10 @@ use quasar_types::ica::packet::{InterchainAccountPacketData, Type};
 use quasar_types::ica::traits::Pack;
 
 use crate::error::ContractError;
-use crate::helpers::{create_reply, parse_seq, IbcMsgKind, IcaMessages, MsgKind, create_submsg};
+use crate::helpers::{create_reply, create_submsg, parse_seq, IbcMsgKind, IcaMessages, MsgKind};
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    Tmp, WithdrawRequest, CHANNELS, OUTSTANDING_FUNDS, PENDING_ACK, REPLACEME, REPLIES,
-    WITHDRAW_QUEUE,
+    CHANNELS, OUTSTANDING_FUNDS, PENDING_ACK, CONFIG, REPLIES, Config,
 };
 
 // version info for migration info
@@ -37,8 +38,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // check valid token info
     msg.validate()?;
-
-    // TODO fill in the instantiation
+    CONFIG.save(deps.storage, &Config{lock_period:msg.lock_period,pool_id:msg.pool_id,pool_denom:msg.pool_denom, denom: msg.denom });
     Ok(Response::default())
 }
 
@@ -84,7 +84,6 @@ pub fn execute(
             pool_id,
             denom,
             amount,
-            lock_period,
             share_out_min_amount,
         ),
     }
@@ -98,9 +97,21 @@ pub fn execute_deposit_and_lock_tokens(
     pool_id: u64,
     denom: String,
     amount: Uint128,
-    lock_period: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    // TODO add stuff to estimate share_out_min_amount
+    let msg = do_ibc_join_pool_swap(deps, env, channel_id, pool_id, denom, amount, Uint128::one())?;
+    Ok(Response::new().add_submessage(msg))
+}
+
+pub fn do_ibc_join_pool_swap(
+    deps: DepsMut,
+    env: Env,
+    channel_id: String,
+    pool_id: u64,
+    denom: String,
+    amount: Uint128,
+    share_out_min_amount: Uint128) -> Result<SubMsg, ContractError> {
     let channel = CHANNELS.load(deps.storage, channel_id.clone())?;
     if let ChannelType::Ica {
         channel_ty: _,
@@ -131,22 +142,11 @@ pub fn execute_deposit_and_lock_tokens(
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };
 
-        // save the left over data so we can access everything we need in the ack to lock the tokens
-        REPLACEME.save(
-            deps.storage,
-            &Tmp {
-                lock_period,
-                pool_id,
-            },
-        )?;
-        let resp = create_reply(
+        Ok(create_submsg(
             deps.storage,
             MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn)),
             send_packet_msg,
-        )?;
-        Ok(resp
-            .add_attribute("joining_swap_extern_amount_in_on_pool", pool_id.to_string())
-            .add_attribute("denom", denom))
+        )?)
     } else {
         Err(ContractError::NoIcaChannel)
     }
@@ -175,7 +175,7 @@ pub fn do_ibc_lock_tokens(
     ))
 }
 
-// transfer funds sent to the contract to an address on osmosis, this needs an extra change to always 
+// transfer funds sent to the contract to an address on osmosis, this needs an extra change to always
 // always send funds to the contracts ICA address
 pub fn execute_transfer(
     deps: DepsMut,
@@ -199,9 +199,13 @@ pub fn execute_transfer(
         amount: funds,
         timeout,
     };
-    
+
     Ok(Response::new()
-        .add_submessage(create_submsg(deps.storage, MsgKind::Ibc(IbcMsgKind::Transfer), transfer)?)
+        .add_submessage(create_submsg(
+            deps.storage,
+            MsgKind::Ibc(IbcMsgKind::Transfer),
+            transfer,
+        )?)
         .add_attribute("ibc-tranfer-channel", channel)
         .add_attribute("ibc-transfer-receiver", to_address))
 }
@@ -214,7 +218,9 @@ pub fn execute_deposit(
     // do things here with the funds. This is where the actual strategy starts placing funds on a new deposit
     // in the template version of the contract, all we do is check that funds are present
     if info.funds.is_empty() {
-        return Err(ContractError::PaymentError(cw_utils::PaymentError::NoFunds {}));
+        return Err(ContractError::PaymentError(
+            cw_utils::PaymentError::NoFunds {},
+        ));
     }
 
     // TODO see if we can package this logic a bit better by moving it to strategy.rs
@@ -335,7 +341,7 @@ mod tests {
         reserve_decimals: u8,
         reserve_supply: Uint128,
     ) -> InstantiateMsg {
-        InstantiateMsg {}
+        InstantiateMsg { lock_period: todo!(), pool_id: todo!(), pool_denom: todo!(), denom: todo!() }
     }
 
     fn setup_test(
