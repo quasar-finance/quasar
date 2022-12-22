@@ -9,10 +9,8 @@ ARG RUNNER_IMAGE="gcr.io/distroless/static"
 
 FROM golang:${GO_VERSION}-alpine as builder
 
-ARG GIT_VERSION
-ARG GIT_COMMIT
-
 RUN apk add --no-cache \
+    git \
     ca-certificates \
     build-base \
     linux-headers
