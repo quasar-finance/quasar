@@ -142,7 +142,7 @@ go.sum: go.mod
 ###                         Proto & Mock Generation                         ###
 ###############################################################################
 
-proto-all: proto-format proto-gen
+proto-all: proto-gen proto-doc
 
 proto-gen:
 	@echo "Generating Protobuf files"
