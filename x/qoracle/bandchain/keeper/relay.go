@@ -133,14 +133,14 @@ func (k Keeper) updateCoinRatesState(ctx sdk.Context, fn func(state *types.Oracl
 
 func (k Keeper) setCoinRatesState(ctx sdk.Context, state types.OracleScriptState) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.CoinRatesStateKey, k.cdc.MustMarshal(&state))
+	store.Set(types.KeyCoinRatesState, k.cdc.MustMarshal(&state))
 }
 
 // GetCoinRatesState returns the coinRates state
 func (k Keeper) GetCoinRatesState(ctx sdk.Context) types.OracleScriptState {
 	store := ctx.KVStore(k.storeKey)
 	var state types.OracleScriptState
-	k.cdc.MustUnmarshal(store.Get(types.CoinRatesStateKey), &state)
+	k.cdc.MustUnmarshal(store.Get(types.KeyCoinRatesState), &state)
 	return state
 }
 

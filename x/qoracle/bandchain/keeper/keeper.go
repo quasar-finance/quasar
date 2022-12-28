@@ -9,6 +9,7 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 	"github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
@@ -18,25 +19,28 @@ import (
 type Keeper struct {
 	cdc        codec.BinaryCodec
 	storeKey   storetypes.StoreKey
-	memKey     storetypes.StoreKey
-	paramstore paramtypes.Subspace
+	paramSpace paramtypes.Subspace
 
 	clientKeeper  qoracletypes.ClientKeeper
-	ics4Wrapper   qoracletypes.ICS4Wrapper
+	ics4Wrapper   porttypes.ICS4Wrapper
 	channelKeeper qoracletypes.ChannelKeeper
 	portKeeper    qoracletypes.PortKeeper
-	scopedKeeper  capabilitykeeper.ScopedKeeper
+
+	scopedKeeper capabilitykeeper.ScopedKeeper
+
+	qoracleKeeper types.QOracle
 }
 
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey, memKey storetypes.StoreKey,
+	storeKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	clientKeeper qoracletypes.ClientKeeper,
-	ics4Wrapper qoracletypes.ICS4Wrapper,
+	ics4Wrapper porttypes.ICS4Wrapper,
 	channelKeeper qoracletypes.ChannelKeeper,
 	portKeeper qoracletypes.PortKeeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
+	qoracleKeeper types.QOracle,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -46,13 +50,13 @@ func NewKeeper(
 	return &Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
-		memKey:        memKey,
-		paramstore:    ps,
+		paramSpace:    ps,
 		clientKeeper:  clientKeeper,
 		ics4Wrapper:   ics4Wrapper,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
 		scopedKeeper:  scopedKeeper,
+		qoracleKeeper: qoracleKeeper,
 	}
 }
 
@@ -92,4 +96,8 @@ func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Cap
 // ClaimCapability wraps the scopedKeeper's ClaimCapability function
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
+}
+
+func (k Keeper) Source() string {
+	return types.OracleSource
 }

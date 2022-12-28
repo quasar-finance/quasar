@@ -13,48 +13,41 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetAuthorizedChannel(ctx),
 		k.GetPacketTimeoutHeight(ctx),
 		k.GetPacketTimeoutTimestamp(ctx),
-		k.GetPriceListExpDuration(ctx),
 		k.GetCoinRatesParams(ctx),
 	)
 }
 
 // SetParams sets the total set of module parameters.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramstore.SetParamSet(ctx, &params)
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
 // IsEnabled retrieves the enabled boolean from the paramstore
 func (k Keeper) IsEnabled(ctx sdk.Context) (res bool) {
-	k.paramstore.Get(ctx, types.KeyEnabled, &res)
+	k.paramSpace.Get(ctx, types.KeyEnabled, &res)
 	return
 }
 
 // GetAuthorizedChannel retrieves the authorized channel from the paramstore
 func (k Keeper) GetAuthorizedChannel(ctx sdk.Context) (res string) {
-	k.paramstore.Get(ctx, types.KeyAuthorizedChannel, &res)
+	k.paramSpace.Get(ctx, types.KeyAuthorizedChannel, &res)
 	return
 }
 
 // GetPacketTimeoutHeight retrieves the timeout height from the paramstore
 func (k Keeper) GetPacketTimeoutHeight(ctx sdk.Context) (res clienttypes.Height) {
-	k.paramstore.Get(ctx, types.KeyPacketTimeoutHeight, &res)
+	k.paramSpace.Get(ctx, types.KeyPacketTimeoutHeight, &res)
 	return
 }
 
 // GetPacketTimeoutTimestamp retrieves the timeout timestamp from the paramstore
 func (k Keeper) GetPacketTimeoutTimestamp(ctx sdk.Context) (res uint64) {
-	k.paramstore.Get(ctx, types.KeyPacketTimeoutTimestamp, &res)
-	return
-}
-
-// GetPacketTimeoutTimestamp retrieves the price list expiration duration from the paramstore
-func (k Keeper) GetPriceListExpDuration(ctx sdk.Context) (res uint64) {
-	k.paramstore.Get(ctx, types.KeyPriceListExpDuration, &res)
+	k.paramSpace.Get(ctx, types.KeyPacketTimeoutTimestamp, &res)
 	return
 }
 
 // GetPacketTimeoutTimestamp retrieves the coin rates scripts params from the paramstore
 func (k Keeper) GetCoinRatesParams(ctx sdk.Context) (res types.CoinRatesParams) {
-	k.paramstore.Get(ctx, types.KeyCoinRatesParams, &res)
+	k.paramSpace.Get(ctx, types.KeyCoinRatesParams, &res)
 	return
 }

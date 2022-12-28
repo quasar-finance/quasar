@@ -33,3 +33,25 @@ func EmitOsmosisRequestEvent(
 		),
 	)
 }
+
+// EmitAcknowledgementEvent emits an event signalling a successful or failed acknowledgement and including the error
+// details if any.
+func EmitAcknowledgementEvent(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement, err error) {
+	attributes := []sdk.Attribute{
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.SubModuleName),
+		sdk.NewAttribute(types.AttributeKeyPacketChannelId, packet.GetDestChannel()),
+		sdk.NewAttribute(types.AttributeKeyPacketSequence, fmt.Sprintf("%d", packet.GetSequence())),
+		sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack.Success())),
+	}
+
+	if err != nil {
+		attributes = append(attributes, sdk.NewAttribute(types.AttributeKeyError, err.Error()))
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypePacket,
+			attributes...,
+		),
+	)
+}

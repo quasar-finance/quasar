@@ -35,7 +35,7 @@ func (k Keeper) sendParamsRequest(ctx sdk.Context) (uint64, error) {
 	}
 
 	state := types.NewOsmosisRequestState(ctx, packet.GetSequence())
-	k.setRequestState(ctx, types.ParamsRequestStateKey, state)
+	k.setRequestState(ctx, types.KeyParamsRequestState, state)
 
 	return packet.GetSequence(), nil
 }
@@ -77,7 +77,7 @@ func (k Keeper) TryUpdateIncentivizedPools(ctx sdk.Context) {
 	}
 
 	// Do not start a new procedure if there's another one pending
-	state := k.GetRequestState(ctx, types.IncentivizedPoolsRequestStateKey)
+	state := k.GetRequestState(ctx, types.KeyIncentivizedPoolsRequestState)
 	if state.Pending() {
 		k.Logger(ctx).Info("tried to update IncentivizedPools but another request is pending")
 		return
@@ -110,7 +110,7 @@ func (k Keeper) sendIncentivizedPoolsRequest(ctx sdk.Context) (uint64, error) {
 	}
 
 	state := types.NewOsmosisRequestState(ctx, packet.GetSequence())
-	k.setRequestState(ctx, types.IncentivizedPoolsRequestStateKey, state)
+	k.setRequestState(ctx, types.KeyIncentivizedPoolsRequestState, state)
 
 	return packet.GetSequence(), nil
 }
@@ -123,13 +123,13 @@ func (k Keeper) TryUpdatePools(ctx sdk.Context) {
 	}
 
 	// Do not start a new procedure if there's another one pending
-	state := k.GetRequestState(ctx, types.PoolsRequestStateKey)
+	state := k.GetRequestState(ctx, types.KeyPoolsRequestState)
 	if state.Pending() {
 		k.Logger(ctx).Info("tried to update Pools but another request is pending")
 		return
 	}
 
-	incentivizedPools := k.GetOsmosisIncentivizedPools(ctx)
+	incentivizedPools := k.GetIncentivizedPools(ctx)
 	if len(incentivizedPools) == 0 {
 		k.Logger(ctx).Info("empty IncentivizedPools list, skipping Pools update")
 		// Remove all the pools in store, because we have to reflect exactly what we receive from osmosis
@@ -165,21 +165,21 @@ func (k Keeper) sendPoolsRequest(ctx sdk.Context, poolIds []uint64) (uint64, err
 	}
 
 	state := types.NewOsmosisRequestState(ctx, packet.GetSequence())
-	k.setRequestState(ctx, types.PoolsRequestStateKey, state)
+	k.setRequestState(ctx, types.KeyPoolsRequestState, state)
 
 	return packet.GetSequence(), nil
 }
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
-	paramsState := k.GetRequestState(ctx, types.ParamsRequestStateKey)
-	incentivizedPoolsState := k.GetRequestState(ctx, types.IncentivizedPoolsRequestStateKey)
-	poolsState := k.GetRequestState(ctx, types.PoolsRequestStateKey)
+	paramsState := k.GetRequestState(ctx, types.KeyParamsRequestState)
+	incentivizedPoolsState := k.GetRequestState(ctx, types.KeyIncentivizedPoolsRequestState)
+	poolsState := k.GetRequestState(ctx, types.KeyPoolsRequestState)
 
 	if !ack.Success() {
 		// Update the state of osmosis params request if it matches the sequence of packet
 		switch packet.GetSequence() {
 		case paramsState.GetPacketSequence():
-			err := k.UpdateRequestState(ctx, types.ParamsRequestStateKey, func(state *types.OsmosisRequestState) error {
+			err := k.UpdateRequestState(ctx, types.KeyParamsRequestState, func(state *types.OsmosisRequestState) error {
 				state.Fail()
 				return nil
 			})
@@ -187,7 +187,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 				return err
 			}
 		case incentivizedPoolsState.GetPacketSequence():
-			err := k.UpdateRequestState(ctx, types.IncentivizedPoolsRequestStateKey, func(state *types.OsmosisRequestState) error {
+			err := k.UpdateRequestState(ctx, types.KeyIncentivizedPoolsRequestState, func(state *types.OsmosisRequestState) error {
 				state.Fail()
 				return nil
 			})
@@ -195,7 +195,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 				return err
 			}
 		case poolsState.GetPacketSequence():
-			err := k.UpdateRequestState(ctx, types.PoolsRequestStateKey, func(state *types.OsmosisRequestState) error {
+			err := k.UpdateRequestState(ctx, types.KeyPoolsRequestState, func(state *types.OsmosisRequestState) error {
 				state.Fail()
 				return nil
 			})
@@ -242,7 +242,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	// Update the state of osmosis params request if it matches the sequence of packet
 	switch packet.Sequence {
 	case paramsState.PacketSequence:
-		err := k.UpdateRequestState(cacheCtx, types.ParamsRequestStateKey, func(state *types.OsmosisRequestState) error {
+		err := k.UpdateRequestState(cacheCtx, types.KeyParamsRequestState, func(state *types.OsmosisRequestState) error {
 			state.Success()
 			return nil
 		})
@@ -250,7 +250,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			return err
 		}
 	case incentivizedPoolsState.PacketSequence:
-		err := k.UpdateRequestState(cacheCtx, types.IncentivizedPoolsRequestStateKey, func(state *types.OsmosisRequestState) error {
+		err := k.UpdateRequestState(cacheCtx, types.KeyIncentivizedPoolsRequestState, func(state *types.OsmosisRequestState) error {
 			state.Success()
 			return nil
 		})
@@ -262,13 +262,17 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// TODO: Move this to EndBlock handler as it consumes gas from relayer
 		k.TryUpdatePools(cacheCtx)
 	case poolsState.PacketSequence:
-		err := k.UpdateRequestState(cacheCtx, types.PoolsRequestStateKey, func(state *types.OsmosisRequestState) error {
+		k.SetPoolsUpdatedAt(cacheCtx, cacheCtx.BlockTime())
+
+		err := k.UpdateRequestState(cacheCtx, types.KeyPoolsRequestState, func(state *types.OsmosisRequestState) error {
 			state.Success()
 			return nil
 		})
 		if err != nil {
 			return err
 		}
+
+		k.qoracleKeeper.NotifyPoolsUpdate(ctx)
 	}
 
 	// NOTE: The context returned by CacheContext() creates a new EventManager, so events must be correctly propagated back to the current context
@@ -306,7 +310,7 @@ func (k Keeper) handleOsmosisEpochsInfoResponse(ctx sdk.Context, req abcitypes.R
 	var qresp epochtypes.QueryEpochsInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.SetOsmosisEpochsInfo(ctx, qresp.Epochs)
+	k.SetEpochsInfo(ctx, qresp.Epochs)
 	return nil
 }
 
@@ -320,15 +324,7 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 		return sdkerrors.Wrapf(err, "could not unmarshal pool")
 	}
 
-	metrics, err := k.calculateOsmosisPoolMetrics(ctx, pool)
-	if err != nil {
-		return sdkerrors.Wrapf(err, "could not calculate pool metrics of pool %d", pool.Id)
-	}
-
-	k.SetOsmosisPool(ctx, types.OsmosisPool{
-		PoolInfo: pool,
-		Metrics:  metrics,
-	})
+	k.SetPool(ctx, pool)
 	return nil
 }
 
@@ -336,7 +332,7 @@ func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abci
 	var qresp poolincentivestypes.QueryLockableDurationsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.setOsmosisLockableDurations(ctx, qresp)
+	k.SetLockableDurations(ctx, qresp)
 	return nil
 }
 
@@ -344,7 +340,7 @@ func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, req abcitypes.R
 	var qresp minttypes.QueryParamsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.SetOsmosisMintParams(ctx, qresp.Params)
+	k.SetMintParams(ctx, qresp.Params)
 	return nil
 }
 
@@ -352,7 +348,7 @@ func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, req ab
 	var qresp minttypes.QueryEpochProvisionsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.SetOsmosisMintEpochProvisions(ctx, qresp.EpochProvisions)
+	k.SetMintEpochProvisions(ctx, qresp.EpochProvisions)
 	return nil
 }
 
@@ -360,7 +356,7 @@ func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abci
 	var qresp poolincentivestypes.QueryIncentivizedPoolsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.SetOsmosisIncentivizedPools(ctx, qresp.IncentivizedPools)
+	k.SetIncentivizedPools(ctx, qresp.IncentivizedPools)
 	return nil
 }
 
@@ -368,7 +364,7 @@ func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.Re
 	var qresp poolincentivestypes.QueryDistrInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
-	k.SetOsmosisDistrInfo(ctx, qresp.DistrInfo)
+	k.SetDistrInfo(ctx, qresp.DistrInfo)
 	return nil
 }
 

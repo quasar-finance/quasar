@@ -32,12 +32,16 @@ func (k Keeper) CalcReceipts(ctx sdk.Context, coin sdk.Coin) (sdk.Coin, error) {
 
 // GetStablePrice gets the amount of UST equivalent to the input one denom from the qoracle module
 func (k Keeper) GetStablePrice(ctx sdk.Context, denom string) (price sdk.Dec, found bool) {
-	return k.qoracleKeeper.GetStablePrice(ctx, denom)
+	price, err := k.qoracleKeeper.GetDenomPrice(ctx, denom)
+	if err != nil {
+		return price, false
+	}
+	return price, true
 }
 
 // GetRelativeStablePrice gets the amount of denomOut equivalent to one denomIn from the qoracle module
 func (k Keeper) GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string) (price sdk.Dec, err error) {
-	return k.qoracleKeeper.GetRelativeStablePrice(ctx, denomIn, denomOut)
+	return k.qoracleKeeper.GetRelativeDenomPrice(ctx, denomIn, denomOut)
 }
 
 // MintOrion mint orions tokens from the OrionReserveMaccName

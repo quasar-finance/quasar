@@ -9,26 +9,26 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetDenomPriceMappings(ctx),
-		k.OneHopDenomMap(ctx),
+		k.GetPriceListExpDuration(ctx),
 	)
 }
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramstore.SetParamSet(ctx, &params)
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
 func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMapping) {
-	k.paramstore.Get(ctx, types.KeyDenomPriceMappings, &res)
+	k.paramSpace.Get(ctx, types.KeyDenomPriceMappings, &res)
 	return
 }
 
 func (k Keeper) SetDenomPriceMappings(ctx sdk.Context, mappings []types.DenomPriceMapping) {
-	k.paramstore.Set(ctx, types.KeyDenomPriceMappings, &mappings)
+	k.paramSpace.Set(ctx, types.KeyDenomPriceMappings, &mappings)
 }
 
-// OneHopDenomMap returns the OneHopIbcDenomMapping param
-func (k Keeper) OneHopDenomMap(ctx sdk.Context) (res []*types.OneHopIbcDenomMapping) {
-	k.paramstore.Get(ctx, types.KeyOneHopDenomMap, &res)
+// GetPacketTimeoutTimestamp retrieves the price list expiration duration from the param space
+func (k Keeper) GetPriceListExpDuration(ctx sdk.Context) (res uint64) {
+	k.paramSpace.Get(ctx, types.KeyDenomPricesExpDuration, &res)
 	return
 }

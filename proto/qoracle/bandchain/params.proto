@@ -33,7 +33,6 @@ message Params {
   ibc.core.client.v1.Height packet_timeout_height = 3
       [(gogoproto.moretags) = "yaml:\"packet_timeout_height\"", (gogoproto.nullable) = false]; // Timeout height relative to the current block height. The timeout is disabled when set to 0.
   uint64 packet_timeout_timestamp = 4 [(gogoproto.moretags) = "yaml:\"packet_timeout_timestamp\""]; // Timeout timestamp relative to counterparty chain current time. The timeout is disabled when set to 0.
-  uint64 price_list_exp_duration = 5 [(gogoproto.moretags) = "yaml:\"price_list_exp_duration\""]; // Maximum time in which the price list is valid between updates in seconds.
   CoinRatesParams coin_rates_params = 6 
       [(gogoproto.moretags) = "yaml:\"coin_rates_params\"", (gogoproto.nullable) = false]; // Script params for the coin rates script
 }

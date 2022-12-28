@@ -271,7 +271,7 @@ var (
 
 	pattern_Query_State_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "bandchain", "state"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_PriceList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "bandchain", "price-list"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_PriceList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"quasarlabs", "quasarnode", "qoracle", "bandchain", "price_list"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

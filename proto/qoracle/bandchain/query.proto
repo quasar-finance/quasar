@@ -25,7 +25,7 @@ service Query {
 
     // Queries the price list.
 	rpc PriceList(QueryPriceListRequest) returns (QueryPriceListResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/bandchain/price-list";
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/bandchain/price_list";
 	}
 }
 
@@ -51,6 +51,5 @@ message QueryPriceListRequest {
 message QueryPriceListResponse {
 	repeated cosmos.base.v1beta1.DecCoin prices = 1
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
-  	int64 updated_at_height = 2;
-	google.protobuf.Timestamp updated_at_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	google.protobuf.Timestamp updated_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 }

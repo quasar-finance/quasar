@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"context"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
@@ -15,11 +13,14 @@ func GetCmdParams() *cobra.Command {
 		Short: "shows the parameters of the module",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.Params(context.Background(), &types.QueryParamsRequest{})
+			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
@@ -39,7 +40,6 @@ func GetCmdState() *cobra.Command {
 		Short: "shows state of bandchain oracle requests",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -47,9 +47,7 @@ func GetCmdState() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryStateRequest{}
-
-			res, err := queryClient.State(cmd.Context(), params)
+			res, err := queryClient.State(cmd.Context(), &types.QueryStateRequest{})
 			if err != nil {
 				return err
 			}
@@ -76,8 +74,7 @@ func GetCmdPriceList() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryPriceListRequest{}
-			res, err := queryClient.PriceList(cmd.Context(), params)
+			res, err := queryClient.PriceList(cmd.Context(), &types.QueryPriceListRequest{})
 			if err != nil {
 				return err
 			}

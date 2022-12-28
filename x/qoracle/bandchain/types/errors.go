@@ -6,6 +6,5 @@ import (
 
 // IBC transfer sentinel errors
 var (
-	ErrDisabled          = sdkerrors.Register(SubModuleName, 2, "bandchain oracle module is disabled")
-	ErrPriceListOutdated = sdkerrors.Register(SubModuleName, 3, "price list is outdated")
+	ErrDisabled = sdkerrors.Register(SubModuleName, 2, "bandchain oracle module is disabled")
 )

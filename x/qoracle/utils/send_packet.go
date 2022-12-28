@@ -6,6 +6,7 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -13,7 +14,7 @@ import (
 func SendPacket(
 	ctx sdk.Context,
 	clientKeeper types.ClientKeeper,
-	ics4Wrapper types.ICS4Wrapper,
+	ics4Wrapper porttypes.ICS4Wrapper,
 	channelKeeper types.ChannelKeeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	sourcePort string,
