@@ -4,6 +4,7 @@ mod helpers;
 mod ibc;
 pub mod msg;
 mod state;
+mod strategy;
 
 #[cfg(test)]
 mod tests {

@@ -14,14 +14,13 @@ pub struct Config {
     pub lock_period: Uint128,
     pub pool_id: u64,
     pub pool_denom: String,
-    pub denom: String
+    pub denom: String,
 }
 
 pub(crate) const CONFIG: Item<Config> = Item::new("tmp");
 
 pub(crate) const REPLIES: Map<u64, MsgKind> = Map::new("replies");
+// Currently we only support one ICA channel to a single destination
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
-
-pub(crate) const OUTSTANDING_FUNDS: Item<Uint128> = Item::new("outstanding_funds");
 pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
