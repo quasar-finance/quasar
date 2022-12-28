@@ -7,11 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"
-
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 )
 
-func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
+func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 		var contractQuery bindings.QuasarQuery
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
@@ -19,53 +18,35 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 		}
 
 		switch {
-		case contractQuery.OsmosisPools != nil:
-			pools, err := qp.GetAllPools(ctx, contractQuery.OsmosisPools.Pagination)
+		case contractQuery.PoolsRankedByAPY != nil:
+			pools := qk.GetPoolsRankedByAPY(ctx, contractQuery.PoolsRankedByAPY.Source, contractQuery.PoolsRankedByAPY.Denom)
 
+			bz, err := json.Marshal(pools)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to get all pools")
+				return nil, sdkerrors.Wrap(err, "failed to marshal quasar qoracle pools")
 			}
-
-			res := qoracletypes.QueryOsmosisPoolsResponse{
-				Pools: pools,
-			}
-
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool query response")
-			}
-
 			return bz, nil
-		case contractQuery.OsmosisPoolInfo != nil:
-			poolId := contractQuery.OsmosisPoolInfo.PoolId
-
-			pool, found := qp.GetPool(ctx, poolId)
-
+		case contractQuery.Pool != nil:
+			pool, found := qk.GetPool(ctx, contractQuery.Pool.Source, contractQuery.Pool.Id)
 			if !found {
-				return nil, sdkerrors.ErrKeyNotFound
+				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "pool not found")
 			}
 
-			res := bindings.OsmosisPoolInfoResponse{
-				Pool: pool,
-			}
-
-			bz, err := json.Marshal(res)
+			bz, err := json.Marshal(pool)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool info query response")
+				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool")
 			}
-
 			return bz, nil
-
-		case contractQuery.OraclePrices != nil:
-			oraclePrices := qp.GetStablePrices(ctx)
-
-			res := qoracletypes.QueryOraclePricesResponse(oraclePrices)
-
-			bz, err := json.Marshal(res)
+		case contractQuery.TokenPrice != nil:
+			price, err := qk.GetDenomPrice(ctx, contractQuery.TokenPrice.Denom)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar oracle prices query response")
+				return nil, sdkerrors.Wrap(err, "failed to get token price")
 			}
 
+			bz, err := price.MarshalJSON()
+			if err != nil {
+				return nil, sdkerrors.Wrap(err, "failed to marshal quasar token price")
+			}
 			return bz, nil
 		default:
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown custom query variant"}

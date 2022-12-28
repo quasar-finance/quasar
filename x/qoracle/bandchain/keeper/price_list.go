@@ -2,10 +2,10 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // updatePriceList sets the price of symbols requested from bandchain oracle based on the latest CoinRatesState.
@@ -28,26 +28,22 @@ func (k Keeper) updatePriceList(ctx sdk.Context) {
 	}
 
 	k.setPriceList(ctx, sdk.NewDecCoins(prices...))
+
+	k.qoracleKeeper.NotifySymbolPricesUpdate(ctx)
 }
 
-// GetPrices implements qoracle PriceOracle interface
-func (k Keeper) GetPrices(ctx sdk.Context) (sdk.DecCoins, error) {
+// GetSymbolPriceList implements qoracle PriceOracle interface
+func (k Keeper) GetSymbolPriceList(ctx sdk.Context) (qoracletypes.SymbolPriceList, error) {
 	if !k.IsEnabled(ctx) {
-		return nil, types.ErrDisabled
+		return qoracletypes.SymbolPriceList{}, types.ErrDisabled
 	}
 
-	pl := k.GetPriceList(ctx)
-	// Check if the list is outdated
-	if pl.UpdatedAtTime.Add(time.Duration(k.GetPriceListExpDuration(ctx))).Before(ctx.BlockTime()) {
-		return nil, types.ErrPriceListOutdated
-	}
-
-	return pl.Prices, nil
+	return k.GetPriceList(ctx), nil
 }
 
 // GetPriceList get the price list from store
-func (k Keeper) GetPriceList(ctx sdk.Context) (pl types.PriceList) {
-	b := ctx.KVStore(k.storeKey).Get(types.PriceListKey)
+func (k Keeper) GetPriceList(ctx sdk.Context) (pl qoracletypes.SymbolPriceList) {
+	b := ctx.KVStore(k.storeKey).Get(types.KeyPriceList)
 	if b == nil {
 		return
 	}
@@ -62,10 +58,9 @@ func (k Keeper) setPriceList(ctx sdk.Context, prices sdk.DecCoins) {
 		panic(fmt.Errorf("invalid dec coins as prices: %w", err))
 	}
 
-	pl := types.PriceList{
-		Prices:          prices,
-		UpdatedAtHeight: ctx.BlockHeight(),
-		UpdatedAtTime:   ctx.BlockTime(),
+	pl := qoracletypes.SymbolPriceList{
+		Prices:    prices,
+		UpdatedAt: ctx.BlockTime(),
 	}
-	ctx.KVStore(k.storeKey).Set(types.PriceListKey, k.cdc.MustMarshal(&pl))
+	ctx.KVStore(k.storeKey).Set(types.KeyPriceList, k.cdc.MustMarshal(&pl))
 }

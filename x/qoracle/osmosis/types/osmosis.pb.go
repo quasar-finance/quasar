@@ -5,10 +5,9 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	balancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
+	types1 "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	types "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	io "io"
 	math "math"
@@ -138,23 +137,22 @@ func (m *IncentivizedPools) GetIncentivizedPools() []types.IncentivizedPool {
 	return nil
 }
 
-type OsmosisPool struct {
-	PoolInfo balancer.Pool      `protobuf:"bytes,1,opt,name=pool_info,json=poolInfo,proto3" json:"pool_info"`
-	Metrics  OsmosisPoolMetrics `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics"`
+type EpochsInfo struct {
+	EpochsInfo []types1.EpochInfo `protobuf:"bytes,1,rep,name=epochs_info,json=epochsInfo,proto3" json:"epochs_info"`
 }
 
-func (m *OsmosisPool) Reset()         { *m = OsmosisPool{} }
-func (m *OsmosisPool) String() string { return proto.CompactTextString(m) }
-func (*OsmosisPool) ProtoMessage()    {}
-func (*OsmosisPool) Descriptor() ([]byte, []int) {
+func (m *EpochsInfo) Reset()         { *m = EpochsInfo{} }
+func (m *EpochsInfo) String() string { return proto.CompactTextString(m) }
+func (*EpochsInfo) ProtoMessage()    {}
+func (*EpochsInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3481bb447417ce28, []int{2}
 }
-func (m *OsmosisPool) XXX_Unmarshal(b []byte) error {
+func (m *EpochsInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *OsmosisPool) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *EpochsInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_OsmosisPool.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EpochsInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -164,114 +162,61 @@ func (m *OsmosisPool) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return b[:n], nil
 	}
 }
-func (m *OsmosisPool) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OsmosisPool.Merge(m, src)
+func (m *EpochsInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EpochsInfo.Merge(m, src)
 }
-func (m *OsmosisPool) XXX_Size() int {
+func (m *EpochsInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *OsmosisPool) XXX_DiscardUnknown() {
-	xxx_messageInfo_OsmosisPool.DiscardUnknown(m)
+func (m *EpochsInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_EpochsInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_OsmosisPool proto.InternalMessageInfo
+var xxx_messageInfo_EpochsInfo proto.InternalMessageInfo
 
-func (m *OsmosisPool) GetPoolInfo() balancer.Pool {
+func (m *EpochsInfo) GetEpochsInfo() []types1.EpochInfo {
 	if m != nil {
-		return m.PoolInfo
+		return m.EpochsInfo
 	}
-	return balancer.Pool{}
+	return nil
 }
-
-func (m *OsmosisPool) GetMetrics() OsmosisPoolMetrics {
-	if m != nil {
-		return m.Metrics
-	}
-	return OsmosisPoolMetrics{}
-}
-
-type OsmosisPoolMetrics struct {
-	APY github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=apy,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"apy"`
-	TVL github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=tvl,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"tvl"`
-}
-
-func (m *OsmosisPoolMetrics) Reset()         { *m = OsmosisPoolMetrics{} }
-func (m *OsmosisPoolMetrics) String() string { return proto.CompactTextString(m) }
-func (*OsmosisPoolMetrics) ProtoMessage()    {}
-func (*OsmosisPoolMetrics) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3481bb447417ce28, []int{3}
-}
-func (m *OsmosisPoolMetrics) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *OsmosisPoolMetrics) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OsmosisPoolMetrics.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *OsmosisPoolMetrics) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OsmosisPoolMetrics.Merge(m, src)
-}
-func (m *OsmosisPoolMetrics) XXX_Size() int {
-	return m.Size()
-}
-func (m *OsmosisPoolMetrics) XXX_DiscardUnknown() {
-	xxx_messageInfo_OsmosisPoolMetrics.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OsmosisPoolMetrics proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*OsmosisRequestState)(nil), "quasarlabs.quasarnode.qoracle.osmosis.OsmosisRequestState")
 	proto.RegisterType((*IncentivizedPools)(nil), "quasarlabs.quasarnode.qoracle.osmosis.IncentivizedPools")
-	proto.RegisterType((*OsmosisPool)(nil), "quasarlabs.quasarnode.qoracle.osmosis.OsmosisPool")
-	proto.RegisterType((*OsmosisPoolMetrics)(nil), "quasarlabs.quasarnode.qoracle.osmosis.OsmosisPoolMetrics")
+	proto.RegisterType((*EpochsInfo)(nil), "quasarlabs.quasarnode.qoracle.osmosis.EpochsInfo")
 }
 
 func init() { proto.RegisterFile("qoracle/osmosis/osmosis.proto", fileDescriptor_3481bb447417ce28) }
 
 var fileDescriptor_3481bb447417ce28 = []byte{
-	// 515 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0x4f, 0x8b, 0x13, 0x31,
-	0x18, 0xc6, 0x3b, 0x76, 0x59, 0xd7, 0x74, 0x71, 0x69, 0x14, 0x29, 0x05, 0xa7, 0xa5, 0xa0, 0x16,
-	0x65, 0x33, 0x6e, 0x55, 0xd0, 0x83, 0x87, 0x2d, 0x82, 0x2e, 0x28, 0x2e, 0xb3, 0x22, 0xac, 0x97,
-	0x92, 0xce, 0xbc, 0x9d, 0x86, 0x66, 0x26, 0xd3, 0x49, 0xa6, 0xda, 0xfd, 0x14, 0x7e, 0x0a, 0xfd,
-	0x2a, 0x7b, 0xdc, 0xa3, 0x78, 0x28, 0xd2, 0x7e, 0x11, 0x49, 0x26, 0xfd, 0x63, 0xbd, 0x88, 0xa7,
-	0x64, 0x9e, 0xbc, 0xcf, 0xef, 0x4d, 0x9e, 0x64, 0xd0, 0xdd, 0xb1, 0xc8, 0x68, 0xc0, 0xc1, 0x13,
-	0x32, 0x16, 0x92, 0xc9, 0xe5, 0x48, 0xd2, 0x4c, 0x28, 0x81, 0xef, 0x8d, 0x73, 0x2a, 0x69, 0xc6,
-	0x69, 0x5f, 0x92, 0x62, 0x9a, 0x88, 0x10, 0x88, 0x35, 0x11, 0x5b, 0x5c, 0xbf, 0x1d, 0x89, 0x48,
-	0x18, 0x87, 0xa7, 0x67, 0x85, 0xb9, 0xfe, 0x68, 0xc9, 0x4c, 0x85, 0xe0, 0x87, 0x2c, 0x09, 0x20,
-	0x51, 0x6c, 0x02, 0xd2, 0x9b, 0x1c, 0xf5, 0x41, 0xd1, 0x23, 0x6f, 0x9c, 0x43, 0x36, 0xb5, 0xc5,
-	0x4f, 0x97, 0xc5, 0x11, 0x8d, 0xe3, 0xc2, 0x11, 0x8b, 0x10, 0xb8, 0xf4, 0xfa, 0x94, 0xd3, 0x24,
-	0x80, 0x6c, 0x35, 0x39, 0x15, 0x82, 0x17, 0xae, 0xd6, 0x37, 0x07, 0xdd, 0x7a, 0x5f, 0x18, 0x7d,
-	0x18, 0xe7, 0x20, 0xd5, 0x99, 0xa2, 0x0a, 0xf0, 0x03, 0x74, 0x90, 0xd2, 0x60, 0x04, 0xaa, 0x27,
-	0xb5, 0x9c, 0x04, 0x50, 0x73, 0x9a, 0x4e, 0x7b, 0xc7, 0xbf, 0x59, 0xc8, 0x67, 0x56, 0xc5, 0x2d,
-	0xb4, 0x4f, 0x83, 0x51, 0x22, 0x3e, 0x73, 0x08, 0x23, 0x08, 0x6b, 0xd7, 0x9a, 0x4e, 0x7b, 0xcf,
-	0xff, 0x43, 0xc3, 0x77, 0xd0, 0xee, 0x80, 0x32, 0x0e, 0x61, 0xad, 0x6c, 0x56, 0xed, 0x17, 0x7e,
-	0x88, 0xaa, 0x79, 0x1a, 0x52, 0x05, 0x61, 0x8f, 0xaa, 0xde, 0x10, 0x58, 0x34, 0x54, 0xb5, 0x9d,
-	0xa6, 0xd3, 0x2e, 0xfb, 0x07, 0x76, 0xe1, 0x58, 0xbd, 0x31, 0x72, 0xeb, 0x02, 0x55, 0x4f, 0x6c,
-	0x00, 0xec, 0x02, 0x42, 0x7d, 0x04, 0x89, 0x01, 0x61, 0xb6, 0x21, 0xf6, 0xf4, 0xa9, 0x65, 0xcd,
-	0x69, 0x96, 0xdb, 0x95, 0xce, 0x63, 0xb2, 0xba, 0x09, 0x21, 0xf8, 0x3a, 0x3c, 0x62, 0xc3, 0x23,
-	0xdb, 0xb8, 0xee, 0xce, 0xe5, 0xac, 0x51, 0xf2, 0xab, 0x6c, 0xbb, 0x4d, 0xeb, 0xbb, 0x83, 0x2a,
-	0x36, 0x24, 0x2d, 0xe0, 0x97, 0xe8, 0x86, 0x66, 0xf6, 0x58, 0x32, 0x10, 0x26, 0x96, 0x4a, 0xa7,
-	0xbe, 0xea, 0xa6, 0xe3, 0x5f, 0xf5, 0xd8, 0xe0, 0xee, 0x69, 0xcb, 0x49, 0x32, 0x10, 0xf8, 0x1c,
-	0x5d, 0x8f, 0x41, 0x65, 0x2c, 0x90, 0x26, 0xad, 0x4a, 0xe7, 0x05, 0xf9, 0xa7, 0x57, 0x42, 0x36,
-	0xf6, 0xf0, 0xae, 0x00, 0x58, 0xf6, 0x92, 0xa7, 0xaf, 0x13, 0xff, 0x5d, 0x85, 0x5f, 0xa3, 0x32,
-	0x4d, 0xa7, 0x66, 0xab, 0xfb, 0xdd, 0x67, 0xda, 0xf2, 0x73, 0xd6, 0xb8, 0x1f, 0x31, 0x35, 0xcc,
-	0xfb, 0x24, 0x10, 0xb1, 0x17, 0x98, 0x16, 0x76, 0x38, 0x94, 0xe1, 0xc8, 0x53, 0xd3, 0x14, 0x24,
-	0x79, 0x05, 0xc1, 0x7c, 0xd6, 0x28, 0x1f, 0x9f, 0x9e, 0xfb, 0x9a, 0xa0, 0x41, 0x6a, 0xc2, 0xcd,
-	0xb6, 0xff, 0x0b, 0xf4, 0xe1, 0xe3, 0x5b, 0x5f, 0x13, 0xba, 0xfe, 0xe5, 0xdc, 0x75, 0xae, 0xe6,
-	0xae, 0xf3, 0x6b, 0xee, 0x3a, 0x5f, 0x17, 0x6e, 0xe9, 0x6a, 0xe1, 0x96, 0x7e, 0x2c, 0xdc, 0xd2,
-	0xa7, 0xe7, 0x1b, 0xb4, 0x75, 0x2c, 0xde, 0x3a, 0x16, 0xef, 0x8b, 0xb7, 0xfd, 0xcf, 0x99, 0x1e,
-	0xfd, 0x5d, 0xf3, 0xa4, 0x9f, 0xfc, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xda, 0xf4, 0xde, 0x06, 0x93,
-	0x03, 0x00, 0x00,
+	// 409 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x52, 0xcf, 0x6a, 0xd4, 0x40,
+	0x18, 0xdf, 0x71, 0x97, 0x22, 0x53, 0xb1, 0xec, 0x28, 0x12, 0x8a, 0xc6, 0x35, 0x20, 0x06, 0xc5,
+	0x19, 0xab, 0x17, 0xaf, 0x16, 0x84, 0xf6, 0xa4, 0xa4, 0xe0, 0xc1, 0x4b, 0x98, 0x24, 0xdf, 0x26,
+	0x43, 0xd3, 0xf9, 0x92, 0xcc, 0xa4, 0xda, 0x3e, 0x85, 0x4f, 0xe1, 0xb3, 0xf4, 0xd8, 0xa3, 0x27,
+	0x91, 0xdd, 0x17, 0x91, 0x24, 0xb3, 0x59, 0xdd, 0x53, 0x26, 0xbf, 0xef, 0xf7, 0x27, 0xf9, 0xcd,
+	0x47, 0x9f, 0xd4, 0xd8, 0xc8, 0xb4, 0x04, 0x81, 0xe6, 0x02, 0x8d, 0x32, 0x9b, 0x27, 0xaf, 0x1a,
+	0xb4, 0xc8, 0x9e, 0xd7, 0xad, 0x34, 0xb2, 0x29, 0x65, 0x62, 0xf8, 0x70, 0xd4, 0x98, 0x01, 0x77,
+	0x22, 0xee, 0xc8, 0x87, 0x0f, 0x73, 0xcc, 0xb1, 0x57, 0x88, 0xee, 0x34, 0x88, 0x0f, 0x5f, 0x6d,
+	0x3c, 0x2b, 0xc4, 0xf2, 0xb5, 0xd2, 0x29, 0x68, 0xab, 0x2e, 0xc1, 0x88, 0xcb, 0xa3, 0x04, 0xac,
+	0x3c, 0x12, 0x75, 0x0b, 0xcd, 0x95, 0x23, 0x3f, 0xde, 0x90, 0xa1, 0xc2, 0xb4, 0x30, 0x22, 0x07,
+	0x0d, 0xe3, 0x77, 0x04, 0x3f, 0x09, 0x7d, 0xf0, 0x69, 0x20, 0x44, 0x50, 0xb7, 0x60, 0xec, 0x99,
+	0x95, 0x16, 0xd8, 0x0b, 0x7a, 0x50, 0xc9, 0xf4, 0x1c, 0x6c, 0x6c, 0x3a, 0x58, 0xa7, 0xe0, 0x91,
+	0x05, 0x09, 0x67, 0xd1, 0xfd, 0x01, 0x3e, 0x73, 0x28, 0x0b, 0xe8, 0x3d, 0x99, 0x9e, 0x6b, 0xfc,
+	0x56, 0x42, 0x96, 0x43, 0xe6, 0xdd, 0x59, 0x90, 0xf0, 0x6e, 0xf4, 0x1f, 0xc6, 0x1e, 0xd1, 0xbd,
+	0xa5, 0x54, 0x25, 0x64, 0xde, 0xb4, 0x9f, 0xba, 0x37, 0xf6, 0x92, 0xce, 0xdb, 0x2a, 0x93, 0x16,
+	0xb2, 0x58, 0xda, 0xb8, 0x00, 0x95, 0x17, 0xd6, 0x9b, 0x2d, 0x48, 0x38, 0x8d, 0x0e, 0xdc, 0xe0,
+	0x83, 0x3d, 0xe9, 0xe1, 0xe0, 0x9a, 0xce, 0x4f, 0xdd, 0x8f, 0xaa, 0x6b, 0xc8, 0x3e, 0x23, 0x96,
+	0x86, 0x01, 0x65, 0xea, 0x1f, 0x30, 0xee, 0xfa, 0x30, 0x1e, 0x59, 0x4c, 0xc3, 0xfd, 0xb7, 0x6f,
+	0xf8, 0xd8, 0x38, 0x62, 0xb9, 0x2d, 0x89, 0xbb, 0x92, 0xf8, 0xae, 0xdd, 0xf1, 0xec, 0xe6, 0xf7,
+	0xd3, 0x49, 0x34, 0x57, 0xbb, 0x31, 0xc1, 0x17, 0x4a, 0x3f, 0xf6, 0xe5, 0x9d, 0xea, 0x25, 0xb2,
+	0x13, 0xba, 0x3f, 0x54, 0x19, 0x2b, 0xbd, 0x44, 0x97, 0xf6, 0x6c, 0x4c, 0x1b, 0x66, 0x63, 0x4a,
+	0x2f, 0xec, 0x74, 0xce, 0x9e, 0xc2, 0xe8, 0x74, 0x1c, 0xdd, 0xac, 0x7c, 0x72, 0xbb, 0xf2, 0xc9,
+	0x9f, 0x95, 0x4f, 0x7e, 0xac, 0xfd, 0xc9, 0xed, 0xda, 0x9f, 0xfc, 0x5a, 0xfb, 0x93, 0xaf, 0xef,
+	0x73, 0x65, 0x8b, 0x36, 0xe1, 0x29, 0x5e, 0x88, 0xed, 0xa6, 0x88, 0xed, 0xa6, 0x88, 0xef, 0x62,
+	0x77, 0xc1, 0xec, 0x55, 0x05, 0x26, 0xd9, 0xeb, 0xef, 0xf5, 0xdd, 0xdf, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0xd8, 0x82, 0x38, 0x94, 0x80, 0x02, 0x00, 0x00,
 }
 
 func (m *OsmosisRequestState) Marshal() (dAtA []byte, err error) {
@@ -364,7 +309,7 @@ func (m *IncentivizedPools) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *OsmosisPool) Marshal() (dAtA []byte, err error) {
+func (m *EpochsInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -374,79 +319,30 @@ func (m *OsmosisPool) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *OsmosisPool) MarshalTo(dAtA []byte) (int, error) {
+func (m *EpochsInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *OsmosisPool) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *EpochsInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	{
-		size, err := m.Metrics.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
+	if len(m.EpochsInfo) > 0 {
+		for iNdEx := len(m.EpochsInfo) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.EpochsInfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintOsmosis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
 		}
-		i -= size
-		i = encodeVarintOsmosis(dAtA, i, uint64(size))
 	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.PoolInfo.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOsmosis(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *OsmosisPoolMetrics) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *OsmosisPoolMetrics) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *OsmosisPoolMetrics) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size := m.TVL.Size()
-		i -= size
-		if _, err := m.TVL.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintOsmosis(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size := m.APY.Size()
-		i -= size
-		if _, err := m.APY.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintOsmosis(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -497,29 +393,18 @@ func (m *IncentivizedPools) Size() (n int) {
 	return n
 }
 
-func (m *OsmosisPool) Size() (n int) {
+func (m *EpochsInfo) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = m.PoolInfo.Size()
-	n += 1 + l + sovOsmosis(uint64(l))
-	l = m.Metrics.Size()
-	n += 1 + l + sovOsmosis(uint64(l))
-	return n
-}
-
-func (m *OsmosisPoolMetrics) Size() (n int) {
-	if m == nil {
-		return 0
+	if len(m.EpochsInfo) > 0 {
+		for _, e := range m.EpochsInfo {
+			l = e.Size()
+			n += 1 + l + sovOsmosis(uint64(l))
+		}
 	}
-	var l int
-	_ = l
-	l = m.APY.Size()
-	n += 1 + l + sovOsmosis(uint64(l))
-	l = m.TVL.Size()
-	n += 1 + l + sovOsmosis(uint64(l))
 	return n
 }
 
@@ -741,7 +626,7 @@ func (m *IncentivizedPools) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *OsmosisPool) Unmarshal(dAtA []byte) error {
+func (m *EpochsInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -764,15 +649,15 @@ func (m *OsmosisPool) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: OsmosisPool: wiretype end group for non-group")
+			return fmt.Errorf("proto: EpochsInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: OsmosisPool: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EpochsInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PoolInfo", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochsInfo", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -799,156 +684,8 @@ func (m *OsmosisPool) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.PoolInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metrics", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOsmosis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Metrics.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOsmosis(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *OsmosisPoolMetrics) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOsmosis
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: OsmosisPoolMetrics: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: OsmosisPoolMetrics: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field APY", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOsmosis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.APY.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TVL", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOsmosis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOsmosis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TVL.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.EpochsInfo = append(m.EpochsInfo, types1.EpochInfo{})
+			if err := m.EpochsInfo[len(m.EpochsInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

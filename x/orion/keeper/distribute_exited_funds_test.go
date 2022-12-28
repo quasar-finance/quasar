@@ -1,113 +1,113 @@
 package keeper_test
 
 import (
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/x/orion/keeper"
 	"github.com/quasarlabs/quasarnode/x/orion/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
-func TestMintDeficit(t *testing.T) {
-	var tests = []struct {
-		name               string
-		storedStablePrices map[string]sdk.Dec
-		totalDeficit       sdk.Coins
-		expectError        bool
-		mintedOrions       map[string]sdk.Coin
-		totalMinted        sdk.Coins
-	}{
-		{
-			name:         "no deficit",
-			totalDeficit: sdk.NewCoins(),
-			expectError:  false,
-			mintedOrions: map[string]sdk.Coin{},
-			totalMinted:  sdk.NewCoins(),
-		},
-		{
-			name:         "single coin, no price stored",
-			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError:  true,
-		},
-		{
-			name: "single coin, different price stored",
-			storedStablePrices: map[string]sdk.Dec{
-				"xyz": sdk.NewDecWithPrec(12, 1),
-			},
-			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError:  true,
-		},
-		{
-			name: "single coin, no orion price",
-			storedStablePrices: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(12, 1),
-			},
-			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError:  true,
-		},
-		{
-			name: "single coin, no qsr price",
-			storedStablePrices: map[string]sdk.Dec{
-				"abc":            sdk.NewDecWithPrec(12, 1),
-				types.OrionDenom: sdk.NewDecWithPrec(9, 1),
-			},
-			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError:  true,
-		},
-		{
-			name: "single coin, valid",
-			storedStablePrices: map[string]sdk.Dec{
-				"abc":             sdk.NewDecWithPrec(12, 1),
-				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
-				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
-			},
-			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError:  false,
-			mintedOrions: map[string]sdk.Coin{
-				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
-			},
-			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(133))),
-		},
-		{
-			name: "two coins, valid",
-			storedStablePrices: map[string]sdk.Dec{
-				"abc":             sdk.NewDecWithPrec(12, 1),
-				"def":             sdk.NewDecWithPrec(14, 1),
-				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
-				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
-			},
-			totalDeficit: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(100)),
-				sdk.NewCoin("def", sdk.NewInt(90)),
-			),
-			expectError: false,
-			mintedOrions: map[string]sdk.Coin{
-				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
-				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(140)),
-			},
-			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(273))),
-		},
-	}
+// func TestMintDeficit(t *testing.T) {
+// 	var tests = []struct {
+// 		name               string
+// 		storedStablePrices map[string]sdk.Dec
+// 		totalDeficit       sdk.Coins
+// 		expectError        bool
+// 		mintedOrions       map[string]sdk.Coin
+// 		totalMinted        sdk.Coins
+// 	}{
+// 		{
+// 			name:         "no deficit",
+// 			totalDeficit: sdk.NewCoins(),
+// 			expectError:  false,
+// 			mintedOrions: map[string]sdk.Coin{},
+// 			totalMinted:  sdk.NewCoins(),
+// 		},
+// 		{
+// 			name:         "single coin, no price stored",
+// 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError:  true,
+// 		},
+// 		{
+// 			name: "single coin, different price stored",
+// 			storedStablePrices: map[string]sdk.Dec{
+// 				"xyz": sdk.NewDecWithPrec(12, 1),
+// 			},
+// 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError:  true,
+// 		},
+// 		{
+// 			name: "single coin, no orion price",
+// 			storedStablePrices: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(12, 1),
+// 			},
+// 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError:  true,
+// 		},
+// 		{
+// 			name: "single coin, no qsr price",
+// 			storedStablePrices: map[string]sdk.Dec{
+// 				"abc":            sdk.NewDecWithPrec(12, 1),
+// 				types.OrionDenom: sdk.NewDecWithPrec(9, 1),
+// 			},
+// 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError:  true,
+// 		},
+// 		{
+// 			name: "single coin, valid",
+// 			storedStablePrices: map[string]sdk.Dec{
+// 				"abc":             sdk.NewDecWithPrec(12, 1),
+// 				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
+// 				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
+// 			},
+// 			totalDeficit: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError:  false,
+// 			mintedOrions: map[string]sdk.Coin{
+// 				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
+// 			},
+// 			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(133))),
+// 		},
+// 		{
+// 			name: "two coins, valid",
+// 			storedStablePrices: map[string]sdk.Dec{
+// 				"abc":             sdk.NewDecWithPrec(12, 1),
+// 				"def":             sdk.NewDecWithPrec(14, 1),
+// 				types.OrionDenom:  sdk.NewDecWithPrec(9, 1),
+// 				types.QuasarDenom: sdk.NewDecWithPrec(22, 1),
+// 			},
+// 			totalDeficit: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(100)),
+// 				sdk.NewCoin("def", sdk.NewInt(90)),
+// 			),
+// 			expectError: false,
+// 			mintedOrions: map[string]sdk.Coin{
+// 				"abc": sdk.NewCoin(types.OrionDenom, sdk.NewInt(133)),
+// 				"def": sdk.NewCoin(types.OrionDenom, sdk.NewInt(140)),
+// 			},
+// 			totalMinted: sdk.NewCoins(sdk.NewCoin(types.OrionDenom, sdk.NewInt(273))),
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setup := testutil.NewTestSetup(t)
-			ctx, k, qoracleKeeper := setup.Ctx, setup.Keepers.OrionKeeper, setup.Keepers.QoracleKeeper
-			for denom, price := range tt.storedStablePrices {
-				qoracleKeeper.SetStablePrice(ctx, denom, price)
-			}
-			mintedOrions, totalMinted, err := k.MintDeficit(ctx, tt.totalDeficit)
-			if tt.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.EqualValues(t, tt.mintedOrions, mintedOrions)
-				require.True(t, tt.totalMinted.IsEqual(totalMinted))
-			}
-		})
-	}
-}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			setup := testutil.NewTestSetup(t)
+// 			ctx, k, qoracleKeeper := setup.Ctx, setup.Keepers.OrionKeeper, setup.Keepers.QoracleKeeper
+// 			for denom, price := range tt.storedStablePrices {
+// 				qoracleKeeper.SetStablePrice(ctx, denom, price)
+// 			}
+// 			mintedOrions, totalMinted, err := k.MintDeficit(ctx, tt.totalDeficit)
+// 			if tt.expectError {
+// 				require.Error(t, err)
+// 			} else {
+// 				require.NoError(t, err)
+// 				require.EqualValues(t, tt.mintedOrions, mintedOrions)
+// 				require.True(t, tt.totalMinted.IsEqual(totalMinted))
+// 			}
+// 		})
+// 	}
+// }
 
 func TestCalculateCoinAllocations(t *testing.T) {
 	var tests = []struct {

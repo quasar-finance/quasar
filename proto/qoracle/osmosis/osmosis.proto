@@ -3,7 +3,7 @@ package quasarlabs.quasarnode.qoracle.osmosis;
 
 import "gogoproto/gogo.proto";
 import "osmosis/pool-incentives/v1beta1/query.proto";
-import "osmosis/gamm/pool-models/balancer/balancerPool.proto";
+import "osmosis/epochs/genesis.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types";
 
@@ -18,20 +18,6 @@ message IncentivizedPools {
   repeated .osmosis.poolincentives.v1beta1.IncentivizedPool incentivized_pools = 1 [(gogoproto.nullable) = false];
 }
 
-message OsmosisPool {
-  .osmosis.gamm.v1beta1.Pool pool_info = 1 [(gogoproto.nullable) = false];
-  OsmosisPoolMetrics metrics = 2 [(gogoproto.nullable) = false];
-}
-
-message OsmosisPoolMetrics {
-  bytes apy = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.customname) = "APY",
-    (gogoproto.nullable) = false
-  ];
-  bytes tvl = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.customname) = "TVL",
-    (gogoproto.nullable) = false
-  ];
+message EpochsInfo {
+  repeated .osmosis.epochs.v1beta1.EpochInfo epochs_info = 1 [(gogoproto.nullable) = false];
 }

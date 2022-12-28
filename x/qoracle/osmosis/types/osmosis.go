@@ -122,19 +122,3 @@ func (state *OsmosisRequestState) Success() {
 func (state *OsmosisRequestState) Fail() {
 	state.Failed = true
 }
-
-type OsmosisPoolsOrderedByAPY []OsmosisPool
-
-// var ـ sort.Interface = (OsmosisPoolsOrderedByAPY)(nil)
-
-func (ops OsmosisPoolsOrderedByAPY) Len() int {
-	return len(ops)
-}
-
-func (ops OsmosisPoolsOrderedByAPY) Less(i, j int) bool {
-	return ops[i].Metrics.APY.LT(ops[j].Metrics.APY)
-}
-
-func (ops OsmosisPoolsOrderedByAPY) Swap(i, j int) {
-	ops[i], ops[j] = ops[j], ops[i]
-}

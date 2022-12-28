@@ -29,7 +29,7 @@ func (k msgServer) UpdateChainParams(goCtx context.Context, msg *types.MsgUpdate
 
 	// TODO: Check authority of the sender
 
-	state := k.GetRequestState(ctx, types.ParamsRequestStateKey)
+	state := k.GetRequestState(ctx, types.KeyParamsRequestState)
 	if state.Pending() {
 		k.Logger(ctx).Info("ignoring current osmosis chain params pending request")
 	}

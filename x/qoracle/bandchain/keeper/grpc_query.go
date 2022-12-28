@@ -32,8 +32,7 @@ func (q Keeper) PriceList(c context.Context, _ *types.QueryPriceListRequest) (*t
 	pl := q.GetPriceList(ctx)
 
 	return &types.QueryPriceListResponse{
-		Prices:          pl.Prices,
-		UpdatedAtHeight: pl.UpdatedAtHeight,
-		UpdatedAtTime:   pl.UpdatedAtTime,
+		Prices:    pl.Prices,
+		UpdatedAt: pl.UpdatedAt,
 	}, nil
 }

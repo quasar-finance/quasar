@@ -54,10 +54,10 @@ type QbankKeeper interface {
 
 // QoracleKeeper defines the expected interface needed by Orion module from qoracle module
 type QoracleKeeper interface {
-	GetOsmosisPoolsRankedByAPY(ctx sdk.Context, denom string) []qoracletypes.OsmosisPool
-	GetOsmosisPool(ctx sdk.Context, id uint64) (qoracletypes.OsmosisPool, bool)
-	GetStablePrice(ctx sdk.Context, denom string) (sdk.Dec, bool)
-	GetRelativeStablePrice(ctx sdk.Context, denomIn, denomOut string) (sdk.Dec, error)
+	GetPoolsRankedByAPY(ctx sdk.Context, source, denom string) []qoracletypes.Pool
+	GetPool(ctx sdk.Context, source, id string) (qoracletypes.Pool, bool)
+	GetDenomPrice(ctx sdk.Context, denom string) (sdk.Dec, error)
+	GetRelativeDenomPrice(ctx sdk.Context, denomIn, denomOut string) (sdk.Dec, error)
 }
 
 // IntergammKeeper defines the expected interface needed by Orion module from intergamm module

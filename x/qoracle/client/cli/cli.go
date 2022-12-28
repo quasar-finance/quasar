@@ -24,6 +24,8 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		CmdQueryParams(),
+		CmdQueryDenomPrices(),
+		CmdQueryPools(),
 		qbandcli.GetQueryCmd(),
 		qosmocli.GetQueryCmd(),
 	)

@@ -2,7 +2,7 @@ package types
 
 const (
 	// SubModuleName defines the sub module name
-	SubModuleName = "qoracle_bandchain"
+	SubModuleName = "qbandchainoracle"
 
 	// StoreKey defines the primary module store key
 	StoreKey = SubModuleName
@@ -16,8 +16,8 @@ const (
 	// PortID is the default port id that qoracle module binds to
 	PortID = SubModuleName
 
-	// MemStoreKey defines the in-memory store key
-	MemStoreKey = "mem_qoracle_bandchain"
+	// OracleSource defines the source of oracle data
+	OracleSource = "bandchain"
 
 	// CoinRatesClientID is query request identifier
 	CoinRatesClientID = "coin_rates_id"
@@ -32,8 +32,8 @@ const (
 var (
 	// PortKey defines the key to store the port ID in store
 	PortKey = []byte{0x01}
-	// CoinRatesStateKey defines the key to store state of coin rates request
-	CoinRatesStateKey = []byte("coin_rates_state")
-	// PriceListKey defines the key to store price list in store
-	PriceListKey = []byte("price_list")
+	// KeyCoinRatesState defines the key to store state of coin rates request
+	KeyCoinRatesState = []byte("coin_rates_state")
+	// KeyPriceList defines the key to store price list in store
+	KeyPriceList = []byte("price_list")
 )

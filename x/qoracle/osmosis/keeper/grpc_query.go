@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,9 +28,9 @@ func (q Keeper) State(c context.Context, _ *types.QueryStateRequest) (*types.Que
 	ctx := sdk.UnwrapSDKContext(c)
 
 	return &types.QueryStateResponse{
-		ParamsRequestState:     q.GetRequestState(ctx, types.ParamsRequestStateKey),
-		IncentivizedPoolsState: q.GetRequestState(ctx, types.IncentivizedPoolsRequestStateKey),
-		PoolsState:             q.GetRequestState(ctx, types.PoolsRequestStateKey),
+		ParamsRequestState:     q.GetRequestState(ctx, types.KeyParamsRequestState),
+		IncentivizedPoolsState: q.GetRequestState(ctx, types.KeyIncentivizedPoolsRequestState),
+		PoolsState:             q.GetRequestState(ctx, types.KeyPoolsRequestState),
 	}, nil
 }
 
@@ -40,11 +41,11 @@ func (q Keeper) ChainParams(goCtx context.Context, req *types.QueryChainParamsRe
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	return &types.QueryChainParamsResponse{
-		EpochsInfo:          q.GetOsmosisEpochsInfo(ctx),
-		LockableDurations:   q.GetOsmosisLockableDurations(ctx),
-		MintParams:          q.GetOsmosisMintParams(ctx),
-		MintEpochProvisions: q.GetOsmosisMintEpochProvisions(ctx),
-		DistrInfo:           q.GetOsmosisDistrInfo(ctx),
+		EpochsInfo:          q.GetEpochsInfo(ctx),
+		LockableDurations:   q.GetLockableDurations(ctx),
+		MintParams:          q.GetMintParams(ctx),
+		MintEpochProvisions: q.GetMintEpochProvisions(ctx),
+		DistrInfo:           q.GetDistrInfo(ctx),
 	}, nil
 }
 
@@ -56,7 +57,7 @@ func (q Keeper) IncentivizedPools(goCtx context.Context, req *types.QueryIncenti
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	return &types.QueryIncentivizedPoolsResponse{
-		IncentivizedPools: q.GetOsmosisIncentivizedPools(ctx),
+		IncentivizedPools: q.GetIncentivizedPools(ctx),
 	}, nil
 }
 
@@ -67,10 +68,10 @@ func (q Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var pools []types.OsmosisPool
-	store := prefix.NewStore(q.getOsmosisStore(ctx), types.KeyPoolPrefix)
+	var pools []balancerpool.Pool
+	store := prefix.NewStore(ctx.KVStore(q.storeKey), types.KeyPoolPrefix)
 	pageRes, err := query.Paginate(store, req.Pagination, func(key []byte, value []byte) error {
-		var pool types.OsmosisPool
+		var pool balancerpool.Pool
 		if err := q.cdc.Unmarshal(value, &pool); err != nil {
 			return err
 		}

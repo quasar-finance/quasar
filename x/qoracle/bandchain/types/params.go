@@ -21,8 +21,6 @@ const (
 	DefaultPacketTimeoutHeight = "0-0"
 	// DefaultPacketTimeoutTimestamp is 3 mins
 	DefaultPacketTimeoutTimestamp = uint64(time.Minute * 3)
-	// DefaultPriceListExpDuration is the default duration in which price list is valid
-	DefaultPriceListExpDuration = uint64(time.Minute * 6)
 )
 
 var (
@@ -50,8 +48,6 @@ var (
 	KeyPacketTimeoutHeight = []byte("PacketTimeoutHeight")
 	// KeyPacketTimeoutTimestamp is store's key for PacketTimeoutTimestamp
 	KeyPacketTimeoutTimestamp = []byte("PacketTimeoutTimestamp")
-	// KeyPriceListExpDuration is store's key for PriceListExpDuration
-	KeyPriceListExpDuration = []byte("PriceListExpDuration")
 	// KeyCoinRatesParams is store's key for CoinRatesParams
 	KeyCoinRatesParams = []byte("CoinRatesParams")
 )
@@ -67,7 +63,6 @@ func NewParams(
 	authorizedChan string,
 	timeoutHeight clienttypes.Height,
 	TimeoutTimestamp uint64,
-	expDuration uint64,
 	coinRatesParams CoinRatesParams,
 ) Params {
 	return Params{
@@ -75,7 +70,6 @@ func NewParams(
 		AuthorizedChannel:      authorizedChan,
 		PacketTimeoutHeight:    timeoutHeight,
 		PacketTimeoutTimestamp: TimeoutTimestamp,
-		PriceListExpDuration:   expDuration,
 		CoinRatesParams:        coinRatesParams,
 	}
 }
@@ -87,7 +81,6 @@ func DefaultParams() Params {
 		DefaultAuthorizedChannel,
 		clienttypes.MustParseHeight(DefaultPacketTimeoutHeight),
 		DefaultPacketTimeoutTimestamp,
-		DefaultPriceListExpDuration,
 		DefaultCoinRatesParams,
 	)
 }
@@ -99,7 +92,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyAuthorizedChannel, &p.AuthorizedChannel, validateAuthorizedChannel),
 		paramtypes.NewParamSetPair(KeyPacketTimeoutHeight, &p.PacketTimeoutHeight, validateClientHeight),
 		paramtypes.NewParamSetPair(KeyPacketTimeoutTimestamp, &p.PacketTimeoutTimestamp, validateDuration),
-		paramtypes.NewParamSetPair(KeyPriceListExpDuration, &p.PriceListExpDuration, validateDuration),
 		paramtypes.NewParamSetPair(KeyCoinRatesParams, &p.CoinRatesParams, validateCoinRatesParams),
 	}
 }
