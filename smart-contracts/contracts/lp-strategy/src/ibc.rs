@@ -1,9 +1,9 @@
-use crate::contract::{do_ibc_lock_tokens, do_ibc_join_pool_swap};
 use crate::error::{ContractError, Never};
 use crate::helpers::{
     create_reply, create_submsg, get_ica_address, IbcMsgKind, IcaMessages, MsgKind,
 };
-use crate::state::{CHANNELS, PENDING_ACK, CONFIG, ICA_CHANNEL};
+use crate::state::{CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK};
+use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::cosmos::base::v1beta1::Coin;
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
@@ -20,11 +20,11 @@ use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
-    IbcAcknowledgement, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg,
-    IbcChannelOpenMsg, IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg,
-    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, Response, StdError,
-    StdResult, SubMsg, Uint128, WasmMsg,
+    entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
+    IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, Response, StdError, StdResult, SubMsg,
+    Uint128, WasmMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -203,10 +203,12 @@ pub fn handle_succesful_ack(
     }
 }
 
-pub fn handle_transfer_ack(deps: DepsMut,
+pub fn handle_transfer_ack(
+    deps: DepsMut,
     env: Env,
     ack_bin: Binary,
-    pkt: IbcPacketAckMsg) -> Result<IbcBasicResponse, ContractError> {
+    pkt: IbcPacketAckMsg,
+) -> Result<IbcBasicResponse, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
     // we need to save and fetch
     let config = CONFIG.load(deps.storage)?;
@@ -214,10 +216,19 @@ pub fn handle_transfer_ack(deps: DepsMut,
     let original: FungibleTokenPacketData = Message::decode(pkt.original_packet.data.as_ref())?;
     let amount = Uint128::new(original.amount.as_str().parse::<u128>()?);
 
-    let msg = do_ibc_join_pool_swap(deps, env, ica_channel, config.pool_id, original.denom.clone(), amount, Uint128::one())?;
-    Ok(IbcBasicResponse::new()
-        .add_submessage(msg)
-        .add_attribute("transfer-ack", format!("{}-{}", original.amount, original.denom)))
+    let msg = do_ibc_join_pool_swap_extern_amount_in(
+        deps.storage,
+        env,
+        ica_channel,
+        config.pool_id,
+        original.denom.clone(),
+        amount,
+        Uint128::one(),
+    )?;
+    Ok(IbcBasicResponse::new().add_submessage(msg).add_attribute(
+        "transfer-ack",
+        format!("{}-{}", original.amount, original.denom),
+    ))
 }
 
 pub fn handle_ica_ack(

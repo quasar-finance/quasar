@@ -41,5 +41,5 @@ pub enum ContractError {
     DecodeError(#[from] prost::DecodeError),
 
     #[error("{0}")]
-    ParseIntError(#[from] ParseIntError)
+    ParseIntError(#[from] ParseIntError),
 }
