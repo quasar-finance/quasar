@@ -247,12 +247,14 @@ pub fn handle_ica_ack(
             deps.api.debug(ack_bin.to_base64().as_ref());
             let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
             let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
+            // The
+            let denom = CONFIG.load(deps.storage)?.denom;
 
             let ica_pkt = do_ibc_lock_tokens(
                 deps.storage,
                 ica_addr,
                 vec![Coin {
-                    denom: "gamm/pool/1".to_string(),
+                    denom,
                     amount: resp.share_out_amount,
                 }],
             )?;
