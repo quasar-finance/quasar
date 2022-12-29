@@ -2,8 +2,7 @@ use crate::{
     error::ContractError,
     state::{CHANNELS, REPLIES},
 };
-use cosmwasm_std::{CosmosMsg, Deps, Order, Reply, Response, StdError, Storage, SubMsg, Uint128};
-use quasar_traits::traits::Curve;
+use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
