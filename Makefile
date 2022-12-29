@@ -183,7 +183,7 @@ test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
 
 test-e2e:
-	@VERSION=$(VERSION) cd $(E2EDIR); go test -mod=readonly -timeout=25m -v .
+	@VERSION=$(VERSION)  go test -mod=readonly -timeout=25m -v ./tests/e2e
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)
