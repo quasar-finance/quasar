@@ -82,7 +82,7 @@ func (kf KeeperFactory) SetQosmosisDefaultParams(k qosmokeeper.Keeper) {
 
 func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memKey := sdk.NewKVStoreKey(types.MemStoreKey)
+	memKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	tKey := sdk.NewTransientStoreKey(types.TStoreKey)
 
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
