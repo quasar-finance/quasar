@@ -37,7 +37,7 @@ pub fn instantiate(
             pool_denom: msg.pool_denom,
             denom: msg.denom,
         },
-    );
+    )?;
     Ok(Response::default())
 }
 
@@ -185,61 +185,6 @@ mod tests {
     const INVESTOR: &str = "investor";
     const BUYER: &str = "buyer";
 
-    #[test]
-    fn interchain_packet_serialization_works() {
-        let expected: Vec<u8> = vec![
-            123, 34, 64, 116, 121, 112, 101, 34, 58, 34, 84, 89, 80, 69, 95, 69, 88, 69, 67, 85,
-            84, 69, 95, 84, 88, 34, 44, 34, 100, 97, 116, 97, 34, 58, 91, 49, 48, 44, 49, 51, 54,
-            44, 49, 44, 49, 48, 44, 52, 55, 44, 52, 55, 44, 49, 49, 49, 44, 49, 49, 53, 44, 49, 48,
-            57, 44, 49, 49, 49, 44, 49, 49, 53, 44, 49, 48, 53, 44, 49, 49, 53, 44, 52, 54, 44, 49,
-            48, 51, 44, 57, 55, 44, 49, 48, 57, 44, 49, 48, 57, 44, 52, 54, 44, 49, 49, 56, 44, 52,
-            57, 44, 57, 56, 44, 49, 48, 49, 44, 49, 49, 54, 44, 57, 55, 44, 52, 57, 44, 52, 54, 44,
-            55, 55, 44, 49, 49, 53, 44, 49, 48, 51, 44, 55, 52, 44, 49, 49, 49, 44, 49, 48, 53, 44,
-            49, 49, 48, 44, 56, 51, 44, 49, 49, 57, 44, 57, 55, 44, 49, 49, 50, 44, 54, 57, 44, 49,
-            50, 48, 44, 49, 49, 54, 44, 49, 48, 49, 44, 49, 49, 52, 44, 49, 49, 48, 44, 54, 53, 44,
-            49, 48, 57, 44, 49, 49, 49, 44, 49, 49, 55, 44, 49, 49, 48, 44, 49, 49, 54, 44, 55, 51,
-            44, 49, 49, 48, 44, 49, 56, 44, 56, 53, 44, 49, 48, 44, 54, 51, 44, 49, 49, 49, 44, 49,
-            49, 53, 44, 49, 48, 57, 44, 49, 49, 49, 44, 52, 57, 44, 49, 48, 50, 44, 49, 49, 50, 44,
-            49, 49, 52, 44, 49, 48, 52, 44, 49, 48, 49, 44, 49, 49, 48, 44, 49, 48, 51, 44, 49, 48,
-            55, 44, 49, 50, 48, 44, 52, 56, 44, 53, 49, 44, 53, 49, 44, 49, 49, 55, 44, 49, 48, 57,
-            44, 53, 48, 44, 49, 49, 53, 44, 49, 49, 50, 44, 49, 48, 49, 44, 49, 49, 51, 44, 49, 48,
-            49, 44, 53, 49, 44, 49, 48, 51, 44, 49, 49, 48, 44, 53, 55, 44, 53, 49, 44, 49, 48, 55,
-            44, 53, 48, 44, 53, 53, 44, 53, 54, 44, 49, 48, 52, 44, 49, 48, 57, 44, 52, 56, 44, 49,
-            48, 48, 44, 53, 52, 44, 53, 53, 44, 53, 48, 44, 49, 49, 57, 44, 49, 49, 56, 44, 49, 48,
-            48, 44, 49, 49, 54, 44, 53, 52, 44, 53, 55, 44, 49, 48, 52, 44, 49, 49, 54, 44, 49, 49,
-            57, 44, 49, 48, 52, 44, 49, 48, 56, 44, 49, 48, 52, 44, 49, 49, 50, 44, 49, 49, 55, 44,
-            53, 48, 44, 49, 49, 53, 44, 49, 50, 48, 44, 49, 48, 56, 44, 49, 49, 55, 44, 49, 49, 50,
-            44, 49, 48, 51, 44, 49, 49, 57, 44, 49, 54, 44, 49, 44, 50, 54, 44, 49, 51, 44, 49, 48,
-            44, 53, 44, 49, 49, 55, 44, 49, 49, 49, 44, 49, 48, 57, 44, 49, 49, 53, 44, 49, 49, 49,
-            44, 49, 56, 44, 52, 44, 52, 57, 44, 52, 56, 44, 52, 56, 44, 52, 56, 44, 51, 52, 44, 49,
-            44, 52, 57, 93, 44, 34, 109, 101, 109, 111, 34, 58, 34, 34, 125,
-        ];
-        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
-            sender: "osmo1fprhengkx033um2speqe3gn93k278hm0d672wvdt69htwhlhpu2sxlupgw".to_string(),
-            pool_id: 1,
-            token_in: Some(Coin {
-                denom: "uomso".to_string(),
-                amount: "1000".to_string(),
-            }),
-            share_out_min_amount: "1".to_string(),
-        };
-
-        let anys: Vec<Any> = vec![Any {
-            type_url:
-                osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL
-                    .to_string(),
-            value: join.encode_to_vec(),
-        }];
-
-        let packet = InterchainAccountPacketData {
-            r#type: Type::ExecuteTx,
-            // TODO data needs to be a cosmos tx
-            data: CosmosTx { messages: anys }.encode_to_vec(),
-            memo: "".into(),
-        };
-        assert_eq!(expected, to_binary(&packet).unwrap())
-    }
-
     fn default_instantiate(
         supply_decimals: u8,
         reserve_decimals: u8,
@@ -260,69 +205,4 @@ mod tests {
         reserve_supply: Uint128,
     ) {
     }
-
-    #[test]
-    fn serialize_cosmos_tx_works() {
-        let join = osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn {
-            sender: "counter_party_address".into(),
-            pool_id: 1,
-            token_in: Some(Coin {
-                denom: "uqsr".to_string(),
-                amount: "1000".to_string(),
-            }),
-            share_out_min_amount: "1".to_string(),
-        };
-
-        let proto_join = join.encode_to_vec();
-        // a serialization in done in Go and Cosmos sdk
-        let go_proto: Vec<u8> = vec![
-            10, 93, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46, 118,
-            49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 74, 111, 105, 110, 83, 119, 97, 112, 69,
-            120, 116, 101, 114, 110, 65, 109, 111, 117, 110, 116, 73, 110, 18, 42, 10, 21, 99, 111,
-            117, 110, 116, 101, 114, 95, 112, 97, 114, 116, 121, 95, 97, 100, 100, 114, 101, 115,
-            115, 16, 1, 26, 12, 10, 4, 117, 113, 115, 114, 18, 4, 49, 48, 48, 48, 34, 1, 49,
-        ];
-
-        let anys: Vec<Any> = vec![Any {
-            type_url:
-                osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountIn::TYPE_URL
-                    .to_string(),
-            value: proto_join,
-        }];
-        let data = CosmosTx { messages: anys }.encode_to_vec();
-
-        assert_eq!(data, go_proto)
-    }
-
-    // #[test]
-    // fn deposit_works() {
-    //     let mut deps = mock_dependencies();
-    //     let info = mock_info("alice", &coins(100_000, "uqsar"));
-    //     execute_deposit(deps.as_mut(), mock_env(), info).unwrap();
-    // }
-
-    // #[test]
-    // fn withdraw_with_sufficient_funds_works() {
-    //     let mut deps = mock_dependencies();
-    //     let env = mock_env();
-    //     deps.querier
-    //         .update_balance(env.clone().contract.address, coins(100_000, "uqsar"));
-    //     let res = execute_withdraw_request(
-    //         deps.as_mut(),
-    //         env,
-    //         mock_info("alice", &[]),
-    //         "alice".into(),
-    //         "uqsar".to_string(),
-    //         Uint128::new(100_000),
-    //     )
-    //     .unwrap();
-    //     assert_eq!(res.messages.len(), 1);
-    //     assert_eq!(
-    //         res.messages[0],
-    //         SubMsg::new(BankMsg::Send {
-    //             to_address: "alice".to_string(),
-    //             amount: coins(100_000, "uqsar")
-    //         })
-    //     )
-    // }
 }
