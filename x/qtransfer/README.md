@@ -1,9 +1,9 @@
-# IBC-hooks
+# QTransfer
 
 ## Wasm Hooks
 
 The wasm hook is an IBC middleware which is used to allow ICS-20 token transfers to initiate contract calls.
-This allows cross-chain contract calls, that involve token movement. 
+This allows cross-chain contract calls, that involve token movement.
 This is useful for a variety of usecases.
 One of primary importance is cross-chain swaps, which is an extremely powerful primitive.
 
@@ -18,20 +18,20 @@ The cosmwasm `MsgExecuteContract` is defined [here](https://github.com/CosmWasm/
 
 ```go
 type MsgExecuteContract struct {
-	// Sender is the that actor that signed the messages
-	Sender string
-	// Contract is the address of the smart contract
-	Contract string
-	// Msg json encoded message to be passed to the contract
-	Msg RawContractMessage
-	// Funds coins that are transferred to the contract on execution
-	Funds sdk.Coins
+    // Sender is the that actor that signed the messages
+    Sender string
+    // Contract is the address of the smart contract
+    Contract string
+    // Msg json encoded message to be passed to the contract
+    Msg RawContractMessage
+    // Funds coins that are transferred to the contract on execution
+    Funds sdk.Coins
 }
 ```
 
 So we detail where we want to get each of these fields from:
 
-* Sender: We cannot trust the sender of an IBC packet, the counterparty chain has full ability to lie about it. 
+* Sender: We cannot trust the sender of an IBC packet, the counterparty chain has full ability to lie about it.
 We cannot risk this sender being confused for a particular user or module address on Osmosis.
 So we hardcode the sender to be a particular module account made in IBC.
 * Contract: This field should be directly obtained from the ICS-20 packet metadata
@@ -42,14 +42,14 @@ So our constructed cosmwasm message that we execute will look like:
 
 ```go
 msg := MsgExecuteContract{
-	// Sender is the that actor that signed the messages
-	Sender: "osmo1-hardcoded-moduleAccount",
-	// Contract is the address of the smart contract
-	Contract: packet.data.memo["wasm"]["ContractAddress"],
-	// Msg json encoded message to be passed to the contract
-	Msg: packet.data.memo["wasm"]["Msg"],
-	// Funds coins that are transferred to the contract on execution
-	Funds: sdk.NewCoin{Denom: ibc.ConvertSenderDenomToLocalDenom(packet.data.Denom), Amount: packet.data.Amount}
+    // Sender is the that actor that signed the messages
+    Sender: "osmo1-hardcoded-moduleAccount",
+    // Contract is the address of the smart contract
+    Contract: packet.data.memo["wasm"]["ContractAddress"],
+    // Msg json encoded message to be passed to the contract
+    Msg: packet.data.memo["wasm"]["Msg"],
+    // Funds coins that are transferred to the contract on execution
+    Funds: sdk.NewCoin{Denom: ibc.ConvertSenderDenomToLocalDenom(packet.data.Denom), Amount: packet.data.Amount}
 ```
 
 ### ICS20 packet structure
@@ -57,15 +57,15 @@ msg := MsgExecuteContract{
 So given the details above, we propogate the implied ICS20 packet data structure.
 ICS20 is JSON native, so we use JSON for the memo format.
 
-```json 
+```json
 {
     //... other ibc fields that we don't care about
     "data":{
-    	"denom": "denom on counterparty chain (e.g. uatom)",
+        "denom": "denom on counterparty chain (e.g. uatom)",
         "amount": "1000",
         "sender": "...", // ignored
         "receiver": "contract addr or blank",
-    	"memo": {
+        "memo": {
            "wasm": {
               "contract": "osmo1contractAddr",
               "msg": {
@@ -99,7 +99,7 @@ If an ICS20 packet is directed towards wasmhooks, and is formated incorrectly, t
 
 Pre wasm hooks:
 
-* Ensure the incoming IBC packet is cryptogaphically valid
+* Ensure the incoming IBC packet is cryptographically valid
 * Ensure the incoming IBC packet is not timed out.
 
 In Wasm hooks, pre packet execution:
@@ -113,7 +113,5 @@ In wasm hooks, post packet execution:
 * Execute wasm message
 * if wasm message has error, return ErrAck
 * otherwise continue through middleware
-
-
 
 ### Testing strategy
