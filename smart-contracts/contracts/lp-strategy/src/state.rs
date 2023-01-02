@@ -13,7 +13,10 @@ use crate::helpers::{IbcMsgKind, MsgKind};
 pub struct Config {
     pub lock_period: Uint128,
     pub pool_id: u64,
+    // pool_denom is the denom of the gamm pool on osmosis; eg gamm/pool/1
     pub pool_denom: String,
+    // the denom here has to be the denom of the asset on quasar,
+    // after proper hops, it should be the correct denom on osmosis
     pub denom: String,
 }
 

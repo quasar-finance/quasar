@@ -71,7 +71,6 @@ pub fn execute(
             channel,
             pool_id,
             amount,
-            lock_period,
             denom,
             share_out_min_amount,
         } => execute_join_pool(
@@ -95,7 +94,13 @@ pub fn execute_transfer(
     channel: String, // TODO see if we can move channel mapping to a more zone like approach
     to_address: String,
 ) -> Result<Response, ContractError> {
-    let transfer = do_transfer(deps.storage, env, info.funds, channel.clone(), to_address.clone())?;
+    let transfer = do_transfer(
+        deps.storage,
+        env,
+        info.funds,
+        channel.clone(),
+        to_address.clone(),
+    )?;
 
     Ok(Response::new()
         .add_submessage(transfer)

@@ -44,6 +44,5 @@ pub enum ExecuteMsg {
         amount: Uint128,
         denom: String,
         share_out_min_amount: Uint128,
-        lock_period: Uint128,
     },
 }
