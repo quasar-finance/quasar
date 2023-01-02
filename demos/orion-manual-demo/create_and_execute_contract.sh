@@ -8,7 +8,11 @@ NODE="--node $RPC"
 TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3"
 echo $NODE
 # the callback_address is the address of the orion module
-INIT='{"callback_address":"quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc"}'
+#     pub lock_period: Uint128, duration is  60 sec/min * 60 min/hr * 24hr * 14days "1209600"
+#     pub pool_id: u64,
+#     pub pool_denom: String,
+#     pub denom: String,
+INIT='{"lock_period":"1209600","pool_id":1,"pool_denom":"gamm/pool/1","denom":""}'
 MSG='{"register_ica_on_zone":{"zone_id":"osmosis"}}'
 
 cd ../../smart-contracts
