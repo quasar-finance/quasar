@@ -3,8 +3,11 @@ package testutils
 import (
 	"encoding/json"
 
+	"github.com/cosmos/cosmos-sdk/simapp"
 	ibctesting "github.com/cosmos/ibc-go/v5/testing"
 	"github.com/quasarlabs/quasarnode/app"
+	"github.com/tendermint/tendermint/libs/log"
+	dbm "github.com/tendermint/tm-db"
 )
 
 type TestChain struct {
@@ -12,8 +15,23 @@ type TestChain struct {
 }
 
 func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	quasarApp := app.Setup(false)
-	return quasarApp, app.NewDefaultGenesisState()
+	db := dbm.NewMemDB()
+	encCdc := app.MakeEncodingConfig()
+	quasarApp := app.New(
+		log.NewNopLogger(),
+		db,
+		nil,
+		true,
+		map[int64]bool{},
+		app.DefaultNodeHome,
+		5,
+		encCdc,
+		simapp.EmptyAppOptions{},
+		app.GetWasmEnabledProposals(),
+		app.EmptyWasmOpts,
+	)
+
+	return quasarApp, app.NewDefaultGenesisState(encCdc.Marshaler)
 }
 
 // GetQuasarApp returns the current chain's app as an QuasarApp

@@ -22,6 +22,7 @@ import (
 	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -98,6 +99,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock, ibcConnectionKeeperMock, ibcClientKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)
+	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
 	// Setting params before loading stores causes store does not exist error.
@@ -128,6 +130,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			QoracleKeeper:    qoracleKeeper,
 			InterGammKeeper:  intergammKeeper,
 			OrionKeeper:      orionKeeper,
+			QTransfer:        qtransferkeeper,
 		},
 	}
 }
@@ -154,4 +157,5 @@ type testKeepers struct {
 	QoracleKeeper    qoraclekeeper.Keeper
 	InterGammKeeper  *intergammkeeper.Keeper
 	OrionKeeper      orionkeeper.Keeper
+	QTransfer        qtransferkeeper.Keeper
 }

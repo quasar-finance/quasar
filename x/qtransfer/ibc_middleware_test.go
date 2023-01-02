@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,18 +11,14 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v5/testing"
-	"github.com/quasarlabs/quasarnode/app"
 	"github.com/quasarlabs/quasarnode/x/qtransfer"
 	qtransfertestutils "github.com/quasarlabs/quasarnode/x/qtransfer/testutils"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 	"github.com/stretchr/testify/suite"
-	tmtypes "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 type HooksTestSuite struct {
 	suite.Suite
-	App *app.App
-	Ctx sdk.Context
 
 	coordinator *ibctesting.Coordinator
 	chainA      *qtransfertestutils.TestChain
@@ -33,10 +28,8 @@ type HooksTestSuite struct {
 }
 
 func (suite *HooksTestSuite) SetupTest() {
-	suite.App = app.Setup(true)
-	suite.Ctx = suite.App.BaseApp.NewContext(false, tmtypes.Header{Height: 1, ChainID: "quasar-1", Time: time.Now().UTC()})
-
 	ibctesting.DefaultTestingAppInit = qtransfertestutils.SetupTestingApp
+
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
 	suite.chainA = &qtransfertestutils.TestChain{
 		TestChain: suite.coordinator.GetChain(ibctesting.GetChainID(1)),
@@ -216,7 +209,7 @@ func (suite *HooksTestSuite) TestFundsAreTransferredToTheContract() {
 
 	// Check that the contract has no funds
 	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
-	balance := suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC
@@ -230,7 +223,7 @@ func (suite *HooksTestSuite) TestFundsAreTransferredToTheContract() {
 	suite.Require().Equal(ack["result"], "eyJjb250cmFjdF9yZXN1bHQiOiJkR2hwY3lCemFHOTFiR1FnWldOb2J3PT0iLCJpYmNfYWNrIjoiZXlKeVpYTjFiSFFpT2lKQlVUMDlJbjA9In0=")
 
 	// Check that the token has now been transferred to the contract
-	balance = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance = suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(1), balance.Amount)
 }
 
@@ -242,7 +235,7 @@ func (suite *HooksTestSuite) TestFundsAreReturnedOnFailedContractExec() {
 
 	// Check that the contract has no funds
 	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
-	balance := suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC with a message that the contract will reject
@@ -255,7 +248,7 @@ func (suite *HooksTestSuite) TestFundsAreReturnedOnFailedContractExec() {
 	suite.Require().Contains(ack, "error")
 
 	// Check that the token has now been transferred to the contract
-	balance = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance = suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	fmt.Println(balance)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 }
@@ -310,7 +303,7 @@ func (suite *HooksTestSuite) TestFundTracking() {
 
 	// Check that the contract has no funds
 	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
-	balance := suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC
@@ -343,6 +336,6 @@ func (suite *HooksTestSuite) TestFundTracking() {
 	suite.Require().Equal(`{"total_funds":[{"denom":"ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878","amount":"1"}]}`, state)
 
 	// Check that the token has now been transferred to the contract
-	balance = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
+	balance = suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(2), balance.Amount)
 }

@@ -232,7 +232,7 @@ var (
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
+		genutil.AppModuleBasic{}, // TODO: Use NewAppModule function instead
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
@@ -367,14 +367,6 @@ type App struct {
 
 	configurator module.Configurator
 }
-
-// TODO wasmOpts and enabledProposals should be part of New() parameters according to cosmwasm, for now we don't
-//
-//	allow customization of wasmOpts and enabledProposals and just hardcode it to nil
-var (
-	wasmOpts         []wasm.Option       = nil
-	enabledProposals []wasm.ProposalType = wasm.EnableAllProposals
-)
 
 // New returns a reference to an initialized blockchain app
 func New(
@@ -517,8 +509,8 @@ func New(
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	// The gov proposal types can be individually enabled
-	if len(enabledProposals) != 0 {
-		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.WasmKeeper, enabledProposals))
+	if len(wasmEnabledProposals) != 0 {
+		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.WasmKeeper, wasmEnabledProposals))
 	}
 
 	// IBC Modules & Keepers
@@ -776,6 +768,13 @@ func New(
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
+
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper)) // The contract keeper needs to be set later
+	app.Ics20WasmHooks = &wasmHooks
+	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
+		app.IBCKeeper.ChannelKeeper,
+		app.Ics20WasmHooks,
+	)
 
 	// Register host and authentication routes
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).

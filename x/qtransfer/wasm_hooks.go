@@ -23,10 +23,10 @@ type ContractAck struct {
 
 type WasmHooks struct {
 	keeper         keeper.Keeper
-	contractKeeper wasmkeeper.PermissionedKeeper
+	contractKeeper *wasmkeeper.PermissionedKeeper
 }
 
-func NewWasmHooks(k keeper.Keeper, contractKeeper wasmkeeper.PermissionedKeeper) WasmHooks {
+func NewWasmHooks(k keeper.Keeper, contractKeeper *wasmkeeper.PermissionedKeeper) WasmHooks {
 	return WasmHooks{
 		keeper:         k,
 		contractKeeper: contractKeeper,

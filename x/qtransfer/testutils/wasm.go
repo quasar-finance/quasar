@@ -2,7 +2,7 @@ package testutils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -17,7 +17,7 @@ func (chain *TestChain) StoreContractCode(suite *suite.Suite, path string) {
 	osmosisApp := chain.GetQuasarApp()
 
 	govKeeper := osmosisApp.GovKeeper
-	wasmCode, err := ioutil.ReadFile(path)
+	wasmCode, err := os.ReadFile(path)
 	suite.Require().NoError(err)
 
 	addr := osmosisApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
