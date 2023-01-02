@@ -1,6 +1,7 @@
-package ibc_hooks
+package qtransfer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,19 +10,17 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/quasarlabs/quasarnode/x/qtransfer/client/cli"
+	"github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-type Ibcmodule struct{}
-
 var (
-	_          module.AppModule      = AppModule{}
-	_          module.AppModuleBasic = AppModuleBasic{}
-	ModuleName                       = "ibchooks"
+	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
 // AppModuleBasic defines the basic application module used by the mint module.
@@ -31,11 +30,11 @@ var _ module.AppModuleBasic = AppModuleBasic{}
 
 // Name returns the mint module's name.
 func (AppModuleBasic) Name() string {
-	return ModuleName
+	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the mint module's types on the given LegacyAmino codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
+func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types.
 func (b AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
@@ -43,27 +42,33 @@ func (b AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
 // DefaultGenesis returns default genesis state as raw bytes for the
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	emptyString := "{}"
-	return []byte(emptyString)
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the mint module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	return nil
+	var gs types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
+
+	return gs.Validate()
 }
 
-// RegisterRESTRoutes registers the REST routes for the mint module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the mint module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {}
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic(err)
+	}
+}
 
 // GetTxCmd returns no root tx command for the mint module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
 // GetQueryCmd returns the root query command for the mint module.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return nil
+	return cli.GetQueryCmd()
 }
 
 // ___________________________________________________________________________
@@ -72,20 +77,20 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 
-	authKeeper types.AccountKeeper
+	keeper keeper.Keeper
 }
 
 // NewAppModule creates a new AppModule object.
-func NewAppModule(ak types.AccountKeeper) AppModule {
+func NewAppModule(k keeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
-		authKeeper:     ak,
+		keeper:         k,
 	}
 }
 
 // Name returns the mint module's name.
 func (AppModule) Name() string {
-	return ModuleName
+	return types.ModuleName
 }
 
 // RegisterInvariants registers the mint module invariants.
@@ -96,32 +101,36 @@ func (AppModule) Route() sdk.Route { return sdk.Route{} }
 
 // QuerierRoute returns the module's querier route name.
 func (AppModule) QuerierRoute() string {
-	return ""
+	return types.QuerierRoute
 }
 
 // LegacyQuerierHandler returns the x/mint module's sdk.Querier.
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(sdk.Context, []string, abci.RequestQuery) ([]byte, error) {
-		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", ModuleName)
+		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", types.ModuleName)
 	}
 }
 
 // RegisterServices registers a gRPC query service to respond to the
 // module-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the ibc-hooks module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	IbcHooksInitGenesis(ctx, am.authKeeper)
+	var genesisState types.GenesisState
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	InitGenesis(ctx, am.keeper, genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the mint
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return json.RawMessage{}
+	gs := ExportGenesis(ctx, am.keeper)
+	return cdc.MustMarshalJSON(gs)
 }
 
 // BeginBlock returns the begin blocker for the mint module.

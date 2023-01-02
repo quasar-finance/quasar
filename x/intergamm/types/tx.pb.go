@@ -298,6 +298,7 @@ func (m *MsgSendTokenResponse) GetPortId() string {
 	}
 	return ""
 }
+
 type MsgRegisterInterchainAccount struct {
 	Creator      string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	ConnectionId string `protobuf:"bytes,2,opt,name=connectionId,proto3" json:"connectionId,omitempty"`
@@ -1246,7 +1247,6 @@ type MsgTransmitICATransfer struct {
 	IcaOwnerAddress string     `protobuf:"bytes,1,opt,name=icaOwnerAddress,proto3" json:"icaOwnerAddress,omitempty"`
 	ToAddress       string     `protobuf:"bytes,3,opt,name=toAddress,proto3" json:"toAddress,omitempty"`
 	Coin            types.Coin `protobuf:"bytes,4,opt,name=coin,proto3" json:"coin"`
-
 }
 
 func (m *MsgTransmitICATransfer) Reset()         { *m = MsgTransmitICATransfer{} }
@@ -1361,7 +1361,6 @@ func (m *MsgTransmitICATransferResponse) GetPortId() string {
 		return m.PortId
 	}
 	return ""
-
 }
 
 type MsgRegisterICAOnZone struct {
@@ -1398,9 +1397,6 @@ func (m *MsgRegisterICAOnZone) XXX_Size() int {
 }
 func (m *MsgRegisterICAOnZone) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRegisterICAOnZone.DiscardUnknown(m)
-}
-func (*UnimplementedMsgServer) RegisterInterchainAccount(ctx context.Context, req *MsgRegisterInterchainAccount) (*MsgRegisterInterchainAccountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterInterchainAccount not implemented")
 }
 
 var xxx_messageInfo_MsgRegisterICAOnZone proto.InternalMessageInfo
@@ -6041,7 +6037,6 @@ func (m *MsgTransmitIbcBeginUnlockingResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *MsgTransmitIbcJoinSwapExternAmountIn) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

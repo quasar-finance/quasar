@@ -1,4 +1,4 @@
-package ibc_hooks
+package qtransfer
 
 import (
 	// external libraries

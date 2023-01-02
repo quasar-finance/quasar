@@ -1,4 +1,4 @@
-package ibc_hooks
+package qtransfer
 
 import (
 	"encoding/json"
@@ -12,6 +12,7 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v5/modules/core/exported"
+	"github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 )
 
@@ -21,16 +22,20 @@ type ContractAck struct {
 }
 
 type WasmHooks struct {
-	ContractKeeper *wasmkeeper.PermissionedKeeper
+	keeper         keeper.Keeper
+	contractKeeper wasmkeeper.PermissionedKeeper
 }
 
-func NewWasmHooks(contractKeeper *wasmkeeper.PermissionedKeeper) WasmHooks {
-	return WasmHooks{ContractKeeper: contractKeeper}
+func NewWasmHooks(k keeper.Keeper, contractKeeper wasmkeeper.PermissionedKeeper) WasmHooks {
+	return WasmHooks{
+		keeper:         k,
+		contractKeeper: contractKeeper,
+	}
 }
 
 func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) ibcexported.Acknowledgement {
-	if h.ContractKeeper == nil {
-		// Not configured
+	if !h.keeper.WasmHooksEnabled(ctx) {
+		// Wasm hooks are disabled
 		return im.App.OnRecvPacket(ctx, packet, relayer)
 	}
 
@@ -54,10 +59,10 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 	// The funds sent on this packet need to be transferred to the wasm hooks module address/
 	// For this, we override the ICS20 packet's Receiver (essentially hijacking the funds for the module)
 	// and execute the underlying OnRecvPacket() call (which should eventually land on the transfer app's
-	// relay.go and send the sunds to the module.
+	// relay.go and send the funds to the module.
 	//
 	// If that succeeds, we make the contract call
-	data.Receiver = WasmHookModuleAccountAddr.String()
+	data.Receiver = types.IntermediateAccountAddress.String()
 	bz, err := json.Marshal(data)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot marshal the ICS20 packet: %w", err))
@@ -72,7 +77,7 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 
 	amount, ok := sdk.NewIntFromString(data.GetAmount())
 	if !ok {
-		// This should never happen, as it should've been caught in the underlaying call to OnRecvPacket,
+		// This should never happen, as it should've been caught in the underlying call to OnRecvPacket,
 		// but returning here for completeness
 		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid packet data: Amount is not an int"))
 	}
@@ -82,7 +87,7 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 	funds := sdk.NewCoins(sdk.NewCoin(denom, amount))
 
 	execMsg := wasmtypes.MsgExecuteContract{
-		Sender:   WasmHookModuleAccountAddr.String(),
+		Sender:   types.IntermediateAccountAddress.String(),
 		Contract: contractAddr.String(),
 		Msg:      msgBytes,
 		Funds:    funds,
@@ -135,9 +140,9 @@ func MustExtractDenomFromPacketOnRecv(packet ibcexported.PacketI) string {
 
 func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 	if err := execMsg.ValidateBasic(); err != nil {
-		return nil, fmt.Errorf(types.ErrBadExecutionMsg, err.Error())
+		return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
 	}
-	wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.ContractKeeper)
+	wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.contractKeeper)
 	return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
 }
 
@@ -186,7 +191,7 @@ func ValidateAndParseMemo(memo string, receiver string) (isWasmRouted bool, cont
 	wasm, ok := wasmRaw.(map[string]interface{})
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, "wasm metadata is not a valid JSON map object")
+			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, "wasm metadata is not a JSON map object")
 	}
 
 	// Get the contract
@@ -194,32 +199,32 @@ func ValidateAndParseMemo(memo string, receiver string) (isWasmRouted bool, cont
 	if !ok {
 		// The tokens will be returned
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, `Could not find key wasm["contract"]`)
+			sdkerrors.Wrapf(types.ErrInvalidMetadataFormat, `could not find key wasm["contract"]`)
 	}
 
 	contractAddr, err = sdk.AccAddressFromBech32(contract)
 	if err != nil {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, `wasm["contract"] is not a valid bech32 address`)
+			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] is not a valid bech32 address`)
 	}
 
 	// The contract and the receiver should be the same for the packet to be valid
 	if contract != receiver {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, `wasm["contract"] should be the same as the receiver of the packet`)
+			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] should be the same as the receiver of the packet`)
 	}
 
 	// Ensure the message key is provided
 	if wasm["msg"] == nil {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, `Could not find key wasm["msg"]`)
+			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `could not find key wasm["msg"]`)
 	}
 
 	// Make sure the msg key is a map. If it isn't, return an error
 	_, ok = wasm["msg"].(map[string]interface{})
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, `wasm["msg"] is not a map object`)
+			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["msg"] is not a map object`)
 	}
 
 	// Get the message string by serializing the map
@@ -227,7 +232,7 @@ func ValidateAndParseMemo(memo string, receiver string) (isWasmRouted bool, cont
 	if err != nil {
 		// The tokens will be returned
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			fmt.Errorf(types.ErrBadMetadataFormatMsg, memo, err.Error())
+			sdkerrors.Wrapf(types.ErrInvalidMetadataFormat, `could not marshal wasm["msg"] field back to json: %s`, err)
 	}
 
 	return isWasmRouted, contractAddr, msgBytes, nil
