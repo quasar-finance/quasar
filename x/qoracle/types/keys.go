@@ -33,6 +33,8 @@ var (
 	KeyPoolsUpdateFlag = []byte("pools_update_flag")
 	// KeyPoolPrefix defines the prefix for the pool key in the memory store
 	KeyMemPoolPrefix = []byte("pool")
+	// KeyMemPoolUpdatedAt defines the prefix for the denom symbol mapping key in store
+	KeyDenomSymbolMappingPrefix = []byte("denom_symbol_mapping")
 )
 
 // GetDenomPriceKey returns the key for the denom price in the memory store.
@@ -43,4 +45,9 @@ func GetDenomPriceKey(denom string) []byte {
 // GetPoolKey returns the key for the pool in the memory store.
 func GetPoolKey(source string, id string) []byte {
 	return append(KeyMemPoolPrefix, []byte(source+"/"+id)...)
+}
+
+// GetDenomSymbolMappingKey returns the key for the denom symbol mapping in store.
+func GetDenomSymbolMappingKey(denom string) []byte {
+	return append(KeyDenomSymbolMappingPrefix, []byte(denom)...)
 }

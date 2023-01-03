@@ -2,7 +2,7 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
-import "qoracle/denom_price_mapping.proto";
+import "qoracle/denom_symbol_mapping.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
@@ -10,6 +10,5 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  repeated DenomPriceMapping denom_price_mappings = 1 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
   uint64 denom_prices_exp_duration = 2 [(gogoproto.moretags) = "yaml:\"denom_prices_exp_duration\""]; // Maximum time in which the denom price list is valid between updates in seconds.
 }

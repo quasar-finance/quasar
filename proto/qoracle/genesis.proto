@@ -3,6 +3,7 @@ package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "qoracle/params.proto";
+import "qoracle/denom_symbol_mapping.proto";
 import "qoracle/bandchain/params.proto";
 import "qoracle/osmosis/params.proto";
 
@@ -12,9 +13,11 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types";
 message GenesisState {
   Params params = 1 
     [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
-  BandchainGenesisState bandchain_genesis_state = 2
+  repeated DenomSymbolMapping denom_symbol_mappings = 2
+    [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"denom_symbol_mappings\""];
+  BandchainGenesisState bandchain_genesis_state = 3
     [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"bandchain_genesis_state\""];
-  OsmosisGenesisState osmosis_genesis_state = 3
+  OsmosisGenesisState osmosis_genesis_state = 4
     [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"osmosis_genesis_state\""];
 }
 
