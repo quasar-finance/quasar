@@ -29,13 +29,13 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	tkey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
-) *Keeper {
+) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	return Keeper{
 		cdc:          cdc,
 		storeKey:     storeKey,
 		memKey:       memKey,
