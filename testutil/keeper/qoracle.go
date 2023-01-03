@@ -40,7 +40,7 @@ func (kf KeeperFactory) QbandchainKeeper(
 		qoracleKeeper,
 	)
 
-	return *k
+	return k
 }
 
 func (kf KeeperFactory) SetQbandchainDefaultParams(k qbandkeeper.Keeper) {
@@ -73,7 +73,7 @@ func (kf KeeperFactory) QosmosisKeeper(
 		qoracleKeeper,
 	)
 
-	return *k
+	return k
 }
 
 func (kf KeeperFactory) SetQosmosisDefaultParams(k qosmokeeper.Keeper) {
@@ -98,7 +98,7 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.K
 		paramsSubspace,
 	)
 
-	return *k
+	return k
 }
 
 func (kf KeeperFactory) SetQoracleDefaultParams(k keeper.Keeper) {
