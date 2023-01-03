@@ -23,7 +23,7 @@ service Query {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_prices";
 	}
 
-	// Pools queries the pools from collected from pool oracles.
+	// Pools queries the pools collected from pool oracles.
 	rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pools";
 	}

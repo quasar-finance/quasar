@@ -33,6 +33,7 @@ func NewCoinRatesCallData(symbols []string) CoinRatesCallData {
 	}
 }
 
+// NewOracleScriptState creates a new OracleScriptState that keeps track of the state of an oracle script request.
 func NewOracleScriptState(ctx sdk.Context, clientId string, requestSeq uint64, callData proto.Message) OracleScriptState {
 	callDataAny, err := cdctypes.NewAnyWithValue(callData)
 	if err != nil {

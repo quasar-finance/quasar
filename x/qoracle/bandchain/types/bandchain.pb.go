@@ -26,6 +26,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// OracleScriptState defines the state of an oracle script which keeps track of oracle script request/response.
 type OracleScriptState struct {
 	ClientId              string     `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	CallData              *types.Any `protobuf:"bytes,2,opt,name=call_data,json=callData,proto3" json:"call_data,omitempty"`
@@ -134,6 +135,7 @@ func (m *OracleScriptState) GetUpdatedAtHeight() int64 {
 	return 0
 }
 
+// CoinRatesCallData is the call data for coin rates script
 type CoinRatesCallData struct {
 	Symbols    []string `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
 	Multiplier uint64   `protobuf:"varint,2,opt,name=multiplier,proto3" json:"multiplier,omitempty"`
@@ -186,6 +188,7 @@ func (m *CoinRatesCallData) GetMultiplier() uint64 {
 	return 0
 }
 
+// CoinRatesResult is the result for coin rates script
 type CoinRatesResult struct {
 	Rates []uint64 `protobuf:"varint,1,rep,packed,name=rates,proto3" json:"rates,omitempty"`
 }

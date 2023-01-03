@@ -414,7 +414,7 @@ type QueryClient interface {
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// DenomPrices queries list of denom prices.
 	DenomPrices(ctx context.Context, in *QueryDenomPricesRequest, opts ...grpc.CallOption) (*QueryDenomPricesResponse, error)
-	// Pools queries the pools from collected from pool oracles.
+	// Pools queries the pools collected from pool oracles.
 	Pools(ctx context.Context, in *QueryPoolsRequest, opts ...grpc.CallOption) (*QueryPoolsResponse, error)
 }
 
@@ -459,7 +459,7 @@ type QueryServer interface {
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// DenomPrices queries list of denom prices.
 	DenomPrices(context.Context, *QueryDenomPricesRequest) (*QueryDenomPricesResponse, error)
-	// Pools queries the pools from collected from pool oracles.
+	// Pools queries the pools collected from pool oracles.
 	Pools(context.Context, *QueryPoolsRequest) (*QueryPoolsResponse, error)
 }
 
