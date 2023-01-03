@@ -135,7 +135,7 @@ pub fn ibc_channel_connect(
                 counter_party_address: addr,
             }
         }
-        ChannelType::Ics20 { ref channel_ty } => todo!(),
+        ChannelType::Ics20 { ref channel_ty } => unimplemented!(),
     }
 
     info.handshake_state = HandshakeState::Open;
@@ -195,7 +195,7 @@ pub fn handle_succesful_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match kind {
-        crate::helpers::IbcMsgKind::Transfer => todo!(),
+        crate::helpers::IbcMsgKind::Transfer => handle_transfer_ack(deps, env, ack_bin, pkt),
         crate::helpers::IbcMsgKind::Ica(ica_kind) => {
             handle_ica_ack(deps, env, ica_kind, ack_bin, pkt)
         }
