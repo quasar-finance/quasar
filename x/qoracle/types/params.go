@@ -4,7 +4,6 @@ import (
 	"fmt"
 	time "time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -17,22 +16,6 @@ const (
 )
 
 var (
-	DefaultDenomPriceMappings = []DenomPriceMapping{
-		{
-			Denom:        "uatom",
-			OracleSymbol: "ATOM",
-			Multiplier:   sdk.NewDecWithPrec(1, 6),
-		},
-		{
-			Denom:        "uosmo",
-			OracleSymbol: "OSMO",
-			Multiplier:   sdk.NewDecWithPrec(1, 6),
-		},
-	}
-)
-
-var (
-	KeyDenomPriceMappings = []byte("DenomPriceMappings")
 	// KeyDenomPricesExpDuration is store's key for DenomPricesExpDuration
 	KeyDenomPricesExpDuration = []byte("DenomPricesExpDuration")
 )
@@ -43,37 +26,26 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(
-	denomPriceMappings []DenomPriceMapping,
-	expDuration uint64,
-) Params {
+func NewParams(expDuration uint64) Params {
 	return Params{
-		DenomPriceMappings:     denomPriceMappings,
 		DenomPricesExpDuration: expDuration,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(
-		DefaultDenomPriceMappings,
-		DefaultDenomPricesExpDuration,
-	)
+	return NewParams(DefaultDenomPricesExpDuration)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyDenomPriceMappings, &p.DenomPriceMappings, validateDenomPriceMappings),
 		paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateDenomPriceMappings(p.DenomPriceMappings); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -81,22 +53,6 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
-}
-
-// validateDenomPriceMappings validates the denom price mappings
-func validateDenomPriceMappings(v interface{}) error {
-	mappings, ok := v.([]DenomPriceMapping)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	for i, mapping := range mappings {
-		if err := mapping.Validate(); err != nil {
-			return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
-		}
-	}
-
-	return nil
 }
 
 func validateDuration(i interface{}) error {

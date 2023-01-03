@@ -173,8 +173,14 @@ func (k Keeper) UpdateDenomPrices(ctx sdk.Context) {
 		return
 	}
 
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.KeyDenomSymbolMappingPrefix)
+	defer iter.Close()
 	memStore := ctx.KVStore(k.memKey)
-	for _, mapping := range k.GetDenomPriceMappings(ctx) {
+	for ; iter.Valid(); iter.Next() {
+		var mapping types.DenomSymbolMapping
+		k.cdc.MustUnmarshal(iter.Value(), &mapping)
+
 		price := spl.Prices.AmountOf(mapping.OracleSymbol)
 		if price.IsZero() {
 			k.Logger(ctx).Error("failed to find symbol price for denom",
@@ -202,6 +208,12 @@ func (k Keeper) removeAllDenomPrices(ctx sdk.Context) {
 	for ; iter.Valid(); iter.Next() {
 		memStore.Delete(iter.Key())
 	}
+}
+
+// StoreDenomPriceMapping stores a denom symbol mapping in the store.
+func (k Keeper) SetDenomSymbolMapping(ctx sdk.Context, mapping types.DenomSymbolMapping) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetDenomSymbolMappingKey(mapping.Denom), k.cdc.MustMarshal(&mapping))
 }
 
 // UpdatePools fetches the latest pools from pool oracles if any available

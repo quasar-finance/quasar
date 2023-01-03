@@ -184,21 +184,14 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.Ra
 	var genesisState genesistypes.GenesisState
 	cdc.MustUnmarshalJSON(gs, &genesisState)
 
-	am.keeper.SetParams(ctx, genesisState.Params)
-	qbandkeeper.InitGenesis(ctx, am.bandchainKeeper, genesisState.BandchainGenesisState)
-	qosmokeeper.InitGenesis(ctx, am.osmosisKeeper, genesisState.OsmosisGenesisState)
+	InitGenesis(ctx, am.keeper, am.bandchainKeeper, am.osmosisKeeper, genesisState)
 
 	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the capability module's exported genesis state as raw JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := genesistypes.NewGenesisState(
-		am.keeper.GetParams(ctx),
-		qbandkeeper.ExportGenesis(ctx, am.bandchainKeeper),
-		qosmokeeper.ExportGenesis(ctx, am.osmosisKeeper),
-	)
-
+	gs := ExportGenesis(ctx, am.keeper, am.bandchainKeeper, am.osmosisKeeper)
 	return cdc.MustMarshalJSON(gs)
 }
 

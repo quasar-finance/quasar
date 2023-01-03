@@ -3,6 +3,9 @@ package types
 // this line is used by starport scaffolding # genesis/types/import
 
 import (
+	fmt "fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
@@ -13,6 +16,7 @@ import (
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		Params:                types.DefaultParams(),
+		DenomSymbolMappings:   DefaultSymbolMappings(),
 		BandchainGenesisState: DefaultBandchainGenesis(),
 		OsmosisGenesisState:   DefaultOsmosisGenesis(),
 	}
@@ -34,6 +38,13 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
+	// validateDenomPriceMappings validates the denom price mappings
+	for i, mapping := range gs.DenomSymbolMappings {
+		if err := mapping.Validate(); err != nil {
+			return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
+		}
+	}
+
 	if err := gs.BandchainGenesisState.Validate(); err != nil {
 		return err
 	}
@@ -43,6 +54,22 @@ func (gs GenesisState) Validate() error {
 	}
 
 	return nil
+}
+
+// DefaultSymbolMappings creates and returns the default qoracle DefaultSymbolMappings
+func DefaultSymbolMappings() []types.DenomSymbolMapping {
+	return []types.DenomSymbolMapping{
+		{
+			Denom:        "uatom",
+			OracleSymbol: "ATOM",
+			Multiplier:   sdk.NewDecWithPrec(1, 6),
+		},
+		{
+			Denom:        "uosmo",
+			OracleSymbol: "OSMO",
+			Multiplier:   sdk.NewDecWithPrec(1, 6),
+		},
+	}
 }
 
 // DefaultBandchainGenesis creates and returns the default qoracle DefaultBandchainGenesis

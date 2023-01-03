@@ -5,7 +5,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-func (mapping DenomPriceMapping) Validate() error {
+func (mapping DenomSymbolMapping) Validate() error {
 	if err := sdk.ValidateDenom(mapping.Denom); err != nil {
 		return sdkerrors.Wrap(err, "mapping denom")
 	}
