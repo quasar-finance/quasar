@@ -19,7 +19,7 @@ cd ../../smart-contracts
 docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/intergamm_bindings_test.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
 echo "Got CODE_ID = $CODE_ID"
 
