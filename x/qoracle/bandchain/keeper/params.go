@@ -46,7 +46,7 @@ func (k Keeper) GetPacketTimeoutTimestamp(ctx sdk.Context) (res uint64) {
 	return
 }
 
-// GetPacketTimeoutTimestamp retrieves the coin rates scripts params from the paramstore
+// GetCoinRatesParams retrieves the coin rates scripts params from the paramstore
 func (k Keeper) GetCoinRatesParams(ctx sdk.Context) (res types.CoinRatesParams) {
 	k.paramSpace.Get(ctx, types.KeyCoinRatesParams, &res)
 	return

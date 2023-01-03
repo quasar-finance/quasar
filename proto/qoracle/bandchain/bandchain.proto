@@ -7,23 +7,26 @@ import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types";
 
+// OracleScriptState defines the state of an oracle script which keeps track of oracle script request/response.
 message OracleScriptState {
-    string client_id = 1;
-    google.protobuf.Any call_data = 2;
-    uint64 request_packet_sequence = 3;
-    uint64 oracle_request_id = 4;
-    uint64 result_packet_sequence = 5;
-    google.protobuf.Any result = 6;
-    bool failed = 7;
-    int64 started_at_height = 8;
-    int64 updated_at_height = 9;
+    string client_id = 1; // Client ID of the oracle script, which can be used identify the request in bandchain.
+    google.protobuf.Any call_data = 2; // Call data of the oracle script.
+    uint64 request_packet_sequence = 3; // IBC packet sequence of request sent to bandchain.
+    uint64 oracle_request_id = 4; // Oracle request ID of the oracle script which we get from bandchain acknowledgment.
+    uint64 result_packet_sequence = 5; // IBC packet sequence of result sent from bandchain.
+    google.protobuf.Any result = 6; // Result of the oracle script.
+    bool failed = 7; // Whether the oracle script failed or not in any state.
+    int64 started_at_height = 8; // Block height when the procedure of sending the oracle request has started.
+    int64 updated_at_height = 9; // Block height when this state has updated.
 }
 
+// CoinRatesCallData is the call data for coin rates script
 message CoinRatesCallData {
   repeated string symbols = 1;
   uint64 multiplier = 2;
 }
 
+// CoinRatesResult is the result for coin rates script
 message CoinRatesResult {
   repeated uint64 rates = 1;
 }
