@@ -41,13 +41,13 @@ func NewKeeper(
 	portKeeper qoracletypes.PortKeeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	qoracleKeeper types.QOracle,
-) *Keeper {
+) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	return Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
 		paramSpace:    paramSpace,

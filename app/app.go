@@ -567,7 +567,7 @@ func New(
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
 
-	app.QOracleKeeper = *qoraclemodulekeeper.NewKeeper(
+	app.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
 		appCodec,
 		keys[qoraclemoduletypes.StoreKey],
 		memKeys[qoraclemoduletypes.MemStoreKey],
@@ -575,7 +575,7 @@ func New(
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
 	)
 
-	app.QBandchainKeeper = *qbandkeeper.NewKeeper(
+	app.QBandchainKeeper = qbandkeeper.NewKeeper(
 		appCodec,
 		keys[qbandtypes.StoreKey],
 		app.GetSubspace(qbandtypes.SubModuleName),
@@ -588,7 +588,7 @@ func New(
 	)
 	qbandIBCModule := qband.NewIBCModule(app.QBandchainKeeper)
 
-	app.QOsmosisKeeper = *qosmokeeper.NewKeeper(
+	app.QOsmosisKeeper = qosmokeeper.NewKeeper(
 		appCodec,
 		keys[qosmotypes.StoreKey],
 		app.GetSubspace(qosmotypes.SubModuleName),
