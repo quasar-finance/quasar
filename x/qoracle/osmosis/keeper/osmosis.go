@@ -79,7 +79,6 @@ func (k Keeper) GetPools(ctx sdk.Context) ([]qoracletypes.Pool, error) {
 		}
 
 		pools = append(pools, qoracletypes.Pool{
-			Source:    types.OracleSource,
 			Id:        fmt.Sprintf("%d", pool.Id),
 			Assets:    extractPoolAssets(pool),
 			TVL:       tvl,

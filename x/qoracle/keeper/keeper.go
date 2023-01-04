@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -241,8 +242,10 @@ func (k Keeper) UpdatePools(ctx sdk.Context) {
 		}
 
 		memStore := ctx.KVStore(k.memKey)
+		poolStore := prefix.NewStore(memStore, types.KeyMemPoolPrefix)
+		osmosisPoolStore := prefix.NewStore(poolStore, types.KeyOsmosisPoolPrefix)
 		for _, pool := range pools {
-			memStore.Set(types.GetPoolKey(pool.Source, pool.Id), k.cdc.MustMarshal(&pool))
+			osmosisPoolStore.Set([]byte(pool.Id), k.cdc.MustMarshal(&pool))
 		}
 	}
 }

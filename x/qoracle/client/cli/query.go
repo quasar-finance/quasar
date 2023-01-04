@@ -88,7 +88,6 @@ func CmdQueryPools() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			source := cmd.Flag(flagSource).Value.String()
 			denom := cmd.Flag(flagDenom).Value.String()
 
 			pageReq, err := client.ReadPageRequest(cmd.Flags())
@@ -97,7 +96,6 @@ func CmdQueryPools() *cobra.Command {
 			}
 
 			req := &types.QueryPoolsRequest{
-				Source:     source,
 				Denom:      denom,
 				Pagination: pageReq,
 			}
@@ -110,7 +108,6 @@ func CmdQueryPools() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flagSource, "", "source to filter pools")
 	cmd.Flags().String(flagDenom, "", "denom to filter pools")
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "pools")
