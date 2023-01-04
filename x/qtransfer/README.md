@@ -32,11 +32,11 @@ type MsgExecuteContract struct {
 So we detail where we want to get each of these fields from:
 
 * Sender: We cannot trust the sender of an IBC packet, the counterparty chain has full ability to lie about it.
-We cannot risk this sender being confused for a particular user or module address on Osmosis.
+We cannot risk this sender being confused for a particular user or module address on Quasar.
 So we hardcode the sender to be a particular module account made in IBC.
 * Contract: This field should be directly obtained from the ICS-20 packet metadata
 * Msg: This field should be directly obtained from the ICS-20 packet metadata.
-* Funds: This field is set to the amount of funds being sent over in the ICS 20 packet. One detail is that the denom in the packet is the counterparty chains representation of the denom, so we have to translate it to Osmosis' representation.
+* Funds: This field is set to the amount of funds being sent over in the ICS 20 packet. One detail is that the denom in the packet is the counterparty chains representation of the denom, so we have to translate it to Quasar' representation.
 
 So our constructed cosmwasm message that we execute will look like:
 

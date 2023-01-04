@@ -14,13 +14,13 @@ import (
 )
 
 func (chain *TestChain) StoreContractCode(suite *suite.Suite, path string) {
-	osmosisApp := chain.GetQuasarApp()
+	quasarApp := chain.GetQuasarApp()
 
-	govKeeper := osmosisApp.GovKeeper
+	govKeeper := quasarApp.GovKeeper
 	wasmCode, err := os.ReadFile(path)
 	suite.Require().NoError(err)
 
-	addr := osmosisApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
+	addr := quasarApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
 	src := wasmtypes.StoreCodeProposalFixture(func(p *wasmtypes.StoreCodeProposal) {
 		p.RunAs = addr.String()
 		p.WASMByteCode = wasmCode
@@ -39,9 +39,9 @@ func (chain *TestChain) StoreContractCode(suite *suite.Suite, path string) {
 }
 
 func (chain *TestChain) InstantiateRLContract(suite *suite.Suite, quotas string) sdk.AccAddress {
-	osmosisApp := chain.GetQuasarApp()
-	transferModule := osmosisApp.AccountKeeper.GetModuleAddress(transfertypes.ModuleName)
-	govModule := osmosisApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
+	quasarApp := chain.GetQuasarApp()
+	transferModule := quasarApp.AccountKeeper.GetModuleAddress(transfertypes.ModuleName)
+	govModule := quasarApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
 
 	initMsgBz := []byte(fmt.Sprintf(`{
            "gov_module":  "%s",
@@ -50,27 +50,27 @@ func (chain *TestChain) InstantiateRLContract(suite *suite.Suite, quotas string)
         }`,
 		govModule, transferModule, quotas))
 
-	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(osmosisApp.WasmKeeper)
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(quasarApp.WasmKeeper)
 	codeID := uint64(1)
-	creator := osmosisApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
+	creator := quasarApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
 	addr, _, err := contractKeeper.Instantiate(chain.GetContext(), codeID, creator, creator, initMsgBz, "rate limiting contract", nil)
 	suite.Require().NoError(err)
 	return addr
 }
 
 func (chain *TestChain) InstantiateContract(suite *suite.Suite, msg string) sdk.AccAddress {
-	osmosisApp := chain.GetQuasarApp()
-	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(osmosisApp.WasmKeeper)
+	quasarApp := chain.GetQuasarApp()
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(quasarApp.WasmKeeper)
 	codeID := uint64(1)
-	creator := osmosisApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
+	creator := quasarApp.AccountKeeper.GetModuleAddress(govtypes.ModuleName)
 	addr, _, err := contractKeeper.Instantiate(chain.GetContext(), codeID, creator, creator, []byte(msg), "contract", nil)
 	suite.Require().NoError(err)
 	return addr
 }
 
 func (chain *TestChain) QueryContract(suite *suite.Suite, contract sdk.AccAddress, key []byte) string {
-	osmosisApp := chain.GetQuasarApp()
-	state, err := osmosisApp.WasmKeeper.QuerySmart(chain.GetContext(), contract, key)
+	quasarApp := chain.GetQuasarApp()
+	state, err := quasarApp.WasmKeeper.QuerySmart(chain.GetContext(), contract, key)
 	suite.Require().NoError(err)
 	return string(state)
 }
