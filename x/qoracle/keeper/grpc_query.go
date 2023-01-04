@@ -99,7 +99,7 @@ func (q Keeper) Pools(c context.Context, req *types.QueryPoolsRequest) (*types.Q
 			return false, err
 		}
 
-		if filterPool(pool, req.Source, req.Denom) {
+		if filterPool(pool, req.Denom) {
 			return false, nil
 		}
 

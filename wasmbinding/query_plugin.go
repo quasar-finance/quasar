@@ -19,7 +19,7 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 
 		switch {
 		case contractQuery.PoolsRankedByAPY != nil:
-			pools := qk.GetPoolsRankedByAPY(ctx, contractQuery.PoolsRankedByAPY.Source, contractQuery.PoolsRankedByAPY.Denom)
+			pools := qk.GetPoolsRankedByAPY(ctx, contractQuery.PoolsRankedByAPY.Denom)
 
 			bz, err := json.Marshal(pools)
 			if err != nil {
@@ -27,7 +27,7 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 			}
 			return bz, nil
 		case contractQuery.Pool != nil:
-			pool, found := qk.GetPool(ctx, contractQuery.Pool.Source, contractQuery.Pool.Id)
+			pool, found := qk.GetPool(ctx, contractQuery.Pool.Id)
 			if !found {
 				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "pool not found")
 			}

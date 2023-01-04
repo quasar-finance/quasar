@@ -35,16 +35,13 @@ var (
 	KeyMemPoolPrefix = []byte("pool")
 	// KeyMemPoolUpdatedAt defines the prefix for the denom symbol mapping key in store
 	KeyDenomSymbolMappingPrefix = []byte("denom_symbol_mapping")
+	// KeyOsmosisPoolPrefix defines the prefix osmosis pools stored in the memory store
+	KeyOsmosisPoolPrefix = []byte("osmosis")
 )
 
 // GetDenomPriceKey returns the key for the denom price in the memory store.
 func GetDenomPriceKey(denom string) []byte {
 	return append(KeyMemDenomPricePrefix, []byte(denom)...)
-}
-
-// GetPoolKey returns the key for the pool in the memory store.
-func GetPoolKey(source string, id string) []byte {
-	return append(KeyMemPoolPrefix, []byte(source+"/"+id)...)
 }
 
 // GetDenomSymbolMappingKey returns the key for the denom symbol mapping in store.

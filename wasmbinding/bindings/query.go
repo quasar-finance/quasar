@@ -13,13 +13,11 @@ type QuasarQuery struct {
 }
 
 type PoolsRankedByAPYRequest struct {
-	Source string `json:"source"`
-	Denom  string `json:"denom"`
+	Denom string `json:"denom"`
 }
 
 type PoolRequest struct {
-	Source string `json:"source"`
-	Id     string `json:"id"`
+	Id string `json:"id"`
 }
 
 type TokenPriceRequest struct {

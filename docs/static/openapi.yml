@@ -2351,8 +2351,6 @@ paths:
                     items:
                       type: object
                       properties:
-                        source:
-                          type: string
                         id:
                           type: string
                         assets:
@@ -2728,13 +2726,6 @@ paths:
                               "value": "1.212s"
                             }
       parameters:
-        - name: source
-          description: source filters the pools by their source chain. If empty, pools
-            with any source returned.
-          in: query
-          required: false
-          schema:
-            type: string
         - name: denom
           description: denom filters the pools by their denom. If empty, pools with any
             denom returned.
@@ -4463,8 +4454,6 @@ components:
     quasarlabs.quasarnode.qoracle.Pool:
       type: object
       properties:
-        source:
-          type: string
         id:
           type: string
         assets:
@@ -4744,8 +4733,6 @@ components:
           items:
             type: object
             properties:
-              source:
-                type: string
               id:
                 type: string
               assets:

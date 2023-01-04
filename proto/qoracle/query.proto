@@ -73,12 +73,10 @@ message QueryDenomPricesResponse {
 
 // QueryPoolsRequest is request type for the Query/Pools RPC method.
 message QueryPoolsRequest {
-	// source filters the pools by their source chain. If empty, pools with any source returned.
-	string source = 1;
 	// denom filters the pools by their denom. If empty, pools with any denom returned.
-	string denom = 2;
+	string denom = 1;
 	// pagination defines an optional pagination for the request.
-	cosmos.base.query.v1beta1.PageRequest pagination = 3;
+	cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryPoolsResponse is response type for the Query/Pools RPC method.

@@ -81,7 +81,7 @@ func (k Keeper) MeissaCoinDistribution(ctx sdk.Context, epochDay uint64, lockupT
 	k.Logger(ctx).Debug(fmt.Sprintf("Entered MeissaCoinDistribution|epochDay=%v|lockupType=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)]))
 
-	pools := k.qoracleKeeper.GetPoolsRankedByAPY(ctx, "", "")
+	pools := k.qoracleKeeper.GetPoolsRankedByAPY(ctx, "")
 	k.Logger(ctx).Debug(fmt.Sprintf("MeissaCoinDistribution|epochDay=%v|lockupType=%v|poolsCount=%v\n",
 		epochDay, qbanktypes.LockupTypes_name[int32(lockupType)], len(pools)))
 	for _, pool := range pools {
@@ -307,7 +307,7 @@ func (k Keeper) GetMeissaEpochLockupPoolPosition(ctx sdk.Context, epochday uint6
 
 // computeTokenOutAmount calculate the token out amount from the recent values from the pool total share.
 func (k Keeper) computeTokenOutAmount(ctx sdk.Context, shareInAmount sdkmath.Int, poolID uint64) sdk.Coins {
-	pool, _ := k.qoracleKeeper.GetPool(ctx, "osmosis", strconv.FormatUint(poolID, 10))
+	pool, _ := k.qoracleKeeper.GetPool(ctx, strconv.FormatUint(poolID, 10))
 	osmosisPool := pool.Raw.GetCachedValue().(gammbalancer.Pool)
 	totalShare := osmosisPool.TotalShares
 	assets := osmosisPool.PoolAssets
