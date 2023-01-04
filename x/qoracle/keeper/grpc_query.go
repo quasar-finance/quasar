@@ -22,6 +22,34 @@ func (q Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types
 	return &types.QueryParamsResponse{Params: q.GetParams(ctx)}, nil
 }
 
+func (q Keeper) DenomMappings(c context.Context, req *types.QueryDenomMappingsRequest) (*types.QueryDenomMappingsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	var mappings []types.DenomSymbolMapping
+	prefixStore := prefix.NewStore(ctx.KVStore(q.memKey), types.KeyDenomSymbolMappingPrefix)
+	pageRes, err := query.Paginate(prefixStore, req.Pagination, func(key []byte, value []byte) error {
+		var mapping types.DenomSymbolMapping
+		err := q.cdc.Unmarshal(value, &mapping)
+		if err != nil {
+			return err
+		}
+
+		mappings = append(mappings, mapping)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryDenomMappingsResponse{
+		Mappings:   mappings,
+		Pagination: pageRes,
+	}, nil
+}
+
 func (q Keeper) DenomPrices(c context.Context, req *types.QueryDenomPricesRequest) (*types.QueryDenomPricesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

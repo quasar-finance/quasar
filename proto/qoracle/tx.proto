@@ -1,0 +1,33 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+import "qoracle/denom_symbol_mapping.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
+
+// Msg defines the Msg service.
+service Msg {
+    // AddDenomSymbolMappings defines a method for adding denom symbol mappings to store.
+    // If the denom symbol mapping already exists, it will be overwritten.
+    rpc AddDenomSymbolMappings(MsgAddDenomSymbolMappings) returns (MsgAddDenomSymbolMappingsResponse);
+
+    // RemoveDenomSymbolMappings defines a method for removing denom symbol mappings from store.
+    rpc RemoveDenomSymbolMappings(MsgRemoveDenomSymbolMappings) returns (MsgRemoveDenomSymbolMappingsResponse);
+}
+
+message MsgAddDenomSymbolMappings {
+  string creator = 1;
+  repeated DenomSymbolMapping mappings = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgAddDenomSymbolMappingsResponse {
+}
+
+message MsgRemoveDenomSymbolMappings {
+  string creator = 1;
+  repeated string denoms = 2;
+}
+
+message MsgRemoveDenomSymbolMappingsResponse {
+}

@@ -3,7 +3,9 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 )
 
@@ -20,14 +22,15 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 func (k msgServer) UpdateChainParams(goCtx context.Context, msg *types.MsgUpdateChainParams) (*types.MsgUpdateChainParamsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	if k.authority != msg.Creator {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "expected %s got %s", k.authority, msg.Creator)
+	}
 
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	// Do not start a new procedure if module is disabled
 	if !k.IsEnabled(ctx) {
 		return nil, types.ErrDisabled
 	}
-
-	// TODO: Check authority of the sender
 
 	state := k.GetRequestState(ctx, types.KeyParamsRequestState)
 	if state.Pending() {
