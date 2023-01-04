@@ -184,7 +184,7 @@ func (k Keeper) UpdateDenomPrices(ctx sdk.Context) {
 		var mapping types.DenomSymbolMapping
 		k.cdc.MustUnmarshal(iter.Value(), &mapping)
 
-		price := spl.Prices.AmountOf(mapping.OracleSymbol)
+		price := spl.Prices.AmountOf(mapping.OracleSymbol).Mul(mapping.Multiplier)
 		if price.IsZero() {
 			k.Logger(ctx).Error("failed to find symbol price for denom",
 				"denom", mapping.Denom,
