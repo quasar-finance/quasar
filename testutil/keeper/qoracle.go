@@ -49,6 +49,7 @@ func (kf KeeperFactory) SetQbandchainDefaultParams(k qbandkeeper.Keeper) {
 
 func (kf KeeperFactory) QosmosisKeeper(
 	paramsKeeper paramskeeper.Keeper,
+	authority string,
 	clientKeeper types.ClientKeeper,
 	ics4Wrapper porttypes.ICS4Wrapper,
 	channelKeeper types.ChannelKeeper,
@@ -65,6 +66,7 @@ func (kf KeeperFactory) QosmosisKeeper(
 		kf.EncodingConfig.Marshaler,
 		storeKey,
 		paramsSubspace,
+		authority,
 		clientKeeper,
 		ics4Wrapper,
 		channelKeeper,
@@ -80,7 +82,7 @@ func (kf KeeperFactory) SetQosmosisDefaultParams(k qosmokeeper.Keeper) {
 	k.SetParams(kf.Ctx, qosmotypes.DefaultParams())
 }
 
-func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.Keeper {
+func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, authority string) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	tKey := sdk.NewTransientStoreKey(types.TStoreKey)
@@ -96,6 +98,7 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper) keeper.K
 		memKey,
 		tKey,
 		paramsSubspace,
+		authority,
 	)
 
 	return k

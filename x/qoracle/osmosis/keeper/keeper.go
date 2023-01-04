@@ -20,6 +20,7 @@ type Keeper struct {
 	cdc        codec.BinaryCodec
 	storeKey   storetypes.StoreKey
 	paramSpace paramtypes.Subspace
+	authority  string // the address capable of issuing chain params update. Usually the gov module account
 
 	clientKeeper  qoracletypes.ClientKeeper
 	ics4Wrapper   porttypes.ICS4Wrapper
@@ -35,6 +36,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
+	authority string,
 	clientKeeper qoracletypes.ClientKeeper,
 	ics4Wrapper porttypes.ICS4Wrapper,
 	channelKeeper qoracletypes.ChannelKeeper,
@@ -51,6 +53,7 @@ func NewKeeper(
 		cdc:           cdc,
 		storeKey:      storeKey,
 		paramSpace:    paramSpace,
+		authority:     authority,
 		clientKeeper:  clientKeeper,
 		ics4Wrapper:   ics4Wrapper,
 		channelKeeper: channelKeeper,

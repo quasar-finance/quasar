@@ -573,6 +573,7 @@ func New(
 		memKeys[qoraclemoduletypes.MemStoreKey],
 		tkeys[qoraclemoduletypes.TStoreKey],
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.QBandchainKeeper = qbandkeeper.NewKeeper(
@@ -592,6 +593,7 @@ func New(
 		appCodec,
 		keys[qosmotypes.StoreKey],
 		app.GetSubspace(qosmotypes.SubModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.IBCKeeper.ClientKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,

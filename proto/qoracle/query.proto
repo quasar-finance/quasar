@@ -7,6 +7,7 @@ import "google/protobuf/timestamp.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qoracle/params.proto";
+import "qoracle/denom_symbol_mapping.proto";
 import "qoracle/pool.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
@@ -16,6 +17,11 @@ service Query {
 	// Params queries the parameters of the module.
 	rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
+	}
+
+	// DenomMappings queries list of denom-> symbol mappings which maps the denoms to their corresponding symbol fetched from price oracles.
+	rpc DenomMappings(QueryDenomMappingsRequest) returns (QueryDenomMappingsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_mappings";
 	}
 
 	// DenomPrices queries list of denom prices.
@@ -36,6 +42,19 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryDenomMappingsRequest is request type for the Query/DenomMappings RPC method.
+message QueryDenomMappingsRequest {
+	// pagination defines an optional pagination for the request.
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryDenomMappingsResponse is response type for the Query/DenomMappings RPC method.
+message QueryDenomMappingsResponse {
+	repeated DenomSymbolMapping mappings = 1 [(gogoproto.nullable) = false];
+	// pagination defines the pagination in the response.
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryDenomPricesRequest is request type for the Query/DenomPrices RPC method.

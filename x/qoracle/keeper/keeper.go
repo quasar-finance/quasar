@@ -17,6 +17,7 @@ type Keeper struct {
 	memKey     storetypes.StoreKey
 	tkey       storetypes.StoreKey
 	paramSpace paramtypes.Subspace
+	authority  string // the address capable of adding or removing denom symbol mappings. Usually the gov module account
 
 	priceOracles []types.PriceOracle
 	poolOracles  map[string]types.PoolOracle
@@ -29,6 +30,7 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	tkey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
+	authority string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -41,6 +43,7 @@ func NewKeeper(
 		memKey:       memKey,
 		tkey:         tkey,
 		paramSpace:   paramSpace,
+		authority:    authority,
 		priceOracles: []types.PriceOracle{},
 		poolOracles:  map[string]types.PoolOracle{},
 	}
@@ -214,6 +217,12 @@ func (k Keeper) removeAllDenomPrices(ctx sdk.Context) {
 func (k Keeper) SetDenomSymbolMapping(ctx sdk.Context, mapping types.DenomSymbolMapping) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.GetDenomSymbolMappingKey(mapping.Denom), k.cdc.MustMarshal(&mapping))
+}
+
+// DeleteDenomSymbolMapping deletes a denom symbol mapping from the store.
+func (k Keeper) DeleteDenomSymbolMapping(ctx sdk.Context, denom string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetDenomSymbolMappingKey(denom))
 }
 
 // UpdatePools fetches the latest pools from pool oracles if any available
