@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
+use cosmwasm_std::{to_binary, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
 use osmosis_std::{
     shim::Duration,
     types::{
@@ -70,7 +70,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 }
 
 pub fn do_ibc_lock_tokens(
-    deps: &mut dyn Storage,
+    _deps: &mut dyn Storage,
     owner: String,
     coins: Vec<Coin>,
 ) -> Result<InterchainAccountPacketData, ContractError> {

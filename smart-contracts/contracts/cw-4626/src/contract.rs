@@ -503,9 +503,9 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{
-        coin, BankMsg, Decimal, OverflowError, OverflowOperation, StdError, SubMsg,
+        BankMsg, SubMsg,
     };
-    use cw_utils::PaymentError;
+    
     use quasar_types::curve::CurveType;
     use std::borrow::BorrowMut;
 
@@ -575,9 +575,9 @@ mod tests {
         let res = instantiate(deps.branch(), env.clone(), info, msg).unwrap();
         assert_eq!(0, res.messages.len());
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // setup_test() defaults to a 1-1 curve
         // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
@@ -629,9 +629,9 @@ mod tests {
         let mut deps = mock_dependencies();
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // setup_test() defaults to a 1-1 curve
         // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
@@ -648,9 +648,9 @@ mod tests {
         let mut deps = mock_dependencies();
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // setup_test() defaults to a 1-1 curve
         // bob buys some shares, spends 45 9 decimal coins (45_000_000_000) and receives 45 6 decimal (45_000_000) shares
@@ -666,9 +666,9 @@ mod tests {
         let mut deps = mock_dependencies();
         setup_test(deps.as_mut(), 9, 6, Uint128::MAX);
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // setup_test() defaults to a 1-1 curve
         // bob tries to buy some shares without any funds
@@ -698,9 +698,9 @@ mod tests {
         deps.querier
             .update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
@@ -737,9 +737,9 @@ mod tests {
             45_000_000,
         );
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
@@ -768,9 +768,9 @@ mod tests {
             45_000_000,
         );
 
-        let alice: &str = "alice";
+        let _alice: &str = "alice";
         let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _carl: &str = "carl";
 
         // check that bob has the shares
         assert_eq!(get_balance(deps.as_ref(), bob), Uint128::new(45_000_000));
@@ -913,9 +913,9 @@ mod tests {
         assert_eq!(total_assets.total_managed_assets, Uint128::new(0));
 
         // deposit some funds in different accounts and check assets after each deposit
-        let alice: &str = "alice";
-        let bob: &str = "bobbyb";
-        let carl: &str = "carl";
+        let _alice: &str = "alice";
+        let _bob: &str = "bobbyb";
+        let _carl: &str = "carl";
 
         deps.querier
             .update_balance(mock_env().contract.address, coins(45_000_000_000, DENOM));

@@ -1,13 +1,13 @@
 use crate::error::{ContractError, Never};
 use crate::helpers::{
-    create_reply, create_submsg, get_ica_address, IbcMsgKind, IcaMessages, MsgKind,
+    create_submsg, get_ica_address, IbcMsgKind, IcaMessages, MsgKind,
 };
 use crate::state::{CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::cosmos::base::v1beta1::Coin;
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
-use osmosis_std::types::osmosis::lockup::{MsgLockTokens, MsgLockTokensResponse};
+use osmosis_std::types::osmosis::lockup::{MsgLockTokensResponse};
 use prost::Message;
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
@@ -20,11 +20,10 @@ use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, Response, StdError, StdResult, SubMsg,
-    Uint128, WasmMsg,
+    from_binary, to_binary, Binary, DepsMut, Env,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError,
+    Uint128,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -135,7 +134,7 @@ pub fn ibc_channel_connect(
                 counter_party_address: addr,
             }
         }
-        ChannelType::Ics20 { ref channel_ty } => todo!(),
+        ChannelType::Ics20 { channel_ty: _ } => todo!(),
     }
 
     info.handshake_state = HandshakeState::Open;
@@ -206,7 +205,7 @@ pub fn handle_succesful_ack(
 pub fn handle_transfer_ack(
     deps: DepsMut,
     env: Env,
-    ack_bin: Binary,
+    _ack_bin: Binary,
     pkt: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
@@ -280,9 +279,9 @@ pub fn handle_ica_ack(
 }
 
 pub fn handle_failing_ack(
-    deps: DepsMut,
-    env: Env,
-    pkt: IbcPacketAckMsg,
+    _deps: DepsMut,
+    _env: Env,
+    _pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the
@@ -302,19 +301,19 @@ pub fn ibc_packet_timeout(
 }
 
 fn on_packet_failure(
-    deps: DepsMut,
-    packet: IbcPacket,
-    error: String,
+    _deps: DepsMut,
+    _packet: IbcPacket,
+    _error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     todo!()
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use cosmos_sdk_proto::ibc::core::channel::v1::Acknowledgement;
-    use cosmos_sdk_proto::Any;
-    use cosmwasm_std::testing::mock_env;
-    use cosmwasm_std::{coins, to_vec, IbcEndpoint};
-    use prost::Message;
+    
+    
+    
+    
+    
+    
 }

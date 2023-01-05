@@ -146,18 +146,18 @@ mod tests {
     const BUYER: &str = "buyer";
 
     fn default_instantiate(
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) -> InstantiateMsg {
         InstantiateMsg {}
     }
 
     fn setup_test(
-        deps: DepsMut,
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _deps: DepsMut,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) {
     }
 

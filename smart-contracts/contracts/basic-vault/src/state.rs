@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_controllers::Claims;
 use cw_storage_plus::Item;
-use cw_utils::Duration;
+
 
 use crate::msg::PrimitiveStrategy;
 

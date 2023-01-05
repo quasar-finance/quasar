@@ -1,16 +1,16 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Empty, Env, IbcMsg, IbcTimeout,
-    MessageInfo, Order, Reply, Response, StdError, StdResult, Storage, SubMsg, Timestamp, Uint128,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout,
+    MessageInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128,
 };
 use cw2::set_contract_version;
-use quasar_types::ibc::{ChannelInfo, ChannelType};
-use quasar_types::ica::packet::{InterchainAccountPacketData, Type};
-use quasar_types::ica::traits::Pack;
+use quasar_types::ibc::{ChannelInfo};
+
+
 
 use crate::error::ContractError;
-use crate::helpers::{create_reply, create_submsg, parse_seq, IbcMsgKind, IcaMessages, MsgKind};
+use crate::helpers::{create_submsg, parse_seq, IbcMsgKind, MsgKind};
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CHANNELS, CONFIG, PENDING_ACK, REPLIES};
 use crate::strategy::do_ibc_join_pool_swap_extern_amount_in;
@@ -21,8 +21,8 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
-    env: Env,
+    deps: DepsMut,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -71,7 +71,7 @@ pub fn execute(
             channel,
             pool_id,
             amount,
-            lock_period,
+            lock_period: _,
             denom,
             share_out_min_amount,
         } => execute_join_pool(
@@ -158,7 +158,7 @@ fn do_transfer(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
     }
@@ -175,10 +175,7 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
-        IbcTimeoutBlock,
-    };
+    
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
@@ -186,9 +183,9 @@ mod tests {
     const BUYER: &str = "buyer";
 
     fn default_instantiate(
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) -> InstantiateMsg {
         InstantiateMsg {
             lock_period: todo!(),
@@ -199,10 +196,10 @@ mod tests {
     }
 
     fn setup_test(
-        deps: DepsMut,
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _deps: DepsMut,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) {
     }
 }

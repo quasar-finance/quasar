@@ -2,10 +2,7 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use cosmwasm_std::StdError;
-use quasar_types::{
-    error::Error as QError,
-    ica::handshake::{Encoding, TxType, Version},
-};
+
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]

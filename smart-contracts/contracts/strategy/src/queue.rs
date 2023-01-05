@@ -61,7 +61,7 @@ fn handle_dequeue(deps: DepsMut) -> Option<WithdrawRequest> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_dependencies_with_balance};
+    use cosmwasm_std::testing::{mock_dependencies};
     use cosmwasm_std::Storage;
     use cosmwasm_std::Uint128;
 
@@ -74,7 +74,7 @@ mod tests {
             owner: "alice".to_string(),
         };
         enqueue(deps.as_mut(), req.clone()).unwrap();
-        let mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
+        let _mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
         let res = dequeue(deps.as_mut()).unwrap();
         assert_eq!(req, res)
     }
@@ -94,7 +94,7 @@ mod tests {
         };
         enqueue(deps.as_mut(), req1.clone()).unwrap();
         enqueue(deps.as_mut(), req2.clone()).unwrap();
-        let mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
+        let _mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
         let res1 = dequeue(deps.as_mut()).unwrap();
         let res2 = dequeue(deps.as_mut()).unwrap();
         assert_eq!(req1, res1);

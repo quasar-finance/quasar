@@ -1,26 +1,21 @@
 use cosmwasm_std::{
-    coin, to_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, DistributionMsg, Env,
-    MessageInfo, QuerierWrapper, Response, StakingMsg, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
+    to_binary, Addr, BankMsg, DepsMut, Env,
+    MessageInfo, QuerierWrapper, Response, StdError, StdResult, Uint128,
 };
 
-use cw2::set_contract_version;
-use cw20_base::allowances::{
-    execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
-    execute_transfer_from, query_allowance,
-};
+
+
 use cw20_base::contract::{
-    execute_burn, execute_mint, execute_send, execute_transfer, query_balance, query_token_info,
+    execute_burn, execute_mint,
 };
-use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
-use cw_storage_plus::Strategy;
+
+
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, QueryMsg};
-use crate::query::query_investment;
+use crate::msg::{ExecuteMsg};
+
 use crate::state::{
-    InvestmentInfo, Supply, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, FALLBACK_RATIO, INVESTMENT,
-    STRATEGY_INIT_ID, TOTAL_SUPPLY,
+    Supply, CLAIMS, FALLBACK_RATIO, INVESTMENT, TOTAL_SUPPLY,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -178,7 +173,7 @@ pub fn unbond(
     //     invest.unbonding_period.after(&env.block),
     // )?;
 
-    let undelegation_msg = todo!();
+    let _undelegation_msg = todo!();
 
     // unbond them
     let res = Response::new()
@@ -235,9 +230,9 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Con
 /// then issue a callback to itself via _bond_all_tokens
 /// to reinvest the new earnings (and anything else that accumulated)
 pub fn reinvest(deps: DepsMut, env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
-    let contract_addr = env.contract.address;
-    let invest = INVESTMENT.load(deps.storage)?;
-    let msg = to_binary(&ExecuteMsg::_BondAllTokens {})?;
+    let _contract_addr = env.contract.address;
+    let _invest = INVESTMENT.load(deps.storage)?;
+    let _msg = to_binary(&ExecuteMsg::_BondAllTokens {})?;
 
     // and bond them to the validator
     let res = Response::new();

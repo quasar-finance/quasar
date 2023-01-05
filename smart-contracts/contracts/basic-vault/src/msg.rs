@@ -1,10 +1,10 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128, WasmMsg};
+use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use cw_utils::Duration;
+
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {

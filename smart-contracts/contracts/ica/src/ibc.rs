@@ -13,9 +13,7 @@ use crate::error::{ContractError, Never};
 use crate::helpers::handle_sample_callback;
 use crate::proto::CosmosResponse;
 use crate::state::{ChannelInfo, Origin, CHANNEL_INFO, PENDING_QUERIES};
-use quasar_types::ica::handshake::{
-    enforce_ica_order_and_metadata, CounterPartyIcaMetadata, Encoding, IcaMetadata, TxType, Version,
-};
+
 
 pub const ICA_VERSION: &str = "{\"version\":\"ics-20\"}";
 pub const ICA_ORDERING: IbcOrder = IbcOrder::Ordered;
@@ -192,10 +190,10 @@ fn on_packet_failure(
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::state::QUERY_RESULT_COUNTER;
-    use crate::ContractError;
+    
+    
+    
 
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::{Binary, IbcAcknowledgement, IbcEndpoint, IbcPacket, IbcTimeout, Timestamp};
+    
+    
 }
