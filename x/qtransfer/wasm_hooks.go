@@ -8,6 +8,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
@@ -23,12 +24,14 @@ type ContractAck struct {
 
 type WasmHooks struct {
 	keeper         keeper.Keeper
+	wasmKeeper     wasmkeeper.Keeper
 	contractKeeper *wasmkeeper.PermissionedKeeper
 }
 
-func NewWasmHooks(k keeper.Keeper, contractKeeper *wasmkeeper.PermissionedKeeper) WasmHooks {
+func NewWasmHooks(k keeper.Keeper, wasmKeeper wasmkeeper.Keeper, contractKeeper *wasmkeeper.PermissionedKeeper) WasmHooks {
 	return WasmHooks{
 		keeper:         k,
+		wasmKeeper:     wasmKeeper,
 		contractKeeper: contractKeeper,
 	}
 }
@@ -236,4 +239,129 @@ func ValidateAndParseMemo(memo string, receiver string) (isWasmRouted bool, cont
 	}
 
 	return isWasmRouted, contractAddr, msgBytes, nil
+}
+
+func (h WasmHooks) OnAcknowledgementPacketOverride(im IBCMiddleware, ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
+	err := im.App.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	if err != nil {
+		return err
+	}
+
+	transferPacket, err := unmarshalTransferPacket(packet)
+	if err != nil {
+		return err
+	}
+	ack, err := unmarshalAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	contractAddr, err := sdk.AccAddressFromBech32(transferPacket.GetSender())
+	if err != nil {
+		return sdkerrors.Wrap(err, "failed to decode transfer packet sender address")
+	}
+	contractInfo := h.wasmKeeper.GetContractInfo(ctx, contractAddr)
+	// Skip if there's no contract with this address (it's a regular address) or the contract doesn't support IBC
+	if contractInfo == nil || contractInfo.IBCPortID == "" {
+		return nil
+	}
+
+	if !ack.Success() {
+		h.keeper.Logger(ctx).Debug(
+			"passing an error acknowledgment to contract",
+			"contract_address", contractAddr,
+			"error", ack.GetError(),
+		)
+	}
+	err = h.wasmKeeper.OnAckPacket(ctx, contractAddr, wasmvmtypes.IBCPacketAckMsg{
+		Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
+		OriginalPacket:  newWasmIBCPacket(packet),
+		Relayer:         relayer.String(),
+	})
+	if err != nil {
+		h.keeper.Logger(ctx).Error(
+			"contract returned error for acknowledgment",
+			"contract_address", contractAddr,
+			"error", err,
+		)
+		return sdkerrors.Wrap(err, "contract returned error for acknowledgment")
+	}
+
+	return nil
+}
+
+func unmarshalTransferPacket(packet channeltypes.Packet) (transfertypes.FungibleTokenPacketData, error) {
+	var transferPacket transfertypes.FungibleTokenPacketData
+	err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &transferPacket)
+	if err != nil {
+		return transferPacket, sdkerrors.Wrap(err, "cannot unmarshal ICS-20 transfer packet data")
+	}
+
+	return transferPacket, nil
+}
+
+func unmarshalAcknowledgement(acknowledgement []byte) (channeltypes.Acknowledgement, error) {
+	var ack channeltypes.Acknowledgement
+	err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
+	if err != nil {
+		return ack, sdkerrors.Wrap(err, "cannot unmarshal ICS-20 transfer packet acknowledgement")
+	}
+	return ack, nil
+}
+
+func newWasmIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
+	timeout := wasmvmtypes.IBCTimeout{
+		Timestamp: packet.TimeoutTimestamp,
+	}
+	if !packet.TimeoutHeight.IsZero() {
+		timeout.Block = &wasmvmtypes.IBCTimeoutBlock{
+			Height:   packet.TimeoutHeight.RevisionHeight,
+			Revision: packet.TimeoutHeight.RevisionNumber,
+		}
+	}
+
+	return wasmvmtypes.IBCPacket{
+		Data:     packet.Data,
+		Src:      wasmvmtypes.IBCEndpoint{ChannelID: packet.SourceChannel, PortID: packet.SourcePort},
+		Dest:     wasmvmtypes.IBCEndpoint{ChannelID: packet.DestinationChannel, PortID: packet.DestinationPort},
+		Sequence: packet.Sequence,
+		Timeout:  timeout,
+	}
+}
+
+func (h WasmHooks) OnTimeoutPacketOverride(im IBCMiddleware, ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
+	err := im.App.OnTimeoutPacket(ctx, packet, relayer)
+	if err != nil {
+		return err
+	}
+
+	transferPacket, err := unmarshalTransferPacket(packet)
+	if err != nil {
+		return err
+	}
+
+	contractAddr, err := sdk.AccAddressFromBech32(transferPacket.GetSender())
+	if err != nil {
+		return sdkerrors.Wrap(err, "failed to decode transfer packet sender address")
+	}
+	contractInfo := h.wasmKeeper.GetContractInfo(ctx, contractAddr)
+	// Skip if there's no contract with this address (it's a regular address) or the contract doesn't support IBC
+	if contractInfo == nil || contractInfo.IBCPortID == "" {
+		return nil
+	}
+
+	err = h.wasmKeeper.OnTimeoutPacket(ctx, contractAddr, wasmvmtypes.IBCPacketTimeoutMsg{
+		Packet:  newWasmIBCPacket(packet),
+		Relayer: relayer.String(),
+	})
+	if err != nil {
+		h.keeper.Logger(ctx).Error(
+			"contract returned error for timeout",
+			"contract_address", contractAddr,
+			"error", err,
+		)
+		return sdkerrors.Wrap(err, "contract returned error for timeout")
+	}
+
+	return nil
 }

@@ -744,7 +744,7 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 
-	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper)) // The contract keeper needs to be set later
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.WasmKeeper, wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper)) // The contract keeper needs to be set later
 	app.Ics20WasmHooks = &wasmHooks
 	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
 		app.IBCKeeper.ChannelKeeper,
