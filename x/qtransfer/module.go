@@ -23,17 +23,17 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// AppModuleBasic defines the basic application module used by the mint module.
+// AppModuleBasic defines the basic application module used by the qtransfer module.
 type AppModuleBasic struct{}
 
 var _ module.AppModuleBasic = AppModuleBasic{}
 
-// Name returns the mint module's name.
+// Name returns the qtransfer module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the mint module's types on the given LegacyAmino codec.
+// RegisterLegacyAminoCodec registers the qtransfer module's types on the given LegacyAmino codec.
 func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types.
@@ -45,7 +45,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis performs genesis state validation for the mint module.
+// ValidateGenesis performs genesis state validation for the qtransfer module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
 	var gs types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
@@ -55,7 +55,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return gs.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the mint module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the qtransfer module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 	if err != nil {
@@ -63,17 +63,17 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 	}
 }
 
-// GetTxCmd returns no root tx command for the mint module.
+// GetTxCmd returns no root tx command for the qtransfer module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
-// GetQueryCmd returns the root query command for the mint module.
+// GetQueryCmd returns the root query command for the qtransfer module.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
 
 // ___________________________________________________________________________
 
-// AppModule implements an application module for the mint module.
+// AppModule implements an application module for the qtransfer module.
 type AppModule struct {
 	AppModuleBasic
 
@@ -88,15 +88,15 @@ func NewAppModule(k keeper.Keeper) AppModule {
 	}
 }
 
-// Name returns the mint module's name.
+// Name returns the qtransfer module's name.
 func (AppModule) Name() string {
 	return types.ModuleName
 }
 
-// RegisterInvariants registers the mint module invariants.
+// RegisterInvariants registers the qtransfer module invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// Route returns the message routing key for the mint module.
+// Route returns the message routing key for the qtransfer module.
 func (AppModule) Route() sdk.Route { return sdk.Route{} }
 
 // QuerierRoute returns the module's querier route name.
@@ -104,7 +104,7 @@ func (AppModule) QuerierRoute() string {
 	return types.QuerierRoute
 }
 
-// LegacyQuerierHandler returns the x/mint module's sdk.Querier.
+// LegacyQuerierHandler returns the x/qtransfer module's sdk.Querier.
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(sdk.Context, []string, abci.RequestQuery) ([]byte, error) {
 		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", types.ModuleName)
@@ -126,18 +126,18 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the mint
+// ExportGenesis returns the exported genesis state as raw bytes for the qtransfer
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gs := ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(gs)
 }
 
-// BeginBlock returns the begin blocker for the mint module.
+// BeginBlock returns the begin blocker for the qtransfer module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 }
 
-// EndBlock returns the end blocker for the mint module. It returns no validator
+// EndBlock returns the end blocker for the qtransfer module. It returns no validator
 // updates.
 func (AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}

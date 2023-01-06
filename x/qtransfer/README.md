@@ -2,6 +2,8 @@
 
 ## Wasm Hooks
 
+*Most of the parts of Wasm Hooks implementation has been copied from [osmosis](github.com/osmosis-labs/osmosis/blob/main/x/ibc-hooks)*
+
 The wasm hook is an IBC middleware which is used to allow ICS-20 token transfers to initiate contract calls.
 This allows cross-chain contract calls, that involve token movement.
 This is useful for a variety of usecases.
@@ -43,7 +45,7 @@ So our constructed cosmwasm message that we execute will look like:
 ```go
 msg := MsgExecuteContract{
     // Sender is the that actor that signed the messages
-    Sender: "osmo1-hardcoded-moduleAccount",
+    Sender: "quasar1-hardcoded-moduleAccount",
     // Contract is the address of the smart contract
     Contract: packet.data.memo["wasm"]["ContractAddress"],
     // Msg json encoded message to be passed to the contract
@@ -67,7 +69,7 @@ ICS20 is JSON native, so we use JSON for the memo format.
         "receiver": "contract addr or blank",
         "memo": {
            "wasm": {
-              "contract": "osmo1contractAddr",
+              "contract": "quasar1contractAddr",
               "msg": {
                 "raw_message_fields": "raw_message_data",
               }

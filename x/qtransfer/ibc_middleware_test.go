@@ -192,8 +192,7 @@ func (suite *HooksTestSuite) TestRecvTransferWithMetadata() {
 	addr := suite.chainA.InstantiateContract(&suite.Suite, "{}")
 
 	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
-	ackStr := string(ackBytes)
-	fmt.Println(ackStr)
+
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
 	suite.Require().NoError(err)
@@ -214,8 +213,7 @@ func (suite *HooksTestSuite) TestFundsAreTransferredToTheContract() {
 
 	// Execute the contract via IBC
 	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
-	ackStr := string(ackBytes)
-	fmt.Println(ackStr)
+
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
 	suite.Require().NoError(err)
@@ -240,8 +238,7 @@ func (suite *HooksTestSuite) TestFundsAreReturnedOnFailedContractExec() {
 
 	// Execute the contract via IBC with a message that the contract will reject
 	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"not_echo": {"msg": "test"} } } }`, addr))
-	ackStr := string(ackBytes)
-	fmt.Println(ackStr)
+
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
 	suite.Require().NoError(err)
@@ -271,10 +268,10 @@ func (suite *HooksTestSuite) TestPacketsThatShouldBeSkipped() {
 		{`{"wasm": []}`, false},
 		{`{"wasm": {}}`, false},
 		{`{"wasm": {"contract": "something"}}`, false},
-		{`{"wasm": {"contract": "osmo1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj"}}`, false},
+		{`{"wasm": {"contract": "quasar1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj"}}`, false},
 		{`{"wasm": {"msg": "something"}}`, false},
 		// invalid receiver
-		{`{"wasm": {"contract": "osmo1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj", "msg": {}}}`, false},
+		{`{"wasm": {"contract": "quasar1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj", "msg": {}}}`, false},
 		// msg not an object
 		{fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": 1}}`, receiver), false},
 	}
@@ -282,7 +279,7 @@ func (suite *HooksTestSuite) TestPacketsThatShouldBeSkipped() {
 	for _, tc := range testCases {
 		ackBytes := suite.receivePacketWithSequence(receiver, tc.memo, sequence)
 		ackStr := string(ackBytes)
-		fmt.Println(ackStr)
+
 		var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 		err := json.Unmarshal(ackBytes, &ack)
 		suite.Require().NoError(err)

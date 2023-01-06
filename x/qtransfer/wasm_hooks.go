@@ -23,16 +23,16 @@ type ContractAck struct {
 }
 
 type WasmHooks struct {
-	keeper         keeper.Keeper
-	wasmKeeper     wasmkeeper.Keeper
-	contractKeeper *wasmkeeper.PermissionedKeeper
+	keeper             keeper.Keeper
+	wasmKeeper         wasmkeeper.Keeper
+	permissionedKeeper *wasmkeeper.PermissionedKeeper
 }
 
-func NewWasmHooks(k keeper.Keeper, wasmKeeper wasmkeeper.Keeper, contractKeeper *wasmkeeper.PermissionedKeeper) WasmHooks {
+func NewWasmHooks(k keeper.Keeper, wasmKeeper wasmkeeper.Keeper) WasmHooks {
 	return WasmHooks{
-		keeper:         k,
-		wasmKeeper:     wasmKeeper,
-		contractKeeper: contractKeeper,
+		keeper:             k,
+		wasmKeeper:         wasmKeeper,
+		permissionedKeeper: wasmkeeper.NewDefaultPermissionKeeper(wasmKeeper),
 	}
 }
 
@@ -48,7 +48,7 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 	}
 
 	// Validate the memo
-	isWasmRouted, contractAddr, msgBytes, err := ValidateAndParseMemo(data.GetMemo(), data.Receiver)
+	isWasmRouted, contractAddr, msgBytes, err := validateAndParseTransferMemo(data.GetMemo(), data.Receiver)
 	if !isWasmRouted {
 		return im.App.OnRecvPacket(ctx, packet, relayer)
 	}
@@ -145,7 +145,7 @@ func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteCon
 	if err := execMsg.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
 	}
-	wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.contractKeeper)
+	wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
 	return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
 }
 
@@ -182,7 +182,7 @@ func isMemoWasmRouted(memo string) (isWasmRouted bool, metadata map[string]inter
 	return true, metadata
 }
 
-func ValidateAndParseMemo(memo string, receiver string) (isWasmRouted bool, contractAddr sdk.AccAddress, msgBytes []byte, err error) {
+func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bool, contractAddr sdk.AccAddress, msgBytes []byte, err error) {
 	isWasmRouted, metadata := isMemoWasmRouted(memo)
 	if !isWasmRouted {
 		return isWasmRouted, sdk.AccAddress{}, nil, nil
