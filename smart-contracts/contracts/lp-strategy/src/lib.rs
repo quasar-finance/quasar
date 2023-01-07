@@ -5,6 +5,7 @@ mod ibc;
 pub mod msg;
 mod state;
 mod strategy;
+mod vault;
 
 #[cfg(test)]
 mod tests {
