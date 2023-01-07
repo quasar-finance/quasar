@@ -30,11 +30,13 @@ require (
 )
 
 require (
+	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/CosmWasm/wasmvm v1.0.0
 	github.com/bandprotocol/bandchain-packet v0.0.3
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.2
+	github.com/prometheus/client_golang v1.13.0
 )
 
 require (
@@ -43,7 +45,6 @@ require (
 	cloud.google.com/go/compute v1.7.0 // indirect
 	cloud.google.com/go/iam v0.4.0 // indirect
 	cloud.google.com/go/storage v1.22.1 // indirect
-	cosmossdk.io/errors v1.0.0-beta.7 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -213,7 +214,6 @@ require (
 	github.com/phayes/checkstyle v0.0.0-20170904204023-bfd46e6a821d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.0.2 // indirect
-	github.com/prometheus/client_golang v1.13.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect

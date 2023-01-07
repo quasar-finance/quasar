@@ -10,7 +10,6 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
-	"github.com/quasarlabs/quasarnode/decorators"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -96,6 +95,7 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v5/modules/core/keeper"
+	ibctestingtypes "github.com/cosmos/ibc-go/v5/testing/types"
 	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -114,6 +114,9 @@ import (
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/qtransfer"
+	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
+	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
 
 	orionmodule "github.com/quasarlabs/quasarnode/x/orion"
 	orionmodulekeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
@@ -138,7 +141,22 @@ const (
 	Name                 = "quasarnode"
 )
 
-// this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
+var (
+	// WasmProposalsEnabled enables all x/wasm proposals when it's value is "true"
+	// and EnableSpecificWasmProposals is empty. Otherwise, all x/wasm proposals
+	// are disabled.
+	WasmProposalsEnabled = "true"
+
+	// EnableSpecificWasmProposals, if set, must be comma-separated list of values
+	// that are all a subset of "EnableAllProposals", which takes precedence over
+	// WasmProposalsEnabled.
+	//
+	// See: https://github.com/CosmWasm/wasmd/blob/02a54d33ff2c064f3539ae12d75d027d9c665f05/x/wasm/internal/types/proposal.go#L28-L34
+	EnableSpecificWasmProposals = ""
+
+	// EmptyWasmOpts defines a type alias for a list of wasm options.
+	EmptyWasmOpts []wasm.Option
+)
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
 	var govProposalHandlers []govclient.ProposalHandler
@@ -158,20 +176,25 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 	return govProposalHandlers
 }
 
-// GetEnabledProposals parses the ProposalsEnabled / EnableSpecificProposals values to
-// produce a list of enabled proposals to pass into quasar app.
-func GetEnabledProposals() []wasm.ProposalType {
-	if EnableSpecificProposals == "" {
-		if ProposalsEnabled == "true" {
+// GetWasmEnabledProposals parses the WasmProposalsEnabled and
+// EnableSpecificWasmProposals values to produce a list of enabled proposals to
+// pass into the application.
+func GetWasmEnabledProposals() []wasm.ProposalType {
+	if EnableSpecificWasmProposals == "" {
+		if WasmProposalsEnabled == "true" {
 			return wasm.EnableAllProposals
 		}
+
 		return wasm.DisableAllProposals
 	}
-	chunks := strings.Split(EnableSpecificProposals, ",")
+
+	chunks := strings.Split(EnableSpecificWasmProposals, ",")
+
 	proposals, err := wasm.ConvertToProposals(chunks)
 	if err != nil {
 		panic(err)
 	}
+
 	return proposals
 }
 
@@ -179,20 +202,12 @@ var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
 
-	// If EnabledSpecificProposals is "", and this is "true", then enable all x/wasm proposals.
-	// If EnabledSpecificProposals is "", and this is not "true", then disable all x/wasm proposals.
-	ProposalsEnabled = "false"
-	// If set to non-empty string it must be comma-separated list of values that are all a subset
-	// of "EnableAllProposals" (takes precedence over ProposalsEnabled)
-	// https://github.com/CosmWasm/wasmd/blob/02a54d33ff2c064f3539ae12d75d027d9c665f05/x/wasm/internal/types/proposal.go#L28-L34
-	EnableSpecificProposals = ""
-
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
+		genutil.AppModuleBasic{}, // TODO: Use NewAppModule function instead
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
@@ -214,8 +229,8 @@ var (
 		qoraclemodule.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		intergammmodule.AppModuleBasic{},
-		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
+		qtransfer.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -293,7 +308,7 @@ type App struct {
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
-	wasmKeeper       wasm.Keeper
+	WasmKeeper       wasm.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -304,15 +319,20 @@ type App struct {
 	scopedQoracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	EpochsKeeper  *epochsmodulekeeper.Keeper
-	QbankKeeper   qbankmodulekeeper.Keeper
-	OrionKeeper   orionmodulekeeper.Keeper
-	QoracleKeeper qoraclemodulekeeper.Keeper
+	EpochsKeeper    *epochsmodulekeeper.Keeper
+	QbankKeeper     qbankmodulekeeper.Keeper
+	OrionKeeper     orionmodulekeeper.Keeper
+	QoracleKeeper   qoraclemodulekeeper.Keeper
+	QTransferKeeper qtransferkeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 	IntergammKeeper     *intergammmodulekeeper.Keeper
-	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
+	// transfer module
+	RawIcs20TransferAppModule transfer.AppModule
+	TransferStack             *qtransfer.IBCMiddleware
+	Ics20WasmHooks            *qtransfer.WasmHooks
+	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// mm is the module manager
 	mm *module.Manager
@@ -322,14 +342,6 @@ type App struct {
 
 	configurator module.Configurator
 }
-
-// TODO wasmOpts and enabledProposals should be part of New() parameters according to cosmwasm, for now we don't
-//
-//	allow customization of wasmOpts and enabledProposals and just hardcode it to nil
-var (
-	wasmOpts         []wasm.Option       = nil
-	enabledProposals []wasm.ProposalType = wasm.EnableAllProposals
-)
 
 // New returns a reference to an initialized blockchain app
 func New(
@@ -342,6 +354,8 @@ func New(
 	invCheckPeriod uint,
 	encodingConfig appParams.EncodingConfig,
 	appOpts servertypes.AppOptions,
+	wasmEnabledProposals []wasm.ProposalType,
+	wasmOpts []wasm.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
 	appCodec := encodingConfig.Marshaler
@@ -372,6 +386,7 @@ func New(
 		icahosttypes.StoreKey,
 		intergammmoduletypes.StoreKey,
 		wasm.StoreKey,
+		qtransfertypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -469,8 +484,8 @@ func New(
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	// The gov proposal types can be individually enabled
-	if len(enabledProposals) != 0 {
-		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
+	if len(wasmEnabledProposals) != 0 {
+		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.WasmKeeper, wasmEnabledProposals))
 	}
 
 	// IBC Modules & Keepers
@@ -480,8 +495,11 @@ func New(
 		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
+	app.RawIcs20TransferAppModule = transfer.NewAppModule(app.TransferKeeper)
 	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	// Hooks Middleware
+	hooksTransferModule := qtransfer.NewIBCMiddleware(&transferIbcModule, &app.HooksICS4Wrapper)
+	app.TransferStack = &hooksTransferModule
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
@@ -568,8 +586,15 @@ func New(
 		app.IntergammKeeper,
 		*app.EpochsKeeper,
 	)
-
 	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.QTransferKeeper = qtransferkeeper.NewKeeper(
+		appCodec,
+		keys[qtransfertypes.ModuleName],
+		app.GetSubspace(qtransfertypes.ModuleName),
+		app.AccountKeeper,
+	)
+	qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
 
 	/*
 		app.QbankKeeper = *qbankkeeper.SetDepositHooks(
@@ -596,7 +621,7 @@ func New(
 	)
 
 	// create the wasm callback plugin
-	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
+	callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.OrionKeeper.GetOrionAcc())
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -609,7 +634,7 @@ func New(
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "iterator,staking,stargate"
-	app.wasmKeeper = wasm.NewKeeper(
+	app.WasmKeeper = wasm.NewKeeper(
 		appCodec,
 		keys[wasm.StoreKey],
 		app.GetSubspace(wasm.ModuleName),
@@ -627,16 +652,6 @@ func New(
 		wasmConfig,
 		supportedFeatures,
 		wasmOpts...,
-	)
-
-	var decoratedTransferIBCModule ibcporttypes.IBCModule
-	decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
-		app.IntergammKeeper,
-		transferIbcModule,
-	)
-	decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
-		&app.wasmKeeper,
-		decoratedTransferIBCModule,
 	)
 
 	// Set Intergamm hooks
@@ -729,11 +744,18 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.WasmKeeper)
+	app.Ics20WasmHooks = &wasmHooks
+	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
+		app.IBCKeeper.ChannelKeeper,
+		app.Ics20WasmHooks,
+	)
+
 	// Register host and authentication routes
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
-		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
+		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
 		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
 		AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -767,12 +789,13 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		transferModule,
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		app.RawIcs20TransferAppModule,
 		epochsModule,
 		qbankModule,
 		orionModule,
 		qoracleModule,
+		qtranserModule,
 		icaModule,
 		intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -804,6 +827,7 @@ func New(
 		banktypes.ModuleName,
 		govtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
+		qtransfertypes.ModuleName,
 		crisistypes.ModuleName,
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
@@ -814,6 +838,7 @@ func New(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
+		qtransfertypes.ModuleName,
 		orionmoduletypes.ModuleName,
 		// TODO check the order of the below
 		evidencetypes.ModuleName,
@@ -872,6 +897,7 @@ func New(
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 		// wasm after ibc transfer
 		wasm.ModuleName,
+		qtransfertypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -895,9 +921,9 @@ func New(
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		app.RawIcs20TransferAppModule,
 		epochsModule,
 		qbankModule,
 		orionModule,
@@ -939,7 +965,7 @@ func New(
 	// see cmd/wasmd/root.go: 206 - 214 approx
 	if manager := app.SnapshotManager(); manager != nil {
 		err := manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.wasmKeeper),
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
@@ -1145,6 +1171,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
+	paramsKeeper.Subspace(qtransfertypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
@@ -1153,4 +1180,21 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// Required for ibctesting
+func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
+	return app.StakingKeeper // Dereferencing the pointer
+}
+
+func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
+	return app.IBCKeeper // This is a *ibckeeper.Keeper
+}
+
+func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
+	return app.ScopedIBCKeeper
+}
+
+func (app *App) GetTxConfig() client.TxConfig {
+	return MakeEncodingConfig().TxConfig
 }

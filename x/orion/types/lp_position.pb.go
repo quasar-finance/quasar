@@ -78,7 +78,7 @@ func (LpState) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_215817c8818ad883, []int{0}
 }
 
-//LpEpochPair indicates the epoch day on which lpId was created.
+// LpEpochPair indicates the epoch day on which lpId was created.
 type LpEpochPair struct {
 	LpId     uint64 `protobuf:"varint,1,opt,name=lpId,proto3" json:"lpId,omitempty"`
 	EpochDay uint64 `protobuf:"varint,2,opt,name=epochDay,proto3" json:"epochDay,omitempty"`
