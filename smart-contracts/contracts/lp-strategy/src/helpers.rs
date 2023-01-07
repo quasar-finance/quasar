@@ -1,8 +1,8 @@
 use crate::{
     error::ContractError,
-    state::{CHANNELS, REPLIES},
+    state::{CHANNELS, REPLIES, PendingAck},
 };
-use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg, Uint128, Event};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -24,24 +24,9 @@ pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String
     }
 }
 
-pub fn create_reply(
+pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    msg_kind: MsgKind,
-    msg: impl Into<CosmosMsg>,
-) -> Result<Response, StdError> {
-    let last = REPLIES.range(storage, None, None, Order::Descending).next();
-    let mut id: u64 = 0;
-    if let Some(val) = last {
-        id = val?.0;
-    }
-    // register the message in the replies for handling
-    REPLIES.save(storage, id, &msg_kind)?;
-    Ok(Response::new().add_submessage(SubMsg::reply_always(msg, id)))
-}
-
-pub fn create_submsg(
-    storage: &mut dyn Storage,
-    msg_kind: MsgKind,
+    pending: PendingAck,
     msg: impl Into<CosmosMsg>,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -50,7 +35,7 @@ pub fn create_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &msg_kind)?;
+    REPLIES.save(storage, id, &pending)?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -76,16 +61,12 @@ pub enum MsgKind {
     Ibc(IbcMsgKind),
 }
 
-pub(crate) fn parse_seq(reply: Reply) -> Result<u64, StdError> {
-    reply
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr { msg })?
-        .events
+pub(crate) fn parse_seq(events: Vec<Event>) -> Result<u64, StdError> {
+        events
         .iter()
         .find(|e| e.ty == "send_packet")
         .ok_or(StdError::NotFound {
-            kind: "send_packet_event".into(),
+            kind: "send_packet".into(),
         })?
         .attributes
         .iter()

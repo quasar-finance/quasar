@@ -1,12 +1,41 @@
 use std::num::ParseIntError;
-
-use cosmwasm_std::StdError;
+use std::fmt::Debug;
+use cosmwasm_std::{StdError, Uint128, Addr, OverflowError, DivideByZeroError};
 use quasar_types::error::Error as QError;
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
 use thiserror::Error;
+
+use crate::helpers::IbcMsgKind;
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
 pub enum Never {}
+
+type TrapResult<T> = Result<T, ContractError>;
+
+trait Trappable<T> {
+    fn trap(self) -> T;
+}
+
+impl<T> Trappable<T> for TrapResult<T> {
+    fn trap(self) -> T {
+        todo!()
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct Trap {
+    // A string describing the trapped error
+    error: String,
+    // the failed step
+    step: IbcMsgKind,
+    // the address of the user whose calls failed
+    addres: Addr,
+    // the amount of funds of the claim that faild
+    amount: Uint128,
+}
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -42,4 +71,10 @@ pub enum ContractError {
 
     #[error("{0}")]
     ParseIntError(#[from] ParseIntError),
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
+
+    #[error("{0}")]
+    DivideByZeroError(#[from] DivideByZeroError),
 }
