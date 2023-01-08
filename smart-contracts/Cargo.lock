@@ -723,46 +723,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc_transfer"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.14.0",
- "cw-utils 0.16.0",
- "cw20-base 0.16.0",
- "osmosis-std 0.12.0",
- "quasar-bindings",
- "quasar-traits",
- "quasar-types",
- "schemars",
- "serde",
- "serde-json-wasm",
- "thiserror",
-]
-
-[[package]]
-name = "ica"
-version = "0.1.0"
-dependencies = [
- "base64 0.13.1",
- "cosmos-sdk-proto 0.14.0",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-controllers",
- "cw-storage-plus 0.14.0",
- "cw-utils 0.14.0",
- "cw2 0.14.0",
- "cw20 0.14.0",
- "osmosis-std 0.12.0",
- "prost 0.11.0",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "icq"
 version = "0.1.0"
 dependencies = [
