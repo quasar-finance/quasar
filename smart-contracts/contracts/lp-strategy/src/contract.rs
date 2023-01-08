@@ -44,7 +44,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // TODO this needs and error check and error handling
     let pending = REPLIES.load(deps.storage, msg.id)?;
     deps.api.debug(format!("{:?}", msg.clone().result.into_result().unwrap().events).as_str());
-    let seq = parse_seq(msg.clone().result.into_result().map_err(|err| StdError::GenericErr { msg: err })?.events).map_err(|_| StdError::GenericErr { msg: format!("{:?}", msg.clone().result.into_result().unwrap().events)})?;
+    let seq = parse_seq(msg.clone().result.into_result().map_err(|err| StdError::GenericErr { msg: err })?.events).map_err(|_| StdError::GenericErr { msg: format!("{:?}", msg)})?;
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
 }

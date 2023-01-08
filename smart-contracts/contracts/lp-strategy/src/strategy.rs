@@ -1,26 +1,30 @@
 use std::ops::Add;
 
-use cosmwasm_std::{to_binary, Coin, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Addr};
+use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceRequest;
+use cosmwasm_std::{to_binary, Coin, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Addr, CosmosMsg};
 use osmosis_std::{
     shim::Duration,
     types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
+        cosmos::{base::v1beta1::Coin as OsmoCoin},
         osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
     },
 };
+use prost::Message;
 use quasar_types::{
     ibc::ChannelType,
     ica::{
         packet::{InterchainAccountPacketData, Type},
         traits::Pack,
-    },
+    }, icq::Query,
 };
 
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages, MsgKind},
-    state::{CHANNELS, PendingAck},
+    state::{CHANNELS, PendingAck, CONFIG},
 };
+
+
 
 pub fn do_transfer(
     storage: &mut dyn Storage,
@@ -54,6 +58,7 @@ pub fn do_transfer(
     )?)
 }
 
+/// prepare the submsg for joining the pool
 pub fn do_ibc_join_pool_swap_extern_amount_in(
     storage: &mut dyn Storage,
     env: Env,
