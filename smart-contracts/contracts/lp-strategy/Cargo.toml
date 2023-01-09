@@ -33,3 +33,5 @@ serde-json-wasm = { version = "0.4.1", default-features = false }
 thiserror = { version = "1.0.23" }
 quasar-traits = { path = "../../packages/quasar-traits" }
 quasar-types = { path = "../../packages/quasar-types"}
+typeshare = "1.0.0"
+

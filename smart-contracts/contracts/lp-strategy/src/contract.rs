@@ -1,16 +1,19 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdResult, Uint128, StdError,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use cw_utils::must_pay;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::error::ContractError;
-use crate::helpers::{parse_seq};
+use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, PENDING_ACK, REPLIES};
+use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, PENDING_ACK, REPLIES};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
+use crate::vault::do_deposit;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -33,8 +36,13 @@ pub fn instantiate(
             pool_id: msg.pool_id,
             pool_denom: msg.pool_denom,
             denom: msg.denom,
+            local_denom: msg.local_denom,
         },
     )?;
+
+    // set the deposit sequence number to zero
+    DEPOSIT_SEQ.save(deps.storage, &Uint128::zero())?;
+
     Ok(Response::default())
 }
 
@@ -43,8 +51,17 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
     let pending = REPLIES.load(deps.storage, msg.id)?;
-    deps.api.debug(format!("{:?}", msg.clone().result.into_result().unwrap().events).as_str());
-    let seq = parse_seq(msg.clone().result.into_result().map_err(|err| StdError::GenericErr { msg: err })?.events).map_err(|_| StdError::GenericErr { msg: format!("{:?}", msg)})?;
+
+    let seq = parse_seq(
+        msg.clone()
+            .result
+            .into_result()
+            .map_err(|err| StdError::GenericErr { msg: err })?
+            .events,
+    )
+    .map_err(|_| StdError::GenericErr {
+        msg: format!("{:?}", msg),
+    })?;
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
 }
@@ -57,7 +74,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => todo!(),
+        ExecuteMsg::Deposit {} => execute_deposit(deps, env, info),
         ExecuteMsg::TransferJoinLock {
             channel,
             to_address,
@@ -77,9 +94,20 @@ pub fn execute(
             denom,
             amount,
             share_out_min_amount,
-
         ),
     }
+}
+
+pub fn execute_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let deposit = do_deposit(deps, env, info.clone())?;
+
+    Ok(Response::new()
+        .add_submessage(deposit)
+        .add_attribute("deposit", info.sender))
 }
 
 // transfer funds sent to the contract to an address on osmosis, this needs an extra change to always
@@ -91,13 +119,19 @@ pub fn execute_transfer(
     channel: String, // TODO see if we can move channel mapping to a more zone like approach
     to_address: String,
 ) -> Result<Response, ContractError> {
+    let dep_seq = DEPOSIT_SEQ.load(deps.storage)?;
+    DEPOSIT_SEQ.save(deps.storage, &dep_seq.checked_add(Uint128::one())?)?;
+
+    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
+
     let transfer = do_transfer(
         deps.storage,
         env,
         info.sender,
-        info.funds,
+        amount,
         channel.clone(),
         to_address.clone(),
+        dep_seq,
     )?;
 
     Ok(Response::new()
@@ -116,6 +150,9 @@ pub fn execute_join_pool(
     amount: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    let dep_seq = DEPOSIT_SEQ.load(deps.storage)?;
+    DEPOSIT_SEQ.save(deps.storage, &dep_seq.checked_add(Uint128::one())?)?;
+
     let join = do_ibc_join_pool_swap_extern_amount_in(
         deps.storage,
         env,
@@ -125,6 +162,7 @@ pub fn execute_join_pool(
         amount,
         share_out_min_amount,
         info.sender,
+        dep_seq,
     )?;
 
     Ok(Response::new()
@@ -171,6 +209,7 @@ mod tests {
             pool_id: todo!(),
             pool_denom: todo!(),
             denom: todo!(),
+            local_denom: todo!(),
         }
     }
 
