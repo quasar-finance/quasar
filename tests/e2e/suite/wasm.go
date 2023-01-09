@@ -48,7 +48,8 @@ func (s *E2ETestSuite) InstantiateContract(
 	codeID uint64,
 	label, admin string,
 	funds sdk.Coins,
-	args any) wasmtypes.MsgInstantiateContractResponse {
+	args any,
+) wasmtypes.MsgInstantiateContractResponse {
 	tn := GetFullNode(chain)
 
 	argsbz, err := json.Marshal(args)
@@ -78,4 +79,37 @@ func (s *E2ETestSuite) InstantiateContract(
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, &resp)
 
 	return resp
+}
+
+// ExecuteContract executes the contract with given contract address on chain. Note that funds are optional.
+func (s *E2ETestSuite) ExecuteContract(
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+	keyName string,
+	contractAddr string,
+	funds sdk.Coins,
+	msg, result any,
+) {
+	tn := GetFullNode(chain)
+
+	msgbz, err := json.Marshal(msg)
+	s.Require().NoError(err)
+	cmds := []string{"wasm", "execute",
+		contractAddr,
+		string(msgbz),
+		"--gas", "auto",
+	}
+	if !funds.Empty() {
+		cmds = append(cmds, "--amount", funds.String())
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to execute contract")
+
+	var resp wasmtypes.MsgExecuteContractResponse
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, &resp)
+
+	if result != nil {
+		s.Require().NoError(json.Unmarshal(resp.Data, result), "failed to unmarshal result")
+	}
 }

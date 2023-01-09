@@ -180,3 +180,21 @@ func GetFullNode(chain *cosmos.CosmosChain) *cosmos.ChainNode {
 	// use first validator
 	return chain.Validators[0]
 }
+
+// CreateChannel creates a channel between two chains.
+func (s *E2ETestSuite) CreateChannel(
+	ctx context.Context,
+	pathName string,
+	srcPort string,
+	dstPort string,
+	order ibc.Order,
+	version string,
+) {
+	err := s.relayer.CreateChannel(ctx, s.erep, pathName, ibc.CreateChannelOptions{
+		SourcePortName: srcPort,
+		DestPortName:   dstPort,
+		Order:          order,
+		Version:        version,
+	})
+	s.Require().NoError(err)
+}
