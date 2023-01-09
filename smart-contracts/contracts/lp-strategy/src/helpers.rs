@@ -1,8 +1,8 @@
 use crate::{
     error::ContractError,
-    state::{CHANNELS, REPLIES, PendingAck},
+    state::{PendingAck, CHANNELS, REPLIES},
 };
-use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg, Uint128, Event};
+use cosmwasm_std::{CosmosMsg, Event, Order, StdError, Storage, SubMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +24,17 @@ pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String
     }
 }
 
+pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), ContractError> {
+    let chan = CHANNELS.load(storage, channel)?;
+    match chan.channel_type {
+        quasar_types::ibc::ChannelType::Icq { channel_ty: _ } => Ok(()),
+        quasar_types::ibc::ChannelType::Ica {
+            channel_ty: _,
+            counter_party_address: _,
+        } => Err(ContractError::NoIcqChannel),
+        quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcqChannel),
+    }
+}
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
     pending: PendingAck,
@@ -62,7 +73,7 @@ pub enum MsgKind {
 }
 
 pub(crate) fn parse_seq(events: Vec<Event>) -> Result<u64, StdError> {
-        events
+    events
         .iter()
         .find(|e| e.ty == "send_packet")
         .ok_or(StdError::NotFound {

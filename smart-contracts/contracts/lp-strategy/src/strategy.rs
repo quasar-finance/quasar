@@ -1,11 +1,13 @@
 use std::ops::Add;
 
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceRequest;
-use cosmwasm_std::{to_binary, Coin, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Addr, CosmosMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
+};
 use osmosis_std::{
     shim::Duration,
     types::{
-        cosmos::{base::v1beta1::Coin as OsmoCoin},
+        cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
     },
 };
@@ -15,33 +17,31 @@ use quasar_types::{
     ica::{
         packet::{InterchainAccountPacketData, Type},
         traits::Pack,
-    }, icq::Query,
+    },
+    icq::Query,
 };
 
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages, MsgKind},
-    state::{CHANNELS, PendingAck, CONFIG},
+    state::{PendingAck, CHANNELS, CONFIG, JOINED_FUNDS, LOCKED_FUNDS, TRANSFERRED_FUNDS},
 };
-
-
 
 pub fn do_transfer(
     storage: &mut dyn Storage,
     env: Env,
     sender: Addr,
-    funds: Vec<Coin>,
+    amount: Uint128,
     channel_id: String,
     to_address: String,
+    current: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    if funds.len() != 1 {
-        return Err(ContractError::PaymentError(
-            cw_utils::PaymentError::MultipleDenoms {},
-        ));
-    }
     // todo check denom of funds once we have denom mapping done
 
-    let coin = &funds[0];
+    let coin = Coin {
+        denom: CONFIG.load(storage)?.local_denom,
+        amount,
+    };
 
     let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(300));
     let transfer = IbcMsg::Transfer {
@@ -51,9 +51,16 @@ pub fn do_transfer(
         timeout,
     };
 
+    TRANSFERRED_FUNDS.save(storage, current.u128(), &amount)?;
+
     Ok(create_ibc_ack_submsg(
         storage,
-        PendingAck { kind: IbcMsgKind::Transfer, address: sender, amount: coin.amount },
+        PendingAck {
+            kind: IbcMsgKind::Transfer,
+            address: sender,
+            amount: coin.amount,
+            id: current,
+        },
         transfer,
     )?)
 }
@@ -68,6 +75,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
     amount: Uint128,
     share_out_min_amount: Uint128,
     sender: Addr,
+    current: Uint128,
 ) -> Result<SubMsg, ContractError> {
     let channel = CHANNELS.load(storage, channel_id.clone())?;
     if let ChannelType::Ica {
@@ -79,6 +87,9 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
         if counter_party_address.is_none() {
             return Err(ContractError::NoCounterpartyIcaAddress);
         }
+
+        TRANSFERRED_FUNDS.remove(storage, current.u128());
+        JOINED_FUNDS.save(storage, current.u128(), &amount)?;
 
         // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
         let join = MsgJoinSwapExternAmountIn {
@@ -101,7 +112,12 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 
         Ok(create_ibc_ack_submsg(
             storage,
-            PendingAck { kind: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn), address: sender, amount },
+            PendingAck {
+                kind: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn),
+                address: sender,
+                amount,
+                id: current,
+            },
             send_packet_msg,
         )?)
     } else {
@@ -158,26 +174,33 @@ mod tests {
         // load an ICA channel into the deps
         let (chan_id, channel_info) = default_ica_channel();
         // unwrap here since this is a test function
-        channels.save(deps.as_mut().storage, chan_id, &channel_info).unwrap();
+        channels
+            .save(deps.as_mut().storage, chan_id, &channel_info)
+            .unwrap();
         deps
     }
 
     fn default_ica_channel() -> (String, ChannelInfo) {
         let chan_id = String::from("channel-0");
-        (chan_id.clone(), ChannelInfo {
-            id: chan_id,
-            counterparty_endpoint: IbcEndpoint {
-                port_id: String::from("ica-host"),
-                channel_id: String::from("channel-0"),
+        (
+            chan_id.clone(),
+            ChannelInfo {
+                id: chan_id,
+                counterparty_endpoint: IbcEndpoint {
+                    port_id: String::from("ica-host"),
+                    channel_id: String::from("channel-0"),
+                },
+                connection_id: String::from("connection-0"),
+                channel_type: ChannelType::Ica {
+                    channel_ty: IcaMetadata::with_connections(
+                        String::from("connection-0"),
+                        String::from("connection-0"),
+                    ),
+                    counter_party_address: Some(String::from("osmo")),
+                },
+                handshake_state: HandshakeState::Open,
             },
-            connection_id: String::from("connection-0"),
-            channel_type:
-            ChannelType::Ica {
-                channel_ty: IcaMetadata::with_connections(String::from("connection-0"), String::from("connection-0")),
-                counter_party_address: Some(String::from("osmo")),
-            },
-            handshake_state: HandshakeState::Open,
-        })
+        )
     }
 
     #[test]
@@ -185,8 +208,9 @@ mod tests {
         let channels = Map::new("channels");
         let deps = default_instantiate(&channels);
 
-        let chan = channels.load(deps.as_ref().storage, "channel-0".to_string()).unwrap();
-        
+        let chan = channels
+            .load(deps.as_ref().storage, "channel-0".to_string())
+            .unwrap();
     }
 
     #[test]
