@@ -1,11 +1,11 @@
 pub mod contract;
 pub mod error;
-mod helpers;
-mod ibc;
+pub mod helpers;
+pub mod ibc;
 pub mod msg;
-mod state;
-mod strategy;
-mod vault;
+pub mod state;
+pub mod strategy;
+pub mod vault;
 
 #[cfg(test)]
 mod tests {

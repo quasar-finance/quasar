@@ -100,7 +100,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
         let packet = InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.pack()], None);
 
         let send_packet_msg = IbcMsg::SendPacket {
-            channel_id: channel_id,
+            channel_id,
             data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };

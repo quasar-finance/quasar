@@ -39,6 +39,9 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 
+    #[error("not enough claims")]
+    InsufficientClaims,
+
     #[error("{0}")]
     QueueError(String),
 

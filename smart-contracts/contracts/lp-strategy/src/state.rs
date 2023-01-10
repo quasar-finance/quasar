@@ -55,7 +55,7 @@ pub(crate) const JOINED_FUNDS: Map<u128, Uint128> = Map::new("locked_funds");
 // The total amount of funds we have locked in the pool, since this contract only accepts one denom, we can use an Uint128
 pub(crate) const LOCKED_FUNDS: Map<u128, Uint128> = Map::new("locked_funds");
 pub(crate) const CLAIMS: Map<Addr, Uint128> = Map::new("claims");
-pub(crate) const SHARES: Map<String, Uint128> = Map::new("shares");
+pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -81,11 +81,4 @@ impl PendingAck {
 #[serde(rename_all = "snake_case")]
 pub struct Claim {
     amount: Uint128,
-}
-
-impl Claim {
-    fn add(mut self, amount: Uint128) -> Result<Self, ContractError> {
-        self.amount = self.amount.checked_add(amount)?;
-        Ok(self)
-    }
 }
