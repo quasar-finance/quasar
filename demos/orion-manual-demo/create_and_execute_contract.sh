@@ -55,12 +55,11 @@ echo "joining pool and locking all lp tokens using preloaded funds"
 JOINMSG=$(printf '{
   "deposit_and_lock_tokens": {
     "amount": "1000",
-    "channel": %s,
     "denom": "uosmo",
     "pool_id": 1,
     "share_out_min_amount": "1"
   }
-}' $CCHAN)
+}')
 
 echo "joining pool, to replay: \"quasarnoded tx wasm execute $ADDR '$JOINMSG' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID\""
 quasarnoded tx wasm execute $ADDR "$JOINMSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
