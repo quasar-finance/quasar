@@ -45,6 +45,9 @@ pub enum ContractError {
     #[error("no counterpart ica address found")]
     NoCounterpartyIcaAddress,
 
+    #[error("ica channel is already set while it should be unset")]
+    IcaChannelAlreadySet,
+
     #[error("channel is not an ica channel")]
     NoIcaChannel,
 

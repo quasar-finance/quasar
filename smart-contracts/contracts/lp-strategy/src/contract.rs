@@ -11,7 +11,7 @@ use quasar_types::ibc::ChannelInfo;
 use crate::error::ContractError;
 use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, PENDING_ACK, REPLIES};
+use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, PENDING_ACK, REPLIES, ICA_CHANNEL};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::vault::do_deposit;
 
@@ -80,7 +80,6 @@ pub fn execute(
             to_address,
         } => execute_transfer(deps, env, info, channel, to_address),
         ExecuteMsg::DepositAndLockTokens {
-            channel,
             pool_id,
             amount,
             denom,
@@ -89,7 +88,6 @@ pub fn execute(
             deps,
             env,
             info,
-            channel,
             pool_id,
             denom,
             amount,
@@ -144,7 +142,6 @@ pub fn execute_join_pool(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    channel_id: String,
     pool_id: u64,
     denom: String,
     amount: Uint128,
@@ -152,6 +149,8 @@ pub fn execute_join_pool(
 ) -> Result<Response, ContractError> {
     let dep_seq = DEPOSIT_SEQ.load(deps.storage)?;
     DEPOSIT_SEQ.save(deps.storage, &dep_seq.checked_add(Uint128::one())?)?;
+
+    let channel_id = ICA_CHANNEL.load(deps.storage)?;
 
     let join = do_ibc_join_pool_swap_extern_amount_in(
         deps.storage,
