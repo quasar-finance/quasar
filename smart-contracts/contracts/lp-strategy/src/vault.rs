@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Response, Storage,
+    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Storage,
     SubMsg, Uint128,
 };
 use cw_storage_plus::Bound;
@@ -12,7 +12,7 @@ use crate::{
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
-        Claim, PendingAck, CLAIMS, CONFIG, DEPOSIT_SEQ, ICA_CHANNEL, ICQ_CHANNEL, LOCKED_FUNDS,
+        PendingAck, CLAIMS, CONFIG, DEPOSIT_SEQ, ICA_CHANNEL, ICQ_CHANNEL, LOCKED_FUNDS,
         SHARES, TRANSFERRED_FUNDS, TRANSFER_CHANNEL,
     },
     strategy::do_transfer,
