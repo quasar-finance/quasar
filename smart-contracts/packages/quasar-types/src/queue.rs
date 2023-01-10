@@ -14,7 +14,7 @@ where
         .unwrap();
     // TODO remove this awful bit once we refactor queues
     let default = &(0, T::default());
-    let (last, _) = q.back().unwrap_or(default).clone();
+    let (last, _) = q.back().unwrap_or(default);
     let next = last.checked_add(1);
     if next.is_none() {
         return Err(StdError::overflow(OverflowError {
@@ -26,7 +26,7 @@ where
     queue.save(deps.storage, next.unwrap(), &value)
 }
 
-pub fn dequeue<'a, T>(deps: DepsMut, queue: Map<u128, T>) -> Option<T>
+pub fn dequeue<T>(deps: DepsMut, queue: Map<u128, T>) -> Option<T>
 where
     T: Serialize + DeserializeOwned,
 {
