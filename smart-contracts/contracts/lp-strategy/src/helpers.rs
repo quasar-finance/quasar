@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
     match chan.channel_type {
-        quasar_types::ibc::ChannelType::Icq { channel_ty } => Err(ContractError::NoIcaChannel),
+        quasar_types::ibc::ChannelType::Icq { channel_ty: _ } => Err(ContractError::NoIcaChannel),
         quasar_types::ibc::ChannelType::Ica {
-            channel_ty,
+            channel_ty: _,
             counter_party_address,
         } => {
             if let Some(addr) = counter_party_address {
@@ -20,7 +20,7 @@ pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String
                 Err(ContractError::NoCounterpartyIcaAddress)
             }
         }
-        quasar_types::ibc::ChannelType::Ics20 { channel_ty } => Err(ContractError::NoIcaChannel),
+        quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcaChannel),
     }
 }
 

@@ -1,7 +1,7 @@
-use std::{env, ops::Add};
+
 
 use cosmwasm_std::{
-    to_binary, Addr, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order,
+    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order,
     Response, Storage, SubMsg, Uint128,
 };
 use cw_storage_plus::Bound;
@@ -153,7 +153,7 @@ fn get_total_balance(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     Ok(sum)
 }
 
-fn create_share(claim: Claim) -> Result<Response, ContractError> {
+fn create_share(_claim: Claim) -> Result<Response, ContractError> {
     // call into the minter and mint shares for the according to the claim
     todo!()
 }

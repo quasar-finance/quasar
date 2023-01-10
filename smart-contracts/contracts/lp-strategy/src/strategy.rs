@@ -1,8 +1,8 @@
-use std::ops::Add;
 
-use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceRequest;
+
+
 use cosmwasm_std::{
-    to_binary, Addr, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
+    to_binary, Addr, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
 };
 use osmosis_std::{
     shim::Duration,
@@ -11,20 +11,19 @@ use osmosis_std::{
         osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
     },
 };
-use prost::Message;
+
 use quasar_types::{
     ibc::ChannelType,
     ica::{
         packet::{InterchainAccountPacketData, Type},
         traits::Pack,
     },
-    icq::Query,
 };
 
 use crate::{
     error::ContractError,
-    helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages, MsgKind},
-    state::{PendingAck, CHANNELS, CONFIG, JOINED_FUNDS, LOCKED_FUNDS, TRANSFERRED_FUNDS},
+    helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
+    state::{PendingAck, CHANNELS, CONFIG, JOINED_FUNDS, TRANSFERRED_FUNDS},
 };
 
 pub fn do_transfer(
@@ -127,7 +126,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 }
 
 pub fn do_ibc_lock_tokens(
-    deps: &mut dyn Storage,
+    _deps: &mut dyn Storage,
     owner: String,
     coins: Vec<Coin>,
 ) -> Result<InterchainAccountPacketData, ContractError> {
@@ -158,8 +157,7 @@ pub fn do_ibc_lock_tokens(
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
-        DepsMut, Empty, IbcEndpoint, OwnedDeps,
+        testing::{mock_dependencies, MockApi, MockQuerier, MockStorage}, Empty, IbcEndpoint, OwnedDeps,
     };
     use cw_storage_plus::Map;
     use quasar_types::{
@@ -209,7 +207,7 @@ mod tests {
         let channels = Map::new("channels");
         let deps = default_instantiate(&channels);
 
-        let chan = channels
+        let _chan = channels
             .load(deps.as_ref().storage, "channel-0".to_string())
             .unwrap();
     }
