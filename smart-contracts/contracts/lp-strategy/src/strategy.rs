@@ -1,9 +1,4 @@
-
-
-
-use cosmwasm_std::{
-    to_binary, Addr, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
-};
+use cosmwasm_std::{to_binary, Addr, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
 use osmosis_std::{
     shim::Duration,
     types::{
@@ -65,7 +60,7 @@ pub fn do_transfer(
 }
 
 /// prepare the submsg for joining the pool
-#[allow(clippy::too_many_arguments)] // allowing this is not ideal, but for now we want to keep channel_id and pool_id in there 
+#[allow(clippy::too_many_arguments)] // allowing this is not ideal, but for now we want to keep channel_id and pool_id in there
 pub fn do_ibc_join_pool_swap_extern_amount_in(
     storage: &mut dyn Storage,
     env: Env,
@@ -157,7 +152,8 @@ pub fn do_ibc_lock_tokens(
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, MockApi, MockQuerier, MockStorage}, Empty, IbcEndpoint, OwnedDeps,
+        testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
+        Empty, IbcEndpoint, OwnedDeps,
     };
     use cw_storage_plus::Map;
     use quasar_types::{

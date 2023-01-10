@@ -11,7 +11,7 @@ use quasar_types::ibc::ChannelInfo;
 use crate::error::ContractError;
 use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, PENDING_ACK, REPLIES, ICA_CHANNEL};
+use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, ICA_CHANNEL, PENDING_ACK, REPLIES};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::vault::do_deposit;
 
@@ -188,7 +188,6 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";

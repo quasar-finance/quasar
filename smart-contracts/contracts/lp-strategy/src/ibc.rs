@@ -8,7 +8,7 @@ use crate::vault::handle_deposit_ack;
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
-use osmosis_std::types::osmosis::lockup::{MsgLockTokensResponse};
+use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
 use prost::Message;
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
@@ -21,11 +21,11 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage, Uint128,
+    entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket,
+    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
+    StdError, Storage, Uint128,
 };
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -129,7 +129,6 @@ pub fn ibc_channel_connect(
             if addr.is_none() {
                 return Err(ContractError::NoCounterpartyIcaAddress);
             }
-            
 
             // once we have an Open ICA channel, save it under ICA channel, if a channel already exists, reject incoming OPENS
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
@@ -138,7 +137,7 @@ pub fn ibc_channel_connect(
             }
 
             ICA_CHANNEL.save(deps.storage, &msg.channel().endpoint.channel_id)?;
-            
+
             info.channel_type = ChannelType::Ica {
                 channel_ty,
                 counter_party_address: addr,
@@ -407,11 +406,4 @@ fn on_packet_failure(
 }
 
 #[cfg(test)]
-mod test {
-    
-    
-    
-    
-    
-    
-}
+mod test {}
