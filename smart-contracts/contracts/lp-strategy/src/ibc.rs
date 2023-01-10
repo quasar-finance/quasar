@@ -1,5 +1,5 @@
 use crate::error::{ContractError, Never, Trap};
-use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages, MsgKind};
+use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
 use crate::state::{
     PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, JOINED_FUNDS, LOCKED_FUNDS, PENDING_ACK, TRAPS,
 };
@@ -21,13 +21,11 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, Response, StdError, StdResult, Storage,
-    SubMsg, Uint128, WasmMsg,
+    entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage, Uint128,
 };
-use schemars::_private::NoSerialize;
+
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -146,7 +144,7 @@ pub fn ibc_channel_connect(
                 counter_party_address: addr,
             }
         }
-        ChannelType::Ics20 { ref channel_ty } => unimplemented!(),
+        ChannelType::Ics20 { channel_ty: _ } => unimplemented!(),
     }
 
     info.handshake_state = HandshakeState::Open;
@@ -268,7 +266,7 @@ pub fn handle_succesful_ack(
 pub fn handle_transfer_ack(
     storage: &mut dyn Storage,
     env: Env,
-    ack_bin: Binary,
+    _ack_bin: Binary,
     pkt: IbcPacketAckMsg,
     pending: PendingAck,
 ) -> Result<IbcBasicResponse, ContractError> {
@@ -300,7 +298,7 @@ pub fn handle_icq_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
-    pkt: IbcPacketAckMsg,
+    _pkt: IbcPacketAckMsg,
     pending: PendingAck,
 ) -> Result<IbcBasicResponse, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
@@ -379,9 +377,9 @@ pub fn handle_ica_ack(
 }
 
 pub fn handle_failing_ack(
-    deps: DepsMut,
-    env: Env,
-    pkt: IbcPacketAckMsg,
+    _deps: DepsMut,
+    _env: Env,
+    _pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the
@@ -401,19 +399,19 @@ pub fn ibc_packet_timeout(
 }
 
 fn on_packet_failure(
-    deps: DepsMut,
-    packet: IbcPacket,
-    error: String,
+    _deps: DepsMut,
+    _packet: IbcPacket,
+    _error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     todo!()
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use cosmos_sdk_proto::ibc::core::channel::v1::Acknowledgement;
-    use cosmos_sdk_proto::Any;
-    use cosmwasm_std::testing::mock_env;
-    use cosmwasm_std::{coins, to_vec, IbcEndpoint};
-    use prost::Message;
+    
+    
+    
+    
+    
+    
 }

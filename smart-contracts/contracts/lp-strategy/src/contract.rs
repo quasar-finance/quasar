@@ -171,7 +171,7 @@ pub fn execute_join_pool(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
     }
@@ -188,10 +188,7 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
-        IbcTimeoutBlock,
-    };
+    
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
@@ -199,9 +196,9 @@ mod tests {
     const BUYER: &str = "buyer";
 
     fn default_instantiate(
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) -> InstantiateMsg {
         InstantiateMsg {
             lock_period: todo!(),
@@ -213,10 +210,10 @@ mod tests {
     }
 
     fn setup_test(
-        deps: DepsMut,
-        supply_decimals: u8,
-        reserve_decimals: u8,
-        reserve_supply: Uint128,
+        _deps: DepsMut,
+        _supply_decimals: u8,
+        _reserve_decimals: u8,
+        _reserve_supply: Uint128,
     ) {
     }
 }

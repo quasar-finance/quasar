@@ -1,7 +1,7 @@
 use std::fmt;
 
 use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
-use prost::{bytes::Buf, DecodeError, Message};
+use prost::{bytes::Buf, Message};
 use serde::{
     de::{self, Unexpected, Visitor},
     Deserialize, Serialize,
@@ -105,7 +105,7 @@ impl AckBody {
         Ok(res)
     }
 
-    pub fn from_bytes<B>(mut buf: B) -> Result<Self, Error>
+    pub fn from_bytes<B>(buf: B) -> Result<Self, Error>
     where
         B: Buf,
     {
@@ -118,12 +118,12 @@ impl AckBody {
 mod tests {
     use super::*;
     use crate::ica::traits::{Pack, Unpack};
-    use cosmwasm_std::{to_binary, Binary, IbcAcknowledgement};
+    use cosmwasm_std::{Binary, IbcAcknowledgement};
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin,
         osmosis::gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse},
     };
-    use serde_test::{assert_ser_tokens, assert_tokens, Token};
+    use serde_test::{assert_tokens, Token};
 
     #[test]
     fn ack_de() {
@@ -252,7 +252,7 @@ mod tests {
             assert_eq!(val, &msg[i], "loc {:?}", i)
         }
         assert_eq!(encoded, msg);
-        let join_msg: MsgJoinSwapExternAmountIn = prost::Message::decode::<&[u8]>(&msg).unwrap();
+        let _join_msg: MsgJoinSwapExternAmountIn = prost::Message::decode::<&[u8]>(&msg).unwrap();
         // assert_eq!(, join_msg);
         // println!("{:?}", join_msg)
     }
