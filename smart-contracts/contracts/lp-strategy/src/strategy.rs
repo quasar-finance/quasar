@@ -66,6 +66,7 @@ pub fn do_transfer(
 }
 
 /// prepare the submsg for joining the pool
+#[allow(clippy::too_many_arguments)] // allowing this is not ideal, but for now we want to keep channel_id and pool_id in there 
 pub fn do_ibc_join_pool_swap_extern_amount_in(
     storage: &mut dyn Storage,
     env: Env,
@@ -96,7 +97,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
             sender: counter_party_address.unwrap(),
             pool_id,
             token_in: Some(OsmoCoin {
-                denom: denom.clone(),
+                denom,
                 amount: amount.to_string(),
             }),
             share_out_min_amount: share_out_min_amount.to_string(),

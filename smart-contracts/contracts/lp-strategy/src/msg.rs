@@ -41,7 +41,6 @@ pub enum ExecuteMsg {
         to_address: String,
     },
     DepositAndLockTokens {
-        channel: String,
         pool_id: u64,
         amount: Uint128,
         denom: String,
