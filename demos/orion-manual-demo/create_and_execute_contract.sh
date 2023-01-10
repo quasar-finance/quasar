@@ -11,8 +11,8 @@ echo $NODE
 #     pool_id is hardcoded to 1 for this testing setup, expected to be done by the instantiater on local/testnet
 #     pool_denom should be looked up and hardcoded aswell
 #     denom: denom should be the denom of the token on osmosos, for now uosmo
-#     the denom for the token sent in the user funds will be added once the bookkeeping vault part is wired up
-INIT='{"lock_period":"1209600","pool_id":1,"pool_denom":"gamm/pool/1","denom":"uosmo"}'
+#     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
+INIT='{"lock_period":"1209600","pool_id":1,"pool_denom":"gamm/pool/1","denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B"}'
 
 cd ../../smart-contracts
 
