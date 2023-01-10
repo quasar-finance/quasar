@@ -151,9 +151,22 @@ fn get_total_balance(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     Ok(sum)
 }
 
-fn create_share(_claim: Claim) -> Result<Response, ContractError> {
+// create a share and remove the amount from the claim
+pub fn create_share(storage: &mut dyn Storage, owner: Addr, amount: Uint128) -> Result<(), ContractError> {
     // call into the minter and mint shares for the according to the claim
-    todo!()
+    let claim = CLAIMS.load(storage, owner.clone())?;
+    if claim < amount {
+        return Err(ContractError::InsufficientClaims);
+    }
+
+    if claim <= amount {
+        CLAIMS.remove(storage, owner.clone());
+    } else {
+        CLAIMS.save(storage, owner.clone(), &claim.checked_sub(amount)?)?;
+    }
+
+    // update the shares
+    Ok(SHARES.save(storage, owner, &amount)?)
 }
 
 /// calculate the amount of for the claim of the user

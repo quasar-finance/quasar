@@ -4,7 +4,7 @@ use crate::state::{
     PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, JOINED_FUNDS, LOCKED_FUNDS, PENDING_ACK, TRAPS,
 };
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::vault::handle_deposit_ack;
+use crate::vault::{handle_deposit_ack, create_share};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
@@ -24,11 +24,11 @@ use cosmwasm_std::{
     entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
     IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128,
+    StdError, Storage, Uint128
 };
 
-#[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_channel_open(
     deps: DepsMut,
     _env: Env,
@@ -83,8 +83,8 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     Ok(())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
 /// record the channel in CHANNEL_INFO, this combines the ChanOpenAck and ChanOpenConfirm steps
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_channel_connect(
     deps: DepsMut,
     _env: Env,
@@ -168,9 +168,8 @@ pub fn ibc_channel_close(
     unimplemented!();
 }
 
+/// The lp-strategy cannot receive any packets
 #[cfg_attr(not(feature = "library"), entry_point)]
-/// Check to see if we have any balance here
-/// We should not return an error if possible, but rather an acknowledgement of failure
 pub fn ibc_packet_receive(
     _deps: DepsMut,
     _env: Env,
@@ -181,7 +180,6 @@ pub fn ibc_packet_receive(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-/// check if success or failure and update balance, or return funds
 pub fn ibc_packet_ack(
     deps: DepsMut,
     env: Env,
@@ -364,6 +362,8 @@ pub fn handle_ica_ack(
                 IcaMessages::LockTokens => {
                     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                     let resp = MsgLockTokensResponse::unpack(ack)?;
+
+                    create_share(storage, pending.address, pending.amount)?;
 
                     Ok(IbcBasicResponse::new()
                         .add_attribute("locked_tokens", ack_bin.to_base64())
