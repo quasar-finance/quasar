@@ -8,7 +8,7 @@ use cw_storage_plus::{Item, Map};
 
 use crate::{
     error::{ContractError, Trap},
-    helpers::{IbcMsgKind},
+    helpers::IbcMsgKind,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]

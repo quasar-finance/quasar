@@ -1,6 +1,5 @@
 use cosmwasm_std::{StdResult, Uint128};
 
-
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
