@@ -4,7 +4,6 @@ use cw_utils::Duration;
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use typeshare::typeshare;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
@@ -29,7 +28,6 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-#[typeshare]
 pub struct ChannelsResponse {
     pub channels: Vec<ChannelInfo>,
 }
