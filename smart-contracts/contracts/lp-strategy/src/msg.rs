@@ -47,10 +47,12 @@ pub enum ExecuteMsg {
     },
 }
 
+// VaultResponse is the response of a the primitive back to a vault after a deposit
 pub struct VaultResponse {
-    claim_amount: Option<Uint128>,
+    pub claim_amount: Option<Uint128>,
 }
 
+// UpdateClaim is the response of a the primitive back to a vault after a claim has succesfully been converted to a share
 pub struct UpdateClaim {
-    share_amount: Uint128,
+    pub share_amount: Uint128,
 }

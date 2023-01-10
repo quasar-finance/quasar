@@ -7,7 +7,7 @@ use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Item, Map};
 
 use crate::{
-    error::{ContractError, Trap},
+    error::Trap,
     helpers::IbcMsgKind,
 };
 
