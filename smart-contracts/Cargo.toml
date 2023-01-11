@@ -6,7 +6,5 @@ members = [
     "contracts/intergamm-bindings-test",
     "contracts/qoracle-bindings-test",
     "packages/intergamm-bindings",
-    "packages/quasar-traits",
     "packages/quasar-types",
-    "packages/intergamm-bindings",
 ]
