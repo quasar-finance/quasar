@@ -801,7 +801,6 @@ dependencies = [
  "cw20-base",
  "osmosis-std 0.13.2",
  "prost 0.11.0",
- "quasar-traits",
  "quasar-types",
  "schemars",
  "serde",
@@ -1025,16 +1024,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quasar-traits"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw20 0.13.4",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
@@ -1046,7 +1035,6 @@ dependencies = [
  "derive_more",
  "osmosis-std 0.13.2",
  "prost 0.11.0",
- "quasar-traits",
  "rust_decimal",
  "schemars",
  "serde",

@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quasar-traits = { version = "0.1.0", path = "../quasar-traits"}
 cosmos-sdk-proto = { version = "0.14", default-features = false }
 prost = { version = "0.11", default-features = false }
 thiserror = { version = "1.0.23" }
