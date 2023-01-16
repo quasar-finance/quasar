@@ -9,8 +9,9 @@ pub struct InstantiateMsg {
     pub lock_period: Uint128,
     pub pool_id: u64,
     pub pool_denom: String,
-    pub denom: String,
+    pub base_denom: String,
     pub local_denom: String,
+    pub quote_denom: String,
 }
 
 impl InstantiateMsg {

@@ -16,19 +16,18 @@ use quasar_types::{
 };
 
 use crate::{
-    error::ContractError,
+    error::{ContractError, OngoingDeposit},
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
-    state::{PendingAck, CHANNELS, CONFIG, JOINED_FUNDS, TRANSFERRED_FUNDS},
+    state::{PendingAck, CHANNELS, CONFIG},
 };
 
 pub fn do_transfer(
     storage: &mut dyn Storage,
     env: Env,
-    sender: Addr,
     amount: Uint128,
     channel_id: String,
     to_address: String,
-    current: Uint128,
+    deposits: Vec<OngoingDeposit>,
 ) -> Result<SubMsg, ContractError> {
     // todo check denom of funds once we have denom mapping done
 
@@ -45,15 +44,11 @@ pub fn do_transfer(
         timeout,
     };
 
-    TRANSFERRED_FUNDS.save(storage, current.u128(), &amount)?;
-
     Ok(create_ibc_ack_submsg(
         storage,
         PendingAck {
             kind: IbcMsgKind::Transfer,
-            address: sender,
-            amount: coin.amount,
-            id: current,
+            deposits,
         },
         transfer,
     )?)
@@ -69,8 +64,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
     denom: String,
     amount: Uint128,
     share_out_min_amount: Uint128,
-    sender: Addr,
-    current: Uint128,
+    deposits: Vec<OngoingDeposit>,
 ) -> Result<SubMsg, ContractError> {
     let channel = CHANNELS.load(storage, channel_id.clone())?;
     if let ChannelType::Ica {
@@ -82,9 +76,6 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
         if counter_party_address.is_none() {
             return Err(ContractError::NoCounterpartyIcaAddress);
         }
-
-        TRANSFERRED_FUNDS.remove(storage, current.u128());
-        JOINED_FUNDS.save(storage, current.u128(), &amount)?;
 
         // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
         let join = MsgJoinSwapExternAmountIn {
@@ -109,9 +100,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
             storage,
             PendingAck {
                 kind: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn),
-                address: sender,
-                amount,
-                id: current,
+                deposits,
             },
             send_packet_msg,
         )?)

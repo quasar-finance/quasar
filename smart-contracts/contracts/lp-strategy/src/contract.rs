@@ -9,10 +9,10 @@ use cw_utils::must_pay;
 use prost::Message;
 use quasar_types::ibc::ChannelInfo;
 
-use crate::error::ContractError;
+use crate::error::{ContractError, OngoingDeposit};
 use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, DEPOSIT_SEQ, ICA_CHANNEL, PENDING_ACK, REPLIES};
+use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, REPLIES};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::vault::do_deposit;
 
@@ -36,13 +36,11 @@ pub fn instantiate(
             lock_period: msg.lock_period,
             pool_id: msg.pool_id,
             pool_denom: msg.pool_denom,
-            denom: msg.denom,
+            base_denom: msg.base_denom,
             local_denom: msg.local_denom,
+            quote_denom: msg.quote_denom,
         },
     )?;
-
-    // set the deposit sequence number to zero
-    DEPOSIT_SEQ.save(deps.storage, &Uint128::zero())?;
 
     Ok(Response::default())
 }
@@ -64,7 +62,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 msg: err.to_string(),
             })?,
     )
-    .map_err(|msg| StdError::GenericErr { msg })?;
+    .map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
 
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
@@ -105,15 +103,18 @@ pub fn execute_deposit(
     env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let deposit = do_deposit(deps, env, info.clone())?;
+    let msg = do_deposit(deps, env, info.clone())?;
 
-    Ok(Response::new()
-        .add_submessage(deposit)
-        .add_attribute("deposit", info.sender))
+    // if msg is some, we are dispatching an icq
+    match msg {
+        Some(submsg) => Ok(Response::new()
+            .add_submessage(submsg)
+            .add_attribute("deposit", info.sender)),
+        None => Ok(Response::new().add_attribute("deposit", info.sender)),
+    }
 }
 
-// transfer funds sent to the contract to an address on osmosis, this needs an extra change to always
-// always send funds to the contracts ICA address
+// transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
 pub fn execute_transfer(
     deps: DepsMut,
     env: Env,
@@ -121,19 +122,17 @@ pub fn execute_transfer(
     channel: String, // TODO see if we can move channel mapping to a more zone like approach
     to_address: String,
 ) -> Result<Response, ContractError> {
-    let dep_seq = DEPOSIT_SEQ.load(deps.storage)?;
-    DEPOSIT_SEQ.save(deps.storage, &dep_seq.checked_add(Uint128::one())?)?;
 
     let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
 
     let transfer = do_transfer(
         deps.storage,
         env,
-        info.sender,
         amount,
         channel.clone(),
         to_address.clone(),
-        dep_seq,
+        // add a dummy ongoing deposit, actual ongoing deposit should not be used like this
+        vec![OngoingDeposit{ claim_amount: amount, owner: info.sender }],
     )?;
 
     Ok(Response::new()
@@ -151,8 +150,6 @@ pub fn execute_join_pool(
     amount: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let dep_seq = DEPOSIT_SEQ.load(deps.storage)?;
-    DEPOSIT_SEQ.save(deps.storage, &dep_seq.checked_add(Uint128::one())?)?;
 
     let channel_id = ICA_CHANNEL.load(deps.storage)?;
 
@@ -164,8 +161,8 @@ pub fn execute_join_pool(
         denom.clone(),
         amount,
         share_out_min_amount,
-        info.sender,
-        dep_seq,
+        // add a dummy ongoing deposit
+        vec![OngoingDeposit{ claim_amount: amount, owner: info.sender }],
     )?;
 
     Ok(Response::new()
@@ -198,19 +195,19 @@ mod tests {
     const INVESTOR: &str = "investor";
     const BUYER: &str = "buyer";
 
-    fn default_instantiate(
-        _supply_decimals: u8,
-        _reserve_decimals: u8,
-        _reserve_supply: Uint128,
-    ) -> InstantiateMsg {
-        InstantiateMsg {
-            lock_period: todo!(),
-            pool_id: todo!(),
-            pool_denom: todo!(),
-            denom: todo!(),
-            local_denom: todo!(),
-        }
-    }
+    // fn default_instantiate(
+    //     _supply_decimals: u8,
+    //     _reserve_decimals: u8,
+    //     _reserve_supply: Uint128,
+    // ) -> InstantiateMsg {
+    //     InstantiateMsg {
+    //         lock_period: todo!(),
+    //         pool_id: todo!(),
+    //         pool_denom: todo!(),
+    //         denom: todo!(),
+    //         local_denom: todo!(),
+    //     }
+    // }
 
     fn setup_test(
         _deps: DepsMut,
