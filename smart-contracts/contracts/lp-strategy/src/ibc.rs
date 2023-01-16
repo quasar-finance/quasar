@@ -2,7 +2,7 @@ use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
 use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, TRAPS};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::vault::{calc_total_balance, create_share, handle_query_ack};
+use crate::vault::{calc_total_balance, handle_query_ack};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::{

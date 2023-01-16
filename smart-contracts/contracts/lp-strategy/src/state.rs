@@ -9,7 +9,7 @@ use cw_storage_plus::{Deque, Item, Map};
 use crate::{
     error::{OngoingDeposit, Trap},
     helpers::IbcMsgKind,
-    lock::{DWType, Deposit, Lock},
+    lock::{DWType, Lock},
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]

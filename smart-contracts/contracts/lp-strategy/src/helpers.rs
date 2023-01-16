@@ -2,7 +2,7 @@ use crate::{
     error::ContractError,
     state::{PendingAck, CHANNELS, REPLIES},
 };
-use cosmwasm_std::{Binary, CosmosMsg, Event, Order, StdError, Storage, SubMsg};
+use cosmwasm_std::{Binary, CosmosMsg, Order, StdError, Storage, SubMsg};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
