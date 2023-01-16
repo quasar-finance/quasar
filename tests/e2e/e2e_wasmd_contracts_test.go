@@ -26,10 +26,7 @@ func TestWasmdTestSuite(t *testing.T) {
 	}
 
 	b := testsuite.NewE2ETestSuiteBuilder(t)
-	b.UseCosmos()
 	b.UseOsmosis()
-	b.Link(b.Quasar(), b.Cosmos(), testconfig.Quasar2CosmosPath)
-	b.Link(b.Cosmos(), b.Osmosis(), testconfig.Cosmos2OsmosisPath)
 	b.Link(b.Quasar(), b.Osmosis(), testconfig.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
@@ -40,17 +37,11 @@ func TestWasmdTestSuite(t *testing.T) {
 type WasmdTestSuite struct {
 	*testsuite.E2ETestSuite
 
-	Quasar2CosmosConn  *connectiontypes.IdentifiedConnection
-	Cosmos2OsmosisConn *connectiontypes.IdentifiedConnection
 	Quasar2OsmosisConn *connectiontypes.IdentifiedConnection
 
-	Quasar2CosmosTransferChan  *channeltypes.IdentifiedChannel
-	Cosmos2OsmosisTransferChan *channeltypes.IdentifiedChannel
 	Quasar2OsmosisTransferChan *channeltypes.IdentifiedChannel
 
-	CosmosDenomInQuasar  string
 	OsmosisDenomInQuasar string
-	CosmosDenomInOsmosis string
 	QuasarDenomInOsmosis string
 
 	LpStrategyContractAddress string
@@ -61,23 +52,17 @@ func (s *WasmdTestSuite) SetupSuite() {
 	ctx := context.Background()
 
 	t.Log("Wait for chains to settle up the ibc connection states")
-	err := test.WaitForBlocks(ctx, 10, s.Quasar(), s.Cosmos(), s.Osmosis())
+	err := test.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
 	// Find out connections between each pair of chains
-	s.Quasar2CosmosConn = s.GetConnectionsByPath(ctx, testconfig.Quasar2CosmosPath)[0]
-	s.Cosmos2OsmosisConn = s.GetConnectionsByPath(ctx, testconfig.Cosmos2OsmosisPath)[0]
 	s.Quasar2OsmosisConn = s.GetConnectionsByPath(ctx, testconfig.Quasar2OsmosisPath)[0]
 
 	// Find out transfer channel between each pair of chains
-	s.Quasar2CosmosTransferChan = s.QueryConnectionChannels(ctx, s.Quasar(), s.Quasar2CosmosConn.Id)[0]
-	s.Cosmos2OsmosisTransferChan = s.QueryConnectionChannels(ctx, s.Cosmos(), s.Cosmos2OsmosisConn.Id)[0]
 	s.Quasar2OsmosisTransferChan = s.QueryConnectionChannels(ctx, s.Quasar(), s.Quasar2OsmosisConn.Id)[0]
 
 	// Generate the ibc denom of native tokens in other chains
-	s.CosmosDenomInQuasar = ibcDenomFromChannel(s.Quasar2CosmosTransferChan, s.Cosmos().Config().Denom)
 	s.OsmosisDenomInQuasar = ibcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
-	s.CosmosDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Cosmos2OsmosisTransferChan, s.Cosmos().Config().Denom)
 	s.QuasarDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
 
 	// Setup an account in quasar chain for contract deployment
