@@ -4,9 +4,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::num::ParseIntError;
+use std::ops::Add;
+use std::str::Utf8Error;
 use thiserror::Error;
 
 use crate::helpers::IbcMsgKind;
+use crate::lock::Deposit;
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -19,10 +22,15 @@ pub struct Trap {
     pub error: String,
     // the failed step
     pub step: IbcMsgKind,
-    // the address of the user whose calls failed
-    pub addres: Addr,
-    // the amount of funds of the claim that faild
-    pub amount: Uint128,
+    // the deposits that failed
+    pub deposits: Vec<OngoingDeposit>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct OngoingDeposit {
+    pub claim_amount: Uint128,
+    pub owner: Addr,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -42,8 +50,14 @@ pub enum ContractError {
     #[error("not enough claims")]
     InsufficientClaims,
 
-    #[error("{0}")]
-    QueueError(String),
+    #[error("base denom not found")]
+    BaseDenomNotFound,
+
+    #[error("quote denom not found")]
+    QuoteDenomNotFound,
+
+    #[error("No item in the queue while an item was expected")]
+    QueueItemNotFound,
 
     #[error("no counterpart ica address found")]
     NoCounterpartyIcaAddress,
@@ -56,6 +70,9 @@ pub enum ContractError {
 
     #[error("channel is not an icq channel")]
     NoIcqChannel,
+
+    #[error("reply data not found")]
+    NoReplyData,
 
     #[error("Could not deserialize ack: {err}, payload was {b64_bin}")]
     DeserializeIcaAck { b64_bin: String, err: String },
@@ -74,4 +91,7 @@ pub enum ContractError {
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
+
+    #[error("{0}")]
+    Utf8Error(#[from] Utf8Error),
 }
