@@ -1,8 +1,9 @@
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
-use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, TRAPS};
+use crate::lock::Lock;
+use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, TRAPS, LOCK};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::vault::{calc_total_balance, handle_query_ack};
+use crate::vault::{calc_total_balance, handle_query_ack, create_share};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
@@ -364,9 +365,14 @@ pub fn handle_ica_ack(
                     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                     let resp = MsgLockTokensResponse::unpack(ack)?;
 
-                    // todo rewrite this to handle the claims vec
-                    // create_share(storage, pending.deposits, pending.amount)?;
+                    for claim in pending.deposits {
+                        create_share(storage, claim.owner, claim.claim_amount)?;
+                    }
 
+                    // set the lock state to unlocked
+                    LOCK.save(storage ,&Lock::Unlocked)?;
+
+                    // TODO, do we want to also check queue state? and see if we can already start a new execution?
                     Ok(IbcBasicResponse::new()
                         .add_attribute("locked_tokens", ack_bin.to_base64())
                         .add_attribute("lock_id", resp.id.to_string()))
