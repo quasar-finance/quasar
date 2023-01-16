@@ -6,6 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
+use prost::Message;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::error::ContractError;
@@ -53,15 +54,18 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let pending = REPLIES.load(deps.storage, msg.id)?;
 
     let seq = parse_seq(
-        msg.clone()
-            .result
+        &pending.kind,
+        msg.result
             .into_result()
-            .map_err(|err| StdError::GenericErr { msg: err })?
-            .events,
+            .map_err(|msg| StdError::GenericErr { msg })?
+            .data
+            .ok_or(ContractError::NoReplyData)
+            .map_err(|err| StdError::GenericErr {
+                msg: err.to_string(),
+            })?,
     )
-    .map_err(|_| StdError::GenericErr {
-        msg: format!("{:?}", msg),
-    })?;
+    .map_err(|msg| StdError::GenericErr { msg })?;
+
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
 }

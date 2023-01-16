@@ -1,4 +1,5 @@
 use cosmwasm_std::{Binary, IbcChannel, IbcEndpoint, IbcOrder};
+use prost::Message;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +14,14 @@ pub enum IcsAck {
     Result(Binary),
     Error(String),
 }
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, ::prost::Message)]
+#[serde(rename_all = "snake_case")]
+pub struct MsgTransferResponse {
+    #[prost(uint64, tag = "1")]
+    pub seq: u64,
+}
+
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
