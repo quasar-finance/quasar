@@ -2,9 +2,13 @@ use crate::{
     error::ContractError,
     state::{PendingAck, CHANNELS, REPLIES},
 };
-use cosmwasm_std::{CosmosMsg, Event, Order, StdError, Storage, SubMsg};
+use cosmwasm_std::{Binary, CosmosMsg, Event, Order, StdError, Storage, SubMsg};
+use prost::Message;
+use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use std::str;
 
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
@@ -72,25 +76,17 @@ pub enum MsgKind {
     Ibc(IbcMsgKind),
 }
 
-pub(crate) fn parse_seq(events: Vec<Event>) -> Result<u64, StdError> {
-    events
-        .iter()
-        .find(|e| e.ty == "send_packet")
-        .ok_or(StdError::NotFound {
-            kind: "send_packet".into(),
-        })?
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "packet_sequence")
-        .ok_or(StdError::NotFound {
-            kind: "packet_sequence".into(),
-        })?
-        .value
-        .parse::<u64>()
-        .map_err(|e| StdError::ParseErr {
-            target_type: "u64".into(),
-            msg: e.to_string(),
-        })
+pub(crate) fn parse_seq(kind: &IbcMsgKind, data: Binary) -> Result<u64, ContractError> {
+    match kind {
+        // for msg transfers, we need to deserialize using MsgTransferResponse
+        crate::helpers::IbcMsgKind::Transfer => {
+            let resp = MsgTransferResponse::decode(data.0.as_slice())?;
+            return Ok(resp.seq);
+        }
+        // for ICQ and ICA, we currently have our own fork that returns big endian uints
+        crate::helpers::IbcMsgKind::Ica(_) => Ok(str::from_utf8(data.0.as_ref())?.parse::<u64>()?),
+        crate::helpers::IbcMsgKind::Icq => Ok(str::from_utf8(data.0.as_ref())?.parse::<u64>()?),
+    }
 }
 
 #[cfg(test)]
