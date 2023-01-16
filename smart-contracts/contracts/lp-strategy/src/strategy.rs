@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Addr, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
+use cosmwasm_std::{to_binary, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
 use osmosis_std::{
     shim::Duration,
     types::{

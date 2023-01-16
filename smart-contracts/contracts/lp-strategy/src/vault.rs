@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Storage,
+    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Storage,
     SubMsg, Uint128,
 };
 use cw_utils::must_pay;

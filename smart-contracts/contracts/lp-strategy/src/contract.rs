@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
-use prost::Message;
+
 use quasar_types::ibc::ChannelInfo;
 
 use crate::error::{ContractError, OngoingDeposit};
