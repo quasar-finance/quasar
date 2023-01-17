@@ -50,19 +50,19 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
     let pending = REPLIES.load(deps.storage, msg.id)?;
+    let data = msg
+        .result
+        .into_result()
+        .map_err(|msg| StdError::GenericErr { msg })?
+        .data
+        .ok_or(ContractError::NoReplyData)
+        .map_err(|err| StdError::GenericErr {
+            msg: err.to_string(),
+        })?;
 
-    let seq = parse_seq(
-        &pending.kind,
-        msg.result
-            .into_result()
-            .map_err(|msg| StdError::GenericErr { msg })?
-            .data
-            .ok_or(ContractError::NoReplyData)
-            .map_err(|err| StdError::GenericErr {
-                msg: err.to_string(),
-            })?,
-    )
-    .map_err(|err| StdError::GenericErr { msg: err.to_string() })?;
+    let seq = parse_seq(data).map_err(|err| StdError::GenericErr {
+        msg: err.to_string(),
+    })?;
 
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
@@ -109,8 +109,11 @@ pub fn execute_deposit(
     match msg {
         Some(submsg) => Ok(Response::new()
             .add_submessage(submsg)
-            .add_attribute("deposit", info.sender)),
-        None => Ok(Response::new().add_attribute("deposit", info.sender)),
+            .add_attribute("deposit", info.sender)
+            .add_attribute("kind", "dispatch")),
+        None => Ok(Response::new()
+            .add_attribute("deposit", info.sender)
+            .add_attribute("kind", "queue")),
     }
 }
 
@@ -119,10 +122,9 @@ pub fn execute_transfer(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    channel: String, // TODO see if we can move channel mapping to a more zone like approach
+    channel: String,
     to_address: String,
 ) -> Result<Response, ContractError> {
-
     let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
 
     let transfer = do_transfer(
@@ -131,8 +133,11 @@ pub fn execute_transfer(
         amount,
         channel.clone(),
         to_address.clone(),
-        // add a dummy ongoing deposit, actual ongoing deposit should not be used like this
-        vec![OngoingDeposit{ claim_amount: amount, owner: info.sender }],
+        // add a dummy ongoing deposit, actual ongoing deposit should calculate the claim using the total balance
+        vec![OngoingDeposit {
+            claim_amount: amount,
+            owner: info.sender,
+        }],
     )?;
 
     Ok(Response::new()
@@ -150,7 +155,6 @@ pub fn execute_join_pool(
     amount: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
-
     let channel_id = ICA_CHANNEL.load(deps.storage)?;
 
     let join = do_ibc_join_pool_swap_extern_amount_in(
@@ -161,8 +165,11 @@ pub fn execute_join_pool(
         denom.clone(),
         amount,
         share_out_min_amount,
-        // add a dummy ongoing deposit
-        vec![OngoingDeposit{ claim_amount: amount, owner: info.sender }],
+        // add a dummy ongoing deposit, actual ongoing deposit should calculate the claim using the total balance
+        vec![OngoingDeposit {
+            claim_amount: amount,
+            owner: info.sender,
+        }],
     )?;
 
     Ok(Response::new()
@@ -195,11 +202,7 @@ mod tests {
     const INVESTOR: &str = "investor";
     const BUYER: &str = "buyer";
 
-    // fn default_instantiate(
-    //     _supply_decimals: u8,
-    //     _reserve_decimals: u8,
-    //     _reserve_supply: Uint128,
-    // ) -> InstantiateMsg {
+    // fn default_instantiate() -> InstantiateMsg {
     //     InstantiateMsg {
     //         lock_period: todo!(),
     //         pool_id: todo!(),

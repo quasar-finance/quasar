@@ -1,9 +1,9 @@
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
 use crate::lock::Lock;
-use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, TRAPS, LOCK};
+use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, PENDING_ACK, TRAPS};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::vault::{calc_total_balance, handle_query_ack, create_share};
+use crate::vault::{calc_total_balance, create_share, handle_query_ack};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
@@ -370,7 +370,7 @@ pub fn handle_ica_ack(
                     }
 
                     // set the lock state to unlocked
-                    LOCK.save(storage ,&Lock::Unlocked)?;
+                    LOCK.save(storage, &Lock::Unlocked)?;
 
                     // TODO, do we want to also check queue state? and see if we can already start a new execution?
                     Ok(IbcBasicResponse::new()

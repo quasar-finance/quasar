@@ -15,7 +15,7 @@ pub enum IcsAck {
     Error(String),
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, ::prost::Message)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Message)]
 #[serde(rename_all = "snake_case")]
 pub struct MsgTransferResponse {
     #[prost(uint64, tag = "1")]
