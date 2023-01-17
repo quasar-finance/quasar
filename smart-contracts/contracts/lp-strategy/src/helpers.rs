@@ -8,8 +8,6 @@ use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use std::str;
-
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
     match chan.channel_type {
@@ -76,20 +74,20 @@ pub enum MsgKind {
     Ibc(IbcMsgKind),
 }
 
-pub(crate) fn parse_seq(kind: &IbcMsgKind, data: Binary) -> Result<u64, ContractError> {
-    match kind {
-        // for msg transfers, we need to deserialize using MsgTransferResponse
-        crate::helpers::IbcMsgKind::Transfer => {
-            let resp = MsgTransferResponse::decode(data.0.as_slice())?;
-            return Ok(resp.seq);
-        }
-        // for ICQ and ICA, we currently have our own fork that returns big endian uints
-        crate::helpers::IbcMsgKind::Ica(_) => Ok(str::from_utf8(data.0.as_ref())?.parse::<u64>()?),
-        crate::helpers::IbcMsgKind::Icq => Ok(str::from_utf8(data.0.as_ref())?.parse::<u64>()?),
-    }
+pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
+    let resp = MsgTransferResponse::decode(data.0.as_slice())?;
+    return Ok(resp.seq);
 }
 
 #[cfg(test)]
 mod tests {
-    // TODO write some tests for helpers
+    use super::*;
+
+    #[test]
+    fn parse_reply_seq() {
+        let seq = 35;
+        let resp = Binary::from(MsgTransferResponse { seq }.encode_to_vec());
+        let parsed_seq = parse_seq(resp).unwrap();
+        assert_eq!(seq, parsed_seq)
+    }
 }

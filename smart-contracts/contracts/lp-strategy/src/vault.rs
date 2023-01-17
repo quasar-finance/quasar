@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Storage,
-    SubMsg, Uint128,
+    to_binary, Addr, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order, Storage, SubMsg, Uint128,
 };
 use cw_utils::must_pay;
 use osmosis_std::types::{
@@ -103,7 +102,8 @@ pub fn fold_queue(
         match item {
             DWType::Withdraw(_) => todo!(),
             DWType::Deposit(val) => {
-                let claim_amount = create_claim(storage, val.amount, val.owner.clone(), total_balance)?;
+                let claim_amount =
+                    create_claim(storage, val.amount, val.owner.clone(), total_balance)?;
                 total = total.checked_add(val.amount)?;
                 deposits.push(OngoingDeposit {
                     claim_amount,

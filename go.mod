@@ -297,7 +297,7 @@ require (
 
 replace (
 	// used latest commit of branch packet-seq-return
-	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230111131435-2bef8ead3ee5
+	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
 
 	// To fix the security issue https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
