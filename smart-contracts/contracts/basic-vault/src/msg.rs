@@ -63,6 +63,8 @@ pub enum ExecuteMsg {
     /// This can only be invoked by the contract itself as a return from Reinvest
     _BondAllTokens {},
 
+    // Callback(CallbackMsg),
+
     /// Implements CW20. Transfer is a base message to move tokens to another account without triggering actions
     Transfer { recipient: String, amount: Uint128 },
     /// Implements CW20. Burn is a base message to destroy tokens forever
@@ -108,6 +110,14 @@ pub enum ExecuteMsg {
     /// Implements CW20 "approval" extension. Destroys tokens forever
     BurnFrom { owner: String, amount: Uint128 },
 }
+
+// #[cw_serde]
+// pub enum CallbackMsg {
+//     OnBond {
+//         /// the amount of tokens that were bonded
+//         amount: Uint128,
+//     },
+// }
 
 #[cw_serde]
 #[derive(QueryResponses)]
