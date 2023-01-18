@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult, SubMsg, Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint128,
     WasmMsg,
 };
 
@@ -16,14 +15,14 @@ use cw20_base::contract::{
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 
-
+use crate::callback::handle_callback;
 use crate::error::ContractError;
-use crate::execute::{bond, unbond, claim, reinvest, _bond_all_tokens};
+use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_investment;
 use crate::state::{
     InvestmentInfo, Supply, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, INVESTMENT,
-    STRATEGY_INIT_ID, TOTAL_SUPPLY,
+    TOTAL_SUPPLY,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -49,40 +48,18 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &data)?;
 
-    let denom = deps.querier.query_bonded_denom()?;
     let invest = InvestmentInfo {
         owner: info.sender,
-        bond_denom: denom,
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives.clone(),
     };
     INVESTMENT.save(deps.storage, &invest)?;
 
-    // TODO: during instantiation, we will need to init however many primitives with their ratios that this vault will handle
-    // WasmMsg::Instantiate { admin: (), code_id: (), msg: (), funds: (), label: () }
-
-    let init_msgs = msg.primitives.iter().map(|strategy| {
-        SubMsg::reply_on_success(
-            WasmMsg::Instantiate {
-                // TODO: Do we need admin?
-                admin: Option::Some(env.contract.address.to_string()),
-                code_id: strategy.code_id,
-                msg: to_binary(&strategy.init).unwrap(),
-                label: "prim_".to_string()
-                    + &strategy.code_id.to_string()
-                    + "_"
-                    + &strategy.weight.to_string(),
-                funds: vec![],
-            },
-            STRATEGY_INIT_ID,
-        )
-    });
-
     // set supply to 0
     let supply = Supply::default();
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
-    Ok(Response::new().add_submessages(init_msgs))
+    Ok(Response::new())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -98,6 +75,9 @@ pub fn execute(
         ExecuteMsg::Claim {} => claim(deps, env, info),
         ExecuteMsg::Reinvest {} => reinvest(deps, env, info),
         ExecuteMsg::_BondAllTokens {} => _bond_all_tokens(deps, env, info),
+
+        // callbacks entrypoint
+        ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
@@ -143,7 +123,6 @@ pub fn execute(
         )?),
     }
 }
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {

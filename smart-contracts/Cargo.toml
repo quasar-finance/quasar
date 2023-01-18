@@ -3,6 +3,7 @@
 members = [
     "contracts/icq",
     "contracts/lp-strategy",
+    "contracts/basic-vault",
     "contracts/intergamm-bindings-test",
     "contracts/qoracle-bindings-test",
     "packages/intergamm-bindings",

@@ -5,23 +5,21 @@ use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
 
-
 #[cw_serde]
 pub enum PrimitiveInitMsg {
     LP(lp_strategy::msg::InstantiateMsg),
 }
 
 #[cw_serde]
-pub struct PrimitiveStrategy {
+pub struct PrimitiveConfig {
     // the weighting of this strategy that the vault should subscribe to (e.g. 30%)
     // weights are normalized accross strategies, so values don't need to add up to 100%
-    pub weight: Decimal,
-    // the code id of the stored primitive contract on the chain
-    pub code_id: u64,
+    pub weight: Uint128,
+    // the contract address of the stored primitive contract on the chain
+    pub address: String,
     // the Instantiation message for the primitive.
     pub init: PrimitiveInitMsg,
 }
-
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -36,8 +34,7 @@ pub struct InstantiateMsg {
     /// that can be unbonded (to avoid needless staking tx)
     pub min_withdrawal: Uint128,
     // the array of primitives to subscribe to for this vault
-    pub primitives: Vec<PrimitiveStrategy>,
-
+    pub primitives: Vec<PrimitiveConfig>,
     // // to be extended & discussed later
     // pub entry_fee: Decimal,
     // pub exit_fee: Decimal,
@@ -50,7 +47,9 @@ pub enum ExecuteMsg {
     Bond {},
     /// Unbond will "burn" the given amount of derivative tokens and send the unbonded
     /// staking tokens to the message sender (after exit tax is deducted)
-    Unbond { amount: Uint128 },
+    Unbond {
+        amount: Uint128,
+    },
     /// Claim is used to claim your native tokens that you previously "unbonded"
     /// after the chain-defined waiting period (eg. 3 weeks)
     Claim {},
@@ -63,12 +62,17 @@ pub enum ExecuteMsg {
     /// This can only be invoked by the contract itself as a return from Reinvest
     _BondAllTokens {},
 
-    // Callback(CallbackMsg),
+    Callback(CallbackMsg),
 
     /// Implements CW20. Transfer is a base message to move tokens to another account without triggering actions
-    Transfer { recipient: String, amount: Uint128 },
+    Transfer {
+        recipient: String,
+        amount: Uint128,
+    },
     /// Implements CW20. Burn is a base message to destroy tokens forever
-    Burn { amount: Uint128 },
+    Burn {
+        amount: Uint128,
+    },
     /// Implements CW20.  Send is a base message to transfer tokens to a contract and trigger an action
     /// on the receiving contract.
     Send {
@@ -108,16 +112,21 @@ pub enum ExecuteMsg {
         msg: Binary,
     },
     /// Implements CW20 "approval" extension. Destroys tokens forever
-    BurnFrom { owner: String, amount: Uint128 },
+    BurnFrom {
+        owner: String,
+        amount: Uint128,
+    },
 }
 
-// #[cw_serde]
-// pub enum CallbackMsg {
-//     OnBond {
-//         /// the amount of tokens that were bonded
-//         amount: Uint128,
-//     },
-// }
+#[cw_serde]
+pub enum CallbackMsg {
+    OnBond {
+        /// the amount of tokens that were bonded
+        shares_out: Uint128,
+        // the id of this deposit
+        deposit_id: u64,
+    },
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -155,5 +164,5 @@ pub struct InvestmentResponse {
     /// that can be unbonded (to avoid needless staking tx)
     pub min_withdrawal: Uint128,
     // the array of primitives to subscribe to for this vault
-    pub primitives: Vec<PrimitiveStrategy>,
+    pub primitives: Vec<PrimitiveConfig>,
 }

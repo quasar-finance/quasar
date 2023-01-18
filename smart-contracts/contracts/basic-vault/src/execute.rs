@@ -1,22 +1,18 @@
+use std::ops::{Add, Mul};
+
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, DepsMut, Env,
-    MessageInfo, QuerierWrapper, Response, StdError, StdResult, Uint128,
+    to_binary, Addr, BankMsg, Coin, DepsMut, Env, MessageInfo, QuerierWrapper, Response, StdError,
+    StdResult, SubMsg, Uint128, WasmMsg,
 };
 
-
-
-use cw20_base::contract::{
-    execute_burn, execute_mint,
-};
-
-
+use cw20_base::contract::{execute_burn, execute_mint};
+use cw_storage_plus::Map;
+use cw_utils::PaymentError;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg};
+use crate::msg::ExecuteMsg;
 
-use crate::state::{
-    Supply, CLAIMS, FALLBACK_RATIO, INVESTMENT, TOTAL_SUPPLY,
-};
+use crate::state::{Supply, CLAIMS, FALLBACK_RATIO, INVESTMENT, STRATEGY_BOND_ID, TOTAL_SUPPLY};
 
 // get_bonded returns the total amount of delegations from contract
 // it ensures they are all the same denom
@@ -50,55 +46,68 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
     }
 }
 
+// returns amount if the coin is found and amount is non-zero
+// errors otherwise
+pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, PaymentError> {
+    match info.funds.iter().find(|c| c.denom == denom) {
+        Some(coin) => {
+            if (coin.amount.is_zero()) {
+                Err(PaymentError::NoFunds {})
+            } else {
+                Ok(coin.amount)
+            }
+        }
+        None => Err(PaymentError::MissingDenom(denom.to_string())),
+    }
+}
+
 pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     // ensure we have the proper denom
     let invest = INVESTMENT.load(deps.storage)?;
-    // payment finds the proper coin (or throws an error)
-    let payment = info
-        .funds
+
+    let total_weight = invest
+        .primitives
         .iter()
-        .find(|x| x.denom == invest.bond_denom)
-        .ok_or_else(|| ContractError::EmptyBalance {
-            denom: invest.bond_denom.clone(),
-        })?;
+        .fold(Uint128::zero(), |a, b| a.add(b.weight));
+    let total_amount = Uint128::zero();
+    let init_msgs: Result<Vec<SubMsg>, ContractError> = invest
+        .primitives
+        .iter()
+        .map(|pc| match pc.init {
+            crate::msg::PrimitiveInitMsg::LP(lp_init_msg) => {
+                let amount = must_pay_multi(&info, &lp_init_msg.local_denom).unwrap();
 
-    // bonded is the total number of tokens we have delegated from this address
-    let bonded = get_bonded(&deps.querier, &env.contract.address)?;
+                // if total amount is still zero, we can define it here
+                // otherwise let's check if it was correct
+                if total_amount.is_zero() {
+                    total_amount = amount
+                        .checked_multiply_ratio(total_weight, pc.weight)
+                        .unwrap();
+                } else {
+                    let this_amount = total_amount
+                        .checked_multiply_ratio(pc.weight, total_weight)
+                        .unwrap();
+                    if this_amount.ne(&amount) {
+                        return Err(ContractError::IncorrectBondingRatio {});
+                    }
+                }
 
-    // calculate to_mint and update total supply
-    let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
-    // TODO: this is just a safety assertion - do we keep it, or remove caching?
-    // in the end supply is just there to cache the (expected) results of get_bonded() so we don't
-    // have expensive queries everywhere
-    assert_bonds(&supply, bonded)?;
-    let to_mint = if supply.issued.is_zero() || bonded.is_zero() {
-        FALLBACK_RATIO * payment.amount
-    } else {
-        payment.amount.multiply_ratio(supply.issued, bonded)
-    };
-    supply.bonded = bonded + payment.amount;
-    supply.issued += to_mint;
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
+                Ok(SubMsg::reply_always(
+                    WasmMsg::Execute {
+                        contract_addr: pc.address,
+                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Deposit {})?,
+                        funds: vec![Coin {
+                            denom: lp_init_msg.local_denom.clone(),
+                            amount: amount,
+                        }],
+                    },
+                    STRATEGY_BOND_ID,
+                ))
+            }
+        })
+        .collect();
 
-    // call into cw20-base to mint the token, call as self as no one else is allowed
-    let sub_info = MessageInfo {
-        sender: env.contract.address.clone(),
-        funds: vec![],
-    };
-    execute_mint(deps, env, sub_info, info.sender.to_string(), to_mint)?;
-
-    // bond them to the validator
-    let res = Response::new()
-        // TODO: replace this with [foreach primitive: primitive.getBondMsg]
-        // .add_message(StakingMsg::Delegate {
-        //     validator: invest.validator,
-        //     amount: payment.clone(),
-        // })
-        .add_attribute("action", "bond")
-        .add_attribute("from", info.sender)
-        .add_attribute("bonded", payment.amount)
-        .add_attribute("minted", to_mint);
-    Ok(res)
+    Ok(Response::new().add_submessages(init_msgs?))
 }
 
 pub fn unbond(
