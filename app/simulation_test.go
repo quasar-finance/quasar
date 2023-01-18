@@ -46,6 +46,8 @@ func BenchmarkSimulation(b *testing.B) {
 		0,
 		encoding,
 		simapp.EmptyAppOptions{},
+		app.GetWasmEnabledProposals(),
+		app.EmptyWasmOpts,
 	)
 
 	// Run randomized simulations

@@ -2,6 +2,7 @@ package suite
 
 import (
 	"context"
+	"encoding/json"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -73,6 +74,23 @@ func (s E2ETestSuite) QueryWasmCodes(ctx context.Context, chain ibc.Chain) []was
 	s.Require().NoError(err)
 
 	return resp.CodeInfos
+}
+
+// QuerySmartWasmContractState queries the smart contract state on the given chain.
+func (s E2ETestSuite) QuerySmartWasmContractState(ctx context.Context, chain ibc.Chain, contractAddr string, query, result any) {
+	queryBz, err := json.Marshal(query)
+	s.Require().NoError(err)
+
+	cc := s.GetGRPCClient(chain)
+	qc := wasmtypes.NewQueryClient(cc)
+	resp, err := qc.SmartContractState(ctx, &wasmtypes.QuerySmartContractStateRequest{
+		Address:   contractAddr,
+		QueryData: queryBz,
+	})
+	s.Require().NoError(err)
+
+	err = json.Unmarshal(resp.Data, result)
+	s.Require().NoError(err)
 }
 
 // GetGRPCClient returns a persistent grpc connection to the requested chain.

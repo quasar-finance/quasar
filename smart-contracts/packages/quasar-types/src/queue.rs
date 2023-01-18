@@ -14,7 +14,7 @@ where
         .unwrap();
     // TODO remove this awful bit once we refactor queues
     let default = &(0, T::default());
-    let (last, _) = q.back().unwrap_or(default).clone();
+    let (last, _) = q.back().unwrap_or(default);
     let next = last.checked_add(1);
     if next.is_none() {
         return Err(StdError::overflow(OverflowError {
@@ -26,7 +26,7 @@ where
     queue.save(deps.storage, next.unwrap(), &value)
 }
 
-pub fn dequeue<'a, T>(deps: DepsMut, queue: Map<u128, T>) -> Option<T>
+pub fn dequeue<T>(deps: DepsMut, queue: Map<u128, T>) -> Option<T>
 where
     T: Serialize + DeserializeOwned,
 {
@@ -61,8 +61,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+<<<<<<<< HEAD:smart-contracts/contracts/strategy/src/queue.rs
+    use cosmwasm_std::testing::{mock_dependencies};
+    use cosmwasm_std::Storage;
+========
     use cosmwasm_std::testing::mock_dependencies;
     use cosmwasm_std::Coin;
+>>>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f:smart-contracts/packages/quasar-types/src/queue.rs
     use cosmwasm_std::Uint128;
 
     #[test]
@@ -73,8 +78,14 @@ mod tests {
             denom: "uqsar".to_string(),
             amount: Uint128::new(100_000),
         };
+<<<<<<<< HEAD:smart-contracts/contracts/strategy/src/queue.rs
+        enqueue(deps.as_mut(), req.clone()).unwrap();
+        let _mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
+        let res = dequeue(deps.as_mut()).unwrap();
+========
         enqueue::<Coin>(deps.as_mut(), req.clone(), queue.clone()).unwrap();
         let res = dequeue::<Coin>(deps.as_mut(), queue).unwrap();
+>>>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f:smart-contracts/packages/quasar-types/src/queue.rs
         assert_eq!(req, res)
     }
 
@@ -90,10 +101,18 @@ mod tests {
             denom: "uqsar".to_string(),
             amount: Uint128::new(100_000),
         };
+<<<<<<<< HEAD:smart-contracts/contracts/strategy/src/queue.rs
+        enqueue(deps.as_mut(), req1.clone()).unwrap();
+        enqueue(deps.as_mut(), req2.clone()).unwrap();
+        let _mem: Vec<_> = deps.storage.range(None, None, Order::Ascending).collect();
+        let res1 = dequeue(deps.as_mut()).unwrap();
+        let res2 = dequeue(deps.as_mut()).unwrap();
+========
         enqueue::<Coin>(deps.as_mut(), req1.clone(), queue.clone()).unwrap();
         enqueue::<Coin>(deps.as_mut(), req2.clone(), queue.clone()).unwrap();
         let res1 = dequeue::<Coin>(deps.as_mut(), queue.clone()).unwrap();
         let res2 = dequeue::<Coin>(deps.as_mut(), queue).unwrap();
+>>>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f:smart-contracts/packages/quasar-types/src/queue.rs
         assert_eq!(req1, res1);
         assert_eq!(req2, res2)
     }

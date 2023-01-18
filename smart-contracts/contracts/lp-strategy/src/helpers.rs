@@ -1,8 +1,10 @@
 use crate::{
     error::ContractError,
-    state::{CHANNELS, REPLIES},
+    state::{PendingAck, CHANNELS, REPLIES},
 };
-use cosmwasm_std::{CosmosMsg, Order, Reply, Response, StdError, Storage, SubMsg};
+use cosmwasm_std::{Binary, CosmosMsg, Order, StdError, Storage, SubMsg};
+use prost::Message;
+use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -24,24 +26,20 @@ pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String
     }
 }
 
-pub fn create_reply(
-    storage: &mut dyn Storage,
-    msg_kind: MsgKind,
-    msg: impl Into<CosmosMsg>,
-) -> Result<Response, StdError> {
-    let last = REPLIES.range(storage, None, None, Order::Descending).next();
-    let mut id: u64 = 0;
-    if let Some(val) = last {
-        id = val?.0;
+pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), ContractError> {
+    let chan = CHANNELS.load(storage, channel)?;
+    match chan.channel_type {
+        quasar_types::ibc::ChannelType::Icq { channel_ty: _ } => Ok(()),
+        quasar_types::ibc::ChannelType::Ica {
+            channel_ty: _,
+            counter_party_address: _,
+        } => Err(ContractError::NoIcqChannel),
+        quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcqChannel),
     }
-    // register the message in the replies for handling
-    REPLIES.save(storage, id, &msg_kind)?;
-    Ok(Response::new().add_submessage(SubMsg::reply_always(msg, id)))
 }
-
-pub fn create_submsg(
+pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    msg_kind: MsgKind,
+    pending: PendingAck,
     msg: impl Into<CosmosMsg>,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -50,7 +48,7 @@ pub fn create_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &msg_kind)?;
+    REPLIES.save(storage, id, &pending)?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -76,32 +74,20 @@ pub enum MsgKind {
     Ibc(IbcMsgKind),
 }
 
-pub(crate) fn parse_seq(reply: Reply) -> Result<u64, StdError> {
-    reply
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr { msg })?
-        .events
-        .iter()
-        .find(|e| e.ty == "send_packet")
-        .ok_or(StdError::NotFound {
-            kind: "send_packet_event".into(),
-        })?
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "packet_sequence")
-        .ok_or(StdError::NotFound {
-            kind: "packet_sequence".into(),
-        })?
-        .value
-        .parse::<u64>()
-        .map_err(|e| StdError::ParseErr {
-            target_type: "u64".into(),
-            msg: e.to_string(),
-        })
+pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
+    let resp = MsgTransferResponse::decode(data.0.as_slice())?;
+    return Ok(resp.seq);
 }
 
 #[cfg(test)]
 mod tests {
-    // TODO write some tests for helpers
+    use super::*;
+
+    #[test]
+    fn parse_reply_seq() {
+        let seq = 35;
+        let resp = Binary::from(MsgTransferResponse { seq }.encode_to_vec());
+        let parsed_seq = parse_seq(resp).unwrap();
+        assert_eq!(seq, parsed_seq)
+    }
 }

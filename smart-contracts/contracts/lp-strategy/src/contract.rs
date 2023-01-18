@@ -1,19 +1,20 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout,
-    MessageInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use quasar_types::ibc::{ChannelInfo};
+use cw_utils::must_pay;
 
+use quasar_types::ibc::ChannelInfo;
 
-
-use crate::error::ContractError;
-use crate::helpers::{create_submsg, parse_seq, IbcMsgKind, MsgKind};
+use crate::error::{ContractError, OngoingDeposit};
+use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, PENDING_ACK, REPLIES};
-use crate::strategy::do_ibc_join_pool_swap_extern_amount_in;
+use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, REPLIES};
+use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
+use crate::vault::do_deposit;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -35,9 +36,12 @@ pub fn instantiate(
             lock_period: msg.lock_period,
             pool_id: msg.pool_id,
             pool_denom: msg.pool_denom,
-            denom: msg.denom,
+            base_denom: msg.base_denom,
+            local_denom: msg.local_denom,
+            quote_denom: msg.quote_denom,
         },
     )?;
+
     Ok(Response::default())
 }
 
@@ -45,13 +49,22 @@ pub fn instantiate(
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
-    let kind = REPLIES.load(deps.storage, msg.id)?;
-    match kind {
-        MsgKind::Ibc(ibc_kind) => {
-            let seq = parse_seq(msg)?;
-            PENDING_ACK.save(deps.storage, seq, &ibc_kind)?;
-        }
-    }
+    let pending = REPLIES.load(deps.storage, msg.id)?;
+    let data = msg
+        .result
+        .into_result()
+        .map_err(|msg| StdError::GenericErr { msg })?
+        .data
+        .ok_or(ContractError::NoReplyData)
+        .map_err(|err| StdError::GenericErr {
+            msg: err.to_string(),
+        })?;
+
+    let seq = parse_seq(data).map_err(|err| StdError::GenericErr {
+        msg: err.to_string(),
+    })?;
+
+    PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
 }
 
@@ -63,21 +76,20 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        ExecuteMsg::Deposit {} => execute_deposit(deps, env, info),
         ExecuteMsg::TransferJoinLock {
             channel,
             to_address,
         } => execute_transfer(deps, env, info, channel, to_address),
         ExecuteMsg::DepositAndLockTokens {
-            channel,
             pool_id,
             amount,
-            lock_period: _,
             denom,
             share_out_min_amount,
         } => execute_join_pool(
             deps,
             env,
-            channel,
+            info,
             pool_id,
             denom,
             amount,
@@ -86,16 +98,47 @@ pub fn execute(
     }
 }
 
-// transfer funds sent to the contract to an address on osmosis, this needs an extra change to always
-// always send funds to the contracts ICA address
+pub fn execute_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let msg = do_deposit(deps, env, info.clone())?;
+
+    // if msg is some, we are dispatching an icq
+    match msg {
+        Some(submsg) => Ok(Response::new()
+            .add_submessage(submsg)
+            .add_attribute("deposit", info.sender)
+            .add_attribute("kind", "dispatch")),
+        None => Ok(Response::new()
+            .add_attribute("deposit", info.sender)
+            .add_attribute("kind", "queue")),
+    }
+}
+
+// transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
 pub fn execute_transfer(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    channel: String, // TODO see if we can move channel mapping to a more zone like approach
+    channel: String,
     to_address: String,
 ) -> Result<Response, ContractError> {
-    let transfer = do_transfer(deps.storage, env, info.funds, channel.clone(), to_address.clone())?;
+    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
+
+    let transfer = do_transfer(
+        deps.storage,
+        env,
+        amount,
+        channel.clone(),
+        to_address.clone(),
+        // add a dummy ongoing deposit, actual ongoing deposit should calculate the claim using the total balance
+        vec![OngoingDeposit {
+            claim_amount: amount,
+            owner: info.sender,
+        }],
+    )?;
 
     Ok(Response::new()
         .add_submessage(transfer)
@@ -106,12 +149,14 @@ pub fn execute_transfer(
 pub fn execute_join_pool(
     deps: DepsMut,
     env: Env,
-    channel_id: String,
+    info: MessageInfo,
     pool_id: u64,
     denom: String,
     amount: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    let channel_id = ICA_CHANNEL.load(deps.storage)?;
+
     let join = do_ibc_join_pool_swap_extern_amount_in(
         deps.storage,
         env,
@@ -120,41 +165,17 @@ pub fn execute_join_pool(
         denom.clone(),
         amount,
         share_out_min_amount,
+        // add a dummy ongoing deposit, actual ongoing deposit should calculate the claim using the total balance
+        vec![OngoingDeposit {
+            claim_amount: amount,
+            owner: info.sender,
+        }],
     )?;
 
     Ok(Response::new()
         .add_submessage(join)
         .add_attribute("ibc-join-pool-channel", channel_id)
         .add_attribute("denom", denom))
-}
-
-fn do_transfer(
-    storage: &mut dyn Storage,
-    env: Env,
-    funds: Vec<Coin>,
-    channel_id: String,
-    to_address: String,
-) -> Result<SubMsg, ContractError> {
-    if funds.len() != 1 {
-        return Err(ContractError::PaymentError(
-            cw_utils::PaymentError::MultipleDenoms {},
-        ));
-    }
-    // todo check denom of funds once we have denom mapping done
-
-    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(300));
-    let transfer = IbcMsg::Transfer {
-        channel_id,
-        to_address,
-        amount: funds[0].clone(),
-        timeout,
-    };
-
-    Ok(create_submsg(
-        storage,
-        MsgKind::Ibc(IbcMsgKind::Transfer),
-        transfer,
-    )?)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -175,25 +196,21 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     const DENOM: &str = "satoshi";
     const CREATOR: &str = "creator";
     const INVESTOR: &str = "investor";
     const BUYER: &str = "buyer";
 
-    fn default_instantiate(
-        _supply_decimals: u8,
-        _reserve_decimals: u8,
-        _reserve_supply: Uint128,
-    ) -> InstantiateMsg {
-        InstantiateMsg {
-            lock_period: todo!(),
-            pool_id: todo!(),
-            pool_denom: todo!(),
-            denom: todo!(),
-        }
-    }
+    // fn default_instantiate() -> InstantiateMsg {
+    //     InstantiateMsg {
+    //         lock_period: todo!(),
+    //         pool_id: todo!(),
+    //         pool_denom: todo!(),
+    //         denom: todo!(),
+    //         local_denom: todo!(),
+    //     }
+    // }
 
     fn setup_test(
         _deps: DepsMut,

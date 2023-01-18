@@ -90,7 +90,7 @@ BUILD_TARGETS := build install
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
+	GOWORK=off go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
@@ -107,8 +107,6 @@ build-reproducible-amd64: $(BUILDDIR)/
 	$(DOCKER) buildx build \
 		--build-arg GO_VERSION=$(GO_VERSION) \
 		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
-		--build-arg GIT_VERSION=$(VERSION) \
-		--build-arg GIT_COMMIT=$(COMMIT) \
 		--platform linux/amd64 \
 		-t quasar-amd64 \
 		--load \
@@ -124,8 +122,6 @@ build-reproducible-arm64: $(BUILDDIR)/
 	$(DOCKER) buildx build \
 		--build-arg GO_VERSION=$(GO_VERSION) \
 		--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
-		--build-arg GIT_VERSION=$(VERSION) \
-		--build-arg GIT_COMMIT=$(COMMIT) \
 		--platform linux/arm64 \
 		-t quasar-arm64 \
 		--load \
@@ -146,7 +142,7 @@ go.sum: go.mod
 ###                         Proto & Mock Generation                         ###
 ###############################################################################
 
-proto-all: proto-format proto-gen
+proto-all: proto-gen proto-doc
 
 proto-gen:
 	@echo "Generating Protobuf files"
@@ -187,7 +183,7 @@ test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
 
 test-e2e:
-	@VERSION=$(VERSION) cd $(E2EDIR); go test -mod=readonly -timeout=25m -v .
+	@VERSION=$(VERSION)  go test -mod=readonly -timeout=25m -v ./tests/e2e
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)

@@ -16,3 +16,4 @@ After channels are setup, users can call the `TransferJoinLock` and `DepositAndL
 
 ## Testing locally
 In demos/orion-manual-demo, `run_all.sh` sets up all chain needed, and `create_and_execute_contract` sets up a contract and starts trying to `TransferJoinLock` for Alice
+

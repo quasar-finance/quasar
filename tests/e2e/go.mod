@@ -210,9 +210,10 @@ require (
 replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
-	github.com/CosmWasm/wasmd => github.com/notional-labs/wasmd v0.25.1-0.20220825131835-6bb783a13332
-	// used latest commit of branch v5.0.0-rc2-icq
-	github.com/cosmos/ibc-go/v5 => github.com/strangelove-ventures/ibc-go/v5 v5.0.0-20221002123911-3471c96afea9
+	// used latest commit of branch packet-seq-return
+	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230111131435-2bef8ead3ee5
+	// used latest commit of branch v5.1.0-icq
+	github.com/cosmos/ibc-go/v5 => github.com/strangelove-ventures/ibc-go/v5 v5.0.0-20221202080744-f443bb61ccfc
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 	github.com/quasarlabs/quasarnode => ../../
