@@ -9,10 +9,12 @@ use cw_utils::must_pay;
 
 use quasar_types::ibc::ChannelInfo;
 
-use crate::error::{ContractError, OngoingDeposit};
+use crate::error::ContractError;
 use crate::helpers::parse_seq;
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, REPLIES};
+use crate::state::{
+    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, REPLIES,
+};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::vault::do_deposit;
 
@@ -39,6 +41,7 @@ pub fn instantiate(
             base_denom: msg.base_denom,
             local_denom: msg.local_denom,
             quote_denom: msg.quote_denom,
+            unbonding_period: todo!(),
         },
     )?;
 
@@ -138,6 +141,8 @@ pub fn execute_transfer(
         vec![OngoingDeposit {
             claim_amount: amount,
             owner: info.sender,
+            raw_amount: RawAmount::LocalDenom(amount),
+            bond_id: "id".to_string(),
         }],
     )?;
 
@@ -170,6 +175,8 @@ pub fn execute_join_pool(
         vec![OngoingDeposit {
             claim_amount: amount,
             owner: info.sender,
+            raw_amount: RawAmount::LocalDenom(amount),
+            bond_id: "id".to_string(),
         }],
     )?;
 

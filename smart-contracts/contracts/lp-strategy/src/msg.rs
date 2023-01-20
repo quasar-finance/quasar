@@ -50,17 +50,3 @@ pub enum ExecuteMsg {
         share_out_min_amount: Uint128,
     },
 }
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(untagged)]
-pub enum Callback {
-    BondResponse(BondResponse),
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-// BondResponse is the response of a the primitive once the
-pub struct BondResponse {
-    pub share_amount: Uint128,
-    pub bond_id: String,
-}
