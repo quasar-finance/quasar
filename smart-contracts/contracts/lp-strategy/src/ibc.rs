@@ -1,7 +1,9 @@
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
 use crate::lock::Lock;
-use crate::state::{PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, PENDING_ACK, TRAPS};
+use crate::state::{
+    PendingAck, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, PENDING_ACK, TRAPS,
+};
 use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use crate::vault::{calc_total_balance, create_share, handle_query_ack};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -12,6 +14,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::{
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
 use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
 use prost::Message;
+use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{
     enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
@@ -26,7 +29,7 @@ use cosmwasm_std::{
     entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
     IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128,
+    StdError, Storage, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -202,7 +205,7 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let pending = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    let mut pending = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match &pending.kind {
         // an transfer ack means we have sent funds to
         crate::helpers::IbcMsgKind::Transfer => {
@@ -223,7 +226,7 @@ pub fn handle_succesful_ack(
             }
         }
         crate::helpers::IbcMsgKind::Ica(_) => {
-            match handle_ica_ack(deps.storage, env, ack_bin, &pkt, pending.clone()) {
+            match handle_ica_ack(deps.storage, env, ack_bin, &pkt, &mut pending) {
                 Ok(response) => Ok(response),
                 Err(err) => {
                     TRAPS.save(
@@ -326,7 +329,7 @@ pub fn handle_ica_ack(
     env: Env,
     ack_bin: Binary,
     pkt: &IbcPacketAckMsg,
-    pending: PendingAck,
+    pending: &mut PendingAck,
 ) -> Result<IbcBasicResponse, ContractError> {
     match &pending.kind {
         IbcMsgKind::Ica(ica_kind) => {
@@ -339,6 +342,11 @@ pub fn handle_ica_ack(
                     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                     let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
                     let denom = CONFIG.load(storage)?.base_denom;
+
+                    // TODO update queue raw amounts here
+                    pending.update_raw_amount_to_lp(Uint128::new(
+                        resp.share_out_amount.parse::<u128>()?,
+                    ))?;
 
                     let ica_pkt = do_ibc_lock_tokens(
                         storage,
@@ -354,19 +362,27 @@ pub fn handle_ica_ack(
                         timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
                     };
 
-                    let msg = create_ibc_ack_submsg(
-                        storage,
-                        pending.update_kind(IbcMsgKind::Ica(IcaMessages::LockTokens)),
-                        ibc_pkt,
-                    )?;
+                    pending.update_kind(IbcMsgKind::Ica(IcaMessages::LockTokens));
+
+                    let msg = create_ibc_ack_submsg(storage, pending, ibc_pkt)?;
                     Ok(IbcBasicResponse::new().add_submessage(msg))
                 }
                 IcaMessages::LockTokens => {
                     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
                     let resp = MsgLockTokensResponse::unpack(ack)?;
 
-                    for claim in pending.deposits {
-                        create_share(storage, claim.owner, claim.claim_amount)?;
+                    let mut callbacks: Vec<WasmMsg> = vec![];
+                    for claim in &pending.deposits {
+                        let share_amount =
+                            create_share(storage, claim.owner.clone(), claim.claim_amount)?;
+                        callbacks.push(WasmMsg::Execute {
+                            contract_addr: claim.owner.to_string(),
+                            msg: Callback::BondResponse(BondResponse {
+                                share_amount,
+                                bond_id: claim.bond_id,
+                            }),
+                            funds: vec![],
+                        })
                     }
 
                     // set the lock state to unlocked
@@ -414,4 +430,6 @@ fn on_packet_failure(
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use super::*;
+}
