@@ -26,6 +26,7 @@ pub fn do_deposit(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    id: String
 ) -> Result<Option<SubMsg>, ContractError> {
     let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
 
