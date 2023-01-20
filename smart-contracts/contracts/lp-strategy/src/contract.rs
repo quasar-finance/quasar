@@ -76,7 +76,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => execute_deposit(deps, env, info),
+        ExecuteMsg::Bond { id } => execute_deposit(deps, env, info, id),
         ExecuteMsg::TransferJoinLock {
             channel,
             to_address,
@@ -102,8 +102,9 @@ pub fn execute_deposit(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    id: String,
 ) -> Result<Response, ContractError> {
-    let msg = do_deposit(deps, env, info.clone())?;
+    let msg = do_deposit(deps, env, info.clone(), id)?;
 
     // if msg is some, we are dispatching an icq
     match msg {

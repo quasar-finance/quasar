@@ -28,6 +28,7 @@ pub enum DWType {
 pub struct Deposit {
     pub amount: Uint128,
     pub owner: Addr,
+    pub bond_id: String,
 }
 
 impl Deposit {
