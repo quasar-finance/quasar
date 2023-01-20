@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
     pub lock_period: Uint128,
+    pub unbonding_period: Uint128,
     pub pool_id: u64,
     pub pool_denom: String,
     pub base_denom: String,
@@ -35,7 +36,9 @@ pub struct ChannelsResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Deposit {},
+    Bond {
+        id: String,
+    },
     TransferJoinLock {
         channel: String,
         to_address: String,
@@ -47,13 +50,17 @@ pub enum ExecuteMsg {
         share_out_min_amount: Uint128,
     },
 }
-
-// VaultResponse is the response of a the primitive back to a vault after a deposit
-pub struct VaultResponse {
-    pub claim_amount: Option<Uint128>,
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
+pub enum Callback {
+    BondResponse(BondResponse),
 }
 
-// UpdateClaim is the response of a the primitive back to a vault after a claim has succesfully been converted to a share
-pub struct UpdateClaim {
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+// BondResponse is the response of a the primitive once the
+pub struct BondResponse {
     pub share_amount: Uint128,
+    pub bond_id: String,
 }

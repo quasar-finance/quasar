@@ -15,7 +15,9 @@ use crate::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct Config {
+    // The lock period is the amount of time we lock tokens on Osmosis
     pub lock_period: Uint128,
+    pub unbonding_period: Uint128,
     pub pool_id: u64,
     // pool_denom is the denom of the gamm pool on osmosis; eg gamm/pool/1
     pub pool_denom: String,
