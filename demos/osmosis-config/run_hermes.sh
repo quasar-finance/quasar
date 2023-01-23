@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BANDCHAIN="band-laozi-testnet5"
+BANDCHAIN="band-laozi-testnet6"
 
 rm -r ~/.hermes
 mkdir ~/.hermes
@@ -20,7 +20,7 @@ hermes create connection --a-chain quasar --b-chain $BANDCHAIN
 hermes create connection --a-chain quasar --b-chain osmosis
 
 # Create channel
-hermes create channel --a-chain quasar --a-connection connection-0 --a-port qoracle --b-port oracle --channel-version bandchain-1
+hermes create channel --a-chain quasar --a-connection connection-0 --a-port qbandchainoracle --b-port oracle --channel-version bandchain-1
 hermes create channel --a-chain quasar --a-connection connection-1 --a-port qoracle --b-port icqhost --channel-version icq-1
 
 # start

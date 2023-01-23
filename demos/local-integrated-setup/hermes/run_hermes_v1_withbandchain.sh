@@ -45,8 +45,8 @@ hermes  keys add --chain quasar --mnemonic-file quasar.seeds
 hermes  keys add --chain osmosis --mnemonic-file osmosis.seeds
 hermes  keys add --chain cosmos --mnemonic-file cosmos.seeds
 
-BANDCHAIN="band-laozi-testnet5"
-hermes keys add --chain band-laozi-testnet5 --mnemonic-file band.seeds  --hd-path "m/44'/494'/0'/0/0"
+BANDCHAIN="band-laozi-testnet6"
+hermes keys add --chain band-laozi-testnet6 --mnemonic-file band.seeds  --hd-path "m/44'/494'/0'/0/0"
 
 ## Checking balance
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
