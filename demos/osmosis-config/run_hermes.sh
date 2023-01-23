@@ -21,7 +21,7 @@ hermes create connection --a-chain quasar --b-chain osmosis
 
 # Create channel
 hermes create channel --a-chain quasar --a-connection connection-0 --a-port qbandchainoracle --b-port oracle --channel-version bandchain-1
-hermes create channel --a-chain quasar --a-connection connection-1 --a-port qoracle --b-port icqhost --channel-version icq-1
+hermes create channel --a-chain quasar --a-connection connection-1 --a-port qosmosisoracle --b-port icqhost --channel-version icq-1
 
 # start
 hermes start
