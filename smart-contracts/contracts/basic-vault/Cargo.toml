@@ -32,5 +32,6 @@ cw20-staking = { repository = "https://github.com/CosmWasm/cw-tokens.git", revis
 lp-strategy = {path = "../lp-strategy", features = ["library"]}
 osmosis-std = {version = "0.13.2"}
 thiserror = "1.0.31"
+quasar-types = { path = "../../packages/quasar-types"}
 
 [dev-dependencies]

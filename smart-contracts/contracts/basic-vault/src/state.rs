@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
+use quasar_types::callback::BondResponse;
 
 use crate::msg::PrimitiveConfig;
 
@@ -44,6 +45,19 @@ pub struct Supply {
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
 pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
+#[cw_serde]
+#[derive(Default)]
+pub struct BondingStub {
+    // the contract address of the primitive
+    pub address: String,
+    // the response of the primitive upon successful bond or error
+    pub bond_response: Option<BondResponse>,
+}
+
+// bonding sequence number (to map primitive responses to the right bond action)
+pub const BONDING_SEQ: Item<Uint128> = Item::new("deposit_seq");
+// current bonds pending for a user
+pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_deposit_ids");
 // map of deposit id to deposit state
 // todo: find the type of the vec items here (replace supply obvs)
-pub const DEPOSIT_STATE: Map<u64, Vec<Supply>> = Map::new("deposit_state");
+pub const DEPOSIT_STATE: Map<String, Vec<BondingStub>> = Map::new("deposit_state");

@@ -1,5 +1,6 @@
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
 use cw20_base::contract::execute_mint;
+use quasar_types::callback::BondResponse;
 
 use crate::{
     msg::CallbackMsg,
@@ -14,10 +15,13 @@ pub fn handle_callback(
     callback_msg: CallbackMsg,
 ) -> Result<Response, ContractError> {
     match callback_msg {
-        CallbackMsg::OnBond {
-            shares_out,
-            deposit_id,
-        } => on_bond(deps, env, info, shares_out, deposit_id),
+        CallbackMsg::OnBond(bond_response) => on_bond(
+            deps,
+            env,
+            info,
+            bond_response.share_amount,
+            bond_response.bond_id,
+        ),
     }
 }
 
@@ -25,12 +29,12 @@ pub fn on_bond(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    shares_out: Uint128,
-    deposit_id: u64,
+    shares_amount: Uint128,
+    bond_id: u64,
 ) -> Result<Response, ContractError> {
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
-    let deposit_state = DEPOSIT_STATE.load(deps.storage, deposit_id)?;
+    let mut deposit_stubs = DEPOSIT_STATE.load(deps.storage, bond_id)?;
 
     // lets save this primitive response
     let primitive_config = invest
@@ -40,33 +44,42 @@ pub fn on_bond(
         .unwrap();
 
     // update deposit state here before doing anything else & save!
+    deposit_stubs = deposit_stubs.iter().map(|s| {
+        if (s.address == info.sender) {
+            s.bond_response = Option::Some(BondResponse {
+                share_amount,
+                bond_id,
+            });
+        }
+        s
+    });
+    DEPOSIT_STATE.save(deps.storage, bond_id, &deposit_stubs);
 
     // if still waiting on successful bonds, then return
-    if (deposit_state.iter().any(|s| s.success == false)) {
+    if (deposit_stubs.iter().any(|s| s.bond_response.is_none())) {
         return Ok(Response::new());
     }
-
-    // todo: iff all primitives succeeded, then we can mint the tokens
-    // (aka surround below in an if statement, else do nothing)
 
     let total_weight = invest
         .primitives
         .iter()
         .fold(Uint128::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
 
-    let zipped = deposit_state.iter().zip(invest.primitives.iter());
-  
     // calculate shares to mint
-    let shares_to_mint = zipped
-        .fold(Uint128::zero(), |acc, (s, pc)| {
-            acc.checked_add(
-                s.shares_out
-                    .checked_multiply_ratio(pc.weight, total_weight)
-                    .unwrap(),
-            )
-            .unwrap()
-        });
-
+    let shares_to_mint =
+        deposit_stubs
+            .iter()
+            .zip(invest.primitives.iter())
+            .fold(Uint128::zero(), |acc, (s, pc)| {
+                acc.checked_add(
+                    s.bond_response
+                        .unwrap()
+                        .share_amount
+                        .checked_multiply_ratio(pc.weight, total_weight)
+                        .unwrap(),
+                )
+                .unwrap()
+            });
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -95,8 +108,8 @@ pub fn on_bond(
     // bond them to the validator
     let res = Response::new()
         .add_attribute("action", "bond")
-        .add_attribute("from", info.sender)
-        // .add_attribute("bonded", payment.amount)
-        // .add_attribute("minted", to_mint);
+        .add_attribute("from", info.sender);
+    // .add_attribute("bonded", payment.amount)
+    // .add_attribute("minted", to_mint);
     Ok(res)
 }

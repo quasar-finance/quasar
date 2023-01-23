@@ -70,6 +70,7 @@ dependencies = [
  "cw20-staking",
  "lp-strategy",
  "osmosis-std 0.13.2",
+ "quasar-types",
  "thiserror",
 ]
 

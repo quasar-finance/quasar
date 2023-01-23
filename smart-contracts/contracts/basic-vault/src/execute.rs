@@ -12,7 +12,10 @@ use cw_utils::PaymentError;
 use crate::error::ContractError;
 use crate::msg::ExecuteMsg;
 
-use crate::state::{Supply, CLAIMS, FALLBACK_RATIO, INVESTMENT, STRATEGY_BOND_ID, TOTAL_SUPPLY};
+use crate::state::{
+    BondingStub, Supply, BONDING_SEQ, CLAIMS, DEPOSIT_STATE, FALLBACK_RATIO, INVESTMENT,
+    PENDING_BOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY,
+};
 
 // get_bonded returns the total amount of delegations from contract
 // it ensures they are all the same denom
@@ -64,6 +67,9 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
 pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     // ensure we have the proper denom
     let invest = INVESTMENT.load(deps.storage)?;
+    let bond_seq = BONDING_SEQ.load(deps.storage)?;
+
+    let deposit_stubs = vec![];
 
     let total_weight = invest
         .primitives
@@ -78,7 +84,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                 let amount = must_pay_multi(&info, &lp_init_msg.local_denom).unwrap();
 
                 // if total amount is still zero, we can define it here
-                // otherwise let's check if it was correct
+                // otherwise let's check if passed in ratio is correct
                 if total_amount.is_zero() {
                     total_amount = amount
                         .checked_multiply_ratio(total_weight, pc.weight)
@@ -92,10 +98,18 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                     }
                 }
 
+                let deposit_stub = BondingStub {
+                    address: pc.address,
+                    bond_response: Option::None,
+                };
+                deposit_stubs.push(deposit_stub);
+
                 Ok(SubMsg::reply_always(
                     WasmMsg::Execute {
                         contract_addr: pc.address,
-                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Deposit {})?,
+                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                            id: bond_seq.to_string(),
+                        })?,
                         funds: vec![Coin {
                             denom: lp_init_msg.local_denom.clone(),
                             amount: amount,
@@ -106,6 +120,17 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             }
         })
         .collect();
+
+    // save bonding state for use during the callback
+    PENDING_BOND_IDS.update(store, info.sender, |ids| match ids {
+        Some(bond_ids) => {
+            bond_ids.push(bond_seq);
+            Ok(bond_ids)
+        }
+        None => Ok(vec![bond_seq]),
+    });
+    DEPOSIT_STATE.save(deps.storage, bond_seq, &deposit_stubs);
+    BONDING_SEQ.save(deps.storage, &bond_seq.add(1u128));
 
     Ok(Response::new().add_submessages(init_msgs?))
 }

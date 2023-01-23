@@ -4,6 +4,7 @@ use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
+use quasar_types::callback::BondResponse;
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -120,12 +121,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum CallbackMsg {
-    OnBond {
-        /// the amount of tokens that were bonded
-        shares_out: Uint128,
-        // the id of this deposit
-        deposit_id: u64,
-    },
+    OnBond (BondResponse)
 }
 
 #[cw_serde]

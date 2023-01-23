@@ -5,3 +5,4 @@ pub mod ica;
 pub mod icq;
 pub mod queue;
 pub mod traits;
+pub mod callback;

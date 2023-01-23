@@ -22,7 +22,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_investment;
 use crate::state::{
     InvestmentInfo, Supply, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, INVESTMENT,
-    TOTAL_SUPPLY,
+    TOTAL_SUPPLY, BONDING_SEQ,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -54,6 +54,9 @@ pub fn instantiate(
         primitives: msg.primitives.clone(),
     };
     INVESTMENT.save(deps.storage, &invest)?;
+
+    // initialize bonding sequence num
+    BONDING_SEQ.save(deps.storage, &Uint128::one());
 
     // set supply to 0
     let supply = Supply::default();
