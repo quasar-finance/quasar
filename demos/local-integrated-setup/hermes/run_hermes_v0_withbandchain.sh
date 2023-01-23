@@ -37,7 +37,7 @@ mkdir -p ~/.hermes/
 pwd
 cp v0/hermes_config_with_bandchain.toml ~/.hermes/config.toml
 
-BANDCHAIN="band-laozi-testnet5"
+BANDCHAIN="band-laozi-testnet6"
 
 quasar_seeds=$(cat quasar.seeds)
 cosmos_seeds=$(cat cosmos.seeds)
@@ -46,7 +46,7 @@ band_seeds=$(cat band.seeds)
 hermes keys restore --mnemonic "$quasar_seeds" quasar
 hermes keys restore --mnemonic "$cosmos_seeds" cosmos
 hermes keys restore --mnemonic "$osmosis_seeds" osmosis
-hermes keys restore --mnemonic "$band_seeds"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet5
+hermes keys restore --mnemonic "$band_seeds"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet6
 
 ## Checking balance
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
