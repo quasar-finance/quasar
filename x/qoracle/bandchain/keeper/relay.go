@@ -53,8 +53,8 @@ func (k Keeper) sendCoinRatesRequest(ctx sdk.Context) (uint64, error) {
 		k.ics4Wrapper,
 		k.channelKeeper,
 		k.scopedKeeper,
-		k.GetPort(ctx),
-		k.GetAuthorizedChannel(ctx),
+		"qbandchainoracle", //TODO get it from KV Store
+		"channel-0",        //TODO get Authorized channel
 		packetData.GetBytes(),
 		k.GetPacketTimeoutHeight(ctx),
 		k.GetPacketTimeoutTimestamp(ctx),

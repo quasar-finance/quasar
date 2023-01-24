@@ -24,7 +24,7 @@ func (k Keeper) updatePriceList(ctx sdk.Context) {
 	mul := callData.GetMultiplier()
 	for i, symbol := range callData.GetSymbols() {
 		p := sdk.NewDec(int64(result.GetRates()[i])).QuoInt64(int64(mul))
-		prices = append(prices, sdk.NewDecCoinFromDec(symbol, p))
+		prices[i] = sdk.NewDecCoinFromDec(symbol, p)
 	}
 
 	k.setPriceList(ctx, sdk.NewDecCoins(prices...))
