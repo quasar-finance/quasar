@@ -9,6 +9,7 @@ use std::str::Utf8Error;
 use thiserror::Error;
 
 use crate::helpers::IbcMsgKind;
+use crate::state::OngoingDeposit;
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -23,13 +24,6 @@ pub struct Trap {
     pub step: IbcMsgKind,
     // the deposits that failed
     pub deposits: Vec<OngoingDeposit>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct OngoingDeposit {
-    pub claim_amount: Uint128,
-    pub owner: Addr,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -69,6 +63,9 @@ pub enum ContractError {
 
     #[error("channel is not an icq channel")]
     NoIcqChannel,
+
+    #[error("no timestamp time found for ibc packets")]
+    NoTimestampTime,
 
     #[error("reply data not found")]
     NoReplyData,

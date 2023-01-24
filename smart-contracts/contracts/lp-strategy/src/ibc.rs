@@ -377,10 +377,10 @@ pub fn handle_ica_ack(
                             create_share(storage, claim.owner.clone(), claim.claim_amount)?;
                         callbacks.push(WasmMsg::Execute {
                             contract_addr: claim.owner.to_string(),
-                            msg: Callback::BondResponse(BondResponse {
+                            msg: to_binary(&Callback::BondResponse(BondResponse {
                                 share_amount,
-                                bond_id: claim.bond_id,
-                            }),
+                                bond_id: claim.bond_id.clone(),
+                            }))?,
                             funds: vec![],
                         })
                     }
@@ -390,6 +390,7 @@ pub fn handle_ica_ack(
 
                     // TODO, do we want to also check queue state? and see if we can already start a new execution?
                     Ok(IbcBasicResponse::new()
+                        .add_messages(callbacks)
                         .add_attribute("locked_tokens", ack_bin.to_base64())
                         .add_attribute("lock_id", resp.id.to_string()))
                 }
