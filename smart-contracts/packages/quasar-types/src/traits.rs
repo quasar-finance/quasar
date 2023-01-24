@@ -1,6 +1,5 @@
-use cosmwasm_std::{Uint128, Decimal};
+use cosmwasm_std::{Decimal, Uint128};
 use std::fmt::Debug;
-
 
 pub trait Curve: Debug {
     /// price returns the current price from the curve. Equal to f(x) on the curve

@@ -7,10 +7,12 @@ use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 
 use crate::{
-    error::{OngoingDeposit, Trap},
+    error::{ContractError, Trap},
     helpers::IbcMsgKind,
     lock::{DWType, Lock},
 };
+
+pub const RETURN_SOURCE_PORT: &'static str = "transfer";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
@@ -27,6 +29,8 @@ pub struct Config {
     pub quote_denom: String,
     // the denom on the Quasar chain
     pub local_denom: String,
+    // the channel for sending tokens back from the counterparty chain to quasar chain
+    pub return_source_channel: String,
 }
 
 pub(crate) const CONFIG: Item<Config> = Item::new("tmp");
@@ -53,6 +57,7 @@ pub(crate) const LOCK_QUEUE: Deque<DWType> = Deque::new("lock_queue");
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 
+// TODO we probably want to change this to an OngoingDeposit
 pub(crate) const CLAIMS: Map<Addr, Uint128> = Map::new("claims");
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
@@ -66,9 +71,29 @@ pub struct PendingAck {
 }
 
 impl PendingAck {
-    pub fn update_kind(mut self, kind: IbcMsgKind) -> Self {
+    pub fn update_kind(&mut self, kind: IbcMsgKind) {
         self.kind = kind;
-        self
+    }
+
+    pub fn update_raw_amount_to_lp(&mut self, total_lp: Uint128) -> Result<(), ContractError> {
+        let mut total = Uint128::zero();
+        for p in self.deposits.iter() {
+            match p.raw_amount {
+                crate::state::RawAmount::LocalDenom(val) => total = total.checked_add(val)?,
+                crate::state::RawAmount::LpShares(_) => unimplemented!(),
+            }
+        }
+        for p in self.deposits.iter_mut() {
+            match p.raw_amount {
+                // amount of lp shares = val * total_lp / total
+                crate::state::RawAmount::LocalDenom(val) => {
+                    p.raw_amount =
+                        RawAmount::LpShares(val.checked_mul(total_lp)?.checked_div(total)?)
+                }
+                crate::state::RawAmount::LpShares(_) => unimplemented!(),
+            }
+        }
+        Ok(())
     }
 }
 
@@ -76,4 +101,67 @@ impl PendingAck {
 #[serde(rename_all = "snake_case")]
 pub struct Claim {
     amount: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct OngoingDeposit {
+    pub claim_amount: Uint128, // becomes shares later
+    pub raw_amount: RawAmount,
+    pub owner: Addr,
+    pub bond_id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum RawAmount {
+    LocalDenom(Uint128),
+    LpShares(Uint128),
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_update_raw_amount_to_lp() {
+        let mut pending = PendingAck {
+            kind: IbcMsgKind::Transfer,
+            deposits: vec![
+                OngoingDeposit {
+                    claim_amount: Uint128::new(100),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "fake".to_string(),
+                },
+                OngoingDeposit {
+                    claim_amount: Uint128::new(99),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(999)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "fake".to_string(),
+                },
+                OngoingDeposit {
+                    claim_amount: Uint128::new(101),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "fake".to_string(),
+                },
+            ],
+        };
+        pending.update_raw_amount_to_lp(Uint128::new(300)).unwrap();
+        assert_eq!(
+            pending.deposits[0].raw_amount,
+            RawAmount::LpShares(Uint128::new(100))
+        );
+        assert_eq!(
+            pending.deposits[1].raw_amount,
+            RawAmount::LpShares(Uint128::new(99))
+        );
+        // because we use integer division and relatively low values, this case us 100
+        assert_eq!(
+            pending.deposits[2].raw_amount,
+            RawAmount::LpShares(Uint128::new(100))
+        )
+    }
 }
