@@ -93,11 +93,17 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 	}
 }
 
+// GetTxCmd returns the capability module's root tx command.
+func (a AppModuleBasic) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
+/*
 // GetTxCmd returns the qoracle module's root tx command.
 func (a AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
-
+*/
 // GetQueryCmd returns the qoracle module's root query command.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
