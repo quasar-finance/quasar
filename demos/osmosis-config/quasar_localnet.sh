@@ -86,6 +86,7 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.gov.voting_params.voting_period="60s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
   jq '.app_state.qoracle.bandchain_genesis_state.params.authorized_channel="channel-0"' |
+  jq '.app_state.qoracle.osmosis_genesis_state.params.authorized_channel="channel-0"' |
   jq '.app_state.qoracle.bandchain_genesis_state.params.coin_rates_params.script_params.fee_limit[0].amount="200"' >  $HOME_QSR/config/genesis.json
 
 # Start
