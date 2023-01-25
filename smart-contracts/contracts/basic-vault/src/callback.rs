@@ -4,7 +4,7 @@ use quasar_types::callback::BondResponse;
 
 use crate::{
     msg::CallbackMsg,
-    state::{BondingStub, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY},
+    state::{BondingStub, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY},
     ContractError,
 };
 
@@ -40,7 +40,7 @@ pub fn on_bond(
     let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
 
     // if we don't find a primitive, this is an unauthorized call
-    if (primitive_config.is_none()) {
+    if primitive_config.is_none() {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -48,7 +48,7 @@ pub fn on_bond(
     deposit_stubs = deposit_stubs
         .iter()
         .map(|s| {
-            if (s.address == info.sender) {
+            if s.address == info.sender {
                 BondingStub {
                     address: s.address.clone(),
                     bond_response: Option::Some(BondResponse {
@@ -64,7 +64,7 @@ pub fn on_bond(
     DEPOSIT_STATE.save(deps.storage, bond_id.clone(), &deposit_stubs)?;
 
     // if still waiting on successful bonds, then return
-    if (deposit_stubs.iter().any(|s| s.bond_response.is_none())) {
+    if deposit_stubs.iter().any(|s| s.bond_response.is_none()) {
         return Ok(Response::new());
     }
 

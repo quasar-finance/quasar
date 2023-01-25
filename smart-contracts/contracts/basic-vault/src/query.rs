@@ -1,8 +1,8 @@
-use cosmwasm_std::{Decimal, StdResult, Deps, coin};
+use cosmwasm_std::{StdResult, Deps};
 
-use crate::{msg::InvestmentResponse, state::{INVESTMENT, TOTAL_SUPPLY, FALLBACK_RATIO}};
+use crate::{msg::InvestmentResponse};
 
-pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
+pub fn query_investment(_deps: Deps) -> StdResult<InvestmentResponse> {
     todo!()
     // let invest = INVESTMENT.load(deps.storage)?;
     // let supply = TOTAL_SUPPLY.load(deps.storage)?;

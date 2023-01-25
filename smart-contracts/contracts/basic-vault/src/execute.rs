@@ -1,20 +1,19 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add};
 
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, DepsMut, Env, MessageInfo, QuerierWrapper, Response, StdError,
-    StdResult, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Coin, DepsMut, Env, MessageInfo, QuerierWrapper, Response, SubMsg, Uint128, WasmMsg,
 };
 
-use cw20_base::contract::{execute_burn, execute_mint};
-use cw_storage_plus::Map;
+
+
 use cw_utils::PaymentError;
 
 use crate::error::ContractError;
 use crate::msg::ExecuteMsg;
 
 use crate::state::{
-    BondingStub, Supply, BONDING_SEQ, CLAIMS, DEPOSIT_STATE, FALLBACK_RATIO, INVESTMENT,
-    PENDING_BOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY,
+    BondingStub, Supply, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT,
+    PENDING_BOND_IDS, STRATEGY_BOND_ID,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -54,7 +53,7 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
 pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, PaymentError> {
     match info.funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
-            if (coin.amount.is_zero()) {
+            if coin.amount.is_zero() {
                 Err(PaymentError::NoFunds {})
             } else {
                 Ok(coin.amount)
@@ -64,7 +63,7 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
     }
 }
 
-pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     // ensure we have the proper denom
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
@@ -136,10 +135,10 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 pub fn unbond(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    amount: Uint128,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _amount: Uint128,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
 
@@ -225,7 +224,7 @@ pub fn unbond(
     // Ok(res)
 }
 
-pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn claim(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
     Ok(Response::new())
 
     // // find how many tokens the contract has
@@ -287,9 +286,9 @@ pub fn reinvest(deps: DepsMut, env: Env, _info: MessageInfo) -> Result<Response,
 }
 
 pub fn _bond_all_tokens(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
 
