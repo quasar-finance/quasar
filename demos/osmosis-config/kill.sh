@@ -1,0 +1,2 @@
+pkill quasarnoded
+pkill osmosisd
