@@ -19,4 +19,4 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 serde_test = "1.0"
 osmosis-std = {version = "0.13.2"}
-base64 = "0.20.0"
+osmosis-std-derive = "0.13.2"

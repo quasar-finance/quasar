@@ -39,7 +39,7 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 }
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: PendingAck,
+    pending: &PendingAck,
     msg: impl Into<CosmosMsg>,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -48,7 +48,7 @@ pub fn create_ibc_ack_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &pending)?;
+    REPLIES.save(storage, id, pending)?;
     Ok(SubMsg::reply_always(msg, id))
 }
 

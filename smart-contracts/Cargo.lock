@@ -44,12 +44,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
-name = "base64"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
-
-[[package]]
 name = "base64ct"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,7 +203,7 @@ version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b13d5a84d15cf7be17dc249a21588cdb0f7ef308907c50ce2723316a7d79c3dc"
 dependencies = [
- "base64 0.13.1",
+ "base64",
  "cosmwasm-crypto",
  "cosmwasm-derive",
  "derivative",
@@ -819,7 +813,7 @@ dependencies = [
 name = "icq"
 version = "0.1.0"
 dependencies = [
- "base64 0.13.1",
+ "base64",
  "cosmos-sdk-proto 0.14.0",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -919,7 +913,7 @@ dependencies = [
 name = "lp-strategy"
 version = "0.1.0"
 dependencies = [
- "base64 0.13.1",
+ "base64",
  "cosmos-sdk-proto 0.15.0",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1156,13 +1150,13 @@ dependencies = [
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
- "base64 0.20.0",
  "cosmos-sdk-proto 0.14.0",
  "cosmwasm-std",
  "cw-storage-plus 1.0.1",
  "cw20 0.13.4",
  "derive_more",
  "osmosis-std 0.13.2",
+ "osmosis-std-derive 0.13.2",
  "prost 0.11.0",
  "rust_decimal",
  "schemars",

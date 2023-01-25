@@ -11,12 +11,12 @@ use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
-    error::{ContractError, OngoingDeposit},
+    error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     lock::{enqueue, DWType, Deposit, Lock},
     state::{
-        PendingAck, CLAIMS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LOCK, LOCK_QUEUE, LP_SHARES, SHARES,
-        TRANSFER_CHANNEL,
+        OngoingDeposit, PendingAck, RawAmount, CLAIMS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LOCK,
+        LOCK_QUEUE, LP_SHARES, SHARES, TRANSFER_CHANNEL,
     },
     strategy::do_transfer,
 };
@@ -26,7 +26,7 @@ pub fn do_deposit(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    id: String
+    bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
     let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
 
@@ -40,8 +40,10 @@ pub fn do_deposit(
             DWType::Deposit(Deposit {
                 amount: amount,
                 owner: info.sender,
+                bond_id,
             }),
         )?;
+        // return early because a different sequence of IBC messages is being executed
         return Ok(None);
     } else {
         LOCK.save(deps.storage, &Lock::Locked)?;
@@ -50,6 +52,7 @@ pub fn do_deposit(
             DWType::Deposit(Deposit {
                 amount: amount,
                 owner: info.sender,
+                bond_id,
             }),
         )?;
     }
@@ -65,7 +68,7 @@ pub fn do_deposit(
 
     Ok(Some(create_ibc_ack_submsg(
         deps.storage,
-        PendingAck {
+        &PendingAck {
             kind: IbcMsgKind::Icq,
             // since we don't empty the queue here, we don't pass any deposits
             deposits: vec![],
@@ -109,6 +112,8 @@ pub fn fold_queue(
                 deposits.push(OngoingDeposit {
                     claim_amount,
                     owner: val.owner,
+                    raw_amount: RawAmount::LocalDenom(val.amount),
+                    bond_id: val.bond_id,
                 });
             }
         }
@@ -202,7 +207,7 @@ pub fn create_share(
     storage: &mut dyn Storage,
     owner: Addr,
     amount: Uint128,
-) -> Result<(), ContractError> {
+) -> Result<Uint128, ContractError> {
     let claim = CLAIMS.load(storage, owner.clone())?;
     if claim < amount {
         return Err(ContractError::InsufficientClaims);
@@ -214,9 +219,9 @@ pub fn create_share(
         CLAIMS.save(storage, owner.clone(), &claim.checked_sub(amount)?)?;
     }
 
-    // TODO make shares fungible using cw20
-    // call into the minter and mint shares for the according to the claim
-    Ok(SHARES.save(storage, owner, &amount)?)
+    // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
+    SHARES.save(storage, owner, &amount)?;
+    Ok(claim)
 }
 
 /// calculate the amount of for the claim of the user
