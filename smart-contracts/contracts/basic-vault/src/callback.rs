@@ -4,7 +4,7 @@ use quasar_types::callback::BondResponse;
 
 use crate::{
     msg::CallbackMsg,
-    state::{DEPOSIT_STATE, INVESTMENT, TOTAL_SUPPLY},
+    state::{BondingStub, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY},
     ContractError,
 };
 
@@ -29,36 +29,57 @@ pub fn on_bond(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    shares_amount: Uint128,
-    bond_id: u64,
+    share_amount: Uint128,
+    bond_id: String,
 ) -> Result<Response, ContractError> {
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
-    let mut deposit_stubs = DEPOSIT_STATE.load(deps.storage, bond_id)?;
+    let mut deposit_stubs = DEPOSIT_STATE.load(deps.storage, bond_id.clone())?;
 
-    // lets save this primitive response
-    let primitive_config = invest
-        .primitives
-        .iter()
-        .find(|p| p.address == info.sender)
-        .unwrap();
+    // lets find the primitive for this response
+    let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
+
+    // if we don't find a primitive, this is an unauthorized call
+    if (primitive_config.is_none()) {
+        return Err(ContractError::Unauthorized {});
+    }
 
     // update deposit state here before doing anything else & save!
-    deposit_stubs = deposit_stubs.iter().map(|s| {
-        if (s.address == info.sender) {
-            s.bond_response = Option::Some(BondResponse {
-                share_amount,
-                bond_id,
-            });
-        }
-        s
-    });
-    DEPOSIT_STATE.save(deps.storage, bond_id, &deposit_stubs);
+    deposit_stubs = deposit_stubs
+        .iter()
+        .map(|s| {
+            if (s.address == info.sender) {
+                BondingStub {
+                    address: s.address.clone(),
+                    bond_response: Option::Some(BondResponse {
+                        share_amount,
+                        bond_id: bond_id.clone(),
+                    }),
+                }
+            } else {
+                s.to_owned()
+            }
+        })
+        .collect();
+    DEPOSIT_STATE.save(deps.storage, bond_id.clone(), &deposit_stubs)?;
 
     // if still waiting on successful bonds, then return
     if (deposit_stubs.iter().any(|s| s.bond_response.is_none())) {
         return Ok(Response::new());
     }
+
+    // at this point we know that the deposit has succeeded fully, and we can mint shares
+    // lets updated all pending deposit info
+    PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
+        Some(mut bond_ids) => {
+            let bond_index = bond_ids.iter().position(|id| id == &bond_id).unwrap();
+            bond_ids.remove(bond_index);
+            Ok::<Vec<String>, ContractError>(bond_ids)
+        }
+        None => Ok(vec![]), // todo: should this error?
+    })?;
+    // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
+    DEPOSIT_STATE.save(deps.storage, bond_id.to_string(), &deposit_stubs)?;
 
     let total_weight = invest
         .primitives
@@ -73,6 +94,7 @@ pub fn on_bond(
             .fold(Uint128::zero(), |acc, (s, pc)| {
                 acc.checked_add(
                     s.bond_response
+                        .as_ref()
                         .unwrap()
                         .share_amount
                         .checked_multiply_ratio(pc.weight, total_weight)
