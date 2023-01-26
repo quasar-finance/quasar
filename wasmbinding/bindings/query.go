@@ -1,33 +1,25 @@
 package bindings
 
-import (
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
-)
-
-// OsmosisQuery contains osmosis custom queries.
-// See https://github.com/osmosis-labs/osmosis-bindings/blob/main/packages/bindings/src/query.rs
+// QuasarQuery contains quasar custom queries.
 type QuasarQuery struct {
 	// Query all pools
-	OsmosisPools *OsmosisPoolsRequest `json:"osmosis_pools,omitempty"`
+	PoolsRankedByAPY *PoolsRankedByAPYRequest `json:"pools_ranked_by_apy,omitempty"`
 
-	// Query pool info
-	OsmosisPoolInfo *OsmosisPoolInfoRequest `json:"osmosis_pool_info,omitempty"`
+	// Query pool details
+	Pool *PoolRequest `json:"pool,omitempty"`
 
-	// Query oracle prices
-	OraclePrices *OraclePricesRequest `json:"oracle_prices,omitempty"`
+	// Query token price
+	TokenPrice *TokenPriceRequest `json:"token_price,omitempty"`
 }
 
-type OsmosisPoolsRequest struct {
-	Pagination *query.PageRequest `json:"pagination,omitempty"`
+type PoolsRankedByAPYRequest struct {
+	Denom string `json:"denom"`
 }
 
-type OsmosisPoolInfoRequest struct {
-	PoolId string `json:"pool_id"`
+type PoolRequest struct {
+	Id string `json:"id"`
 }
 
-type OsmosisPoolInfoResponse struct {
-	Pool *types.OsmosisPool `json:"pool,omitempty"`
+type TokenPriceRequest struct {
+	Denom string `json:"denom"`
 }
-
-type OraclePricesRequest struct{}

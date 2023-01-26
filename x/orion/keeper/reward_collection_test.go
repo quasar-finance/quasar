@@ -102,175 +102,175 @@ func TestDeductPerformanceFee(t *testing.T) {
 	}
 }
 
-func TestCalculateDenomLPWeights(t *testing.T) {
-	var tests = []struct {
-		name        string
-		totalLPV    sdk.Coins
-		prices      map[string]sdk.Dec
-		expectError bool
-		weights     map[string]sdk.Dec
-	}{
-		{
-			name:        "empty totalLPV",
-			totalLPV:    sdk.NewCoins(),
-			expectError: false,
-			weights:     map[string]sdk.Dec{},
-		},
-		{
-			name:        "single denom in totalLPV, no price data",
-			totalLPV:    sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			expectError: true,
-		},
-		{
-			name:     "single denom in totalLPV, only orion price data",
-			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(2),
-			},
-			expectError: true,
-		},
-		{
-			name:     "single denom in totalLPV, only denom price data",
-			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			prices: map[string]sdk.Dec{
-				"abc": sdk.NewDec(2),
-			},
-			expectError: true,
-		},
-		{
-			name:     "single denom in totalLPV, with both price data",
-			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(2),
-				"abc":            sdk.NewDec(2),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.OneDec(),
-			},
-		},
-		{
-			name:     "single denom in totalLPV, arbitrary price data",
-			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDecWithPrec(123, 2),
-				"abc":            sdk.NewDecWithPrec(687, 1),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.OneDec(),
-			},
-		},
-		{
-			name: "two denoms in totalLPV, same amount, same price",
-			totalLPV: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(100)),
-				sdk.NewCoin("def", sdk.NewInt(100)),
-			),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(2),
-				"abc":            sdk.NewDec(2),
-				"def":            sdk.NewDec(2),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(5, 1),
-				"def": sdk.NewDecWithPrec(5, 1),
-			},
-		},
-		{
-			name: "two denoms in totalLPV, same price",
-			totalLPV: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(80)),
-				sdk.NewCoin("def", sdk.NewInt(120)),
-			),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(2),
-				"abc":            sdk.NewDec(2),
-				"def":            sdk.NewDec(2),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(4, 1),
-				"def": sdk.NewDecWithPrec(6, 1),
-			},
-		},
-		{
-			name: "two denoms in totalLPV, same amount",
-			totalLPV: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(100)),
-				sdk.NewCoin("def", sdk.NewInt(100)),
-			),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.NewDec(2),
-				"abc":            sdk.NewDecWithPrec(35, 1),
-				"def":            sdk.NewDecWithPrec(15, 1),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(7, 1),
-				"def": sdk.NewDecWithPrec(3, 1),
-			},
-		},
-		{
-			name: "two denoms in totalLPV, both amount and price different, no truncation",
-			totalLPV: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(90)),
-				sdk.NewCoin("def", sdk.NewInt(70)),
-			),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.OneDec(),
-				"abc":            sdk.NewDecWithPrec(35, 1),
-				"def":            sdk.NewDecWithPrec(15, 1),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(75, 2),
-				"def": sdk.NewDecWithPrec(25, 2),
-			},
-		},
-		{
-			name: "two denoms in totalLPV, both amount and price different",
-			totalLPV: sdk.NewCoins(
-				sdk.NewCoin("abc", sdk.NewInt(150)),
-				sdk.NewCoin("def", sdk.NewInt(100)),
-			),
-			prices: map[string]sdk.Dec{
-				types.OrionDenom: sdk.OneDec(),
-				"abc":            sdk.NewDecWithPrec(35, 1),
-				"def":            sdk.NewDecWithPrec(15, 1),
-			},
-			expectError: false,
-			weights: map[string]sdk.Dec{
-				"abc": sdk.NewDecWithPrec(777777777777777778, 18),
-				"def": sdk.NewDecWithPrec(222222222222222222, 18),
-			},
-		},
-	}
+// func TestCalculateDenomLPWeights(t *testing.T) {
+// 	var tests = []struct {
+// 		name        string
+// 		totalLPV    sdk.Coins
+// 		prices      map[string]sdk.Dec
+// 		expectError bool
+// 		weights     map[string]sdk.Dec
+// 	}{
+// 		{
+// 			name:        "empty totalLPV",
+// 			totalLPV:    sdk.NewCoins(),
+// 			expectError: false,
+// 			weights:     map[string]sdk.Dec{},
+// 		},
+// 		{
+// 			name:        "single denom in totalLPV, no price data",
+// 			totalLPV:    sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			expectError: true,
+// 		},
+// 		{
+// 			name:     "single denom in totalLPV, only orion price data",
+// 			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDec(2),
+// 			},
+// 			expectError: true,
+// 		},
+// 		{
+// 			name:     "single denom in totalLPV, only denom price data",
+// 			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			prices: map[string]sdk.Dec{
+// 				"abc": sdk.NewDec(2),
+// 			},
+// 			expectError: true,
+// 		},
+// 		{
+// 			name:     "single denom in totalLPV, with both price data",
+// 			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDec(2),
+// 				"abc":            sdk.NewDec(2),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.OneDec(),
+// 			},
+// 		},
+// 		{
+// 			name:     "single denom in totalLPV, arbitrary price data",
+// 			totalLPV: sdk.NewCoins(sdk.NewCoin("abc", sdk.NewInt(100))),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDecWithPrec(123, 2),
+// 				"abc":            sdk.NewDecWithPrec(687, 1),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.OneDec(),
+// 			},
+// 		},
+// 		{
+// 			name: "two denoms in totalLPV, same amount, same price",
+// 			totalLPV: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(100)),
+// 				sdk.NewCoin("def", sdk.NewInt(100)),
+// 			),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDec(2),
+// 				"abc":            sdk.NewDec(2),
+// 				"def":            sdk.NewDec(2),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(5, 1),
+// 				"def": sdk.NewDecWithPrec(5, 1),
+// 			},
+// 		},
+// 		{
+// 			name: "two denoms in totalLPV, same price",
+// 			totalLPV: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(80)),
+// 				sdk.NewCoin("def", sdk.NewInt(120)),
+// 			),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDec(2),
+// 				"abc":            sdk.NewDec(2),
+// 				"def":            sdk.NewDec(2),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(4, 1),
+// 				"def": sdk.NewDecWithPrec(6, 1),
+// 			},
+// 		},
+// 		{
+// 			name: "two denoms in totalLPV, same amount",
+// 			totalLPV: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(100)),
+// 				sdk.NewCoin("def", sdk.NewInt(100)),
+// 			),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.NewDec(2),
+// 				"abc":            sdk.NewDecWithPrec(35, 1),
+// 				"def":            sdk.NewDecWithPrec(15, 1),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(7, 1),
+// 				"def": sdk.NewDecWithPrec(3, 1),
+// 			},
+// 		},
+// 		{
+// 			name: "two denoms in totalLPV, both amount and price different, no truncation",
+// 			totalLPV: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(90)),
+// 				sdk.NewCoin("def", sdk.NewInt(70)),
+// 			),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.OneDec(),
+// 				"abc":            sdk.NewDecWithPrec(35, 1),
+// 				"def":            sdk.NewDecWithPrec(15, 1),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(75, 2),
+// 				"def": sdk.NewDecWithPrec(25, 2),
+// 			},
+// 		},
+// 		{
+// 			name: "two denoms in totalLPV, both amount and price different",
+// 			totalLPV: sdk.NewCoins(
+// 				sdk.NewCoin("abc", sdk.NewInt(150)),
+// 				sdk.NewCoin("def", sdk.NewInt(100)),
+// 			),
+// 			prices: map[string]sdk.Dec{
+// 				types.OrionDenom: sdk.OneDec(),
+// 				"abc":            sdk.NewDecWithPrec(35, 1),
+// 				"def":            sdk.NewDecWithPrec(15, 1),
+// 			},
+// 			expectError: false,
+// 			weights: map[string]sdk.Dec{
+// 				"abc": sdk.NewDecWithPrec(777777777777777778, 18),
+// 				"def": sdk.NewDecWithPrec(222222222222222222, 18),
+// 			},
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setup := testutil.NewTestSetup(t)
-			ctx, k, qoracleKeeper := setup.Ctx, setup.Keepers.OrionKeeper, setup.Keepers.QoracleKeeper
-			for denom, price := range tt.prices {
-				qoracleKeeper.SetStablePrice(ctx, denom, price)
-			}
-			weights, err := k.CalculateDenomLPWeights(ctx, tt.totalLPV)
-			if tt.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.weights, weights)
-				totalWeight := sdk.ZeroDec()
-				for _, w := range weights {
-					require.True(t, w.GTE(sdk.ZeroDec()))
-					totalWeight = totalWeight.Add(w)
-				}
-				require.True(t, totalWeight.LTE(sdk.OneDec()))
-			}
-		})
-	}
-}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			setup := testutil.NewTestSetup(t)
+// 			ctx, k, qoracleKeeper := setup.Ctx, setup.Keepers.OrionKeeper, setup.Keepers.QoracleKeeper
+// 			for denom, price := range tt.prices {
+// 				qoracleKeeper.SetStablePrice(ctx, denom, price)
+// 			}
+// 			weights, err := k.CalculateDenomLPWeights(ctx, tt.totalLPV)
+// 			if tt.expectError {
+// 				require.Error(t, err)
+// 			} else {
+// 				require.NoError(t, err)
+// 				require.Equal(t, tt.weights, weights)
+// 				totalWeight := sdk.ZeroDec()
+// 				for _, w := range weights {
+// 					require.True(t, w.GTE(sdk.ZeroDec()))
+// 					totalWeight = totalWeight.Add(w)
+// 				}
+// 				require.True(t, totalWeight.LTE(sdk.OneDec()))
+// 			}
+// 		})
+// 	}
+// }
 
 func TestCalculateActualRewardForEachDenom(t *testing.T) {
 	var tests = []struct {

@@ -1,0 +1,17 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle.osmosis;
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc UpdateChainParams(MsgUpdateChainParams) returns (MsgUpdateChainParamsResponse);
+}
+
+message MsgUpdateChainParams {
+  string creator = 1;
+}
+
+message MsgUpdateChainParamsResponse {
+  uint64 packet_sequence = 1;
+}

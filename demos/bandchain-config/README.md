@@ -18,8 +18,8 @@ updating their testnet so its rpc and faucet address are also changing.
 
 ```
 ignite relayer configure -a \
---target-rpc "https://rpc.laozi-testnet5.bandchain.org" \
---target-faucet "https://laozi-testnet5.bandchain.org/faucet" \
+--target-rpc "https://rpc.laozi-testnet6.bandchain.org" \
+--target-faucet "https://laozi-testnet6.bandchain.org/faucet" \
 --target-port "oracle" \
 --target-gasprice "0uband" \
 --target-gaslimit 5000000 \

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
+
+message DenomSymbolMapping {
+  string denom = 1; // Denom of this token as it is (e.g. uatom, uosmo, ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 etc.)
+  string oracle_symbol = 2; // Symbol of this token in oracle prices which is used to calculate the price of this denom
+  string multiplier = 3 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false]; // Multiplier of the oracle denom (denom_price = oracle_denom_price * multiplier)
+}

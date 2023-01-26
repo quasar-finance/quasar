@@ -2,27 +2,13 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
-import "qoracle/bandchain.proto";
-import "qoracle/osmosis.proto";
-import "qoracle/denom_price_mapping.proto";
+import "qoracle/denom_symbol_mapping.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
-
-message OneHopIbcDenomMapping {
-  // option (gogoproto.goproto_stringer) = false;
-
-  string originName = 1 [(gogoproto.moretags) = "yaml:\"origin_name\""]; // Original denom name i.e. uatom
-  string quasar = 2  [(gogoproto.moretags) = "yaml:\"quasar\""]; // one hop ibc denom representation in quasar
-  string osmo = 3 [(gogoproto.moretags) = "yaml:\"osmo\""]; // one hop ibc denom representation in osmo
-  // Representation in the other chains can be added in the future.
-}
 
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  BandchainParams bandchain_params = 1 [(gogoproto.moretags) = "yaml:\"bandchain_params\"", (gogoproto.nullable) = false];
-  OsmosisParams osmosis_params = 2 [(gogoproto.moretags) = "yaml:\"osmosis_params\"", (gogoproto.nullable) = false];
-  repeated DenomPriceMapping denom_price_mappings = 3 [(gogoproto.moretags) = "yaml:\"denom_price_mappings\"", (gogoproto.nullable) = false];
-  repeated OneHopIbcDenomMapping oneHopDenomMap = 6 [(gogoproto.moretags) = "yaml:\"onehop_ibcdenoms\""];
+  uint64 denom_prices_exp_duration = 2 [(gogoproto.moretags) = "yaml:\"denom_prices_exp_duration\""]; // Maximum time in which the denom price list is valid between updates in seconds.
 }

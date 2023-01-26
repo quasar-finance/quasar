@@ -9,8 +9,8 @@ hermes keys add --chain cosmos --mnemonic-file keys/gaia.key
 hermes keys add --chain osmosis --mnemonic-file keys/osmo.key
 
 
-# BANDCHAIN="band-laozi-testnet5"
-# hermes keys restore --mnemonic "machine danger crush duck always will liberty popular security shoulder bargain day repair focus fog evoke market gossip love curious question kingdom armor crazy"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet5
+# BANDCHAIN="band-laozi-testnet6"
+# hermes keys restore --mnemonic "machine danger crush duck always will liberty popular security shoulder bargain day repair focus fog evoke market gossip love curious question kingdom armor crazy"  --hd-path "m/44'/494'/0'/0/0" band-laozi-testnet6
 
 ## Checking balance
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659

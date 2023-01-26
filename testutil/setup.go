@@ -7,9 +7,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
@@ -20,8 +22,11 @@ import (
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
 	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
+	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
+	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
+	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -94,8 +99,15 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
+	qbandScopedKeeper := capabilityKeeper.ScopeToModule(qbandtypes.SubModuleName)
+	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
+
+	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	qbandKeeper := factory.QbandchainKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qbandScopedKeeper, qoracleKeeper)
+	qosmosisKeeper := factory.QosmosisKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qosmoScopedKeeper, qoracleKeeper)
+	qoracleKeeper.RegisterPriceOracle(qbandKeeper)
+	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
+	qoracleKeeper.Seal()
 	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock, ibcConnectionKeeperMock, ibcClientKeeperMock)
 	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)
@@ -109,6 +121,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	factory.SetQbankDefaultParams(qbankKeeper)
 	factory.SetQoracleDefaultParams(qoracleKeeper)
+	factory.SetQbandchainDefaultParams(qbandKeeper)
+	factory.SetQosmosisDefaultParams(qosmosisKeeper)
 	factory.SetIntergammDefaultParams(intergammKeeper)
 	factory.SetOrionDefaultParams(orionKeeper)
 
@@ -128,6 +142,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			CapabilityKeeper: capabilityKeeper,
 			QbankKeeper:      qbankKeeper,
 			QoracleKeeper:    qoracleKeeper,
+			QbandchainKeeper: qbandKeeper,
+			QosmosisKeeper:   qosmosisKeeper,
 			InterGammKeeper:  intergammKeeper,
 			OrionKeeper:      orionKeeper,
 			QTransfer:        qtransferkeeper,
@@ -155,6 +171,8 @@ type testKeepers struct {
 	CapabilityKeeper capabilitykeeper.Keeper
 	QbankKeeper      qbankkeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
+	QbandchainKeeper qbandkeeper.Keeper
+	QosmosisKeeper   qosmokeeper.Keeper
 	InterGammKeeper  *intergammkeeper.Keeper
 	OrionKeeper      orionkeeper.Keeper
 	QTransfer        qtransferkeeper.Keeper

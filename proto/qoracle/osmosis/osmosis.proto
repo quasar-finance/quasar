@@ -1,0 +1,23 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle.osmosis;
+
+import "gogoproto/gogo.proto";
+import "osmosis/pool-incentives/v1beta1/query.proto";
+import "osmosis/epochs/genesis.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types";
+
+message OsmosisRequestState {
+  uint64 packet_sequence = 1;
+  bool acknowledged = 2;
+  bool failed = 3;
+  int64 updated_at_height = 4;
+}
+
+message IncentivizedPools {
+  repeated .osmosis.poolincentives.v1beta1.IncentivizedPool incentivized_pools = 1 [(gogoproto.nullable) = false];
+}
+
+message EpochsInfo {
+  repeated .osmosis.epochs.v1beta1.EpochInfo epochs_info = 1 [(gogoproto.nullable) = false];
+}

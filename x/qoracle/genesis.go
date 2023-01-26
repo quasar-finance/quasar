@@ -1,40 +1,39 @@
 package qoracle
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
+	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
+	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 )
 
-// InitGenesis initializes the capability module's state from a provided genesis
-// state.
-func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-	k.SetPort(ctx, genState.PortId)
+func InitGenesis(
+	ctx sdk.Context,
+	qKeeper qoraclekeeper.Keeper,
+	bandKeeper qbandkeeper.Keeper,
+	osmoKeeper qosmokeeper.Keeper,
+	state genesistypes.GenesisState,
+) {
+	qKeeper.SetParams(ctx, state.Params)
 
-	// Only try to bind to port if it is not already bound, since we may already own
-	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, genState.PortId) {
-		// transfer module binds to the transfer port on InitChain
-		// and claims the returned capability
-		err := k.BindPort(ctx, genState.PortId)
-		if err != nil {
-			panic(fmt.Sprintf("could not claim port capability: %v", err))
-		}
+	for _, mapping := range state.DenomSymbolMappings {
+		qKeeper.SetDenomSymbolMapping(ctx, mapping)
 	}
 
-	// this line is used by starport scaffolding # genesis/module/init
-	k.SetParams(ctx, genState.Params)
+	qbandkeeper.InitGenesis(ctx, bandKeeper, state.BandchainGenesisState)
+	qosmokeeper.InitGenesis(ctx, osmoKeeper, state.OsmosisGenesisState)
 }
 
-// ExportGenesis returns the capability module's exported genesis.
-func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
-	genesis := types.DefaultGenesis()
-	genesis.PortId = k.GetPort(ctx)
-	genesis.Params = k.GetParams(ctx)
-
-	// this line is used by starport scaffolding # genesis/module/export
-
-	return genesis
+func ExportGenesis(
+	ctx sdk.Context,
+	qKeeper qoraclekeeper.Keeper,
+	bandKeeper qbandkeeper.Keeper,
+	osmoKeeper qosmokeeper.Keeper,
+) *genesistypes.GenesisState {
+	return genesistypes.NewGenesisState(
+		qKeeper.GetParams(ctx),
+		qbandkeeper.ExportGenesis(ctx, bandKeeper),
+		qosmokeeper.ExportGenesis(ctx, osmoKeeper),
+	)
 }
