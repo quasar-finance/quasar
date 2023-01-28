@@ -13,7 +13,7 @@ echo $NODE
 #     base_denom: base_denom should be the denom of the token on osmosos, for now uosmo
 #     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
 #     quote_denom is the denom other denom in the pool, stake for now
-INIT='{"lock_period":"1209600","pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake"}'
+INIT='{"lock_period":1209600,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake"}'
 
 cd ../../smart-contracts
 
@@ -42,8 +42,8 @@ AMOUNT="100000stake"
 HOME_OSMOSIS=$HOME/.osmosis
 # echo $CADDR
 # echo "preloading the ICA address with $AMOUNT to play around with"
-# BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home %s' $CADDR $AMOUNT $HOME_OSMOSIS)
-# echo $BANKTX
+BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home %s' $CADDR $AMOUNT $HOME_OSMOSIS)
+echo $BANKTX
 # $BANKTX
 
 echo "joining pool and locking all lp tokens using preloaded funds"

@@ -1,11 +1,14 @@
+use crate::bond::create_share;
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
-use crate::lock::Lock;
+use crate::ibc_lock::IbcLock;
+use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
+use crate::icq::{calc_total_balance, handle_query_ack};
+use crate::start_unbond::batch_unbond;
 use crate::state::{
-    PendingAck, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, PENDING_ACK, TRAPS,
+    PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, LP_SHARES,
+    OSMO_LOCK, PENDING_ACK, TRAPS, UNBOND_QUEUE,
 };
-use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::vault::{calc_total_balance, create_share, handle_query_ack};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
@@ -206,10 +209,10 @@ pub fn handle_succesful_ack(
     ack_bin: Binary,
 ) -> Result<IbcBasicResponse, ContractError> {
     let mut pending = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
-    match &pending.kind {
+    match pending {
         // an transfer ack means we have sent funds to
-        crate::helpers::IbcMsgKind::Transfer => {
-            match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone()) {
+        IbcMsgKind::Transfer(data) => {
+            match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, data.clone()) {
                 Ok(response) => Ok(response),
                 Err(err) => {
                     TRAPS.save(
@@ -217,16 +220,15 @@ pub fn handle_succesful_ack(
                         pkt.original_packet.sequence,
                         &Trap {
                             error: err.to_string(),
-                            step: IbcMsgKind::Transfer,
-                            deposits: pending.deposits,
+                            step: IbcMsgKind::Transfer(data),
                         },
                     )?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
         }
-        crate::helpers::IbcMsgKind::Ica(_) => {
-            match handle_ica_ack(deps.storage, env, ack_bin, &pkt, &mut pending) {
+        IbcMsgKind::Ica(ica_kind) => {
+            match handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind.clone()) {
                 Ok(response) => Ok(response),
                 Err(err) => {
                     TRAPS.save(
@@ -234,31 +236,27 @@ pub fn handle_succesful_ack(
                         pkt.original_packet.sequence,
                         &Trap {
                             error: err.to_string(),
-                            step: IbcMsgKind::Transfer,
-                            deposits: pending.deposits,
+                            step: IbcMsgKind::Ica(ica_kind),
                         },
                     )?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
         }
-        crate::helpers::IbcMsgKind::Icq => {
-            match handle_icq_ack(deps.storage, env, ack_bin, &pkt, pending.clone()) {
-                Ok(response) => Ok(response),
-                Err(err) => {
-                    TRAPS.save(
-                        deps.storage,
-                        pkt.original_packet.sequence,
-                        &Trap {
-                            error: err.to_string(),
-                            step: IbcMsgKind::Transfer,
-                            deposits: pending.deposits,
-                        },
-                    )?;
-                    Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
-                }
+        IbcMsgKind::Icq => match handle_icq_ack(deps.storage, env, ack_bin, &pkt) {
+            Ok(response) => Ok(response),
+            Err(err) => {
+                TRAPS.save(
+                    deps.storage,
+                    pkt.original_packet.sequence,
+                    &Trap {
+                        error: err.to_string(),
+                        step: IbcMsgKind::Icq,
+                    },
+                )?;
+                Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
-        }
+        },
     }
 }
 
@@ -267,7 +265,7 @@ pub fn handle_transfer_ack(
     env: Env,
     _ack_bin: Binary,
     pkt: &IbcPacketAckMsg,
-    pending: PendingAck,
+    pending: PendingBond,
 ) -> Result<IbcBasicResponse, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
     // we need to save and fetch
@@ -283,8 +281,9 @@ pub fn handle_transfer_ack(
         config.pool_id,
         original.denom.clone(),
         amount,
+        // TODO update share_out_min_amount to get a better estimate
         Uint128::one(),
-        pending.deposits,
+        pending.bonds,
     )?;
 
     Ok(IbcBasicResponse::new().add_submessage(msg).add_attribute(
@@ -298,7 +297,6 @@ pub fn handle_icq_ack(
     env: Env,
     ack_bin: Binary,
     _pkt: &IbcPacketAckMsg,
-    pending: PendingAck,
 ) -> Result<IbcBasicResponse, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
@@ -318,10 +316,17 @@ pub fn handle_icq_ack(
         exit_pool.tokens_out,
         Uint128::new(spot_price.parse()?),
     )?;
-    let transfer = handle_query_ack(storage, env, pending.clone(), total_balance)?;
+
+    let total_lp = LP_SHARES.load(storage)?;
+
+    let begin_unlock = batch_unbond(storage, &env, total_lp)?;
+
+    let transfer = handle_query_ack(storage, env, total_balance)?;
     Ok(IbcBasicResponse::new()
         .add_submessage(transfer)
-        .add_attribute("transfer-icq-total", total_balance))
+        .add_submessage(begin_unlock)
+        .add_attribute("transfer-total", total_balance)
+        .add_attribute("unlock_total", total_lp))
 }
 
 pub fn handle_ica_ack(
@@ -329,74 +334,76 @@ pub fn handle_ica_ack(
     env: Env,
     ack_bin: Binary,
     pkt: &IbcPacketAckMsg,
-    pending: &mut PendingAck,
+    ica_kind: IcaMessages,
 ) -> Result<IbcBasicResponse, ContractError> {
-    match &pending.kind {
-        IbcMsgKind::Ica(ica_kind) => {
-            match ica_kind {
-                IcaMessages::JoinSwapExternAmountIn => {
-                    // TODO move the below locking logic to a separate function
-                    // get the ica address of the channel id
-                    let ica_addr =
-                        get_ica_address(storage, pkt.original_packet.src.channel_id.clone())?;
-                    let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
-                    let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
-                    let denom = CONFIG.load(storage)?.base_denom;
+    match ica_kind {
+        IcaMessages::JoinSwapExternAmountIn(mut data) => {
+            // TODO move the below locking logic to a separate function
+            // get the ica address of the channel id
+            let ica_addr = get_ica_address(storage, pkt.original_packet.src.channel_id.clone())?;
+            let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
+            let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
+            let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>()?);
+            LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
+                Ok(old.checked_add(shares_out)?)
+            })?;
 
-                    // TODO update queue raw amounts here
-                    pending.update_raw_amount_to_lp(Uint128::new(
-                        resp.share_out_amount.parse::<u128>()?,
-                    ))?;
+            let denom = CONFIG.load(storage)?.base_denom;
 
-                    let ica_pkt = do_ibc_lock_tokens(
-                        storage,
-                        ica_addr,
-                        vec![Coin {
-                            denom,
-                            amount: Uint128::new(resp.share_out_amount.parse::<u128>()?),
-                        }],
-                    )?;
-                    let ibc_pkt = IbcMsg::SendPacket {
-                        channel_id: pkt.original_packet.src.channel_id.clone(),
-                        data: to_binary(&ica_pkt)?,
-                        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-                    };
+            // TODO update queue raw amounts here
+            data.update_raw_amount_to_lp(Uint128::new(resp.share_out_amount.parse::<u128>()?))?;
 
-                    pending.update_kind(IbcMsgKind::Ica(IcaMessages::LockTokens));
+            let ica_pkt = do_ibc_lock_tokens(
+                storage,
+                ica_addr,
+                vec![Coin {
+                    denom,
+                    amount: shares_out,
+                }],
+            )?;
+            let ibc_pkt = IbcMsg::SendPacket {
+                channel_id: pkt.original_packet.src.channel_id.clone(),
+                data: to_binary(&ica_pkt)?,
+                timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            };
 
-                    let msg = create_ibc_ack_submsg(storage, pending, ibc_pkt)?;
-                    Ok(IbcBasicResponse::new().add_submessage(msg))
-                }
-                IcaMessages::LockTokens => {
-                    let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
-                    let resp = MsgLockTokensResponse::unpack(ack)?;
-
-                    let mut callbacks: Vec<WasmMsg> = vec![];
-                    for claim in &pending.deposits {
-                        let share_amount =
-                            create_share(storage, claim.owner.clone(), claim.claim_amount)?;
-                        callbacks.push(WasmMsg::Execute {
-                            contract_addr: claim.owner.to_string(),
-                            msg: to_binary(&Callback::BondResponse(BondResponse {
-                                share_amount,
-                                bond_id: claim.bond_id.clone(),
-                            }))?,
-                            funds: vec![],
-                        })
-                    }
-
-                    // set the lock state to unlocked
-                    LOCK.save(storage, &Lock::Unlocked)?;
-
-                    // TODO, do we want to also check queue state? and see if we can already start a new execution?
-                    Ok(IbcBasicResponse::new()
-                        .add_messages(callbacks)
-                        .add_attribute("locked_tokens", ack_bin.to_base64())
-                        .add_attribute("lock_id", resp.id.to_string()))
-                }
-            }
+            let msg = create_ibc_ack_submsg(
+                storage,
+                &IbcMsgKind::Ica(IcaMessages::LockTokens(data)),
+                ibc_pkt,
+            )?;
+            Ok(IbcBasicResponse::new().add_submessage(msg))
         }
-        _ => unimplemented!(),
+        IcaMessages::LockTokens(data) => {
+            let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
+            let resp = MsgLockTokensResponse::unpack(ack)?;
+
+            // save the lock id in the contract
+            OSMO_LOCK.save(storage, &resp.id)?;
+
+            let mut callbacks: Vec<WasmMsg> = vec![];
+            for claim in &data.bonds {
+                let share_amount = create_share(storage, claim.owner.clone(), claim.claim_amount)?;
+                callbacks.push(WasmMsg::Execute {
+                    contract_addr: claim.owner.to_string(),
+                    msg: to_binary(&Callback::BondResponse(BondResponse {
+                        share_amount,
+                        bond_id: claim.bond_id.clone(),
+                    }))?,
+                    funds: vec![],
+                })
+            }
+
+            // set the lock state to unlocked
+            LOCK.save(storage, &IbcLock::Unlocked)?;
+
+            // TODO, do we want to also check queue state? and see if we can already start a new execution?
+            Ok(IbcBasicResponse::new()
+                .add_messages(callbacks)
+                .add_attribute("locked_tokens", ack_bin.to_base64())
+                .add_attribute("lock_id", resp.id.to_string()))
+        }
+        IcaMessages::BeginUnlocking(data) => todo!(),
     }
 }
 

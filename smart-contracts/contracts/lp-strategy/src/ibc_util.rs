@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Timestamp};
+use cosmwasm_std::{to_binary, Coin, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Timestamp, Uint128};
 use osmosis_std::{
     shim::Duration,
     types::{
@@ -21,7 +21,7 @@ use quasar_types::{
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    state::{OngoingDeposit, PendingAck, CHANNELS, CONFIG, ICA_CHANNEL, RETURN_SOURCE_PORT},
+    state::{OngoingDeposit, PendingBond, CHANNELS, CONFIG, ICA_CHANNEL, RETURN_SOURCE_PORT},
 };
 
 pub fn do_transfer(
@@ -49,10 +49,9 @@ pub fn do_transfer(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        &PendingAck {
-            kind: IbcMsgKind::Transfer,
-            deposits,
-        },
+        &IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(PendingBond {
+            bonds: deposits,
+        })),
         transfer,
     )?)
 }
@@ -101,10 +100,9 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 
         Ok(create_ibc_ack_submsg(
             storage,
-            &PendingAck {
-                kind: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn),
-                deposits,
-            },
+            &IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                bonds: deposits,
+            })),
             send_packet_msg,
         )?)
     } else {
@@ -141,58 +139,35 @@ pub fn do_ibc_lock_tokens(
     ))
 }
 
-pub fn ica_transfer_funds(
-    storage: &dyn Storage,
-    env: Env,
-    amount: Uint128,
-    // todo make memo work a bit better
-    memo: String,
-    timeout_timestamp: Timestamp,
-) -> Result<MsgTransfer, ContractError> {
-    let config = CONFIG.load(storage)?;
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-    let transfer = MsgTransfer {
-        // TODO do we want to keep the return port a constant?
-        source_port: RETURN_SOURCE_PORT.to_string(),
-        source_channel: config.return_source_channel,
-        token: Some(OsmoCoin {
-            denom: config.base_denom,
-            amount: amount.to_string(),
-        }),
-        sender: ica_address,
-        receiver: env.contract.address.to_string(),
-        // timeout_height is disabled when set to 0
-        // since height is kinda difficult to use, we always want to use the timestamp
-        timeout_height: None,
-        // timeout_timestamp is disabled when set to 0
-        timeout_timestamp: Some(timeout_timestamp.nanos()),
-        memo,
-    };
-    Ok(transfer)
-}
-
-pub fn unbond_lp_shares(
-    storage: &dyn Storage,
-    lock_id: u64,
-    amount: Uint128,
-) -> Result<MsgBeginUnlocking, ContractError> {
-    let channel = CHANNELS.load(storage, ICA_CHANNEL.load(storage)?)?;
-
-    match channel.channel_type {
-        ChannelType::Ica {
-            channel_ty,
-            counter_party_address,
-        } => Ok(MsgBeginUnlocking {
-            owner: counter_party_address.ok_or(ContractError::NoCounterpartyIcaAddress)?,
-            id: lock_id,
-            coins: vec![OsmoCoin {
-                denom: CONFIG.load(storage)?.pool_denom,
-                amount: amount.to_string(),
-            }],
-        }),
-        _ => unimplemented!(),
-    }
-}
+// pub fn ica_transfer_funds(
+//     storage: &dyn Storage,
+//     env: Env,
+//     amount: Uint128,
+//     // todo make memo work a bit better
+//     memo: String,
+//     timeout_timestamp: Timestamp,
+// ) -> Result<MsgTransfer, ContractError> {
+//     let config = CONFIG.load(storage)?;
+//     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+//     let transfer = MsgTransfer {
+//         // TODO do we want to keep the return port a constant?
+//         source_port: RETURN_SOURCE_PORT.to_string(),
+//         source_channel: config.return_source_channel,
+//         token: Some(OsmoCoin {
+//             denom: config.base_denom,
+//             amount: amount.to_string(),
+//         }),
+//         sender: ica_address,
+//         receiver: env.contract.address.to_string(),
+//         // timeout_height is disabled when set to 0
+//         // since height is kinda difficult to use, we always want to use the timestamp
+//         timeout_height: None,
+//         // timeout_timestamp is disabled when set to 0
+//         timeout_timestamp: Some(timeout_timestamp.nanos()),
+//         memo,
+//     };
+//     Ok(transfer)
+// }
 
 #[cfg(test)]
 mod tests {

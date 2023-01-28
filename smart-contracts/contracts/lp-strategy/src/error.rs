@@ -20,10 +20,8 @@ pub enum Never {}
 pub struct Trap {
     // A string describing the trapped error
     pub error: String,
-    // the failed step
+    // the failed step and underlying values
     pub step: IbcMsgKind,
-    // the deposits that failed
-    pub deposits: Vec<OngoingDeposit>,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -36,6 +34,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     QError(#[from] QError),
+
+    #[error("map has duplicate key while no key should be present")]
+    DuplicateKey,
 
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
@@ -73,8 +74,8 @@ pub enum ContractError {
     #[error("Could not deserialize ack: {err}, payload was {b64_bin}")]
     DeserializeIcaAck { b64_bin: String, err: String },
 
-    #[error("not enough funds in the strategy to withdraw")]
-    InsufficientOutStandingFunds,
+    #[error("Shares are still unbonding")]
+    SharesNotYetUnbonded,
 
     #[error("{0}")]
     DecodeError(#[from] prost::DecodeError),

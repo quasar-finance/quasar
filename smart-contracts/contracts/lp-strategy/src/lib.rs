@@ -1,12 +1,14 @@
+pub mod bond;
 pub mod contract;
 pub mod error;
 pub mod helpers;
 pub mod ibc;
-pub mod lock;
+pub mod ibc_lock;
+mod ibc_util;
+pub mod icq;
 pub mod msg;
+pub mod start_unbond;
 pub mod state;
-pub mod strategy;
-pub mod vault;
 
 #[cfg(test)]
 mod tests {
