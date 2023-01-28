@@ -1,12 +1,20 @@
 use crate::{
     error::ContractError,
-    state::{PendingAck, CHANNELS, REPLIES},
+    state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
 };
-use cosmwasm_std::{Binary, CosmosMsg, Order, StdError, Storage, SubMsg};
+use cosmwasm_std::{Binary, CosmosMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+pub fn get_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
+    let mut sum = Uint128::zero();
+    for val in SHARES.range(storage, None, None, Order::Ascending) {
+        sum = sum.checked_add(val?.1)?;
+    }
+    Ok(sum)
+}
 
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
@@ -37,9 +45,10 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
         quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcqChannel),
     }
 }
+
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: &PendingAck,
+    pending: &IbcMsgKind,
     msg: impl Into<CosmosMsg>,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -55,7 +64,7 @@ pub fn create_ibc_ack_submsg(
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum IbcMsgKind {
-    Transfer,
+    Transfer(PendingBond),
     Ica(IcaMessages),
     Icq,
 }
@@ -64,8 +73,9 @@ pub enum IbcMsgKind {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum IcaMessages {
-    JoinSwapExternAmountIn,
-    LockTokens,
+    JoinSwapExternAmountIn(PendingBond),
+    LockTokens(PendingBond),
+    BeginUnlocking(Vec<PendingSingleUnbond>),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

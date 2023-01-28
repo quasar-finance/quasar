@@ -6,12 +6,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
-    pub lock_period: Uint128,
-    pub unbonding_period: Uint128,
+    pub lock_period: u64,
     pub pool_id: u64,
     pub pool_denom: String,
-    pub base_denom: String,
     pub local_denom: String,
+    pub base_denom: String,
     pub quote_denom: String,
 }
 
@@ -38,6 +37,14 @@ pub struct ChannelsResponse {
 pub enum ExecuteMsg {
     Bond {
         id: String,
+    },
+    StartUnbond {
+        id: String,
+        share_amount: Uint128,
+    },
+    Unbond {
+        id: String,
+        share_amount: Uint128,
     },
     TransferJoinLock {
         channel: String,
