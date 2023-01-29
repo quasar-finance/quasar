@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Env, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Env, Storage, SubMsg, Uint128, IbcBasicResponse};
 use cw_storage_plus::DequeIter;
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
 use schemars::JsonSchema;
@@ -78,11 +78,11 @@ pub fn handle_unbond_ack(
     storage: &mut dyn Storage,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
-) -> Result<(), ContractError> {
+) -> Result<IbcBasicResponse, ContractError> {
     for unbond in unbonds {
         start_internal_unbond(storage, env, &unbond)?
     }
-    Ok(())
+    Ok(IbcBasicResponse::new().add_attribute("start-unbond", "succes"))
 }
 
 fn single_unbond(

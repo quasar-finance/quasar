@@ -4,7 +4,7 @@ use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMess
 use crate::ibc_lock::IbcLock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use crate::icq::{calc_total_balance, handle_query_ack};
-use crate::start_unbond::batch_unbond;
+use crate::start_unbond::{batch_unbond, handle_unbond_ack};
 use crate::state::{
     PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, LP_SHARES,
     OSMO_LOCK, PENDING_ACK, TRAPS, UNBOND_QUEUE,
@@ -403,7 +403,7 @@ pub fn handle_ica_ack(
                 .add_attribute("locked_tokens", ack_bin.to_base64())
                 .add_attribute("lock_id", resp.id.to_string()))
         }
-        IcaMessages::BeginUnlocking(data) => todo!(),
+        IcaMessages::BeginUnlocking(data) => handle_unbond_ack(storage, &env, data),
     }
 }
 
@@ -413,18 +413,17 @@ pub fn handle_failing_ack(
     _pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO we can expand error handling here to fetch the packet by the
+    // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
     Ok(IbcBasicResponse::new().add_attribute("ibc-error", error.as_str()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-/// return fund to original sender (same as failure in ibc_packet_ack)
 pub fn ibc_packet_timeout(
     deps: DepsMut,
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: trap error like in receive?
+    // TODO: trap error like in acks
     on_packet_failure(deps, msg.packet, "timeout".to_string())?;
     Ok(IbcBasicResponse::default())
 }
