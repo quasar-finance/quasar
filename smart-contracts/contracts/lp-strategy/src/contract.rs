@@ -9,14 +9,15 @@ use cw_utils::must_pay;
 
 use quasar_types::ibc::ChannelInfo;
 
+use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::parse_seq;
+use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, PENDING_ACK, REPLIES,
+    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
+    REPLIES,
 };
-use crate::strategy::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
-use crate::vault::do_deposit;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -41,10 +42,10 @@ pub fn instantiate(
             base_denom: msg.base_denom,
             local_denom: msg.local_denom,
             quote_denom: msg.quote_denom,
-            unbonding_period: todo!(),
-            return_source_channel: todo!(),
         },
     )?;
+
+    LP_SHARES.save(deps.storage, &Uint128::zero())?;
 
     Ok(Response::default())
 }
@@ -99,7 +100,19 @@ pub fn execute(
             amount,
             share_out_min_amount,
         ),
+        ExecuteMsg::StartUnbond { id, share_amount } => todo!(),
+        ExecuteMsg::Unbond { id, share_amount } => todo!(),
     }
+}
+
+pub fn execute_start_unbond(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    id: String,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    todo!()
 }
 
 pub fn execute_deposit(
@@ -108,7 +121,7 @@ pub fn execute_deposit(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
-    let msg = do_deposit(deps, env, info.clone(), id)?;
+    let msg = do_bond(deps, env, info.clone(), id)?;
 
     // if msg is some, we are dispatching an icq
     match msg {

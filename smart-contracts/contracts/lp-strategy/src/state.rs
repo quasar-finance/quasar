@@ -1,15 +1,17 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Add};
 
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 
 use crate::{
+    bond::Bond,
     error::{ContractError, Trap},
     helpers::IbcMsgKind,
-    lock::{DWType, Lock},
+    ibc_lock::IbcLock,
+    start_unbond::StartUnbond,
 };
 
 pub const RETURN_SOURCE_PORT: &'static str = "transfer";
@@ -18,8 +20,7 @@ pub const RETURN_SOURCE_PORT: &'static str = "transfer";
 #[serde(rename_all = "snake_case")]
 pub struct Config {
     // The lock period is the amount of time we lock tokens on Osmosis
-    pub lock_period: Uint128,
-    pub unbonding_period: Uint128,
+    pub lock_period: u64,
     pub pool_id: u64,
     // pool_denom is the denom of the gamm pool on osmosis; eg gamm/pool/1
     pub pool_denom: String,
@@ -30,13 +31,13 @@ pub struct Config {
     // the denom on the Quasar chain
     pub local_denom: String,
     // the channel for sending tokens back from the counterparty chain to quasar chain
-    pub return_source_channel: String,
+    // pub return_source_channel: String,
 }
 
 pub(crate) const CONFIG: Item<Config> = Item::new("tmp");
 
 // IBC related state items
-pub(crate) const REPLIES: Map<u64, PendingAck> = Map::new("replies");
+pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
 // Currently we only support one ICA channel to a single destination
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 // We also support one ICQ channel to Osmosis at the moment
@@ -46,44 +47,57 @@ pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
 pub(crate) const TRANSFER_CHANNEL: Item<String> = Item::new("transfer_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
-pub(crate) const PENDING_ACK: Map<u64, PendingAck> = Map::new("pending_acks");
+pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
 // The map to store trapped errors,
 pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
 
 // all vault related state items
-
-pub(crate) const LOCK: Item<Lock> = Item::new("lock");
-pub(crate) const LOCK_QUEUE: Deque<DWType> = Deque::new("lock_queue");
+pub(crate) const LOCK: Item<IbcLock> = Item::new("lock");
+pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
+pub(crate) const UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("unbond_queue");
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 
 // TODO we probably want to change this to an OngoingDeposit
-pub(crate) const CLAIMS: Map<Addr, Uint128> = Map::new("claims");
+pub(crate) const BONDING_CLAIMS: Map<Addr, Uint128> = Map::new("bonding_claims");
+
+pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
+// the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis
+pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct PendingAck {
-    // the ibc msg of the sequence number
-    pub kind: IbcMsgKind,
-    // the deposits of the original calls
-    pub deposits: Vec<OngoingDeposit>,
+pub struct Unbond {
+    pub shares: Uint128,
+    pub unlock_time: Timestamp,
 }
 
-impl PendingAck {
-    pub fn update_kind(&mut self, kind: IbcMsgKind) {
-        self.kind = kind;
-    }
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct PendingSingleUnbond {
+    pub amount: Uint128,
+    pub owner: Addr,
+    pub id: String,
+}
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct PendingBond {
+    // the bonds of the original calls
+    pub bonds: Vec<OngoingDeposit>,
+}
+
+impl PendingBond {
     pub fn update_raw_amount_to_lp(&mut self, total_lp: Uint128) -> Result<(), ContractError> {
         let mut total = Uint128::zero();
-        for p in self.deposits.iter() {
+        for p in self.bonds.iter() {
             match p.raw_amount {
                 crate::state::RawAmount::LocalDenom(val) => total = total.checked_add(val)?,
                 crate::state::RawAmount::LpShares(_) => unimplemented!(),
             }
         }
-        for p in self.deposits.iter_mut() {
+        for p in self.bonds.iter_mut() {
             match p.raw_amount {
                 // amount of lp shares = val * total_lp / total
                 crate::state::RawAmount::LocalDenom(val) => {
@@ -126,9 +140,8 @@ mod tests {
 
     #[test]
     fn test_update_raw_amount_to_lp() {
-        let mut pending = PendingAck {
-            kind: IbcMsgKind::Transfer,
-            deposits: vec![
+        let mut pending = PendingBond {
+            bonds: vec![
                 OngoingDeposit {
                     claim_amount: Uint128::new(100),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
@@ -151,16 +164,16 @@ mod tests {
         };
         pending.update_raw_amount_to_lp(Uint128::new(300)).unwrap();
         assert_eq!(
-            pending.deposits[0].raw_amount,
+            pending.bonds[0].raw_amount,
             RawAmount::LpShares(Uint128::new(100))
         );
         assert_eq!(
-            pending.deposits[1].raw_amount,
+            pending.bonds[1].raw_amount,
             RawAmount::LpShares(Uint128::new(99))
         );
         // because we use integer division and relatively low values, this case us 100
         assert_eq!(
-            pending.deposits[2].raw_amount,
+            pending.bonds[2].raw_amount,
             RawAmount::LpShares(Uint128::new(100))
         )
     }
