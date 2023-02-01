@@ -17,7 +17,6 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil"
 	"github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -360,14 +359,6 @@ func TestHandleIcaAcknowledgement(t *testing.T) {
 			setup:     func() {},
 			errorStr:  "expected single message in packet",
 		},
-		{
-			name:      "unsupported packet type",
-			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
-			ack:       makeIcaAck(t, &ibctransfertypes.MsgTransfer{}, &ibctransfertypes.MsgTransferResponse{}),
-			setup:     func() {},
-			errorStr:  "unsupported packet type",
-		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -570,13 +561,6 @@ func TestHandleIcaTimeout(t *testing.T) {
 			icaPacket: makeEmptyIcaPacket(),
 			setup:     func() {},
 			errorStr:  "expected single message in packet",
-		},
-		{
-			name:      "unsupported packet type",
-			seq:       tstSeq,
-			icaPacket: makeIcaPacket(&qbanktypes.MsgRequestDeposit{}),
-			setup:     func() {},
-			errorStr:  "unsupported packet type",
 		},
 	}
 	for _, tc := range testCases {
