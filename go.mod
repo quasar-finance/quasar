@@ -31,7 +31,6 @@ require (
 )
 
 require (
-	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/CosmWasm/wasmvm v1.0.0
 	github.com/bandprotocol/bandchain-packet v0.0.3

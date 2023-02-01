@@ -6,7 +6,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/quasarlabs/quasarnode/app"
 	"github.com/quasarlabs/quasarnode/app/params"
-	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
 	tmdb "github.com/tendermint/tm-db"
 )
 
@@ -36,7 +35,7 @@ func NewKeeperFactory(
 // TestModuleAccountPerms returns module account permissions for testing
 func (kf KeeperFactory) TestModuleAccountPerms() map[string][]string {
 	moduleAccPerms := app.GetMaccPerms()
-	moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
+	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
 	return moduleAccPerms
 }
 

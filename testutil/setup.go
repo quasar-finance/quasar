@@ -20,8 +20,6 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
-	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
 	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
 	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -108,9 +106,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	qoracleKeeper.RegisterPriceOracle(qbandKeeper)
 	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
 	qoracleKeeper.Seal()
-	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
 	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock, ibcConnectionKeeperMock, ibcClientKeeperMock)
-	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
@@ -119,12 +115,10 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	require.NoError(t, factory.StateStore.LoadLatestVersion())
 
-	factory.SetQbankDefaultParams(qbankKeeper)
 	factory.SetQoracleDefaultParams(qoracleKeeper)
 	factory.SetQbandchainDefaultParams(qbandKeeper)
 	factory.SetQosmosisDefaultParams(qosmosisKeeper)
 	factory.SetIntergammDefaultParams(intergammKeeper)
-	factory.SetOrionDefaultParams(orionKeeper)
 
 	return &TestSetup{
 		Ctx: ctx,
@@ -140,12 +134,10 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			AccountKeeper:    accountKeeper,
 			BankKeeper:       bankKeeper,
 			CapabilityKeeper: capabilityKeeper,
-			QbankKeeper:      qbankKeeper,
 			QoracleKeeper:    qoracleKeeper,
 			QbandchainKeeper: qbandKeeper,
 			QosmosisKeeper:   qosmosisKeeper,
 			InterGammKeeper:  intergammKeeper,
-			OrionKeeper:      orionKeeper,
 			QTransfer:        qtransferkeeper,
 		},
 	}
@@ -169,11 +161,9 @@ type testKeepers struct {
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper capabilitykeeper.Keeper
-	QbankKeeper      qbankkeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
 	QbandchainKeeper qbandkeeper.Keeper
 	QosmosisKeeper   qosmokeeper.Keeper
 	InterGammKeeper  *intergammkeeper.Keeper
-	OrionKeeper      orionkeeper.Keeper
 	QTransfer        qtransferkeeper.Keeper
 }
