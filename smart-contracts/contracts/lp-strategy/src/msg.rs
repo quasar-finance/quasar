@@ -12,6 +12,7 @@ pub struct InstantiateMsg {
     pub local_denom: String,
     pub base_denom: String,
     pub quote_denom: String,
+    pub return_source_channel: String,
 }
 
 impl InstantiateMsg {
@@ -46,6 +47,11 @@ pub enum ExecuteMsg {
         id: String,
         share_amount: Uint128,
     },
+    // accept a dispatched transfer from osmosis
+    AcceptReturningFunds {
+        id: u64,
+    },
+    // all execute msges below are used for testing and should be removed before productions
     TransferJoinLock {
         channel: String,
         to_address: String,
@@ -55,5 +61,8 @@ pub enum ExecuteMsg {
         amount: Uint128,
         denom: String,
         share_out_min_amount: Uint128,
+    },
+    ReturnTransfer {
+        amount: Uint128,
     },
 }

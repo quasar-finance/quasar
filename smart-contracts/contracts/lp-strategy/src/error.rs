@@ -74,6 +74,12 @@ pub enum ContractError {
     #[error("Could not deserialize ack: {err}, payload was {b64_bin}")]
     DeserializeIcaAck { b64_bin: String, err: String },
 
+    #[error("Could not find returning transfer")]
+    ReturningTransferNotFound,
+
+    #[error("amount of returning transfer is not the same as the expected amount")]
+    ReturningTransferIncorrectAmount,
+
     #[error("Shares are still unbonding")]
     SharesNotYetUnbonded,
 
@@ -91,4 +97,10 @@ pub enum ContractError {
 
     #[error("{0}")]
     Utf8Error(#[from] Utf8Error),
+
+    #[error("{0}")]
+    SerdeJsonDe(#[from] serde_json_wasm::de::Error),
+
+    #[error("could not serialize to json")]
+    SerdeJsonSer,
 }

@@ -9,6 +9,7 @@ pub mod icq;
 pub mod msg;
 pub mod start_unbond;
 pub mod state;
+pub mod unbond;
 
 #[cfg(test)]
 mod tests {

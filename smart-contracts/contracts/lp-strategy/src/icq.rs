@@ -11,9 +11,7 @@ use crate::{
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     ibc_util::do_transfer,
-    state::{
-        CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL,
-    },
+    state::{CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL},
 };
 
 // after the balance query, we can calculate the amount of the claim we need to create, we update the claims and transfer the funds

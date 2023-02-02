@@ -1,4 +1,4 @@
-use cosmwasm_std::IbcOrder;
+use cosmwasm_std::{IbcOrder, StdError};
 use prost::DecodeError;
 use thiserror::Error;
 
@@ -6,6 +6,9 @@ use crate::ica::handshake::{Encoding, TxType, Version};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
+    #[error("{0}")]
+    Std(#[from] StdError),
+
     #[error("No Counterparty Ica Address")]
     NoCounterpartyIcaAddress,
 
