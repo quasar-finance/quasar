@@ -1,8 +1,9 @@
 use crate::{
     error::ContractError,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
+    unbond::{PendingReturningUnbonds, ReturningUnbond},
 };
-use cosmwasm_std::{Binary, CosmosMsg, Order, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Binary, CosmosMsg, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
@@ -46,10 +47,12 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
     }
 }
 
+pub fn ica_packet() {}
+
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
     pending: &IbcMsgKind,
-    msg: impl Into<CosmosMsg>,
+    msg: IbcMsg,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -76,6 +79,8 @@ pub enum IcaMessages {
     JoinSwapExternAmountIn(PendingBond),
     LockTokens(PendingBond),
     BeginUnlocking(Vec<PendingSingleUnbond>),
+    ExitPool(PendingReturningUnbonds),
+    ReturnTransfer(PendingReturningUnbonds),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

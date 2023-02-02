@@ -31,10 +31,10 @@ pub struct Config {
     // the denom on the Quasar chain
     pub local_denom: String,
     // the channel for sending tokens back from the counterparty chain to quasar chain
-    // pub return_source_channel: String,
+    pub return_source_channel: String,
 }
 
-pub(crate) const CONFIG: Item<Config> = Item::new("tmp");
+pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
@@ -54,23 +54,30 @@ pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
 // all vault related state items
 pub(crate) const LOCK: Item<IbcLock> = Item::new("lock");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
-pub(crate) const UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("unbond_queue");
+pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
+pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
+
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<Addr, Uint128> = Map::new("bonding_claims");
 
+// TODO UNBONDING_CLAIMS should probably be a multi index map
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 // the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
+// the returning transfer we can expect and their exact amount
+pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct Unbond {
-    pub shares: Uint128,
+    pub lp_shares: Uint128,
     pub unlock_time: Timestamp,
+    pub owner: Addr,
+    pub id: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

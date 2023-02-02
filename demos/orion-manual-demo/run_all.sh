@@ -51,10 +51,10 @@ echo "setting up go relayer"
 
 echo "starting go relaying"
 # # run an instance of go relayer for each path, thus 3 in total
-rly start quasar_cosmos --debug-addr "localhost:7597" -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
+rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 30s -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
 RLY_PID_1=$!
 
-rly start quasar_osmosis --debug-addr "localhost:7598" -p events >> ./logs/quasar_osmosis.log 2>&1 &
+rly start quasar_osmosis --debug-addr "localhost:7598" -p events --time-threshold 30s >> ./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_2=$!
 
 rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmos_osmosis.log 2>&1  &

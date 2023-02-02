@@ -6,8 +6,8 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens
 use crate::icq::{calc_total_balance, handle_query_ack};
 use crate::start_unbond::{batch_unbond, handle_unbond_ack};
 use crate::state::{
-    PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, LP_SHARES,
-    OSMO_LOCK, PENDING_ACK, TRAPS, UNBOND_QUEUE,
+    PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, LP_SHARES, OSMO_LOCK, PENDING_ACK,
+    START_UNBOND_QUEUE, TRAPS,
 };
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
@@ -23,7 +23,7 @@ use quasar_types::ibc::{
     enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState, IcsAck,
 };
 use quasar_types::ica::handshake::enforce_ica_order_and_metadata;
-use quasar_types::ica::packet::AckBody;
+use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
 use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
@@ -348,12 +348,12 @@ pub fn handle_ica_ack(
                 Ok(old.checked_add(shares_out)?)
             })?;
 
-            let denom = CONFIG.load(storage)?.base_denom;
+            let denom = CONFIG.load(storage)?.pool_denom;
 
             // TODO update queue raw amounts here
             data.update_raw_amount_to_lp(Uint128::new(resp.share_out_amount.parse::<u128>()?))?;
 
-            let ica_pkt = do_ibc_lock_tokens(
+            let msg = do_ibc_lock_tokens(
                 storage,
                 ica_addr,
                 vec![Coin {
@@ -361,16 +361,17 @@ pub fn handle_ica_ack(
                     amount: shares_out,
                 }],
             )?;
-            let ibc_pkt = IbcMsg::SendPacket {
-                channel_id: pkt.original_packet.src.channel_id.clone(),
-                data: to_binary(&ica_pkt)?,
-                timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-            };
+
+            let outgoing = ica_send(
+                msg,
+                pkt.original_packet.src.channel_id.clone(),
+                IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            )?;
 
             let msg = create_ibc_ack_submsg(
                 storage,
                 &IbcMsgKind::Ica(IcaMessages::LockTokens(data)),
-                ibc_pkt,
+                outgoing,
             )?;
             Ok(IbcBasicResponse::new().add_submessage(msg))
         }
@@ -404,6 +405,9 @@ pub fn handle_ica_ack(
                 .add_attribute("lock_id", resp.id.to_string()))
         }
         IcaMessages::BeginUnlocking(data) => handle_unbond_ack(storage, &env, data),
+        // TODO hook up the unbond ICA messages
+        IcaMessages::ExitPool(data) => todo!(),
+        IcaMessages::ReturnTransfer(_) => todo!(),
     }
 }
 
