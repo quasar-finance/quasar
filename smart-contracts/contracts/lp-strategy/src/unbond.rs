@@ -203,7 +203,7 @@ fn get_next_return_id(storage: &dyn Storage) -> Result<u64, ContractError> {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct IbcHook {
+struct IbcHook {
     wasm: Wasm,
 }
 
