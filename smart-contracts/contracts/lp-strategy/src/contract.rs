@@ -14,7 +14,7 @@ use crate::error::ContractError;
 use crate::helpers::parse_seq;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ChannelsResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
@@ -298,6 +298,7 @@ pub fn execute_join_pool(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
+        QueryMsg::Config {} => todo!(),
     }
 }
 
@@ -307,6 +308,12 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
         .map(|kv| kv.unwrap().1)
         .collect();
     Ok(ChannelsResponse { channels })
+}
+
+pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {
+    Ok(ConfigResponse {
+        config: CONFIG.load(deps.storage)?,
+    })
 }
 
 #[cfg(test)]

@@ -4,6 +4,8 @@ use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::state::Config;
+
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
     pub lock_period: u64,
@@ -25,12 +27,19 @@ impl InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Channels {}, // TODO add all wanted queries
+    Config {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ChannelsResponse {
     pub channels: Vec<ChannelInfo>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct ConfigResponse {
+    pub config: Config,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
