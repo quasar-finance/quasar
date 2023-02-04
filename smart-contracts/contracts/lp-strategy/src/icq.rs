@@ -7,26 +7,12 @@ use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
-    bond::batch_bond,
+    bond::fold_bonds,
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     ibc_util::do_transfer,
     state::{CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL},
 };
-
-// after the balance query, we can calculate the amount of the claim we need to create, we update the claims and transfer the funds
-pub fn handle_query_ack(
-    storage: &mut dyn Storage,
-    env: Env,
-    query_balance: Uint128,
-) -> Result<SubMsg, ContractError> {
-    let transfer_chan = TRANSFER_CHANNEL.load(storage)?;
-    let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-
-    let (amount, deposits) = batch_bond(storage, query_balance)?;
-
-    do_transfer(storage, env, amount, transfer_chan, to_address, deposits)
-}
 
 pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, ContractError> {
     let icq_channel = ICQ_CHANNEL.load(storage)?;

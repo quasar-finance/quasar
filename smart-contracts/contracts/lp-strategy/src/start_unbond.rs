@@ -9,11 +9,11 @@ use crate::{
     error::ContractError,
     helpers::get_total_shares,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_lock::IbcLock,
+    ibc_lock::{IbcLock, Lock},
     icq::try_icq,
     state::{
         PendingSingleUnbond, Unbond, CONFIG, ICA_CHANNEL, OSMO_LOCK, SHARES, START_UNBOND_QUEUE,
-        UNBONDING_CLAIMS,
+        UNBONDING_CLAIMS, IBC_LOCK,
     },
 };
 
@@ -37,15 +37,21 @@ pub fn do_start_unbond(
 }
 
 // batch unbond tries to unbond a batch of unbondings, should be called after the icq query has returned for deposits
-pub fn batch_unbond(
+pub fn batch_start_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     total_lp_shares: Uint128,
-) -> Result<SubMsg, ContractError> {
+) -> Result<Option<SubMsg>, ContractError> {
     let mut to_unbond = Uint128::zero();
     let mut unbonds: Vec<PendingSingleUnbond> = vec![];
 
-    while !START_UNBOND_QUEUE.is_empty(storage)? {
+    let empty = START_UNBOND_QUEUE.is_empty(storage)?;
+
+    if empty {
+        return Ok(None)
+    }
+
+    while !empty {
         let unbond = START_UNBOND_QUEUE
             .pop_front(storage)?
             .ok_or(ContractError::QueueItemNotFound)?;
@@ -76,14 +82,14 @@ pub fn batch_unbond(
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     )?;
 
-    Ok(create_ibc_ack_submsg(
+    Ok(Some(create_ibc_ack_submsg(
         storage,
         &IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
         pkt,
-    )?)
+    )?))
 }
 
-pub fn handle_unbond_ack(
+pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
@@ -91,6 +97,9 @@ pub fn handle_unbond_ack(
     for unbond in unbonds {
         start_internal_unbond(storage, env, &unbond)?
     }
+
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {Ok(lock.unlock_start_unbond())})?;
+    
     Ok(IbcBasicResponse::new().add_attribute("start-unbond", "succes"))
 }
 

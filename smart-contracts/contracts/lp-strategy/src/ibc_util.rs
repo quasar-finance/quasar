@@ -26,7 +26,7 @@ use crate::{
 
 pub fn do_transfer(
     storage: &mut dyn Storage,
-    env: Env,
+    env: &Env,
     amount: Uint128,
     channel_id: String,
     to_address: String,

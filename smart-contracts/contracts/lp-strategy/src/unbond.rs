@@ -3,9 +3,8 @@ use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
 };
 use quasar_types::{
-    error::Error,
     ibc::MsgTransfer,
-    ica::packet::{ica_send, InterchainAccountPacketData, Type},
+    ica::packet::{ica_send},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -37,16 +36,22 @@ pub fn do_unbond(
     Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
-fn batch_unbond(
+pub fn batch_unbond(
     storage: &mut dyn Storage,
-    env: Env,
+    env: &Env,
     vault_value: Uint128,
     total_lp_shares: Uint128,
-) -> Result<SubMsg, ContractError> {
+) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
+
+    let empty = UNBOND_QUEUE.is_empty(storage)?;
+    if empty {
+        return Ok(None);
+    }
+    
     // aggregate the current unbond queue, all items in this queue should be able to unbond
-    while !UNBOND_QUEUE.is_empty(storage)? {
+    while !empty {
         let unbond = UNBOND_QUEUE
             .pop_front(storage)?
             .ok_or(ContractError::QueueItemNotFound)?;
@@ -77,13 +82,13 @@ fn batch_unbond(
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     )?;
 
-    Ok(create_ibc_ack_submsg(
+    Ok(Some(create_ibc_ack_submsg(
         storage,
         &IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
             unbonds: pending,
         })),
         pkt,
-    )?)
+    )?))
 }
 
 pub fn transfer_batch_unbond(

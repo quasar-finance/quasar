@@ -1,14 +1,15 @@
-use crate::bond::create_share;
+use crate::bond::{create_share, batch_bond};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
-use crate::ibc_lock::IbcLock;
+use crate::ibc_lock::{Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
-use crate::icq::{calc_total_balance, handle_query_ack};
-use crate::start_unbond::{batch_unbond, handle_unbond_ack};
+use crate::icq::{calc_total_balance};
+use crate::start_unbond::{batch_start_unbond, handle_unbond_ack};
 use crate::state::{
-    PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LOCK, LP_SHARES, OSMO_LOCK, PENDING_ACK,
-    START_UNBOND_QUEUE, TRAPS,
+    PendingBond, CHANNELS, CONFIG, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK,
+    START_UNBOND_QUEUE, TRAPS, IBC_LOCK,
 };
+use crate::unbond::batch_unbond;
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
@@ -32,7 +33,7 @@ use cosmwasm_std::{
     entry_point, from_binary, to_binary, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
     IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128, WasmMsg,
+    StdError, Storage, Uint128, WasmMsg, Attribute,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -319,14 +320,41 @@ pub fn handle_icq_ack(
 
     let total_lp = LP_SHARES.load(storage)?;
 
-    let begin_unlock = batch_unbond(storage, &env, total_lp)?;
+    let bond = batch_bond(storage, &env, total_balance)?;
 
-    let transfer = handle_query_ack(storage, env, total_balance)?;
-    Ok(IbcBasicResponse::new()
-        .add_submessage(transfer)
-        .add_submessage(begin_unlock)
-        .add_attribute("transfer-total", total_balance)
-        .add_attribute("unlock_total", total_lp))
+    let start_unbond = batch_start_unbond(storage, &env, total_lp)?;
+
+    let unbond = batch_unbond(storage, &env, total_balance, total_lp)?;
+
+    let mut msges = Vec::new();
+    let mut attrs = Vec::new();
+    // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
+    // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
+    if bond.is_some() {
+        msges.push(bond.unwrap());
+        attrs.push(Attribute::new("bond-status", "bonding"));
+        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {Ok(lock.lock_bond())})?;
+    } else {
+        attrs.push(Attribute::new("bond-status", "empty"));
+    }
+
+    if start_unbond.is_some() {
+        msges.push(start_unbond.unwrap());
+        attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
+        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {Ok(lock.lock_start_unbond())})?;
+    } else {
+        attrs.push(Attribute::new("start-unbond-status", "empty"));
+    }
+
+    if unbond.is_some() {
+        msges.push(unbond.unwrap());
+        attrs.push(Attribute::new("unbond-status", "unbonding"));
+        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {Ok(lock.lock_unbond())})?;
+    } else {
+        attrs.push(Attribute::new("unbond-status", "empty"));
+    }
+
+    Ok(IbcBasicResponse::new().add_submessages(msges).add_attributes(attrs))
 }
 
 pub fn handle_ica_ack(
@@ -395,8 +423,8 @@ pub fn handle_ica_ack(
                 })
             }
 
-            // set the lock state to unlocked
-            LOCK.save(storage, &IbcLock::Unlocked)?;
+            // set the bond lock state to unlocked
+            IBC_LOCK.update(storage, |old| -> Result<Lock, StdError> {Ok(old.unlock_bond())} )?;
 
             // TODO, do we want to also check queue state? and see if we can already start a new execution?
             Ok(IbcBasicResponse::new()
