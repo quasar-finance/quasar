@@ -10,7 +10,7 @@ use crate::{
     bond::Bond,
     error::{ContractError, Trap},
     helpers::IbcMsgKind,
-    ibc_lock::IbcLock,
+    ibc_lock::{IbcLock, Lock},
     start_unbond::StartUnbond,
 };
 
@@ -52,7 +52,7 @@ pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
 pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
 
 // all vault related state items
-pub(crate) const LOCK: Item<IbcLock> = Item::new("lock");
+pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
 pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");

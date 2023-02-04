@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::get_total_shares,
+    helpers::{get_total_shares, get_ica_address},
     icq::try_icq,
-    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, SHARES},
+    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, SHARES, TRANSFER_CHANNEL, ICA_CHANNEL}, ibc_util::do_transfer,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -45,14 +45,37 @@ pub fn do_bond(
     try_icq(deps.storage, env)
 }
 
-/// fold_queue folds the queue and attributes shares to the depositors according to the given total value
+// after the balance query, we can calculate the amount of the claim we need to create, we update the claims and transfer the funds
 pub fn batch_bond(
     storage: &mut dyn Storage,
+    env: &Env,
+    query_balance: Uint128,
+) -> Result<Option<SubMsg>, ContractError> {
+    let transfer_chan = TRANSFER_CHANNEL.load(storage)?;
+    let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+
+    if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
+        Ok(Some(do_transfer(storage, &env, amount, transfer_chan, to_address, deposits)?))
+    } else {
+        Ok(None)
+    }
+}
+
+/// fold_bonds folds the queue and attributes shares to the depositors according to the given total value
+pub fn fold_bonds(
+    storage: &mut dyn Storage,
     total_balance: Uint128,
-) -> Result<(Uint128, Vec<OngoingDeposit>), ContractError> {
+) -> Result<Option<(Uint128, Vec<OngoingDeposit>)>, ContractError> {
     let mut total = Uint128::zero();
     let mut deposits: Vec<OngoingDeposit> = vec![];
-    while !BOND_QUEUE.is_empty(storage)? {
+
+    let empty = BOND_QUEUE.is_empty(storage)?;
+
+    if empty {
+        return Ok(None);
+    }
+
+    while !empty {
         let item: Bond = BOND_QUEUE
             .pop_front(storage)?
             .ok_or(ContractError::QueueItemNotFound)?;
@@ -65,7 +88,8 @@ pub fn batch_bond(
             bond_id: item.bond_id,
         });
     }
-    Ok((total, deposits))
+
+    Ok(Some((total, deposits)))
 }
 
 // create_claim
