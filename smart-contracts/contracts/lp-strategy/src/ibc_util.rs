@@ -26,7 +26,7 @@ use crate::{
 
 pub fn do_transfer(
     storage: &mut dyn Storage,
-    env: Env,
+    env: &Env,
     amount: Uint128,
     channel_id: String,
     to_address: String,
@@ -114,11 +114,11 @@ pub fn do_ibc_lock_tokens(
     _deps: &mut dyn Storage,
     owner: String,
     coins: Vec<Coin>,
-) -> Result<InterchainAccountPacketData, ContractError> {
+) -> Result<MsgLockTokens, ContractError> {
     // denom in this case is expected to be something like gamm/pool/1
     // duration is  60 sec/min * 60 min/hr * 24hr * 14days
     // TODO move the duration to a package and make it settable
-    let lock = MsgLockTokens {
+    Ok(MsgLockTokens {
         owner,
         duration: Some(Duration {
             seconds: 1209600,
@@ -131,43 +131,8 @@ pub fn do_ibc_lock_tokens(
                 amount: c.amount.to_string(),
             })
             .collect(),
-    };
-    Ok(InterchainAccountPacketData::new(
-        Type::ExecuteTx,
-        vec![lock.pack()],
-        None,
-    ))
+    })
 }
-
-// pub fn ica_transfer_funds(
-//     storage: &dyn Storage,
-//     env: Env,
-//     amount: Uint128,
-//     // todo make memo work a bit better
-//     memo: String,
-//     timeout_timestamp: Timestamp,
-// ) -> Result<MsgTransfer, ContractError> {
-//     let config = CONFIG.load(storage)?;
-//     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-//     let transfer = MsgTransfer {
-//         // TODO do we want to keep the return port a constant?
-//         source_port: RETURN_SOURCE_PORT.to_string(),
-//         source_channel: config.return_source_channel,
-//         token: Some(OsmoCoin {
-//             denom: config.base_denom,
-//             amount: amount.to_string(),
-//         }),
-//         sender: ica_address,
-//         receiver: env.contract.address.to_string(),
-//         // timeout_height is disabled when set to 0
-//         // since height is kinda difficult to use, we always want to use the timestamp
-//         timeout_height: None,
-//         // timeout_timestamp is disabled when set to 0
-//         timeout_timestamp: Some(timeout_timestamp.nanos()),
-//         memo,
-//     };
-//     Ok(transfer)
-// }
 
 #[cfg(test)]
 mod tests {

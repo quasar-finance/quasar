@@ -13,11 +13,14 @@ use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::parse_seq;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
-use crate::msg::{ChannelsResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::icq::try_icq;
+use crate::msg::{ChannelsResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
-    REPLIES,
+    REPLIES, RETURNING,
 };
+use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -42,6 +45,7 @@ pub fn instantiate(
             base_denom: msg.base_denom,
             local_denom: msg.local_denom,
             quote_denom: msg.quote_denom,
+            return_source_channel: msg.return_source_channel,
         },
     )?;
 
@@ -81,7 +85,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Bond { id } => execute_deposit(deps, env, info, id),
+        ExecuteMsg::Bond { id } => execute_bond(deps, env, info, id),
         ExecuteMsg::TransferJoinLock {
             channel,
             to_address,
@@ -100,9 +104,59 @@ pub fn execute(
             amount,
             share_out_min_amount,
         ),
-        ExecuteMsg::StartUnbond { id, share_amount } => todo!(),
-        ExecuteMsg::Unbond { id, share_amount } => todo!(),
+        ExecuteMsg::StartUnbond { id, share_amount } => {
+            execute_start_unbond(deps, env, info, id, share_amount)
+        }
+        ExecuteMsg::Unbond { id } => execute_unbond(deps, env, info, id),
+        ExecuteMsg::AcceptReturningFunds { id } => {
+            execute_accept_returning_funds(deps, &env, info, id)
+        }
+        ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
     }
+}
+
+pub fn execute_return_funds(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    let msg = transfer_batch_unbond(
+        deps.storage,
+        &env,
+        &mut PendingReturningUnbonds {
+            unbonds: vec![ReturningUnbond {
+                amount: RawAmount::LpShares(Uint128::new(100)),
+                owner: info.sender,
+                id: String::from("1"),
+            }],
+        },
+        amount,
+    )?;
+
+    Ok(Response::new().add_submessage(msg))
+}
+
+pub fn execute_accept_returning_funds(
+    deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    id: u64,
+) -> Result<Response, ContractError> {
+    let returning_amount = RETURNING
+        .may_load(deps.storage, id)?
+        .ok_or(ContractError::ReturningTransferNotFound)?;
+
+    let amount = must_pay(&info, CONFIG.load(deps.storage)?.local_denom.as_str())?;
+    if amount != returning_amount {
+        return Err(ContractError::ReturningTransferIncorrectAmount);
+    }
+
+    // TODO cleanup the incoming transfer
+
+    Ok(Response::new()
+        .add_attribute("returning-transfer", id.to_string())
+        .add_attribute("success", "true"))
 }
 
 pub fn execute_start_unbond(
@@ -110,12 +164,52 @@ pub fn execute_start_unbond(
     env: Env,
     info: MessageInfo,
     id: String,
-    amount: Uint128,
+    share_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    todo!()
+    do_start_unbond(
+        deps.storage,
+        StartUnbond {
+            owner: info.sender.clone(),
+            id,
+            shares: share_amount,
+        },
+    )?;
+
+    let msg = try_icq(deps.storage, env)?;
+
+    match msg {
+        Some(submsg) => Ok(Response::new()
+            .add_submessage(submsg)
+            .add_attribute("start-unbond", info.sender)
+            .add_attribute("kind", "dispatch")),
+        None => Ok(Response::new()
+            .add_attribute("start-unbond", info.sender)
+            .add_attribute("kind", "queue")),
+    }
 }
 
-pub fn execute_deposit(
+pub fn execute_unbond(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    id: String,
+) -> Result<Response, ContractError> {
+    do_unbond(deps.storage, &env, info.sender.clone(), id)?;
+
+    let msg = try_icq(deps.storage, env)?;
+
+    match msg {
+        Some(submsg) => Ok(Response::new()
+            .add_submessage(submsg)
+            .add_attribute("unbond", info.sender)
+            .add_attribute("kind", "dispatch")),
+        None => Ok(Response::new()
+            .add_attribute("unbond", info.sender)
+            .add_attribute("kind", "queue")),
+    }
+}
+
+pub fn execute_bond(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -147,7 +241,7 @@ pub fn execute_transfer(
 
     let transfer = do_transfer(
         deps.storage,
-        env,
+        &env,
         amount,
         channel.clone(),
         to_address.clone(),
@@ -204,6 +298,7 @@ pub fn execute_join_pool(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
+        QueryMsg::Config {} => todo!(),
     }
 }
 
@@ -213,6 +308,12 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
         .map(|kv| kv.unwrap().1)
         .collect();
     Ok(ChannelsResponse { channels })
+}
+
+pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {
+    Ok(ConfigResponse {
+        config: CONFIG.load(deps.storage)?,
+    })
 }
 
 #[cfg(test)]

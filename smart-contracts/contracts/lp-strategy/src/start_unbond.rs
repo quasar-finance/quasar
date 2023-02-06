@@ -1,6 +1,12 @@
-use cosmwasm_std::{Addr, Env, Storage, SubMsg, Uint128, IbcBasicResponse};
+use cosmwasm_std::{
+    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
+};
 use cw_storage_plus::DequeIter;
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
+use quasar_types::{
+    callback::{Callback, StartUnbondResponse},
+    ica::packet::ica_send,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,42 +14,50 @@ use crate::{
     error::ContractError,
     helpers::get_total_shares,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_lock::IbcLock,
+    ibc_lock::{IbcLock, Lock},
     icq::try_icq,
     state::{
-        PendingSingleUnbond, Unbond, CONFIG, ICA_CHANNEL, OSMO_LOCK, SHARES, UNBONDING_CLAIMS,
-        UNBOND_QUEUE,
+        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
+        START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct StartUnbond {
-    owner: Addr,
-    id: String,
-    amount: Uint128,
+    pub owner: Addr,
+    pub id: String,
+    pub shares: Uint128,
 }
 
 pub fn do_start_unbond(
     storage: &mut dyn Storage,
-    env: Env,
     unbond: StartUnbond,
-) -> Result<Option<SubMsg>, ContractError> {
-    UNBOND_QUEUE.push_back(storage, &unbond)?;
-    try_icq(storage, env)
+) -> Result<(), ContractError> {
+    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+        return Err(ContractError::DuplicateKey);
+    }
+
+    Ok(START_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
 // batch unbond tries to unbond a batch of unbondings, should be called after the icq query has returned for deposits
-pub fn batch_unbond(
+pub fn batch_start_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     total_lp_shares: Uint128,
-) -> Result<SubMsg, ContractError> {
+) -> Result<Option<SubMsg>, ContractError> {
     let mut to_unbond = Uint128::zero();
     let mut unbonds: Vec<PendingSingleUnbond> = vec![];
 
-    while !UNBOND_QUEUE.is_empty(storage)? {
-        let unbond = UNBOND_QUEUE
+    let empty = START_UNBOND_QUEUE.is_empty(storage)?;
+
+    if empty {
+        return Ok(None);
+    }
+
+    while !empty {
+        let unbond = START_UNBOND_QUEUE
             .pop_front(storage)?
             .ok_or(ContractError::QueueItemNotFound)?;
         let lp_shares = single_unbond(storage, &env, &unbond, total_lp_shares)?;
@@ -67,37 +81,50 @@ pub fn batch_unbond(
         }],
     };
 
-    Ok(create_ibc_ack_submsg(
+    let pkt = ica_send::<MsgBeginUnlocking>(
+        msg,
+        ICA_CHANNEL.load(storage)?,
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+    )?;
+
+    Ok(Some(create_ibc_ack_submsg(
         storage,
         &IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
-        msg,
-    )?)
+        pkt,
+    )?))
 }
 
-pub fn handle_unbond_ack(
+pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
     env: &Env,
-    unbonds: Vec<PendingSingleUnbond>,
+    unbonds: &mut Vec<PendingSingleUnbond>,
 ) -> Result<IbcBasicResponse, ContractError> {
+    let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        start_internal_unbond(storage, env, &unbond)?
+        let msg = start_internal_unbond(storage, env, &unbond)?;
+        msgs.push(msg);
     }
-    Ok(IbcBasicResponse::new().add_attribute("start-unbond", "succes"))
+
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_start_unbond())
+    })?;
+
+    Ok(IbcBasicResponse::new()
+        .add_attribute("start-unbond", "succes")
+        .add_attribute("callback-msgs", msgs.len().to_string())
+        .add_messages(msgs))
 }
 
+// in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
 fn single_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     unbond: &StartUnbond,
     total_lp_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    // TODO move this to the ack
-    // start unbonding local shares
-    // start_internal_unbond(storage, env, unbond)?;
-
     let total_shares = get_total_shares(storage)?;
     Ok(unbond
-        .amount
+        .shares
         .checked_mul(total_lp_shares)?
         .checked_div(total_shares)?)
 }
@@ -107,7 +134,7 @@ fn start_internal_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     unbond: &PendingSingleUnbond,
-) -> Result<(), ContractError> {
+) -> Result<WasmMsg, ContractError> {
     // check that we can create a new unbond
     if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
@@ -135,32 +162,21 @@ fn start_internal_unbond(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {
-            shares: unbond.amount,
+            lp_shares: unbond.amount,
             unlock_time,
+            id: unbond.id.clone(),
+            owner: unbond.owner.clone(),
         },
     )?;
-    Ok(())
-}
 
-// try to unbond the shares
-pub fn do_single_unbond(
-    storage: &mut dyn Storage,
-    env: Env,
-    shares: Uint128,
-    owner: Addr,
-    id: String,
-    total_lp_shares: Uint128,
-) -> Result<Uint128, ContractError> {
-    let unbonding = UNBONDING_CLAIMS.load(storage, (owner, id))?;
+    let msg = Callback::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: unbond.id.clone(),
+        unlock_time,
+    });
 
-    if unbonding.unlock_time.nanos() > env.block.time.nanos() {
-        return Err(ContractError::SharesNotYetUnbonded);
-    }
-
-    let total_shares = get_total_shares(storage)?;
-    // lp_shares = shares / total_shares  * total_lp_shares =  shares * total_lp_shares / total_shares
-    let lp_shares = shares
-        .checked_mul(total_lp_shares)?
-        .checked_div(total_shares)?;
-    Ok(lp_shares)
+    Ok(WasmMsg::Execute {
+        contract_addr: unbond.owner.to_string(),
+        msg: to_binary(&msg)?,
+        funds: vec![],
+    })
 }

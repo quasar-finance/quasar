@@ -1,6 +1,7 @@
 use std::fmt;
 
 use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
+use cosmwasm_std::{to_binary, IbcMsg, IbcTimeout};
 use prost::{bytes::Buf, Message};
 use serde::{
     de::{self, Unexpected, Visitor},
@@ -8,6 +9,21 @@ use serde::{
 };
 
 use crate::error::Error;
+
+use super::traits::Pack;
+
+pub fn ica_send<T>(msg: T, channel_id: String, timeout: IbcTimeout) -> Result<IbcMsg, Error>
+where
+    T: Pack,
+{
+    let packet = InterchainAccountPacketData::new(Type::ExecuteTx, vec![msg.pack()], None);
+
+    Ok(IbcMsg::SendPacket {
+        channel_id,
+        data: to_binary(&packet)?,
+        timeout,
+    })
+}
 
 // TODO implement serialize for ICA packets to serialize type as string to json
 #[derive(Clone, PartialEq, Serialize, Deserialize)]

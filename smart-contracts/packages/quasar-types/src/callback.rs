@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Timestamp};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -7,14 +7,30 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum Callback {
     BondResponse(BondResponse),
+    StartUnbondResponse(StartUnbondResponse),
+    UnbondResponse(UnbondResponse)
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-// BondResponse is the response of a the primitive once the
+/// BondResponse is the response of a the primitive once the funds are succesfully bonded
 pub struct BondResponse {
     /// the amount of tokens that were bonded
     pub share_amount: Uint128,
     // the id of this deposit
     pub bond_id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+/// UnbondResponse is the response of a primitive once shares succesfully start unbonding
+pub struct StartUnbondResponse {
+    pub unbond_id: String,
+    pub unlock_time: Timestamp,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct UnbondResponse {
+    pub unbond_id: String
 }

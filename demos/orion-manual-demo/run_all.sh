@@ -41,20 +41,19 @@ osmosisd tx gamm create-pool --pool-file ./sample_pool.json --node http://127.0.
 # ./run_hermes.sh  &
 
 # Currently we're not using Hermes due to an issue with relaying new channels https://github.com/informalsystems/ibc-rs/issues/2608
-# starting hermes
-# echo "starting hermes"
-# hermes start >> ./logs/hermes_start.log 2>&1
-# HERMES_PID=$!
+echo "starting hermes"
+hermes start >> ./logs/hermes_start.log 2>&1 &
+HERMES_PID=$!
 
 echo "setting up go relayer"
 ./setup_go_relayer.sh
 
 echo "starting go relaying"
 # # run an instance of go relayer for each path, thus 3 in total
-rly start quasar_cosmos --debug-addr "localhost:7597" -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
+rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 30s -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
 RLY_PID_1=$!
 
-rly start quasar_osmosis --debug-addr "localhost:7598" -p events >> ./logs/quasar_osmosis.log 2>&1 &
+rly start quasar_osmosis --debug-addr "localhost:7598" -p events --time-threshold 30s >> ./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_2=$!
 
 rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmos_osmosis.log 2>&1  &

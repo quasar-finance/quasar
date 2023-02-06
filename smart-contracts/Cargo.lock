@@ -913,7 +913,6 @@ dependencies = [
 name = "lp-strategy"
 version = "0.1.0"
 dependencies = [
- "base64",
  "cosmos-sdk-proto 0.15.0",
  "cosmwasm-schema",
  "cosmwasm-std",
