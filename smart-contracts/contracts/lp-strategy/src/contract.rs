@@ -107,7 +107,7 @@ pub fn execute(
         ExecuteMsg::StartUnbond { id, share_amount } => {
             execute_start_unbond(deps, env, info, id, share_amount)
         }
-        ExecuteMsg::Unbond { id, share_amount } => execute_unbond(deps, env, info, id),
+        ExecuteMsg::Unbond { id } => execute_unbond(deps, env, info, id),
         ExecuteMsg::AcceptReturningFunds { id } => {
             execute_accept_returning_funds(deps, &env, info, id)
         }

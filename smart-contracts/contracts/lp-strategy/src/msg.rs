@@ -54,7 +54,6 @@ pub enum ExecuteMsg {
     },
     Unbond {
         id: String,
-        share_amount: Uint128,
     },
     // accept a dispatched transfer from osmosis
     AcceptReturningFunds {
