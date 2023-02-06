@@ -109,7 +109,7 @@ pub fn execute(
         }
         ExecuteMsg::Unbond { id, share_amount } => execute_unbond(deps, env, info, id),
         ExecuteMsg::AcceptReturningFunds { id } => {
-            execute_accept_returning_funds(deps, env, info, id)
+            execute_accept_returning_funds(deps, &env, info, id)
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
     }
@@ -139,7 +139,7 @@ pub fn execute_return_funds(
 
 pub fn execute_accept_returning_funds(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     id: u64,
 ) -> Result<Response, ContractError> {
@@ -241,7 +241,7 @@ pub fn execute_transfer(
 
     let transfer = do_transfer(
         deps.storage,
-        env,
+        &env,
         amount,
         channel.clone(),
         to_address.clone(),

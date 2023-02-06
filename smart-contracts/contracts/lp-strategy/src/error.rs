@@ -83,6 +83,9 @@ pub enum ContractError {
     #[error("Shares are still unbonding")]
     SharesNotYetUnbonded,
 
+    #[error("found incorrect raw amount type")]
+    IncorrectRawAmount,
+
     #[error("{0}")]
     DecodeError(#[from] prost::DecodeError),
 

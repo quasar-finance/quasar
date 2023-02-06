@@ -11,10 +11,14 @@ use crate::{
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     ibc_util::do_transfer,
-    state::{CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL},
+    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL},
 };
 
 pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, ContractError> {
+    if IBC_LOCK.load(storage)?.is_locked() {
+        return Ok(None);
+    }
+
     let icq_channel = ICQ_CHANNEL.load(storage)?;
     check_icq_channel(storage, icq_channel.clone())?;
 

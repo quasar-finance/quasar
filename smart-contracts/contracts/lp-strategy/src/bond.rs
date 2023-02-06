@@ -5,9 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_total_shares, get_ica_address},
+    helpers::{get_ica_address, get_total_shares},
+    ibc_util::do_transfer,
     icq::try_icq,
-    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, SHARES, TRANSFER_CHANNEL, ICA_CHANNEL}, ibc_util::do_transfer,
+    state::{
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES,
+        TRANSFER_CHANNEL,
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -55,7 +59,14 @@ pub fn batch_bond(
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
-        Ok(Some(do_transfer(storage, &env, amount, transfer_chan, to_address, deposits)?))
+        Ok(Some(do_transfer(
+            storage,
+            &env,
+            amount,
+            transfer_chan,
+            to_address,
+            deposits,
+        )?))
     } else {
         Ok(None)
     }
