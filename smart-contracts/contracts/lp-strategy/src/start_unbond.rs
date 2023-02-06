@@ -1,7 +1,12 @@
-use cosmwasm_std::{Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128};
+use cosmwasm_std::{
+    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
+};
 use cw_storage_plus::DequeIter;
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
-use quasar_types::ica::packet::ica_send;
+use quasar_types::{
+    callback::{Callback, StartUnbondResponse},
+    ica::packet::ica_send,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -94,15 +99,20 @@ pub fn handle_start_unbond_ack(
     env: &Env,
     unbonds: &mut Vec<PendingSingleUnbond>,
 ) -> Result<IbcBasicResponse, ContractError> {
+    let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        start_internal_unbond(storage, env, &unbond)?
+        let msg = start_internal_unbond(storage, env, &unbond)?;
+        msgs.push(msg);
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_start_unbond())
     })?;
 
-    Ok(IbcBasicResponse::new().add_attribute("start-unbond", "succes"))
+    Ok(IbcBasicResponse::new()
+        .add_attribute("start-unbond", "succes")
+        .add_attribute("callback-msgs", msgs.len().to_string())
+        .add_messages(msgs))
 }
 
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
@@ -124,7 +134,7 @@ fn start_internal_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     unbond: &PendingSingleUnbond,
-) -> Result<(), ContractError> {
+) -> Result<WasmMsg, ContractError> {
     // check that we can create a new unbond
     if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
@@ -158,5 +168,15 @@ fn start_internal_unbond(
             owner: unbond.owner.clone(),
         },
     )?;
-    Ok(())
+
+    let msg = Callback::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: unbond.id.clone(),
+        unlock_time,
+    });
+
+    Ok(WasmMsg::Execute {
+        contract_addr: unbond.owner.to_string(),
+        msg: to_binary(&msg)?,
+        funds: vec![],
+    })
 }
