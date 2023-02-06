@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Timestamp};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,8 @@ pub struct BondResponse {
 #[serde(rename_all = "snake_case")]
 /// UnbondResponse is the response of a primitive once shares succesfully start unbonding
 pub struct StartUnbondResponse {
-    pub unbond_id: String
+    pub unbond_id: String,
+    pub unlock_time: Timestamp,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
