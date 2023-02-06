@@ -12,8 +12,8 @@ use crate::{
     ibc_lock::{IbcLock, Lock},
     icq::try_icq,
     state::{
-        PendingSingleUnbond, Unbond, CONFIG, ICA_CHANNEL, OSMO_LOCK, SHARES, START_UNBOND_QUEUE,
-        UNBONDING_CLAIMS, IBC_LOCK,
+        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
+        START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -48,7 +48,7 @@ pub fn batch_start_unbond(
     let empty = START_UNBOND_QUEUE.is_empty(storage)?;
 
     if empty {
-        return Ok(None)
+        return Ok(None);
     }
 
     while !empty {
@@ -92,14 +92,16 @@ pub fn batch_start_unbond(
 pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
     env: &Env,
-    unbonds: Vec<PendingSingleUnbond>,
+    unbonds: &mut Vec<PendingSingleUnbond>,
 ) -> Result<IbcBasicResponse, ContractError> {
     for unbond in unbonds {
         start_internal_unbond(storage, env, &unbond)?
     }
 
-    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {Ok(lock.unlock_start_unbond())})?;
-    
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_start_unbond())
+    })?;
+
     Ok(IbcBasicResponse::new().add_attribute("start-unbond", "succes"))
 }
 

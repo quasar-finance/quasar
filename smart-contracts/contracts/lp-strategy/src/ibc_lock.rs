@@ -6,9 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct Lock {
     pub bond: IbcLock,
     pub start_unbond: IbcLock,
-    pub unbond: IbcLock
+    pub unbond: IbcLock,
 }
-
 
 impl Lock {
     pub fn unlock_bond(mut self) -> Self {
@@ -48,7 +47,6 @@ impl Lock {
     pub fn is_locked(&self) -> bool {
         self.bond.is_locked() && self.start_unbond.is_locked() && self.unbond.is_locked()
     }
-
 }
 
 /// IbcLock describes the current state of the contract
