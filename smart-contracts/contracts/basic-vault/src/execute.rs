@@ -64,7 +64,7 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
 }
 
 pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    // ensure we have the proper denom
+    // load vault info & sequence number
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
@@ -103,6 +103,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
                 };
                 deposit_stubs.push(deposit_stub);
 
+                // todo: do we need it to reply
                 Ok(SubMsg::reply_always(
                     WasmMsg::Execute {
                         contract_addr: pc.address.clone(),

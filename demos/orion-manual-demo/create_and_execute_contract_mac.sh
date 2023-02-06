@@ -15,10 +15,12 @@ echo $NODE
 #     quote_denom is the denom other denom in the pool, stake for now
 INIT='{"lock_period":1209600,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake"}'
 
-cd ../../smart-contracts
+cd ../../smart-contracts/contracts/lp-strategy
 
-# RUSTFLAGS='-C link-arg=-s' cargo wasm
+RUSTFLAGS='-C link-arg=-s' cargo wasm
 # docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
+
+cd ../..
 
 echo "Running store code"
 RES=$(quasarnoded tx wasm store target/wasm32-unknown-unknown/release/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)

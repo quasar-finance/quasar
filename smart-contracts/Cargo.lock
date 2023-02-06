@@ -56,7 +56,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-controllers 0.16.0",
- "cw-storage-plus 0.16.0",
+ "cw-storage-plus 1.0.1",
  "cw-utils 0.16.0",
  "cw2 0.16.0",
  "cw20 0.16.0",

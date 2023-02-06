@@ -76,7 +76,7 @@ pub fn on_bond(
             bond_ids.remove(bond_index);
             Ok::<Vec<String>, ContractError>(bond_ids)
         }
-        None => Ok(vec![]), // todo: should this error?
+        None => Ok(vec![]), // todo: should this error? we should never be here
     })?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
     DEPOSIT_STATE.save(deps.storage, bond_id.to_string(), &deposit_stubs)?;
@@ -106,6 +106,7 @@ pub fn on_bond(
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
 
+    // todo: i think supply structure needs to be simplified or augmented
     supply.issued += shares_to_mint;
     // TODO: this is just a safety assertion - do we keep it, or remove caching?
     // in the end supply is just there to cache the (expected) results of get_bonded() so we don't

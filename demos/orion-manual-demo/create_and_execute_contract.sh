@@ -30,32 +30,13 @@ OUT=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT" --from alice --keyring-ba
 ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR"
 
-<<<<<<< HEAD
-# rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icqhost --order unordered --version icq-1 --override
-=======
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icqhost --order unordered --version icq-1 --override
->>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-1","host_connection_id":"connection-0"}' --override
 
 QMSG='{"channels": {}}'
 CADDR=$(quasarnoded query wasm contract-state smart $ADDR "$QMSG" --output json | jq '.data.channels[] | select(.counterparty_endpoint.port_id=="icahost").channel_type.ica.counter_party_address')
 CCHAN=$(quasarnoded query wasm contract-state smart $ADDR "$QMSG" --output json | jq '.data.channels[] | select(.counterparty_endpoint.port_id=="icahost").id')
 
-<<<<<<< HEAD
-MSG= $(printf '{"transfer":{"channel":"channel-0", "to_address": "cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89|transfer/channel-1:%s"}}' $CADDR)
-
-echo "transferring funds over ibc message... to replay: \"quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000uqsr\""
-quasarnoded tx wasm execute $ADDR "$MSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000uqsr
-
-
-AMOUNT="100000stake"
-HOME_OSMOSIS=$HOME/.osmosis
-echo $CADDR
-echo "preloading the ICA address with $AMOUNT to play around with"
-BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home %s' $CADDR $AMOUNT $HOME_OSMOSIS)
-echo $BANKTX
-$BANKTX
-=======
 
 AMOUNT="100000stake"
 HOME_OSMOSIS=$HOME/.osmosis
@@ -64,28 +45,17 @@ HOME_OSMOSIS=$HOME/.osmosis
 BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home %s' $CADDR $AMOUNT $HOME_OSMOSIS)
 echo $BANKTX
 # $BANKTX
->>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f
 
 echo "joining pool and locking all lp tokens using preloaded funds"
 
 JOINMSG=$(printf '{
   "deposit_and_lock_tokens": {
     "amount": "1000",
-<<<<<<< HEAD
-    "channel": %s,
-    "denom": "stake",
-    "lock_period": "10",
-    "pool_id": 1,
-    "share_out_min_amount": "1"
-  }
-}' $CCHAN)
-=======
     "denom": "uosmo",
     "pool_id": 1,
     "share_out_min_amount": "1"
   }
 }')
->>>>>>> 3dd09489cdf6955724622248d63d091d3fcf952f
 
 echo "joining pool, to replay: \"quasarnoded tx wasm execute $ADDR '$JOINMSG' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID\""
 quasarnoded tx wasm execute $ADDR "$JOINMSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID

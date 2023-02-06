@@ -348,7 +348,7 @@ pub fn handle_ica_ack(
                 Ok(old.checked_add(shares_out)?)
             })?;
 
-            let denom = CONFIG.load(storage)?.base_denom;
+            let denom = CONFIG.load(storage)?.pool_denom;
 
             // TODO update queue raw amounts here
             data.update_raw_amount_to_lp(Uint128::new(resp.share_out_amount.parse::<u128>()?))?;

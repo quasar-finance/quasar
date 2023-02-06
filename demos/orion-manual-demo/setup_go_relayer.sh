@@ -23,7 +23,7 @@ rly q balance cosmos
 rly q balance osmosis
 
 rly paths add-dir ./go-relayer-config/paths
-rly tx link quasar_cosmos --debug >> ./logs/rly_qc_setup.log 2>&1
+# rly tx link quasar_cosmos --debug >> ./logs/rly_qc_setup.log 2>&1
 rly tx link  quasar_osmosis --debug --override >> ./logs/rly_qo_setup.log 2>&1
 rly tx link cosmos_osmosis --debug --override >> ./logs/rly_co_setup.log 2>&1
 
