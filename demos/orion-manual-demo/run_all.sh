@@ -59,4 +59,6 @@ RLY_PID_2=$!
 rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmos_osmosis.log 2>&1  &
 RLY_PID_3=$!
 
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10000uosmo --from bob --node http://127.0.0.1:26679 --chain-id osmosis
+
 wait
