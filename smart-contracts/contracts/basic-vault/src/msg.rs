@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use quasar_types::callback::BondResponse;
+use quasar_types::callback::Callback;
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -15,7 +15,7 @@ pub enum PrimitiveInitMsg {
 pub struct PrimitiveConfig {
     // the weighting of this strategy that the vault should subscribe to (e.g. 30%)
     // weights are normalized accross strategies, so values don't need to add up to 100%
-    pub weight: Uint128,
+    pub weight: Decimal,
     // the contract address of the stored primitive contract on the chain
     pub address: String,
     // the Instantiation message for the primitive.
@@ -63,7 +63,7 @@ pub enum ExecuteMsg {
     /// This can only be invoked by the contract itself as a return from Reinvest
     _BondAllTokens {},
 
-    Callback(CallbackMsg),
+    Callback(Callback),
 
     /// Implements CW20. Transfer is a base message to move tokens to another account without triggering actions
     Transfer {
@@ -117,11 +117,6 @@ pub enum ExecuteMsg {
         owner: String,
         amount: Uint128,
     },
-}
-
-#[cw_serde]
-pub enum CallbackMsg {
-    OnBond (BondResponse)
 }
 
 #[cw_serde]

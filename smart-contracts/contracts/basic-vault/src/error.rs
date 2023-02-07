@@ -24,8 +24,8 @@ pub enum ContractError {
     #[error("No {denom} tokens sent")]
     EmptyBalance { denom: String },
 
-    #[error("Must unbond at least {min_bonded} {denom}")]
-    UnbondTooSmall { min_bonded: Uint128, denom: String },
+    #[error("Must unbond at least {min_bonded}")]
+    UnbondTooSmall { min_bonded: Uint128 },
 
     #[error("Cannot withdraw without vault tokens")]
     NoFunds { },

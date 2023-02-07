@@ -1,9 +1,8 @@
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
 use cw20_base::contract::execute_mint;
-use quasar_types::callback::BondResponse;
+use quasar_types::callback::{BondResponse, Callback};
 
 use crate::{
-    msg::CallbackMsg,
     state::{BondingStub, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY},
     ContractError,
 };
@@ -12,16 +11,18 @@ pub fn handle_callback(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    callback_msg: CallbackMsg,
+    callback_msg: Callback,
 ) -> Result<Response, ContractError> {
     match callback_msg {
-        CallbackMsg::OnBond(bond_response) => on_bond(
+        Callback::BondResponse(bond_response) => on_bond(
             deps,
             env,
             info,
             bond_response.share_amount,
             bond_response.bond_id,
         ),
+        Callback::StartUnbondResponse(start_unbond_response) => todo!(),
+        Callback::UnbondResponse(unbond_response) => todo!(),
     }
 }
 
@@ -84,7 +85,7 @@ pub fn on_bond(
     let total_weight = invest
         .primitives
         .iter()
-        .fold(Uint128::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
+        .fold(Decimal::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
 
     // calculate shares to mint
     let shares_to_mint =
@@ -93,11 +94,21 @@ pub fn on_bond(
             .zip(invest.primitives.iter())
             .fold(Uint128::zero(), |acc, (s, pc)| {
                 acc.checked_add(
+                    // omfg pls dont look at this code, i will make it cleaner
                     s.bond_response
                         .as_ref()
                         .unwrap()
                         .share_amount
-                        .checked_multiply_ratio(pc.weight, total_weight)
+                        .checked_multiply_ratio(
+                            pc.weight.numerator(),
+                            total_weight
+                                .numerator()
+                                .checked_multiply_ratio(
+                                    pc.weight.denominator(),
+                                    total_weight.denominator(),
+                                )
+                                .unwrap(),
+                        )
                         .unwrap(),
                 )
                 .unwrap()

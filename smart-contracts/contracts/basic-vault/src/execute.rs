@@ -1,19 +1,18 @@
-use std::ops::{Add};
+use std::ops::Add;
 
 use cosmwasm_std::{
-    to_binary, Addr, Coin, DepsMut, Env, MessageInfo, QuerierWrapper, Response, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response,
+    SubMsg, Uint128, WasmMsg,
 };
 
-
-
 use cw_utils::PaymentError;
+use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::msg::ExecuteMsg;
+use crate::msg::{ExecuteMsg, PrimitiveInitMsg};
 
 use crate::state::{
-    BondingStub, Supply, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT,
-    PENDING_BOND_IDS, STRATEGY_BOND_ID,
+    BondingStub, Supply, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, STRATEGY_BOND_ID,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -63,6 +62,39 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
     }
 }
 
+pub fn must_pay_with_ratio(
+    info: &MessageInfo,
+    ratio: CoinRatio,
+) -> Result<Vec<Coin>, ContractError> {
+    // verify that info.funds are passed in with the correct ratio
+    let normed_ratio = ratio.get_normed_ratio();
+    let mut last_expected_total = Uint128::zero();
+
+    let coins: Result<Vec<Coin>, ContractError> = normed_ratio
+        .iter()
+        .map(|r| {
+            let amount = must_pay_multi(info, &r.denom).unwrap();
+            let expected_total = amount
+                .checked_multiply_ratio(r.weight.denominator(), r.weight.numerator())
+                .unwrap();
+
+            if (last_expected_total.is_zero()) {
+                last_expected_total = expected_total;
+            }
+
+            if expected_total.ne(&last_expected_total) {
+                return Err(ContractError::IncorrectBondingRatio {});
+            }
+            Ok(Coin {
+                denom: r.denom.clone(),
+                amount: amount,
+            })
+        })
+        .collect();
+
+    coins
+}
+
 pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     // load vault info & sequence number
     let invest = INVESTMENT.load(deps.storage)?;
@@ -70,33 +102,30 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
 
     let mut deposit_stubs = vec![];
 
-    let total_weight = invest
+    let primitive_funding_amounts = must_pay_with_ratio(
+        &info,
+        // todo: This ratio should be constrained from share out calc, currently constrained by amount in.
+        CoinRatio {
+            ratio: invest
+                .primitives
+                .iter()
+                .map(|i| match i.init {
+                    PrimitiveInitMsg::LP(lp_init_msg) => CoinWeight {
+                        denom: lp_init_msg.local_denom,
+                        weight: i.weight,
+                    },
+                })
+                .collect(),
+        },
+    )
+    .unwrap();
+
+    let bond_msgs: Result<Vec<SubMsg>, ContractError> = invest
         .primitives
         .iter()
-        .fold(Uint128::zero(), |a, b| a.add(b.weight));
-    let mut total_amount = Uint128::zero();
-    let init_msgs: Result<Vec<SubMsg>, ContractError> = invest
-        .primitives
-        .iter()
-        .map(|pc| match pc.init.clone() {
+        .zip(primitive_funding_amounts)
+        .map(|(pc, funds)| match pc.init.clone() {
             crate::msg::PrimitiveInitMsg::LP(lp_init_msg) => {
-                let amount = must_pay_multi(&info, &lp_init_msg.local_denom).unwrap();
-
-                // if total amount is still zero, we can define it here
-                // otherwise let's check if passed in ratio is correct
-                if total_amount.is_zero() {
-                    total_amount = amount
-                        .checked_multiply_ratio(total_weight, pc.weight)
-                        .unwrap();
-                } else {
-                    let this_amount = total_amount
-                        .checked_multiply_ratio(pc.weight, total_weight)
-                        .unwrap();
-                    if this_amount.ne(&amount) {
-                        return Err(ContractError::IncorrectBondingRatio {});
-                    }
-                }
-
                 let deposit_stub = BondingStub {
                     address: pc.address.clone(),
                     bond_response: Option::None,
@@ -110,10 +139,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
                         msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
                             id: bond_seq.to_string(),
                         })?,
-                        funds: vec![Coin {
-                            denom: lp_init_msg.local_denom.clone(),
-                            amount: amount,
-                        }],
+                        funds: vec![funds],
                     },
                     STRATEGY_BOND_ID,
                 ))
@@ -132,17 +158,16 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     DEPOSIT_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
     BONDING_SEQ.save(deps.storage, &bond_seq.add(Uint128::from(1u128)))?;
 
-    Ok(Response::new().add_submessages(init_msgs?))
+    Ok(Response::new().add_submessages(bond_msgs?))
 }
 
 pub fn unbond(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _amount: Uint128,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
-
     // if info.funds.is_empty() {
     //     return Err(ContractError::NoFunds {});
     // }
@@ -152,9 +177,10 @@ pub fn unbond(
     // if amount < invest.min_withdrawal {
     //     return Err(ContractError::UnbondTooSmall {
     //         min_bonded: invest.min_withdrawal,
-    //         denom: invest.,
     //     });
     // }
+
+    // need to convert amount to the set of amounts for each primitive
 
     // // // calculate tax and remainer to unbond
     // // let tax = amount * invest.exit_tax;
