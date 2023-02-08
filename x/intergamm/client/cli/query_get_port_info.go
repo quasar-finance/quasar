@@ -27,7 +27,6 @@ func CmdGetPortInfo() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryGetPortInfoRequest{
-
 				PortID:             reqPortID,
 				DestinationChainID: reqDestinationChainId,
 			}

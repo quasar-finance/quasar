@@ -142,7 +142,6 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 			},
 		},
 	})
-
 	if err != nil {
 		return sdkerrors.Wrap(err, "ibc ack callback")
 	}

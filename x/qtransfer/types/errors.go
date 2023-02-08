@@ -4,6 +4,4 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 )
 
-var (
-	ErrInvalidMetadataFormat = sdkerrors.New(ModuleName, 2, "invalid metadata format")
-)
+var ErrInvalidMetadataFormat = sdkerrors.New(ModuleName, 2, "invalid metadata format")

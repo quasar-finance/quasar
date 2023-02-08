@@ -23,21 +23,19 @@ const (
 	DefaultPacketTimeoutTimestamp = uint64(time.Minute * 3)
 )
 
-var (
-	// DefaultCoinRatesParams is the default configuration for coin rates (a.k.a token prices) based on bandchain testnet
-	DefaultCoinRatesParams = CoinRatesParams{
-		EpochIdentifier: "minute",
-		Symbols:         []string{"BTC", "OSMO", "BNB", "ATOM"},
-		ScriptParams: OracleScriptParams{
-			ScriptId:   37,
-			AskCount:   4,
-			MinCount:   3,
-			FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
-			PrepareGas: 600000,
-			ExecuteGas: 600000,
-		},
-	}
-)
+// DefaultCoinRatesParams is the default configuration for coin rates (a.k.a token prices) based on bandchain testnet
+var DefaultCoinRatesParams = CoinRatesParams{
+	EpochIdentifier: "minute",
+	Symbols:         []string{"BTC", "OSMO", "BNB", "ATOM"},
+	ScriptParams: OracleScriptParams{
+		ScriptId:   37,
+		AskCount:   4,
+		MinCount:   3,
+		FeeLimit:   sdk.NewCoins(sdk.NewCoin("uband", sdk.NewInt(30))),
+		PrepareGas: 600000,
+		ExecuteGas: 600000,
+	},
+}
 
 var (
 	// KeyEnabled is store's key for Enabled

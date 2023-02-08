@@ -90,7 +90,6 @@ func NewBandchainGenesisState(port string, params qbandtypes.Params) BandchainGe
 
 // Validate performs basic validation of the BandchainGenesisState
 func (gs BandchainGenesisState) Validate() error {
-
 	if err := host.PortIdentifierValidator(gs.Port); err != nil {
 		return err
 	}
@@ -120,7 +119,6 @@ func NewOsmosisGenesisState(port string, params qosmotypes.Params) OsmosisGenesi
 
 // Validate performs basic validation of the OsmosisGenesisState
 func (gs OsmosisGenesisState) Validate() error {
-
 	if err := host.PortIdentifierValidator(gs.Port); err != nil {
 		return err
 	}

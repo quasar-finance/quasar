@@ -15,10 +15,8 @@ const (
 	DefaultDenomPricesExpDuration = uint64(time.Minute * 6)
 )
 
-var (
-	// KeyDenomPricesExpDuration is store's key for DenomPricesExpDuration
-	KeyDenomPricesExpDuration = []byte("DenomPricesExpDuration")
-)
+// KeyDenomPricesExpDuration is store's key for DenomPricesExpDuration
+var KeyDenomPricesExpDuration = []byte("DenomPricesExpDuration")
 
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {

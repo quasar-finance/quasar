@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
@@ -14,8 +15,8 @@ func (ms msgServer) TransmitIbcJoinSwapExternAmountIn(goCtx context.Context, in 
 		return nil, err
 	}
 	return &types.MsgTransmitIbcJoinSwapExternAmountInResponse{
-		Seq: seq,
+		Seq:     seq,
 		Channel: channel,
-		PortId: portId,
+		PortId:  portId,
 	}, nil
 }

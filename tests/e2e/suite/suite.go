@@ -9,6 +9,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	ibctest "github.com/strangelove-ventures/ibctest/v5"
+	"github.com/strangelove-ventures/ibctest/v5/test"
+
 	"github.com/strangelove-ventures/ibctest/v5/chain/cosmos"
 	"github.com/strangelove-ventures/ibctest/v5/ibc"
 	"github.com/strangelove-ventures/ibctest/v5/relayer/rly"
@@ -112,7 +114,7 @@ func (s *E2ETestSuite) CreateUserAndFund(ctx context.Context, chain ibc.Chain, a
 	user := ibctest.GetAndFundTestUsers(s.T(), ctx, strings.ReplaceAll(s.T().Name(), " ", "-"), amount, chain)[0]
 
 	// Wait a few blocks
-	err := ibctest.WaitForBlocks(ctx, 5, chain)
+	err := test.WaitForBlocks(ctx, 5, chain)
 	s.Require().NoError(err)
 	return user
 }

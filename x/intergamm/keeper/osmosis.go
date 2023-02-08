@@ -18,7 +18,8 @@ func (k Keeper) TransmitIbcCreatePool(
 	timeoutTimestamp uint64,
 	poolParams *gammbalancer.PoolParams,
 	poolAssets []gammbalancer.PoolAsset,
-	futurePoolGovernor string) (uint64, string, string, error) {
+	futurePoolGovernor string,
+) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
@@ -45,7 +46,8 @@ func (k Keeper) TransmitIbcJoinPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareOutAmount sdkmath.Int,
-	tokenInMaxs []sdk.Coin) (uint64, string, string, error) {
+	tokenInMaxs []sdk.Coin,
+) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,
@@ -72,7 +74,8 @@ func (k Keeper) TransmitIbcExitPool(
 	timeoutTimestamp uint64,
 	poolId uint64,
 	shareInAmount sdkmath.Int,
-	tokenOutMins []sdk.Coin) (uint64, string, string, error) {
+	tokenOutMins []sdk.Coin,
+) (uint64, string, string, error) {
 	iaResp, err := k.InterchainAccountFromAddress(sdk.WrapSDKContext(ctx), &types.QueryInterchainAccountFromAddressRequest{
 		Owner:        owner,
 		ConnectionId: connectionId,

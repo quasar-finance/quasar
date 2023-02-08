@@ -11,7 +11,7 @@ var _ sdk.Msg = &MsgRegisterInterchainAccount{}
 
 func NewMsgRegisterInterchainAccount(creator string, connectionId string) *MsgRegisterInterchainAccount {
 	return &MsgRegisterInterchainAccount{
-		Creator:                creator,
+		Creator:      creator,
 		ConnectionId: connectionId,
 	}
 }

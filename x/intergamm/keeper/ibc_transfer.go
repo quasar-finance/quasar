@@ -83,7 +83,8 @@ func (k Keeper) TransmitICATransfer(
 	token sdk.Coin,
 	finalReceiver string,
 	icaTransferTimeoutHeight ibcclienttypes.Height,
-	icaTransferTimeoutTimestamp uint64) (uint64, string, string, error) {
+	icaTransferTimeoutTimestamp uint64,
+) (uint64, string, string, error) {
 	logger := k.Logger(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(finalReceiver); err != nil {

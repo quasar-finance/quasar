@@ -9,15 +9,11 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-var (
-	// DefaultWasmHooksEnabled is the default value for WasmHooksEnabled
-	DefaultWasmHooksEnabled = true
-)
+// DefaultWasmHooksEnabled is the default value for WasmHooksEnabled
+var DefaultWasmHooksEnabled = true
 
-var (
-	// KeyWasmHooksEnabled is parameter store key for WasmHooksEnabled
-	KeyWasmHooksEnabled = []byte("WasmHooksEnabled")
-)
+// KeyWasmHooksEnabled is parameter store key for WasmHooksEnabled
+var KeyWasmHooksEnabled = []byte("WasmHooksEnabled")
 
 // ParamKeyTable for qtransfer module
 func ParamKeyTable() paramtypes.KeyTable {

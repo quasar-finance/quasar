@@ -24,10 +24,8 @@ import (
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
-var (
-	// Timeout timestamp following Transfer timestamp default
-	DefaultSendTxRelativeTimeoutTimestamp = ibctransfertypes.DefaultRelativePacketTimeoutTimestamp
-)
+// Timeout timestamp following Transfer timestamp default
+var DefaultSendTxRelativeTimeoutTimestamp = ibctransfertypes.DefaultRelativePacketTimeoutTimestamp
 
 type GammHooks struct {
 	IbcTransfer IbcTransferHooks
@@ -116,7 +114,6 @@ func (k Keeper) GetChainID(ctx sdk.Context, connectionID string) (string, error)
 
 // getConnectionId returns the connection identifier to osmosis from intergamm module
 func (k Keeper) GetConnectionId(ctx sdk.Context, inChainID string) (string, bool) {
-
 	logger := k.Logger(ctx)
 	for _, c := range k.GetAllConnections(ctx) {
 		logger.Info("GetConnectionId", "Connection", c)
@@ -136,6 +133,7 @@ func (k Keeper) GetConnectionId(ctx sdk.Context, inChainID string) (string, bool
 	}
 	return "", false
 }
+
 func (k Keeper) SetPortDetail(ctx sdk.Context, pi types.PortInfo) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PortInfoKBP)
 	destinationChain, _ := k.GetChainID(ctx, pi.ConnectionID)
@@ -295,7 +293,8 @@ func (k Keeper) SendToken(ctx sdk.Context,
 	destZoneId string,
 	sender sdk.AccAddress,
 	receiver string,
-	coin sdk.Coin) (uint64, string, string, error) {
+	coin sdk.Coin,
+) (uint64, string, string, error) {
 	logger := k.Logger(ctx)
 	logger.Info("SendToken",
 		"destinationLocalZoneId", destZoneId,

@@ -6,10 +6,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var (
-	// CoinRatesMultiplier is the default multiplier used for coin rates oracle requests
-	CoinRatesMultiplier uint64 = 1e6
-)
+// CoinRatesMultiplier is the default multiplier used for coin rates oracle requests
+var CoinRatesMultiplier uint64 = 1e6
 
 type CoinRatesCallDataI interface {
 	GetSymbols() []string

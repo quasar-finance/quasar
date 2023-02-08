@@ -28,7 +28,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(quasarDenomToNativeZoneIdMap map[string]string,
 	osmosisDenomToQuasarDenomMap map[string]string,
-	completeZoneInfoMap map[string]ZoneCompleteInfo) Params {
+	completeZoneInfoMap map[string]ZoneCompleteInfo,
+) Params {
 	return Params{
 		QuasarDenomToNativeZoneIdMap: quasarDenomToNativeZoneIdMap,
 		OsmosisDenomToQuasarDenomMap: osmosisDenomToQuasarDenomMap,
