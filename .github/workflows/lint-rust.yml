@@ -1,0 +1,30 @@
+name: Lint Quasar code
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# This workflow makes x86_64 binaries for linux.
+# TODO: add darwin later
+jobs:
+  lint-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.59.0
+          target: wasm32-unknown-unknown
+          profile: default
+          override: true
+      - name: Show versions
+        run: rustc -V && cargo -V
+      - name: Rust lint
+        run: cd smart-contracts && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings 
+      - name: Rust format check
+        run: cd smart-contracts && cargo fmt --all -- --check
