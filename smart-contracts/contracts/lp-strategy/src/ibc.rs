@@ -327,6 +327,8 @@ pub fn handle_icq_ack(
         Uint128::new(spot_price.parse()?),
     )?;
 
+    ICA_BALANCE.save(storage, &total_balance)?;
+
     let total_lp = LP_SHARES.load(storage)?;
 
     let bond = batch_bond(storage, &env, total_balance)?;

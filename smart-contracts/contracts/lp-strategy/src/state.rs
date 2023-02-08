@@ -60,6 +60,9 @@ pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 
+// the latest known ica balance
+pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
+
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<Addr, Uint128> = Map::new("bonding_claims");
 

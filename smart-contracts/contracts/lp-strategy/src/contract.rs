@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
     StdResult, Uint128,
 };
 use cw2::set_contract_version;
@@ -11,17 +11,18 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{get_ica_address, parse_seq};
+use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
-    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, InstantiateMsg, QueryMsg, IcaBalanceResponse,
+    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
+    InstantiateMsg, PrimitiveSharesResponse, QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
-    PENDING_ACK, REPLIES, RETURNING,
+    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -329,10 +330,31 @@ pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
     })
 }
 
-pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
-
+pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse> {
+    Ok(PrimitiveSharesResponse {
+        total: get_total_shares(deps.storage).map_err(|err| StdError::GenericErr {
+            msg: err.to_string(),
+        })?,
+    })
 }
 
+pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
+    Ok(IcaBalanceResponse {
+        amount: Coin {
+            denom: CONFIG
+                .load(deps.storage)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })?
+                .local_denom,
+            amount: ICA_BALANCE
+                .load(deps.storage)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })?,
+        },
+    })
+}
 
 #[cfg(test)]
 mod tests {

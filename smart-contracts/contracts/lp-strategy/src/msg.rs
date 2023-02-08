@@ -45,10 +45,20 @@ pub struct ConfigResponse {
     pub config: Config,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct PrimitiveSharesResponse {
+    pub total: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct IcaAddressResponse {
     pub address: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct IcaBalanceResponse {
     pub amount: Coin,
 }
