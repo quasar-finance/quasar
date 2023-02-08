@@ -21,8 +21,8 @@ pub fn handle_callback(
             bond_response.share_amount,
             bond_response.bond_id,
         ),
-        Callback::StartUnbondResponse(start_unbond_response) => todo!(),
-        Callback::UnbondResponse(unbond_response) => todo!(),
+        Callback::StartUnbondResponse(_start_unbond_response) => todo!(),
+        Callback::UnbondResponse(_unbond_response) => todo!(),
     }
 }
 

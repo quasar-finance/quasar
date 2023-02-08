@@ -1,19 +1,19 @@
-use std::borrow::Borrow;
+
 use std::collections::HashMap;
-use std::ops::{Add, Div, Mul};
+use std::ops::{Add, Mul};
 
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
     Response, SubMsg, Uint128, WasmMsg,
 };
 
-use cw_storage_plus::Map;
+
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, PrimitiveConfig, PrimitiveInitMsg};
+use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
     BondingStub, Supply, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, STRATEGY_BOND_ID,
@@ -141,7 +141,7 @@ pub fn may_pay_with_ratio(
                 .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
                 .unwrap();
 
-            if (expected_amount > amount) {
+            if expected_amount > amount {
                 return Err(ContractError::IncorrectBondingRatio {});
             }
 
@@ -185,7 +185,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
         .iter()
         .zip(primitive_funding_amounts)
         .map(|(pc, funds)| match pc.init.clone() {
-            crate::msg::PrimitiveInitMsg::LP(lp_init_msg) => {
+            crate::msg::PrimitiveInitMsg::LP(_lp_init_msg) => {
                 let deposit_stub = BondingStub {
                     address: pc.address.clone(),
                     bond_response: Option::None,
@@ -227,10 +227,10 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
 }
 
 pub fn unbond(
-    deps: DepsMut,
+    _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    amount: Uint128,
+    _amount: Uint128,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
     // if info.funds.is_empty() {
