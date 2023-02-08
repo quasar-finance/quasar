@@ -20,8 +20,8 @@ import (
 	"google.golang.org/grpc"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	connectiontypes "github.com/cosmos/ibc-go/v5/modules/core/03-connection/types"
-	ibctenderminttypes "github.com/cosmos/ibc-go/v5/modules/light-clients/07-tendermint/types"
+	connectiontypes "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
+	ibctenderminttypes "github.com/cosmos/ibc-go/v6/modules/light-clients/07-tendermint/types"
 )
 
 type E2ETestSuite struct {

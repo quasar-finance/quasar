@@ -2,11 +2,11 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icqtypes "github.com/cosmos/ibc-go/v5/modules/apps/icq/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
 	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
+	icqtypes "github.com/strangelove-ventures/async-icq/v6/types"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 

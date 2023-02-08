@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
 	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"

@@ -7,9 +7,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	transfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	connectiontypes "github.com/cosmos/ibc-go/v5/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	connectiontypes "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	testconfig "github.com/quasarlabs/quasarnode/tests/e2e/config"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"

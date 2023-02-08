@@ -9,7 +9,7 @@ import (
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	types1 "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
+	types1 "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
