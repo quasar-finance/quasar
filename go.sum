@@ -1863,8 +1863,9 @@ github.com/miekg/pkcs11 v1.0.2/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WT
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/miekg/pkcs11 v1.1.1/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/mimoo/StrobeGo v0.0.0-20181016162300-f8f6d4d2b643/go.mod h1:43+3pMjjKimDBf5Kr4ZFNGbLql1zKkbImw+fZbw3geM=
-github.com/mimoo/StrobeGo v0.0.0-20210601165009-122bf33a46e0 h1:QRUSJEgZn2Snx0EmT/QLXibWjSUDjKWvXIT19NBVp94=
 github.com/mimoo/StrobeGo v0.0.0-20210601165009-122bf33a46e0/go.mod h1:43+3pMjjKimDBf5Kr4ZFNGbLql1zKkbImw+fZbw3geM=
+github.com/mimoo/StrobeGo v0.0.0-20220103164710-9a04d6ca976b h1:QrHweqAtyJ9EwCaGHBu1fghwxIPiopAHV06JlXrMHjk=
+github.com/mimoo/StrobeGo v0.0.0-20220103164710-9a04d6ca976b/go.mod h1:xxLb2ip6sSUts3g1irPVHyk/DGslwQsNOo9I7smJfNU=
 github.com/minio/highwayhash v1.0.1/go.mod h1:BQskDq+xkJ12lmlUUi7U0M5Swg3EWR+dLTk+kldvVxY=
 github.com/minio/highwayhash v1.0.2 h1:Aak5U0nElisjDCfPSG79Tgzkn2gl66NxOMspRrKnA/g=
 github.com/minio/highwayhash v1.0.2/go.mod h1:BQskDq+xkJ12lmlUUi7U0M5Swg3EWR+dLTk+kldvVxY=

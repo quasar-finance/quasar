@@ -154,14 +154,16 @@ proto-doc:
 
 .PHONY: proto-gen proto-doc
 
+
+# TODO: FIXME
 mocks: $(MOCKSDIR)/ 
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go github.com/cosmos/ibc-go/v5/modules/core/05-port/types ICS4Wrapper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go -source=$(GOMOD)/x/qoracle/types ChannelKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go -source=$(GOMOD)/x/intergamm/types ICAControllerKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_mocks.go -source=$(GOMOD)/x/intergamm/types IBCTransferKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go -source=github.com/cosmos/ibc-go/v6/modules/core/05-port/types ICS4Wrapper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_port_mocks.go -source=$(GOMOD)/x/qoracle/types PortKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_connection_mocks.go -source=$(GOMOD)/x/intergamm/types ConnectionKeeper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_client_mocks.go -source=$(GOMOD)/x/intergamm/types ClientKeeper
 
 $(MOCKSDIR)/:
 	mkdir -p $(MOCKSDIR)/

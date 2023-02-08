@@ -2,7 +2,10 @@
 
 set -Cue -o pipefail
 
-project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
+project_dir="$(
+  cd "$(dirname "${0}")/.."
+  pwd
+)" # Absolute path to project dir
 
 trap "rm -rf github.com" 0
 
@@ -14,9 +17,6 @@ for dir in $proto_dirs; do
     fi
   done
 done
-
-# Remove old protobuf generated go files
-find ${project_dir} -path "github.com" -prune -and -name "*.pb*.go" -type f -delete
 
 # Copy the generated go files over
 cp -r github.com/quasarlabs/quasarnode/* .

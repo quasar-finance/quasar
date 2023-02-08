@@ -2,7 +2,8 @@ package keeper
 
 import (
 	"context"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	sdkerrors "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"

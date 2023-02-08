@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/CosmWasm/wasmd v0.30.0
 	github.com/cosmos/cosmos-sdk v0.46.9
-	github.com/cosmos/ibc-go/v5 v5.1.0
+	github.com/cosmos/ibc-go/v6 v6.1.0
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/gogo/protobuf v1.3.3
@@ -46,7 +46,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
-	github.com/btcsuite/btcd v0.22.2 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.10 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -65,7 +64,7 @@ require (
 	github.com/cosmos/gogoproto v1.4.2 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.19.5 // indirect
-	github.com/cosmos/ibc-go/v6 v6.1.0 // indirect
+	github.com/cosmos/ibc-go/v5 v5.1.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

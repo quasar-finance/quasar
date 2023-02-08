@@ -1,8 +1,8 @@
 package types
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const TypeMsgRegisterICAOnDenomNativeZone = "register_ica_on_denom_native_zone"

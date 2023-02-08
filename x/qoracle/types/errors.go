@@ -1,9 +1,7 @@
 package types
 
-// DONTCOVER
-
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 )
 
 // x/qoracle module sentinel errors

@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"

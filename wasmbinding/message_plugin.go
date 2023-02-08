@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"

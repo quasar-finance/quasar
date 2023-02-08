@@ -1,9 +1,10 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"time"
+
+	sdkerrors "cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const TypeMsgTransmitIbcLockTokens = "transmit_ibc_lock_tokens"

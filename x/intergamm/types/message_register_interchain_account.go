@@ -1,8 +1,8 @@
 package types
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const TypeMsgRegisterInterchainAccount = "register_interchain_account"
@@ -11,7 +11,7 @@ var _ sdk.Msg = &MsgRegisterInterchainAccount{}
 
 func NewMsgRegisterInterchainAccount(creator string, connectionId string) *MsgRegisterInterchainAccount {
 	return &MsgRegisterInterchainAccount{
-		Creator:                creator,
+		Creator:      creator,
 		ConnectionId: connectionId,
 	}
 }

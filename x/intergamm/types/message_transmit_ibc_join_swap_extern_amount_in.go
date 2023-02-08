@@ -1,8 +1,8 @@
 package types
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const TypeMsgTransmitIbcJoinSwapExternAmountIn = "transmit_ibc_join_swap_extern_amount_in"
