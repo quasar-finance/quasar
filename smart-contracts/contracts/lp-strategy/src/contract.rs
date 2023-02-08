@@ -11,14 +11,17 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::parse_seq;
+use crate::helpers::{get_ica_address, parse_seq};
+use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ChannelsResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{
+    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, InstantiateMsg, QueryMsg, IcaBalanceResponse,
+};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
-    REPLIES, RETURNING,
+    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
+    PENDING_ACK, REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -298,7 +301,10 @@ pub fn execute_join_pool(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => todo!(),
+        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
+        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
+        QueryMsg::PrimitiveShares {} => todo!(),
+        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
     }
 }
 
@@ -315,6 +321,18 @@ pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {
         config: CONFIG.load(deps.storage)?,
     })
 }
+
+pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
+    Ok(IcaAddressResponse {
+        address: get_ica_address(deps.storage, ICA_CHANNEL.load(deps.storage)?)
+            .expect("ica address setup correctly"),
+    })
+}
+
+pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
+
+}
+
 
 #[cfg(test)]
 mod tests {
