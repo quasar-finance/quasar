@@ -1,15 +1,19 @@
-use std::ops::Add;
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::ops::{Add, Div, Mul};
 
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response,
-    SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
+    Response, SubMsg, Uint128, WasmMsg,
 };
 
+use cw_storage_plus::Map;
 use cw_utils::PaymentError;
+use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, PrimitiveInitMsg};
+use crate::msg::{ExecuteMsg, PrimitiveConfig, PrimitiveInitMsg};
 
 use crate::state::{
     BondingStub, Supply, BONDING_SEQ, DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS, STRATEGY_BOND_ID,
@@ -47,6 +51,7 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
     }
 }
 
+// todo test
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
 pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, PaymentError> {
@@ -62,39 +67,109 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
     }
 }
 
-pub fn must_pay_with_ratio(
+// todo test
+pub fn may_pay_with_ratio(
+    deps: &DepsMut,
     info: &MessageInfo,
-    ratio: CoinRatio,
-) -> Result<Vec<Coin>, ContractError> {
-    // verify that info.funds are passed in with the correct ratio
+    primitives: &Vec<PrimitiveConfig>,
+) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
+    // todo: Normalize weights first
+
+    // load cached balance of primitive contracts
+    let deposit_amount_weights: Vec<CoinWeight> = primitives
+        .iter()
+        .map(|pc| {
+            let supply: PrimitiveSharesResponse = deps
+                .querier
+                .query_wasm_smart(
+                    pc.address.clone(),
+                    &lp_strategy::msg::QueryMsg::PrimitiveShares {},
+                )
+                .unwrap();
+            let balance: IcaBalanceResponse = deps
+                .querier
+                .query_wasm_smart(
+                    pc.address.clone(),
+                    &lp_strategy::msg::QueryMsg::IcaBalance {},
+                )
+                .unwrap();
+
+            CoinWeight {
+                weight: Decimal::from_ratio(pc.weight.mul(balance.amount.amount), supply.amount),
+                denom: balance.amount.denom,
+            }
+        })
+        .collect();
+
+    let token_map = deposit_amount_weights.iter().fold(
+        HashMap::<&String, Decimal>::new(),
+        |mut acc, coin_weight| {
+            let existing_weight = acc.get(&coin_weight.denom);
+            let new_weight = match existing_weight {
+                Some(weight) => weight.checked_add(coin_weight.weight).unwrap(),
+                None => coin_weight.weight,
+            };
+            acc.insert(&coin_weight.denom, new_weight);
+            acc
+        },
+    );
+
+    let mut max_bond = Uint128::MAX;
+    for (denom, weight) in token_map {
+        let amount = must_pay_multi(info, denom).unwrap();
+        let bond_for_token = amount.multiply_ratio(weight.numerator(), weight.denominator());
+        if bond_for_token < max_bond {
+            max_bond = bond_for_token;
+        }
+    }
+
+    let ratio = CoinRatio {
+        ratio: deposit_amount_weights,
+    };
+
+    // verify that >0 of each token in ratio is passed in, return (funds, remainder))
+    // where funds is the max amount we can use in compliance with the ratio
+    // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
-    let mut last_expected_total = Uint128::zero();
+    let mut remainder = info.funds.clone();
 
     let coins: Result<Vec<Coin>, ContractError> = normed_ratio
         .iter()
         .map(|r| {
             let amount = must_pay_multi(info, &r.denom).unwrap();
-            let expected_total = amount
-                .checked_multiply_ratio(r.weight.denominator(), r.weight.numerator())
+            let expected_amount = max_bond
+                .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
                 .unwrap();
 
-            if (last_expected_total.is_zero()) {
-                last_expected_total = expected_total;
-            }
-
-            if expected_total.ne(&last_expected_total) {
+            if (expected_amount > amount) {
                 return Err(ContractError::IncorrectBondingRatio {});
             }
+
+            remainder = remainder
+                .iter()
+                .map(|c| {
+                    if c.denom == r.denom {
+                        Coin {
+                            amount: c.amount.checked_sub(expected_amount).unwrap(),
+                            denom: c.denom.clone(),
+                        }
+                    } else {
+                        c.clone()
+                    }
+                })
+                .collect();
+
             Ok(Coin {
                 denom: r.denom.clone(),
-                amount: amount,
+                amount: expected_amount,
             })
         })
         .collect();
 
-    coins
+    Ok((coins?, remainder))
 }
 
+// todo test
 pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     // load vault info & sequence number
     let invest = INVESTMENT.load(deps.storage)?;
@@ -102,23 +177,8 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
 
     let mut deposit_stubs = vec![];
 
-    let primitive_funding_amounts = must_pay_with_ratio(
-        &info,
-        // todo: This ratio should be constrained from share out calc, currently constrained by amount in.
-        CoinRatio {
-            ratio: invest
-                .primitives
-                .iter()
-                .map(|i| match i.init {
-                    PrimitiveInitMsg::LP(lp_init_msg) => CoinWeight {
-                        denom: lp_init_msg.local_denom,
-                        weight: i.weight,
-                    },
-                })
-                .collect(),
-        },
-    )
-    .unwrap();
+    let (primitive_funding_amounts, remainder) =
+        may_pay_with_ratio(&deps, &info, &invest.primitives).unwrap();
 
     let bond_msgs: Result<Vec<SubMsg>, ContractError> = invest
         .primitives
@@ -148,7 +208,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
         .collect();
 
     // save bonding state for use during the callback
-    PENDING_BOND_IDS.update(deps.storage, info.sender, |ids| match ids {
+    PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
         Some(mut bond_ids) => {
             bond_ids.push(bond_seq.to_string());
             Ok::<Vec<String>, ContractError>(bond_ids)
@@ -158,7 +218,12 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     DEPOSIT_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
     BONDING_SEQ.save(deps.storage, &bond_seq.add(Uint128::from(1u128)))?;
 
-    Ok(Response::new().add_submessages(bond_msgs?))
+    Ok(Response::new()
+        .add_submessages(bond_msgs?)
+        .add_message(BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: remainder,
+        }))
 }
 
 pub fn unbond(
@@ -167,17 +232,18 @@ pub fn unbond(
     _info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
+    Ok(Response::new())
     // if info.funds.is_empty() {
     //     return Err(ContractError::NoFunds {});
     // }
 
-    let invest = INVESTMENT.load(deps.storage)?;
-    // ensure it is big enough to care
-    if amount < invest.min_withdrawal {
-        return Err(ContractError::UnbondTooSmall {
-            min_bonded: invest.min_withdrawal,
-        });
-    }
+    // let invest = INVESTMENT.load(deps.storage)?;
+    // // ensure it is big enough to care
+    // if amount < invest.min_withdrawal {
+    //     return Err(ContractError::UnbondTooSmall {
+    //         min_bonded: invest.min_withdrawal,
+    //     });
+    // }
 
     // need to convert amount to the set of amounts for each primitive
 
