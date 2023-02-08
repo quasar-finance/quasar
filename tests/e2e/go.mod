@@ -1,6 +1,6 @@
 module github.com/quasarlabs/quasarnode/tests/e2e
 
-go 1.19
+go 1.20
 
 require (
 	github.com/CosmWasm/wasmd v0.30.0
