@@ -28,6 +28,9 @@ impl InstantiateMsg {
 pub enum QueryMsg {
     Channels {}, // TODO add all wanted queries
     Config {},
+    IcaAddress {},
+    PrimitiveShares {},
+    IcaBalance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
