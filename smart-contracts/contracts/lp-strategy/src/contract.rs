@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
-    StdResult, Uint128,
+    StdResult, Uint128, Coin,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -16,7 +16,8 @@ use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
-    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, InstantiateMsg, QueryMsg, IcaBalanceResponse,
+    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
+    InstantiateMsg, QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -330,9 +331,13 @@ pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
-
+    Ok(IcaBalanceResponse {
+        amount: Coin {
+            denom: CONFIG.load(deps.storage)?.local_denom,
+            amount: Uint128::one()
+        },
+    })
 }
-
 
 #[cfg(test)]
 mod tests {

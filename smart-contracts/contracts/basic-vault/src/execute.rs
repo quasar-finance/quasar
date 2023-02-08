@@ -167,18 +167,17 @@ pub fn unbond(
     _info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    Ok(Response::new())
     // if info.funds.is_empty() {
     //     return Err(ContractError::NoFunds {});
     // }
 
-    // let invest = INVESTMENT.load(deps.storage)?;
-    // // ensure it is big enough to care
-    // if amount < invest.min_withdrawal {
-    //     return Err(ContractError::UnbondTooSmall {
-    //         min_bonded: invest.min_withdrawal,
-    //     });
-    // }
+    let invest = INVESTMENT.load(deps.storage)?;
+    // ensure it is big enough to care
+    if amount < invest.min_withdrawal {
+        return Err(ContractError::UnbondTooSmall {
+            min_bonded: invest.min_withdrawal,
+        });
+    }
 
     // need to convert amount to the set of amounts for each primitive
 
