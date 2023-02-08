@@ -12,7 +12,6 @@ import (
 	"github.com/strangelove-ventures/ibctest/v5/chain/cosmos"
 	"github.com/strangelove-ventures/ibctest/v5/ibc"
 	"github.com/strangelove-ventures/ibctest/v5/relayer/rly"
-	"github.com/strangelove-ventures/ibctest/v5/test"
 	"github.com/strangelove-ventures/ibctest/v5/testreporter"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
@@ -113,7 +112,7 @@ func (s *E2ETestSuite) CreateUserAndFund(ctx context.Context, chain ibc.Chain, a
 	user := ibctest.GetAndFundTestUsers(s.T(), ctx, strings.ReplaceAll(s.T().Name(), " ", "-"), amount, chain)[0]
 
 	// Wait a few blocks
-	err := test.WaitForBlocks(ctx, 5, chain)
+	err := ibctest.WaitForBlocks(ctx, 5, chain)
 	s.Require().NoError(err)
 	return user
 }
