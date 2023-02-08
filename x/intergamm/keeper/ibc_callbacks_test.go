@@ -22,7 +22,7 @@ import (
 
 func makeIcaPacketPartial(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
 	return func(msg sdk.Msg) icatypes.InterchainAccountPacketData {
-		data, err := icatypes.SerializeCosmosTx(cdc, []sdk.Msg{msg})
+		data, err := icatypes.SerializeCosmosTx(cdc, []proto.Message{msg})
 		require.NoError(t, err)
 
 		return icatypes.InterchainAccountPacketData{
@@ -34,7 +34,7 @@ func makeIcaPacketPartial(t *testing.T, cdc codec.Codec) func(msg sdk.Msg) icaty
 
 func makeEmptyIcaPacketPartial(t *testing.T, cdc codec.Codec) func() icatypes.InterchainAccountPacketData {
 	return func() icatypes.InterchainAccountPacketData {
-		data, err := icatypes.SerializeCosmosTx(cdc, []sdk.Msg{})
+		data, err := icatypes.SerializeCosmosTx(cdc, []proto.Message{})
 		require.NoError(t, err)
 
 		return icatypes.InterchainAccountPacketData{
