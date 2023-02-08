@@ -30,28 +30,28 @@ type OsmosisHooks struct {
 	timeoutMsgBeginUnlocking          []func(sdk.Context, types.TimeoutExchange[*lockuptypes.MsgBeginUnlocking]) error
 }
 
-func (ih *OsmosisHooks) ClearAckHooks() {
-	ih.ackMsgCreateBalancerPool = nil
-	ih.ackMsgJoinPool = nil
-	ih.ackMsgExitPool = nil
-	ih.ackMsgJoinSwapExternAmountIn = nil
-	ih.ackMsgExitSwapExternAmountOut = nil
-	ih.ackMsgJoinSwapShareAmountOut = nil
-	ih.ackMsgExitSwapShareAmountIn = nil
-	ih.ackMsgLockTokens = nil
-	ih.ackMsgBeginUnlocking = nil
+func (oh *OsmosisHooks) ClearAckHooks() {
+	oh.ackMsgCreateBalancerPool = nil
+	oh.ackMsgJoinPool = nil
+	oh.ackMsgExitPool = nil
+	oh.ackMsgJoinSwapExternAmountIn = nil
+	oh.ackMsgExitSwapExternAmountOut = nil
+	oh.ackMsgJoinSwapShareAmountOut = nil
+	oh.ackMsgExitSwapShareAmountIn = nil
+	oh.ackMsgLockTokens = nil
+	oh.ackMsgBeginUnlocking = nil
 }
 
-func (ih *OsmosisHooks) ClearTimeoutHooks() {
-	ih.timeoutMsgCreateBalancerPool = nil
-	ih.timeoutMsgJoinPool = nil
-	ih.timeoutMsgExitPool = nil
-	ih.timeoutMsgJoinSwapExternAmountIn = nil
-	ih.timeoutMsgExitSwapExternAmountOut = nil
-	ih.timeoutMsgJoinSwapShareAmountOut = nil
-	ih.timeoutMsgExitSwapShareAmountIn = nil
-	ih.timeoutMsgLockTokens = nil
-	ih.timeoutMsgBeginUnlocking = nil
+func (oh *OsmosisHooks) ClearTimeoutHooks() {
+	oh.timeoutMsgCreateBalancerPool = nil
+	oh.timeoutMsgJoinPool = nil
+	oh.timeoutMsgExitPool = nil
+	oh.timeoutMsgJoinSwapExternAmountIn = nil
+	oh.timeoutMsgExitSwapExternAmountOut = nil
+	oh.timeoutMsgJoinSwapShareAmountOut = nil
+	oh.timeoutMsgExitSwapShareAmountIn = nil
+	oh.timeoutMsgLockTokens = nil
+	oh.timeoutMsgBeginUnlocking = nil
 }
 
 func (oh *OsmosisHooks) AddHooksAckMsgCreateBalancerPool(hs ...func(sdk.Context, types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]) error) {

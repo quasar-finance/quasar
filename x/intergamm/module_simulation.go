@@ -22,6 +22,7 @@ var (
 	_ = baseapp.Paramspace
 )
 
+//nolint:gosec // these are not hard-coded credentials
 const (
 	opWeightMsgSendToken = "op_weight_msg_send_token"
 	// TODO: Determine the simulation weight value

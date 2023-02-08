@@ -3,9 +3,9 @@ package wasmbinding
 import (
 	"encoding/json"
 
+	sdkerrors "cosmossdk.io/errors"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 )

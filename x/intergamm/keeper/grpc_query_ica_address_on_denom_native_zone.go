@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/intergamm/types"
@@ -19,7 +19,7 @@ func (k Keeper) ICAAddressOnDenomNativeZone(goCtx context.Context, req *types.Qu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, err := sdk.AccAddressFromBech32(req.Owner); err != nil {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid owner address (%s)", err)
+		return nil, sdkerrors.Wrapf(err, "invalid owner address (%s)")
 	}
 
 	if err := sdk.ValidateDenom(req.Denom); err != nil {
