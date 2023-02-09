@@ -39,7 +39,7 @@ impl InterchainAccountPacketData {
         InterchainAccountPacketData {
             r#type,
             data: CosmosTx { messages: msgs }.encode_to_vec(),
-            memo: memo.unwrap_or("".into()),
+            memo: memo.unwrap_or_else(|| "".into()),
         }
     }
 }

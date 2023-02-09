@@ -1,23 +1,15 @@
 use cosmwasm_std::{
-    Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError,
-    Storage, SubMsg, Uint128,
+    Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError, Storage, SubMsg, Uint128,
 };
 use osmosis_std::{
     shim::Duration,
     types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{
-            gamm::v1beta1::MsgJoinSwapExternAmountIn,
-            lockup::{MsgLockTokens},
-        },
+        osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
     },
 };
 
-use quasar_types::{
-    ica::{
-        packet::{ica_send},
-    },
-};
+use quasar_types::ica::packet::ica_send;
 
 use crate::{
     error::ContractError,
@@ -44,7 +36,7 @@ pub fn do_transfer(
     let transfer = IbcMsg::Transfer {
         channel_id,
         to_address,
-        amount: coin.clone(),
+        amount: coin,
         timeout,
     };
 
@@ -69,10 +61,8 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
     share_out_min_amount: Uint128,
     deposits: Vec<OngoingDeposit>,
 ) -> Result<SubMsg, ContractError> {
-    let ica_channel = ICA_CHANNEL
-        .load(storage)?;
-    let ica_address =
-        get_ica_address(storage, ica_channel.clone())?;
+    let ica_channel = ICA_CHANNEL.load(storage)?;
+    let ica_address = get_ica_address(storage, ica_channel.clone())?;
 
     // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
     let msg = MsgJoinSwapExternAmountIn {

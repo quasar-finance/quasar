@@ -19,12 +19,6 @@ pub struct Bond {
     pub bond_id: String,
 }
 
-impl Bond {
-    fn validate(&self) -> Result<(), ContractError> {
-        Ok(())
-    }
-}
-
 // A deposit starts of by querying the state of the ica counterparty contract
 pub fn do_bond(
     deps: DepsMut,
@@ -37,7 +31,7 @@ pub fn do_bond(
     BOND_QUEUE.push_back(
         deps.storage,
         &Bond {
-            amount: amount,
+            amount,
             owner: info.sender,
             bond_id,
         },
@@ -58,7 +52,7 @@ pub fn batch_bond(
     if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
         Ok(Some(do_transfer(
             storage,
-            &env,
+            env,
             amount,
             transfer_chan,
             to_address,
@@ -147,9 +141,7 @@ fn calculate_claim(
     total_balance: Uint128,
     total_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    if total_shares == Uint128::zero() {
-        Ok(user_balance)
-    } else if total_balance == Uint128::zero() {
+    if total_shares == Uint128::zero() || total_balance == Uint128::zero() {
         Ok(user_balance)
     } else {
         Ok(user_balance

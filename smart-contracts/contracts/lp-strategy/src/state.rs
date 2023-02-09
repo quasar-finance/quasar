@@ -1,7 +1,7 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
@@ -10,11 +10,11 @@ use crate::{
     bond::Bond,
     error::{ContractError, Trap},
     helpers::IbcMsgKind,
-    ibc_lock::{Lock},
+    ibc_lock::Lock,
     start_unbond::StartUnbond,
 };
 
-pub const RETURN_SOURCE_PORT: &'static str = "transfer";
+pub const RETURN_SOURCE_PORT: &str = "transfer";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
