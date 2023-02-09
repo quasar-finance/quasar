@@ -24,25 +24,25 @@ var (
 	// PortKey defines the key to store the port ID in store
 	PortKey = []byte{0x01}
 	// KeyParamsRequestState defines the key to store state of chain params request
-	KeyParamsRequestState = []byte("params_request_state")
+	KeyParamsRequestState = []byte{0x02}
 	// KeyIncentivizedPoolsRequestState defines the key to store state of osmosis incentivized pools request
-	KeyIncentivizedPoolsRequestState = []byte("incentivized_pools_request_state")
+	KeyIncentivizedPoolsRequestState = []byte{0x03}
 	// KeyPoolsRequestState defines the key to store state of osmosis pools request
-	KeyPoolsRequestState = []byte("pools_request_state")
+	KeyPoolsRequestState = []byte{0x04}
 	// KeyEpochsInfo defines the key to store osmosis epochs info in store
-	KeyEpochsInfo = []byte("epochs_info")
+	KeyEpochsInfo = []byte{0x05}
 	// KeyPoolPrefix defines the prefix key to store osmosis pools in store
-	KeyPoolPrefix = []byte("pool")
+	KeyPoolPrefix = []byte{0x06}
 	// KeyPoolsUpdatedAt defines the key to store osmosis pools updated at in store
-	KeyPoolsUpdatedAt = []byte("pools_updated_at")
-	// KeyKeyLockableDurations defines the key to store lockable durations in store
-	KeyLockableDurations = []byte("lockable_durations")
+	KeyPoolsUpdatedAt = []byte{0x07}
+	// KeyLockableDurations defines the key to store lockable durations in store
+	KeyLockableDurations = []byte{0x08}
 	// KeyMintParams defines the key to store mint params in store
-	KeyMintParams = []byte("mint_params")
+	KeyMintParams = []byte{0x09}
 	// KeyMintEpochProvisions defines the key to store mint epoch provisions in store
-	KeyMintEpochProvisions = []byte("mint_epoch_provisions")
+	KeyMintEpochProvisions = []byte{0x0A}
 	// KeyIncentivizedPools defines the key to store incentivized pools in store
-	KeyIncentivizedPools = []byte("incentivized_pools")
+	KeyIncentivizedPools = []byte{0x0B}
 	// KeyDistrInfo defines the key to store distribution info in store
-	KeyDistrInfo = []byte("distr_info")
+	KeyDistrInfo = []byte{0x0C}
 )
