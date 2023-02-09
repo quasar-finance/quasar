@@ -30,6 +30,8 @@ pub struct Config {
     pub quote_denom: String,
     // the denom on the Quasar chain
     pub local_denom: String,
+    // the transfer channel to transfer funds to Osmosis
+    pub transfer_channel: String,
     // the channel for sending tokens back from the counterparty chain to quasar chain
     pub return_source_channel: String,
 }
@@ -42,9 +44,6 @@ pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 // We also support one ICQ channel to Osmosis at the moment
 pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
-
-// The channel over which to transfer the tokens,
-pub(crate) const TRANSFER_CHANNEL: Item<String> = Item::new("transfer_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
 pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");

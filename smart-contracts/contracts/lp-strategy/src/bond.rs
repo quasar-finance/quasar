@@ -8,10 +8,7 @@ use crate::{
     helpers::{get_ica_address, get_total_shares},
     ibc_util::do_transfer,
     icq::try_icq,
-    state::{
-        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES,
-        TRANSFER_CHANNEL,
-    },
+    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -55,7 +52,7 @@ pub fn batch_bond(
     env: &Env,
     query_balance: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let transfer_chan = TRANSFER_CHANNEL.load(storage)?;
+    let transfer_chan = CONFIG.load(storage)?.transfer_channel;
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
@@ -80,16 +77,17 @@ pub fn fold_bonds(
     let mut total = Uint128::zero();
     let mut deposits: Vec<OngoingDeposit> = vec![];
 
-    let empty = BOND_QUEUE.is_empty(storage)?;
-
-    if empty {
+    if BOND_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
-    while !empty {
-        let item: Bond = BOND_QUEUE
-            .pop_front(storage)?
-            .ok_or(ContractError::QueueItemNotFound)?;
+    while !BOND_QUEUE.is_empty(storage)? {
+        let item: Bond =
+            BOND_QUEUE
+                .pop_front(storage)?
+                .ok_or(ContractError::QueueItemNotFound {
+                    queue: "bond".to_string(),
+                })?;
         let claim_amount = create_claim(storage, item.amount, item.owner.clone(), total_balance)?;
         total = total.checked_add(item.amount)?;
         deposits.push(OngoingDeposit {
@@ -142,14 +140,22 @@ pub fn create_share(
 
 /// calculate the amount of for the claim of the user
 /// user_shares = (user_balance / vault_balance) * vault_total_shares = (user_balance * vault_total_shares) / vault_balance
+/// if the total_shares are zero, independant of the total_balance, the user shoudl get user_balance amount of shares
+/// if the total_balance is zero, what do we do?, for now the same as if total_shares is zero
 fn calculate_claim(
     user_balance: Uint128,
     total_balance: Uint128,
     total_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    Ok(user_balance
-        .checked_mul(total_shares)?
-        .checked_div(total_balance)?)
+    if total_shares == Uint128::zero() {
+        Ok(user_balance)
+    } else if total_balance == Uint128::zero() {
+        Ok(user_balance)
+    } else {
+        Ok(user_balance
+            .checked_mul(total_shares)?
+            .checked_div(total_balance)?)
+    }
 }
 
 #[cfg(test)]

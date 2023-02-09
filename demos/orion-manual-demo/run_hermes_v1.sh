@@ -28,7 +28,7 @@ osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp:
 
 # hermes create connection quasar $BANDCHAIN
 
-# # Create channel
+# Create channel
 
 # hermes create channel --a-chain cosmos --a-connection connection-0 --a-port transfer --b-port transfer
 
@@ -37,6 +37,3 @@ osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp:
 # hermes create channel --a-chain quasar --a-connection connection-1 --a-port transfer --port-b transfer
 
 # hermes create channel --port-a qoracle --port-b oracle quasar connection-2 -v bandchain-1
-
-# start
-hermes start 

@@ -48,16 +48,17 @@ pub fn batch_unbond(
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
-    let empty = UNBOND_QUEUE.is_empty(storage)?;
-    if empty {
+    if UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
     // aggregate the current unbond queue, all items in this queue should be able to unbond
-    while !empty {
+    while !UNBOND_QUEUE.is_empty(storage)? {
         let unbond = UNBOND_QUEUE
             .pop_front(storage)?
-            .ok_or(ContractError::QueueItemNotFound)?;
+            .ok_or(ContractError::QueueItemNotFound {
+                queue: "unbond".to_string(),
+            })?;
         total_exit = total_exit.checked_add(unbond.lp_shares)?;
         // add the unbond to the pending unbonds
         pending.push(ReturningUnbond {

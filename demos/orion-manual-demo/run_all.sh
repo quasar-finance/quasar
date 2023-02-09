@@ -41,6 +41,11 @@ osmosisd tx gamm create-pool --pool-file ./sample_pool.json --node http://127.0.
 # ./run_hermes.sh  &
 
 # Currently we're not using Hermes due to an issue with relaying new channels https://github.com/informalsystems/ibc-rs/issues/2608
+
+
+# setup and run hermes
+./run_hermes_v1.sh
+
 echo "starting hermes"
 hermes start >> ./logs/hermes_start.log 2>&1 &
 HERMES_PID=$!
@@ -59,6 +64,13 @@ RLY_PID_2=$!
 rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmos_osmosis.log 2>&1  &
 RLY_PID_3=$!
 
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10000uosmo --from bob --node http://127.0.0.1:26679 --chain-id osmosis
+echo "ibc transferring uosmo"
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10000uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y
+
+sleep 10
+
+quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+
+echo "setup ready for use"
 
 wait

@@ -50,8 +50,8 @@ pub enum ContractError {
     #[error("quote denom not found")]
     QuoteDenomNotFound,
 
-    #[error("No item in the queue while an item was expected")]
-    QueueItemNotFound,
+    #[error("No item in the queue {} while an item was expected", queue)]
+    QueueItemNotFound { queue: String },
 
     #[error("no counterpart ica address found")]
     NoCounterpartyIcaAddress,

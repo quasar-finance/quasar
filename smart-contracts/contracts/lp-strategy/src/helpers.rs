@@ -47,8 +47,6 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
     }
 }
 
-pub fn ica_packet() {}
-
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
     pending: &IbcMsgKind,
@@ -67,7 +65,10 @@ pub fn create_ibc_ack_submsg(
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum IbcMsgKind {
-    Transfer(PendingBond),
+    Transfer {
+        pending: PendingBond,
+        amount: Uint128,
+    },
     Ica(IcaMessages),
     Icq,
 }

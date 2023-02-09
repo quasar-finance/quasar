@@ -11,7 +11,7 @@ use crate::{
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     ibc_util::do_transfer,
-    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, TRANSFER_CHANNEL},
+    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
 };
 
 pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, ContractError> {
@@ -68,26 +68,28 @@ pub fn prepare_total_balance_query(
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
     };
+
+    // path have to be set manually, should be equal to the proto_queries of osmosis-std types
     Ok(Query::new()
         .add_request(
             base_balance.encode_to_vec(),
-            QueryBalanceRequest::TYPE_URL.to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             quote_balance.encode_to_vec(),
-            QueryBalanceRequest::TYPE_URL.to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             lp_balance.encode_to_vec(),
-            QueryBalanceRequest::TYPE_URL.to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             exit_pool.encode_to_vec(),
-            QueryCalcExitPoolCoinsFromSharesRequest::TYPE_URL.to_string(),
+            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
             spot_price.encode_to_vec(),
-            QuerySpotPriceRequest::TYPE_URL.to_string(),
+            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         )
         .encode_pkt())
 }
@@ -100,6 +102,11 @@ pub fn calc_total_balance(
     spot_price: Uint128,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
+    // if we receive no tokens in the response, the total balance
+    if exit_pool.len() == 0 {
+        return Ok(ica_balance);
+    }
+
     let base = exit_pool
         .iter()
         .find(|coin| coin.denom == config.base_denom)
