@@ -7,10 +7,8 @@ use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
-    bond::fold_bonds,
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
-    ibc_util::do_transfer,
     state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
 };
 

@@ -12,7 +12,7 @@ use quasar_types::ibc::ChannelInfo;
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
-use crate::ibc_lock::{IbcLock, Lock};
+use crate::ibc_lock::{Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
@@ -146,7 +146,7 @@ pub fn execute_return_funds(
 
 pub fn execute_accept_returning_funds(
     deps: DepsMut,
-    env: &Env,
+    _env: &Env,
     info: MessageInfo,
     id: u64,
 ) -> Result<Response, ContractError> {
