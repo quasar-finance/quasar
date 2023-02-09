@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, DivideByZeroError, OverflowError, StdError, Uint128};
+use cosmwasm_std::{DivideByZeroError, OverflowError, StdError};
 use quasar_types::error::Error as QError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ use std::str::Utf8Error;
 use thiserror::Error;
 
 use crate::helpers::IbcMsgKind;
-use crate::state::OngoingDeposit;
+
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]

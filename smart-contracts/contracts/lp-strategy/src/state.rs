@@ -1,7 +1,7 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, ops::Add};
+use std::{fmt::Debug};
 
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
@@ -10,7 +10,7 @@ use crate::{
     bond::Bond,
     error::{ContractError, Trap},
     helpers::IbcMsgKind,
-    ibc_lock::{IbcLock, Lock},
+    ibc_lock::{Lock},
     start_unbond::StartUnbond,
 };
 

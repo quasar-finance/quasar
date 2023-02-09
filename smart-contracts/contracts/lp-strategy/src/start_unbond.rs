@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
 };
-use cw_storage_plus::DequeIter;
+
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
 use quasar_types::{
     callback::{Callback, StartUnbondResponse},
@@ -14,8 +14,7 @@ use crate::{
     error::ContractError,
     helpers::get_total_shares,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_lock::{IbcLock, Lock},
-    icq::try_icq,
+    ibc_lock::{Lock},
     state::{
         PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
         START_UNBOND_QUEUE, UNBONDING_CLAIMS,
@@ -119,7 +118,7 @@ pub fn handle_start_unbond_ack(
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
 fn single_unbond(
     storage: &mut dyn Storage,
-    env: &Env,
+    _env: &Env,
     unbond: &StartUnbond,
     total_lp_shares: Uint128,
 ) -> Result<Uint128, ContractError> {

@@ -7,16 +7,15 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
-    OSMO_LOCK, PENDING_ACK, START_UNBOND_QUEUE, TRAPS, UNBONDING_CLAIMS,
+    OSMO_LOCK, PENDING_ACK, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
-use cosmos_sdk_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
+
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
-    QueryCalcExitPoolCoinsFromSharesResponse,
 };
-use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
+
 use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
@@ -32,7 +31,7 @@ use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
-    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcPacket,
+    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     StdError, Storage, Uint128, WasmMsg,
 };
@@ -271,7 +270,7 @@ pub fn handle_transfer_ack(
     storage: &mut dyn Storage,
     env: Env,
     _ack_bin: Binary,
-    pkt: &IbcPacketAckMsg,
+    _pkt: &IbcPacketAckMsg,
     pending: PendingBond,
     total_amount: Uint128,
 ) -> Result<IbcBasicResponse, ContractError> {
@@ -310,11 +309,11 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
-    let quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
+    let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
-    let lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
+    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -382,7 +381,7 @@ pub fn handle_ica_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
-    pkt: &IbcPacketAckMsg,
+    _pkt: &IbcPacketAckMsg,
     ica_kind: &mut IcaMessages,
 ) -> Result<IbcBasicResponse, ContractError> {
     match ica_kind {
@@ -525,5 +524,5 @@ fn on_packet_failure(
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    
 }

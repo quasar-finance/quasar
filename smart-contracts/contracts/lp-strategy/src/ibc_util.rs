@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, OverflowError, StdError,
-    Storage, SubMsg, Timestamp, Uint128,
+    Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError,
+    Storage, SubMsg, Uint128,
 };
 use osmosis_std::{
     shim::Duration,
@@ -8,23 +8,21 @@ use osmosis_std::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::{
             gamm::v1beta1::MsgJoinSwapExternAmountIn,
-            lockup::{MsgBeginUnlocking, MsgLockTokens},
+            lockup::{MsgLockTokens},
         },
     },
 };
 
 use quasar_types::{
-    ibc::{ChannelType, MsgTransfer},
     ica::{
-        packet::{ica_send, InterchainAccountPacketData, Type},
-        traits::Pack,
+        packet::{ica_send},
     },
 };
 
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    state::{OngoingDeposit, PendingBond, CHANNELS, CONFIG, ICA_CHANNEL, RETURN_SOURCE_PORT},
+    state::{OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL},
 };
 
 pub fn do_transfer(

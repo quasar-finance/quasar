@@ -15,10 +15,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    icq::try_icq,
     msg::ExecuteMsg,
     state::{
-        RawAmount, Unbond, CONFIG, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
+        RawAmount, CONFIG, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
         UNBOND_QUEUE,
     },
 };
@@ -42,8 +41,8 @@ pub fn do_unbond(
 pub fn batch_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    vault_value: Uint128,
-    total_lp_shares: Uint128,
+    _vault_value: Uint128,
+    _total_lp_shares: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];

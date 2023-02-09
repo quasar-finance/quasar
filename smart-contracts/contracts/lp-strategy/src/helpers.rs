@@ -1,9 +1,9 @@
 use crate::{
     error::ContractError,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
-    unbond::{PendingReturningUnbonds, ReturningUnbond},
+    unbond::{PendingReturningUnbonds},
 };
-use cosmwasm_std::{Binary, CosmosMsg, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
