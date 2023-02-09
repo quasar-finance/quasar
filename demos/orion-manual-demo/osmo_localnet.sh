@@ -184,6 +184,8 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
         "/cosmos.bank.v1beta1.Query/Balance",
         "/osmosis.epochs.v1beta1.Query/EpochInfos",
         "/osmosis.gamm.v1beta1.Query/Pool",
+        "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares",
+        "/osmosis.gamm.v2.Query/SpotPrice",
         "/osmosis.poolincentives.v1beta1.Query/LockableDurations",
         "/osmosis.mint.v1beta1.Query/Params",
         "/osmosis.mint.v1beta1.Query/EpochProvisions",

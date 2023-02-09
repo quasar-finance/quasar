@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdResult, Uint128};
+use cosmwasm_std::{Coin, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
@@ -14,6 +14,7 @@ pub struct InstantiateMsg {
     pub local_denom: String,
     pub base_denom: String,
     pub quote_denom: String,
+    pub transfer_channel: String,
     pub return_source_channel: String,
 }
 
@@ -31,6 +32,7 @@ pub enum QueryMsg {
     IcaAddress {},
     PrimitiveShares {},
     IcaBalance {},
+    IcaChannel {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -61,6 +63,12 @@ pub struct IcaAddressResponse {
 #[serde(rename_all = "snake_case")]
 pub struct IcaBalanceResponse {
     pub amount: Coin,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct IcaChannelResponse {
+    pub channel: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

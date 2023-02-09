@@ -17,7 +17,7 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    InstantiateMsg, PrimitiveSharesResponse, QueryMsg,
+    IcaChannelResponse, InstantiateMsg, PrimitiveSharesResponse, QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -50,8 +50,11 @@ pub fn instantiate(
             local_denom: msg.local_denom,
             quote_denom: msg.quote_denom,
             return_source_channel: msg.return_source_channel,
+            transfer_channel: msg.transfer_channel,
         },
     )?;
+
+    IBC_LOCK.save(deps.storage, &Lock::new())?;
 
     LP_SHARES.save(deps.storage, &Uint128::zero())?;
 
@@ -273,12 +276,9 @@ pub fn execute_join_pool(
     amount: Uint128,
     share_out_min_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let channel_id = ICA_CHANNEL.load(deps.storage)?;
-
     let join = do_ibc_join_pool_swap_extern_amount_in(
         deps.storage,
         env,
-        channel_id.clone(),
         pool_id,
         denom.clone(),
         amount,
@@ -294,7 +294,6 @@ pub fn execute_join_pool(
 
     Ok(Response::new()
         .add_submessage(join)
-        .add_attribute("ibc-join-pool-channel", channel_id)
         .add_attribute("denom", denom))
 }
 
@@ -304,8 +303,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
         QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
         QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::PrimitiveShares {} => todo!(),
+        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
         QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
+        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
     }
 }
 
@@ -327,6 +327,12 @@ pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
     Ok(IcaAddressResponse {
         address: get_ica_address(deps.storage, ICA_CHANNEL.load(deps.storage)?)
             .expect("ica address setup correctly"),
+    })
+}
+
+pub fn handle_ica_channel(deps: Deps) -> StdResult<IcaChannelResponse> {
+    Ok(IcaChannelResponse {
+        channel: ICA_CHANNEL.load(deps.storage)?,
     })
 }
 

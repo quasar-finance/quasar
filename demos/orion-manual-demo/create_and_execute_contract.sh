@@ -7,13 +7,13 @@ RPC="http://127.0.0.1:26659"
 NODE="--node $RPC"
 TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3"
 echo $NODE
-#     duration is  60 sec/min * 60 min/hr * 24hr * 14days "1209600"
+#     lock_period is  60 for 60 sec, in prod should be at least: 60 sec/min * 60 min/hr * 24hr * 14days "1209600"
 #     pool_id is hardcoded to 1 for this testing setup, expected to be done by the instantiater on local/testnet
 #     pool_denom should be looked up and hardcoded aswell
 #     base_denom: base_denom should be the denom of the token on osmosos, for now uosmo
 #     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
 #     quote_denom is the denom other denom in the pool, stake for now
-INIT='{"lock_period":1209600,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake","return_source_channel":"channel-0"}'
+INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-1"}'
 
 cd ../../smart-contracts
 
@@ -46,17 +46,10 @@ BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --nod
 echo $BANKTX
 # $BANKTX
 
-echo "joining pool and locking all lp tokens using preloaded funds"
+# BONDMSG='{"bond": {"id": "my-id"}}'
+# BOND=$(printf 'quasarnoded tx wasm execute %s '%s' -y --from alice --keyring-backend test --gas-prices 10uqsr --gas auto --gas-adjustment 1.3 --node http://127.0.0.1:26659 --chain-id quasar --amount 1000ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817\n' $ADDR $BONDMSG)
 
-JOINMSG=$(printf '{
-  "deposit_and_lock_tokens": {
-    "amount": "1000",
-    "denom": "uosmo",
-    "pool_id": 1,
-    "share_out_min_amount": "1"
-  }
-}')
-
-echo "joining pool, to replay: \"quasarnoded tx wasm execute $ADDR '$JOINMSG' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID\""
-quasarnoded tx wasm execute $ADDR "$JOINMSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+# echo "bonding tokens, to replay: "
+# echo $BOND
+# $BOND
 cd -
