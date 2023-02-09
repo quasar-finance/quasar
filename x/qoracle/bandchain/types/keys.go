@@ -33,7 +33,7 @@ var (
 	// PortKey defines the key to store the port ID in store
 	PortKey = []byte{0x01}
 	// KeyCoinRatesState defines the key to store state of coin rates request
-	KeyCoinRatesState = []byte("coin_rates_state")
+	KeyCoinRatesState = []byte{0x02}
 	// KeyPriceList defines the key to store price list in store
-	KeyPriceList = []byte("price_list")
+	KeyPriceList = []byte{0x03}
 )
