@@ -1,7 +1,7 @@
 use crate::{
     error::ContractError,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
-    unbond::{PendingReturningUnbonds},
+    unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
@@ -92,7 +92,7 @@ pub enum MsgKind {
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
     let resp = MsgTransferResponse::decode(data.0.as_slice())?;
-    return Ok(resp.seq);
+    Ok(resp.seq)
 }
 
 #[cfg(test)]

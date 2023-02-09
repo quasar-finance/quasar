@@ -10,7 +10,6 @@ use thiserror::Error;
 
 use crate::helpers::IbcMsgKind;
 
-
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
 pub enum Never {}

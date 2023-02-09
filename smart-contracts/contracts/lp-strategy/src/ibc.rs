@@ -217,7 +217,7 @@ pub fn handle_succesful_ack(
     let mut pending = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match pending {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
-        IbcMsgKind::Transfer{ pending, amount } => {
+        IbcMsgKind::Transfer { pending, amount } => {
             match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone(), amount) {
                 Ok(response) => Ok(response),
                 Err(err) => {
@@ -226,7 +226,7 @@ pub fn handle_succesful_ack(
                         pkt.original_packet.sequence,
                         &Trap {
                             error: err.to_string(),
-                            step: IbcMsgKind::Transfer{ pending, amount },
+                            step: IbcMsgKind::Transfer { pending, amount },
                         },
                     )?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
@@ -342,8 +342,8 @@ pub fn handle_icq_ack(
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
-    if bond.is_some() {
-        msges.push(bond.unwrap());
+    if let Some(msg) = bond {
+        msges.push(msg);
         attrs.push(Attribute::new("bond-status", "bonding"));
         IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
             Ok(lock.lock_bond())
@@ -352,8 +352,8 @@ pub fn handle_icq_ack(
         attrs.push(Attribute::new("bond-status", "empty"));
     }
 
-    if start_unbond.is_some() {
-        msges.push(start_unbond.unwrap());
+    if let Some(msg) = start_unbond {
+        msges.push(msg);
         attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
         IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
             Ok(lock.lock_start_unbond())
@@ -362,8 +362,8 @@ pub fn handle_icq_ack(
         attrs.push(Attribute::new("start-unbond-status", "empty"));
     }
 
-    if unbond.is_some() {
-        msges.push(unbond.unwrap());
+    if let Some(msg) = unbond {
+        msges.push(msg);
         attrs.push(Attribute::new("unbond-status", "unbonding"));
         IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
             Ok(lock.lock_unbond())
@@ -523,6 +523,4 @@ fn on_packet_failure(
 }
 
 #[cfg(test)]
-mod test {
-    
-}
+mod test {}

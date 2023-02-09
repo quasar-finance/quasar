@@ -57,6 +57,12 @@ impl Lock {
     }
 }
 
+impl Default for Lock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// IbcLock describes the current state of the contract
 /// Upon locking the contract, all current deposits and withdraws are going to be handled, Incoming withdraws are gathered once again gathered into a queue.
 /// Once the contract unlocks, if the queue has any deposits and/or withdraws, the contract locks and starts handling all current queries

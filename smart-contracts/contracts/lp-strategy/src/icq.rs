@@ -52,7 +52,7 @@ pub fn prepare_total_balance_query(
         denom: config.quote_denom.clone(),
     };
     let lp_balance = QueryBalanceRequest {
-        address: address.clone(),
+        address,
         denom: config.pool_denom,
     };
     // we simulate the result of an exit pool of our entire vault to get the total value in lp tokens
@@ -101,7 +101,7 @@ pub fn calc_total_balance(
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
     // if we receive no tokens in the response, the total balance
-    if exit_pool.len() == 0 {
+    if exit_pool.is_empty() {
         return Ok(ica_balance);
     }
 

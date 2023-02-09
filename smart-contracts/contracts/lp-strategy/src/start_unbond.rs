@@ -14,7 +14,7 @@ use crate::{
     error::ContractError,
     helpers::get_total_shares,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_lock::{Lock},
+    ibc_lock::Lock,
     state::{
         PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
         START_UNBOND_QUEUE, UNBONDING_CLAIMS,
@@ -60,7 +60,7 @@ pub fn batch_start_unbond(
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "start_unbond".to_string(),
                 })?;
-        let lp_shares = single_unbond(storage, &env, &unbond, total_lp_shares)?;
+        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
             amount: lp_shares,
@@ -101,7 +101,7 @@ pub fn handle_start_unbond_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        let msg = start_internal_unbond(storage, env, &unbond)?;
+        let msg = start_internal_unbond(storage, env, unbond)?;
         msgs.push(msg);
     }
 
