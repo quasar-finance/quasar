@@ -1,6 +1,7 @@
 use crate::{
     error::ContractError,
-    state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
+    ibc_lock::Lock,
+    state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
@@ -93,6 +94,61 @@ pub enum MsgKind {
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
     let resp = MsgTransferResponse::decode(data.0.as_slice())?;
     Ok(resp.seq)
+}
+
+pub(crate) fn unlock_on_error(
+    storage: &mut dyn Storage,
+    kind: IbcMsgKind,
+) -> Result<(), ContractError> {
+    match kind {
+        IbcMsgKind::Transfer {
+            pending: _,
+            amount: _,
+        } => {
+            IBC_LOCK.update(storage, |lock| {
+                Ok::<Lock, ContractError>(lock.unlock_bond())
+            })?;
+            Ok(())
+        }
+        IbcMsgKind::Ica(ica) => match ica {
+            IcaMessages::JoinSwapExternAmountIn(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_bond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::LockTokens(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_bond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::BeginUnlocking(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_start_unbond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::ExitPool(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_unbond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::ReturnTransfer(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_unbond())
+                })?;
+                Ok(())
+            }
+        },
+        IbcMsgKind::Icq => {
+            IBC_LOCK.update(storage, |lock| {
+                Ok::<Lock, ContractError>(lock.unlock_bond().unlock_start_unbond().unlock_unbond())
+            })?;
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

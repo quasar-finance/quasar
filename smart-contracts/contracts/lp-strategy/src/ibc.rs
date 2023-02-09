@@ -1,6 +1,8 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
-use crate::helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages};
+use crate::helpers::{
+    create_ibc_ack_submsg, get_ica_address, unlock_on_error, IbcMsgKind, IcaMessages,
+};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use crate::icq::calc_total_balance;
@@ -14,8 +16,10 @@ use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
+    QueryCalcExitPoolCoinsFromSharesResponse,
 };
 
+use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
 use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
@@ -214,25 +218,30 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let mut pending = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
-    match pending {
+    let mut kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    match kind {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
-        IbcMsgKind::Transfer { pending, amount } => {
-            match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone(), amount) {
-                Ok(response) => Ok(response),
-                Err(err) => {
-                    TRAPS.save(
-                        deps.storage,
-                        pkt.original_packet.sequence,
-                        &Trap {
-                            error: err.to_string(),
-                            step: IbcMsgKind::Transfer { pending, amount },
+        IbcMsgKind::Transfer {
+            ref pending,
+            amount,
+        } => match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone(), amount) {
+            Ok(response) => Ok(response),
+            Err(err) => {
+                TRAPS.save(
+                    deps.storage,
+                    pkt.original_packet.sequence,
+                    &Trap {
+                        error: err.to_string(),
+                        step: IbcMsgKind::Transfer {
+                            pending: pending.clone(),
+                            amount,
                         },
-                    )?;
-                    Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
-                }
+                    },
+                )?;
+                unlock_on_error(deps.storage, kind)?;
+                Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
-        }
+        },
         IbcMsgKind::Ica(ref mut ica_kind) => {
             match handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind) {
                 Ok(response) => Ok(response),
@@ -245,6 +254,7 @@ pub fn handle_succesful_ack(
                             step: IbcMsgKind::Ica(ica_kind.clone()),
                         },
                     )?;
+                    unlock_on_error(deps.storage, kind)?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
@@ -260,6 +270,7 @@ pub fn handle_succesful_ack(
                         step: IbcMsgKind::Icq,
                     },
                 )?;
+                unlock_on_error(deps.storage, kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -317,15 +328,16 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
-    // let exit_pool =
-    //     QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
-    // let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+    let exit_pool =
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
+    let _ = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
 
     let total_balance = calc_total_balance(
         storage,
         Uint128::new(balance.parse::<u128>()?),
-        Vec::new(),
+        exit_pool.tokens_out,
         Uint128::one(),
+        // Uint128::new(spot_price.parse()?),
     )?;
 
     ICA_BALANCE.save(storage, &total_balance)?;

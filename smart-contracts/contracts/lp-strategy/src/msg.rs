@@ -4,7 +4,7 @@ use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::Config;
+use crate::{ibc_lock, state::Config};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {
@@ -27,9 +27,10 @@ impl InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Channels {}, // TODO add all wanted queries
+    Channels {},
     Config {},
     IcaAddress {},
+    Lock {},
     PrimitiveShares {},
     IcaBalance {},
     IcaChannel {},
@@ -49,14 +50,20 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct PrimitiveSharesResponse {
-    pub total: Uint128,
+pub struct LockResponse {
+    pub lock: ibc_lock::Lock,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct IcaAddressResponse {
     pub address: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct PrimitiveSharesResponse {
+    pub total: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

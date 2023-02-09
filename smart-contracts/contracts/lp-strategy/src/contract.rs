@@ -17,7 +17,7 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    IcaChannelResponse, InstantiateMsg, PrimitiveSharesResponse, QueryMsg,
+    IcaChannelResponse, InstantiateMsg, LockResponse, PrimitiveSharesResponse, QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -306,6 +306,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
         QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
         QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
+        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
     }
 }
 
@@ -359,6 +360,16 @@ pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
                     msg: err.to_string(),
                 })?,
         },
+    })
+}
+
+pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
+    Ok(LockResponse {
+        lock: IBC_LOCK
+            .load(deps.storage)
+            .map_err(|err| StdError::GenericErr {
+                msg: err.to_string(),
+            })?,
     })
 }
 
