@@ -158,7 +158,7 @@ mocks: $(MOCKSDIR)/
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
 	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
+	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go github.com/cosmos/ibc-go/v5/modules/core/05-port/types ICS4Wrapper
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
@@ -170,7 +170,7 @@ $(MOCKSDIR)/:
 ###                           Tests & Simulation                            ###
 ###############################################################################
 
-PACKAGES_UNIT = $(shell go list ./x/epochs/... ./x/intergamm/... ./x/qbank/... ./x/qoracle/... ./x/orion/keeper/... ./x/orion/types/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_UNIT = $(shell go list ./x/epochs/... ./x/intergamm/...  ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 E2EDIR = $(CURDIR)/tests/e2e
 PACKAGES_SIM = $(shell go list ./... | grep '/tests/simulator')
 TEST_PACKAGES = ./...

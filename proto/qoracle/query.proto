@@ -3,52 +3,36 @@ package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qoracle/params.proto";
-import "qoracle/bandchain.proto";
-import "qoracle/osmosis.proto";
-import "osmosis/epochs/genesis.proto";
-import "osmosis/mint/v1beta1/mint.proto";
-import "osmosis/pool-incentives/v1beta1/incentives.proto";
-import "osmosis/pool-incentives/v1beta1/query.proto";
-// this line is used by starport scaffolding # 1
+import "qoracle/denom_symbol_mapping.proto";
+import "qoracle/pool.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
 // Query defines the gRPC querier service.
 service Query {
-// Parameters queries the parameters of the module.
+	// Params queries the parameters of the module.
 	rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
 	}
 
-// Queries a list of State items.
-	rpc State(QueryStateRequest) returns (QueryStateResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/state";
+	// DenomMappings queries list of denom-> symbol mappings which maps the denoms to their corresponding symbol fetched from price oracles.
+	rpc DenomMappings(QueryDenomMappingsRequest) returns (QueryDenomMappingsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_mappings";
 	}
 
-// Queries a list of OraclePrices items.
-	rpc OraclePrices(QueryOraclePricesRequest) returns (QueryOraclePricesResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/oracle_prices";
+	// DenomPrices queries list of denom prices.
+	rpc DenomPrices(QueryDenomPricesRequest) returns (QueryDenomPricesResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_prices";
 	}
 
-// Queries a list of OsmosisChainParams items.
-	rpc OsmosisChainParams(QueryOsmosisChainParamsRequest) returns (QueryOsmosisChainParamsResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/osmosis/chain_params";
+	// Pools queries the pools collected from pool oracles.
+	rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pools";
 	}
-
-// Queries a list of OsmosisIncentivizedPools items.
-	rpc OsmosisIncentivizedPools(QueryOsmosisIncentivizedPoolsRequest) returns (QueryOsmosisIncentivizedPoolsResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/osmosis/incentivized_pools";
-	}
-
-// Queries a list of OsmosisPools items.
-	rpc OsmosisPools(QueryOsmosisPoolsRequest) returns (QueryOsmosisPoolsResponse) {
-		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/osmosis/pools";
-	}
-
-// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -60,50 +44,44 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryStateRequest {
-}
-
-message QueryStateResponse {
-	OracleScriptState coin_rates_state = 1 [(gogoproto.nullable) = false];
-	OsmosisRequestState osmosis_params_request_state = 2 [(gogoproto.nullable) = false];
-	OsmosisRequestState osmosis_incentivized_pools_state = 3 [(gogoproto.nullable) = false];
-	OsmosisRequestState osmosis_pools_state = 4 [(gogoproto.nullable) = false];
-}
-
-message QueryOraclePricesRequest {
-}
-
-message QueryOraclePricesResponse {
-	repeated cosmos.base.v1beta1.DecCoin prices = 1
-      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"];
-  	int64 updated_at_height = 2;
-}
-
-message QueryOsmosisChainParamsRequest {
-}
-
-message QueryOsmosisChainParamsResponse {
-	repeated osmosis.epochs.v1beta1.EpochInfo epochs_info = 1 [(gogoproto.nullable) = false];
-	repeated int64 lockable_durations = 2 [(gogoproto.casttype) = "time.Duration"];
-	osmosis.mint.v1beta1.Params mint_params = 3 [(gogoproto.nullable) = false];
-	string mint_epoch_provisions = 4;
-	osmosis.poolincentives.v1beta1.DistrInfo distr_info = 5 [(gogoproto.nullable) = false];
-}
-
-message QueryOsmosisIncentivizedPoolsRequest {
-}
-
-message QueryOsmosisIncentivizedPoolsResponse {
-	repeated osmosis.poolincentives.v1beta1.IncentivizedPool incentivized_pools = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryOsmosisPoolsRequest {
+// QueryDenomMappingsRequest is request type for the Query/DenomMappings RPC method.
+message QueryDenomMappingsRequest {
+	// pagination defines an optional pagination for the request.
 	cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-message QueryOsmosisPoolsResponse {
-	repeated OsmosisPool pools = 1 [(gogoproto.nullable) = false];
+// QueryDenomMappingsResponse is response type for the Query/DenomMappings RPC method.
+message QueryDenomMappingsResponse {
+	repeated DenomSymbolMapping mappings = 1 [(gogoproto.nullable) = false];
+	// pagination defines the pagination in the response.
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-// this line is used by starport scaffolding # 3
+// QueryDenomPricesRequest is request type for the Query/DenomPrices RPC method.
+message QueryDenomPricesRequest {
+	// pagination defines an optional pagination for the request.
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryDenomPricesResponse is response type for the Query/DenomPrices RPC method.
+message QueryDenomPricesResponse {
+	repeated cosmos.base.v1beta1.DecCoin prices = 1 [(gogoproto.nullable) = false];
+	google.protobuf.Timestamp updated_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	// pagination defines the pagination in the response.
+	cosmos.base.query.v1beta1.PageResponse pagination = 3;
+}
+
+// QueryPoolsRequest is request type for the Query/Pools RPC method.
+message QueryPoolsRequest {
+	// denom filters the pools by their denom. If empty, pools with any denom returned.
+	string denom = 1;
+	// pagination defines an optional pagination for the request.
+	cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryPoolsResponse is response type for the Query/Pools RPC method.
+message QueryPoolsResponse {
+	repeated Pool pools = 1 [(gogoproto.nullable) = false];
+	// pagination defines the pagination in the response.
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

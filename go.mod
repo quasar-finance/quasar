@@ -3,6 +3,7 @@ module github.com/quasarlabs/quasarnode
 go 1.18
 
 require (
+	cosmossdk.io/errors v1.0.0-beta.7
 	github.com/CosmWasm/wasmd v0.27.0
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/cosmos/ibc-go/v5 v5.0.0
@@ -30,7 +31,6 @@ require (
 )
 
 require (
-	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/CosmWasm/wasmvm v1.0.0
 	github.com/bandprotocol/bandchain-packet v0.0.3
