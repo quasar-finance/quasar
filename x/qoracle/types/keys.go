@@ -24,19 +24,19 @@ var (
 	// KeyMemInitialized defines the key that stores the initialized flag in the memory store
 	KeyMemInitialized = []byte{0x01}
 	// KeyMemDenomPricePrefix defines the prefix for the denom price key in the memory store
-	KeyMemDenomPricePrefix = []byte{0x01}
+	KeyMemDenomPricePrefix = []byte{0x02}
 	// KeyMemDenomPricesUpdatedAt defines the key that stores the denom prices updated at in the memory store
-	KeyMemDenomPricesUpdatedAt = []byte{0x02}
+	KeyMemDenomPricesUpdatedAt = []byte{0x03}
 	// KeySymbolPriceListUpdateFlag defines the key that stores the symbol price list update flag in the memory store
-	KeySymbolPriceListUpdateFlag = []byte{0x03}
+	KeySymbolPriceListUpdateFlag = []byte{0x04}
 	// KeyPoolsUpdateFlag defines the key that stores the pools update flag in the memory store
-	KeyPoolsUpdateFlag = []byte{0x04}
+	KeyPoolsUpdateFlag = []byte{0x05}
 	// KeyMemPoolPrefix defines the prefix for the pool key in the memory store
-	KeyMemPoolPrefix = []byte{0x05}
+	KeyMemPoolPrefix = []byte{0x06}
 	// KeyDenomSymbolMappingPrefix defines the prefix for the denom symbol mapping key in store
-	KeyDenomSymbolMappingPrefix = []byte{0x06}
+	KeyDenomSymbolMappingPrefix = []byte{0x07}
 	// KeyOsmosisPoolPrefix defines the prefix osmosis pools stored in the memory store
-	KeyOsmosisPoolPrefix = []byte{0x07}
+	KeyOsmosisPoolPrefix = []byte{0x08}
 )
 
 // GetDenomPriceKey returns the key for the denom price in the memory store.
