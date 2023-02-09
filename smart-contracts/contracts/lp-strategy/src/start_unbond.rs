@@ -33,7 +33,7 @@ pub fn do_start_unbond(
     storage: &mut dyn Storage,
     unbond: StartUnbond,
 ) -> Result<(), ContractError> {
-    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+    if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
