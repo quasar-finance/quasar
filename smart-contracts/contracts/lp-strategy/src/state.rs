@@ -9,7 +9,7 @@ use cw_storage_plus::{Deque, Item, Map};
 use crate::{
     bond::Bond,
     error::{ContractError, Trap},
-    helpers::IbcMsgKind,
+    helpers::{IbcMsgKind, MsgKind},
     ibc_lock::Lock,
     start_unbond::StartUnbond,
 };
@@ -39,7 +39,7 @@ pub struct Config {
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 // IBC related state items
-pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
+pub(crate) const REPLIES: Map<u64, MsgKind> = Map::new("replies");
 // Currently we only support one ICA channel to a single destination
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 // We also support one ICQ channel to Osmosis at the moment
@@ -70,6 +70,9 @@ pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbon
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 // the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
+// any manual withdraws or failed callbacks are added to WITHDRAWABLE to allow for later withdraws
+pub(crate) const WITHDRAWABLE: Map<Addr, Uint128> = Map::new("withdrawable");
+
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 

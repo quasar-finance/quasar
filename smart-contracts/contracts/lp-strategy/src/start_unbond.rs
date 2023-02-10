@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -90,20 +91,23 @@ pub fn batch_start_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
         pkt,
     )?))
 }
 
 pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbonds: &mut Vec<PendingSingleUnbond>,
 ) -> Result<IbcBasicResponse, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        let msg = start_internal_unbond(storage, env, unbond)?;
-        msgs.push(msg);
+        let msg = start_internal_unbond(storage, querier, env, unbond)?;
+        if let Some(val) = msg {
+            msgs.push(val);
+        }
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -133,11 +137,12 @@ fn single_unbond(
 // unbond starts unbonding an amount of lp shares
 fn start_internal_unbond(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbond: &PendingSingleUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<Option<WasmMsg>, ContractError> {
     // check that we can create a new unbond
-    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+    if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
@@ -170,14 +175,21 @@ fn start_internal_unbond(
         },
     )?;
 
-    let msg = Callback::StartUnbondResponse(StartUnbondResponse {
-        unbond_id: unbond.id.clone(),
-        unlock_time,
-    });
+    if querier
+        .query_wasm_contract_info(unbond.owner.clone())
+        .is_ok()
+    {
+        let msg = Callback::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: unbond.id.clone(),
+            unlock_time,
+        });
 
-    Ok(WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&msg)?,
-        funds: vec![],
-    })
+        Ok(Some(WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        }))
+    } else {
+        Ok(None)
+    }
 }

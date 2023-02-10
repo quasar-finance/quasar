@@ -37,7 +37,7 @@ use cosmwasm_std::{
     entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
     IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128, WasmMsg,
+    QuerierWrapper, StdError, Storage, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -243,7 +243,7 @@ pub fn handle_succesful_ack(
             }
         },
         IbcMsgKind::Ica(ref mut ica_kind) => {
-            match handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind) {
+            match handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind) {
                 Ok(response) => Ok(response),
                 Err(err) => {
                     TRAPS.save(
@@ -391,6 +391,7 @@ pub fn handle_icq_ack(
 
 pub fn handle_ica_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: Env,
     ack_bin: Binary,
     _pkt: &IbcPacketAckMsg,
@@ -431,7 +432,7 @@ pub fn handle_ica_ack(
 
             let msg = create_ibc_ack_submsg(
                 storage,
-                &IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
+                IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
                 outgoing,
             )?;
             Ok(IbcBasicResponse::new().add_submessage(msg))
@@ -446,15 +447,22 @@ pub fn handle_ica_ack(
 
             let mut callbacks: Vec<WasmMsg> = vec![];
             for claim in &data.bonds {
+                // TODO claim.claim_amount might be the wron amount of shares for begin unlock
                 let share_amount = create_share(storage, claim.owner.clone(), claim.claim_amount)?;
-                callbacks.push(WasmMsg::Execute {
-                    contract_addr: claim.owner.to_string(),
-                    msg: to_binary(&Callback::BondResponse(BondResponse {
-                        share_amount,
-                        bond_id: claim.bond_id.clone(),
-                    }))?,
-                    funds: vec![],
-                })
+                // TODO this query might fail even though the sender is a contract, should add a better query wrapper here
+                if querier
+                    .query_wasm_contract_info(claim.owner.clone())
+                    .is_ok()
+                {
+                    callbacks.push(WasmMsg::Execute {
+                        contract_addr: claim.owner.to_string(),
+                        msg: to_binary(&Callback::BondResponse(BondResponse {
+                            share_amount,
+                            bond_id: claim.bond_id.clone(),
+                        }))?,
+                        funds: vec![],
+                    })
+                }
             }
 
             // set the bond lock state to unlocked
@@ -468,11 +476,11 @@ pub fn handle_ica_ack(
                 .add_attribute("locked_tokens", ack_bin.to_base64())
                 .add_attribute("lock_id", resp.id.to_string()))
         }
-        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
+        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, querier, &env, data),
         // TODO hook up the unbond ICA messages
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
-        IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
+        IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
     }
 }
 
@@ -492,12 +500,15 @@ fn handle_exit_pool_ack(
 
 fn handle_return_transfer_ack(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
     data: &mut PendingReturningUnbonds,
 ) -> Result<IbcBasicResponse, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for pending in data.unbonds.iter() {
-        let msg = finish_unbond(storage, pending)?;
-        msgs.push(msg);
+        let msg = finish_unbond(storage, querier, pending)?;
+        if let Some(val) = msg {
+            msgs.push(val);
+        }
     }
     Ok(IbcBasicResponse::new()
         .add_attribute("callback-msgs", msgs.len().to_string())
