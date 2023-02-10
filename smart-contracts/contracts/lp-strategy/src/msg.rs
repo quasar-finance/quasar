@@ -91,9 +91,6 @@ pub enum ExecuteMsg {
     Unbond {
         id: String,
     },
-    Withdraw {
-        amount: Uint128
-    },
     // accept a dispatched transfer from osmosis
     AcceptReturningFunds {
         id: u64,

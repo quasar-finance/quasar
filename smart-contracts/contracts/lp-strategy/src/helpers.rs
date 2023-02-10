@@ -4,7 +4,7 @@ use crate::{
     state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
     unbond::PendingReturningUnbonds,
 };
-use cosmwasm_std::{Addr, Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
@@ -51,7 +51,7 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: IbcMsgKind,
+    pending: &IbcMsgKind,
     msg: IbcMsg,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -60,7 +60,7 @@ pub fn create_ibc_ack_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &MsgKind::Ibc(pending))?;
+    REPLIES.save(storage, id, pending)?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -90,7 +90,6 @@ pub enum IcaMessages {
 #[serde(rename_all = "snake_case")]
 pub enum MsgKind {
     Ibc(IbcMsgKind),
-    WasmExecute(Addr, Uint128),
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Env, IbcTimeout, Order, QuerierWrapper, Storage, SubMsg, Timestamp,
-    Uint128, WasmMsg,
+    to_binary, Addr, Coin, Env, IbcTimeout, Order, Storage, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
@@ -88,7 +87,7 @@ pub fn batch_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
+        &IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
             unbonds: pending,
         })),
         pkt,
@@ -120,7 +119,7 @@ pub fn transfer_batch_unbond(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
+        &IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
         pkt,
     )?)
 }
@@ -165,31 +164,23 @@ pub struct ReturningUnbond {
 // TODO this only works for the happy path in the receiver
 pub fn finish_unbond(
     storage: &dyn Storage,
-    querier: QuerierWrapper,
     unbond: &ReturningUnbond,
-) -> Result<Option<WasmMsg>, ContractError> {
+) -> Result<WasmMsg, ContractError> {
     let amount = match unbond.amount {
         RawAmount::LocalDenom(val) => val,
         RawAmount::LpShares(_) => return Err(ContractError::IncorrectRawAmount),
     };
-    if querier
-        .query_wasm_contract_info(unbond.owner.clone())
-        .is_ok()
-    {
-        let msg = WasmMsg::Execute {
-            contract_addr: unbond.owner.to_string(),
-            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
-                unbond_id: unbond.id.clone(),
-            }))?,
-            funds: vec![Coin {
-                denom: CONFIG.load(storage)?.local_denom,
-                amount,
-            }],
-        };
-        Ok(Some(msg))
-    } else {
-        Ok(None)
-    }
+    let msg = WasmMsg::Execute {
+        contract_addr: unbond.owner.to_string(),
+        msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+            unbond_id: unbond.id.clone(),
+        }))?,
+        funds: vec![Coin {
+            denom: CONFIG.load(storage)?.local_denom,
+            amount,
+        }],
+    };
+    Ok(msg)
 }
 
 fn return_transfer(

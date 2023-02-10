@@ -7,7 +7,6 @@ pub mod ibc_lock;
 mod ibc_util;
 pub mod icq;
 pub mod msg;
-pub mod reply;
 pub mod start_unbond;
 pub mod state;
 pub mod unbond;
