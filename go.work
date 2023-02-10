@@ -4,5 +4,3 @@ use (
 	.
 	./tests/e2e
 )
-
-replace github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
