@@ -3,7 +3,7 @@ module github.com/quasarlabs/quasarnode/tests/e2e
 go 1.19
 
 require (
-	github.com/CosmWasm/wasmd v0.27.0
+	github.com/CosmWasm/wasmd v0.29.2
 	github.com/cosmos/cosmos-sdk v0.46.9
 	github.com/cosmos/ibc-go/v5 v5.2.0
 	github.com/docker/docker v20.10.19+incompatible
@@ -33,7 +33,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
 	github.com/ChainSafe/go-schnorrkel/1 v0.0.0-00010101000000-000000000000 // indirect
-	github.com/CosmWasm/wasmvm v1.0.0 // indirect
+	github.com/CosmWasm/wasmvm v1.1.1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/StirlingMarketingGroup/go-namecase v1.0.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
@@ -43,6 +43,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
+	github.com/btcsuite/btcd v0.22.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -85,7 +86,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/btree v1.0.1 // indirect
+	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
@@ -215,10 +216,11 @@ require (
 replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
-	// used latest commit of branch packet-seq-return
-	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
+	// used latest commit of branch packet-seq-return with updates
+	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210062508-4d1225b477fc
+
 	// used latest commit of branch v5.1.0-icq
-	github.com/cosmos/ibc-go/v5 => github.com/strangelove-ventures/ibc-go/v5 v5.0.0-20221202080744-f443bb61ccfc
+	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 	github.com/quasarlabs/quasarnode => ../../

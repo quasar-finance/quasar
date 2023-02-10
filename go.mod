@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
-	github.com/CosmWasm/wasmd v0.27.0
+	github.com/CosmWasm/wasmd v0.29.2
 	github.com/cosmos/cosmos-sdk v0.46.9
 	github.com/cosmos/ibc-go/v5 v5.2.0
 	github.com/gogo/protobuf v1.3.3
@@ -32,7 +32,7 @@ require (
 
 require (
 	cosmossdk.io/math v1.0.0-beta.6
-	github.com/CosmWasm/wasmvm v1.0.0
+	github.com/CosmWasm/wasmvm v1.1.1
 	github.com/bandprotocol/bandchain-packet v0.0.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.1
 	github.com/cosmos/gogoproto v1.4.4
@@ -140,7 +140,7 @@ require (
 	github.com/golangci/misspell v0.4.0 // indirect
 	github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
-	github.com/google/btree v1.0.1 // indirect
+	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
@@ -301,9 +301,9 @@ require (
 
 replace (
 	// used latest commit of branch packet-seq-return
-	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
+	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210062508-4d1225b477fc
 
-	// used latest commit of branch v5.1.0-icq
+	// used latest commit of branch v5.2.0-icq
 	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
