@@ -7,7 +7,7 @@ ARG RUNNER_IMAGE="ubuntu"
 # Builder
 # --------------------------------------------------------
 
-FROM golang:${GO_VERSION}-ubuntu as builder
+FROM golang:${GO_VERSION}-buster as builder
 
 
 # Download go dependencies
