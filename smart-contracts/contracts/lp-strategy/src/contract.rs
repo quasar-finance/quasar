@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
-    StdResult, Uint128,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -11,7 +11,7 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
+use crate::helpers::{get_ica_address, get_total_shares};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
@@ -58,29 +58,6 @@ pub fn instantiate(
 
     LP_SHARES.save(deps.storage, &Uint128::zero())?;
 
-    Ok(Response::default())
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
-    // TODO this needs and error check and error handling
-    let pending = REPLIES.load(deps.storage, msg.id)?;
-    let data = msg
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr { msg })?
-        .data
-        .ok_or(ContractError::NoReplyData)
-        .map_err(|err| StdError::GenericErr {
-            msg: err.to_string(),
-        })?;
-
-    let seq = parse_seq(data).map_err(|err| StdError::GenericErr {
-        msg: err.to_string(),
-    })?;
-
-    PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
 }
 
@@ -178,7 +155,7 @@ pub fn execute_start_unbond(
         StartUnbond {
             owner: info.sender.clone(),
             id,
-            shares: share_amount,
+            primitive_shares: share_amount,
         },
     )?;
 

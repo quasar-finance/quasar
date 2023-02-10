@@ -85,7 +85,8 @@ pub struct Unbond {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingSingleUnbond {
-    pub amount: Uint128,
+    pub lp_shares: Uint128,
+    pub primitive_shares: Uint128,
     pub owner: Addr,
     pub id: String,
 }
