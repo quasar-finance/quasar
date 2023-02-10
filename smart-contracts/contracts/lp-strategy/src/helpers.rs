@@ -1,9 +1,10 @@
 use crate::{
     error::ContractError,
-    state::{PendingBond, PendingSingleUnbond, CHANNELS, REPLIES, SHARES},
-    unbond::{PendingReturningUnbonds, ReturningUnbond},
+    ibc_lock::Lock,
+    state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
+    unbond::PendingReturningUnbonds,
 };
-use cosmwasm_std::{Binary, CosmosMsg, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
@@ -47,11 +48,9 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
     }
 }
 
-pub fn ica_packet() {}
-
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: &IbcMsgKind,
+    pending: IbcMsgKind,
     msg: IbcMsg,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -60,14 +59,17 @@ pub fn create_ibc_ack_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, pending)?;
+    REPLIES.save(storage, id, &MsgKind::Ibc(pending))?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum IbcMsgKind {
-    Transfer(PendingBond),
+    Transfer {
+        pending: PendingBond,
+        amount: Uint128,
+    },
     Ica(IcaMessages),
     Icq,
 }
@@ -87,11 +89,67 @@ pub enum IcaMessages {
 #[serde(rename_all = "snake_case")]
 pub enum MsgKind {
     Ibc(IbcMsgKind),
+    WasmExecute(Addr, Uint128),
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
     let resp = MsgTransferResponse::decode(data.0.as_slice())?;
-    return Ok(resp.seq);
+    Ok(resp.seq)
+}
+
+pub(crate) fn unlock_on_error(
+    storage: &mut dyn Storage,
+    kind: IbcMsgKind,
+) -> Result<(), ContractError> {
+    match kind {
+        IbcMsgKind::Transfer {
+            pending: _,
+            amount: _,
+        } => {
+            IBC_LOCK.update(storage, |lock| {
+                Ok::<Lock, ContractError>(lock.unlock_bond())
+            })?;
+            Ok(())
+        }
+        IbcMsgKind::Ica(ica) => match ica {
+            IcaMessages::JoinSwapExternAmountIn(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_bond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::LockTokens(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_bond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::BeginUnlocking(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_start_unbond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::ExitPool(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_unbond())
+                })?;
+                Ok(())
+            }
+            IcaMessages::ReturnTransfer(_) => {
+                IBC_LOCK.update(storage, |lock| {
+                    Ok::<Lock, ContractError>(lock.unlock_unbond())
+                })?;
+                Ok(())
+            }
+        },
+        IbcMsgKind::Icq => {
+            IBC_LOCK.update(storage, |lock| {
+                Ok::<Lock, ContractError>(lock.unlock_bond().unlock_start_unbond().unlock_unbond())
+            })?;
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

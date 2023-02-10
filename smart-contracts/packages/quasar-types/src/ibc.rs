@@ -1,5 +1,5 @@
 use cosmwasm_std::{Binary, IbcChannel, IbcEndpoint, IbcOrder};
-use osmosis_std::types::cosmos::base::v1beta1::Coin;
+
 use osmosis_std_derive::CosmwasmExt;
 
 use prost::Message;

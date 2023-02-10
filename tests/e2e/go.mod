@@ -211,7 +211,7 @@ replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	// used latest commit of branch packet-seq-return
-	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230111131435-2bef8ead3ee5
+	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
 	// used latest commit of branch v5.1.0-icq
 	github.com/cosmos/ibc-go/v5 => github.com/strangelove-ventures/ibc-go/v5 v5.0.0-20221202080744-f443bb61ccfc
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1

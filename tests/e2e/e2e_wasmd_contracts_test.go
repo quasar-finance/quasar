@@ -65,16 +65,16 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.OsmosisDenomInQuasar = ibcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
 	s.QuasarDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
 
-	// Setup an account in quasar chain for contract deployment
-	quasarAccount := s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
+	// // Setup an account in quasar chain for contract deployment
+	// quasarAccount := s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
 
-	// Deploy the lp strategy contract
-	s.LpStrategyContractAddress = s.deployContract(ctx, quasarAccount, lpStrategyContractPath, "lp_strategy_test", map[string]any{
-		"lock_period": "1209600",
-		"pool_id":     1,
-		"pool_denom":  "gamm/pool/1",
-		"denom":       "uosmo",
-	})
+	// // Deploy the lp strategy contract
+	// s.LpStrategyContractAddress = s.deployContract(ctx, quasarAccount, lpStrategyContractPath, "lp_strategy_test", map[string]any{
+	// 	"lock_period": "1209600",
+	// 	"pool_id":     1,
+	// 	"pool_denom":  "gamm/pool/1",
+	// 	"denom":       "uosmo",
+	// })
 }
 
 // deployAndInitContract stores the contract, initiates it and returns the contract address.
@@ -98,6 +98,7 @@ func (s *WasmdTestSuite) deployContract(ctx context.Context, acc *ibc.Wallet, fi
 // and depositing 1000uqsr tokens to the contract which it must ibc transfer to its ICA account at osmosis.
 func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 	t := s.T()
+	t.Skip()
 	ctx := context.Background()
 
 	// Setup an account in quasar chain

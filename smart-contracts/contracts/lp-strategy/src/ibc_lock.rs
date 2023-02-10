@@ -10,6 +10,14 @@ pub struct Lock {
 }
 
 impl Lock {
+    pub fn new() -> Self {
+        Lock {
+            bond: IbcLock::Unlocked,
+            start_unbond: IbcLock::Unlocked,
+            unbond: IbcLock::Unlocked,
+        }
+    }
+
     pub fn unlock_bond(mut self) -> Self {
         self.bond = IbcLock::Unlocked;
         self
@@ -46,6 +54,12 @@ impl Lock {
 
     pub fn is_locked(&self) -> bool {
         self.bond.is_locked() && self.start_unbond.is_locked() && self.unbond.is_locked()
+    }
+}
+
+impl Default for Lock {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -1,7 +1,7 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, ops::Add};
+use std::fmt::Debug;
 
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
@@ -9,12 +9,12 @@ use cw_storage_plus::{Deque, Item, Map};
 use crate::{
     bond::Bond,
     error::{ContractError, Trap},
-    helpers::IbcMsgKind,
-    ibc_lock::{IbcLock, Lock},
+    helpers::{IbcMsgKind, MsgKind},
+    ibc_lock::Lock,
     start_unbond::StartUnbond,
 };
 
-pub const RETURN_SOURCE_PORT: &'static str = "transfer";
+pub const RETURN_SOURCE_PORT: &str = "transfer";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
@@ -30,6 +30,8 @@ pub struct Config {
     pub quote_denom: String,
     // the denom on the Quasar chain
     pub local_denom: String,
+    // the transfer channel to transfer funds to Osmosis
+    pub transfer_channel: String,
     // the channel for sending tokens back from the counterparty chain to quasar chain
     pub return_source_channel: String,
 }
@@ -37,14 +39,11 @@ pub struct Config {
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 // IBC related state items
-pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
+pub(crate) const REPLIES: Map<u64, MsgKind> = Map::new("replies");
 // Currently we only support one ICA channel to a single destination
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 // We also support one ICQ channel to Osmosis at the moment
 pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
-
-// The channel over which to transfer the tokens,
-pub(crate) const TRANSFER_CHANNEL: Item<String> = Item::new("transfer_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
 pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
@@ -60,6 +59,9 @@ pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 
+// the latest known ica balance
+pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
+
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<Addr, Uint128> = Map::new("bonding_claims");
 
@@ -68,6 +70,9 @@ pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbon
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 // the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
+// any manual withdraws or failed callbacks are added to WITHDRAWABLE to allow for later withdraws
+pub(crate) const WITHDRAWABLE: Map<Addr, Uint128> = Map::new("withdrawable");
+
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 
@@ -83,7 +88,8 @@ pub struct Unbond {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingSingleUnbond {
-    pub amount: Uint128,
+    pub lp_shares: Uint128,
+    pub primitive_shares: Uint128,
     pub owner: Addr,
     pub id: String,
 }

@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Env, IbcTimeout, Order, Storage, SubMsg, Timestamp, Uint128, WasmMsg,
+    to_binary, Addr, Coin, Env, IbcTimeout, Order, QuerierWrapper, Storage, SubMsg, Timestamp,
+    Uint128, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
@@ -15,10 +16,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    icq::try_icq,
     msg::ExecuteMsg,
     state::{
-        RawAmount, Unbond, CONFIG, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
+        RawAmount, CONFIG, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
         UNBOND_QUEUE,
     },
 };
@@ -42,22 +42,23 @@ pub fn do_unbond(
 pub fn batch_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    vault_value: Uint128,
-    total_lp_shares: Uint128,
+    _vault_value: Uint128,
+    _total_lp_shares: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
-    let empty = UNBOND_QUEUE.is_empty(storage)?;
-    if empty {
+    if UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
     // aggregate the current unbond queue, all items in this queue should be able to unbond
-    while !empty {
+    while !UNBOND_QUEUE.is_empty(storage)? {
         let unbond = UNBOND_QUEUE
             .pop_front(storage)?
-            .ok_or(ContractError::QueueItemNotFound)?;
+            .ok_or(ContractError::QueueItemNotFound {
+                queue: "unbond".to_string(),
+            })?;
         total_exit = total_exit.checked_add(unbond.lp_shares)?;
         // add the unbond to the pending unbonds
         pending.push(ReturningUnbond {
@@ -87,7 +88,7 @@ pub fn batch_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
+        IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
             unbonds: pending,
         })),
         pkt,
@@ -119,7 +120,7 @@ pub fn transfer_batch_unbond(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
+        IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
         pkt,
     )?)
 }
@@ -164,23 +165,31 @@ pub struct ReturningUnbond {
 // TODO this only works for the happy path in the receiver
 pub fn finish_unbond(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
     unbond: &ReturningUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<Option<WasmMsg>, ContractError> {
     let amount = match unbond.amount {
         RawAmount::LocalDenom(val) => val,
         RawAmount::LpShares(_) => return Err(ContractError::IncorrectRawAmount),
     };
-    let msg = WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
-            unbond_id: unbond.id.clone(),
-        }))?,
-        funds: vec![Coin {
-            denom: CONFIG.load(storage)?.local_denom,
-            amount,
-        }],
-    };
-    Ok(msg)
+    if querier
+        .query_wasm_contract_info(unbond.owner.clone())
+        .is_ok()
+    {
+        let msg = WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+                unbond_id: unbond.id.clone(),
+            }))?,
+            funds: vec![Coin {
+                denom: CONFIG.load(storage)?.local_denom,
+                amount,
+            }],
+        };
+        Ok(Some(msg))
+    } else {
+        Ok(None)
+    }
 }
 
 fn return_transfer(

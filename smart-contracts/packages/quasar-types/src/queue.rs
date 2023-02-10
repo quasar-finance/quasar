@@ -3,7 +3,7 @@ use cw_storage_plus::Map;
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::VecDeque;
 
-pub fn enqueue<'a, T>(deps: DepsMut, value: T, queue: Map<u128, T>) -> StdResult<()>
+pub fn enqueue<T>(deps: DepsMut, value: T, queue: Map<u128, T>) -> StdResult<()>
 where
     T: Serialize + DeserializeOwned + Default,
 {

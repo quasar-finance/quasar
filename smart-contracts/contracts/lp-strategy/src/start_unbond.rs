@@ -1,7 +1,8 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    WasmMsg,
 };
-use cw_storage_plus::DequeIter;
+
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
 use quasar_types::{
     callback::{Callback, StartUnbondResponse},
@@ -14,8 +15,7 @@ use crate::{
     error::ContractError,
     helpers::get_total_shares,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_lock::{IbcLock, Lock},
-    icq::try_icq,
+    ibc_lock::Lock,
     state::{
         PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
         START_UNBOND_QUEUE, UNBONDING_CLAIMS,
@@ -27,14 +27,14 @@ use crate::{
 pub struct StartUnbond {
     pub owner: Addr,
     pub id: String,
-    pub shares: Uint128,
+    pub primitive_shares: Uint128,
 }
 
 pub fn do_start_unbond(
     storage: &mut dyn Storage,
     unbond: StartUnbond,
 ) -> Result<(), ContractError> {
-    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+    if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
@@ -50,20 +50,22 @@ pub fn batch_start_unbond(
     let mut to_unbond = Uint128::zero();
     let mut unbonds: Vec<PendingSingleUnbond> = vec![];
 
-    let empty = START_UNBOND_QUEUE.is_empty(storage)?;
-
-    if empty {
+    if START_UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
-    while !empty {
-        let unbond = START_UNBOND_QUEUE
-            .pop_front(storage)?
-            .ok_or(ContractError::QueueItemNotFound)?;
-        let lp_shares = single_unbond(storage, &env, &unbond, total_lp_shares)?;
+    while !START_UNBOND_QUEUE.is_empty(storage)? {
+        let unbond =
+            START_UNBOND_QUEUE
+                .pop_front(storage)?
+                .ok_or(ContractError::QueueItemNotFound {
+                    queue: "start_unbond".to_string(),
+                })?;
+        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
-            amount: lp_shares,
+            lp_shares,
+            primitive_shares: unbond.primitive_shares,
             owner: unbond.owner,
             id: unbond.id,
         })
@@ -89,20 +91,23 @@ pub fn batch_start_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
         pkt,
     )?))
 }
 
 pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbonds: &mut Vec<PendingSingleUnbond>,
 ) -> Result<IbcBasicResponse, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        let msg = start_internal_unbond(storage, env, &unbond)?;
-        msgs.push(msg);
+        let msg = start_internal_unbond(storage, querier, env, unbond)?;
+        if let Some(val) = msg {
+            msgs.push(val);
+        }
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -118,13 +123,13 @@ pub fn handle_start_unbond_ack(
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
 fn single_unbond(
     storage: &mut dyn Storage,
-    env: &Env,
+    _env: &Env,
     unbond: &StartUnbond,
     total_lp_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
     let total_shares = get_total_shares(storage)?;
     Ok(unbond
-        .shares
+        .primitive_shares
         .checked_mul(total_lp_shares)?
         .checked_div(total_shares)?)
 }
@@ -132,18 +137,19 @@ fn single_unbond(
 // unbond starts unbonding an amount of lp shares
 fn start_internal_unbond(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbond: &PendingSingleUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<Option<WasmMsg>, ContractError> {
     // check that we can create a new unbond
-    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+    if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
     // remove amount of shares
     let left = SHARES
         .load(storage, unbond.owner.clone())?
-        .checked_sub(unbond.amount)?;
+        .checked_sub(unbond.primitive_shares)?;
     // subtracting below zero here should trigger an error in check_sub
     if left.is_zero() {
         SHARES.remove(storage, unbond.owner.clone());
@@ -162,21 +168,28 @@ fn start_internal_unbond(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {
-            lp_shares: unbond.amount,
+            lp_shares: unbond.lp_shares,
             unlock_time,
             id: unbond.id.clone(),
             owner: unbond.owner.clone(),
         },
     )?;
 
-    let msg = Callback::StartUnbondResponse(StartUnbondResponse {
-        unbond_id: unbond.id.clone(),
-        unlock_time,
-    });
+    if querier
+        .query_wasm_contract_info(unbond.owner.clone())
+        .is_ok()
+    {
+        let msg = Callback::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: unbond.id.clone(),
+            unlock_time,
+        });
 
-    Ok(WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&msg)?,
-        funds: vec![],
-    })
+        Ok(Some(WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        }))
+    } else {
+        Ok(None)
+    }
 }
