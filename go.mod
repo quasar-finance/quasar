@@ -304,7 +304,7 @@ replace (
 	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
 
 	// used latest commit of branch v5.1.0-icq
-	github.com/cosmos/ibc-go/v5 => github.com/strangelove-ventures/ibc-go/v5 v5.0.0-20221202080744-f443bb61ccfc
+	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
