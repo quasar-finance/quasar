@@ -169,6 +169,7 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
           "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
           "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
           "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+          "/osmosis.lockup.MsgBeginUnlocking",
           "/osmosis.lockup.MsgLockTokens", 
           "/osmosis.superfluid.MsgSuperfluidUnbondLock"
        ]
