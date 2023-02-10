@@ -4,3 +4,7 @@ use (
 	.
 	./tests/e2e
 )
+
+replace github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210083007-7c0426ddab37
+
+replace github.com/btcsuite/btcd v0.22.1 => github.com/btcsuite/btcd v0.23.0

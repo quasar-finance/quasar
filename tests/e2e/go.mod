@@ -216,7 +216,7 @@ replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	// used latest commit of branch packet-seq-return with updates
-	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210062508-4d1225b477fc
+	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210083007-7c0426ddab37
 
 	// used latest commit of branch v5.1.0-icq
 	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq

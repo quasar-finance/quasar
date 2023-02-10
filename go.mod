@@ -66,6 +66,7 @@ require (
 	github.com/ashanbrown/forbidigo v1.3.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/aws/aws-sdk-go v1.40.45 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
@@ -273,6 +274,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
@@ -301,7 +303,9 @@ require (
 
 replace (
 	// used latest commit of branch packet-seq-return
-	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210062508-4d1225b477fc
+	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210083007-7c0426ddab37
+	// bandchain packet
+	github.com/bandprotocol/bandchain-packet => github.com/notional-labs/bandchain-packet v0.0.0-20230210080947-80fe427efadc
 
 	// used latest commit of branch v5.2.0-icq
 	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
