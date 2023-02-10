@@ -5,6 +5,7 @@ use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
 use quasar_types::callback::Callback;
+use quasar_types::types::CoinRatio;
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -128,6 +129,9 @@ pub enum QueryMsg {
     /// Investment shows metadata on the staking info of the contract
     #[returns(InvestmentResponse)]
     Investment {},
+    /// DepositRatio shows the ratio of tokens that should be sent for a deposit given list of available tokens
+    #[returns(DepositRatioResponse)]
+    DepositRatio { funds: Vec<Coin> },
 
     /// Implements CW20. Returns the current balance of the given address, 0 if unset.
     #[returns(BalanceResponse)]
@@ -143,12 +147,6 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct InvestmentResponse {
-    pub token_supply: Uint128,
-    pub bonded_tokens: Coin,
-    // TODO: determine why we need this:
-    // ratio of bonded_tokens / token_supply (or how many native tokens that one derivative token is nominally worth)
-    pub nominal_value: Decimal,
-
     /// owner created the contract and takes a cut
     pub owner: String,
     /// This is the minimum amount we will pull out to reinvest, as well as a minimum
@@ -156,4 +154,11 @@ pub struct InvestmentResponse {
     pub min_withdrawal: Uint128,
     // the array of primitives to subscribe to for this vault
     pub primitives: Vec<PrimitiveConfig>,
+}
+
+#[cw_serde]
+pub struct DepositRatioResponse {
+    /// the ratio of tokens that should be sent for a deposit given list of available tokens
+    pub primitive_funding_amounts: Vec<Coin>,
+    pub remainder: Vec<Coin>,
 }

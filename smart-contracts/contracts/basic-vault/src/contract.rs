@@ -18,10 +18,10 @@ use crate::callback::handle_callback;
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::query::query_investment;
+use crate::query::{query_deposit_ratio, query_investment};
 use crate::state::{
-    InvestmentInfo, Supply, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, INVESTMENT,
-    TOTAL_SUPPLY, BONDING_SEQ,
+    InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, INVESTMENT,
+    TOTAL_SUPPLY,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -129,16 +129,15 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        // custom queries
         QueryMsg::Claims { address } => {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
         QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        // inherited from cw20-base
         QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::Allowance { owner, spender } => {
             to_binary(&query_allowance(deps, owner, spender)?)
         }
+        QueryMsg::DepositRatio { funds } => to_binary(&query_deposit_ratio(deps, funds)?),
     }
 }

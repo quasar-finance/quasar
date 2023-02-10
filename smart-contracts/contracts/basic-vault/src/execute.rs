@@ -1,13 +1,12 @@
-
 use std::collections::HashMap;
 use std::ops::{Add, Mul};
 
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
-    Response, SubMsg, Uint128, WasmMsg,
+    Response, SubMsg, Uint128, WasmMsg, Deps,
 };
 
-
+use cw20_base::contract::execute_burn;
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -54,8 +53,8 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
 // todo test
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
-pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, PaymentError> {
-    match info.funds.iter().find(|c| c.denom == denom) {
+pub fn must_pay_multi(funds: &Vec<Coin>, denom: &str) -> Result<Uint128, PaymentError> {
+    match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
                 Err(PaymentError::NoFunds {})
@@ -69,8 +68,8 @@ pub fn must_pay_multi(info: &MessageInfo, denom: &str) -> Result<Uint128, Paymen
 
 // todo test
 pub fn may_pay_with_ratio(
-    deps: &DepsMut,
-    info: &MessageInfo,
+    deps: &Deps,
+    funds: &Vec<Coin>,
     primitives: &Vec<PrimitiveConfig>,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // todo: Normalize weights first
@@ -116,7 +115,7 @@ pub fn may_pay_with_ratio(
 
     let mut max_bond = Uint128::MAX;
     for (denom, weight) in token_map {
-        let amount = must_pay_multi(info, denom).unwrap();
+        let amount = must_pay_multi(funds, denom).unwrap();
         let bond_for_token = amount.multiply_ratio(weight.numerator(), weight.denominator());
         if bond_for_token < max_bond {
             max_bond = bond_for_token;
@@ -131,12 +130,12 @@ pub fn may_pay_with_ratio(
     // where funds is the max amount we can use in compliance with the ratio
     // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
-    let mut remainder = info.funds.clone();
+    let mut remainder = funds.clone();
 
     let coins: Result<Vec<Coin>, ContractError> = normed_ratio
         .iter()
         .map(|r| {
-            let amount = must_pay_multi(info, &r.denom).unwrap();
+            let amount = must_pay_multi(funds, &r.denom).unwrap();
             let expected_amount = max_bond
                 .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
                 .unwrap();
@@ -178,7 +177,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     let mut deposit_stubs = vec![];
 
     let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps, &info, &invest.primitives).unwrap();
+        may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives).unwrap();
 
     let bond_msgs: Result<Vec<SubMsg>, ContractError> = invest
         .primitives
@@ -227,10 +226,10 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
 }
 
 pub fn unbond(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _amount: Uint128,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
     // if info.funds.is_empty() {
@@ -238,34 +237,46 @@ pub fn unbond(
     // }
 
     // let invest = INVESTMENT.load(deps.storage)?;
-    // // ensure it is big enough to care
+
+    // //TODO: Normalize primitive weights
+
+    // // // ensure it is big enough to care
     // if amount < invest.min_withdrawal {
     //     return Err(ContractError::UnbondTooSmall {
     //         min_bonded: invest.min_withdrawal,
     //     });
     // }
 
-    // need to convert amount to the set of amounts for each primitive
-
-    // // // calculate tax and remainer to unbond
-    // // let tax = amount * invest.exit_tax;
-
-    // // burn from the original caller
+    // // this should error if amount larger than sender balance
+    // // todo: verify above statement
     // execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
-    // // if tax > Uint128::zero() {
-    // //     let sub_info = MessageInfo {
-    // //         sender: env.contract.address.clone(),
-    // //         funds: vec![],
-    // //     };
-    // //     // call into cw20-base to mint tokens to owner, call as self as no one else is allowed
-    // //     execute_mint(
-    // //         deps.branch(),
-    // //         env.clone(),
-    // //         sub_info,
-    // //         invest.owner.to_string(),
-    // //         tax,
-    // //     )?;
-    // // }
+
+    // let primitive_share_amounts = invest.primitives.iter().map(|pc| {
+    //     // todo need to normalize these weights, ideally all of this functionality exists within a trait
+    //     pc.weight * amount
+    // });
+
+    // // need to convert amount to the set of amounts for each primitive
+
+    // // // // calculate tax and remainer to unbond
+    // // // let tax = amount * invest.exit_tax;
+
+    // // // burn from the original caller
+    // // execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
+    // // // if tax > Uint128::zero() {
+    // // //     let sub_info = MessageInfo {
+    // // //         sender: env.contract.address.clone(),
+    // // //         funds: vec![],
+    // // //     };
+    // // //     // call into cw20-base to mint tokens to owner, call as self as no one else is allowed
+    // // //     execute_mint(
+    // // //         deps.branch(),
+    // // //         env.clone(),
+    // // //         sub_info,
+    // // //         invest.owner.to_string(),
+    // // //         tax,
+    // // //     )?;
+    // // // }
 
     // // re-calculate bonded to ensure we have real values
     // // bonded is the total number of tokens we have delegated from this address
