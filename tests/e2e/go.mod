@@ -66,9 +66,8 @@ require (
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v2 v2.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
+	github.com/dgraph-io/badger/v3 v3.2103.2 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
-	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1-0.20200219035652-afde56e7acac // indirect
@@ -88,6 +87,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
+	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
@@ -170,7 +170,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tendermint/tendermint v0.34.26 // indirect
-	github.com/tendermint/tm-db v0.6.7 // indirect
+	github.com/tendermint/tm-db v0.6.8-0.20221109095132-774cdfe7e6b0 // indirect
 	github.com/tidwall/btree v1.5.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect
