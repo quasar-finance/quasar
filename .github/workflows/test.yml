@@ -18,7 +18,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Display go version
         run: go version
       - name: Run all tests
@@ -43,8 +43,8 @@ jobs:
       #   uses: docker://cosmwasm/rust-optimizer:0.12.6
       #   with:
       #     args: >-
-      #       --rm -v "$(pwd)":/code 
-      #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
+      #       --rm -v "$(pwd)":/code
+      #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target
       #       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
       - name: Compile wasm code
         run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
@@ -59,7 +59,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Display go version
         run: go version
       - name: Build Docker Image

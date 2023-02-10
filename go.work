@@ -5,4 +5,4 @@ use (
 	./tests/e2e
 )
 
-replace	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
+replace github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.0.0-20230117083724-92009f61a2e3
