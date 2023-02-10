@@ -302,10 +302,13 @@ require (
 )
 
 replace (
+
 	// used latest commit of branch packet-seq-return
 	github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210083007-7c0426ddab37
 	// bandchain packet
 	github.com/bandprotocol/bandchain-packet => github.com/notional-labs/bandchain-packet v0.0.0-20230210080947-80fe427efadc
+	//btcd
+	github.com/btcsuite/btcd v0.22.1 => github.com/btcsuite/btcd v0.23.0
 
 	// used latest commit of branch v5.2.0-icq
 	github.com/cosmos/ibc-go/v5 => github.com/notional-labs/ibc-go/v5 v5.2.0-icq
