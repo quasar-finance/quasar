@@ -188,3 +188,34 @@ pub struct GetDebugResponse {
     /// the debug string
     pub debug: String,
 }
+
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::Timestamp;
+
+    use super::*;
+
+    #[test]
+    fn callback_equals_execute() {
+        let bond_response = BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() };
+        let cb = quasar_types::callback::Callback::BondResponse(bond_response.clone());
+        let se = serde_json_wasm::to_string(&cb).unwrap();
+        let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap();
+        assert_eq!(msg, ExecuteMsg::BondResponse(bond_response));
+
+        let start_unbond_response = StartUnbondResponse { unbond_id: "id".to_string(), unlock_time: Timestamp::from_seconds(100) };
+        let cb = quasar_types::callback::Callback::StartUnbondResponse(start_unbond_response.clone());
+        let se = serde_json_wasm::to_string(&cb).unwrap();
+        let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap();
+        assert_eq!(msg, ExecuteMsg::StartUnbondResponse(start_unbond_response));
+
+
+        let unbond_response = UnbondResponse { unbond_id: "id".to_string() };
+        let cb = quasar_types::callback::Callback::UnbondResponse(unbond_response.clone());
+        let se = serde_json_wasm::to_string(&cb).unwrap();
+        let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap(); 
+        assert_eq!(msg, ExecuteMsg::UnbondResponse(unbond_response));
+
+    }
+}
