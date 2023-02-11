@@ -172,3 +172,36 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
 // }
+
+
+mod tests {
+    use quasar_types::callback::BondResponse;
+
+    use super::*;
+
+    const DENOM: &str = "satoshi";
+    const CREATOR: &str = "creator";
+    const INVESTOR: &str = "investor";
+    const BUYER: &str = "buyer";
+
+    // fn default_instantiate() -> InstantiateMsg {
+    //     InstantiateMsg {
+    //         lock_period: todo!(),
+    //         pool_id: todo!(),
+    //         pool_denom: todo!(),
+    //         denom: todo!(),
+    //         local_denom: todo!(),
+    //     }
+    // }
+
+    #[test]
+    fn test() {
+        let msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: Uint128::from(100u128),
+            bond_id: Uint128::from(1u128).to_string(),
+        });
+
+        // print bond message
+        println!("{:?}", msg);
+    }
+}

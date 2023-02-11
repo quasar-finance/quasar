@@ -378,5 +378,6 @@ mod tests {
         _reserve_decimals: u8,
         _reserve_supply: Uint128,
     ) {
+        serde_json_wasm::to_string(ExecuteMsg);
     }
 }
