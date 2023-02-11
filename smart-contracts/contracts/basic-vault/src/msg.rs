@@ -188,3 +188,17 @@ pub struct GetDebugResponse {
     /// the debug string
     pub debug: String,
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn callback_equals_type() {
+        let cb = quasar_types::callback::Callback::BondResponse(BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() });
+        let se = serde_json_wasm::to_string(&cb).unwrap();
+        println!("{:?}", se);
+        let _: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap(); 
+    }
+}

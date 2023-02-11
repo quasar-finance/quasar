@@ -64,6 +64,7 @@ dependencies = [
  "cw20-staking",
  "lp-strategy",
  "quasar-types",
+ "serde-json-wasm 0.4.1",
  "thiserror",
 ]
 
