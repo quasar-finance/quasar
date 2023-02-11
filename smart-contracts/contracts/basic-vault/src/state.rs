@@ -61,3 +61,5 @@ pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_deposit_i
 // map of deposit id to deposit state
 // todo: find the type of the vec items here (replace supply obvs)
 pub const DEPOSIT_STATE: Map<String, Vec<BondingStub>> = Map::new("deposit_state");
+
+pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");

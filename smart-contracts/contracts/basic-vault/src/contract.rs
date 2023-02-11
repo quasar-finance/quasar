@@ -14,14 +14,14 @@ use cw20_base::contract::{
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 
-use crate::callback::handle_callback;
+use crate::callback::on_bond;
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::query::{query_deposit_ratio, query_investment};
+use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, QueryMsg};
+use crate::query::{query_deposit_ratio, query_investment, query_pending_bonds};
 use crate::state::{
-    InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, INVESTMENT,
-    TOTAL_SUPPLY,
+    InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
+    INVESTMENT, TOTAL_SUPPLY,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -55,11 +55,16 @@ pub fn instantiate(
     INVESTMENT.save(deps.storage, &invest)?;
 
     // initialize bonding sequence num
-    BONDING_SEQ.save(deps.storage, &Uint128::one());
+    BONDING_SEQ.save(deps.storage, &Uint128::one())?;
 
     // set supply to 0
     let supply = Supply::default();
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
+
+    DEBUG_TOOL.save(
+        deps.storage,
+        &"Empty".to_string(),
+    )?;
 
     Ok(Response::new())
 }
@@ -79,7 +84,17 @@ pub fn execute(
         ExecuteMsg::_BondAllTokens {} => _bond_all_tokens(deps, env, info),
 
         // callbacks entrypoint
-        ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
+        // you cant do this fuck me
+        // ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
+        ExecuteMsg::BondResponse(bond_response) => on_bond(
+            deps,
+            env,
+            info,
+            bond_response.share_amount,
+            bond_response.bond_id,
+        ),
+        ExecuteMsg::StartUnbondResponse(start_unbond_response) => todo!(),
+        ExecuteMsg::UnbondResponse(unbond_response) => todo!(),
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
@@ -139,5 +154,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query_allowance(deps, owner, spender)?)
         }
         QueryMsg::DepositRatio { funds } => to_binary(&query_deposit_ratio(deps, funds)?),
+        QueryMsg::PendingBonds { address } => to_binary(&query_pending_bonds(deps, address)?),
+        QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
     }
 }
+
+pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
+    let debug_string = DEBUG_TOOL.load(deps.storage)?;
+
+    Ok(GetDebugResponse {
+        debug: debug_string,
+    })
+}
+
+// replies not created yet
+// #[cfg_attr(not(feature = "library"), entry_point)]
+// pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+
+// }

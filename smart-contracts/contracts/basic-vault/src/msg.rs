@@ -4,8 +4,9 @@ use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use quasar_types::callback::Callback;
-use quasar_types::types::CoinRatio;
+use quasar_types::callback::{Callback, BondResponse, StartUnbondResponse, UnbondResponse};
+
+use crate::state::BondingStub;
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -64,7 +65,10 @@ pub enum ExecuteMsg {
     /// This can only be invoked by the contract itself as a return from Reinvest
     _BondAllTokens {},
 
-    Callback(Callback),
+    // Callback(Callback),
+    BondResponse(BondResponse),
+    StartUnbondResponse(StartUnbondResponse),
+    UnbondResponse(UnbondResponse),
 
     /// Implements CW20. Transfer is a base message to move tokens to another account without triggering actions
     Transfer {
@@ -133,6 +137,14 @@ pub enum QueryMsg {
     #[returns(DepositRatioResponse)]
     DepositRatio { funds: Vec<Coin> },
 
+    /// PendingBonds shows the bonds that are currently in the process of being deposited for a user
+    #[returns(PendingBondsResponse)]
+    PendingBonds { address: String },
+
+    /// GetDebug shows us debug string info
+    #[returns(GetDebugResponse)]
+    GetDebug {},
+
     /// Implements CW20. Returns the current balance of the given address, 0 if unset.
     #[returns(BalanceResponse)]
     Balance { address: String },
@@ -161,4 +173,18 @@ pub struct DepositRatioResponse {
     /// the ratio of tokens that should be sent for a deposit given list of available tokens
     pub primitive_funding_amounts: Vec<Coin>,
     pub remainder: Vec<Coin>,
+}
+
+#[cw_serde]
+pub struct PendingBondsResponse {
+    /// the bonds that are currently in the process of being deposited for a user
+    pub pending_bonds: Vec<BondingStub>,
+    /// the bond ids that are registered as pending for a user
+    pub pending_bond_ids: Vec<String>,
+}
+
+#[cw_serde]
+pub struct GetDebugResponse {
+    /// the debug string
+    pub debug: String,
 }

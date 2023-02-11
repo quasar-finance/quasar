@@ -65,7 +65,7 @@ rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >> ./logs/cosmo
 RLY_PID_3=$!
 
 echo "ibc transferring uosmo"
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10000uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y
 
 sleep 10
 

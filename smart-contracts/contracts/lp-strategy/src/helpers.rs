@@ -11,7 +11,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub fn get_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
-    let mut sum = Uint128::zero();
+    // workaround for a div-by-zero error on multi-asset vault side
+    let mut sum = Uint128::one();
     for val in SHARES.range(storage, None, None, Order::Ascending) {
         sum = sum.checked_add(val?.1)?;
     }

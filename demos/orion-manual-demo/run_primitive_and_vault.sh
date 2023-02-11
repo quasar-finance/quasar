@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"
@@ -13,7 +15,7 @@ echo $NODE
 #     base_denom: base_denom should be the denom of the token on osmosos, for now uosmo
 #     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
 #     quote_denom is the denom other denom in the pool, stake for now
-INIT='{"lock_period":1209600,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B","quote_denom":"stake"}'
+INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-1"}'
 
 cd ../../smart-contracts/contracts/lp-strategy
 
@@ -49,7 +51,7 @@ AMOUNT="100000uosmo"
 HOME_OSMOSIS=$HOME/.osmosis
 # echo $CADDR
 # echo "preloading the ICA address with $AMOUNT to play around with"
-BANTX=$(osmosisd tx bank send bob $CADDR2 $AMOUNT -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home $HOME_OSMOSIS)
+BANTX=$(osmosisd tx bank send bob $CADDR2 $AMOUNT -y --keyring-backend test --node tcp://localhost:26679 --chain-id osmosis --gas 583610 --home $HOME_OSMOSIS)
 # BANKTX=$(printf 'osmosisd tx bank send bob %s %s -y --keyring-backend test --node tcp://localhost:26679  --chain-id osmosis --gas 583610 --home %s' $CADDR $AMOUNT $HOME_OSMOSIS)
 # echo $BANTX
 # $BANKTX
@@ -67,4 +69,37 @@ JOINMSG=$(printf '{
 
 echo "joining pool, to replay: \"quasarnoded tx wasm execute $ADDR '$JOINMSG' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID\""
 quasarnoded tx wasm execute $ADDR "$JOINMSG" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+
+## MULTI ASSET VAULT ZONE
+echo "Starting multi-asset vault init"
+
+VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR'","weight":"1.0","init":{"l_p":'$INIT'}}]}'
+echo $VAULT_INIT
+
+RUSTFLAGS='-C link-arg=-s' cargo wasm
+# docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.10
+# sleep 4
+
+echo "Running store code (vault)"
+RES=$(quasarnoded tx wasm store target/wasm32-unknown-unknown/release/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+
+VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
+
+echo "Got CODE_ID = $VAULT_CODE_ID"
+
+echo "Deploying contract (vault)"
+# swallow output
+OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
+
+echo "Got address of deployed contract = $VAULT_ADDR (vault)"
+
+# echo "Running a primitive deposit manually to circumvent the cold start issue with primitives"
+# quasarnoded tx wasm execute $ADDR '{"bond": {"id": "test"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 10ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+# sleep 4
+
+echo "Running deposit (vault)"
+echo "Command: quasarnoded tx wasm execute $VAULT_ADDR '{\"bond\":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 100ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518"
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 100ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+
 cd -

@@ -1,12 +1,8 @@
-use std::collections::HashMap;
-use std::ops::{Add, Mul};
-
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
-    Response, SubMsg, Uint128, WasmMsg, Deps,
+    to_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, SubMsg, Uint128, WasmMsg,
 };
 
-use cw20_base::contract::execute_burn;
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -94,29 +90,45 @@ pub fn may_pay_with_ratio(
                 .unwrap();
 
             CoinWeight {
-                weight: Decimal::from_ratio(pc.weight.mul(balance.amount.amount), supply.amount),
+                weight: Decimal::from_ratio(
+                    balance
+                        .amount
+                        .amount
+                        .multiply_ratio(pc.weight.numerator(), pc.weight.denominator()),
+                    supply.total,
+                ),
                 denom: balance.amount.denom,
             }
         })
         .collect();
 
-    let token_map = deposit_amount_weights.iter().fold(
-        HashMap::<&String, Decimal>::new(),
-        |mut acc, coin_weight| {
-            let existing_weight = acc.get(&coin_weight.denom);
-            let new_weight = match existing_weight {
-                Some(weight) => weight.checked_add(coin_weight.weight).unwrap(),
-                None => coin_weight.weight,
-            };
-            acc.insert(&coin_weight.denom, new_weight);
-            acc
-        },
-    );
+    let token_weights: Vec<CoinWeight> =
+        deposit_amount_weights
+            .iter()
+            .fold(vec![], |mut acc, coin_weight| {
+                let existing_weight_idx = acc.iter().position(|cw| cw.denom == coin_weight.denom);
+                let existing_weight = match existing_weight_idx {
+                    Some(idx) => Some(acc.remove(idx)),
+                    None => None,
+                };
+                let new_weight = match existing_weight {
+                    Some(weight) => weight.weight.checked_add(coin_weight.weight).unwrap(),
+                    None => coin_weight.weight,
+                };
+                acc.push(CoinWeight {
+                    weight: new_weight,
+                    denom: coin_weight.denom.clone(),
+                });
+                acc
+            });
 
     let mut max_bond = Uint128::MAX;
-    for (denom, weight) in token_map {
-        let amount = must_pay_multi(funds, denom).unwrap();
-        let bond_for_token = amount.multiply_ratio(weight.numerator(), weight.denominator());
+    for coin_weight in token_weights {
+        let amount = must_pay_multi(funds, &coin_weight.denom).unwrap();
+        let bond_for_token = amount.multiply_ratio(
+            coin_weight.weight.numerator(),
+            coin_weight.weight.denominator(),
+        );
         if bond_for_token < max_bond {
             max_bond = bond_for_token;
         }
@@ -170,6 +182,10 @@ pub fn may_pay_with_ratio(
 
 // todo test
 pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    if (info.funds.len() == 0 || info.funds.iter().all(|c| c.amount.is_zero())) {
+        return Err(ContractError::NoFunds {});
+    }
+
     // load vault info & sequence number
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
@@ -179,7 +195,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     let (primitive_funding_amounts, remainder) =
         may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives).unwrap();
 
-    let bond_msgs: Result<Vec<SubMsg>, ContractError> = invest
+    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
         .iter()
         .zip(primitive_funding_amounts)
@@ -192,16 +208,13 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
                 deposit_stubs.push(deposit_stub);
 
                 // todo: do we need it to reply
-                Ok(SubMsg::reply_always(
-                    WasmMsg::Execute {
-                        contract_addr: pc.address.clone(),
-                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
-                            id: bond_seq.to_string(),
-                        })?,
-                        funds: vec![funds],
-                    },
-                    STRATEGY_BOND_ID,
-                ))
+                Ok(WasmMsg::Execute {
+                    contract_addr: pc.address.clone(),
+                    msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                        id: bond_seq.to_string(),
+                    })?,
+                    funds: vec![funds],
+                })
             }
         })
         .collect();
@@ -215,14 +228,29 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
         None => Ok(vec![bond_seq.to_string()]),
     })?;
     DEPOSIT_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
-    BONDING_SEQ.save(deps.storage, &bond_seq.add(Uint128::from(1u128)))?;
+    BONDING_SEQ.save(
+        deps.storage,
+        &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
+    )?;
+
+    let mut remainder_msgs = vec![];
+
+    remainder.iter().for_each(|r| {
+        if (r.amount > Uint128::zero()) {
+            remainder_msgs.push(BankMsg::Send {
+                to_address: info.sender.clone().to_string(),
+                amount: vec![Coin {
+                    denom: r.denom.clone(),
+                    amount: r.amount,
+                }],
+            });
+        }
+    });
 
     Ok(Response::new()
-        .add_submessages(bond_msgs?)
-        .add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: remainder,
-        }))
+        .add_attribute("bond_id", bond_seq.to_string())
+        .add_messages(bond_msgs?)
+        .add_messages(remainder_msgs))
 }
 
 pub fn unbond(

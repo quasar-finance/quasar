@@ -1,13 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-<<<<<<< HEAD
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
-    StdResult, Uint128, Coin,
-=======
     to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
     Uint128,
->>>>>>> 7842da36b72e965799c7d2f8c5c103b9f9a4c340
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -22,11 +17,7 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-<<<<<<< HEAD
-    InstantiateMsg, QueryMsg,
-=======
     IcaChannelResponse, InstantiateMsg, LockResponse, PrimitiveSharesResponse, QueryMsg,
->>>>>>> 7842da36b72e965799c7d2f8c5c103b9f9a4c340
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -66,6 +57,9 @@ pub fn instantiate(
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
     LP_SHARES.save(deps.storage, &Uint128::zero())?;
+
+    // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
+    ICA_BALANCE.save(deps.storage, &Uint128::one())?;
 
     Ok(Response::default())
 }
@@ -343,7 +337,7 @@ pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
             amount: ICA_BALANCE
                 .load(deps.storage)
                 .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
+                    msg: "could not load balance: <".to_string() + &err.to_string() + ">",
                 })?,
         },
     })
