@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Uint128,
+    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -19,6 +18,7 @@ use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
     IcaChannelResponse, InstantiateMsg, LockResponse, PrimitiveSharesResponse, QueryMsg,
 };
+use crate::reply::{handle_ibc_reply, handle_execute_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
@@ -61,6 +61,20 @@ pub fn instantiate(
     // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
     ICA_BALANCE.save(deps.storage, &Uint128::one())?;
 
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> StdResult<Response> {
+    // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
+    // TODO this needs and error check and error handling
+    let kind = REPLIES.load(deps.storage, reply.id)?;
+    match kind {
+        crate::helpers::MsgKind::Ibc(ibc_kind) => handle_ibc_reply(deps, reply, ibc_kind)?,
+        crate::helpers::MsgKind::WasmExecute(owner, amount) => {
+            handle_execute_reply(deps, reply, owner, amount)?
+        }
+    }
     Ok(Response::default())
 }
 

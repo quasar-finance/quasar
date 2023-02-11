@@ -172,3 +172,23 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
 // }
+
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use quasar_types::callback::BondResponse;
+    use super::*;
+
+    #[test]
+    fn callback_bond_response() {
+        let bond_response = BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() };
+        let cb = ExecuteMsg::BondResponse(bond_response);
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = MessageInfo { sender: env.clone().contract.address, funds: Vec::new() };
+        execute(deps.as_mut(), env, info, cb).unwrap();
+        assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
+        println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
+    }
+}
