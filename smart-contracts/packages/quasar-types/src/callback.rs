@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-#[serde(untagged)]
 pub enum Callback {
     BondResponse(BondResponse),
     StartUnbondResponse(StartUnbondResponse),
@@ -31,4 +30,16 @@ pub struct StartUnbondResponse {
 #[serde(rename_all = "snake_case")]
 pub struct UnbondResponse {
     pub unbond_id: String,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn callback_json() {
+        let json = serde_json_wasm::to_string(&Callback::BondResponse(BondResponse { share_amount:Uint128::one(), bond_id: "my_id".to_string() })).unwrap();
+        println!("{:?}", json);
+
+    }
 }
