@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
-    StdResult, Uint128,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -22,7 +22,7 @@ use crate::msg::{
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, WITHDRAWABLE,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -99,34 +99,7 @@ pub fn execute(
             execute_accept_returning_funds(deps, &env, info, id)
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
-        ExecuteMsg::Withdraw { amount } => execute_withdraw(deps, info, amount),
     }
-}
-
-
-fn execute_withdraw(deps: DepsMut, info: MessageInfo, funds: Option<Uint128>) -> Result<Response, ContractError> {
-    let total = WITHDRAWABLE.load(deps.storage, info.sender.clone())?;
-    if let Some(amount) = funds {
-        if total < amount {
-            return Err(ContractError::PaymentError(cw_utils::PaymentError::NoFunds {}));
-        }
-        Ok(Response::new().add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: vec![Coin {
-                denom: CONFIG.load(deps.storage)?.local_denom,
-                amount
-            }],
-        }))
-    } else {
-        Ok(Response::new().add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: vec![Coin {
-                denom: CONFIG.load(deps.storage)?.local_denom,
-                amount: total,
-            }],
-        }))
-    }
-    
 }
 
 pub fn execute_return_funds(
