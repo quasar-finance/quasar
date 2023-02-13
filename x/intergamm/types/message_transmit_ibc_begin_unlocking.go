@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -43,16 +44,16 @@ func (msg *MsgTransmitIbcBeginUnlocking) GetSignBytes() []byte {
 func (msg *MsgTransmitIbcBeginUnlocking) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 	if msg.ConnectionId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "connectionID cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidRequest, "connectionID cannot be empty")
 	}
 	if len(msg.Coins) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be empty")
 	}
 	if msg.TimeoutTimestamp == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "TimeoutTimestamp cannot be 0")
+		return errors.Wrap(sdkerrors.ErrInvalidRequest, "TimeoutTimestamp cannot be 0")
 	}
 	return nil
 }

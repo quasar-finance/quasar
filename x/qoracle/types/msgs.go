@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -40,12 +41,12 @@ func (msg *MsgAddDenomSymbolMappings) GetSignBytes() []byte {
 func (msg *MsgAddDenomSymbolMappings) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
 	for _, mapping := range msg.Mappings {
 		if err := mapping.Validate(); err != nil {
-			return sdkerrors.Wrapf(err, "invalid mapping with denom %s", mapping.Denom)
+			return errors.Wrapf(err, "invalid mapping with denom %s", mapping.Denom)
 		}
 	}
 
@@ -86,7 +87,7 @@ func (msg *MsgRemoveDenomSymbolMappings) GetSignBytes() []byte {
 func (msg *MsgRemoveDenomSymbolMappings) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
 	for _, denom := range msg.Denoms {

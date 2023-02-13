@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
@@ -22,7 +23,7 @@ func (k Keeper) TransferIbcTokens(
 ) (uint64, error) {
 	seq, found := k.channelKeeper.GetNextSequenceSend(ctx, srcPort, srcChannel)
 	if !found {
-		return 0, sdkerrors.Wrapf(
+		return 0, errors.Wrapf(
 			channeltypes.ErrSequenceSendNotFound,
 			"source port: %s, source channel: %s", srcPort, srcChannel,
 		)
@@ -87,14 +88,14 @@ func (k Keeper) TransmitICATransfer(
 	logger := k.Logger(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(finalReceiver); err != nil {
-		err := sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid final receiver address (%s) for quasar zone", err)
+		err := errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid final receiver address (%s) for quasar zone", err)
 		logger.Error("TransmitICATransfer", err)
 		return 0, "", "", err
 	}
 
 	icaZoneInfo, found := k.GetZoneInfo(ctx, types.OsmosisZoneId)
 	if !found {
-		err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not found in CompleteZoneInfoMap for direct transfer of %s",
+		err := errors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not found in CompleteZoneInfoMap for direct transfer of %s",
 			token.String())
 		logger.Error("TransmitICATransfer", err)
 		return 0, "", "", err
@@ -112,13 +113,13 @@ func (k Keeper) TransmitICATransfer(
 	osmosisDenom := token.Denom
 	quasarDenom, found := k.OsmosisDenomToQuasarDenomMap(ctx)[osmosisDenom]
 	if !found {
-		err := sdkerrors.Wrapf(types.ErrInvalidDenom, "corresponding quasar denom for osmosis denom %s not found", osmosisDenom)
+		err := errors.Wrapf(types.ErrInvalidDenom, "corresponding quasar denom for osmosis denom %s not found", osmosisDenom)
 		logger.Error("TransmitICATransfer", err)
 		return 0, "", "", err
 	}
 	nativeZoneId, found := k.QuasarDenomToNativeZoneIdMap(ctx)[quasarDenom]
 	if !found {
-		err := sdkerrors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of quasar denom '%s' not specified", quasarDenom)
+		err := errors.Wrapf(types.ErrDenomNativeZoneIdNotFound, "native zone ID of quasar denom '%s' not specified", quasarDenom)
 		logger.Error("TransmitICATransfer", err)
 		return 0, "", "", err
 	}
@@ -146,7 +147,7 @@ func (k Keeper) TransmitICATransfer(
 
 		nativeZoneInfo, found := k.GetZoneInfo(ctx, nativeZoneId)
 		if !found {
-			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for zone ID '%s' not specified", nativeZoneId)
+			err := errors.Wrapf(types.ErrZoneInfoNotFound, "zone info for zone ID '%s' not specified", nativeZoneId)
 			logger.Error("TransmitICATransfer", err)
 			return 0, "", "", err
 		}
@@ -154,7 +155,7 @@ func (k Keeper) TransmitICATransfer(
 		// icaFromNativeInfo contains IBC info about the channel between ICA zone and the native zone.
 		icaFromNativeInfo, found := nativeZoneInfo.NextZoneRouteMap[types.OsmosisZoneId]
 		if !found {
-			err := sdkerrors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not specified in NextZoneRouteMap of zone '%s' (native zone of %s)",
+			err := errors.Wrapf(types.ErrZoneInfoNotFound, "zone info for osmosis not specified in NextZoneRouteMap of zone '%s' (native zone of %s)",
 				nativeZoneInfo.ZoneRouteInfo.CounterpartyZoneId, token.String())
 			logger.Error("TransmitICATransfer", err)
 			return 0, "", "", err
@@ -162,7 +163,7 @@ func (k Keeper) TransmitICATransfer(
 
 		nativeIcaAddr, found := k.IsICARegistered(ctx, nativeZoneInfo.ZoneRouteInfo.ConnectionId, owner)
 		if !found {
-			err := sdkerrors.Wrapf(types.ErrICANotFound, "no inter-chain account owned by %s found on zone '%s' (native zone of %s)",
+			err := errors.Wrapf(types.ErrICANotFound, "no inter-chain account owned by %s found on zone '%s' (native zone of %s)",
 				owner, nativeZoneId, token.String())
 			logger.Error("TransmitICATransfer", err)
 			return 0, "", "", err

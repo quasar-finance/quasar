@@ -3,6 +3,7 @@ package wasmbinding
 import (
 	"encoding/json"
 
+	"cosmossdk.io/errors"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,7 +15,7 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 		var contractQuery bindings.QuasarQuery
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
-			return nil, sdkerrors.Wrap(err, "osmosis query")
+			return nil, errors.Wrap(err, "osmosis query")
 		}
 
 		switch {
@@ -23,29 +24,29 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 
 			bz, err := json.Marshal(pools)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar qoracle pools")
+				return nil, errors.Wrap(err, "failed to marshal quasar qoracle pools")
 			}
 			return bz, nil
 		case contractQuery.Pool != nil:
 			pool, found := qk.GetPool(ctx, contractQuery.Pool.Id)
 			if !found {
-				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "pool not found")
+				return nil, errors.Wrap(sdkerrors.ErrInvalidRequest, "pool not found")
 			}
 
 			bz, err := json.Marshal(pool)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool")
+				return nil, errors.Wrap(err, "failed to marshal quasar pool")
 			}
 			return bz, nil
 		case contractQuery.TokenPrice != nil:
 			price, err := qk.GetDenomPrice(ctx, contractQuery.TokenPrice.Denom)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to get token price")
+				return nil, errors.Wrap(err, "failed to get token price")
 			}
 
 			bz, err := price.MarshalJSON()
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar token price")
+				return nil, errors.Wrap(err, "failed to marshal quasar token price")
 			}
 			return bz, nil
 		default:

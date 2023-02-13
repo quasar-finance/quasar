@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icqtypes "github.com/cosmos/ibc-go/v5/modules/apps/icq/types"
@@ -215,27 +216,27 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 	var ackData icqtypes.InterchainQueryPacketAck
 	if err := types.ModuleCdc.UnmarshalJSON(ack.GetResult(), &ackData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet acknowledgement data")
+		return errors.Wrapf(err, "could not unmarshal icq packet acknowledgement data")
 	}
 	resps, err := icqtypes.DeserializeCosmosResponse(ackData.Data)
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq acknowledgement data to cosmos response")
+		return errors.Wrapf(err, "could not unmarshal icq acknowledgement data to cosmos response")
 	}
 
 	var packetData icqtypes.InterchainQueryPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet data")
+		return errors.Wrapf(err, "could not unmarshal icq packet data")
 	}
 	reqs, err := icqtypes.DeserializeCosmosQuery(packetData.Data)
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet data to cosmos query")
+		return errors.Wrapf(err, "could not unmarshal icq packet data to cosmos query")
 	}
 
 	cacheCtx, writeCache := ctx.CacheContext()
 
 	for i, req := range reqs {
 		if err := k.handleOsmosisICQResponse(cacheCtx, req, resps[i]); err != nil {
-			return sdkerrors.Wrapf(err, "could not handle icq response of request %d", i)
+			return errors.Wrapf(err, "could not handle icq response of request %d", i)
 		}
 	}
 
@@ -283,7 +284,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	if resp.IsErr() {
-		return sdkerrors.Wrapf(types.ErrFailedICQResponse, "icq response failed with code %d", resp.GetCode())
+		return errors.Wrapf(types.ErrFailedICQResponse, "icq response failed with code %d", resp.GetCode())
 	}
 
 	switch req.Path {
@@ -302,7 +303,7 @@ func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQ
 	case types.OsmosisQueryDistrInfoPath:
 		return k.handleOsmosisDistrInfoResponse(ctx, req, resp)
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
+		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
 	}
 }
 
@@ -321,7 +322,7 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 	var pool balancerpool.Pool
 	err := pool.Unmarshal(qresp.GetPool().GetValue())
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal pool")
+		return errors.Wrapf(err, "could not unmarshal pool")
 	}
 
 	k.SetPool(ctx, pool)

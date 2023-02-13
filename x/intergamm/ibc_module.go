@@ -3,6 +3,7 @@ package intergamm
 import (
 	"fmt"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -127,7 +128,7 @@ func (im IBCModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	err := sdkerrors.Wrapf(icatypes.ErrInvalidChannelFlow, "cannot receive packet via interchain accounts authentication module")
+	err := errors.Wrapf(icatypes.ErrInvalidChannelFlow, "cannot receive packet via interchain accounts authentication module")
 	return channeltypes.NewErrorAcknowledgement(err)
 }
 
@@ -144,13 +145,13 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
+		return errors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
 	}
 
 	ack := channeltypes.Acknowledgement{}
 	err = icatypes.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
 	if err != nil {
-		return sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal IBC acknowledgement")
+		return errors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal IBC acknowledgement")
 	}
 
 	return im.keeper.HandleIcaAcknowledgement(ctx, packet.GetSequence(), packet.SourceChannel, packet.SourcePort, icaPacket, ack)
@@ -166,7 +167,7 @@ func (im IBCModule) OnTimeoutPacket(
 
 	icaPacket, err := parseIcaPacket(packet)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
+		return errors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-27 ica packet data: %s", err.Error())
 	}
 
 	return im.keeper.HandleIcaTimeout(ctx, packet.GetSequence(), icaPacket)
@@ -192,11 +193,11 @@ func parseIcaPacket(packet channeltypes.Packet) (icatypes.InterchainAccountPacke
 	var icaPacket icatypes.InterchainAccountPacketData
 	err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &icaPacket)
 	if err != nil {
-		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+		return icaPacket, errors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
 	}
 
 	if icaPacket.Type != icatypes.EXECUTE_TX {
-		return icaPacket, sdkerrors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
+		return icaPacket, errors.Wrapf(icatypes.ErrUnsupported, "only EXECUTE_TX ICA callbacks are supported")
 	}
 
 	return icaPacket, nil

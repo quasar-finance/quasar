@@ -1,9 +1,11 @@
 package types
 
 import (
+	"time"
+
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"time"
 )
 
 const TypeMsgTransmitIbcLockTokens = "transmit_ibc_lock_tokens"
@@ -44,22 +46,22 @@ func (msg *MsgTransmitIbcLockTokens) GetSignBytes() []byte {
 func (msg *MsgTransmitIbcLockTokens) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 	if msg.ConnectionId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "connectionID cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidAddress, "connectionID cannot be empty")
 	}
 	if msg.ConnectionId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "connectionID cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidAddress, "connectionID cannot be empty")
 	}
 	if msg.Duration == time.Duration(0) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "duration cannot be 0")
+		return errors.Wrap(sdkerrors.ErrInvalidRequest, "duration cannot be 0")
 	}
 	if len(msg.Coins) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidCoins, "coins cannot be empty")
 	}
 	if msg.TimeoutTimestamp == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid TimeoutTimestamp, cannot be 0")
+		return errors.Wrap(sdkerrors.ErrInvalidRequest, "invalid TimeoutTimestamp, cannot be 0")
 	}
 	return nil
 }
