@@ -280,7 +280,11 @@ pub fn do_start_unbond(
     info: &MessageInfo,
     amount: Uint128,
 ) -> Result<(Vec<WasmMsg>, Vec<Attribute>), ContractError> {
-    // check that user has vault tokens and the amount is > 0 and less than min_withdraw
+    if (amount.is_zero()) {
+        // skip start unbond
+        return Ok((vec![], vec![]));
+    }
+    // check that user has vault tokens and the amount is > min_withdrawal
 
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
@@ -406,7 +410,7 @@ pub fn do_start_unbond(
         vec![
             Attribute {
                 key: "action".to_string(),
-                value: "unbond".to_string(),
+                value: "start_unbond".to_string(),
             },
             Attribute {
                 key: "from".to_string(),
@@ -438,7 +442,7 @@ pub fn do_unbond(
     }
 
     Ok((
-        unbond_msgs,
+        unbond_msgs.clone(),
         vec![
             Attribute {
                 key: "action".to_string(),
@@ -448,6 +452,10 @@ pub fn do_unbond(
                 key: "from".to_string(),
                 value: info.sender.to_string(),
             },
+            Attribute {
+                key: "unbondable_ids".to_string(),
+                value: unbond_msgs.len().to_string(),
+            }
         ],
     ))
 }

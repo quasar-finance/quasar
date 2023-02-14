@@ -19,10 +19,10 @@ INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uos
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
-CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
@@ -37,7 +37,6 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR" --dst-port icahost -
 QMSG='{"channels": {}}'
 CADDR=$(quasarnoded query wasm contract-state smart $ADDR "$QMSG" --output json | jq '.data.channels[] | select(.counterparty_endpoint.port_id=="icahost").channel_type.ica.counter_party_address')
 CCHAN=$(quasarnoded query wasm contract-state smart $ADDR "$QMSG" --output json | jq '.data.channels[] | select(.counterparty_endpoint.port_id=="icahost").id')
-
 
 AMOUNT="100000uosmo"
 HOME_OSMOSIS=$HOME/.osmosis
@@ -79,8 +78,19 @@ sleep 80
 
 echo "Querying alice balance"
 quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
-echo "Running unbond"
+echo "Running unbond, command: quasarnoded tx wasm execute $VAULT_ADDR '{\"unbond\":{\"amount\":\"100\"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID"
 quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+
+echo "Sleeping 60"
+sleep 60
+echo "Running unbond again to get funds back"
+quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"0"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+
+echo "Sleeping 60"
+echo "Alice balances after unbond step:"
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
 cd -
