@@ -26,7 +26,7 @@ use crate::{
 pub struct StartUnbond {
     pub owner: Addr,
     pub id: String,
-    pub shares: Uint128,
+    pub primitive_shares: Uint128,
 }
 
 pub fn do_start_unbond(
@@ -63,7 +63,8 @@ pub fn batch_start_unbond(
         let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
-            amount: lp_shares,
+            lp_shares,
+            primitive_shares: unbond.primitive_shares,
             owner: unbond.owner,
             id: unbond.id,
         })
@@ -124,7 +125,7 @@ fn single_unbond(
 ) -> Result<Uint128, ContractError> {
     let total_shares = get_total_shares(storage)?;
     Ok(unbond
-        .shares
+        .primitive_shares
         .checked_mul(total_lp_shares)?
         .checked_div(total_shares)?)
 }
@@ -136,14 +137,14 @@ fn start_internal_unbond(
     unbond: &PendingSingleUnbond,
 ) -> Result<WasmMsg, ContractError> {
     // check that we can create a new unbond
-    if !UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
+    if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
     // remove amount of shares
     let left = SHARES
         .load(storage, unbond.owner.clone())?
-        .checked_sub(unbond.amount)?;
+        .checked_sub(unbond.primitive_shares)?;
     // subtracting below zero here should trigger an error in check_sub
     if left.is_zero() {
         SHARES.remove(storage, unbond.owner.clone());
@@ -162,7 +163,7 @@ fn start_internal_unbond(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {
-            lp_shares: unbond.amount,
+            lp_shares: unbond.lp_shares,
             unlock_time,
             id: unbond.id.clone(),
             owner: unbond.owner.clone(),

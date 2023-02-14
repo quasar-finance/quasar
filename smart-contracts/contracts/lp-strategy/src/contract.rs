@@ -178,7 +178,7 @@ pub fn execute_start_unbond(
         StartUnbond {
             owner: info.sender.clone(),
             id,
-            shares: share_amount,
+            primitive_shares: share_amount,
         },
     )?;
 
