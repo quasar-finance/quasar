@@ -2,7 +2,7 @@ use crate::{error::Error, ica::traits::Unpack};
 /// a collection of pack implementations for foreign types to be used in our ica contracts
 use cosmos_sdk_proto::Any;
 use osmosis_std::types::osmosis::{
-    gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse},
+    gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse, MsgExitSwapShareAmountInResponse, MsgExitSwapShareAmountIn},
     lockup::{MsgLockTokens, MsgLockTokensResponse},
 };
 use prost::Message;
@@ -40,6 +40,19 @@ impl Unpack for MsgLockTokensResponse {
         if msg.type_url != MsgLockTokens::TYPE_URL {
             return Err(Error::UnpackInvalidTypeUrl {
                 expected: MsgLockTokens::TYPE_URL.to_string(),
+                actual: msg.type_url,
+            });
+        }
+        let val: Self = Message::decode(msg.value.as_ref())?;
+        Ok(val)
+    }
+}
+
+impl Unpack for MsgExitSwapShareAmountInResponse {
+    fn unpack(msg: Any) -> Result<Self, Error> {
+        if msg.type_url != MsgExitSwapShareAmountIn::TYPE_URL {
+            return Err(Error::UnpackInvalidTypeUrl {
+                expected: MsgExitSwapShareAmountIn::TYPE_URL.to_string(),
                 actual: msg.type_url,
             });
         }

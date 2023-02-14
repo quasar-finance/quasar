@@ -88,8 +88,8 @@ pub enum ContractError {
     #[error("{0}")]
     DecodeError(#[from] prost::DecodeError),
 
-    #[error("{0}")]
-    ParseIntError(#[from] ParseIntError),
+    #[error("parse int error: {error} caused by {value}")]
+    ParseIntError{error: ParseIntError, value: String},
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),

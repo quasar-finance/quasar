@@ -44,11 +44,11 @@ osmosisd tx gamm create-pool --pool-file ./sample_pool.json --node http://127.0.
 
 
 # setup and run hermes
-# ./run_hermes_v1.sh
+./run_hermes_v1.sh
 
 # echo "starting hermes"
-# hermes start >> ./logs/hermes_start.log 2>&1 &
-# HERMES_PID=$!
+hermes start >> ./logs/hermes_start.log 2>&1 &
+HERMES_PID=$!
 
 echo "setting up go relayer"
 ./setup_go_relayer.sh
