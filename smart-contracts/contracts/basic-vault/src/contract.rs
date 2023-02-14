@@ -174,34 +174,21 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // }
 
 
+#[cfg(test)]
 mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use quasar_types::callback::BondResponse;
-
     use super::*;
 
-    const DENOM: &str = "satoshi";
-    const CREATOR: &str = "creator";
-    const INVESTOR: &str = "investor";
-    const BUYER: &str = "buyer";
-
-    // fn default_instantiate() -> InstantiateMsg {
-    //     InstantiateMsg {
-    //         lock_period: todo!(),
-    //         pool_id: todo!(),
-    //         pool_denom: todo!(),
-    //         denom: todo!(),
-    //         local_denom: todo!(),
-    //     }
-    // }
-
     #[test]
-    fn test() {
-        let msg = ExecuteMsg::BondResponse(BondResponse {
-            share_amount: Uint128::from(100u128),
-            bond_id: Uint128::from(1u128).to_string(),
-        });
-
-        // print bond message
-        println!("{:?}", msg);
+    fn callback_bond_response() {
+        let bond_response = BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() };
+        let cb = ExecuteMsg::BondResponse(bond_response);
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = MessageInfo { sender: env.clone().contract.address, funds: Vec::new() };
+        execute(deps.as_mut(), env, info, cb).unwrap();
+        assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
+        println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
     }
 }

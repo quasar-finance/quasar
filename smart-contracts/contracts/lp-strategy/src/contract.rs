@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
     StdResult, Uint128,
 };
 use cw2::set_contract_version;
@@ -11,7 +11,7 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{get_ica_address, get_total_shares};
+use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
@@ -22,7 +22,7 @@ use crate::msg::{
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, WITHDRAWABLE,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -65,6 +65,25 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+    // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
+    // TODO this needs and error check and error handling
+    let pending = REPLIES.load(deps.storage, msg.id)?;
+    let data = msg
+        .result
+        .into_result()
+        .map_err(|msg| StdError::GenericErr { msg: format!("submsg error: {:?}", msg ) })?
+        .data
+        .ok_or(ContractError::NoReplyData)
+        .map_err(|err| StdError::NotFound { kind: "reply-data".to_string() })?;
+
+    let seq = parse_seq(data).map_err(|err| StdError::SerializeErr { source_type: "protobuf-decode".to_string(), msg: err.to_string() })?;
+
+    PENDING_ACK.save(deps.storage, seq, &pending)?;
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -99,34 +118,7 @@ pub fn execute(
             execute_accept_returning_funds(deps, &env, info, id)
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
-        ExecuteMsg::Withdraw { amount } => execute_withdraw(deps, info, amount),
     }
-}
-
-
-fn execute_withdraw(deps: DepsMut, info: MessageInfo, funds: Option<Uint128>) -> Result<Response, ContractError> {
-    let total = WITHDRAWABLE.load(deps.storage, info.sender.clone())?;
-    if let Some(amount) = funds {
-        if total < amount {
-            return Err(ContractError::PaymentError(cw_utils::PaymentError::NoFunds {}));
-        }
-        Ok(Response::new().add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: vec![Coin {
-                denom: CONFIG.load(deps.storage)?.local_denom,
-                amount
-            }],
-        }))
-    } else {
-        Ok(Response::new().add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: vec![Coin {
-                denom: CONFIG.load(deps.storage)?.local_denom,
-                amount: total,
-            }],
-        }))
-    }
-    
 }
 
 pub fn execute_return_funds(
@@ -185,7 +177,7 @@ pub fn execute_start_unbond(
         StartUnbond {
             owner: info.sender.clone(),
             id,
-            primitive_shares: share_amount,
+            shares: share_amount,
         },
     )?;
 
@@ -364,7 +356,7 @@ pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
             amount: ICA_BALANCE
                 .load(deps.storage)
                 .map_err(|err| StdError::GenericErr {
-                    msg: "could not load balance: <".to_string() + &err.to_string() + ">",
+                    msg: err.to_string(),
                 })?,
         },
     })

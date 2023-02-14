@@ -1,6 +1,6 @@
 use cosmwasm_std::{Coin, StdResult, Uint128};
 
-use quasar_types::{ibc::ChannelInfo};
+use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -90,9 +90,6 @@ pub enum ExecuteMsg {
     },
     Unbond {
         id: String,
-    },
-    Withdraw {
-        amount: Option<Uint128>,
     },
     // accept a dispatched transfer from osmosis
     AcceptReturningFunds {
