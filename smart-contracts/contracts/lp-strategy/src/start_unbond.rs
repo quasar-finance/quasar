@@ -26,7 +26,7 @@ use crate::{
 pub struct StartUnbond {
     pub owner: Addr,
     pub id: String,
-    pub primitive_shares: Uint128,
+    pub shares: Uint128,
 }
 
 pub fn do_start_unbond(
@@ -63,8 +63,7 @@ pub fn batch_start_unbond(
         let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
-            lp_shares,
-            primitive_shares: unbond.primitive_shares,
+            amount: lp_shares,
             owner: unbond.owner,
             id: unbond.id,
         })
@@ -125,7 +124,7 @@ fn single_unbond(
 ) -> Result<Uint128, ContractError> {
     let total_shares = get_total_shares(storage)?;
     Ok(unbond
-        .primitive_shares
+        .shares
         .checked_mul(total_lp_shares)?
         .checked_div(total_shares)?)
 }
@@ -144,7 +143,7 @@ fn start_internal_unbond(
     // remove amount of shares
     let left = SHARES
         .load(storage, unbond.owner.clone())?
-        .checked_sub(unbond.primitive_shares)?;
+        .checked_sub(unbond.amount)?;
     // subtracting below zero here should trigger an error in check_sub
     if left.is_zero() {
         SHARES.remove(storage, unbond.owner.clone());
@@ -163,7 +162,7 @@ fn start_internal_unbond(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {
-            lp_shares: unbond.lp_shares,
+            lp_shares: unbond.amount,
             unlock_time,
             id: unbond.id.clone(),
             owner: unbond.owner.clone(),
