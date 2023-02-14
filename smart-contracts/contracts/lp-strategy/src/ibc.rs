@@ -8,8 +8,8 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
-    OSMO_LOCK, PENDING_ACK, TRAPS,
+    PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
+    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -443,6 +443,8 @@ pub fn handle_ica_ack(
 
             // save the lock id in the contract
             OSMO_LOCK.save(storage, &resp.id)?;
+
+            LAST_PENDING_BOND.save(storage, data)?;
 
             let mut callbacks: Vec<WasmMsg> = vec![];
             for claim in &data.bonds {

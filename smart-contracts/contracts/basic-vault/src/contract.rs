@@ -14,7 +14,7 @@ use cw20_base::contract::{
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 
-use crate::callback::on_bond;
+use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
 use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, QueryMsg};
@@ -61,10 +61,7 @@ pub fn instantiate(
     let supply = Supply::default();
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
-    DEBUG_TOOL.save(
-        deps.storage,
-        &"Empty".to_string(),
-    )?;
+    DEBUG_TOOL.save(deps.storage, &"Empty".to_string())?;
 
     Ok(Response::new())
 }
@@ -93,8 +90,16 @@ pub fn execute(
             bond_response.share_amount,
             bond_response.bond_id,
         ),
-        ExecuteMsg::StartUnbondResponse(start_unbond_response) => todo!(),
-        ExecuteMsg::UnbondResponse(unbond_response) => todo!(),
+        ExecuteMsg::StartUnbondResponse(start_unbond_response) => on_start_unbond(
+            deps,
+            env,
+            info,
+            start_unbond_response.unbond_id,
+            start_unbond_response.unlock_time,
+        ),
+        ExecuteMsg::UnbondResponse(unbond_response) => {
+            on_unbond(deps, env, info, unbond_response.unbond_id)
+        }
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {

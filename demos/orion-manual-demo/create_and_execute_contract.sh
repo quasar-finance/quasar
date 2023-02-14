@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"
@@ -17,9 +19,9 @@ INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uos
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
 echo "Got CODE_ID = $CODE_ID"
 
@@ -56,7 +58,7 @@ VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","pr
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-RES=$(quasarnoded tx wasm store target/wasm32-unknown-unknown/release/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
 
@@ -71,5 +73,14 @@ echo "Got address of deployed contract = $VAULT_ADDR (vault)"
 
 echo "Command: quasarnoded tx wasm execute $VAULT_ADDR '{\"bond\":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 100ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518"
 quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 100ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+
+echo "Sleeping for 80 seconds"
+sleep 80
+
+echo "Querying alice balance"
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+
+echo "Running unbond"
+quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 cd -

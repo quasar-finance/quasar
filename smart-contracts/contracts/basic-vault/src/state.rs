@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128, Timestamp, Coin};
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
-use quasar_types::callback::BondResponse;
+use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::msg::PrimitiveConfig;
 
@@ -54,12 +54,32 @@ pub struct BondingStub {
     pub bond_response: Option<BondResponse>,
 }
 
-// bonding sequence number (to map primitive responses to the right bond action)
-pub const BONDING_SEQ: Item<Uint128> = Item::new("deposit_seq");
+#[cw_serde]
+#[derive(Default)]
+pub struct UnbondingStub {
+    // the contract address of the primitive
+    pub address: String,
+    // the response of the primitive upon successful bond or error
+    pub unlock_time: Option<Timestamp>,
+    // response of the unbond, if this is present then we have finished unbonding
+    pub unbond_response: Option<UnbondResponse>,
+    // funds attached to the unbond_response
+    pub unbond_funds: Vec<Coin>,
+}
+
+// (un)bonding sequence number (to map primitive responses to the right bond action)
+pub const BONDING_SEQ: Item<Uint128> = Item::new("bond_seq");
+// mapping from bonding sequence number to depositor/withdrawer address (todo: better way to do this?)
+pub const BONDING_SEQ_TO_ADDR: Map<String, String> = Map::new("bond_seq_to_addr");
 // current bonds pending for a user
-pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_deposit_ids");
-// map of deposit id to deposit state
+pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_bond_ids");
+// current unbonds pending for a user
+pub const PENDING_UNBOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_unbond_ids");
+// map of bond id to bond state
 // todo: find the type of the vec items here (replace supply obvs)
-pub const DEPOSIT_STATE: Map<String, Vec<BondingStub>> = Map::new("deposit_state");
+pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
+// map of unbond id to unbond state
+pub const UNBOND_STATE: Map<String, Vec<UnbondingStub>> = Map::new("unbond_state");
+
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");

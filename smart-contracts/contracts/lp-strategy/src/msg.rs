@@ -4,7 +4,10 @@ use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{ibc_lock, state::Config};
+use crate::{
+    ibc_lock,
+    state::{Config, PendingBond},
+};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMsg {

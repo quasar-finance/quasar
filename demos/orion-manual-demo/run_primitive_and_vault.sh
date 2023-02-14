@@ -15,7 +15,7 @@ echo $NODE
 #     base_denom: base_denom should be the denom of the token on osmosos, for now uosmo
 #     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
 #     quote_denom is the denom other denom in the pool, stake for now
-INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-1"}'
+INIT='{"lock_period":60,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-0"}'
 
 cd ../../smart-contracts/contracts/lp-strategy
 

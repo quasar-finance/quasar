@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, Coin, Deps, StdResult};
 use crate::{
     execute::may_pay_with_ratio,
     msg::{DepositRatioResponse, InvestmentResponse, PendingBondsResponse},
-    state::{DEPOSIT_STATE, INVESTMENT, PENDING_BOND_IDS},
+    state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS},
 };
 
 pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
@@ -35,7 +35,7 @@ pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBond
     let mut pending_bonds = vec![];
 
     pending_bond_ids.iter().for_each(|id| {
-        let mut deposit_stubs = DEPOSIT_STATE.load(deps.storage, id.to_string()).unwrap();
+        let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
 
         pending_bonds.append(deposit_stubs.as_mut());
     });

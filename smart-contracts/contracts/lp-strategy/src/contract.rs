@@ -17,7 +17,8 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    IcaChannelResponse, InstantiateMsg, LockResponse, PrimitiveSharesResponse, QueryMsg,
+    IcaChannelResponse, InstantiateMsg, LockResponse,
+    PrimitiveSharesResponse, QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -308,7 +309,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
     }
 }
-
 pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
     let channels: Vec<ChannelInfo> = CHANNELS
         .range(deps.storage, None, None, Order::Ascending)
@@ -397,6 +397,5 @@ mod tests {
         _reserve_decimals: u8,
         _reserve_supply: Uint128,
     ) {
-        serde_json_wasm::to_string(ExecuteMsg);
     }
 }
