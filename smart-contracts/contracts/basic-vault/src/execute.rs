@@ -146,7 +146,7 @@ pub fn may_pay_with_ratio(
     let normed_ratio = ratio.get_normed_ratio();
     let mut remainder = funds.clone();
 
-    let coins: Result<Vec<Coin>, ContractError> = normed_ratio
+    let coins: Result<Vec<Coin>, ContractError> = normed_ratio?
         .iter()
         .map(|r| {
             let amount = must_pay_multi(funds, &r.denom).unwrap();
@@ -195,7 +195,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     let mut deposit_stubs = vec![];
 
     let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives).unwrap();
+        may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives)?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives

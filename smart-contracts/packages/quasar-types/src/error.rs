@@ -1,4 +1,4 @@
-use cosmwasm_std::{IbcOrder, StdError};
+use cosmwasm_std::{IbcOrder, StdError, DivideByZeroError, OverflowError, CheckedFromRatioError};
 use prost::DecodeError;
 use thiserror::Error;
 
@@ -47,4 +47,16 @@ pub enum Error {
 
     #[error("{0}")]
     DecodeError(#[from] DecodeError),
+
+    #[error("found empty coin ratio")]
+    EmptyCoinRatio,
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
+
+    #[error("{0}")]
+    DivideByZeroError(#[from] DivideByZeroError),
+    #[error("{0}")]
+    CheckedFromRatioError(#[from] CheckedFromRatioError),
+
 }

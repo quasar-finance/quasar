@@ -1,5 +1,6 @@
 use cosmwasm_std::{StdError, Uint128};
 use thiserror::Error;
+use quasar_types::error::Error as QError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -56,6 +57,10 @@ pub enum ContractError {
 
     #[error("Duplicate initial balance addresses")]
     DuplicateInitialBalanceAddresses {},
+
+    #[error("{0}")]
+    QError(#[from] QError),
+
 }
 
 impl From<cw20_base::ContractError> for ContractError {

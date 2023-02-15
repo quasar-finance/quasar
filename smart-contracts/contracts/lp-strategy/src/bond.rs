@@ -152,6 +152,8 @@ fn calculate_claim(
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::testing::mock_dependencies;
+
     use super::*;
 
     // TODO rewrite this to a proptest
@@ -160,4 +162,23 @@ mod tests {
         let val = calculate_claim(Uint128::new(10), Uint128::new(100), Uint128::new(10)).unwrap();
         assert_eq!(val, Uint128::one())
     }
+
+    #[test]
+    fn fold_bonds_works() {
+        let mut deps = mock_dependencies();
+        let total_balance = Uint128::new(150);
+        let bonds = vec![Bond { amount: Uint128::new(34), owner: Addr::unchecked("person1"), bond_id: "id1".to_string()}, Bond { amount: Uint128::new(50), owner: Addr::unchecked("person2"), bond_id: "id2".to_string() }, Bond { amount: Uint128::new(2), owner: Addr::unchecked("person3"), bond_id: "id3".to_string() },Bond { amount: Uint128::new(7), owner: Addr::unchecked("person4"), bond_id: "id4".to_string() }, Bond { amount: Uint128::new(57), owner: Addr::unchecked("person5"), bond_id: "id5".to_string() }];
+        for b in &bonds {
+            BOND_QUEUE.push_back(deps.as_mut().storage, b).unwrap();
+        }
+
+        let (total, ongoing) = fold_bonds(deps.as_mut().storage, total_balance).unwrap().unwrap();
+        assert_eq!(total_balance, total);
+        for (i, b) in bonds.iter().enumerate() {
+            assert_eq!(ongoing[i].bond_id, b.bond_id);
+            assert_eq!(ongoing[i].owner, b.owner);
+
+            assert_eq!(ongoing[i].claim_amount, b.amount)
+        }
+        }
 }

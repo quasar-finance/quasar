@@ -351,11 +351,20 @@ pub fn handle_ica_channel(deps: Deps) -> StdResult<IcaChannelResponse> {
 }
 
 pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse> {
-    Ok(PrimitiveSharesResponse {
-        total: get_total_shares(deps.storage).map_err(|err| StdError::GenericErr {
-            msg: err.to_string(),
-        })?,
-    })
+    let total = get_total_shares(deps.storage).map_err(|err| StdError::GenericErr {
+        msg: err.to_string(),
+    })?;
+
+    if total.is_zero() {
+        Ok(PrimitiveSharesResponse {
+            total: Uint128::one(),
+        })
+    } else {
+        Ok(PrimitiveSharesResponse {
+            total,
+        })
+    }
+   
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
