@@ -64,6 +64,56 @@
       "additionalProperties": false
     },
     {
+      "description": "PendingBonds shows the bonds that are currently in the process of being deposited for a user",
+      "type": "object",
+      "required": [
+        "pending_bonds"
+      ],
+      "properties": {
+        "pending_bonds": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "GetTvlInfo gets all info necessary for",
+      "type": "object",
+      "required": [
+        "get_tvl_info"
+      ],
+      "properties": {
+        "get_tvl_info": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "GetDebug shows us debug string info",
+      "type": "object",
+      "required": [
+        "get_debug"
+      ],
+      "properties": {
+        "get_debug": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Implements CW20. Returns the current balance of the given address, 0 if unset.",
       "type": "object",
       "required": [

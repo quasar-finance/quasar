@@ -54,7 +54,8 @@
         "pool_denom",
         "pool_id",
         "quote_denom",
-        "return_source_channel"
+        "return_source_channel",
+        "transfer_channel"
       ],
       "properties": {
         "base_denom": {
@@ -80,6 +81,9 @@
           "type": "string"
         },
         "return_source_channel": {
+          "type": "string"
+        },
+        "transfer_channel": {
           "type": "string"
         }
       }

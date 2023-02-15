@@ -83,11 +83,35 @@
     {
       "type": "object",
       "required": [
-        "callback"
+        "bond_response"
       ],
       "properties": {
-        "callback": {
-          "$ref": "#/definitions/Callback"
+        "bond_response": {
+          "$ref": "#/definitions/BondResponse"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "start_unbond_response"
+      ],
+      "properties": {
+        "start_unbond_response": {
+          "$ref": "#/definitions/StartUnbondResponse"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unbond_response"
+      ],
+      "properties": {
+        "unbond_response": {
+          "$ref": "#/definitions/UnbondResponse"
         }
       },
       "additionalProperties": false
@@ -358,19 +382,6 @@
           ]
         }
       }
-    },
-    "Callback": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/BondResponse"
-        },
-        {
-          "$ref": "#/definitions/StartUnbondResponse"
-        },
-        {
-          "$ref": "#/definitions/UnbondResponse"
-        }
-      ]
     },
     "Expiration": {
       "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
