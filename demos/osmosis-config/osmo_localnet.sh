@@ -157,3 +157,4 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
 
 # Start
 $BINARY start --home $HOME_OSMOSIS > osmosis.log 2>&1  &
+.
