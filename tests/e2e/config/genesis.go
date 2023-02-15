@@ -51,3 +51,15 @@ func modifyGenesisICAModule(enabled bool, allowMsgs []string) genesisModifiers {
 		return gen, err
 	}
 }
+
+// modifyGenesisICQModule sets the params of ICQ module.
+func modifyGenesisICQModule(enabled bool, allowQueries []string) genesisModifiers {
+	return func(gen any) (any, error) {
+		v := map[string]any{
+			"host_enabled":  enabled,
+			"allow_queries": allowQueries,
+		}
+		err := dyno.Set(gen, v, "app_state", "interchainquery", "params")
+		return gen, err
+	}
+}

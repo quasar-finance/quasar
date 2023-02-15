@@ -1,10 +1,14 @@
-use cosmwasm_std::IbcOrder;
+use cosmwasm_std::{IbcOrder, StdError};
+use prost::DecodeError;
 use thiserror::Error;
 
-use crate::ica::{Encoding, TxType, Version};
+use crate::ica::handshake::{Encoding, TxType, Version};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
+    #[error("{0}")]
+    Std(#[from] StdError),
+
     #[error("No Counterparty Ica Address")]
     NoCounterpartyIcaAddress,
 
@@ -37,4 +41,10 @@ pub enum Error {
 
     #[error("invalid Ibc version")]
     InvalidIbcVersion { version: String },
+
+    #[error("invalid type url, expected {expected}  and found {actual}")]
+    UnpackInvalidTypeUrl { expected: String, actual: String },
+
+    #[error("{0}")]
+    DecodeError(#[from] DecodeError),
 }

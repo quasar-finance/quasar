@@ -3,6 +3,7 @@ package qoracle
 import (
 	"strings"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -52,7 +53,7 @@ func (im IBCModule) OnChanOpenInit(
 	}
 
 	if version != types.BandchainOracleVersion {
-		return "", sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "got %s, expected %s", version, types.BandchainOracleVersion)
+		return "", errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "got %s, expected %s", version, types.BandchainOracleVersion)
 	}
 
 	// Claim channel capability passed back by IBC module
@@ -69,13 +70,13 @@ func (im IBCModule) validateChannelParams(
 	portID string,
 ) error {
 	if order != channeltypes.UNORDERED {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
+		return errors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
 	}
 
 	// Require port id to be the port id module is bound to
 	boundPort := im.keeper.GetPort(ctx)
 	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+		return errors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
 	return nil
@@ -101,7 +102,7 @@ func (im IBCModule) OnChanOpenTry(
 	}
 
 	if counterpartyVersion != types.BandchainOracleVersion {
-		return "", sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.BandchainOracleVersion)
+		return "", errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.BandchainOracleVersion)
 	}
 
 	// OpenTry must claim the channelCapability that IBC passes into the callback
@@ -121,7 +122,7 @@ func (im IBCModule) OnChanOpenAck(
 	counterpartyVersion string,
 ) error {
 	if counterpartyVersion != types.BandchainOracleVersion {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.BandchainOracleVersion)
+		return errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.BandchainOracleVersion)
 	}
 	return nil
 }
@@ -188,7 +189,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
+		return errors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
 	}
 
 	return im.keeper.OnAcknowledgementPacket(ctx, packet, ack)

@@ -10,10 +10,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/tendermint/tendermint/libs/log"
 
+	"cosmossdk.io/errors"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
@@ -127,7 +127,7 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	resp := new(bytes.Buffer)
 	err := m.Marshal(resp, response)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback marshalling")
+		return errors.Wrap(err, "ibc ack callback marshalling")
 	}
 
 	data, err := json.Marshal(ContractAck{
@@ -144,13 +144,13 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	})
 
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback")
+		return errors.Wrap(err, "ibc ack callback")
 	}
 	c.Logger(ctx).Info(fmt.Sprintf("Preparing callback message: %v", string(data)))
 
 	_, err = c.contractKeeper.Execute(ctx, addr, c.callBackAddress, data, nil)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ack callback execute")
+		return errors.Wrap(err, "ack callback execute")
 	}
 
 	return nil

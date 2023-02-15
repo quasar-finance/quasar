@@ -1,10 +1,10 @@
 package types
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"cosmossdk.io/errors"
 )
 
 // IBC transfer sentinel errors
 var (
-	ErrDisabled = sdkerrors.Register(SubModuleName, 2, "bandchain oracle module is disabled")
+	ErrDisabled = errors.Register(SubModuleName, 2, "bandchain oracle module is disabled")
 )

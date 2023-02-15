@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -41,16 +42,16 @@ func (msg *MsgTransmitICATransfer) GetSignBytes() []byte {
 func (msg *MsgTransmitICATransfer) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.IcaOwnerAddress)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid icaOwnerAddress address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid icaOwnerAddress address (%s)", err)
 	}
 	if msg.ToAddress == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "toAddress cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidAddress, "toAddress cannot be empty")
 	}
 	if !msg.Coin.IsValid() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be valid", msg.Coin.String())
+		return errors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be valid", msg.Coin.String())
 	}
 	if !msg.Coin.IsPositive() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be positive", msg.Coin.String())
+		return errors.Wrapf(sdkerrors.ErrInvalidCoins, "coin (%s) must be positive", msg.Coin.String())
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package qoracle
 import (
 	"strings"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -53,7 +54,7 @@ func (im IBCModule) OnChanOpenInit(
 	}
 
 	if version != icqtypes.Version {
-		return "", sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "got %s, expected %s", version, icqtypes.Version)
+		return "", errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "got %s, expected %s", version, icqtypes.Version)
 	}
 
 	// Claim channel capability passed back by IBC module
@@ -70,13 +71,13 @@ func (im IBCModule) validateChannelParams(
 	portID string,
 ) error {
 	if order != channeltypes.UNORDERED {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
+		return errors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
 	}
 
 	// Require port id to be the port id module is bound to
 	boundPort := im.keeper.GetPort(ctx)
 	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+		return errors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
 	return nil
@@ -102,7 +103,7 @@ func (im IBCModule) OnChanOpenTry(
 	}
 
 	if counterpartyVersion != icqtypes.Version {
-		return "", sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, icqtypes.Version)
+		return "", errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, icqtypes.Version)
 	}
 
 	// OpenTry must claim the channelCapability that IBC passes into the callback
@@ -122,7 +123,7 @@ func (im IBCModule) OnChanOpenAck(
 	counterpartyVersion string,
 ) error {
 	if counterpartyVersion != icqtypes.Version {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, icqtypes.Version)
+		return errors.Wrapf(channeltypes.ErrInvalidChannelVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, icqtypes.Version)
 	}
 	return nil
 }
@@ -164,7 +165,7 @@ func (im IBCModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	err := sdkerrors.Wrapf(types.ErrInvalidChannelFlow, "cannot receive packet on qoracle module")
+	err := errors.Wrapf(types.ErrInvalidChannelFlow, "cannot receive packet on qoracle module")
 	ack := channeltypes.NewErrorAcknowledgement(err)
 	keeper.EmitAcknowledgementEvent(ctx, packet, ack, err)
 	return ack
@@ -179,7 +180,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
+		return errors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
 	}
 
 	return im.keeper.OnAcknowledgementPacket(ctx, packet, ack)

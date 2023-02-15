@@ -84,6 +84,9 @@ name = "bytes"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "cfg-if"
@@ -115,14 +118,25 @@ checksum = "20b42021d8488665b1a0d9748f1f81df7235362d194f44481e2e61bf376b77b4"
 dependencies = [
  "prost 0.11.0",
  "prost-types",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
+]
+
+[[package]]
+name = "cosmos-sdk-proto"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673d31bd830c0772d78545de20d975129b6ab2f7db4e4e9313c3b8777d319194"
+dependencies = [
+ "prost 0.11.0",
+ "prost-types",
+ "tendermint-proto 0.26.0",
 ]
 
 [[package]]
 name = "cosmwasm-crypto"
-version = "1.1.5"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28376836c7677e1ea6d6656a754582e88b91e544ce22fae42956d5fe5549a958"
+checksum = "227315dc11f0bb22a273d0c43d3ba8ef52041c42cf959f09045388a89c57e661"
 dependencies = [
  "digest 0.10.5",
  "ed25519-zebra",
@@ -133,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-derive"
-version = "1.1.5"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eb69f4f7a8a4bce68c8fbd3646238fede1e77056e4ea31c5b6bfc37b709eec3"
+checksum = "6fca30d51f7e5fbfa6440d8b10d7df0231bdf77e97fd3fe5d0cb79cc4822e50c"
 dependencies = [
  "syn",
 ]
@@ -166,9 +180,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-std"
-version = "1.1.5"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46bf9157d060abbc55152aeadcace799d03dc630575daa66604079a1206cb060"
+checksum = "b13d5a84d15cf7be17dc249a21588cdb0f7ef308907c50ce2723316a7d79c3dc"
 dependencies = [
  "base64",
  "cosmwasm-crypto",
@@ -241,26 +255,6 @@ dependencies = [
  "rand_core 0.5.1",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "cw-4626"
-version = "0.13.4"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "cw2 0.13.4",
- "cw20 0.13.4",
- "cw20-base 0.13.4",
- "quasar-traits",
- "quasar-types",
- "schemars",
- "serde",
- "serde_json",
- "strategy",
- "thiserror",
 ]
 
 [[package]]
@@ -342,6 +336,17 @@ name = "cw-storage-plus"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b6f91c0b94481a3e9ef1ceb183c37d00764f8751e39b45fc09f4d9b970d469"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw-storage-plus"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "053a5083c258acd68386734f428a5a171b29f7d733151ae83090c6fcc9417ffa"
 dependencies = [
  "cosmwasm-std",
  "schemars",
@@ -461,22 +466,6 @@ dependencies = [
  "cw-utils 0.16.0",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "cw20-base"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0306e606581f4fb45e82bcbb7f0333179ed53dd949c6523f01a99b4bfc1475a0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "cw2 0.13.4",
- "cw20 0.13.4",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -692,51 +681,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc_transfer"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.14.0",
- "cw-utils 0.16.0",
- "cw20-base 0.16.0",
- "osmosis-std",
- "quasar-bindings",
- "quasar-traits",
- "quasar-types",
- "schemars",
- "serde",
- "serde-json-wasm",
- "thiserror",
-]
-
-[[package]]
-name = "ica"
-version = "0.1.0"
-dependencies = [
- "base64",
- "cosmos-sdk-proto",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-controllers",
- "cw-storage-plus 0.14.0",
- "cw-utils 0.14.0",
- "cw2 0.14.0",
- "cw20 0.14.0",
- "osmosis-std",
- "prost 0.11.0",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "icq"
 version = "0.1.0"
 dependencies = [
  "base64",
- "cosmos-sdk-proto",
+ "cosmos-sdk-proto 0.14.0",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-controllers",
@@ -744,7 +693,7 @@ dependencies = [
  "cw-utils 0.14.0",
  "cw2 0.14.0",
  "cw20 0.14.0",
- "osmosis-std",
+ "osmosis-std 0.12.0",
  "prost 0.11.0",
  "schemars",
  "semver",
@@ -832,6 +781,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "lp-strategy"
+version = "0.1.0"
+dependencies = [
+ "cosmos-sdk-proto 0.15.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
+ "cw-utils 0.16.0",
+ "cw2 0.16.0",
+ "cw20 0.16.0",
+ "cw20-base",
+ "osmosis-std 0.13.2",
+ "prost 0.11.0",
+ "quasar-types",
+ "schemars",
+ "serde",
+ "serde-json-wasm",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -890,7 +861,23 @@ checksum = "d2b3792977036dc49cfc9af9fd7a6c021fd48dfffc8ebf09324201506c65a47a"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive",
+ "osmosis-std-derive 0.12.0",
+ "prost 0.11.0",
+ "prost-types",
+ "schemars",
+ "serde",
+ "serde-cw-value",
+]
+
+[[package]]
+name = "osmosis-std"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10d6fe6ac7fcba45ed61d738091d33c838c4cabbcf4892dc7aa56d19d39cc976"
+dependencies = [
+ "chrono",
+ "cosmwasm-std",
+ "osmosis-std-derive 0.13.2",
  "prost 0.11.0",
  "prost-types",
  "schemars",
@@ -903,6 +890,18 @@ name = "osmosis-std-derive"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c501f2b8ff88b1c60ab671d7b808e947f384fa2524fe4ec8c06f63ef4be29979"
+dependencies = [
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "osmosis-std-derive"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a455e262a6fdfd3914f3a4e11e6bc0ce491901cb9d507d7856d7ef6e129e90c6"
 dependencies = [
  "itertools",
  "proc-macro2",
@@ -1018,29 +1017,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "quasar-traits"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw20 0.13.4",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "quasar-types"
 version = "0.1.0"
 dependencies = [
- "cosmos-sdk-proto",
+ "cosmos-sdk-proto 0.14.0",
  "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
  "cw20 0.13.4",
  "derive_more",
+ "osmosis-std 0.13.2",
+ "osmosis-std-derive 0.13.2",
  "prost 0.11.0",
- "quasar-traits",
  "rust_decimal",
  "schemars",
  "serde",
  "serde-json-wasm",
+ "serde_test",
  "thiserror",
 ]
 
@@ -1210,6 +1202,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_test"
+version = "1.0.152"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3611210d2d67e3513204742004d6ac6f589e521861dabb0f649b070eea8bed9e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "sha2"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1260,25 +1261,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "strategy"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "cw2 0.13.4",
- "cw20 0.13.4",
- "cw20-base 0.13.4",
- "quasar-traits",
- "quasar-types",
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
 name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1309,6 +1291,24 @@ name = "tendermint-proto"
 version = "0.23.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ce80bf536476db81ecc9ebab834dc329c9c1509a694f211a73858814bfe023"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost 0.11.0",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "974d6330a19dfa6720e9f663fc59101d207a817db3f9c730d3f31caaa565b574"
 dependencies = [
  "bytes",
  "flex-error",

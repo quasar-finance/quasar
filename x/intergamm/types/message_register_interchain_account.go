@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -11,7 +12,7 @@ var _ sdk.Msg = &MsgRegisterInterchainAccount{}
 
 func NewMsgRegisterInterchainAccount(creator string, connectionId string) *MsgRegisterInterchainAccount {
 	return &MsgRegisterInterchainAccount{
-		Creator:                creator,
+		Creator:      creator,
 		ConnectionId: connectionId,
 	}
 }
@@ -40,10 +41,10 @@ func (msg *MsgRegisterInterchainAccount) GetSignBytes() []byte {
 func (msg *MsgRegisterInterchainAccount) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 	if msg.ConnectionId == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "ConnectionId cannot be nil")
+		return errors.Wrap(sdkerrors.ErrInvalidRequest, "ConnectionId cannot be nil")
 	}
 	return nil
 }

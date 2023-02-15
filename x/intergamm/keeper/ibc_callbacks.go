@@ -2,7 +2,6 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
@@ -24,11 +23,11 @@ func (k *Keeper) HandleIcaAcknowledgement(
 ) error {
 	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
 	if err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
+		return errors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
 	}
 
 	if len(msgs) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
+		return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
 	}
 
 	msg := msgs[0]
@@ -37,12 +36,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &ibctransfertypes.MsgTransferResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -57,12 +56,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammbalancer.MsgCreateBalancerPoolResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammbalancer.MsgCreateBalancerPool, *gammbalancer.MsgCreateBalancerPoolResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -77,12 +76,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgJoinPoolResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinPool, *gammtypes.MsgJoinPoolResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -97,12 +96,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgExitPoolResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitPool, *gammtypes.MsgExitPoolResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -117,12 +116,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgJoinSwapExternAmountInResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinSwapExternAmountIn, *gammtypes.MsgJoinSwapExternAmountInResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -137,12 +136,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgExitSwapExternAmountOutResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitSwapExternAmountOut, *gammtypes.MsgExitSwapExternAmountOutResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -157,12 +156,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgJoinSwapShareAmountOutResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgJoinSwapShareAmountOut, *gammtypes.MsgJoinSwapShareAmountOutResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -177,12 +176,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &gammtypes.MsgExitSwapShareAmountInResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*gammtypes.MsgExitSwapShareAmountIn, *gammtypes.MsgExitSwapShareAmountInResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -197,12 +196,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &lockuptypes.MsgLockTokensResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*lockuptypes.MsgLockTokens, *lockuptypes.MsgLockTokensResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -217,12 +216,12 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		resp := &lockuptypes.MsgBeginUnlockingResponse{}
 		err := ParseIcaAck(ack, req, resp)
 		if err != nil {
-			return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
+			return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "cannot parse acknowledgement")
 		}
 		ex := types.AckExchange[*lockuptypes.MsgBeginUnlocking, *lockuptypes.MsgBeginUnlockingResponse]{
 			Sequence: sequence,
-			Channel: channel,
-			PortId: portId,
+			Channel:  channel,
+			PortId:   portId,
 			Error:    ack.GetError(),
 			Request:  req,
 			Response: resp,
@@ -234,7 +233,7 @@ func (k *Keeper) HandleIcaAcknowledgement(
 		}
 
 	default:
-		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
+		return errors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
 	}
 
 	return nil
@@ -247,11 +246,11 @@ func (k *Keeper) HandleIcaTimeout(
 ) error {
 	msgs, err := icatypes.DeserializeCosmosTx(k.cdc, icaPacket.GetData())
 	if err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
+		return errors.Wrap(channeltypes.ErrInvalidPacket, "cannot deserialize packet data")
 	}
 
 	if len(msgs) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
+		return errors.Wrap(channeltypes.ErrInvalidAcknowledgement, "expected single message in packet")
 	}
 
 	msg := msgs[0]
@@ -367,7 +366,7 @@ func (k *Keeper) HandleIcaTimeout(
 		}
 
 	default:
-		return sdkerrors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
+		return errors.Wrap(channeltypes.ErrInvalidPacket, "unsupported packet type")
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/errors"
 	"github.com/bandprotocol/bandchain-packet/obi"
 	bandpacket "github.com/bandprotocol/bandchain-packet/packet"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -73,7 +74,7 @@ func (k Keeper) sendCoinRatesRequest(ctx sdk.Context) (uint64, error) {
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byte, error) {
 	var packetData bandpacket.OracleResponsePacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return nil, sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
+		return nil, errors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
 	}
 
 	switch packetData.GetClientID() {
@@ -93,7 +94,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byt
 			if packetData.ResolveStatus == bandpacket.RESOLVE_STATUS_SUCCESS {
 				var coinRatesResult types.CoinRatesResult
 				if err := obi.Decode(packetData.GetResult(), &coinRatesResult); err != nil {
-					return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "cannot decode the CoinRates result")
+					return errors.Wrap(sdkerrors.ErrUnknownRequest, "cannot decode the CoinRates result")
 				}
 				state.SetResult(&coinRatesResult)
 
@@ -111,7 +112,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byt
 
 		k.updatePriceList(ctx)
 	default:
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "oracle received packet with unknown client id: %s", packetData.GetClientID())
+		return nil, errors.Wrapf(sdkerrors.ErrUnknownRequest, "oracle received packet with unknown client id: %s", packetData.GetClientID())
 	}
 
 	return types.ModuleCdc.MustMarshalJSON(
@@ -147,7 +148,7 @@ func (k Keeper) GetCoinRatesState(ctx sdk.Context) types.OracleScriptState {
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	var packetData bandpacket.OracleRequestPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
+		return errors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
 	}
 
 	switch packetData.GetClientID() {
@@ -171,7 +172,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			} else {
 				var ackData bandpacket.OracleRequestPacketAcknowledgement
 				if err := types.ModuleCdc.UnmarshalJSON(ack.GetResult(), &ackData); err != nil {
-					return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet acknowledgement data")
+					return errors.Wrapf(err, "could not unmarshal bandchain oracle packet acknowledgement data")
 				}
 				// Update request latest state with oracle request id
 				state.OracleRequestId = ackData.GetRequestID()
@@ -191,7 +192,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		}
 		return nil
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "oracle acknowledgment handler for client id %s not found", packetData.GetClientID())
+		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "oracle acknowledgment handler for client id %s not found", packetData.GetClientID())
 	}
 }
 
@@ -213,7 +214,7 @@ func (k Keeper) validatePacketAgainstState(ctx sdk.Context, packet channeltypes.
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
 	var packetData bandpacket.OracleRequestPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
+		return errors.Wrapf(err, "could not unmarshal bandchain oracle packet data")
 	}
 
 	switch packetData.GetClientID() {
@@ -240,6 +241,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 		}
 		return nil
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "oracle timeout handler for client id %s not found", packetData.GetClientID())
+		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "oracle timeout handler for client id %s not found", packetData.GetClientID())
 	}
 }

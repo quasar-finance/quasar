@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -40,10 +41,10 @@ func (msg *MsgRegisterICAOnDenomNativeZone) GetSignBytes() []byte {
 func (msg *MsgRegisterICAOnDenomNativeZone) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.OwnerAddress)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid ownerAddress address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid ownerAddress address (%s)", err)
 	}
 	if sdk.ValidateDenom(msg.Denom) != nil {
-		return sdkerrors.Wrapf(ErrInvalidDenom, "invalid denom (%s)", msg.Denom)
+		return errors.Wrapf(ErrInvalidDenom, "invalid denom (%s)", msg.Denom)
 	}
 	return nil
 }

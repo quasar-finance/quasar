@@ -12,39 +12,6 @@ MOCKSDIR = $(CURDIR)/testutil/mock
 
 export GO111MODULE = on
 
-# process build tags
-
-build_tags = netgo
-ifeq ($(LEDGER_ENABLED),true)
-  ifeq ($(OS),Windows_NT)
-    GCCEXE = $(shell where gcc.exe 2> NUL)
-    ifeq ($(GCCEXE),)
-      $(error gcc.exe not installed for ledger support, please install or set LEDGER_ENABLED=false)
-    else
-      build_tags += ledger
-    endif
-  else
-    UNAME_S = $(shell uname -s)
-    ifeq ($(UNAME_S),OpenBSD)
-      $(warning OpenBSD detected, disabling ledger support (https://github.com/cosmos/cosmos-sdk/issues/1988))
-    else
-      GCC = $(shell command -v gcc 2> /dev/null)
-      ifeq ($(GCC),)
-        $(error gcc not installed for ledger support, please install or set LEDGER_ENABLED=false)
-      else
-        build_tags += ledger
-      endif
-    endif
-  endif
-endif
-
-ifeq (cleveldb,$(findstring cleveldb,$(QUASAR_BUILD_OPTIONS)))
-  build_tags += gcc
-else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
-  build_tags += gcc
-endif
-build_tags += $(BUILD_TAGS)
-build_tags := $(strip $(build_tags))
 
 whitespace :=
 whitespace += $(whitespace)
@@ -59,11 +26,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=quasar \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
-ifeq (cleveldb,$(findstring cleveldb,$(QUASAR_BUILD_OPTIONS)))
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
-else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
-endif
+
 ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
   ldflags += -w -s
 endif
@@ -90,7 +53,7 @@ BUILD_TARGETS := build install
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	GOWORK=off go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
+	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/

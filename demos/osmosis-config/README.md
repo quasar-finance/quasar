@@ -36,7 +36,7 @@ cd ./demos/osmosis-config
 After this you should see block logs written in the stdout of your terminal.
 
 # Config and Start the Hermes Relayer
-Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/state by default the response should be:
+Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/state by default the response should be:
 ```json
 {
   "coin_rates_state": {
@@ -135,7 +135,7 @@ Before updating the osmosis chain params http://localhost:1311/quasarlabs/quasar
 ```
 To Update the chain params of osmosis in quasar run the following command:
 ```bash
-quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --output json --keyring-backend test
+quasarnoded tx qoracle osmosis update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --output json --keyring-backend test
 ```
 After hermes relayed the acknowledgement the result of http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params will change to:
 ```json

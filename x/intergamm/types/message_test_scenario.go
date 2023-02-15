@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -40,10 +41,10 @@ func (msg *MsgTestScenario) GetSignBytes() []byte {
 func (msg *MsgTestScenario) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 	if msg.Scenario == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "scenario cannot be empty")
+		return errors.Wrap(sdkerrors.ErrInvalidAddress, "scenario cannot be empty")
 	}
 	return nil
 }

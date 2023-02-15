@@ -18,7 +18,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Display go version
         run: go version
       - name: Go lint
@@ -38,6 +38,6 @@ jobs:
       - name: Show versions
         run: rustc -V && cargo -V
       - name: Rust lint
-        run: cd smart-contracts && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings 
+        run: cd smart-contracts && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings
       - name: Rust format check
         run: cd smart-contracts && cargo fmt --all -- --check

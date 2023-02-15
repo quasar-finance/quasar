@@ -1,6 +1,7 @@
 package epochs
 
 import (
+	"cosmossdk.io/errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,7 +16,7 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		default:
 			errMsg := fmt.Sprintf("unrecognized %s message type: %T", types.ModuleName, msg)
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
+			return nil, errors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }

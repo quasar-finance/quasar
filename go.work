@@ -4,3 +4,9 @@ use (
 	.
 	./tests/e2e
 )
+
+replace github.com/CosmWasm/wasmd => github.com/faddat/wasmd v0.29.3-0.20230210083007-7c0426ddab37
+
+replace github.com/btcsuite/btcd v0.22.1 => github.com/btcsuite/btcd v0.23.0
+
+replace github.com/tendermint/tm-db => github.com/tendermint/tm-db v0.6.8-0.20221109095132-774cdfe7e6b0
