@@ -418,9 +418,6 @@ pub fn handle_ica_ack(
                         value: resp.share_out_amount,
                     }
                 })?);
-            LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
-                Ok(old.checked_add(shares_out)?)
-            })?;
 
             let denom = CONFIG.load(storage)?.pool_denom;
 
@@ -505,7 +502,12 @@ fn handle_exit_pool_ack(
             value: msg.token_out_amount,
         }
     })?);
-    data.lp_to_local_denom(total_tokens)?;
+
+    let total_lp = data.lp_to_local_denom(total_tokens)?;
+    LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
+        Ok(old.checked_sub(total_lp)?)
+    })?;
+
     let sub_msg = transfer_batch_unbond(storage, env, data, total_tokens)?;
     Ok(IbcBasicResponse::new()
         .add_submessage(sub_msg)

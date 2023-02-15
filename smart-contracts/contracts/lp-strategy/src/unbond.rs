@@ -135,7 +135,8 @@ pub struct PendingReturningUnbonds {
 }
 
 impl PendingReturningUnbonds {
-    pub fn lp_to_local_denom(&mut self, total_local: Uint128) -> Result<(), ContractError> {
+    /// convert a se of lp shares to a set of local tokens
+    pub fn lp_to_local_denom(&mut self, total_local: Uint128) -> Result<Uint128, ContractError> {
         let mut total_lp = Uint128::zero();
         for p in self.unbonds.iter() {
             match p.amount {
@@ -153,7 +154,7 @@ impl PendingReturningUnbonds {
                 crate::state::RawAmount::LocalDenom(_) => unimplemented!(),
             }
         }
-        Ok(())
+        Ok(total_lp)
     }
 }
 
