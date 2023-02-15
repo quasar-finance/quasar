@@ -2,7 +2,10 @@ use crate::{error::Error, ica::traits::Unpack};
 /// a collection of pack implementations for foreign types to be used in our ica contracts
 use cosmos_sdk_proto::Any;
 use osmosis_std::types::osmosis::{
-    gamm::v1beta1::{MsgJoinSwapExternAmountIn, MsgJoinSwapExternAmountInResponse, MsgExitSwapShareAmountInResponse, MsgExitSwapShareAmountIn},
+    gamm::v1beta1::{
+        MsgExitSwapShareAmountIn, MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountIn,
+        MsgJoinSwapExternAmountInResponse,
+    },
     lockup::{MsgLockTokens, MsgLockTokensResponse},
 };
 use prost::Message;

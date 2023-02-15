@@ -455,7 +455,7 @@ pub fn do_unbond(
             Attribute {
                 key: "unbondable_ids".to_string(),
                 value: unbond_msgs.len().to_string(),
-            }
+            },
         ],
     ))
 }

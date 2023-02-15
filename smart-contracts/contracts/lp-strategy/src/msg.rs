@@ -34,6 +34,7 @@ pub enum QueryMsg {
     Config {},
     IcaAddress {},
     Lock {},
+    LpShares {},
     PrimitiveShares {},
     IcaBalance {},
     IcaChannel {},
@@ -43,6 +44,12 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct ChannelsResponse {
     pub channels: Vec<ChannelInfo>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct LpSharesResponse {
+    pub lp_shares: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

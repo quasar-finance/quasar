@@ -1,10 +1,43 @@
 use cosmwasm_std::{Addr, Coin, Deps, StdResult};
+use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
 
 use crate::{
     execute::may_pay_with_ratio,
-    msg::{DepositRatioResponse, InvestmentResponse, PendingBondsResponse},
+    msg::{
+        DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PrimitiveInfo,
+        TvlInfoResponse,
+    },
     state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS},
 };
+
+pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
+    let primitives = INVESTMENT.load(deps.storage)?.primitives;
+    let mut prim_infos: Vec<PrimitiveInfo> = Vec::new();
+    for prim in primitives {
+        let addr = deps.api.addr_validate(prim.address.as_str())?;
+        let ica = deps
+            .querier
+            .query_wasm_smart::<IcaAddressResponse>(addr.as_str(), &QueryMsg::IcaAddress {})?;
+        let lp_shares = deps
+            .querier
+            .query_wasm_smart::<LpSharesResponse>(addr.as_str(), &QueryMsg::LpShares {})?
+            .lp_shares;
+        let config = deps
+            .querier
+            .query_wasm_smart::<ConfigResponse>(addr.as_str(), &QueryMsg::Config {})?
+            .config;
+        prim_infos.push(PrimitiveInfo {
+            ica_address: ica.address,
+            base_denom: config.base_denom,
+            quote_denom: config.quote_denom,
+            lp_denom: config.pool_denom,
+            lp_shares,
+        })
+    }
+    Ok(TvlInfoResponse {
+        primitives: prim_infos,
+    })
+}
 
 pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     let invest = INVESTMENT.load(deps.storage)?;

@@ -28,7 +28,7 @@ pub enum ContractError {
     UnbondTooSmall { min_bonded: Uint128 },
 
     #[error("Cannot withdraw without vault tokens")]
-    NoFunds { },
+    NoFunds {},
 
     #[error("Insufficient balance in contract to process claim")]
     BalanceTooSmall {},

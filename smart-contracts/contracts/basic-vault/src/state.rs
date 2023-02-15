@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Uint128, Timestamp, Coin};
+use cosmwasm_std::{Addr, Coin, Decimal, Timestamp, Uint128};
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -80,6 +80,5 @@ pub const PENDING_UNBOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_unbond_
 pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 // map of unbond id to unbond state
 pub const UNBOND_STATE: Map<String, Vec<UnbondingStub>> = Map::new("unbond_state");
-
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");

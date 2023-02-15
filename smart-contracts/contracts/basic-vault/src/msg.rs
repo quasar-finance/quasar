@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use quasar_types::callback::{Callback, BondResponse, StartUnbondResponse, UnbondResponse};
+use quasar_types::callback::{BondResponse, Callback, StartUnbondResponse, UnbondResponse};
 
 use crate::state::BondingStub;
 
@@ -141,6 +141,10 @@ pub enum QueryMsg {
     #[returns(PendingBondsResponse)]
     PendingBonds { address: String },
 
+    /// GetTvlInfo gets all info necessary for
+    #[returns(PendingBondsResponse)]
+    GetTvlInfo {},
+
     /// GetDebug shows us debug string info
     #[returns(GetDebugResponse)]
     GetDebug {},
@@ -189,6 +193,19 @@ pub struct GetDebugResponse {
     pub debug: String,
 }
 
+#[cw_serde]
+pub struct TvlInfoResponse {
+    pub primitives: Vec<PrimitiveInfo>,
+}
+
+#[cw_serde]
+pub struct PrimitiveInfo {
+    pub ica_address: String,
+    pub base_denom: String,
+    pub quote_denom: String,
+    pub lp_denom: String,
+    pub lp_shares: Uint128,
+}
 
 #[cfg(test)]
 mod tests {
@@ -198,24 +215,31 @@ mod tests {
 
     #[test]
     fn callback_equals_execute() {
-        let bond_response = BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() };
+        let bond_response = BondResponse {
+            share_amount: Uint128::one(),
+            bond_id: "id".to_string(),
+        };
         let cb = quasar_types::callback::Callback::BondResponse(bond_response.clone());
         let se = serde_json_wasm::to_string(&cb).unwrap();
         let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap();
         assert_eq!(msg, ExecuteMsg::BondResponse(bond_response));
 
-        let start_unbond_response = StartUnbondResponse { unbond_id: "id".to_string(), unlock_time: Timestamp::from_seconds(100) };
-        let cb = quasar_types::callback::Callback::StartUnbondResponse(start_unbond_response.clone());
+        let start_unbond_response = StartUnbondResponse {
+            unbond_id: "id".to_string(),
+            unlock_time: Timestamp::from_seconds(100),
+        };
+        let cb =
+            quasar_types::callback::Callback::StartUnbondResponse(start_unbond_response.clone());
         let se = serde_json_wasm::to_string(&cb).unwrap();
         let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap();
         assert_eq!(msg, ExecuteMsg::StartUnbondResponse(start_unbond_response));
 
-
-        let unbond_response = UnbondResponse { unbond_id: "id".to_string() };
+        let unbond_response = UnbondResponse {
+            unbond_id: "id".to_string(),
+        };
         let cb = quasar_types::callback::Callback::UnbondResponse(unbond_response.clone());
         let se = serde_json_wasm::to_string(&cb).unwrap();
-        let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap(); 
+        let msg: ExecuteMsg = serde_json_wasm::from_str(se.as_str()).unwrap();
         assert_eq!(msg, ExecuteMsg::UnbondResponse(unbond_response));
-
     }
 }

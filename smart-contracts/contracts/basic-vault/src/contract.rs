@@ -18,7 +18,7 @@ use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
 use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, QueryMsg};
-use crate::query::{query_deposit_ratio, query_investment, query_pending_bonds};
+use crate::query::{query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info};
 use crate::state::{
     InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
     INVESTMENT, TOTAL_SUPPLY,
@@ -161,6 +161,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DepositRatio { funds } => to_binary(&query_deposit_ratio(deps, funds)?),
         QueryMsg::PendingBonds { address } => to_binary(&query_pending_bonds(deps, address)?),
         QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
+        QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
     }
 }
 
@@ -178,20 +179,25 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 // }
 
-
 #[cfg(test)]
 mod tests {
+    use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use quasar_types::callback::BondResponse;
-    use super::*;
 
     #[test]
     fn callback_bond_response() {
-        let bond_response = BondResponse { share_amount: Uint128::one(), bond_id: "id".to_string() };
+        let bond_response = BondResponse {
+            share_amount: Uint128::one(),
+            bond_id: "id".to_string(),
+        };
         let cb = ExecuteMsg::BondResponse(bond_response);
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = MessageInfo { sender: env.clone().contract.address, funds: Vec::new() };
+        let info = MessageInfo {
+            sender: env.clone().contract.address,
+            funds: Vec::new(),
+        };
         execute(deps.as_mut(), env, info, cb).unwrap();
         assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
         println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())

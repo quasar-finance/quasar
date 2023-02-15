@@ -115,6 +115,19 @@ pub fn calc_total_balance(
         .ok_or(ContractError::QuoteDenomNotFound)?;
     // return ica_balance + base_amount + (quote_amount * spot_price)
     Ok(ica_balance
-        .checked_add(Uint128::new(base.amount.parse::<u128>().map_err(|err| ContractError::ParseIntError { error: err, value: base.amount.clone() })?))?
-        .checked_add(Uint128::new(quote.amount.parse::<u128>().map_err(|err| ContractError::ParseIntError { error: err, value: quote.amount.clone() })?).checked_mul(spot_price)?)?)
+        .checked_add(Uint128::new(base.amount.parse::<u128>().map_err(
+            |err| ContractError::ParseIntError {
+                error: err,
+                value: base.amount.clone(),
+            },
+        )?))?
+        .checked_add(
+            Uint128::new(quote.amount.parse::<u128>().map_err(|err| {
+                ContractError::ParseIntError {
+                    error: err,
+                    value: quote.amount.clone(),
+                }
+            })?)
+            .checked_mul(spot_price)?,
+        )?)
 }

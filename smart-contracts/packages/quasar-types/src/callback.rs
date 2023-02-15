@@ -40,8 +40,11 @@ mod test {
 
     #[test]
     fn callback_json() {
-        let json = serde_json_wasm::to_string(&Callback::BondResponse(BondResponse { share_amount:Uint128::one(), bond_id: "my_id".to_string() })).unwrap();
+        let json = serde_json_wasm::to_string(&Callback::BondResponse(BondResponse {
+            share_amount: Uint128::one(),
+            bond_id: "my_id".to_string(),
+        }))
+        .unwrap();
         println!("{:?}", json);
-
     }
 }

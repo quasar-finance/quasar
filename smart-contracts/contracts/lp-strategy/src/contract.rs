@@ -17,8 +17,8 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    IcaChannelResponse, InstantiateMsg, LockResponse,
-    PrimitiveSharesResponse, QueryMsg,
+    IcaChannelResponse, InstantiateMsg, LockResponse, LpSharesResponse, PrimitiveSharesResponse,
+    QueryMsg,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -73,12 +73,19 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let data = msg
         .result
         .into_result()
-        .map_err(|msg| StdError::GenericErr { msg: format!("submsg error: {:?}", msg ) })?
+        .map_err(|msg| StdError::GenericErr {
+            msg: format!("submsg error: {:?}", msg),
+        })?
         .data
         .ok_or(ContractError::NoReplyData)
-        .map_err(|err| StdError::NotFound { kind: "reply-data".to_string() })?;
+        .map_err(|err| StdError::NotFound {
+            kind: "reply-data".to_string(),
+        })?;
 
-    let seq = parse_seq(data).map_err(|err| StdError::SerializeErr { source_type: "protobuf-decode".to_string(), msg: err.to_string() })?;
+    let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
+        source_type: "protobuf-decode".to_string(),
+        msg: err.to_string(),
+    })?;
 
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default())
@@ -307,6 +314,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
         QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
         QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
+        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
     }
 }
 pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
@@ -315,6 +323,12 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
         .map(|kv| kv.unwrap().1)
         .collect();
     Ok(ChannelsResponse { channels })
+}
+
+pub fn handle_lp_shares_query(deps: Deps) -> StdResult<LpSharesResponse> {
+    Ok(LpSharesResponse {
+        lp_shares: LP_SHARES.load(deps.storage)?,
+    })
 }
 
 pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {

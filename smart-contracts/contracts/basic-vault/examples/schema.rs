@@ -1,4 +1,4 @@
-use basic_vault::msg::{InstantiateMsg, QueryMsg, ExecuteMsg};
+use basic_vault::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_schema::write_api;
 
 fn main() {

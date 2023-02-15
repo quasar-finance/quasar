@@ -17,7 +17,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     msg::ExecuteMsg,
     state::{
-        RawAmount, CONFIG, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
+        RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
         UNBOND_QUEUE,
     },
 };
@@ -69,6 +69,10 @@ pub fn batch_unbond(
 
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
+
+    LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
+        Ok(old.checked_sub(total_exit)?)
+    })?;
 
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,

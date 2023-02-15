@@ -334,7 +334,14 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        Uint128::new(balance.parse::<u128>().map_err(|err| ContractError::ParseIntError { error: err, value: balance })?),
+        Uint128::new(
+            balance
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: err,
+                    value: balance,
+                })?,
+        ),
         exit_pool.tokens_out,
         Uint128::one(),
         // Uint128::new(spot_price.parse()?),
@@ -404,7 +411,13 @@ pub fn handle_ica_ack(
             let ica_addr = get_ica_address(storage, ica_channel.clone())?;
             let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
             let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
-            let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| ContractError::ParseIntError { error: err, value: resp.share_out_amount })?);
+            let shares_out =
+                Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
+                    ContractError::ParseIntError {
+                        error: err,
+                        value: resp.share_out_amount,
+                    }
+                })?);
             LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
                 Ok(old.checked_add(shares_out)?)
             })?;
@@ -486,10 +499,17 @@ fn handle_exit_pool_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
-    let total_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| ContractError::ParseIntError { error: err, value: msg.token_out_amount })?);
+    let total_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
+        ContractError::ParseIntError {
+            error: err,
+            value: msg.token_out_amount,
+        }
+    })?);
     data.lp_to_local_denom(total_tokens)?;
     let sub_msg = transfer_batch_unbond(storage, env, data, total_tokens)?;
-    Ok(IbcBasicResponse::new().add_submessage(sub_msg).add_attribute("transfer-funds", total_tokens.to_string()))
+    Ok(IbcBasicResponse::new()
+        .add_submessage(sub_msg)
+        .add_attribute("transfer-funds", total_tokens.to_string()))
 }
 
 fn handle_return_transfer_ack(
