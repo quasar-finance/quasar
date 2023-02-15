@@ -10,7 +10,7 @@ use cw_utils::must_pay;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
-use crate::error::ContractError;
+use crate::error::{ContractError, Trap};
 use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -18,12 +18,12 @@ use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
     IcaChannelResponse, InstantiateMsg, LockResponse, LpSharesResponse, PrimitiveSharesResponse,
-    QueryMsg,
+    QueryMsg, TrappedErrorsResponse,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TRAPS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -315,8 +315,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
         QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
         QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
+        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?)
     }
 }
+
+pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsResponse> {
+    let trapped: StdResult<Vec<(u64, Trap)>> = TRAPS.range(deps.storage, None, None, Order::Ascending).collect();
+    Ok(TrappedErrorsResponse { errors: trapped? })
+}
+
 pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
     let channels: Vec<ChannelInfo> = CHANNELS
         .range(deps.storage, None, None, Order::Ascending)

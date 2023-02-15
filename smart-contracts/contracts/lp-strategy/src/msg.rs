@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc_lock,
-    state::{Config, PendingBond},
+    state::{Config, PendingBond}, error::Trap,
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -38,12 +38,19 @@ pub enum QueryMsg {
     PrimitiveShares {},
     IcaBalance {},
     IcaChannel {},
+    TrappedErrors{},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ChannelsResponse {
     pub channels: Vec<ChannelInfo>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct TrappedErrorsResponse {
+    pub errors: Vec<(u64, Trap)>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
