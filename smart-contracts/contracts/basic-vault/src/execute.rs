@@ -152,6 +152,17 @@ pub fn may_pay_with_ratio(
         ratio: deposit_amount_weights,
     };
 
+    if (max_bond == Uint128::zero()) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "we failed here ser 2".to_string(),
+        }));
+    }
+    if (max_bond == Uint128::MAX) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "we failed here ser 3".to_string(),
+        }));
+    }
+
     // verify that >0 of each token in ratio is passed in, return (funds, remainder))
     // where funds is the max amount we can use in compliance with the ratio
     // and remainder is the change to return to user
