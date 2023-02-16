@@ -19,6 +19,15 @@ pub fn get_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError>
     Ok(sum)
 }
 
+pub fn get_raw_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
+    // workaround for a div-by-zero error on multi-asset vault side
+    let mut sum = Uint128::zero();
+    for val in SHARES.range(storage, None, None, Order::Ascending) {
+        sum = sum.checked_add(val?.1)?;
+    }
+    Ok(sum)
+}
+
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
     let chan = CHANNELS.load(store, channel_id)?;
     match chan.channel_type {

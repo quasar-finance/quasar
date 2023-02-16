@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_ica_address, get_total_shares},
+    helpers::{get_ica_address, get_total_shares, get_raw_total_shares},
     ibc_util::do_transfer,
     icq::try_icq,
     state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
@@ -84,6 +84,7 @@ pub fn fold_bonds(
                 })?;
         let claim_amount = create_claim(storage, item.amount, item.owner.clone(), total_balance)?;
         total = total.checked_add(item.amount)?;
+        println!("{:?}", claim_amount);
         deposits.push(OngoingDeposit {
             claim_amount,
             owner: item.owner,
@@ -102,7 +103,7 @@ fn create_claim(
     address: Addr,
     total_balance: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let total_shares = get_total_shares(storage)?;
+    let total_shares = get_raw_total_shares(storage)?;
 
     // calculate the correct size of the claim
     let claim_amount = calculate_claim(user_balance, total_balance, total_shares)?;
@@ -144,6 +145,8 @@ fn calculate_claim(
     if total_shares == Uint128::zero() || total_balance == Uint128::zero() {
         Ok(user_balance)
     } else {
+        println!("hit me 2");
+        println!("ub: {:?}, ts: {:?}, tb: {:?}", user_balance, total_shares, total_balance);
         Ok(user_balance
             .checked_mul(total_shares)?
             .checked_div(total_balance)?)
