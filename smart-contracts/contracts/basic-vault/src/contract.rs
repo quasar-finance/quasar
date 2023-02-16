@@ -18,7 +18,7 @@ use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
 use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, QueryMsg};
-use crate::query::{query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info};
+use crate::query::{query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info, query_unbonding_claims};
 use crate::state::{
     InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
     INVESTMENT, TOTAL_SUPPLY,
@@ -147,7 +147,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Claims { address } => {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
@@ -162,6 +162,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PendingBonds { address } => to_binary(&query_pending_bonds(deps, address)?),
         QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
         QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
+        QueryMsg::UnbondingClaims { address } => to_binary(&query_unbonding_claims(deps, env, address)?)
     }
 }
 

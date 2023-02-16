@@ -7,7 +7,7 @@ use quasar_types::callback::{BondResponse, Callback, UnbondResponse};
 use crate::{
     state::{
         BondingStub, UnbondingStub, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT,
-        PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+        PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE, Unbond,
     },
     ContractError,
 };
@@ -154,15 +154,18 @@ pub fn on_start_unbond(
     UNBOND_STATE.update(
         deps.storage,
         unbond_id.clone(),
-        |s| -> Result<Vec<UnbondingStub>, ContractError> {
-            let mut stubs = s.unwrap();
+        |s: Option<Unbond>| -> Result<Unbond, ContractError> {
+            // TODO change this to ok_or() or unwrap_or()
+            // TODO update could/should be more efficient, shouldn't be a need to copy s
+            let mut unbond = s.unwrap();
             // update the stub where the address is the same as message sender with the unlock time
-            stubs
+
+            unbond.stub
                 .iter_mut()
                 .find(|s| s.address == info.sender)
                 .unwrap()
                 .unlock_time = Option::Some(unlock_time);
-            Ok(stubs)
+            Ok(Unbond { stub: unbond.stub, shares: unbond.shares})
         },
     )?;
 

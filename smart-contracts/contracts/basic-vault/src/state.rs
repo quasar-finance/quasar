@@ -56,6 +56,13 @@ pub struct BondingStub {
 
 #[cw_serde]
 #[derive(Default)]
+pub struct Unbond {
+    pub stub: Vec<UnbondingStub>,
+    pub shares: Uint128,
+}
+
+#[cw_serde]
+#[derive(Default)]
 pub struct UnbondingStub {
     // the contract address of the primitive
     pub address: String,
@@ -79,6 +86,6 @@ pub const PENDING_UNBOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_unbond_
 // todo: find the type of the vec items here (replace supply obvs)
 pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 // map of unbond id to unbond state
-pub const UNBOND_STATE: Map<String, Vec<UnbondingStub>> = Map::new("unbond_state");
+pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");

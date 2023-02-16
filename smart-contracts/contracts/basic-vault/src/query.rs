@@ -1,14 +1,47 @@
-use cosmwasm_std::{Addr, Coin, Deps, StdResult};
+use std::collections::HashMap;
+
+use cosmwasm_std::{Addr, Coin, Deps, StdResult, Timestamp, Env, Uint128};
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
 
 use crate::{
     execute::may_pay_with_ratio,
     msg::{
         DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PrimitiveInfo,
-        TvlInfoResponse,
+        TvlInfoResponse, UnbondingClaimResponse,
     },
-    state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS},
+    state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
 };
+
+pub fn query_unbonding_claims(deps: Deps, env: Env, addr: Addr) -> StdResult<UnbondingClaimResponse> {
+    let ids = PENDING_UNBOND_IDS.load(deps.storage, addr)?;
+    let mut resp = UnbondingClaimResponse { pending_unbonds: Uint128::zero(), unbonds: HashMap::new(), unbonded: Uint128::zero() };
+    for id in ids {
+        let stub = UNBOND_STATE.load(deps.storage, id)?;
+        let mut time = Timestamp::from_seconds(0);
+
+        // find the largest time
+        // TODO this should be done by an iter and remove clone
+        for pending in stub.stub.clone() {
+            if let Some(unlock) = pending.unlock_time {
+                if unlock.seconds() >= time.seconds() {
+                    time = unlock;
+                }
+            }
+        }
+        // if time is zero, all timestamps were None, so we don't have an unbonding time yet
+        if time.seconds() == 0 {
+            resp.pending_unbonds = resp.pending_unbonds.checked_add(stub.shares)?;
+        }
+        // if the current time is before the stub timestamp, funds are still unbondong
+        else if env.block.time < time {
+            // TODO make the addition save here
+            resp.unbonds.entry(time.seconds()).and_modify(|old| *old += stub.shares).or_insert(stub.shares);
+        } else {
+            resp.unbonded = resp.unbonded.checked_add(stub.shares)?;
+        }
+    }
+    Ok(resp)
+}
 
 pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
     let primitives = INVESTMENT.load(deps.storage)?.primitives;

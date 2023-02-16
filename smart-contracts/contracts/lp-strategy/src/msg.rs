@@ -1,4 +1,6 @@
-use cosmwasm_std::{Coin, StdResult, Uint128};
+use std::collections::HashMap;
+
+use cosmwasm_std::{Coin, StdResult, Uint128, Addr};
 
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
@@ -6,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc_lock,
-    state::{Config, PendingBond}, error::Trap,
+    state::{Config, PendingBond, Unbond}, error::Trap,
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -39,6 +41,20 @@ pub enum QueryMsg {
     IcaBalance {},
     IcaChannel {},
     TrappedErrors{},
+    UnbondingClaim{addr: Addr, id: String},
+    ListUnbondingClaims{},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct ListUnbondingClaimsResponse {
+    pub unbonds: HashMap<(Addr, String), Unbond>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct UnbondingClaimResponse {
+    pub unbond: Unbond,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

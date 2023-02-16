@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
+use cosmwasm_std::{Binary, Coin, Decimal, Uint128, Timestamp, Addr};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
@@ -142,8 +144,12 @@ pub enum QueryMsg {
     PendingBonds { address: String },
 
     /// GetTvlInfo gets all info necessary for
-    #[returns(PendingBondsResponse)]
+    #[returns(TvlInfoResponse)]
     GetTvlInfo {},
+
+    /// Get all unbonding claims of a user
+    #[returns(PendingBondsResponse)]
+    UnbondingClaims { address: Addr },
 
     /// GetDebug shows us debug string info
     #[returns(GetDebugResponse)]
@@ -159,6 +165,13 @@ pub enum QueryMsg {
     /// Returns how much spender can use from owner account, 0 if unset.
     #[returns(AllowanceResponse)]
     Allowance { owner: String, spender: String },
+}
+
+#[cw_serde]
+pub struct UnbondingClaimResponse {
+    pub pending_unbonds: Uint128,
+    pub unbonds: HashMap<u64, Uint128>,
+    pub unbonded: Uint128
 }
 
 #[cw_serde]
