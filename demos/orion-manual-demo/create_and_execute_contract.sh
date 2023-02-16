@@ -17,11 +17,11 @@ echo $NODE
 #     quote_denom is the denom other denom in the pool, stake for now
 INIT1='{"lock_period":6,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-0"}'
 INIT2='{"lock_period":6,"pool_id":2,"pool_denom":"gamm/pool/2","base_denom":"stake","local_denom":"ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878","quote_denom":"fakestake","return_source_channel":"channel-0","transfer_channel":"channel-0"}'
-INIT3='{"lock_period":6,"pool_id":3,"pool_denom":"gamm/pool/3","base_denom":"fakestake","local_denom":"ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1c,"quote_denom":"uosmo","return_source_channel":"channel-0","transfer_channel":"channel-0"}'
+INIT3='{"lock_period":6,"pool_id":3,"pool_denom":"gamm/pool/3","base_denom":"fakestake","local_denom":"ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1","quote_denom":"uosmo","return_source_channel":"channel-0","transfer_channel":"channel-0"}'
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-aarch64:0.12.11
 echo "Running store code"
 RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 

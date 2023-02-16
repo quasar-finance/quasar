@@ -21,10 +21,7 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!(
-            "We hit on_unbond with bond_id: {}",
-            bond_id.clone()
-        ),
+        &format!("We hit on_unbond with bond_id: {}", bond_id.clone()),
     )?;
 
     // load investment info
@@ -144,9 +141,8 @@ pub fn on_bond(
     // bond them to the validator
     let res = Response::new()
         .add_attribute("action", "bond")
-        .add_attribute("from", info.sender);
-    // .add_attribute("bonded", payment.amount)
-    // .add_attribute("minted", to_mint);
+        .add_attribute("from", info.sender)
+        .add_attribute("minted", shares_to_mint);
     Ok(res)
 }
 
