@@ -83,8 +83,8 @@ quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 echo "Running unbond, command: quasarnoded tx wasm execute $VAULT_ADDR '{\"unbond\":{\"amount\":\"100\"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID"
 quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
-echo "Sleeping 60"
-sleep 60
+echo "Sleeping 120"
+sleep 120
 echo "Running unbond again to get funds back"
 quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"0"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 

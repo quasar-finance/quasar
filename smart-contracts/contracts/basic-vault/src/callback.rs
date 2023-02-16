@@ -193,57 +193,56 @@ pub fn on_unbond(
             info.funds[0]
         ),
     )?;
-    Ok(Response::new())
 
-    // let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-    // let invest = INVESTMENT.load(deps.storage)?;
+    let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
+    let invest = INVESTMENT.load(deps.storage)?;
 
-    // // edit and save the stub where the address is the same as message sender with the unbond response
-    // let mut unbonding_stub = unbond_stubs
-    //     .iter_mut()
-    //     .find(|s| s.address == info.sender)
-    //     .unwrap();
+    // edit and save the stub where the address is the same as message sender with the unbond response
+    let mut unbonding_stub = unbond_stubs.stub
+        .iter_mut()
+        .find(|s| s.address == info.sender)
+        .unwrap();
 
-    // // update info
-    // unbonding_stub.unbond_response = Option::Some(UnbondResponse {
-    //     unbond_id: unbond_id.clone(),
-    // });
-    // unbonding_stub.unbond_funds = info.funds;
+    // update info
+    unbonding_stub.unbond_response = Option::Some(UnbondResponse {
+        unbond_id: unbond_id.clone(),
+    });
+    unbonding_stub.unbond_funds = info.funds;
 
-    // UNBOND_STATE.save(deps.storage, unbond_id.clone(), &unbond_stubs)?;
+    UNBOND_STATE.save(deps.storage, unbond_id.clone(), &unbond_stubs)?;
 
-    // // if still waiting on successful unbonds, then return
-    // if unbond_stubs.iter().any(|s| s.unbond_response.is_none()) {
-    //     return Ok(Response::new());
-    // }
+    // if still waiting on successful unbonds, then return
+    if unbond_stubs.stub.iter().any(|s| s.unbond_response.is_none()) {
+        return Ok(Response::new());
+    }
 
-    // let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
-    // // Construct message to return these funds to the user
-    // let return_msgs: Vec<BankMsg> = unbond_stubs
-    //     .iter()
-    //     .map(|s| BankMsg::Send {
-    //         to_address: user_address.to_string(),
-    //         amount: s.unbond_funds.clone(),
-    //     })
-    //     .collect();
+    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
+    // Construct message to return these funds to the user
+    let return_msgs: Vec<BankMsg> = unbond_stubs.stub
+        .iter()
+        .map(|s| BankMsg::Send {
+            to_address: user_address.to_string(),
+            amount: s.unbond_funds.clone(),
+        })
+        .collect();
 
-    // // delete this pending unbond id from the state
-    // UNBOND_STATE.remove(deps.storage, unbond_id.clone());
-    // // todo: also need to remove the unbond id from the user's list of pending unbonds
-    // PENDING_UNBOND_IDS.update(
-    //     deps.storage,
-    //     Addr::unchecked(user_address),
-    //     |ids| -> Result<Vec<String>, ContractError> {
-    //         Ok(ids
-    //             .unwrap()
-    //             .into_iter()
-    //             .filter(|id| id != &unbond_id)
-    //             .collect())
-    //     },
-    // )?;
+    // delete this pending unbond id from the state
+    UNBOND_STATE.remove(deps.storage, unbond_id.clone());
+    // todo: also need to remove the unbond id from the user's list of pending unbonds
+    PENDING_UNBOND_IDS.update(
+        deps.storage,
+        Addr::unchecked(user_address),
+        |ids| -> Result<Vec<String>, ContractError> {
+            Ok(ids
+                .unwrap()
+                .into_iter()
+                .filter(|id| id != &unbond_id)
+                .collect())
+        },
+    )?;
 
-    // Ok(Response::new()
-    //     .add_messages(return_msgs)
-    //     .add_attribute("action", "on_unbond")
-    //     .add_attribute("unbond_id", unbond_id))
+    Ok(Response::new()
+        .add_messages(return_msgs)
+        .add_attribute("action", "on_unbond")
+        .add_attribute("unbond_id", unbond_id))
 }

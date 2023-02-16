@@ -97,12 +97,18 @@ pub fn may_pay_with_ratio(
                         .amount
                         .amount
                         .multiply_ratio(pc.weight.numerator(), pc.weight.denominator()),
-                    supply.total,
+                    supply.total, 
                 ),
                 denom: balance.amount.denom,
             }
         })
         .collect();
+
+    if (deposit_amount_weights.first().unwrap().weight == Decimal::zero()) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "we failed here".to_string(),
+        }));
+    }
 
     let token_weights: Vec<CoinWeight> =
         deposit_amount_weights
@@ -123,6 +129,12 @@ pub fn may_pay_with_ratio(
                 });
                 acc
             });
+
+    if (token_weights.first().unwrap().weight == Decimal::zero()) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "we failed here ser".to_string(),
+        }));
+    }
 
     let mut max_bond = Uint128::MAX;
     for coin_weight in token_weights {
@@ -179,7 +191,14 @@ pub fn may_pay_with_ratio(
         })
         .collect();
 
-    Ok((coins?, remainder))
+    let c = coins?;
+    if (c.first().unwrap().amount == Uint128::zero()) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "we failed here".to_string(),
+        }));
+    }
+
+    Ok((c, remainder))
 }
 
 // todo test
