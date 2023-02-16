@@ -3,7 +3,7 @@ use cosmwasm_std::{
     QuerierWrapper, Response, StdError, SubMsg, Uint128, WasmMsg,
 };
 
-use cw20_base::contract::execute_burn;
+use cw20_base::contract::{execute_burn, execute_mint};
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -96,8 +96,9 @@ pub fn may_pay_with_ratio(
                     balance
                         .amount
                         .amount
-                        .checked_mul(pc.weight.numerator()).unwrap(),
-                    supply.total.checked_mul(pc.weight.denominator()).unwrap()
+                        .checked_mul(pc.weight.numerator())
+                        .unwrap(),
+                    supply.total.checked_mul(pc.weight.denominator()).unwrap(),
                 ),
                 denom: balance.amount.denom,
             }
@@ -213,7 +214,7 @@ pub fn may_pay_with_ratio(
 }
 
 // todo test
-pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     if (info.funds.len() == 0 || info.funds.iter().all(|c| c.amount.is_zero())) {
         return Err(ContractError::NoFunds {});
     }
@@ -230,7 +231,7 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
         .iter()
-        .zip(primitive_funding_amounts)
+        .zip(primitive_funding_amounts.clone())
         .map(|(pc, funds)| match pc.init.clone() {
             crate::msg::PrimitiveInitMsg::LP(_lp_init_msg) => {
                 let deposit_stub = BondingStub {
@@ -279,6 +280,25 @@ pub fn bond(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, Con
             });
         }
     });
+
+    let shares_to_mint = primitive_funding_amounts
+        .iter()
+        .zip(invest.primitives)
+        .fold(Uint128::zero(), |acc, (funds, pc)| {
+            // sum all funds with proper ratio
+            acc.checked_add(
+                funds
+                    .amount
+                    .multiply_ratio(pc.weight.numerator(), pc.weight.denominator()),
+            )
+            .unwrap()
+        });
+
+    let sub_info = MessageInfo {
+        sender: env.contract.address.clone(),
+        funds: vec![],
+    };
+    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint)?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())

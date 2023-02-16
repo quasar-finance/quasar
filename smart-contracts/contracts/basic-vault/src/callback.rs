@@ -37,7 +37,7 @@ pub fn on_bond(
     }
 
     // update deposit state here before doing anything else & save!
-    bond_stubs = bond_stubs
+    let bond_stubs_new = bond_stubs
         .iter()
         .map(|s| {
             if s.address == info.sender {
@@ -53,11 +53,26 @@ pub fn on_bond(
             }
         })
         .collect();
-    BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs)?;
+    BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs_new)?;
 
     // if still waiting on successful bonds, then return
-    if bond_stubs.iter().any(|s| s.bond_response.is_none()) {
-        return Ok(Response::new());
+    if bond_stubs_new.iter().any(|s| s.bond_response.is_none()) {
+        return Ok(Response::new()
+            .add_attribute("action", "on_bond")
+            .add_attribute(
+                "state",
+                bond_stubs_new
+                    .iter()
+                    .fold(0u32, |acc, stub| {
+                        if stub.bond_response.is_none() {
+                            acc + 1
+                        } else {
+                            acc
+                        }
+                    })
+                    .to_string()
+                    + "pending bonds",
+            ));
     }
 
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
@@ -73,7 +88,7 @@ pub fn on_bond(
         None => Ok(vec![]), // todo: should this error? we should never be here
     })?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs)?;
+    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
 
     let total_weight = invest
         .primitives
@@ -82,7 +97,7 @@ pub fn on_bond(
 
     // calculate shares to mint
     let shares_to_mint =
-        bond_stubs
+        bond_stubs_new
             .iter()
             .zip(invest.primitives.iter())
             .fold(Uint128::zero(), |acc, (s, pc)| {
@@ -130,13 +145,13 @@ pub fn on_bond(
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    execute_mint(
-        deps,
-        env,
-        sub_info,
-        user_address.to_string(),
-        shares_to_mint,
-    )?;
+    // execute_mint(
+    //     deps,
+    //     env,
+    //     sub_info,
+    //     user_address.to_string(),
+    //     shares_to_mint,
+    // )?;
 
     // bond them to the validator
     let res = Response::new()
