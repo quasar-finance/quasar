@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
-use cosmwasm_std::{Coin, StdResult, Uint128, Addr};
+use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    error::Trap,
     ibc_lock,
-    state::{Config, PendingBond, Unbond}, error::Trap,
+    state::{Config, PendingBond, Unbond},
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -40,9 +41,9 @@ pub enum QueryMsg {
     PrimitiveShares {},
     IcaBalance {},
     IcaChannel {},
-    TrappedErrors{},
-    UnbondingClaim{addr: Addr, id: String},
-    ListUnbondingClaims{},
+    TrappedErrors {},
+    UnbondingClaim { addr: Addr, id: String },
+    ListUnbondingClaims {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -66,7 +67,7 @@ pub struct ChannelsResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TrappedErrorsResponse {
-    pub errors: Vec<(u64, Trap)>
+    pub errors: Vec<(u64, Trap)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

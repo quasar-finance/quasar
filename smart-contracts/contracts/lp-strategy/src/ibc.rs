@@ -343,6 +343,7 @@ pub fn handle_icq_ack(
                 })?,
         ),
         exit_pool.tokens_out,
+        // TODO fix me, spot price is intentionally messed
         Uint128::one(),
         // Uint128::new(spot_price.parse()?),
     )?;

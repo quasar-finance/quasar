@@ -3,8 +3,8 @@ use std::collections::HashMap;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
-    StdResult, Uint128, Addr,
+    to_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -19,13 +19,14 @@ use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
     ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    IcaChannelResponse, InstantiateMsg, LockResponse, LpSharesResponse, PrimitiveSharesResponse,
-    QueryMsg, TrappedErrorsResponse, ListUnbondingClaimsResponse, UnbondingClaimResponse,
+    IcaChannelResponse, InstantiateMsg, ListUnbondingClaimsResponse, LockResponse,
+    LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
+    UnbondingClaimResponse,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TRAPS, UNBONDING_CLAIMS, Unbond,
+    Config, OngoingDeposit, RawAmount, Unbond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE,
+    ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TRAPS, UNBONDING_CLAIMS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -318,22 +319,34 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
         QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
         QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims { } => to_binary(&handle_list_unbonding_claims(deps)?),
-        QueryMsg::UnbondingClaim { addr, id } => to_binary(&handle_unbonding_claim_query(deps, addr, id)?),
+        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
+        QueryMsg::UnbondingClaim { addr, id } => {
+            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
+        }
     }
 }
 
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
-    let unbonds: StdResult<HashMap<(Addr, String), Unbond>> = UNBONDING_CLAIMS.range(deps.storage, None, None, Order::Ascending).collect();
+    let unbonds: StdResult<HashMap<(Addr, String), Unbond>> = UNBONDING_CLAIMS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
     Ok(ListUnbondingClaimsResponse { unbonds: unbonds? })
 }
 
-pub fn handle_unbonding_claim_query(deps: Deps, addr: Addr, id: String) -> StdResult<UnbondingClaimResponse> {
-    Ok(UnbondingClaimResponse { unbond: UNBONDING_CLAIMS.load(deps.storage, (addr, id))? })
+pub fn handle_unbonding_claim_query(
+    deps: Deps,
+    addr: Addr,
+    id: String,
+) -> StdResult<UnbondingClaimResponse> {
+    Ok(UnbondingClaimResponse {
+        unbond: UNBONDING_CLAIMS.load(deps.storage, (addr, id))?,
+    })
 }
 
 pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsResponse> {
-    let trapped: StdResult<Vec<(u64, Trap)>> = TRAPS.range(deps.storage, None, None, Order::Ascending).collect();
+    let trapped: StdResult<Vec<(u64, Trap)>> = TRAPS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
     Ok(TrappedErrorsResponse { errors: trapped? })
 }
 
@@ -380,27 +393,22 @@ pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse>
             total: Uint128::one(),
         })
     } else {
-        Ok(PrimitiveSharesResponse {
-            total,
-        })
+        Ok(PrimitiveSharesResponse { total })
     }
-   
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
+    let balance = ICA_BALANCE.load(deps.storage)?;
+    let amount = if balance.is_zero() {
+        Uint128::one()
+    } else {
+        balance
+    };
+
     Ok(IcaBalanceResponse {
         amount: Coin {
-            denom: CONFIG
-                .load(deps.storage)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })?
-                .local_denom,
-            amount: ICA_BALANCE
-                .load(deps.storage)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })?,
+            denom: CONFIG.load(deps.storage)?.local_denom,
+            amount,
         },
     })
 }
