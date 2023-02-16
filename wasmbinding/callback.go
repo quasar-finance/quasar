@@ -14,11 +14,6 @@ import (
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	gammbalancer "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
-	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
-	lockuptypes "github.com/quasarlabs/quasarnode/osmosis/lockup/types"
-	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
 // if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
@@ -47,6 +42,7 @@ func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("wasm callback plugin")
 }
 
+/*
 func (c *CallbackPlugin) Handle(ctx sdk.Context, ex intergammtypes.AckExchange[*ibctransfertypes.MsgTransfer, *ibctransfertypes.MsgTransferResponse]) error {
 	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "handle")
 }
@@ -113,6 +109,7 @@ func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
 ) error {
 	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "begin_unlocking")
 }
+*/
 
 // the easiest way for the smart contract to handle the response is to
 func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, portId string, response proto.Message, caller string) error {

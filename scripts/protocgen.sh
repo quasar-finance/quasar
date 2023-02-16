@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -Cue -o pipefail
+#set -Cue -o pipefail
 
 project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
 

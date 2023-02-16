@@ -1,5 +1,6 @@
 package decorators
 
+/*
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
@@ -154,3 +155,4 @@ func newWasmIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
 func (im IBCTransferWasmDecorator) logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("decorator", "IBCTransferWasmCallback")
 }
+*/

@@ -21,8 +21,6 @@ import (
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	epochstypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	oriontypes "github.com/quasarlabs/quasarnode/x/orion/types"
-	qbanktypes "github.com/quasarlabs/quasarnode/x/qbank/types"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
@@ -103,24 +101,6 @@ func PrepareGenesis(clientCtx client.Context, appState map[string]json.RawMessag
 	appState[epochstypes.ModuleName] = epochsGenStateBz
 
 	// orion module genesis
-	orionGenState := oriontypes.DefaultGenesis()
-	orionGenState.Params = genesisParams.OrionParams
-	orionGenStateBz, err := cdc.MarshalJSON(orionGenState)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to marshal orion genesis state: %w", err)
-	}
-	appState[oriontypes.ModuleName] = orionGenStateBz
-
-	// orion module genesis
-	qBankGenState := qbanktypes.DefaultGenesis()
-	qBankGenState.Params = genesisParams.QBankParams
-	qBankGenStateBz, err := cdc.MarshalJSON(qBankGenState)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to marshal qbank genesis state: %w", err)
-	}
-	appState[qbanktypes.ModuleName] = qBankGenStateBz
-
-	// orion module genesis
 	qOracleGenState := qoracletypes.DefaultGenesis()
 	qOracleGenState.Params = genesisParams.QOracleParams
 	qOracleGenStateBz, err := cdc.MarshalJSON(qOracleGenState)
@@ -154,8 +134,6 @@ type GenesisParams struct {
 
 	Epochs []epochstypes.EpochInfo
 
-	OrionParams   oriontypes.Params
-	QBankParams   qbanktypes.Params
 	QOracleParams qoracletypes.Params
 }
 
@@ -255,30 +233,6 @@ func MainnetGenesisParams() GenesisParams {
 	genParams.ConsensusParams.Evidence.MaxAgeNumBlocks = int64(genParams.StakingParams.UnbondingTime.Seconds()) / 3
 	genParams.ConsensusParams.Version.AppVersion = 1
 
-	genParams.OrionParams = oriontypes.DefaultParams()
-	genParams.OrionParams.Enabled = true
-	genParams.OrionParams.LpEpochId = "day"
-	genParams.OrionParams.MgmtFeePer = sdk.MustNewDecFromStr("0.003")
-	genParams.OrionParams.PerfFeePer = sdk.MustNewDecFromStr("0.02")
-
-	genParams.QBankParams = qbanktypes.DefaultParams()
-	genParams.QBankParams.Enabled = true
-	genParams.QBankParams.MinOrionEpochDenomDollarDeposit = sdk.NewDec(100)
-	genParams.QBankParams.OrionEpochIdentifier = "day"
-	genParams.QBankParams.WhiteListedDenomsInOrion = []qbanktypes.WhiteListedDenomInOrion{
-		// TODO recheck
-		{
-			OriginName:   "uatom",
-			OnehopQuasar: "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
-			OnehopOsmo:   "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
-		},
-		{
-			OriginName:   "uqsr",
-			OnehopQuasar: "uqsr",
-			OnehopOsmo:   "ibc/BE1BB42D4BE3C30D50B68D7C41DB4DFCE9678E8EF8C539F6E6A9345048894FCC",
-		},
-	}
-
 	return genParams
 }
 
@@ -308,11 +262,6 @@ func TestnetGenesisParams() GenesisParams {
 	))
 	genParams.GovParams.TallyParams.Quorum = sdk.MustNewDecFromStr("0.0000001") // 0.00001%
 	genParams.GovParams.VotingParams.VotingPeriod = time.Second * 20            // 20 seconds
-
-	genParams.OrionParams.Enabled = false
-	genParams.OrionParams.LpEpochId = "minute"
-
-	genParams.QBankParams.OrionEpochIdentifier = "minute"
 
 	return genParams
 }

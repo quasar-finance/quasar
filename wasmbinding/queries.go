@@ -6,21 +6,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 type QueryPlugin struct {
-	intergammKeeper *intergammkeeper.Keeper
-	qoracleKeeper   *qoraclekeeper.Keeper
+	qoracleKeeper *qoraclekeeper.Keeper
 }
 
 // NewQueryPlugin returns a reference to a new QueryPlugin.
-func NewQueryPlugin(gk *intergammkeeper.Keeper, qk *qoraclekeeper.Keeper) *QueryPlugin {
+func NewQueryPlugin(qk *qoraclekeeper.Keeper) *QueryPlugin {
 	return &QueryPlugin{
-		intergammKeeper: gk,
-		qoracleKeeper:   qk,
+		// intergammKeeper: gk,
+		qoracleKeeper: qk,
 	}
 }
 

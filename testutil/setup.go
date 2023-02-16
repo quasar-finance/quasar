@@ -18,9 +18,6 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	orionkeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
-	qbankkeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/stretchr/testify/require"
@@ -61,12 +58,12 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
-	ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
+	//ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
 	ics4WrapperMock := mock.NewMockICS4Wrapper(ctl)
 	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
 	// Set BindPort method for mock and return a mock capability
 	ibcPortKeeperMock.EXPECT().BindPort(gomock.Any(), gomock.Any()).AnyTimes().Return(capabilitytypes.NewCapability(1))
-	ibcConnectionKeeperMock := mock.NewMockConnectionKeeper(ctl)
+	//ibcConnectionKeeperMock := mock.NewMockConnectionKeeper(ctl)
 	// ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 
 	// Keepers
@@ -85,9 +82,6 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
-	qbankKeeper := factory.QbankKeeper(paramsKeeper, bankKeeper, *epochsKeeper, qoracleKeeper)
-	intergammKeeper := factory.IntergammKeeper(paramsKeeper, capabilityKeeper, ibcChannelKeeperMock, icaControllerKeeperMock, ibcTransferKeeperMock, ibcConnectionKeeperMock, ibcClientKeeperMock)
-	orionKeeper := factory.OrionKeeper(paramsKeeper, accountKeeper, bankKeeper, qbankKeeper, qoracleKeeper, intergammKeeper, *epochsKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
 	// Setting params before loading stores causes store does not exist error.
@@ -95,10 +89,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	require.NoError(t, factory.StateStore.LoadLatestVersion())
 
-	factory.SetQbankDefaultParams(qbankKeeper)
 	factory.SetQoracleDefaultParams(qoracleKeeper)
-	factory.SetIntergammDefaultParams(intergammKeeper)
-	factory.SetOrionDefaultParams(orionKeeper)
 
 	return &TestSetup{
 		Ctx: ctx,
@@ -114,10 +105,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			AccountKeeper:    accountKeeper,
 			BankKeeper:       bankKeeper,
 			CapabilityKeeper: capabilityKeeper,
-			QbankKeeper:      qbankKeeper,
 			QoracleKeeper:    qoracleKeeper,
-			InterGammKeeper:  intergammKeeper,
-			OrionKeeper:      orionKeeper,
 		},
 	}
 }
@@ -140,8 +128,5 @@ type testKeepers struct {
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper capabilitykeeper.Keeper
-	QbankKeeper      qbankkeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
-	InterGammKeeper  *intergammkeeper.Keeper
-	OrionKeeper      orionkeeper.Keeper
 }

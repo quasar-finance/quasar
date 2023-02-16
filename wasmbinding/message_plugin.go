@@ -2,8 +2,6 @@ package wasmbinding
 
 import (
 	"encoding/json"
-	"time"
-
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,26 +9,22 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"
-	intergammkeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	intergammtypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 )
 
-func CustomMessageDecorator(intergammKeeper *intergammkeeper.Keeper, bank *bankkeeper.BaseKeeper, callback *CallbackPlugin) func(wasmkeeper.Messenger) wasmkeeper.Messenger {
+func CustomMessageDecorator(bank *bankkeeper.BaseKeeper, callback *CallbackPlugin) func(wasmkeeper.Messenger) wasmkeeper.Messenger {
 	return func(old wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return &CustomMessenger{
-			wrapped:         old,
-			bank:            bank,
-			intergammKeeper: intergammKeeper,
-			callback:        callback,
+			wrapped:  old,
+			bank:     bank,
+			callback: callback,
 		}
 	}
 }
 
 type CustomMessenger struct {
-	wrapped         wasmkeeper.Messenger
-	bank            *bankkeeper.BaseKeeper
-	intergammKeeper *intergammkeeper.Keeper
-	callback        *CallbackPlugin
+	wrapped  wasmkeeper.Messenger
+	bank     *bankkeeper.BaseKeeper
+	callback *CallbackPlugin
 }
 
 var _ wasmkeeper.Messenger = (*CustomMessenger)(nil)
@@ -44,36 +38,43 @@ func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddre
 			return nil, nil, sdkerrors.Wrap(err, "osmosis msg")
 		}
 		if contractMsg.TestScenario != nil {
-			return m.testScenario(ctx, contractAddr, contractMsg.TestScenario)
+			return nil, nil, nil
+			// return m.testScenario(ctx, contractAddr, contractMsg.TestScenario)
 		}
-		if contractMsg.SendToken != nil {
-			return m.sendToken(ctx, contractAddr, contractMsg.SendToken)
-		}
-		if contractMsg.RegisterICAOnZone != nil {
-			return m.RegisterICAOnZone(ctx, contractAddr, contractMsg.RegisterICAOnZone)
-		}
-		if contractMsg.OsmosisJoinPool != nil {
-			return m.OsmosisJoinPool(ctx, contractAddr, contractMsg.OsmosisJoinPool)
-		}
-		if contractMsg.OsmosisExitPool != nil {
-			return m.OsmosisExitPool(ctx, contractAddr, contractMsg.OsmosisExitPool)
-		}
-		if contractMsg.OsmosisLockTokens != nil {
-			return m.OsmosisLockTokens(ctx, contractAddr, contractMsg.OsmosisLockTokens)
-		}
-		if contractMsg.OsmosisBeginUnlocking != nil {
-			return m.OsmosisBeginUnlocking(ctx, contractAddr, contractMsg.OsmosisBeginUnlocking)
-		}
-		if contractMsg.OsmosisJoinSwapExternAmountIn != nil {
-			return m.OsmosisJoinSwapExternAmountIn(ctx, contractAddr, contractMsg.OsmosisJoinSwapExternAmountIn)
-		}
-		if contractMsg.OsmosisExitSwapExternAmountOut != nil {
-			return m.OsmosisExitSwapExternAmountOut(ctx, contractAddr, contractMsg.OsmosisExitSwapExternAmountOut)
-		}
+
+		/*
+			if contractMsg.SendToken != nil {
+				return m.sendToken(ctx, contractAddr, contractMsg.SendToken)
+			}
+
+			if contractMsg.RegisterICAOnZone != nil {
+				return m.RegisterICAOnZone(ctx, contractAddr, contractMsg.RegisterICAOnZone)
+			}
+			if contractMsg.OsmosisJoinPool != nil {
+				return m.OsmosisJoinPool(ctx, contractAddr, contractMsg.OsmosisJoinPool)
+			}
+			if contractMsg.OsmosisExitPool != nil {
+				return m.OsmosisExitPool(ctx, contractAddr, contractMsg.OsmosisExitPool)
+			}
+			if contractMsg.OsmosisLockTokens != nil {
+				return m.OsmosisLockTokens(ctx, contractAddr, contractMsg.OsmosisLockTokens)
+			}
+			if contractMsg.OsmosisBeginUnlocking != nil {
+				return m.OsmosisBeginUnlocking(ctx, contractAddr, contractMsg.OsmosisBeginUnlocking)
+			}
+			if contractMsg.OsmosisJoinSwapExternAmountIn != nil {
+				return m.OsmosisJoinSwapExternAmountIn(ctx, contractAddr, contractMsg.OsmosisJoinSwapExternAmountIn)
+			}
+			if contractMsg.OsmosisExitSwapExternAmountOut != nil {
+				return m.OsmosisExitSwapExternAmountOut(ctx, contractAddr, contractMsg.OsmosisExitSwapExternAmountOut)
+			}
+
+		*/
 	}
 	return m.wrapped.DispatchMsg(ctx, contractAddr, contractIBCPortID, msg)
 }
 
+/*
 func (m *CustomMessenger) testScenario(ctx sdk.Context, contractAddr sdk.AccAddress, testScenario *bindings.TestScenario) ([]sdk.Event, [][]byte, error) {
 	err := PerformTestScenario(m.intergammKeeper, ctx, contractAddr, testScenario)
 	// err := PerformCreateDenom(m.tokenFactory, m.bank, ctx, contractAddr, createDenom)
@@ -82,33 +83,39 @@ func (m *CustomMessenger) testScenario(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 	return nil, nil, nil
 }
+*/
 
-func PerformTestScenario(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.AccAddress, testScenario *bindings.TestScenario) error {
-	if testScenario == nil {
-		return wasmvmtypes.InvalidRequest{Err: "test scenario null"}
+/*
+	func PerformTestScenario(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.AccAddress, testScenario *bindings.TestScenario) error {
+		if testScenario == nil {
+			return wasmvmtypes.InvalidRequest{Err: "test scenario null"}
+		}
+
+		msgServer := intergammkeeper.NewMsgServerImpl(k)
+
+		msgTestScenario := intergammtypes.NewMsgTestScenario(contractAddr.String(), testScenario.Scenario)
+
+		// msgCreateDenom := tokenfactorytypes.NewMsgCreateDenom(contractAddr.String(), createDenom.Subdenom)
+
+		if err := msgTestScenario.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "failed validating MsgTestScenario")
+		}
+
+		// Run the test scenario
+		_, err := msgServer.TestScenario(
+			sdk.WrapSDKContext(ctx),
+			msgTestScenario,
+		)
+		if err != nil {
+			return sdkerrors.Wrap(err, "running test scenario")
+		}
+		return nil
 	}
 
-	msgServer := intergammkeeper.NewMsgServerImpl(k)
 
-	msgTestScenario := intergammtypes.NewMsgTestScenario(contractAddr.String(), testScenario.Scenario)
+*/
 
-	// msgCreateDenom := tokenfactorytypes.NewMsgCreateDenom(contractAddr.String(), createDenom.Subdenom)
-
-	if err := msgTestScenario.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "failed validating MsgTestScenario")
-	}
-
-	// Run the test scenario
-	_, err := msgServer.TestScenario(
-		sdk.WrapSDKContext(ctx),
-		msgTestScenario,
-	)
-	if err != nil {
-		return sdkerrors.Wrap(err, "running test scenario")
-	}
-	return nil
-}
-
+/*
 func (m *CustomMessenger) sendToken(ctx sdk.Context, contractAddr sdk.AccAddress, send *bindings.SendToken) ([]sdk.Event, [][]byte, error) {
 	err := PerformSendToken(m.intergammKeeper, m.bank, ctx, contractAddr, send, m.callback)
 	if err != nil {
@@ -116,7 +123,8 @@ func (m *CustomMessenger) sendToken(ctx sdk.Context, contractAddr sdk.AccAddress
 	}
 	return nil, nil, nil
 }
-
+*/
+/*
 func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, send *bindings.SendToken, cb *CallbackPlugin) error {
 	if send == nil {
 		return wasmvmtypes.InvalidRequest{Err: "send token null"}
@@ -136,7 +144,8 @@ func PerformSendToken(k *intergammkeeper.Keeper, b *bankkeeper.BaseKeeper, ctx s
 	cb.OnSendPacket(ctx, res.GetSeq(), res.Channel, res.PortId, contractAddr)
 	return nil
 }
-
+*/
+/*
 func (m *CustomMessenger) RegisterICAOnZone(ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterICAOnZone) ([]sdk.Event, [][]byte, error) {
 	err := PerformRegisterICAOnZone(m.intergammKeeper, ctx, contractAddr, register)
 	if err != nil {
@@ -144,7 +153,8 @@ func (m *CustomMessenger) RegisterICAOnZone(ctx sdk.Context, contractAddr sdk.Ad
 	}
 	return nil, nil, nil
 }
-
+*/
+/*
 func PerformRegisterICAOnZone(k *intergammkeeper.Keeper, ctx sdk.Context, contractAddr sdk.Address, register *bindings.RegisterICAOnZone) error {
 	if register == nil {
 		return wasmvmtypes.InvalidRequest{Err: "register interchain account null"}
@@ -334,3 +344,4 @@ func PerformOsmosisExitSwapExternAmountOut(k *intergammkeeper.Keeper, ctx sdk.Co
 
 	return nil
 }
+*/

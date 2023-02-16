@@ -8,10 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	appParams "github.com/quasarlabs/quasarnode/app/params"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
-	"github.com/quasarlabs/quasarnode/decorators"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -78,7 +74,6 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
-	icacontroller "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
 	icahost "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host"
@@ -95,6 +90,8 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	appParams "github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasarlabs/quasarnode/app/upgrades"
 	"github.com/spf13/cast"
 	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 	"github.com/tendermint/starport/starport/pkg/openapiconsole"
@@ -116,21 +113,9 @@ import (
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 
-	orionmodule "github.com/quasarlabs/quasarnode/x/orion"
-	orionmodulekeeper "github.com/quasarlabs/quasarnode/x/orion/keeper"
-	orionmoduletypes "github.com/quasarlabs/quasarnode/x/orion/types"
-
-	qbankmodule "github.com/quasarlabs/quasarnode/x/qbank"
-	qbankmodulekeeper "github.com/quasarlabs/quasarnode/x/qbank/keeper"
-	qbankmoduletypes "github.com/quasarlabs/quasarnode/x/qbank/types"
-
 	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
 	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-
-	intergammmodule "github.com/quasarlabs/quasarnode/x/intergamm"
-	intergammmodulekeeper "github.com/quasarlabs/quasarnode/x/intergamm/keeper"
-	intergammmoduletypes "github.com/quasarlabs/quasarnode/x/intergamm/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -205,36 +190,22 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		epochsmodule.AppModuleBasic{},
-		qbankmodule.AppModuleBasic{},
-		orionmodule.AppModuleBasic{},
 		qoraclemodule.AppModuleBasic{},
 		ica.AppModuleBasic{},
-		intergammmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                nil,
-		distrtypes.ModuleName:                     nil,
-		minttypes.ModuleName:                      {authtypes.Minter},
-		stakingtypes.BondedPoolName:               {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:            {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                       {authtypes.Burner},
-		ibctransfertypes.ModuleName:               {authtypes.Minter, authtypes.Burner},
-		qbankmoduletypes.ModuleName:               {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		orionmoduletypes.ModuleName:               {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		orionmoduletypes.MgmtFeeCollectorMaccName: nil,
-		orionmoduletypes.PerfFeeCollectorMaccName: nil,
-		orionmoduletypes.OrionReserveMaccName:     {authtypes.Minter, authtypes.Burner},
-		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_7):   nil,
-		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Days_21):  nil,
-		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_1): nil,
-		orionmoduletypes.CreateOrionStakingMaccName(qbankmoduletypes.LockupTypes_Months_3): nil,
-		orionmoduletypes.CreateMeissaMaccName():                                            nil,
-		orionmoduletypes.CreateOrionRewardGloablMaccName():                                 nil,
-		icatypes.ModuleName: nil,
+		authtypes.FeeCollectorName:     nil,
+		distrtypes.ModuleName:          nil,
+		minttypes.ModuleName:           {authtypes.Minter},
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:            {authtypes.Burner},
+		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:            nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 		wasm.ModuleName: {authtypes.Burner},
 	}
@@ -302,13 +273,10 @@ type App struct {
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
 	EpochsKeeper  *epochsmodulekeeper.Keeper
-	QbankKeeper   qbankmodulekeeper.Keeper
-	OrionKeeper   orionmodulekeeper.Keeper
 	QoracleKeeper qoraclemodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	IntergammKeeper     *intergammmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -356,12 +324,9 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		epochsmoduletypes.StoreKey,
-		qbankmoduletypes.StoreKey,
-		orionmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
-		intergammmoduletypes.StoreKey,
 		wasm.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
@@ -390,7 +355,6 @@ func New(
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIntergammKeeper := app.CapabilityKeeper.ScopeToModule(intergammmoduletypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedQoracleKeeper := app.CapabilityKeeper.ScopeToModule(qoraclemoduletypes.ModuleName)
@@ -460,7 +424,8 @@ func New(
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	// TODO_IMPORTANT
+	// transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
@@ -474,22 +439,7 @@ func New(
 	)
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
 
-	app.IntergammKeeper = intergammmodulekeeper.NewKeeper(
-		appCodec,
-		keys[intergammmoduletypes.StoreKey],
-		keys[intergammmoduletypes.MemStoreKey],
-		scopedIntergammKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.ICAControllerKeeper,
-		app.TransferKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.GetSubspace(intergammmoduletypes.ModuleName),
-	)
-	intergammModule := intergammmodule.NewAppModule(appCodec, app.IntergammKeeper, app.AccountKeeper, app.BankKeeper)
-	intergammIBCModule := intergammmodule.NewIBCModule(app.IntergammKeeper)
-
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
+	// icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// TODO AUDIT Above lines
@@ -523,59 +473,21 @@ func New(
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
 	qoracleIBCModule := qoraclemodule.NewIBCModule(app.QoracleKeeper)
 
-	qbankkeeper := qbankmodulekeeper.NewKeeper(
-		appCodec,
-		keys[qbankmoduletypes.StoreKey],
-		keys[qbankmoduletypes.MemStoreKey],
-		app.GetSubspace(qbankmoduletypes.ModuleName),
-		app.BankKeeper,
-		*app.EpochsKeeper,
-		app.QoracleKeeper,
-	)
-
-	app.QbankKeeper = qbankkeeper
-
-	app.OrionKeeper = *orionmodulekeeper.NewKeeper(
-		appCodec,
-		keys[orionmoduletypes.StoreKey],
-		keys[orionmoduletypes.MemStoreKey],
-		app.GetSubspace(orionmoduletypes.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.QbankKeeper,
-		app.QoracleKeeper,
-		app.IntergammKeeper,
-		*app.EpochsKeeper,
-	)
-
-	orionModule := orionmodule.NewAppModule(appCodec, app.OrionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	/*
-		app.QbankKeeper = *qbankkeeper.SetDepositHooks(
-			qbankmoduletypes.NewMultiDepositHooks(
-				app.OrionKeeper.QBankHooks(),
-			),
-		)
-	*/
-	app.QbankKeeper.SetDepositHooks(
-		qbankmoduletypes.NewMultiDepositHooks(
-			app.OrionKeeper.QBankHooks(),
-		),
-	)
-
-	qbankModule := qbankmodule.NewAppModule(appCodec, app.QbankKeeper, app.AccountKeeper, app.BankKeeper)
-
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			app.QbankKeeper.EpochHooks(),
-			app.OrionKeeper.EpochHooks(),
+			//	app.QbankKeeper.EpochHooks(),
+			//	app.OrionKeeper.EpochHooks(),
 			app.QoracleKeeper.EpochHooks(),
 		),
 	)
 
 	// create the wasm callback plugin
-	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
+	// TODO_IMPORTANT
+
+	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
+	var tmpacc sdk.AccAddress
+	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, tmpacc)
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -583,7 +495,7 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.IntergammKeeper, &app.QoracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	wasmOpts = append(owasm.RegisterCustomPlugins(&app.QoracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
@@ -608,100 +520,23 @@ func New(
 		wasmOpts...,
 	)
 
-	var decoratedTransferIBCModule ibcporttypes.IBCModule
-	decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
-		app.IntergammKeeper,
-		transferIbcModule,
-	)
-	decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
-		&app.wasmKeeper,
-		decoratedTransferIBCModule,
-	)
-
+	/*
+		// TODO_IMPORTANT - add qtransfer module
+		var decoratedTransferIBCModule ibcporttypes.IBCModule
+		decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
+			app.IntergammKeeper,
+			transferIbcModule,
+		)
+		decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
+			&app.wasmKeeper,
+			decoratedTransferIBCModule,
+		)
+	*/
 	// Set Intergamm hooks
 
 	// IBC
 
-	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIbcTransfer(
-		app.OrionKeeper.HandleAckIbcTransfer,
-	)
-	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksAckIcaIbcTransfer(
-		app.OrionKeeper.HandleAckIcaIbcTransfer,
-		callback.Handle,
-	)
-	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIbcTransfer(
-		app.OrionKeeper.HandleTimeoutIbcTransfer,
-	)
-	app.IntergammKeeper.Hooks.IbcTransfer.AddHooksTimeoutIcaIbcTransfer(
-		app.OrionKeeper.HandleTimeoutIcaIbcTransfer,
-	)
-
 	// Osmosis
-
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgCreateBalancerPool(
-		app.OrionKeeper.HandleAckMsgCreateBalancerPool,
-		callback.HandleAckMsgCreateBalancerPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinPool(
-		app.OrionKeeper.HandleAckMsgJoinPool,
-		callback.HandleAckMsgJoinPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitPool(
-		app.OrionKeeper.HandleAckMsgExitPool,
-		callback.HandleAckMsgExitPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapExternAmountIn(
-		app.OrionKeeper.HandleAckMsgJoinSwapExternAmountIn,
-		callback.HandleAckMsgJoinSwapExternAmountIn,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapExternAmountOut(
-		app.OrionKeeper.HandleAckMsgExitSwapExternAmountOut,
-		callback.HandleAckMsgExitSwapExternAmountOut,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgJoinSwapShareAmountOut(
-		app.OrionKeeper.HandleAckMsgJoinSwapShareAmountOut,
-		callback.HandleAckMsgJoinSwapShareAmountOut,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgExitSwapShareAmountIn(
-		app.OrionKeeper.HandleAckMsgExitSwapShareAmountIn,
-		callback.HandleAckMsgExitSwapShareAmountIn,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgLockTokens(
-		app.OrionKeeper.HandleAckMsgLockTokens,
-		callback.HandleAckMsgLockTokens,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksAckMsgBeginUnlocking(
-		app.OrionKeeper.HandleAckMsgBeginUnlocking,
-		callback.HandleAckMsgBeginUnlocking,
-	)
-	// TODO (laurens) add some more handlers for callbacks to contracts
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgCreateBalancerPool(
-		app.OrionKeeper.HandleTimeoutMsgCreateBalancerPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinPool(
-		app.OrionKeeper.HandleTimeoutMsgJoinPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitPool(
-		app.OrionKeeper.HandleTimeoutMsgExitPool,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapExternAmountIn(
-		app.OrionKeeper.HandleTimeoutMsgJoinSwapExternAmountIn,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapExternAmountOut(
-		app.OrionKeeper.HandleTimeoutMsgExitSwapExternAmountOut,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgJoinSwapShareAmountOut(
-		app.OrionKeeper.HandleTimeoutMsgJoinSwapShareAmountOut,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgExitSwapShareAmountIn(
-		app.OrionKeeper.HandleTimeoutMsgExitSwapShareAmountIn,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgLockTokens(
-		app.OrionKeeper.HandleTimeoutMsgLockTokens,
-	)
-	app.IntergammKeeper.Hooks.Osmosis.AddHooksTimeoutMsgBeginUnlocking(
-		app.OrionKeeper.HandleTimeoutMsgBeginUnlocking,
-	)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -709,12 +544,22 @@ func New(
 	ibcRouter := ibcporttypes.NewRouter()
 
 	// Register host and authentication routes
-	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
-		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
+	// TODO_IMPORTANT - addition of qtransfer module
+	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
-		AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
+		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
+		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
 		AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
+
+	/*
+		ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
+			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
+			AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
+			AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
+			AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
+			AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
+	*/
+
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	/****  Module Options ****/
@@ -749,11 +594,8 @@ func New(
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		transferModule,
 		epochsModule,
-		qbankModule,
-		orionModule,
 		qoracleModule,
 		icaModule,
-		intergammModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -772,12 +614,9 @@ func New(
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
 		feegrant.ModuleName,
-		qbankmoduletypes.ModuleName,
-		orionmoduletypes.ModuleName,
 		// TODO check the order of the below
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
-		intergammmoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName,
 		banktypes.ModuleName,
@@ -793,7 +632,6 @@ func New(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
-		orionmoduletypes.ModuleName,
 		// TODO check the order of the below
 		evidencetypes.ModuleName,
 		ibchost.ModuleName,
@@ -806,10 +644,8 @@ func New(
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
-		qbankmoduletypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
-		intergammmoduletypes.ModuleName,
 		icatypes.ModuleName,
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
@@ -837,11 +673,8 @@ func New(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		qbankmoduletypes.ModuleName,
-		orionmoduletypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
 		icatypes.ModuleName,
-		intergammmoduletypes.ModuleName,
 		// TODO check the order of the below
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
@@ -877,8 +710,6 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		epochsModule,
-		qbankModule,
-		orionModule,
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
@@ -936,7 +767,7 @@ func New(
 	app.scopedQoracleKeeper = scopedQoracleKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
-	app.ScopedIntergammKeeper = scopedIntergammKeeper
+	// app.ScopedIntergammKeeper = scopedIntergammKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
@@ -1105,12 +936,12 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
-	paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
-	paramsKeeper.Subspace(orionmoduletypes.ModuleName)
+	// paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
+	// paramsKeeper.Subspace(orionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
+	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 

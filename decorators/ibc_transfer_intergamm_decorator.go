@@ -1,5 +1,6 @@
 package decorators
 
+/*
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -126,3 +127,4 @@ func unmarshalAcknowledgement(acknowledgement []byte) (channeltypes.Acknowledgem
 	}
 	return ack, nil
 }
+*/
