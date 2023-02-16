@@ -96,8 +96,8 @@ pub fn may_pay_with_ratio(
                     balance
                         .amount
                         .amount
-                        .multiply_ratio(pc.weight.numerator(), pc.weight.denominator()),
-                    supply.total, 
+                        .checked_mul(pc.weight.numerator()).unwrap(),
+                    supply.total.checked_mul(pc.weight.denominator()).unwrap()
                 ),
                 denom: balance.amount.denom,
             }
