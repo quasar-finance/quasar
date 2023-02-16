@@ -1,68 +1,44 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "PendingBondsResponse",
+  "title": "TvlInfoResponse",
   "type": "object",
   "required": [
-    "pending_bond_ids",
-    "pending_bonds"
+    "primitives"
   ],
   "properties": {
-    "pending_bond_ids": {
-      "description": "the bond ids that are registered as pending for a user",
+    "primitives": {
       "type": "array",
       "items": {
-        "type": "string"
-      }
-    },
-    "pending_bonds": {
-      "description": "the bonds that are currently in the process of being deposited for a user",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/BondingStub"
+        "$ref": "#/definitions/PrimitiveInfo"
       }
     }
   },
   "additionalProperties": false,
   "definitions": {
-    "BondResponse": {
-      "description": "BondResponse is the response of a the primitive once the funds are succesfully bonded",
+    "PrimitiveInfo": {
       "type": "object",
       "required": [
-        "bond_id",
-        "share_amount"
+        "base_denom",
+        "ica_address",
+        "lp_denom",
+        "lp_shares",
+        "quote_denom"
       ],
       "properties": {
-        "bond_id": {
+        "base_denom": {
           "type": "string"
         },
-        "share_amount": {
-          "description": "the amount of tokens that were bonded",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Uint128"
-            }
-          ]
-        }
-      }
-    },
-    "BondingStub": {
-      "type": "object",
-      "required": [
-        "address"
-      ],
-      "properties": {
-        "address": {
+        "ica_address": {
           "type": "string"
         },
-        "bond_response": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BondResponse"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "lp_denom": {
+          "type": "string"
+        },
+        "lp_shares": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "quote_denom": {
+          "type": "string"
         }
       },
       "additionalProperties": false

@@ -25,12 +25,16 @@
       "properties": {
         "unbond": {
           "type": "object",
-          "required": [
-            "amount"
-          ],
           "properties": {
             "amount": {
-              "$ref": "#/definitions/Uint128"
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "additionalProperties": false

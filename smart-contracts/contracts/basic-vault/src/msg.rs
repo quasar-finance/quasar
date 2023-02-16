@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128, Timestamp, Addr};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, Timestamp, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
@@ -53,7 +53,7 @@ pub enum ExecuteMsg {
     /// Unbond will "burn" the given amount of derivative tokens and send the unbonded
     /// staking tokens to the message sender (after exit tax is deducted)
     Unbond {
-        amount: Uint128,
+        amount: Option<Uint128>,
     },
     /// Claim is used to claim your native tokens that you previously "unbonded"
     /// after the chain-defined waiting period (eg. 3 weeks)
@@ -149,7 +149,7 @@ pub enum QueryMsg {
 
     /// Get all unbonding claims of a user
     #[returns(PendingBondsResponse)]
-    UnbondingClaims { address: Addr },
+    PendingUnbonds { address: Addr },
 
     /// GetDebug shows us debug string info
     #[returns(GetDebugResponse)]
@@ -171,7 +171,7 @@ pub enum QueryMsg {
 pub struct UnbondingClaimResponse {
     pub pending_unbonds: Uint128,
     pub unbonds: HashMap<u64, Uint128>,
-    pub unbonded: Uint128
+    pub unbonded: Uint128,
 }
 
 #[cw_serde]

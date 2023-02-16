@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cosmwasm_std::{Addr, Coin, Deps, StdResult, Timestamp, Env, Uint128};
+use cosmwasm_std::{Addr, Coin, Deps, Env, StdResult, Timestamp, Uint128};
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
 
 use crate::{
@@ -12,9 +12,17 @@ use crate::{
     state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
 };
 
-pub fn query_unbonding_claims(deps: Deps, env: Env, addr: Addr) -> StdResult<UnbondingClaimResponse> {
+pub fn query_unbonding_claims(
+    deps: Deps,
+    env: Env,
+    addr: Addr,
+) -> StdResult<UnbondingClaimResponse> {
     let ids = PENDING_UNBOND_IDS.load(deps.storage, addr)?;
-    let mut resp = UnbondingClaimResponse { pending_unbonds: Uint128::zero(), unbonds: HashMap::new(), unbonded: Uint128::zero() };
+    let mut resp = UnbondingClaimResponse {
+        pending_unbonds: Uint128::zero(),
+        unbonds: HashMap::new(),
+        unbonded: Uint128::zero(),
+    };
     for id in ids {
         let stub = UNBOND_STATE.load(deps.storage, id)?;
         let mut time = Timestamp::from_seconds(0);
@@ -35,7 +43,10 @@ pub fn query_unbonding_claims(deps: Deps, env: Env, addr: Addr) -> StdResult<Unb
         // if the current time is before the stub timestamp, funds are still unbondong
         else if env.block.time < time {
             // TODO make the addition save here
-            resp.unbonds.entry(time.seconds()).and_modify(|old| *old += stub.shares).or_insert(stub.shares);
+            resp.unbonds
+                .entry(time.seconds())
+                .and_modify(|old| *old += stub.shares)
+                .or_insert(stub.shares);
         } else {
             resp.unbonded = resp.unbonded.checked_add(stub.shares)?;
         }

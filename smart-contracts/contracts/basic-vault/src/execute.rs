@@ -12,8 +12,8 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
-    BondingStub, Supply, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR, BOND_STATE, INVESTMENT,
-    PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY, UNBOND_STATE, Unbond,
+    BondingStub, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR, BOND_STATE,
+    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -260,18 +260,25 @@ pub fn unbond(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    amount: Uint128,
+    amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
-    let (start_unbond_msgs, start_unbond_attrs) =
-        do_start_unbond(deps.branch(), &env, &info, amount)?;
+    if let Some(unbond_amount) = amount {
+        let (start_unbond_msgs, start_unbond_attrs) =
+            do_start_unbond(deps.branch(), &env, &info, unbond_amount)?;
 
-    let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?;
+        let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?;
 
-    Ok(Response::new()
-        .add_messages(start_unbond_msgs)
-        .add_messages(unbond_msgs)
-        .add_attributes(start_unbond_attrs)
-        .add_attributes(unbond_attrs))
+        Ok(Response::new()
+            .add_messages(start_unbond_msgs)
+            .add_messages(unbond_msgs)
+            .add_attributes(start_unbond_attrs)
+            .add_attributes(unbond_attrs))
+    } else {
+        let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?;
+        Ok(Response::new()
+            .add_messages(unbond_msgs)
+            .add_attributes(unbond_attrs))
+    }
 }
 
 pub fn do_start_unbond(
@@ -343,7 +350,14 @@ pub fn do_start_unbond(
         }
         None => Ok(vec![bond_seq.to_string()]),
     })?;
-    UNBOND_STATE.save(deps.storage, bond_seq.to_string(), &Unbond{ stub: unbonding_stubs, shares: amount })?;
+    UNBOND_STATE.save(
+        deps.storage,
+        bond_seq.to_string(),
+        &Unbond {
+            stub: unbonding_stubs,
+            shares: amount,
+        },
+    )?;
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
     BONDING_SEQ.save(
         deps.storage,
@@ -436,8 +450,13 @@ pub fn do_unbond(
     let mut unbond_msgs: Vec<WasmMsg> = vec![];
     for unbond_id in pending_unbond_ids.iter() {
         let unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-        let mut current_unbond_msgs =
-            find_and_return_unbondable_msgs(deps.branch(), env, info, unbond_id, unbond_stubs.stub)?;
+        let mut current_unbond_msgs = find_and_return_unbondable_msgs(
+            deps.branch(),
+            env,
+            info,
+            unbond_id,
+            unbond_stubs.stub,
+        )?;
         unbond_msgs.append(current_unbond_msgs.as_mut());
     }
 
