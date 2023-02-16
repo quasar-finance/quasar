@@ -72,6 +72,9 @@ elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8091"+g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1311"+g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's+address = ":8080"+address = ":8081"+g' $HOME_QSR/config/app.toml
+# also replace timeout_commit = "5s" with timeout_commit = "1s" and skip_timeout_commit = false with skip_timeout_commit = true
+  sed -i'.original' -e 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $HOME_QSR/config/config.toml
+  sed -i'.original' -e 's/skip_timeout_commit = false/skip_timeout_commit = true/g' $HOME_QSR/config/config.toml
 else
 	echo "only linux and macos platforms are supported, if you are using other platforms you should probably improve this script."
 

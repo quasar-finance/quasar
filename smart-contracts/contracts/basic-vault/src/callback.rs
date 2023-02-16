@@ -19,6 +19,14 @@ pub fn on_bond(
     share_amount: Uint128,
     bond_id: String,
 ) -> Result<Response, ContractError> {
+    DEBUG_TOOL.save(
+        deps.storage,
+        &format!(
+            "We hit on_unbond with bond_id: {}",
+            bond_id.clone()
+        ),
+    )?;
+
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
     let mut bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
@@ -61,7 +69,7 @@ pub fn on_bond(
     // lets updated all pending deposit info
     PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
         Some(mut bond_ids) => {
-            let bond_index = bond_ids.iter().position(|id| id == &bond_id).unwrap();
+            let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).unwrap();
             bond_ids.remove(bond_index);
             Ok::<Vec<String>, ContractError>(bond_ids)
         }
@@ -198,7 +206,8 @@ pub fn on_unbond(
     let invest = INVESTMENT.load(deps.storage)?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
-    let mut unbonding_stub = unbond_stubs.stub
+    let mut unbonding_stub = unbond_stubs
+        .stub
         .iter_mut()
         .find(|s| s.address == info.sender)
         .unwrap();
@@ -212,13 +221,18 @@ pub fn on_unbond(
     UNBOND_STATE.save(deps.storage, unbond_id.clone(), &unbond_stubs)?;
 
     // if still waiting on successful unbonds, then return
-    if unbond_stubs.stub.iter().any(|s| s.unbond_response.is_none()) {
+    if unbond_stubs
+        .stub
+        .iter()
+        .any(|s| s.unbond_response.is_none())
+    {
         return Ok(Response::new());
     }
 
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
     // Construct message to return these funds to the user
-    let return_msgs: Vec<BankMsg> = unbond_stubs.stub
+    let return_msgs: Vec<BankMsg> = unbond_stubs
+        .stub
         .iter()
         .map(|s| BankMsg::Send {
             to_address: user_address.to_string(),
