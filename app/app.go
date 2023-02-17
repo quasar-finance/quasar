@@ -112,6 +112,9 @@ import (
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasarlabs/quasarnode/x/qtransfer"
+	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
+	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
 
 	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
 	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -194,6 +197,7 @@ var (
 		ica.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
+		qtransfer.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -272,12 +276,18 @@ type App struct {
 	scopedQoracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	EpochsKeeper  *epochsmodulekeeper.Keeper
-	QoracleKeeper qoraclemodulekeeper.Keeper
+	QTransferKeeper qtransferkeeper.Keeper
+	EpochsKeeper    *epochsmodulekeeper.Keeper
+	QoracleKeeper   qoraclemodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
+	// transfer module
+	RawIcs20TransferAppModule transfer.AppModule
+	TransferStack             *qtransfer.IBCMiddleware
+	Ics20WasmHooks            *qtransfer.WasmHooks
+	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// mm is the module manager
 	mm *module.Manager
@@ -328,6 +338,7 @@ func New(
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
+		qtransfertypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -423,9 +434,14 @@ func New(
 		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
+	// transferModule := transfer.NewAppModule(app.TransferKeeper)
 	// TODO_IMPORTANT
 	// transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	app.RawIcs20TransferAppModule = transfer.NewAppModule(app.TransferKeeper)
+	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
+	// Hooks Middleware
+	hooksTransferModule := qtransfer.NewIBCMiddleware(&transferIbcModule, &app.HooksICS4Wrapper)
+	app.TransferStack = &hooksTransferModule
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
@@ -473,6 +489,14 @@ func New(
 	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
 	qoracleIBCModule := qoraclemodule.NewIBCModule(app.QoracleKeeper)
 
+	app.QTransferKeeper = qtransferkeeper.NewKeeper(
+		appCodec,
+		keys[qtransfertypes.ModuleName],
+		app.GetSubspace(qtransfertypes.ModuleName),
+		app.AccountKeeper,
+	)
+	qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
+
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
@@ -483,12 +507,13 @@ func New(
 	)
 
 	// create the wasm callback plugin
-	// TODO_IMPORTANT
+	// TODO_IMPORTANT - CALL BACK ACCOUNT
 
 	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
-	var tmpacc sdk.AccAddress
-	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, tmpacc)
+	// var tmpacc sdk.AccAddress
+	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, tmpacc)
 
+	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.QTransferKeeper.GetQTransferAcc())
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -543,11 +568,18 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.wasmKeeper)
+	app.Ics20WasmHooks = &wasmHooks
+	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
+		app.IBCKeeper.ChannelKeeper,
+		app.Ics20WasmHooks,
+	)
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
 	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
 	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
 		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
 		AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
@@ -593,9 +625,10 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		transferModule,
+		app.RawIcs20TransferAppModule,
 		epochsModule,
 		qoracleModule,
+		qtranserModule,
 		icaModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
@@ -623,6 +656,7 @@ func New(
 		banktypes.ModuleName,
 		govtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
+		qtransfertypes.ModuleName,
 		crisistypes.ModuleName,
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
@@ -633,6 +667,7 @@ func New(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		qoraclemoduletypes.ModuleName,
+		qtransfertypes.ModuleName,
 		// TODO check the order of the below
 		evidencetypes.ModuleName,
 		ibchost.ModuleName,
@@ -685,6 +720,7 @@ func New(
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 		// wasm after ibc transfer
 		wasm.ModuleName,
+		qtransfertypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -709,7 +745,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		app.RawIcs20TransferAppModule,
 		epochsModule,
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
@@ -944,6 +980,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
+	paramsKeeper.Subspace(qtransfertypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

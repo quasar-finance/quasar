@@ -1,0 +1,15 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qtransfer;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qtransfer/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  bool wasm_hooks_enabled = 1 [
+    (gogoproto.moretags) = "yaml:\"wasm_hooks_enabled\""
+  ];
+}
