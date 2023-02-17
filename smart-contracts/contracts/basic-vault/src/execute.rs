@@ -225,8 +225,46 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     let mut deposit_stubs = vec![];
 
-    let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives)?;
+    // let (primitive_funding_amounts, remainder) =
+    //     may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives)?;
+
+    // let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
+    //     .primitives
+    //     .iter()
+    //     .zip(primitive_funding_amounts.clone())
+    //     .map(|(pc, funds)| match pc.init.clone() {
+    //         crate::msg::PrimitiveInitMsg::LP(_lp_init_msg) => {
+    //             let deposit_stub = BondingStub {
+    //                 address: pc.address.clone(),
+    //                 bond_response: Option::None,
+    //             };
+    //             deposit_stubs.push(deposit_stub);
+
+    //             // todo: do we need it to reply
+    //             Ok(WasmMsg::Execute {
+    //                 contract_addr: pc.address.clone(),
+    //                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+    //                     id: bond_seq.to_string(),
+    //                 })?,
+    //                 funds: vec![funds],
+    //             })
+    //         }
+    //     })
+    //     .collect();
+
+    let mut remainder = vec![];
+    let primitive_funding_amounts = info.funds.iter().fold(vec![], |mut acc, c| {
+        let primitive_for_this_coin = invest.primitives.iter().find(|p| match &p.init {
+            crate::msg::PrimitiveInitMsg::LP(init_msg) => init_msg.local_denom == c.denom,
+        });
+        if (primitive_for_this_coin.is_none()) {
+            acc.push(c);
+        } else {
+            remainder.push(c);
+        }
+
+        acc
+    });
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
@@ -246,7 +284,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                     msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
                         id: bond_seq.to_string(),
                     })?,
-                    funds: vec![funds],
+                    funds: vec![funds.clone()],
                 })
             }
         })
