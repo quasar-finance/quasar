@@ -252,17 +252,17 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     //     })
     //     .collect();
 
-    let mut remainder = vec![];
-    let primitive_funding_amounts = info.funds.iter().fold(vec![], |mut acc, c| {
-        let primitive_for_this_coin = invest.primitives.iter().find(|p| match &p.init {
-            crate::msg::PrimitiveInitMsg::LP(init_msg) => init_msg.local_denom == c.denom,
-        });
-        if (!c.amount.is_zero()) {
-            if (primitive_for_this_coin.is_some()) {
-                acc.push(c);
-            } else {
-                remainder.push(c);
+    // let mut remainder = vec![];
+
+    let primitive_funding_amounts = invest.primitives.iter().fold(vec![], |mut acc, pc| {
+        let coin_for_this_primitive = match &pc.init {
+            crate::msg::PrimitiveInitMsg::LP(init_msg) => {
+                info.funds.iter().find(|c| c.denom == init_msg.local_denom)
             }
+        };
+
+        if (coin_for_this_primitive.is_some()) {
+            acc.push(coin_for_this_primitive.unwrap());
         }
 
         acc
@@ -307,19 +307,19 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
     )?;
 
-    let mut remainder_msgs = vec![];
+    // let mut remainder_msgs = vec![];
 
-    remainder.iter().for_each(|r| {
-        if (r.amount > Uint128::zero()) {
-            remainder_msgs.push(BankMsg::Send {
-                to_address: info.sender.clone().to_string(),
-                amount: vec![Coin {
-                    denom: r.denom.clone(),
-                    amount: r.amount,
-                }],
-            });
-        }
-    });
+    // remainder.iter().for_each(|r| {
+    //     if (r.amount > Uint128::zero()) {
+    //         remainder_msgs.push(BankMsg::Send {
+    //             to_address: info.sender.clone().to_string(),
+    //             amount: vec![Coin {
+    //                 denom: r.denom.clone(),
+    //                 amount: r.amount,
+    //             }],
+    //         });
+    //     }
+    // });
 
     let shares_to_mint = primitive_funding_amounts
         .iter()
@@ -335,22 +335,31 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             acc
         });
 
-    // if (true) {
-    //     return Err(ContractError::Std(StdError::GenericErr {
-    //         msg: format!("we failed here ser 1 {:?} {:?} {:?}", shares_to_mint, bond_msgs, primitive_funding_amounts),
-    //     }));
-    // }
+    if (true) {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: format!(
+                "we failed here ser 1 {:?} {:?}",
+                shares_to_mint, primitive_funding_amounts
+            ),
+        }));
+    }
 
     let sub_info = MessageInfo {
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint.to_uint_ceil())?;
+    execute_mint(
+        deps,
+        env,
+        sub_info,
+        info.sender.to_string(),
+        shares_to_mint.to_uint_ceil(),
+    )?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
-        .add_messages(bond_msgs?)
-        .add_messages(remainder_msgs))
+        .add_messages(bond_msgs?))
+        // .add_messages(remainder_msgs))
 }
 
 pub fn unbond(
