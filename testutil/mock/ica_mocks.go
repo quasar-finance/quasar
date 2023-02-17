@@ -7,7 +7,7 @@ package mock
 import (
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/capability/types"
-	types1 "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	types1 "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

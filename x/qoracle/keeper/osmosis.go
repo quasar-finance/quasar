@@ -8,14 +8,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	// icqtypes "github.com/cosmos/ibc-go/v4/modules/apps/icq/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
 	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
+	icqtypes "github.com/strangelove-ventures/async-icq/v4/types"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 

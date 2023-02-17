@@ -1,10 +1,7 @@
 package types
 
 import (
-	"fmt"
-
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 )
 
 const (
@@ -18,9 +15,11 @@ const (
 func NewErrorAcknowledgement(err error) channeltypes.Acknowledgement {
 	// the ABCI code is included in the abcitypes.ResponseDeliverTx hash
 	// constructed in Tendermint and is therefore deterministic
-	_, code, _ := sdkerrors.ABCIInfo(err, false) // discard non-determinstic codespace and log values
+	// _, code, _ := sdkerrors.ABCIInfo(err, false) // discard non-determinstic codespace and log values
 
-	errorString := fmt.Sprintf("ABCI code: %d: %s", code, ackErrorString)
+	//errorString := fmt.Sprintf("ABCI code: %d: %s", code, ackErrorString)
 
-	return channeltypes.NewErrorAcknowledgement(errorString)
+	// return channeltypes.NewErrorAcknowledgement(errorString)
+	return channeltypes.NewErrorAcknowledgement(err)
+
 }

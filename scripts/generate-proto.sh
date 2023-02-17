@@ -14,7 +14,7 @@ locate_cosmos_sdk_dir() {
 
 # Get the path of the ibc-go repo from go/pkg/mod
 locate_ibc_go_dir() {
-  go list -f "{{ .Dir }}" -m github.com/cosmos/ibc-go/v3
+  go list -f "{{ .Dir }}" -m github.com/cosmos/ibc-go/v4
 }
 
 # Collect all proto dirs
