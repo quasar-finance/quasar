@@ -258,7 +258,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             crate::msg::PrimitiveInitMsg::LP(init_msg) => init_msg.local_denom == c.denom,
         });
         if (!c.amount.is_zero()) {
-            if (primitive_for_this_coin.is_none()) {
+            if (primitive_for_this_coin.is_some()) {
                 acc.push(c);
             } else {
                 remainder.push(c);
@@ -330,14 +330,22 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                 funds.amount.checked_mul(pc.weight.numerator()).unwrap(),
                 pc.weight.denominator(),
             ))
-            .unwrap()
+            .unwrap();
+
+            acc
         });
+
+    // if (true) {
+    //     return Err(ContractError::Std(StdError::GenericErr {
+    //         msg: format!("we failed here ser 1 {:?} {:?} {:?}", shares_to_mint, bond_msgs, primitive_funding_amounts),
+    //     }));
+    // }
 
     let sub_info = MessageInfo {
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint.to_uint_floor())?;
+    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint.to_uint_ceil())?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
