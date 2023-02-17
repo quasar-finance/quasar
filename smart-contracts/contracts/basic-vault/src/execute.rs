@@ -335,14 +335,14 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             acc
         });
 
-    if (true) {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: format!(
-                "we failed here ser 1 {:?} {:?}",
-                shares_to_mint, primitive_funding_amounts
-            ),
-        }));
-    }
+    // if (true) {
+    //     return Err(ContractError::Std(StdError::GenericErr {
+    //         msg: format!(
+    //             "we failed here ser 1 {:?} {:?}",
+    //             shares_to_mint, primitive_funding_amounts
+    //         ),
+    //     }));
+    // }
 
     let sub_info = MessageInfo {
         sender: env.contract.address.clone(),
