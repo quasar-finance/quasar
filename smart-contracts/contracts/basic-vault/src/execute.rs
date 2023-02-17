@@ -255,41 +255,36 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     // let mut remainder = vec![];
 
     let primitive_funding_amounts = invest.primitives.iter().fold(vec![], |mut acc, pc| {
-        let coin_for_this_primitive = match &pc.init {
+        let coin_prim = match &pc.init {
             crate::msg::PrimitiveInitMsg::LP(init_msg) => {
-                info.funds.iter().find(|c| c.denom == init_msg.local_denom)
+                // unwrap here should be an error about not finding denoms
+                let coin = info.funds.iter().find(|c| c.denom == init_msg.local_denom).unwrap();
+                (coin, pc.address.clone())
             }
         };
 
-        if (coin_for_this_primitive.is_some()) {
-            acc.push(coin_for_this_primitive.unwrap());
-        }
-
+        acc.push(coin_prim);
+        
         acc
     });
 
-    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
-        .primitives
-        .iter()
-        .zip(primitive_funding_amounts.clone())
-        .map(|(pc, funds)| match pc.init.clone() {
-            crate::msg::PrimitiveInitMsg::LP(_lp_init_msg) => {
-                let deposit_stub = BondingStub {
-                    address: pc.address.clone(),
-                    bond_response: Option::None,
-                };
-                deposit_stubs.push(deposit_stub);
+    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = 
+        primitive_funding_amounts.iter()
+        .map(|(coin, prim_addr)| {
+            let deposit_stub = BondingStub {
+                address: prim_addr.clone(),
+                bond_response: Option::None,
+            };
+            deposit_stubs.push(deposit_stub);
 
-                // todo: do we need it to reply
-                Ok(WasmMsg::Execute {
-                    contract_addr: pc.address.clone(),
-                    msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
-                        id: bond_seq.to_string(),
-                    })?,
-                    funds: vec![funds.clone()],
-                })
-            }
-        })
+            // todo: do we need it to reply
+            Ok(WasmMsg::Execute {
+                contract_addr: prim_addr.clone(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                    id: bond_seq.to_string(),
+                })?,
+                funds: vec![coin.clone().clone()],
+            })})
         .collect();
 
     // save bonding state for use during the callback
@@ -321,17 +316,9 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     //     }
     // });
 
-    let shares_to_mint = primitive_funding_amounts
-        .iter()
-        .zip(invest.primitives)
-        .fold(Uint128::zero(), |acc, (funds, pc)| {
-            // sum all funds with proper ratio
-            acc.checked_add(
-                funds
-                    .amount,
-            )
-            .unwrap()
-        });
+    let shares_to_mint = primitive_funding_amounts.iter().fold(Uint128::zero(), |acc, (coin, prim)| {
+        acc.checked_add(coin.amount).unwrap()
+    });
 
     // if (true) {
     //     return Err(ContractError::Std(StdError::GenericErr {
