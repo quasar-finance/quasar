@@ -257,10 +257,12 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         let primitive_for_this_coin = invest.primitives.iter().find(|p| match &p.init {
             crate::msg::PrimitiveInitMsg::LP(init_msg) => init_msg.local_denom == c.denom,
         });
-        if (primitive_for_this_coin.is_none()) {
-            acc.push(c);
-        } else {
-            remainder.push(c);
+        if (!c.amount.is_zero()) {
+            if (primitive_for_this_coin.is_none()) {
+                acc.push(c);
+            } else {
+                remainder.push(c);
+            }
         }
 
         acc
@@ -322,13 +324,12 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     let shares_to_mint = primitive_funding_amounts
         .iter()
         .zip(invest.primitives)
-        .fold(Uint128::zero(), |acc, (funds, pc)| {
+        .fold(Decimal::zero(), |acc, (funds, pc)| {
             // sum all funds with proper ratio
-            acc.checked_add(
-                funds
-                    .amount
-                    .multiply_ratio(pc.weight.numerator(), pc.weight.denominator()),
-            )
+            acc.checked_add(Decimal::from_ratio(
+                funds.amount.checked_mul(pc.weight.numerator()).unwrap(),
+                pc.weight.denominator(),
+            ))
             .unwrap()
         });
 
@@ -336,7 +337,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint)?;
+    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint.to_uint_floor())?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
