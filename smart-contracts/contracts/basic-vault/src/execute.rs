@@ -215,7 +215,7 @@ pub fn may_pay_with_ratio(
 
 // todo test
 pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    if (info.funds.len() == 0 || info.funds.iter().all(|c| c.amount.is_zero())) {
+    if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
         return Err(ContractError::NoFunds {});
     }
 
@@ -324,15 +324,13 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     let shares_to_mint = primitive_funding_amounts
         .iter()
         .zip(invest.primitives)
-        .fold(Decimal::zero(), |acc, (funds, pc)| {
+        .fold(Uint128::zero(), |acc, (funds, pc)| {
             // sum all funds with proper ratio
-            acc.checked_add(Decimal::from_ratio(
-                funds.amount.checked_mul(pc.weight.numerator()).unwrap(),
-                pc.weight.denominator(),
-            ))
-            .unwrap();
-
-            acc
+            acc.checked_add(
+                funds
+                    .amount,
+            )
+            .unwrap()
         });
 
     // if (true) {
@@ -348,13 +346,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    execute_mint(
-        deps,
-        env,
-        sub_info,
-        info.sender.to_string(),
-        shares_to_mint.to_uint_ceil(),
-    )?;
+    execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint)?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
