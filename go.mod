@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	cosmossdk.io/math v1.0.0-beta.6
 	github.com/CosmWasm/wasmvm v1.1.1
 	github.com/bandprotocol/bandchain-packet v0.0.3
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
@@ -258,7 +259,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/crypto v0.2.0 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
+	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
@@ -267,7 +268,6 @@ require (
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	honnef.co/go/tools v0.3.3 // indirect
 	mvdan.cc/gofumpt v0.4.0 // indirect
@@ -278,6 +278,9 @@ require (
 )
 
 replace (
+	// Replace with quasar finance fork for ibc packet seq
+    github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.30.1-0.20230218143410-3039b038b17b
+	// github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd wasm-v30-packet_seq_ret
 	// To fix the security issue https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 	// used latest commit of branch v3.3.0-icq
@@ -288,3 +291,4 @@ replace (
 	// To fix https://github.com/cosmos/cosmos-sdk/issues/8426
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
+

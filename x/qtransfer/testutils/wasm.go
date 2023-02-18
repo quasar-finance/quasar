@@ -8,7 +8,6 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -27,13 +26,13 @@ func (chain *TestChain) StoreContractCode(suite *suite.Suite, path string) {
 	})
 
 	// when stored
-	contentMsg, err := govtypesv1.NewLegacyContent(src, addr.String())
-	suite.Require().NoError(err)
-	_, err = govKeeper.SubmitProposal(chain.GetContext(), []sdk.Msg{contentMsg}, "")
+	storedProposal, err := govKeeper.SubmitProposal(chain.GetContext(), src)
+
 	suite.Require().NoError(err)
 
 	// and proposal execute
-	handler := govKeeper.LegacyRouter().GetRoute(src.ProposalRoute())
+	handler := govKeeper.Router().GetRoute(storedProposal.ProposalRoute())
+
 	err = handler(chain.GetContext(), src)
 	suite.Require().NoError(err)
 }
