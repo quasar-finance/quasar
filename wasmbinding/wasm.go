@@ -8,19 +8,15 @@ import (
 )
 
 func RegisterCustomPlugins(
-	// intergammKeeper *intergammkeeper.Keeper,
-	qoracleKeeper *qoraclekeeper.Keeper,
+//	intergammKeeper *intergammkeeper.Keeper,
+	qoracleKeeper qoraclekeeper.Keeper,
 	bank *bankkeeper.BaseKeeper,
 	callback *CallbackPlugin,
 ) []wasmkeeper.Option {
-	// wasmQueryPlugin := NewQueryPlugin(intergammKeeper, qoracleKeeper)
-	wasmQueryPlugin := NewQueryPlugin(qoracleKeeper)
-
 	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
-		Custom: CustomQuerier(wasmQueryPlugin),
+		Custom: CustomQuerier(qoracleKeeper),
 	})
 	messengerDecoratorOpt := wasmkeeper.WithMessageHandlerDecorator(
-		//		CustomMessageDecorator(intergammKeeper, bank, callback),
 		CustomMessageDecorator(bank, callback),
 	)
 

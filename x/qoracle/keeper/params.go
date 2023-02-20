@@ -8,48 +8,17 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.BandchainParams(ctx),
-		k.OsmosisParams(ctx),
-		k.GetDenomPriceMappings(ctx),
-		k.OneHopDenomMap(ctx),
+		k.GetPriceListExpDuration(ctx),
 	)
 }
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramstore.SetParamSet(ctx, &params)
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
-// BandchainIBCParams returns the BandchainIBCParams param
-func (k Keeper) BandchainParams(ctx sdk.Context) (res types.BandchainParams) {
-	k.paramstore.Get(ctx, types.KeyBandchainParams, &res)
-	return
-}
-
-func (k Keeper) SetBandchainParams(ctx sdk.Context, params types.BandchainParams) {
-	k.paramstore.Set(ctx, types.KeyBandchainParams, &params)
-}
-
-func (k Keeper) OsmosisParams(ctx sdk.Context) (res types.OsmosisParams) {
-	k.paramstore.Get(ctx, types.KeyOsmosisParams, &res)
-	return
-}
-
-func (k Keeper) SetOsmosisParams(ctx sdk.Context, params types.OsmosisParams) {
-	k.paramstore.Set(ctx, types.KeyOsmosisParams, &params)
-}
-
-func (k Keeper) GetDenomPriceMappings(ctx sdk.Context) (res []types.DenomPriceMapping) {
-	k.paramstore.Get(ctx, types.KeyDenomPriceMappings, &res)
-	return
-}
-
-func (k Keeper) SetDenomPriceMappings(ctx sdk.Context, mappings []types.DenomPriceMapping) {
-	k.paramstore.Set(ctx, types.KeyDenomPriceMappings, &mappings)
-}
-
-// OneHopDenomMap returns the OneHopIbcDenomMapping param
-func (k Keeper) OneHopDenomMap(ctx sdk.Context) (res []*types.OneHopIbcDenomMapping) {
-	k.paramstore.Get(ctx, types.KeyOneHopDenomMap, &res)
+// GetPacketTimeoutTimestamp retrieves the price list expiration duration from the param space
+func (k Keeper) GetPriceListExpDuration(ctx sdk.Context) (res uint64) {
+	k.paramSpace.Get(ctx, types.KeyDenomPricesExpDuration, &res)
 	return
 }
