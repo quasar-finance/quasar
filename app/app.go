@@ -286,7 +286,7 @@ type App struct {
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
-	wasmKeeper       wasm.Keeper
+	WasmKeeper       wasm.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -320,6 +320,10 @@ type App struct {
 	sm *module.SimulationManager
 
 	configurator module.Configurator
+}
+
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+	return app.StakingKeeper
 }
 
 // New returns a reference to an initialized blockchain app
@@ -463,7 +467,7 @@ func New(
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	// The gov proposal types can be individually enabled
 	if len(wasmEnabledProposals) != 0 {
-		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.wasmKeeper, wasmEnabledProposals))
+		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.WasmKeeper, wasmEnabledProposals))
 	}
 
 	// IBC Modules & Keepers
@@ -574,11 +578,11 @@ func New(
 	// create the wasm callback plugin
 	// TODO_IMPORTANT - CALL BACK ACCOUNT
 
-	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
+	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.OrionKeeper.GetOrionAcc())
 	// var tmpacc sdk.AccAddress
-	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, tmpacc)
+	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, tmpacc)
 
-	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.QTransferKeeper.GetQTransferAcc())
+	callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.QTransferKeeper.GetQTransferAcc())
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -590,7 +594,7 @@ func New(
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "iterator,staking,stargate"
-	app.wasmKeeper = wasm.NewKeeper(
+	app.WasmKeeper = wasm.NewKeeper(
 		appCodec,
 		keys[wasm.StoreKey],
 		app.GetSubspace(wasm.ModuleName),
@@ -618,7 +622,7 @@ func New(
 			transferIbcModule,
 		)
 		decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
-			&app.wasmKeeper,
+			&app.WasmKeeper,
 			decoratedTransferIBCModule,
 		)
 	*/
@@ -633,7 +637,7 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 
-	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.wasmKeeper)
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.WasmKeeper)
 	app.Ics20WasmHooks = &wasmHooks
 	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
 		app.IBCKeeper.ChannelKeeper,
@@ -641,8 +645,8 @@ func New(
 	)
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
-	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
-	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
+	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
+	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
 		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
@@ -653,7 +657,7 @@ func New(
 
 	/*
 		ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
-			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
+			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper)).
 			AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 			AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 			AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
@@ -691,7 +695,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
 		qoracleModule,
@@ -810,7 +814,7 @@ func New(
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
@@ -852,7 +856,7 @@ func New(
 	// see cmd/wasmd/root.go: 206 - 214 approx
 	if manager := app.SnapshotManager(); manager != nil {
 		err := manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.wasmKeeper),
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))

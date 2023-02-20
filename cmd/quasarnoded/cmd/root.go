@@ -31,7 +31,6 @@ import (
 	appparams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	tmcfg "github.com/tendermint/tendermint/config"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -85,10 +84,10 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 
 // initTendermintConfig helps to override default Tendermint Config values.
 // return tmcfg.DefaultConfig if no custom configuration is required for the application.
-func initTendermintConfig() *tmcfg.Config {
-	cfg := tmcfg.DefaultConfig()
-	return cfg
-}
+//func initTendermintConfig() *tmcfg.Config {
+//	cfg := tmcfg.DefaultConfig()
+//	return cfg
+//}
 
 func initRootCmd(
 	rootCmd *cobra.Command,
@@ -229,12 +228,6 @@ func (a appCreator) newApp(
 		panic(err)
 	}
 
-	/*
-		snapshotOptions := snapshottypes.NewSnapshotOptions(
-			cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
-			cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
-		)
-	*/
 	var wasmOpts []wasm.Option
 	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
 		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
@@ -263,9 +256,6 @@ func (a appCreator) newApp(
 		baseapp.SetSnapshotStore(snapshotStore),
 		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
 		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
-		// baseapp.SetSnapshot(snapshotStore, snapshotOptions),
-		// baseapp.SetSnapshot(snapshotStore, snapshottypes.NewSnapshotOptions(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)), cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)))),
-
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagDisableIAVLFastNode))),
 	)

@@ -1,14 +1,9 @@
 package wasmbinding
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -109,9 +104,8 @@ func (c *CallbackPlugin) HandleAckMsgBeginUnlocking(
 ) error {
 	return c.doHandle(ctx, ex.Sequence, ex.Channel, ex.PortId, ex.Response, "begin_unlocking")
 }
-*/
 
-// the easiest way for the smart contract to handle the response is to
+// doHandle the easiest way for the smart contract to handle the response is to
 func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, portId string, response proto.Message, caller string) error {
 	addr, exists := c.sentMessages[key{seq, channel, portId}]
 	if !exists {
@@ -152,6 +146,7 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 
 	return nil
 }
+*/
 
 type ContractAck struct {
 	AckTriggered struct {

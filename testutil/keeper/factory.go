@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/quasarlabs/quasarnode/app"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
+	"github.com/quasarlabs/quasarnode/app/params"
 	tmdb "github.com/tendermint/tm-db"
 )
 
@@ -14,7 +14,7 @@ type KeeperFactory struct {
 	DB             *tmdb.MemDB
 	StateStore     store.CommitMultiStore
 	Ctx            sdk.Context
-	EncodingConfig cosmoscmd.EncodingConfig
+	EncodingConfig params.EncodingConfig
 }
 
 // Create an KeeperFactory with in memory database and default codecs
@@ -22,7 +22,7 @@ func NewKeeperFactory(
 	db *tmdb.MemDB,
 	stateStore store.CommitMultiStore,
 	ctx sdk.Context,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig params.EncodingConfig,
 ) KeeperFactory {
 	return KeeperFactory{
 		DB:             db,
@@ -35,9 +35,7 @@ func NewKeeperFactory(
 // TestModuleAccountPerms returns module account permissions for testing
 func (kf KeeperFactory) TestModuleAccountPerms() map[string][]string {
 	moduleAccPerms := app.GetMaccPerms()
-	// IMPORTANT_TODO A Module Account
 	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
-
 	return moduleAccPerms
 }
 
