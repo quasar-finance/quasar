@@ -298,7 +298,6 @@ type App struct {
 	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	QoracleKeeper    qoraclemodulekeeper.Keeper
 	QTransferKeeper  qtransferkeeper.Keeper
 	EpochsKeeper     *epochsmodulekeeper.Keeper
 	QBandchainKeeper qbandkeeper.Keeper
@@ -515,7 +514,7 @@ func New(
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
 
-	app.QoracleKeeper = qoraclemodulekeeper.NewKeeper(
+	app.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
 		appCodec,
 		keys[qoraclemoduletypes.StoreKey],
 		memKeys[qoraclemoduletypes.MemStoreKey],
@@ -586,7 +585,7 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.QoracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	wasmOpts = append(owasm.RegisterCustomPlugins(app.QOracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
@@ -1060,7 +1059,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	// paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	// paramsKeeper.Subspace(orionmoduletypes.ModuleName)
-	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
+	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName).WithKeyTable(qoraclemoduletypes.ParamKeyTable())
 	paramsKeeper.Subspace(qbandtypes.SubModuleName)
 	paramsKeeper.Subspace(qosmotypes.SubModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
