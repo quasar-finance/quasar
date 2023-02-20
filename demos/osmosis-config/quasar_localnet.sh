@@ -89,4 +89,4 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.qoracle.bandchain_genesis_state.params.coin_rates_params.script_params.fee_limit[0].amount="200"' >$HOME_QSR/config/genesis.json
 
 # Start
-#$BINARY start --home $HOME_QSR
+$BINARY start --home $HOME_QSR
