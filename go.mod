@@ -10,10 +10,9 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.50.1
-	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/pelletier/go-toml/v2 v2.0.5
+	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/regen-network/cosmos-proto v0.3.1 // indirect
 	github.com/spf13/cast v1.5.0
@@ -205,7 +204,7 @@ require (
 	github.com/phayes/checkstyle v0.0.0-20170904204023-bfd46e6a821d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.0.5 // indirect
-	github.com/prometheus/client_golang v1.14.0 // indirect
+	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
@@ -279,7 +278,7 @@ require (
 
 replace (
 	// Replace with quasar finance fork for ibc packet seq
-    github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.30.1-0.20230218143410-3039b038b17b
+	github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd v0.30.1-0.20230218143410-3039b038b17b
 	// github.com/CosmWasm/wasmd => github.com/quasar-finance/wasmd wasm-v30-packet_seq_ret
 	// To fix the security issue https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
@@ -291,4 +290,3 @@ replace (
 	// To fix https://github.com/cosmos/cosmos-sdk/issues/8426
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
-

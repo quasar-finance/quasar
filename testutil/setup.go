@@ -7,29 +7,44 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/quasarlabs/quasarnode/app"
-	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
+	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
+	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
+	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 )
 
 func init() {
-	cosmoscmd.SetPrefixes(appParams.AccountAddressPrefix)
+	// Set prefixes
+	accountPubKeyPrefix := app.AccountAddressPrefix + "pub"
+	validatorAddressPrefix := app.AccountAddressPrefix + "valoper"
+	validatorPubKeyPrefix := app.AccountAddressPrefix + "valoperpub"
+	consNodeAddressPrefix := app.AccountAddressPrefix + "valcons"
+	consNodePubKeyPrefix := app.AccountAddressPrefix + "valconspub"
+
+	// Set and seal config
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount(app.AccountAddressPrefix, accountPubKeyPrefix)
+	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
+	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
+	config.Seal()
 }
 
 func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
@@ -44,7 +59,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	stateStore := store.NewCommitMultiStore(db)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, logger)
-	encodingConfig := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
+	encodingConfig := app.MakeEncodingConfig()
 
 	// Mocks
 
@@ -59,12 +74,10 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 	ibcChannelKeeperMock := mock.NewMockChannelKeeper(ctl)
 	icaControllerKeeperMock := mock.NewMockICAControllerKeeper(ctl)
-	//ibcTransferKeeperMock := mock.NewMockIBCTransferKeeper(ctl)
 	ics4WrapperMock := mock.NewMockICS4Wrapper(ctl)
 	ibcPortKeeperMock := mock.NewMockPortKeeper(ctl)
 	// Set BindPort method for mock and return a mock capability
 	ibcPortKeeperMock.EXPECT().BindPort(gomock.Any(), gomock.Any()).AnyTimes().Return(capabilitytypes.NewCapability(1))
-	//ibcConnectionKeeperMock := mock.NewMockConnectionKeeper(ctl)
 	// ibcClientKeeperMock := mock.NewMockClientKeeper(ctl)
 
 	// Keepers
@@ -81,8 +94,15 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qoracleScopedKeeper := capabilityKeeper.ScopeToModule(qoracletypes.ModuleName)
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qoracleScopedKeeper)
+	qbandScopedKeeper := capabilityKeeper.ScopeToModule(qbandtypes.SubModuleName)
+	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
+
+	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	qbandKeeper := factory.QbandchainKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qbandScopedKeeper, qoracleKeeper)
+	qosmosisKeeper := factory.QosmosisKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qosmoScopedKeeper, qoracleKeeper)
+	qoracleKeeper.RegisterPriceOracle(qbandKeeper)
+	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
+	qoracleKeeper.Seal()
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
@@ -92,6 +112,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	require.NoError(t, factory.StateStore.LoadLatestVersion())
 
 	factory.SetQoracleDefaultParams(qoracleKeeper)
+	factory.SetQbandchainDefaultParams(qbandKeeper)
+	factory.SetQosmosisDefaultParams(qosmosisKeeper)
 
 	return &TestSetup{
 		Ctx: ctx,
@@ -108,6 +130,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			BankKeeper:       bankKeeper,
 			CapabilityKeeper: capabilityKeeper,
 			QoracleKeeper:    qoracleKeeper,
+			QbandchainKeeper: qbandKeeper,
+			QosmosisKeeper:   qosmosisKeeper,
 			QTransfer:        qtransferkeeper,
 		},
 	}
@@ -132,5 +156,7 @@ type testKeepers struct {
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper capabilitykeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
+	QbandchainKeeper qbandkeeper.Keeper
+	QosmosisKeeper   qosmokeeper.Keeper
 	QTransfer        qtransferkeeper.Keeper
 }

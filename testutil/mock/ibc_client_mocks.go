@@ -5,37 +5,38 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	types "github.com/cosmos/cosmos-sdk/store/types"
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockClientKeeper is a mock of ClientKeeper interface
+// MockClientKeeper is a mock of ClientKeeper interface.
 type MockClientKeeper struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientKeeperMockRecorder
 }
 
-// MockClientKeeperMockRecorder is the mock recorder for MockClientKeeper
+// MockClientKeeperMockRecorder is the mock recorder for MockClientKeeper.
 type MockClientKeeperMockRecorder struct {
 	mock *MockClientKeeper
 }
 
-// NewMockClientKeeper creates a new mock instance
+// NewMockClientKeeper creates a new mock instance.
 func NewMockClientKeeper(ctrl *gomock.Controller) *MockClientKeeper {
 	mock := &MockClientKeeper{ctrl: ctrl}
 	mock.recorder = &MockClientKeeperMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 	return m.recorder
 }
 
-// ClientStore mocks base method
+// ClientStore mocks base method.
 func (m *MockClientKeeper) ClientStore(arg0 types0.Context, arg1 string) types.KVStore {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ClientStore", arg0, arg1)
@@ -43,13 +44,13 @@ func (m *MockClientKeeper) ClientStore(arg0 types0.Context, arg1 string) types.K
 	return ret0
 }
 
-// ClientStore indicates an expected call of ClientStore
+// ClientStore indicates an expected call of ClientStore.
 func (mr *MockClientKeeperMockRecorder) ClientStore(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientStore", reflect.TypeOf((*MockClientKeeper)(nil).ClientStore), arg0, arg1)
 }
 
-// GetClientConsensusState mocks base method
+// GetClientConsensusState mocks base method.
 func (m *MockClientKeeper) GetClientConsensusState(arg0 types0.Context, arg1 string, arg2 exported.Height) (exported.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientConsensusState", arg0, arg1, arg2)
@@ -58,13 +59,13 @@ func (m *MockClientKeeper) GetClientConsensusState(arg0 types0.Context, arg1 str
 	return ret0, ret1
 }
 
-// GetClientConsensusState indicates an expected call of GetClientConsensusState
+// GetClientConsensusState indicates an expected call of GetClientConsensusState.
 func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetClientConsensusState), arg0, arg1, arg2)
 }
 
-// GetClientState mocks base method
+// GetClientState mocks base method.
 func (m *MockClientKeeper) GetClientState(arg0 types0.Context, arg1 string) (exported.ClientState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientState", arg0, arg1)
@@ -73,7 +74,7 @@ func (m *MockClientKeeper) GetClientState(arg0 types0.Context, arg1 string) (exp
 	return ret0, ret1
 }
 
-// GetClientState indicates an expected call of GetClientState
+// GetClientState indicates an expected call of GetClientState.
 func (mr *MockClientKeeperMockRecorder) GetClientState(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientState", reflect.TypeOf((*MockClientKeeper)(nil).GetClientState), arg0, arg1)

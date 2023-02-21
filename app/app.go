@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	appParams "github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasarlabs/quasarnode/app/upgrades"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -90,10 +93,7 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
-	appParams "github.com/quasarlabs/quasarnode/app/params"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
 	"github.com/spf13/cast"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 	"github.com/tendermint/starport/starport/pkg/openapiconsole"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -117,12 +117,38 @@ import (
 	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
 
 	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
+	qband "github.com/quasarlabs/quasarnode/x/qoracle/bandchain"
+	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
+	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	qosmo "github.com/quasarlabs/quasarnode/x/qoracle/osmosis"
+	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
+	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
-// this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
+const (
+	AccountAddressPrefix = "quasar"
+	Name                 = "quasarnode"
+)
+
+var (
+	// WasmProposalsEnabled enables all x/wasm proposals when it's value is "true"
+	// and EnableSpecificWasmProposals is empty. Otherwise, all x/wasm proposals
+	// are disabled.
+	WasmProposalsEnabled = "true"
+
+	// EnableSpecificWasmProposals, if set, must be comma-separated list of values
+	// that are all a subset of "EnableAllProposals", which takes precedence over
+	// WasmProposalsEnabled.
+	//
+	// See: https://github.com/CosmWasm/wasmd/blob/02a54d33ff2c064f3539ae12d75d027d9c665f05/x/wasm/internal/types/proposal.go#L28-L34
+	EnableSpecificWasmProposals = ""
+
+	// EmptyWasmOpts defines a type alias for a list of wasm options.
+	EmptyWasmOpts []wasm.Option
+)
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
 	var govProposalHandlers []govclient.ProposalHandler
@@ -142,16 +168,20 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 	return govProposalHandlers
 }
 
-// GetEnabledProposals parses the ProposalsEnabled / EnableSpecificProposals values to
-// produce a list of enabled proposals to pass into quasar app.
-func GetEnabledProposals() []wasm.ProposalType {
-	if EnableSpecificProposals == "" {
-		if ProposalsEnabled == "true" {
+// GetWasmEnabledProposals parses the WasmProposalsEnabled and
+// EnableSpecificWasmProposals values to produce a list of enabled proposals to
+// pass into the application.
+func GetWasmEnabledProposals() []wasm.ProposalType {
+	if EnableSpecificWasmProposals == "" {
+		if WasmProposalsEnabled == "true" {
 			return wasm.EnableAllProposals
 		}
+
 		return wasm.DisableAllProposals
 	}
-	chunks := strings.Split(EnableSpecificProposals, ",")
+
+	chunks := strings.Split(EnableSpecificWasmProposals, ",")
+
 	proposals, err := wasm.ConvertToProposals(chunks)
 	if err != nil {
 		panic(err)
@@ -162,14 +192,6 @@ func GetEnabledProposals() []wasm.ProposalType {
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
-
-	// If EnabledSpecificProposals is "", and this is "true", then enable all x/wasm proposals.
-	// If EnabledSpecificProposals is "", and this is not "true", then disable all x/wasm proposals.
-	ProposalsEnabled = "false"
-	// If set to non-empty string it must be comma-separated list of values that are all a subset
-	// of "EnableAllProposals" (takes precedence over ProposalsEnabled)
-	// https://github.com/CosmWasm/wasmd/blob/02a54d33ff2c064f3539ae12d75d027d9c665f05/x/wasm/internal/types/proposal.go#L28-L34
-	EnableSpecificProposals = ""
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
@@ -218,7 +240,6 @@ var (
 )
 
 var (
-	_ cosmoscmd.App           = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ simapp.App              = (*App)(nil)
 )
@@ -229,7 +250,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, "."+appParams.Name)
+	DefaultNodeHome = filepath.Join(userHomeDir, "."+Name)
 }
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -265,7 +286,7 @@ type App struct {
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
-	wasmKeeper       wasm.Keeper
+	WasmKeeper       wasm.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -273,12 +294,15 @@ type App struct {
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
-	scopedQoracleKeeper       capabilitykeeper.ScopedKeeper
+	scopedQBandchainKeeper    capabilitykeeper.ScopedKeeper
+	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	QTransferKeeper qtransferkeeper.Keeper
-	EpochsKeeper    *epochsmodulekeeper.Keeper
-	QoracleKeeper   qoraclemodulekeeper.Keeper
+	QTransferKeeper  qtransferkeeper.Keeper
+	EpochsKeeper     *epochsmodulekeeper.Keeper
+	QBandchainKeeper qbandkeeper.Keeper
+	QOsmosisKeeper   qosmokeeper.Keeper
+	QOracleKeeper    qoraclemodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
@@ -298,13 +322,9 @@ type App struct {
 	configurator module.Configurator
 }
 
-// TODO wasmOpts and enabledProposals should be part of New() parameters according to cosmwasm, for now we don't
-//
-//	allow customization of wasmOpts and enabledProposals and just hardcode it to nil
-var (
-	wasmOpts         []wasm.Option       = nil
-	enabledProposals []wasm.ProposalType = wasm.EnableAllProposals
-)
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+	return app.StakingKeeper
+}
 
 // New returns a reference to an initialized blockchain app
 func New(
@@ -315,15 +335,23 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig appParams.EncodingConfig,
 	appOpts servertypes.AppOptions,
+	wasmEnabledProposals []wasm.ProposalType,
+	wasmOpts []wasm.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) cosmoscmd.App {
+) *App {
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
-	bApp := baseapp.NewBaseApp(appParams.Name, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(
+		Name,
+		logger,
+		db,
+		encodingConfig.TxConfig.TxDecoder(),
+		baseAppOptions...,
+	)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -335,14 +363,22 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		epochsmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
+		qbandtypes.StoreKey,
+		qosmotypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
-	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+	tkeys := sdk.NewTransientStoreKeys(
+		paramstypes.TStoreKey,
+		qoraclemoduletypes.TStoreKey,
+	)
+	memKeys := sdk.NewMemoryStoreKeys(
+		capabilitytypes.MemStoreKey,
+		qoraclemoduletypes.MemStoreKey,
+	)
 
 	app := &App{
 		BaseApp:           bApp,
@@ -368,7 +404,8 @@ func New(
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedQoracleKeeper := app.CapabilityKeeper.ScopeToModule(qoraclemoduletypes.ModuleName)
+	scopedQBandchainKeeper := app.CapabilityKeeper.ScopeToModule(qbandtypes.SubModuleName)
+	scopedQOsmosisKeeper := app.CapabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasm.ModuleName)
 
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
@@ -378,7 +415,7 @@ func New(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
 	)
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.ModuleAccountAddrs(),
+		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedModuleAccountAddrs(),
 	)
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
@@ -388,8 +425,14 @@ func New(
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
-		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
-		&stakingKeeper, authtypes.FeeCollectorName, app.ModuleAccountAddrs(),
+		appCodec,
+		keys[distrtypes.StoreKey],
+		app.GetSubspace(distrtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		&stakingKeeper,
+		authtypes.FeeCollectorName,
+		app.ModuleAccountAddrs(),
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec, keys[slashingtypes.StoreKey], &stakingKeeper, app.GetSubspace(slashingtypes.ModuleName),
@@ -423,8 +466,8 @@ func New(
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	// The gov proposal types can be individually enabled
-	if len(enabledProposals) != 0 {
-		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
+	if len(wasmEnabledProposals) != 0 {
+		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.WasmKeeper, wasmEnabledProposals))
 	}
 
 	// IBC Modules & Keepers
@@ -475,19 +518,46 @@ func New(
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
 	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
 
-	app.QoracleKeeper = *qoraclemodulekeeper.NewKeeper(
+	app.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
 		appCodec,
 		keys[qoraclemoduletypes.StoreKey],
-		keys[qoraclemoduletypes.MemStoreKey],
+		memKeys[qoraclemoduletypes.MemStoreKey],
+		tkeys[qoraclemoduletypes.TStoreKey],
 		app.GetSubspace(qoraclemoduletypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	app.QBandchainKeeper = qbandkeeper.NewKeeper(
+		appCodec,
+		keys[qbandtypes.StoreKey],
+		app.GetSubspace(qbandtypes.SubModuleName),
 		app.IBCKeeper.ClientKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
-		scopedQoracleKeeper,
+		scopedQBandchainKeeper,
+		app.QOracleKeeper,
 	)
-	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QoracleKeeper, app.AccountKeeper, app.BankKeeper)
-	qoracleIBCModule := qoraclemodule.NewIBCModule(app.QoracleKeeper)
+	qbandIBCModule := qband.NewIBCModule(app.QBandchainKeeper)
+
+	app.QOsmosisKeeper = qosmokeeper.NewKeeper(
+		appCodec,
+		keys[qosmotypes.StoreKey],
+		app.GetSubspace(qosmotypes.SubModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.IBCKeeper.ClientKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedQOsmosisKeeper,
+		app.QOracleKeeper,
+	)
+	qosmoIBCModule := qosmo.NewIBCModule(app.QOsmosisKeeper)
+
+	app.QOracleKeeper.RegisterPriceOracle(app.QBandchainKeeper)
+	app.QOracleKeeper.RegisterPoolOracle(app.QOsmosisKeeper)
+	app.QOracleKeeper.Seal()
+	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QBandchainKeeper, app.QOsmosisKeeper)
 
 	app.QTransferKeeper = qtransferkeeper.NewKeeper(
 		appCodec,
@@ -500,32 +570,31 @@ func New(
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			//	app.QbankKeeper.EpochHooks(),
-			//	app.OrionKeeper.EpochHooks(),
-			app.QoracleKeeper.EpochHooks(),
+			app.QBandchainKeeper.EpochHooks(),
+			app.QOsmosisKeeper.EpochHooks(),
 		),
 	)
 
 	// create the wasm callback plugin
 	// TODO_IMPORTANT - CALL BACK ACCOUNT
 
-	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.OrionKeeper.GetOrionAcc())
+	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.OrionKeeper.GetOrionAcc())
 	// var tmpacc sdk.AccAddress
-	// callback := owasm.NewCallbackPlugin(&app.wasmKeeper, tmpacc)
+	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, tmpacc)
 
-	callback := owasm.NewCallbackPlugin(&app.wasmKeeper, app.QTransferKeeper.GetQTransferAcc())
+	callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.QTransferKeeper.GetQTransferAcc())
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(&app.QoracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	wasmOpts = append(owasm.RegisterCustomPlugins(app.QOracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "iterator,staking,stargate"
-	app.wasmKeeper = wasm.NewKeeper(
+	app.WasmKeeper = wasm.NewKeeper(
 		appCodec,
 		keys[wasm.StoreKey],
 		app.GetSubspace(wasm.ModuleName),
@@ -553,7 +622,7 @@ func New(
 			transferIbcModule,
 		)
 		decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
-			&app.wasmKeeper,
+			&app.WasmKeeper,
 			decoratedTransferIBCModule,
 		)
 	*/
@@ -568,7 +637,7 @@ func New(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 
-	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.wasmKeeper)
+	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.WasmKeeper)
 	app.Ics20WasmHooks = &wasmHooks
 	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
 		app.IBCKeeper.ChannelKeeper,
@@ -576,17 +645,19 @@ func New(
 	)
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
-	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
-	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
+	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
+	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
 		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
-		AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
+		AddRoute(qbandtypes.SubModuleName, qbandIBCModule).
+		AddRoute(qosmotypes.SubModuleName, qosmoIBCModule)
+	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
 	/*
 		ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
-			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper)).
+			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper)).
 			AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 			AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 			AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
@@ -624,7 +695,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
 		qoracleModule,
@@ -743,7 +814,7 @@ func New(
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
-		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
@@ -785,7 +856,7 @@ func New(
 	// see cmd/wasmd/root.go: 206 - 214 approx
 	if manager := app.SnapshotManager(); manager != nil {
 		err := manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.wasmKeeper),
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
@@ -801,7 +872,8 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedWasmKeeper = scopedWasmKeeper
-	app.scopedQoracleKeeper = scopedQoracleKeeper
+	app.scopedQBandchainKeeper = scopedQBandchainKeeper
+	app.scopedQOracleKeeper = scopedQOsmosisKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 	// app.ScopedIntergammKeeper = scopedIntergammKeeper
@@ -862,6 +934,17 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
+
+	return modAccAddrs
+}
+
+// BlockedModuleAccountAddrs returns all the app's blocked module account
+// addresses.
+func (app *App) BlockedModuleAccountAddrs() map[string]bool {
+	modAccAddrs := app.ModuleAccountAddrs()
+	// TODO: Investigate why gov module in removed from blocked list
+	// https://github.com/cosmos/gaia/blob/main/app/app.go#L280
+	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
 }
@@ -946,7 +1029,12 @@ func (app *App) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
-	tmservice.RegisterTendermintService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
+	tmservice.RegisterTendermintService(
+		app.BaseApp.GRPCQueryRouter(),
+		clientCtx,
+		app.interfaceRegistry,
+		//app.Query,
+	)
 }
 
 // GetMaccPerms returns a copy of the module account permissions
@@ -975,7 +1063,9 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	// paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	// paramsKeeper.Subspace(orionmoduletypes.ModuleName)
-	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
+	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName).WithKeyTable(qoraclemoduletypes.ParamKeyTable())
+	paramsKeeper.Subspace(qbandtypes.SubModuleName)
+	paramsKeeper.Subspace(qosmotypes.SubModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
@@ -989,4 +1079,22 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// Required for ibctesting
+/*
+func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
+	return app.StakingKeeper // Dereferencing the pointer
+}
+*/
+func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
+	return app.IBCKeeper // This is a *ibckeeper.Keeper
+}
+
+func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
+	return app.ScopedIBCKeeper
+}
+
+func (app *App) GetTxConfig() client.TxConfig {
+	return MakeEncodingConfig().TxConfig
 }

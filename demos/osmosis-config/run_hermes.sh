@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BANDCHAIN="band-laozi-testnet5"
+BANDCHAIN="band-laozi-testnet6"
 
 rm -r ~/.hermes
 mkdir ~/.hermes

@@ -8,17 +8,15 @@ import (
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgUpdateOsmosisChainParams{}, "qoracle/UpdateOsmosisChainParams", nil)
-	// this line is used by starport scaffolding # 2
+	cdc.RegisterConcrete(&MsgAddDenomSymbolMappings{}, "qoracle/MsgAddDenomSymbolMappings", nil)
+	cdc.RegisterConcrete(&MsgRemoveDenomSymbolMappings{}, "qoracle/MsgRemoveDenomSymbolMappings", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations((*CoinRatesCallDataI)(nil), &CoinRatesCallData{})
-	registry.RegisterImplementations((*CoinRatesResultI)(nil), &CoinRatesResult{})
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgUpdateOsmosisChainParams{},
+		&MsgAddDenomSymbolMappings{},
+		&MsgRemoveDenomSymbolMappings{},
 	)
-	// this line is used by starport scaffolding # 3
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
