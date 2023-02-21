@@ -1,12 +1,12 @@
 [package]
-authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>", "N <n@quasar.fi>"]
-description = "Implement simple staking derivatives as a cw20 token"
-documentation = "https://docs.cosmwasm.com"
+authors = ["N <n@quasar.fi>", "Laurens Kubat <laurens@quasar.fi>"]
+description = "a basic vault implementation to "
+documentation = "https://docs.quasar.fi/"
 edition = "2018"
-homepage = "https://cosmwasm.com"
+homepage = "https://quasar.fi"
 license = "Apache-2.0"
 name = "basic-vault"
-repository = "https://github.com/CosmWasm/cw-tokens"
+repository = "https://github.com/quasar-finance/quasar"
 version = "0.14.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
