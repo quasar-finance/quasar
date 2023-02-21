@@ -5,11 +5,85 @@
     {
       "type": "object",
       "required": [
-        "deposit"
+        "bond"
       ],
       "properties": {
-        "deposit": {
-          "type": "object"
+        "bond": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "start_unbond"
+      ],
+      "properties": {
+        "start_unbond": {
+          "type": "object",
+          "required": [
+            "id",
+            "share_amount"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "share_amount": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unbond"
+      ],
+      "properties": {
+        "unbond": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "accept_returning_funds"
+      ],
+      "properties": {
+        "accept_returning_funds": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -48,7 +122,6 @@
           "type": "object",
           "required": [
             "amount",
-            "channel",
             "denom",
             "pool_id",
             "share_out_min_amount"
@@ -56,9 +129,6 @@
           "properties": {
             "amount": {
               "$ref": "#/definitions/Uint128"
-            },
-            "channel": {
-              "type": "string"
             },
             "denom": {
               "type": "string"
@@ -69,6 +139,26 @@
               "minimum": 0.0
             },
             "share_out_min_amount": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "return_transfer"
+      ],
+      "properties": {
+        "return_transfer": {
+          "type": "object",
+          "required": [
+            "amount"
+          ],
+          "properties": {
+            "amount": {
               "$ref": "#/definitions/Uint128"
             }
           }
