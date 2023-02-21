@@ -1,6 +1,6 @@
 {
     "weights": "4stake,4fakestake",
-    "initial-deposit": "100000stake,100000uosmo",
+    "initial-deposit": "100000stake,100000fakestake",
     "swap-fee": "0.01",
     "exit-fee": "0.01",
     "future-governor": "168h"
