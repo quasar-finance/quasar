@@ -1,5 +1,5 @@
+use crate::traits::Curve;
 use cosmwasm_std::{Decimal as StdDecimal, Uint128};
-use quasar_traits::traits::Curve;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use schemars::JsonSchema;

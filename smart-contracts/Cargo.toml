@@ -1,16 +1,11 @@
 [workspace]
 
 members = [
-    "contracts/cw-4626",
-    "contracts/strategy",
     "contracts/icq",
-    "contracts/ica",
-    "contracts/ibc-transfer",
-    "packages/intergamm-bindings",
+    "contracts/lp-strategy",
+    "contracts/basic-vault",
     "contracts/intergamm-bindings-test",
     "contracts/qoracle-bindings-test",
-    "contracts/ica",
-    "packages/quasar-traits",
-    "packages/quasar-types",
     "packages/intergamm-bindings",
+    "packages/quasar-types",
 ]
