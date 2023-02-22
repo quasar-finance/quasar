@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 # Configure variables
 BINARY=osmosisd
@@ -10,8 +10,8 @@ USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar 
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
 RELAYER_ACC="$(cat ./keys/osmo.key)"
 
-ALICE_GENESIS_COINS=20000000uosmo,2000000000stake
-BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake
+ALICE_GENESIS_COINS=20000000uosmo,2000000000stake,1000000000000fakestake
+BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake,1000000000000fakestake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
 USER_2_GENESIS_COINS=10000000000stake,10000000000uosmo
 RELAYER_ACC_GENESIS_COINS=10000000uosmo,10000000000stake
@@ -81,7 +81,6 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.crisis.constant_fee.denom="uosmo"' |
   jq '.app_state.staking.params.bond_denom="uosmo"' |
   jq '.app_state.mint = {
-      halven_started_epoch: "0",
       minter: {
         epoch_provisions: "0.000000000000000000"
       },
@@ -144,6 +143,39 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uosmo",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
+  jq '.app_state.interchainaccounts = {
+    host_genesis_state: {
+      port: "icahost",
+      params: {
+        host_enabled: true, 
+        allow_messages: [
+          "/ibc.applications.transfer.v1.MsgTransfer",
+          "/cosmos.bank.v1beta1.MsgSend",
+          "/cosmos.staking.v1beta1.MsgDelegate",
+          "/cosmos.staking.v1beta1.MsgBeginRedelegate",
+          "/cosmos.staking.v1beta1.MsgCreateValidator",
+          "/cosmos.staking.v1beta1.MsgEditValidator",
+          "/cosmos.staking.v1beta1.MsgUndelegate",
+          "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward",
+          "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress",
+          "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission",
+          "/cosmos.distribution.v1beta1.MsgFundCommunityPool",
+          "/cosmos.gov.v1beta1.MsgVote",
+          "/osmosis.gamm.v1beta1.MsgJoinPool",
+          "/osmosis.gamm.v1beta1.MsgExitPool",
+          "/osmosis.gamm.v1beta1.MsgSwapExactAmountIn",
+          "/osmosis.gamm.v1beta1.MsgSwapExactAmountOut",
+          "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+          "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+          "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+          "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+          "/osmosis.lockup.MsgBeginUnlocking",
+          "/osmosis.lockup.MsgLockTokens", 
+          "/osmosis.superfluid.MsgSuperfluidUnbondLock"
+       ]
+      }
+    }
+  }' |
   jq '.app_state.interchainquery = {
     host_port: "icqhost",
     params: {
@@ -153,6 +185,8 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
         "/cosmos.bank.v1beta1.Query/Balance",
         "/osmosis.epochs.v1beta1.Query/EpochInfos",
         "/osmosis.gamm.v1beta1.Query/Pool",
+        "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares",
+        "/osmosis.gamm.v2.Query/SpotPrice",
         "/osmosis.poolincentives.v1beta1.Query/LockableDurations",
         "/osmosis.mint.v1beta1.Query/Params",
         "/osmosis.mint.v1beta1.Query/EpochProvisions",

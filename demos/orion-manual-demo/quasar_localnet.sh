@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 ## This script helps to create a basic version of the quasar chain genesis file for development purposes.
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
@@ -52,6 +52,7 @@ if [ $platform = 'linux' ]; then
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uqsr"/g' $HOME_QSR/config/app.toml
+  sed -i 's/query_gas_limit = 300000/query_gas_limit = 800000/g' $HOME_QSR/config/app.toml
 	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
 	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
 	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
@@ -88,7 +89,6 @@ cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
   jq '.app_state.gov.voting_params.voting_period="60s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
-  jq ".app_state.qoracle.params.oracleAccounts=\"$($BINARY keys show alice --keyring-backend test -a)\"" |
   jq '.app_state.orion = {
       "lpPosition": null,
       "lpStat": null,
