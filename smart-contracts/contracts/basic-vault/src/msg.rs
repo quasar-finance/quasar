@@ -168,6 +168,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
+pub struct MigrateMsg {}
+
+#[cw_serde]
 pub struct UnbondingClaimResponse {
     pub pending_unbonds: Uint128,
     pub unbonds: HashMap<u64, Uint128>,
