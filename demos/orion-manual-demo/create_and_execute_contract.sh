@@ -24,8 +24,9 @@ cd ../../smart-contracts
 docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
-CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+
+CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value') 
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
@@ -68,7 +69,7 @@ echo $VAULT_INIT
 echo "Running store code (vault)"
 RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
-VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
+VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
 echo "Got CODE_ID = $VAULT_CODE_ID"
 
