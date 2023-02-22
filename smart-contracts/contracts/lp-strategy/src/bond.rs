@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_ica_address, get_total_shares, get_raw_total_shares},
+    helpers::{get_ica_address, get_raw_total_shares, get_total_shares},
     ibc_util::do_transfer,
     icq::try_icq,
     state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
@@ -146,7 +146,10 @@ fn calculate_claim(
         Ok(user_balance)
     } else {
         println!("hit me 2");
-        println!("ub: {:?}, ts: {:?}, tb: {:?}", user_balance, total_shares, total_balance);
+        println!(
+            "ub: {:?}, ts: {:?}, tb: {:?}",
+            user_balance, total_shares, total_balance
+        );
         Ok(user_balance
             .checked_mul(total_shares)?
             .checked_div(total_balance)?)

@@ -96,31 +96,30 @@ pub fn on_bond(
         .fold(Decimal::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
 
     // calculate shares to mint
-    let shares_to_mint =
-        bond_stubs_new
-            .iter()
-            .zip(invest.primitives.iter())
-            .fold(Uint128::zero(), |acc, (s, pc)| {
-                acc.checked_add(
-                    // omfg pls dont look at this code, i will make it cleaner
-                    s.bond_response
-                        .as_ref()
-                        .unwrap()
-                        .share_amount
-                        .checked_multiply_ratio(
-                            pc.weight.numerator(),
-                            total_weight
-                                .numerator()
-                                .checked_multiply_ratio(
-                                    pc.weight.denominator(),
-                                    total_weight.denominator(),
-                                )
-                                .unwrap(),
-                        )
-                        .unwrap(),
-                )
-                .unwrap()
-            });
+    let shares_to_mint = bond_stubs_new.iter().zip(invest.primitives.iter()).fold(
+        Uint128::zero(),
+        |acc, (s, pc)| {
+            acc.checked_add(
+                // omfg pls dont look at this code, i will make it cleaner
+                s.bond_response
+                    .as_ref()
+                    .unwrap()
+                    .share_amount
+                    .checked_multiply_ratio(
+                        pc.weight.numerator(),
+                        total_weight
+                            .numerator()
+                            .checked_multiply_ratio(
+                                pc.weight.denominator(),
+                                total_weight.denominator(),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
+        },
+    );
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
