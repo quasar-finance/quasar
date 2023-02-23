@@ -44,6 +44,7 @@ else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
   build_tags += gcc
 endif
 build_tags += $(BUILD_TAGS)
+build_tags_debug += $(BUILD_TAGS)
 build_tags := $(strip $(build_tags))
 
 whitespace :=
@@ -64,16 +65,25 @@ ifeq (cleveldb,$(findstring cleveldb,$(QUASAR_BUILD_OPTIONS)))
 else ifeq (rocksdb,$(findstring rocksdb,$(QUASAR_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
 endif
+
+ldflags-debug := $(ldflags)
+
 ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
   ldflags += -w -s
 endif
+
 ifeq ($(LINK_STATICALLY),true)
 	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static"
+	ldflags-debug += -linkmode=external -extldflags "-Wl,-z,muldefs -static"
 endif
+
 ldflags += $(LDFLAGS)
+ldflags-debug += $(LDFLAGS)
+
 ldflags := $(strip $(ldflags))
 
 BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+BUILD_FLAGS_DEBUG := -tags "$(build_tags_debug)" -ldflags '$(ldflags-debug)'
 # check for nostrip option
 ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
@@ -86,11 +96,14 @@ endif
 all: install lint test
 
 BUILD_TARGETS := build install
-
+#BUILD_TARGETS_DEBUG := build install
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
 	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
+
+$(BUILD_TARGETS_DEBUG): go.sum $(BUILDDIR)/
+	go $@ -mod=readonly $(BUILD_FLAGS_DEBUG) -gcflags='all=-N -l' $(BUILD_ARGS) ./cmd/quasarnoded
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
