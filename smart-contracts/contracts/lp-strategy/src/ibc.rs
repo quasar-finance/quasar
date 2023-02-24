@@ -300,7 +300,9 @@ pub fn handle_transfer_ack(
         pending.bonds,
     )?;
 
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {Ok(old.checked_add(total_amount)?)})?;
+    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
+        Ok(old.checked_add(total_amount)?)
+    })?;
 
     Ok(IbcBasicResponse::new().add_submessage(msg).add_attribute(
         "transfer-ack",
@@ -511,7 +513,9 @@ fn handle_exit_pool_ack(
         Ok(old.checked_sub(total_lp)?)
     })?;
 
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {Ok(old.checked_sub(total_tokens)?)})?;
+    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
+        Ok(old.checked_sub(total_tokens)?)
+    })?;
 
     let sub_msg = transfer_batch_unbond(storage, env, data, total_tokens)?;
     Ok(IbcBasicResponse::new()

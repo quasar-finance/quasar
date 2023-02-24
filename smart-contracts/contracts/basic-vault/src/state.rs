@@ -13,7 +13,7 @@ pub const FALLBACK_RATIO: Decimal = Decimal::one();
 pub const STRATEGY_BOND_ID: u64 = 80085;
 
 // version info for migration info
-pub const CONTRACT_NAME: &str = "crates.io:cw20-staking";
+pub const CONTRACT_NAME: &str = "basic-vault";
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const CLAIMS: Claims = Claims::new("claims");

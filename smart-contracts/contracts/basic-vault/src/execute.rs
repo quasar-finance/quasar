@@ -258,18 +258,22 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         let coin_prim = match &pc.init {
             crate::msg::PrimitiveInitMsg::LP(init_msg) => {
                 // unwrap here should be an error about not finding denoms
-                let coin = info.funds.iter().find(|c| c.denom == init_msg.local_denom).unwrap();
+                let coin = info
+                    .funds
+                    .iter()
+                    .find(|c| c.denom == init_msg.local_denom)
+                    .unwrap();
                 (coin, pc.address.clone())
             }
         };
 
         acc.push(coin_prim);
-        
+
         acc
     });
 
-    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = 
-        primitive_funding_amounts.iter()
+    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = primitive_funding_amounts
+        .iter()
         .map(|(coin, prim_addr)| {
             let deposit_stub = BondingStub {
                 address: prim_addr.clone(),
@@ -284,7 +288,8 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                     id: bond_seq.to_string(),
                 })?,
                 funds: vec![coin.clone().clone()],
-            })})
+            })
+        })
         .collect();
 
     // save bonding state for use during the callback
@@ -316,9 +321,11 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     //     }
     // });
 
-    let shares_to_mint = primitive_funding_amounts.iter().fold(Uint128::zero(), |acc, (coin, prim)| {
-        acc.checked_add(coin.amount).unwrap()
-    });
+    let shares_to_mint = primitive_funding_amounts
+        .iter()
+        .fold(Uint128::zero(), |acc, (coin, prim)| {
+            acc.checked_add(coin.amount).unwrap()
+        });
 
     // if (true) {
     //     return Err(ContractError::Std(StdError::GenericErr {
@@ -333,12 +340,23 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         sender: env.contract.address.clone(),
         funds: vec![],
     };
+
+    // update total supply eagerly
+    TOTAL_SUPPLY.update(
+        deps.storage,
+        |mut supply| -> Result<Supply, ContractError> {
+            supply.issued += shares_to_mint;
+            Ok(supply)
+        },
+    )?;
+
+    // mint eagerly
     execute_mint(deps, env, sub_info, info.sender.to_string(), shares_to_mint)?;
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
         .add_messages(bond_msgs?))
-        // .add_messages(remainder_msgs))
+    // .add_messages(remainder_msgs))
 }
 
 pub fn unbond(
