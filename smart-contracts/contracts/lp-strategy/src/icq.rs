@@ -17,6 +17,7 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
         return Ok(None);
     }
 
+    // TODO fetching ICQ channel and confirming vs handshake version can be a single function
     let icq_channel = ICQ_CHANNEL.load(storage)?;
     check_icq_channel(storage, icq_channel.clone())?;
 
@@ -130,4 +131,100 @@ pub fn calc_total_balance(
             })?)
             .checked_mul(spot_price)?,
         )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
+        Deps, Empty, OwnedDeps,
+    };
+
+    use crate::{
+        ibc_lock::Lock,
+        state::{Config, CHANNELS, IBC_LOCK},
+        test_helpers::default_setup,
+    };
+
+    use super::*;
+
+    #[test]
+    fn try_icq_unlocked_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        LP_SHARES
+            .save(deps.as_mut().storage, &Uint128::new(100))
+            .unwrap();
+
+        // lock the ibc lock
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        let res = try_icq(deps.as_mut().storage, env.clone()).unwrap();
+
+        let pkt = IbcMsg::SendPacket {
+            channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            data: to_binary(
+                &prepare_total_balance_query(
+                    deps.as_ref().storage,
+                    ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+                )
+                .unwrap(),
+            )
+            .unwrap(),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        };
+
+        assert_eq!(
+            res,
+            Some(create_ibc_ack_submsg(deps.as_mut().storage, &IbcMsgKind::Icq, pkt).unwrap())
+        )
+    }
+
+    #[test]
+    fn try_icq_locked_bond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        // lock the ibc lock
+        IBC_LOCK
+            .save(deps.as_mut().storage, &Lock::new().lock_bond())
+            .unwrap();
+
+        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        assert_eq!(res, None)
+    }
+
+    #[test]
+    fn try_icq_locked_start_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        // lock the ibc lock
+        IBC_LOCK
+            .save(deps.as_mut().storage, &&Lock::new().lock_start_unbond())
+            .unwrap();
+
+        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        assert_eq!(res, None)
+    }
+
+    #[test]
+    fn try_icq_locked_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        // lock the ibc lock
+        IBC_LOCK
+            .save(deps.as_mut().storage, &Lock::new().lock_unbond())
+            .unwrap();
+
+        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        assert_eq!(res, None)
+    }
 }

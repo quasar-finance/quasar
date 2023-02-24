@@ -82,7 +82,13 @@ pub fn fold_bonds(
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "bond".to_string(),
                 })?;
-        let claim_amount = create_claim(storage, item.amount, &item.owner, &item.bond_id, total_balance)?;
+        let claim_amount = create_claim(
+            storage,
+            item.amount,
+            &item.owner,
+            &item.bond_id,
+            total_balance,
+        )?;
         total = total.checked_add(item.amount)?;
         println!("{:?}", claim_amount);
         deposits.push(OngoingDeposit {
@@ -139,7 +145,16 @@ pub fn create_share(
 /// user_shares = (user_balance / vault_balance) * vault_total_shares = (user_balance * vault_total_shares) / vault_balance
 /// if the total_shares are zero, independant of the total_balance, the user shoudl get user_balance amount of shares
 /// if the total_balance is zero, what do we do?, for now the same as if total_shares is zero
-fn calculate_claim(
+/// ```rust
+/// #  use cosmwasm_std::Uint128;
+/// # use lp_strategy::bond::calculate_claim;
+///
+/// # fn calculate_claim_works() {
+/// let val = calculate_claim(Uint128::new(10), Uint128::new(100), Uint128::new(10)).unwrap();
+/// assert_eq!(val, Uint128::one())
+/// # }
+/// ```
+pub fn calculate_claim(
     user_balance: Uint128,
     total_balance: Uint128,
     total_shares: Uint128,
@@ -155,7 +170,12 @@ fn calculate_claim(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env},
+    };
+
+    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
 
     use super::*;
 
@@ -166,17 +186,86 @@ mod tests {
     }
 
     #[test]
+    fn do_bond_locked_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+
+        let info = MessageInfo {
+            sender: owner,
+            funds: vec![coin(1000, config.local_denom)],
+        };
+
+        IBC_LOCK
+            .save(deps.as_mut().storage, &Lock::new().lock_bond())
+            .unwrap();
+        let id = "my-id";
+
+        let res = do_bond(deps.as_mut(), env, info, id.to_string()).unwrap();
+        assert_eq!(res, None)
+    }
+
+    #[test]
+    fn do_bond_unlocked_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let owner = Addr::unchecked("bob");
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap()
+    }
+
+    #[test]
+    fn batch_bond_works() {}
+
+    #[test]
+    fn create_claim_works() {
+        let mut deps = mock_dependencies();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let user_balance = Uint128::new(10);
+        let total_balance = Uint128::new(100);
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .unwrap();
+
+        let claim_amount = create_claim(
+            deps.as_mut().storage,
+            user_balance,
+            &owner,
+            id,
+            total_balance,
+        )
+        .unwrap();
+        assert_eq!(claim_amount, Uint128::new(10));
+        assert_eq!(
+            BONDING_CLAIMS
+                .load(deps.as_ref().storage, (&owner, id))
+                .unwrap(),
+            claim_amount
+        );
+    }
+
+    #[test]
     fn create_exact_share_works() {
         let mut deps = mock_dependencies();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
         let amount = Uint128::new(100);
 
-        BONDING_CLAIMS.save(deps.as_mut().storage, (&owner, id), &amount).unwrap();
+        BONDING_CLAIMS
+            .save(deps.as_mut().storage, (&owner, id), &amount)
+            .unwrap();
 
         create_share(deps.as_mut().storage, &owner, id, amount).unwrap();
         // the claim in BONDING_CLAIMS should have been deleted
-        assert_eq!(BONDING_CLAIMS.may_load(deps.as_ref().storage, (&owner, id)).unwrap(), None);
+        assert_eq!(
+            BONDING_CLAIMS
+                .may_load(deps.as_ref().storage, (&owner, id))
+                .unwrap(),
+            None
+        );
         // we should have amount shares by now
         assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
     }
@@ -189,13 +278,23 @@ mod tests {
         let amount = Uint128::new(100);
         let smaller_amount = Uint128::new(99);
 
-        BONDING_CLAIMS.save(deps.as_mut().storage, (&owner, id), &amount).unwrap();
+        BONDING_CLAIMS
+            .save(deps.as_mut().storage, (&owner, id), &amount)
+            .unwrap();
 
         create_share(deps.as_mut().storage, &owner, id, smaller_amount).unwrap();
         // the claim in BONDING_CLAIMS should have been deleted
-        assert_eq!(BONDING_CLAIMS.may_load(deps.as_ref().storage, (&owner, id)).unwrap(), Some(Uint128::one()));
+        assert_eq!(
+            BONDING_CLAIMS
+                .may_load(deps.as_ref().storage, (&owner, id))
+                .unwrap(),
+            Some(Uint128::one())
+        );
         // we should have amount shares by now
-        assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), smaller_amount);
+        assert_eq!(
+            SHARES.load(deps.as_ref().storage, owner).unwrap(),
+            smaller_amount
+        );
     }
 
     #[test]
@@ -206,7 +305,9 @@ mod tests {
         let amount = Uint128::new(100);
         let incorrect_amount = Uint128::new(101);
 
-        BONDING_CLAIMS.save(deps.as_mut().storage, (&owner, id), &amount).unwrap();
+        BONDING_CLAIMS
+            .save(deps.as_mut().storage, (&owner, id), &amount)
+            .unwrap();
 
         let err = create_share(deps.as_mut().storage, &owner, id, incorrect_amount).unwrap_err();
         // the claim in BONDING_CLAIMS should have been deleted
@@ -214,7 +315,17 @@ mod tests {
     }
 
     #[test]
-    fn fold_bonds_works() {
+    fn empty_fold_bonds_works() {
+        let mut deps = mock_dependencies();
+        let total_balance = Uint128::new(150);
+        // we don't have any bonds to setup
+
+        let res = fold_bonds(deps.as_mut().storage, total_balance).unwrap();
+        assert_eq!(res, None)
+    }
+
+    #[test]
+    fn filled_fold_bonds_works() {
         let mut deps = mock_dependencies();
         let total_balance = Uint128::new(150);
         let bonds = vec![

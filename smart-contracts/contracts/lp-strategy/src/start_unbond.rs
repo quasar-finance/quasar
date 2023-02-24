@@ -181,3 +181,146 @@ fn start_internal_unbond(
         funds: vec![],
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr, Uint128, WasmMsg, StdError, OverflowError, OverflowOperation,
+    };
+
+    use crate::{
+        state::{PendingSingleUnbond, SHARES},
+        test_helpers::default_setup,
+    };
+
+    use super::*;
+
+    #[test]
+    fn start_internal_unbond_exact_shares_works() {
+        // general setup
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let env = mock_env();
+
+        // test specific setup
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .unwrap();
+        let unbond = PendingSingleUnbond {
+            lp_shares: Uint128::new(100),
+            primitive_shares: Uint128::new(100),
+            owner: owner.clone(),
+            id: id.to_string(),
+        };
+
+        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap();
+        assert_eq!(
+            res,
+            WasmMsg::Execute {
+                contract_addr: owner.to_string(),
+                msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
+                    unbond_id: id.to_string(),
+                    unlock_time: env
+                        .block
+                        .time
+                        .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period)
+                }))
+                .unwrap(),
+                funds: vec![]
+            }
+        )
+    }
+
+    #[test]
+    fn start_internal_unbond_less_shares_works() {
+        // general setup
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let env = mock_env();
+
+        // test specific setup
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(101))
+            .unwrap();
+        let unbond = PendingSingleUnbond {
+            lp_shares: Uint128::new(100),
+            primitive_shares: Uint128::new(100),
+            owner: owner.clone(),
+            id: id.to_string(),
+        };
+
+        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap();
+        assert_eq!(
+            res,
+            WasmMsg::Execute {
+                contract_addr: owner.clone().to_string(),
+                msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
+                    unbond_id: id.to_string(),
+                    unlock_time: env
+                        .block
+                        .time
+                        .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period)
+                }))
+                .unwrap(),
+                funds: vec![]
+            }
+        );
+        assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), Uint128::one())
+    }
+
+    #[test]
+    fn start_internal_unbond_not_enough_shares_fails() {
+        // general setup
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let env = mock_env();
+
+        // test specific setup
+        SHARES
+        .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
+        .unwrap();
+        let unbond = PendingSingleUnbond {
+            lp_shares: Uint128::new(100),
+            primitive_shares: Uint128::new(100),
+            owner: owner.clone(),
+            id: id.to_string(),
+        };
+
+        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        assert_eq!(
+            res,
+            ContractError::OverflowError(OverflowError { operation: OverflowOperation::Sub, operand1: "99".to_string(), operand2: "100".to_string() })
+        )
+    }
+
+    #[test]
+    fn start_internal_unbond_no_shares_fails() {
+        // general setup
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let env = mock_env();
+
+        // test specific setup
+        let unbond = PendingSingleUnbond {
+            lp_shares: Uint128::new(100),
+            primitive_shares: Uint128::new(100),
+            owner: owner.clone(),
+            id: id.to_string(),
+        };
+
+        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        assert_eq!(
+            res,
+            ContractError::Std(StdError::NotFound{ kind: "cosmwasm_std::math::uint128::Uint128".to_string() })
+        )
+    }
+}
