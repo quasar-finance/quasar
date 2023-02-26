@@ -33,7 +33,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           target: wasm32-unknown-unknown
           profile: default
           override: true
@@ -46,14 +46,14 @@ jobs:
       #       --rm -v "$(pwd)":/code
       #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target
       #       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Generate code coverage
-        run: cd smart-contracts && cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
       - name: Compile wasm code
         run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
       - name: Run cosmwasm check
         run: cd smart-contracts && cosmwasm-check artifacts/*.wasm
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cd smart-contracts && cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
   test-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 25
