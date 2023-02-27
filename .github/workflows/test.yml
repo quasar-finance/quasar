@@ -35,6 +35,7 @@ jobs:
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+          components: llvm-tools-preview
           profile: default
           override: true
       - name: Install cosmwasm check
