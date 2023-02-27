@@ -23,5 +23,3 @@ type PoolRequest struct {
 type TokenPriceRequest struct {
 	Denom string `json:"denom"`
 }
-
- 
