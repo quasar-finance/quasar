@@ -37,6 +37,10 @@ pub fn do_start_unbond(
         return Err(ContractError::DuplicateKey);
     }
 
+    if SHARES.load(storage, unbond.owner.clone())? < unbond.primitive_shares {
+        return Err(ContractError::InsufficientFunds);
+    }
+
     Ok(START_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
@@ -186,8 +190,9 @@ fn start_internal_unbond(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, Uint128, WasmMsg, StdError, OverflowError, OverflowOperation,
+        Addr, OverflowError, OverflowOperation, StdError, Timestamp, Uint128, WasmMsg, CosmosMsg,
     };
+    use quasar_types::ica::{packet::{InterchainAccountPacketData, Type}, traits::Pack};
 
     use crate::{
         state::{PendingSingleUnbond, SHARES},
@@ -195,6 +200,206 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn do_start_unbond_exact_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
+            .unwrap();
+
+        let unbond = StartUnbond {
+            owner: owner,
+            id: id.to_string(),
+            primitive_shares: Uint128::new(1000),
+        };
+        do_start_unbond(deps.as_mut().storage, unbond).unwrap()
+    }
+
+    #[test]
+    fn do_start_unbond_multiple_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
+            .unwrap();
+
+        let unbond1 = StartUnbond {
+            owner: owner.clone(),
+            id: id.to_string(),
+            primitive_shares: Uint128::new(500),
+        };
+        let unbond2 = StartUnbond {
+            owner: owner.clone(),
+            id: id.to_string(),
+            primitive_shares: Uint128::new(300),
+        };
+        let unbond3 = StartUnbond {
+            owner: owner,
+            id: id.to_string(),
+            primitive_shares: Uint128::new(200),
+        };
+
+        do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
+        do_start_unbond(deps.as_mut().storage, unbond2.clone()).unwrap();
+        do_start_unbond(deps.as_mut().storage, unbond3.clone()).unwrap();
+        assert_eq!(START_UNBOND_QUEUE.len(deps.as_ref().storage).unwrap(), 3);
+        assert_eq!(
+            START_UNBOND_QUEUE
+                .pop_front(deps.as_mut().storage)
+                .unwrap()
+                .unwrap(),
+            unbond1
+        );
+        assert_eq!(
+            START_UNBOND_QUEUE
+                .pop_front(deps.as_mut().storage)
+                .unwrap()
+                .unwrap(),
+            unbond2
+        );
+        assert_eq!(
+            START_UNBOND_QUEUE
+                .pop_front(deps.as_mut().storage)
+                .unwrap()
+                .unwrap(),
+            unbond3
+        )
+    }
+
+    #[test]
+    fn do_start_unbond_not_enough_shares_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(999))
+            .unwrap();
+
+        let unbond = StartUnbond {
+            owner: owner,
+            id: id.to_string(),
+            primitive_shares: Uint128::new(1000),
+        };
+        let err = do_start_unbond(deps.as_mut().storage, unbond).unwrap_err();
+        assert_eq!(err, ContractError::InsufficientFunds)
+    }
+
+    #[test]
+    fn do_start_unbond_duplicate_key_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(999))
+            .unwrap();
+        UNBONDING_CLAIMS.save(
+            deps.as_mut().storage,
+            (owner.clone(), id.clone()),
+            &Unbond {
+                lp_shares: Uint128::new(420),
+                unlock_time: Timestamp::from_seconds(100),
+                owner: owner.clone(),
+                id: id.clone(),
+            },
+        ).unwrap();
+
+        let unbond = StartUnbond {
+            owner: owner,
+            id: id,
+            primitive_shares: Uint128::new(1000),
+        };
+        let err = do_start_unbond(deps.as_mut().storage, unbond).unwrap_err();
+        assert_eq!(err, ContractError::DuplicateKey)
+    }
+
+    #[test]
+    fn batch_start_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+        //test specific setup
+        OSMO_LOCK.save(deps.as_mut().storage, &1);
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
+            .unwrap();
+
+        let unbond1 = StartUnbond {
+            owner: owner.clone(),
+            id: id.to_string(),
+            primitive_shares: Uint128::new(1000),
+        };
+
+        do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
+
+
+        let res = batch_start_unbond(deps.as_mut().storage, &env, Uint128::new(1000)).unwrap();
+        assert!(res.is_some());
+
+        // check that the packet is as we expect 
+        let ica = get_ica_address(deps.as_ref().storage, ICA_CHANNEL.load(deps.as_ref().storage).unwrap()).unwrap();
+        let msg = MsgBeginUnlocking {
+            owner: ica,
+            id: OSMO_LOCK.load(deps.as_mut().storage).unwrap(),
+            coins: vec![Coin {
+                denom: CONFIG.load(deps.as_ref().storage).unwrap().pool_denom,
+                // integer truncation present here again
+                amount: Uint128::new(999).to_string(),
+            }],
+        };
+    
+        let pkt = ica_send::<MsgBeginUnlocking>(
+            msg.clone(),
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        ).unwrap();
+        assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));
+    }
+
+    // this is an excellent first test to write a proptest for
+    #[test]
+    fn single_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .unwrap();
+
+        let res = single_unbond(
+            deps.as_mut().storage,
+            &env,
+            &StartUnbond {
+                owner,
+                id,
+                primitive_shares: Uint128::new(100),
+            },
+            Uint128::new(100),
+        )
+        .unwrap();
+        // we have a share loss here due to truncation, is this avoidable?
+        assert_eq!(res, Uint128::new(99))
+    }
 
     #[test]
     fn start_internal_unbond_exact_shares_works() {
@@ -270,7 +475,50 @@ mod tests {
                 funds: vec![]
             }
         );
-        assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), Uint128::one())
+        assert_eq!(
+            SHARES.load(deps.as_ref().storage, owner).unwrap(),
+            Uint128::one()
+        )
+    }
+
+    #[test]
+    fn start_internal_unbond_duplicate_key_fails() {
+        // general setup
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+        let env = mock_env();
+
+        // test specific setup
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
+            .unwrap();
+        let unbond = PendingSingleUnbond {
+            lp_shares: Uint128::new(100),
+            primitive_shares: Uint128::new(100),
+            owner: owner.clone(),
+            id: id.to_string(),
+        };
+        let unlock_time = env
+            .block
+            .time
+            .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period);
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (owner.clone(), id.to_string()),
+                &Unbond {
+                    lp_shares: Uint128::new(100),
+                    unlock_time,
+                    owner,
+                    id: id.to_string(),
+                },
+            )
+            .unwrap();
+
+        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        assert_eq!(res, ContractError::DuplicateKey)
     }
 
     #[test]
@@ -284,8 +532,8 @@ mod tests {
 
         // test specific setup
         SHARES
-        .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
-        .unwrap();
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
+            .unwrap();
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
             primitive_shares: Uint128::new(100),
@@ -296,7 +544,11 @@ mod tests {
         let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::OverflowError(OverflowError { operation: OverflowOperation::Sub, operand1: "99".to_string(), operand2: "100".to_string() })
+            ContractError::OverflowError(OverflowError {
+                operation: OverflowOperation::Sub,
+                operand1: "99".to_string(),
+                operand2: "100".to_string()
+            })
         )
     }
 
@@ -320,7 +572,9 @@ mod tests {
         let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::Std(StdError::NotFound{ kind: "cosmwasm_std::math::uint128::Uint128".to_string() })
+            ContractError::Std(StdError::NotFound {
+                kind: "cosmwasm_std::math::uint128::Uint128".to_string()
+            })
         )
     }
 }
