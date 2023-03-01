@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Trap,
+    helpers::IbcMsgKind,
     ibc_lock,
-    state::{Config, PendingBond, Unbond},
+    state::{Config, Unbond},
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -51,15 +52,21 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ListBondingClaimsResponse {}
+pub struct ListBondingClaimsResponse {
+    pub bonds: HashMap<(Addr, String), Uint128>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ListPrimitiveSharesResponse {}
+pub struct ListPrimitiveSharesResponse {
+    pub shares: HashMap<Addr, Uint128>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ListPendingAcksResponse {}
+pub struct ListPendingAcksResponse {
+    pub pending: HashMap<u64, IbcMsgKind>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
