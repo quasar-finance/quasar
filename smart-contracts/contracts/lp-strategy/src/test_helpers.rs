@@ -1,4 +1,4 @@
-use cosmwasm_std::{DepsMut, IbcEndpoint, Storage};
+use cosmwasm_std::{IbcEndpoint, Storage};
 use quasar_types::{
     ibc::{ChannelInfo, ChannelType},
     ica::handshake::IcaMetadata,
@@ -6,7 +6,7 @@ use quasar_types::{
 
 use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL};
 
-pub(crate) fn default_setup(storage: &mut dyn Storage) -> Result<(), cosmwasm_std::StdError> {
+pub fn default_setup(storage: &mut dyn Storage) -> Result<(), cosmwasm_std::StdError> {
     setup_default_icq(storage)?;
     setup_default_ica(storage)?;
     setup_default_config(storage)

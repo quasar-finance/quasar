@@ -124,7 +124,7 @@ pub fn transfer_batch_unbond(
     )?)
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingReturningUnbonds {
     pub unbonds: Vec<ReturningUnbond>,
@@ -154,7 +154,7 @@ impl PendingReturningUnbonds {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ReturningUnbond {
     pub amount: RawAmount,

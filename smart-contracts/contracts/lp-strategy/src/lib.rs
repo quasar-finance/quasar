@@ -10,7 +10,7 @@ pub mod msg;
 pub mod queries;
 pub mod start_unbond;
 pub mod state;
-mod test_helpers;
+pub mod test_helpers;
 pub mod unbond;
 
 #[cfg(test)]

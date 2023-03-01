@@ -85,7 +85,7 @@ pub struct Unbond {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingSingleUnbond {
     pub lp_shares: Uint128,
@@ -94,7 +94,7 @@ pub struct PendingSingleUnbond {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingBond {
     // the bonds of the original calls
@@ -124,13 +124,13 @@ impl PendingBond {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct Claim {
     amount: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct OngoingDeposit {
     pub claim_amount: Uint128, // becomes shares later
@@ -139,7 +139,7 @@ pub struct OngoingDeposit {
     pub bond_id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum RawAmount {
     LocalDenom(Uint128),
