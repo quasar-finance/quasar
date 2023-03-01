@@ -23,7 +23,11 @@ use crate::msg::{
     LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
     UnbondingClaimResponse,
 };
-use crate::queries::{handle_channels_query, handle_config_query, handle_ica_address_query, handle_primitive_shares, handle_ica_balance, handle_ica_channel, handle_lock, handle_lp_shares_query, handle_trapped_errors_query, handle_list_unbonding_claims, handle_unbonding_claim_query};
+use crate::queries::{
+    handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
+    handle_ica_channel, handle_list_unbonding_claims, handle_lock, handle_lp_shares_query,
+    handle_primitive_shares, handle_trapped_errors_query, handle_unbonding_claim_query,
+};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, Unbond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE,
@@ -169,8 +173,6 @@ pub fn execute_accept_returning_funds(
     if amount != returning_amount {
         return Err(ContractError::ReturningTransferIncorrectAmount);
     }
-
-    // TODO cleanup the incoming transfer
 
     Ok(Response::new()
         .add_attribute("returning-transfer", id.to_string())
@@ -325,17 +327,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
         }
         QueryMsg::ListBondingClaims {} => todo!(),
-        QueryMsg::ListPrimitiveShares {  } => todo!(),
-        QueryMsg::ListPendingAcks {  } => todo!(),
+        QueryMsg::ListPrimitiveShares {} => todo!(),
+        QueryMsg::ListPendingAcks {} => todo!(),
     }
 }
 
 pub fn handle_list_bonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
     todo!()
-}  
+}
 
 // pub fn handle_
-
 
 #[cfg(test)]
 mod tests {

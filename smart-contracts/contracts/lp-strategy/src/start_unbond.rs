@@ -190,9 +190,12 @@ fn start_internal_unbond(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, OverflowError, OverflowOperation, StdError, Timestamp, Uint128, WasmMsg, CosmosMsg,
+        Addr, CosmosMsg, OverflowError, OverflowOperation, StdError, Timestamp, Uint128, WasmMsg,
     };
-    use quasar_types::ica::{packet::{InterchainAccountPacketData, Type}, traits::Pack};
+    use quasar_types::ica::{
+        packet::{InterchainAccountPacketData, Type},
+        traits::Pack,
+    };
 
     use crate::{
         state::{PendingSingleUnbond, SHARES},
@@ -308,16 +311,18 @@ mod tests {
         SHARES
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(999))
             .unwrap();
-        UNBONDING_CLAIMS.save(
-            deps.as_mut().storage,
-            (owner.clone(), id.clone()),
-            &Unbond {
-                lp_shares: Uint128::new(420),
-                unlock_time: Timestamp::from_seconds(100),
-                owner: owner.clone(),
-                id: id.clone(),
-            },
-        ).unwrap();
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (owner.clone(), id.clone()),
+                &Unbond {
+                    lp_shares: Uint128::new(420),
+                    unlock_time: Timestamp::from_seconds(100),
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+            )
+            .unwrap();
 
         let unbond = StartUnbond {
             owner: owner,
@@ -349,12 +354,15 @@ mod tests {
 
         do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
 
-
         let res = batch_start_unbond(deps.as_mut().storage, &env, Uint128::new(1000)).unwrap();
         assert!(res.is_some());
 
-        // check that the packet is as we expect 
-        let ica = get_ica_address(deps.as_ref().storage, ICA_CHANNEL.load(deps.as_ref().storage).unwrap()).unwrap();
+        // check that the packet is as we expect
+        let ica = get_ica_address(
+            deps.as_ref().storage,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+        )
+        .unwrap();
         let msg = MsgBeginUnlocking {
             owner: ica,
             id: OSMO_LOCK.load(deps.as_mut().storage).unwrap(),
@@ -364,12 +372,13 @@ mod tests {
                 amount: Uint128::new(999).to_string(),
             }],
         };
-    
+
         let pkt = ica_send::<MsgBeginUnlocking>(
             msg.clone(),
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));
     }
 

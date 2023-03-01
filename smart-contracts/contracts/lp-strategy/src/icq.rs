@@ -93,6 +93,7 @@ pub fn prepare_total_balance_query(
         .encode_pkt())
 }
 
+// TODO add quote denom to base denom conversion
 // calculate the total balance of the vault using the query from prepare_total_balance_query()
 pub fn calc_total_balance(
     storage: &mut dyn Storage,

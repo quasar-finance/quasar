@@ -358,9 +358,10 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
+    // TODO move the LP_SHARES.load to start_unbond
     let start_unbond = batch_start_unbond(storage, &env, total_lp)?;
 
-    let unbond = batch_unbond(storage, &env, total_balance, total_lp)?;
+    let unbond = batch_unbond(storage, &env)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
@@ -426,7 +427,6 @@ pub fn handle_ica_ack(
 
             let denom = CONFIG.load(storage)?.pool_denom;
 
-            // TODO update queue raw amounts here
             data.update_raw_amount_to_lp(shares_out)?;
 
             let msg = do_ibc_lock_tokens(
@@ -462,6 +462,7 @@ pub fn handle_ica_ack(
             LAST_PENDING_BOND.save(storage, data)?;
 
             let mut callbacks: Vec<WasmMsg> = vec![];
+            // TODO make execute a sub msg
             for claim in &data.bonds {
                 let share_amount =
                     create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
@@ -487,7 +488,6 @@ pub fn handle_ica_ack(
                 .add_attribute("lock_id", resp.id.to_string()))
         }
         IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
-        // TODO hook up the unbond ICA messages
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
@@ -509,6 +509,7 @@ fn handle_exit_pool_ack(
         }
     })?);
 
+    // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_tokens)?;
     LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_sub(total_lp)?)

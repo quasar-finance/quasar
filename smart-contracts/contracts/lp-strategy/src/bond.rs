@@ -90,7 +90,6 @@ pub fn fold_bonds(
             total_balance,
         )?;
         total = total.checked_add(item.amount)?;
-        println!("{:?}", claim_amount);
         deposits.push(OngoingDeposit {
             claim_amount,
             owner: item.owner,

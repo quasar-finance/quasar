@@ -46,7 +46,7 @@ pub enum QueryMsg {
     ListUnbondingClaims {},
     ListBondingClaims {},
     ListPrimitiveShares {},
-    ListPendingAcks{},
+    ListPendingAcks {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -60,7 +60,6 @@ pub struct ListPrimitiveSharesResponse {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ListPendingAcksResponse {}
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
