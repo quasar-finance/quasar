@@ -5,15 +5,16 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     error::Trap,
-    helpers::{get_ica_address, get_total_shares},
+    helpers::{get_ica_address, get_total_shares, IbcMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
-        IcaChannelResponse, ListUnbondingClaimsResponse, LockResponse, LpSharesResponse,
+        IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
+        ListPrimitiveSharesResponse, ListUnbondingClaimsResponse, LockResponse, LpSharesResponse,
         PrimitiveSharesResponse, TrappedErrorsResponse, UnbondingClaimResponse,
     },
     state::{
-        Unbond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES, TRAPS,
-        UNBONDING_CLAIMS,
+        Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
+        PENDING_ACK, SHARES, TRAPS, UNBONDING_CLAIMS,
     },
 };
 
@@ -112,4 +113,25 @@ pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
                 msg: err.to_string(),
             })?,
     })
+}
+
+pub fn handle_list_bonding_claims(deps: Deps) -> StdResult<ListBondingClaimsResponse> {
+    let bonds: StdResult<HashMap<(Addr, String), Uint128>> = BONDING_CLAIMS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(ListBondingClaimsResponse { bonds: bonds? })
+}
+
+pub fn handle_list_primitive_shares(deps: Deps) -> StdResult<ListPrimitiveSharesResponse> {
+    let shares: StdResult<HashMap<Addr, Uint128>> = SHARES
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(ListPrimitiveSharesResponse { shares: shares? })
+}
+
+pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse> {
+    let pending: StdResult<HashMap<u64, IbcMsgKind>> = PENDING_ACK
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(ListPendingAcksResponse { pending: pending? })
 }

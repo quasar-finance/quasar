@@ -1,37 +1,33 @@
-use std::collections::HashMap;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
     StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
 
-use quasar_types::ibc::ChannelInfo;
 
 use crate::bond::do_bond;
-use crate::error::{ContractError, Trap};
-use crate::helpers::{get_ica_address, get_total_shares, parse_seq};
+use crate::error::{ContractError};
+use crate::helpers::{parse_seq};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
-    ChannelsResponse, ConfigResponse, ExecuteMsg, IcaAddressResponse, IcaBalanceResponse,
-    IcaChannelResponse, InstantiateMsg, ListUnbondingClaimsResponse, LockResponse,
-    LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
-    UnbondingClaimResponse,
+    ExecuteMsg, InstantiateMsg, QueryMsg,
 };
 use crate::queries::{
     handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
-    handle_ica_channel, handle_list_unbonding_claims, handle_lock, handle_lp_shares_query,
-    handle_primitive_shares, handle_trapped_errors_query, handle_unbonding_claim_query,
+    handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
+    handle_list_primitive_shares, handle_list_unbonding_claims, handle_lock,
+    handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
+    handle_unbonding_claim_query,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, Unbond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE,
-    ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TRAPS, UNBONDING_CLAIMS,
+    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK,
+    ICA_BALANCE, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -86,7 +82,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         })?
         .data
         .ok_or(ContractError::NoReplyData)
-        .map_err(|err| StdError::NotFound {
+        .map_err(|_| StdError::NotFound {
             kind: "reply-data".to_string(),
         })?;
 
@@ -326,17 +322,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::UnbondingClaim { addr, id } => {
             to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
         }
-        QueryMsg::ListBondingClaims {} => todo!(),
-        QueryMsg::ListPrimitiveShares {} => todo!(),
-        QueryMsg::ListPendingAcks {} => todo!(),
+        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
+        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
+        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
     }
 }
-
-pub fn handle_list_bonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
-    todo!()
-}
-
-// pub fn handle_
 
 #[cfg(test)]
 mod tests {
