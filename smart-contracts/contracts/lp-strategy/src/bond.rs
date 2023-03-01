@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_ica_address, get_raw_total_shares, get_total_shares},
+    helpers::{get_ica_address, get_raw_total_shares},
     ibc_util::do_transfer,
     icq::try_icq,
     state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
@@ -174,7 +174,11 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
+    use crate::{
+        ibc_lock::Lock,
+        state::{IBC_LOCK, LP_SHARES},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -210,9 +214,23 @@ mod tests {
     fn do_bond_unlocked_works() {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
-
+        let env = mock_env();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap()
+        let id = "my-id";
+
+        LP_SHARES
+            .save(deps.as_mut().storage, &Uint128::new(100))
+            .unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        let info = MessageInfo {
+            sender: owner,
+            funds: vec![coin(1000, config.local_denom)],
+        };
+        let res = do_bond(deps.as_mut(), env.clone(), info, id.to_string()).unwrap();
+        assert_eq!(res, try_icq(deps.as_mut().storage, env).unwrap())
     }
 
     #[test]
