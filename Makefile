@@ -190,6 +190,7 @@ $(MOCKSDIR)/:
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 PACKAGES_E2E=$(shell go list ./... | grep '/e2e')
 PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
+E2EDIR = $(CURDIR)/tests/e2e
 TEST_PACKAGES=./...
 
 test: test-unit test-build
@@ -198,6 +199,9 @@ test-all: check test-race test-cover
 
 test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
+
+test-e2e:
+	@VERSION=$(VERSION)  go test -mod=readonly -timeout=25m -v ./tests/e2e
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)
