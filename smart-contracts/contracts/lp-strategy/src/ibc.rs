@@ -556,17 +556,24 @@ pub fn ibc_packet_timeout(
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: trap error like in acks
-    on_packet_failure(deps, msg.packet, "timeout".to_string())?;
-    Ok(IbcBasicResponse::default())
+    on_packet_failure(deps, msg.packet, "timeout".to_string())
 }
 
 fn on_packet_failure(
-    _deps: DepsMut,
-    _packet: IbcPacket,
-    _error: String,
+    deps: DepsMut,
+    packet: IbcPacket,
+    error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    todo!()
+    let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
+    TRAPS.save(
+        deps.storage,
+        packet.sequence,
+        &Trap {
+            error: format!("packet failure: {}", error),
+            step,
+        },
+    )?;
+    Ok(IbcBasicResponse::default())
 }
 
 #[cfg(test)]
