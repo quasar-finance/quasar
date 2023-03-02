@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 
@@ -23,6 +24,8 @@ func (chain *TestChain) StoreContractCode(suite *suite.Suite, path string) {
 	src := wasmtypes.StoreCodeProposalFixture(func(p *wasmtypes.StoreCodeProposal) {
 		p.RunAs = addr.String()
 		p.WASMByteCode = wasmCode
+		checksum := sha256.Sum256(wasmCode)
+		p.CodeHash = checksum[:]
 	})
 
 	// when stored

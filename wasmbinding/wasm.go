@@ -8,7 +8,7 @@ import (
 )
 
 func RegisterCustomPlugins(
-//	intergammKeeper *intergammkeeper.Keeper,
+	//	intergammKeeper *intergammkeeper.Keeper,
 	qoracleKeeper qoraclekeeper.Keeper,
 	bank *bankkeeper.BaseKeeper,
 	callback *CallbackPlugin,
