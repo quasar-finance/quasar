@@ -135,7 +135,7 @@ fn single_unbond(
 }
 
 // unbond starts unbonding an amount of lp shares
-fn start_internal_unbond(
+pub fn start_internal_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     unbond: &PendingSingleUnbond,

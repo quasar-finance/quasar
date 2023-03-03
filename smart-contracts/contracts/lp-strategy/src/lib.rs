@@ -3,6 +3,7 @@ pub mod contract;
 pub mod error;
 pub mod helpers;
 pub mod ibc;
+pub mod ibc_copy;
 pub mod ibc_lock;
 mod ibc_util;
 pub mod icq;
