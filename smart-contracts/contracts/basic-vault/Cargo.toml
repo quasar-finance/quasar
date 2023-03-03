@@ -36,3 +36,6 @@ quasar-types = {path = "../../packages/quasar-types"}
 thiserror = "1.0.23"
 
 [dev-dependencies]
+cw-multi-test = "0.16"
+derivative = "2"
+anyhow = "1"
