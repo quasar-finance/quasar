@@ -127,9 +127,7 @@ pub fn create_share(
     let claim = BONDING_CLAIMS.load(storage, (owner, bond_id))?;
     if claim < amount {
         return Err(ContractError::InsufficientClaims);
-    }
-
-    if claim <= amount {
+    } else if claim == amount {
         BONDING_CLAIMS.remove(storage, (owner, bond_id));
     } else {
         BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?;
@@ -283,7 +281,9 @@ mod tests {
                 .unwrap(),
             None
         );
-        // we should have amount shares by now
+
+        // we should have minted exactly 100 shares by now, 
+        // we should have minted exactly 100 shares by now, 
         assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
     }
 
@@ -327,8 +327,10 @@ mod tests {
             .unwrap();
 
         let err = create_share(deps.as_mut().storage, &owner, id, incorrect_amount).unwrap_err();
-        // the claim in BONDING_CLAIMS should have been deleted
+        // we should not have created shares
         assert_eq!(err, ContractError::InsufficientClaims);
+        // our bonding claim should still exist
+        assert_eq!(BONDING_CLAIMS.load(deps.as_ref().storage, (&owner, id)).unwrap(), amount)
     }
 
     #[test]
