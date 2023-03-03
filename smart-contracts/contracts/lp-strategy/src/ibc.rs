@@ -34,7 +34,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
+    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
     IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     StdError, Storage, Uint128, WasmMsg,
@@ -238,7 +238,7 @@ pub fn handle_succesful_ack(
                         },
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -254,7 +254,7 @@ pub fn handle_succesful_ack(
                             step: IbcMsgKind::Ica(ica_kind.clone()),
                         },
                     )?;
-                    unlock_on_error(deps.storage, kind)?;
+                    unlock_on_error(deps.storage, &kind)?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
@@ -270,7 +270,7 @@ pub fn handle_succesful_ack(
                         step: IbcMsgKind::Icq,
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -358,9 +358,10 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
+    // TODO move the LP_SHARES.load to start_unbond
     let start_unbond = batch_start_unbond(storage, &env, total_lp)?;
 
-    let unbond = batch_unbond(storage, &env, total_balance, total_lp)?;
+    let unbond = batch_unbond(storage, &env)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
@@ -426,7 +427,6 @@ pub fn handle_ica_ack(
 
             let denom = CONFIG.load(storage)?.pool_denom;
 
-            // TODO update queue raw amounts here
             data.update_raw_amount_to_lp(shares_out)?;
 
             let msg = do_ibc_lock_tokens(
@@ -462,8 +462,10 @@ pub fn handle_ica_ack(
             LAST_PENDING_BOND.save(storage, data)?;
 
             let mut callbacks: Vec<WasmMsg> = vec![];
+            // TODO make execute a sub msg
             for claim in &data.bonds {
-                let share_amount = create_share(storage, claim.owner.clone(), claim.claim_amount)?;
+                let share_amount =
+                    create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
                 callbacks.push(WasmMsg::Execute {
                     contract_addr: claim.owner.to_string(),
                     msg: to_binary(&Callback::BondResponse(BondResponse {
@@ -486,7 +488,6 @@ pub fn handle_ica_ack(
                 .add_attribute("lock_id", resp.id.to_string()))
         }
         IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
-        // TODO hook up the unbond ICA messages
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
@@ -508,6 +509,7 @@ fn handle_exit_pool_ack(
         }
     })?);
 
+    // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_tokens)?;
     LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_sub(total_lp)?)
@@ -554,17 +556,26 @@ pub fn ibc_packet_timeout(
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: trap error like in acks
-    on_packet_failure(deps, msg.packet, "timeout".to_string())?;
-    Ok(IbcBasicResponse::default())
+    on_packet_failure(deps, msg.packet, "timeout".to_string())
 }
 
 fn on_packet_failure(
-    _deps: DepsMut,
-    _packet: IbcPacket,
-    _error: String,
+    deps: DepsMut,
+    packet: IbcPacket,
+    error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    todo!()
+    let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
+    unlock_on_error(deps.storage, &step)?;
+    TRAPS.save(
+        deps.storage,
+        packet.sequence,
+        &Trap {
+            error: format!("packet failure: {}", error),
+            step,
+        },
+    )?;
+    // we unlock the failed packet
+    Ok(IbcBasicResponse::default())
 }
 
 #[cfg(test)]

@@ -79,13 +79,13 @@ pub fn on_bond(
 
     // at this point we know that the deposit has succeeded fully, and we can mint shares
     // lets updated all pending deposit info
-    PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
+    PENDING_BOND_IDS.update(deps.storage, deps.api.addr_validate(&user_address)?, |ids| match ids {
         Some(mut bond_ids) => {
-            let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).unwrap();
+            let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).ok_or(ContractError::IncorrectCallbackId { expected: bond_id.clone(), ids: bond_ids.clone() })?;
             bond_ids.remove(bond_index);
             Ok::<Vec<String>, ContractError>(bond_ids)
         }
-        None => Ok(vec![]), // todo: should this error? we should never be here
+        None => Err(ContractError::IncorrectCallbackId { expected: "Some".to_string(), ids: vec!["None".to_string()] }), // todo: should this error? we should never be here
     })?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
     BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;

@@ -63,10 +63,11 @@ pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
 pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
 
 // TODO we probably want to change this to an OngoingDeposit
-pub(crate) const BONDING_CLAIMS: Map<Addr, Uint128> = Map::new("bonding_claims");
+pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
 // TODO UNBONDING_CLAIMS should probably be a multi index map
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
+// TODO make key borrowed
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 // the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
@@ -84,7 +85,7 @@ pub struct Unbond {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingSingleUnbond {
     pub lp_shares: Uint128,
@@ -93,7 +94,7 @@ pub struct PendingSingleUnbond {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingBond {
     // the bonds of the original calls
@@ -123,13 +124,13 @@ impl PendingBond {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct Claim {
     amount: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct OngoingDeposit {
     pub claim_amount: Uint128, // becomes shares later
@@ -138,7 +139,7 @@ pub struct OngoingDeposit {
     pub bond_id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum RawAmount {
     LocalDenom(Uint128),
