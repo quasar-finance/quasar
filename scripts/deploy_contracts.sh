@@ -25,8 +25,8 @@ echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
 # swallow output
-OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from laurens-2 --keyring-backend test -y  --label "primitive-1" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-ADDR1=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
+ADDR1=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from laurens-2 --keyring-backend test -y  --label "primitive-1" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l"  $NODE --chain-id $CHAIN_ID)
+
 echo "Got address of deployed contract = $ADDR1"
 
 # rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icqhost --order unordered --version icq-1 --override
