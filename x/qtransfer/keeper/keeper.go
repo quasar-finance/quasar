@@ -58,6 +58,8 @@ func (k Keeper) CreateIntermediateAccountAccount(ctx sdk.Context) error {
 		),
 	)
 	k.accountKeeper.SetAccount(ctx, acc)
+	logger := k.Logger(ctx)
+	logger.Info("qTransfer CreateIntermediateAccountAccount", "account", acc.String())
 	return nil
 }
 
