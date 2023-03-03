@@ -577,4 +577,111 @@ fn on_packet_failure(
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env},
+        Addr, IbcAcknowledgement,
+    };
+
+    use crate::test_helpers::default_setup;
+
+    use super::*;
+
+    #[test]
+    fn ibc_packet_ack_transfer_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        // Q: docs are contradictory!!!
+        // The IbcAcknowledgement structure contains both,
+        // the original packet that was sent as well as
+        // the acknowledgement bytes returned from executing the remote contract
+        //
+        // pub struct IbcAcknowledgement {
+        //     pub data: Binary,
+        //     // we may add more info here in the future (meta-data from the acknowledgement)
+        //     // there have been proposals to extend this type in core ibc for future versions
+        // }
+
+        // construct msg = IbcPacketAckMsg {
+        // mock acknowledgement: IbcAcknowledgement,
+        // mock original_packet: IbcPacket,
+        // ? mock relayer: Addr,
+        //                  }
+
+        // let res = ibc_packet_ack(todo!(), todo!(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_transfer_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo!(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_join_swap_extern_amount_in_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_lock_tokens_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_begin_unlocking_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_exit_pool_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_return_transfer_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_ica_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo(), todo!());
+    }
+    #[test]
+    fn ibc_packet_ack_icq_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo!(), todo!());
+    }
+
+    #[test]
+    fn ibc_packet_ack_icq_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        // let res = ibc_packet_ack(todo!(), todo!(), todo!());
+    }
+}
