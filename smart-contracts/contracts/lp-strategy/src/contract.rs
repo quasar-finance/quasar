@@ -307,7 +307,7 @@ pub fn execute_join_pool(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // migrate without changing any state objects
     Ok(Response::new().add_attribute("migrate", CONTRACT_NAME).add_attribute("succes", "true"))
 }
@@ -336,5 +336,4 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 }

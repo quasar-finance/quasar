@@ -192,10 +192,6 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, CosmosMsg, OverflowError, OverflowOperation, StdError, Timestamp, Uint128, WasmMsg,
     };
-    use quasar_types::ica::{
-        packet::{InterchainAccountPacketData, Type},
-        traits::Pack,
-    };
 
     use crate::{
         state::{PendingSingleUnbond, SHARES},
@@ -209,7 +205,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -229,7 +224,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -284,7 +278,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -305,7 +298,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -341,7 +333,7 @@ mod tests {
         let env = mock_env();
         let id = "my-id".to_string();
         //test specific setup
-        OSMO_LOCK.save(deps.as_mut().storage, &1);
+        OSMO_LOCK.save(deps.as_mut().storage, &1).unwrap();
         SHARES
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
             .unwrap();

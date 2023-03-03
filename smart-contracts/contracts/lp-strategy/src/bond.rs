@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
 use schemars::JsonSchema;
@@ -125,12 +127,11 @@ pub fn create_share(
     amount: Uint128,
 ) -> Result<Uint128, ContractError> {
     let claim = BONDING_CLAIMS.load(storage, (owner, bond_id))?;
-    if claim < amount {
-        return Err(ContractError::InsufficientClaims);
-    } else if claim == amount {
-        BONDING_CLAIMS.remove(storage, (owner, bond_id));
-    } else {
-        BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?;
+
+    match claim.cmp(&amount) {
+        Ordering::Less => return Err(ContractError::InsufficientClaims),
+        Ordering::Equal => BONDING_CLAIMS.remove(storage, (owner, bond_id)),
+        Ordering::Greater => BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?,
     }
 
     // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
