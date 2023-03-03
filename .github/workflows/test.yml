@@ -31,12 +31,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          profile: default
-          override: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Install cosmwasm check
         run: cargo install cosmwasm-check
       # - name: Compile wasm code
