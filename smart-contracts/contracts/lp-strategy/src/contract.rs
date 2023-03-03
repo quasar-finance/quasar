@@ -15,7 +15,7 @@ use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg,
+    ExecuteMsg, InstantiateMsg, QueryMsg, MigrateMsg,
 };
 use crate::queries::{
     handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
@@ -304,6 +304,12 @@ pub fn execute_join_pool(
     Ok(Response::new()
         .add_submessage(join)
         .add_attribute("denom", denom))
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // migrate without changing any state objects
+    Ok(Response::new().add_attribute("migrate", CONTRACT_NAME).add_attribute("succes", "true"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

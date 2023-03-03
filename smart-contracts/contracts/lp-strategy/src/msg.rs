@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
@@ -30,6 +31,9 @@ impl InstantiateMsg {
         Ok(())
     }
 }
+
+#[cw_serde]
+pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
