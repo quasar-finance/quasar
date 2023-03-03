@@ -238,7 +238,7 @@ pub fn handle_succesful_ack(
                         },
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -254,7 +254,7 @@ pub fn handle_succesful_ack(
                             step: IbcMsgKind::Ica(ica_kind.clone()),
                         },
                     )?;
-                    unlock_on_error(deps.storage, kind)?;
+                    unlock_on_error(deps.storage, &kind)?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
@@ -270,7 +270,7 @@ pub fn handle_succesful_ack(
                         step: IbcMsgKind::Icq,
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -565,6 +565,7 @@ fn on_packet_failure(
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
+    unlock_on_error(deps.storage, &step)?;
     TRAPS.save(
         deps.storage,
         packet.sequence,
@@ -573,6 +574,7 @@ fn on_packet_failure(
             step,
         },
     )?;
+    // we unlock the failed packet
     Ok(IbcBasicResponse::default())
 }
 

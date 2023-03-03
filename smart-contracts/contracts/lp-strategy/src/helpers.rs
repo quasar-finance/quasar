@@ -108,7 +108,7 @@ pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
 
 pub(crate) fn unlock_on_error(
     storage: &mut dyn Storage,
-    kind: IbcMsgKind,
+    kind: &IbcMsgKind,
 ) -> Result<(), ContractError> {
     match kind {
         IbcMsgKind::Transfer {
