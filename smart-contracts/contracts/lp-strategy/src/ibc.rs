@@ -34,7 +34,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
+    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
     IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     StdError, Storage, Uint128, WasmMsg,
