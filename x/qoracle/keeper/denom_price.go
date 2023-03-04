@@ -58,5 +58,14 @@ func (k Keeper) GetRelativeDenomPrice(ctx sdk.Context, denomIn, denomOut string)
 	if err != nil {
 		return sdk.ZeroDec(), err
 	}
+
+	if denomOutPrice.IsZero() || denomOutPrice.IsNil() || denomOutPrice.IsNegative() {
+		// In this case, division by denomOutPrice is risky
+		return sdk.ZeroDec(), sdkerrors.Wrapf(types.ErrRelativeDenomPriceNotFound,
+			"denomInPrice: %s", denomInPrice.String(),
+			"denomOutPrice: %s", denomOutPrice.String())
+	}
+
+	// Can this cause - non determinism
 	return denomInPrice.Quo(denomOutPrice), nil
 }

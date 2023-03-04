@@ -24,6 +24,7 @@ func (k msgServer) AddDenomSymbolMappings(goCtx context.Context, msg *types.MsgA
 			return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "expected %s got %s", k.authority, msg.Creator)
 		}
 	*/
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	for _, mapping := range msg.Mappings {

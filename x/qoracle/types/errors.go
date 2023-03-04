@@ -9,4 +9,5 @@ var (
 	ErrNegativeDenomPriceMultiplier = errors.Register(ModuleName, 2, "negative denom price multiplier")
 	ErrPriceListOutdated            = errors.Register(ModuleName, 3, "price list is outdated")
 	ErrDenomPriceNotFound           = errors.Register(ModuleName, 4, "symbol price not found")
+	ErrRelativeDenomPriceNotFound   = errors.Register(ModuleName, 5, "relative symbol price not found")
 )

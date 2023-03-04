@@ -97,7 +97,7 @@ func (k Keeper) GetPoolsUpdatedAt(ctx sdk.Context) time.Time {
 
 	updatedAt, err := sdk.ParseTimeBytes(store.Get(types.KeyPoolsUpdatedAt))
 	if err != nil {
-		return time.Now()
+		return ctx.BlockTime()
 	}
 	return updatedAt
 }
