@@ -131,7 +131,9 @@ pub fn create_share(
     match claim.cmp(&amount) {
         Ordering::Less => return Err(ContractError::InsufficientClaims),
         Ordering::Equal => BONDING_CLAIMS.remove(storage, (owner, bond_id)),
-        Ordering::Greater => BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?,
+        Ordering::Greater => {
+            BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?
+        }
     }
 
     // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
@@ -283,8 +285,8 @@ mod tests {
             None
         );
 
-        // we should have minted exactly 100 shares by now, 
-        // we should have minted exactly 100 shares by now, 
+        // we should have minted exactly 100 shares by now,
+        // we should have minted exactly 100 shares by now,
         assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
     }
 
@@ -331,7 +333,12 @@ mod tests {
         // we should not have created shares
         assert_eq!(err, ContractError::InsufficientClaims);
         // our bonding claim should still exist
-        assert_eq!(BONDING_CLAIMS.load(deps.as_ref().storage, (&owner, id)).unwrap(), amount)
+        assert_eq!(
+            BONDING_CLAIMS
+                .load(deps.as_ref().storage, (&owner, id))
+                .unwrap(),
+            amount
+        )
     }
 
     #[test]
