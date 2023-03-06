@@ -1,5 +1,6 @@
 package types
 
+/*
 import (
 	//	"cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -99,3 +100,4 @@ func (msg *MsgRemoveDenomSymbolMappings) ValidateBasic() error {
 
 	return nil
 }
+*/

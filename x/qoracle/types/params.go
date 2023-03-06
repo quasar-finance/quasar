@@ -10,14 +10,17 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-const (
+var (
 	// DefaultDenomPricesExpDuration is the default duration in which denom prices are valid
 	DefaultDenomPricesExpDuration = uint64(time.Minute * 6)
+	// ds1                           = DenomSymbolMapping{Denom: "", OracleSymbol: "", Multiplier: types.ZeroDec()}
+	DefaultDenomSymbolMapping = []DenomSymbolMapping{}
 )
 
 var (
 	// KeyDenomPricesExpDuration is store's key for DenomPricesExpDuration
 	KeyDenomPricesExpDuration = []byte("DenomPricesExpDuration")
+	KeyDenomSymbolMapping     = []byte("DenomSymbolMapping")
 )
 
 // ParamKeyTable the param key table for launch module
@@ -26,21 +29,23 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(expDuration uint64) Params {
+func NewParams(expDuration uint64, mapping []DenomSymbolMapping) Params {
 	return Params{
 		DenomPricesExpDuration: expDuration,
+		Mappings:               mapping, // TODO - Is deep copy a better solution here.
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultDenomPricesExpDuration)
+	return NewParams(DefaultDenomPricesExpDuration, DefaultDenomSymbolMapping)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
+		paramtypes.NewParamSetPair(KeyDenomSymbolMapping, &p.Mappings, validateDenomSymbolMapping),
 	}
 }
 
@@ -61,5 +66,14 @@ func validateDuration(i interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
+	return nil
+}
+
+func validateDenomSymbolMapping(m interface{}) error {
+	_, ok := m.([]DenomSymbolMapping)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", m)
+	}
+	// TODO - Should also check if the param is sorted or not
 	return nil
 }

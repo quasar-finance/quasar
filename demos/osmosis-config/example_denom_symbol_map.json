@@ -1,0 +1,13 @@
+ "denom_symbol_mappings": [
+        {
+          "denom": "uatom",
+          "oracle_symbol": "ATOM",
+          "multiplier": "0.000001000000000000"
+        },
+        {
+          "denom": "uosmo",
+          "oracle_symbol": "OSMO",
+          "multiplier": "0.000001000000000000"
+        }
+      ],
+

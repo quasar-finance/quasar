@@ -15,11 +15,15 @@ func InitGenesis(
 	osmoKeeper qosmokeeper.Keeper,
 	state genesistypes.GenesisState,
 ) {
+	// TODO - any list items should be first sorted.
 	qKeeper.SetParams(ctx, state.Params)
 
-	for _, mapping := range state.DenomSymbolMappings {
-		qKeeper.SetDenomSymbolMapping(ctx, mapping)
-	}
+	/*
+		// TODO - Remove
+		for _, mapping := range state.DenomSymbolMappings {
+			qKeeper.SetDenomSymbolMapping(ctx, mapping)
+		}
+	*/
 
 	qbandkeeper.InitGenesis(ctx, bandKeeper, state.BandchainGenesisState)
 	qosmokeeper.InitGenesis(ctx, osmoKeeper, state.OsmosisGenesisState)

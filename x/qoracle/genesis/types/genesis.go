@@ -3,8 +3,6 @@ package types
 // this line is used by starport scaffolding # genesis/types/import
 
 import (
-	fmt "fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
@@ -15,8 +13,8 @@ import (
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		Params:                types.DefaultParams(),
-		DenomSymbolMappings:   DefaultSymbolMappings(),
+		Params: types.DefaultParams(),
+		// DenomSymbolMappings:   DefaultSymbolMappings(),
 		BandchainGenesisState: DefaultBandchainGenesis(),
 		OsmosisGenesisState:   DefaultOsmosisGenesis(),
 	}
@@ -38,12 +36,15 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	// validateDenomPriceMappings validates the denom price mappings
-	for i, mapping := range gs.DenomSymbolMappings {
-		if err := mapping.Validate(); err != nil {
-			return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
+	/*
+		// validateDenomPriceMappings validates the denom price mappings
+		for i, mapping := range gs.DenomSymbolMappings {
+			if err := mapping.Validate(); err != nil {
+				return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
+			}
 		}
-	}
+
+	*/
 
 	if err := gs.BandchainGenesisState.Validate(); err != nil {
 		return err
