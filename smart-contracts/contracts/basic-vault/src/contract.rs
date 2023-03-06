@@ -50,11 +50,12 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &data)?;
 
-    let invest = InvestmentInfo {
+    let mut invest = InvestmentInfo {
         owner: info.sender,
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives.clone(),
     };
+    invest.normalize_primitive_weights();
     INVESTMENT.save(deps.storage, &invest)?;
 
     // initialize bonding sequence num
@@ -200,7 +201,7 @@ mod tests {
     //     let cb = ExecuteMsg::BondResponse(bond_response);
     //     let mut deps = mock_dependencies();
     //     let env = mock_env();
-        
+
     //     let info = MessageInfo {
     //         sender: env.clone().contract.address,
     //         funds: Vec::new(),

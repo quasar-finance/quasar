@@ -12,8 +12,9 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
-    BondingStub, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR, BOND_STATE,
-    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY, UNBOND_STATE,
+    BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
+    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY,
+    UNBOND_STATE,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -68,12 +69,14 @@ pub fn must_pay_multi(funds: &Vec<Coin>, denom: &str) -> Result<Uint128, Payment
 pub fn may_pay_with_ratio(
     deps: &Deps,
     funds: &Vec<Coin>,
-    primitives: &Vec<PrimitiveConfig>,
+    mut invest: InvestmentInfo,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-    // todo: Normalize weights first
+    // normalize primitives
+    invest.normalize_primitive_weights();
 
     // load cached balance of primitive contracts
-    let deposit_amount_weights: Vec<CoinWeight> = primitives
+    let deposit_amount_weights: Vec<CoinWeight> = invest
+        .primitives
         .iter()
         .map(|pc| {
             let supply: PrimitiveSharesResponse = deps
@@ -107,7 +110,7 @@ pub fn may_pay_with_ratio(
 
     if (deposit_amount_weights.first().unwrap().weight == Decimal::zero()) {
         return Err(ContractError::Std(StdError::GenericErr {
-            msg: "we failed here".to_string(),
+            msg: "Deposit amount weight for primitive is zero".to_string(),
         }));
     }
 
@@ -115,25 +118,24 @@ pub fn may_pay_with_ratio(
         deposit_amount_weights
             .iter()
             .fold(vec![], |mut acc, coin_weight| {
-                let existing_weight_idx = acc.iter().position(|cw| cw.denom == coin_weight.denom);
-                let existing_weight = match existing_weight_idx {
-                    Some(idx) => Some(acc.remove(idx)),
-                    None => None,
-                };
-                let new_weight = match existing_weight {
-                    Some(weight) => weight.weight.checked_add(coin_weight.weight).unwrap(),
-                    None => coin_weight.weight,
-                };
-                acc.push(CoinWeight {
-                    weight: new_weight,
-                    denom: coin_weight.denom.clone(),
-                });
+                // look through acc for existing denom and add weight, or else push it to the back of the vec
+                let existing_weight = acc.iter_mut().find(|cw| cw.denom == coin_weight.denom);
+                match existing_weight {
+                    Some(weight) => {
+                        weight.weight = weight.weight.checked_add(coin_weight.weight).unwrap()
+                    }
+                    None => acc.push(coin_weight.clone()),
+                }
+
                 acc
             });
 
     if (token_weights.first().unwrap().weight == Decimal::zero()) {
         return Err(ContractError::Std(StdError::GenericErr {
-            msg: "we failed here ser".to_string(),
+            msg: format!(
+                "token weight is zero for {}",
+                token_weights.first().unwrap().denom
+            ),
         }));
     }
 
@@ -141,8 +143,8 @@ pub fn may_pay_with_ratio(
     for coin_weight in token_weights {
         let amount = must_pay_multi(funds, &coin_weight.denom).unwrap();
         let bond_for_token = amount.multiply_ratio(
-            coin_weight.weight.numerator(),
             coin_weight.weight.denominator(),
+            coin_weight.weight.numerator(),
         );
         if bond_for_token < max_bond {
             max_bond = bond_for_token;
@@ -153,14 +155,12 @@ pub fn may_pay_with_ratio(
         ratio: deposit_amount_weights,
     };
 
-    if (max_bond == Uint128::zero()) {
+    if (max_bond == Uint128::zero() || max_bond == Uint128::MAX) {
         return Err(ContractError::Std(StdError::GenericErr {
-            msg: "we failed here ser 2".to_string(),
-        }));
-    }
-    if (max_bond == Uint128::MAX) {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: "we failed here ser 3".to_string(),
+            msg: format!(
+                "Unable to correctly determine max_bond, value: {}",
+                max_bond
+            ),
         }));
     }
 
@@ -226,7 +226,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     let mut deposit_stubs = vec![];
 
     let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps.as_ref(), &info.funds, &invest.primitives)?;
+        may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
@@ -284,15 +284,6 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         .fold(Uint128::zero(), |acc, coin| {
             acc.checked_add(coin.amount).unwrap()
         });
-
-    if (true) {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: format!(
-                "we failed here ser 1 {:?} {:?}",
-                shares_to_mint, primitive_funding_amounts
-            ),
-        }));
-    }
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())

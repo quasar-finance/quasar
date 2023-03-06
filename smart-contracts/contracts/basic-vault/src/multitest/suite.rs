@@ -4,14 +4,31 @@ use crate::{
     msg::{DepositRatioResponse, PrimitiveConfig},
     multitest::common::*,
 };
-use cosmwasm_std::Addr;
-use cw_multi_test::App;
+use cosmwasm_schema::{schemars, serde};
+use cosmwasm_std::{
+    testing::MockApi, to_binary, Addr, Binary, CosmosMsg, IbcChannel, IbcChannelConnectMsg,
+    IbcChannelOpenMsg, IbcEndpoint, IbcMsg, IbcOrder, IbcQuery, IbcTimeout, IbcTimeoutBlock,
+    MemoryStorage, StdError,
+};
+use cw_multi_test::{
+    ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
+    StakeKeeper, WasmKeeper, WasmSudo,
+};
 
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct QuasarVaultSuite {
     #[derivative(Debug = "ignore")]
-    pub app: App,
+    pub app: App<
+        BankKeeper,
+        MockApi,
+        MemoryStorage,
+        FailingModule<Empty, Empty, Empty>,
+        WasmKeeper<Empty, Empty>,
+        StakeKeeper,
+        DistributionKeeper,
+        AcceptingModule,
+    >,
     // The account that deploys everything
     pub deployer: Addr,
     // executor address
@@ -24,6 +41,68 @@ pub struct QuasarVaultSuite {
     pub primitive: Addr,
 }
 
+pub struct AcceptingModule;
+
+impl Module for AcceptingModule {
+    type ExecT = IbcMsg;
+    type QueryT = IbcQuery;
+    type SudoT = Empty;
+
+    fn execute<ExecC, QueryC>(
+        &self,
+        _api: &dyn cosmwasm_std::Api,
+        _storage: &mut dyn cosmwasm_std::Storage,
+        _router: &dyn CosmosRouter<ExecC = ExecC, QueryC = QueryC>,
+        _block: &cosmwasm_std::BlockInfo,
+        _sender: cosmwasm_std::Addr,
+        _msg: Self::ExecT,
+    ) -> anyhow::Result<AppResponse>
+    where
+        ExecC: std::fmt::Debug
+            + Clone
+            + PartialEq
+            + schemars::JsonSchema
+            + serde::de::DeserializeOwned
+            + 'static,
+        QueryC: cosmwasm_std::CustomQuery + serde::de::DeserializeOwned + 'static,
+    {
+        Ok(AppResponse::default())
+    }
+
+    fn sudo<ExecC, QueryC>(
+        &self,
+        _api: &dyn cosmwasm_std::Api,
+        _storage: &mut dyn cosmwasm_std::Storage,
+        _router: &dyn CosmosRouter<ExecC = ExecC, QueryC = QueryC>,
+        _block: &cosmwasm_std::BlockInfo,
+        _msg: Self::SudoT,
+    ) -> anyhow::Result<AppResponse>
+    where
+        ExecC: std::fmt::Debug
+            + Clone
+            + PartialEq
+            + schemars::JsonSchema
+            + serde::de::DeserializeOwned
+            + 'static,
+        QueryC: cosmwasm_std::CustomQuery + serde::de::DeserializeOwned + 'static,
+    {
+        Ok(AppResponse::default())
+    }
+
+    fn query(
+        &self,
+        _api: &dyn cosmwasm_std::Api,
+        _storage: &dyn cosmwasm_std::Storage,
+        _querier: &dyn cosmwasm_std::Querier,
+        _block: &cosmwasm_std::BlockInfo,
+        _request: Self::QueryT,
+    ) -> anyhow::Result<cosmwasm_std::Binary> {
+        Ok(Binary::default())
+    }
+}
+
+impl Ibc for AcceptingModule {}
+
 impl QuasarVaultSuite {
     pub fn init(
         init_msg: Option<VaultInstantiateMsg>,
@@ -33,14 +112,30 @@ impl QuasarVaultSuite {
         let deployer = Addr::unchecked(DEPLOYER);
         let executor = Addr::unchecked(EXECUTOR);
         let user = Addr::unchecked(USER);
-        let mut app = App::new(|router, _, storage| {
-            router
-                .bank
-                .init_balance(storage, &deployer, genesis_funds)
-                .unwrap();
-        });
-        app.send_tokens(deployer.clone(), user.clone(), &[coin(50000, DENOM),coin(50000, LOCAL_DENOM)])?;
-        app.send_tokens(deployer.clone(), executor.clone(), &[coin(50000, DENOM),coin(50000, LOCAL_DENOM)])?;
+        let mut app = AppBuilder::new()
+            .with_ibc(AcceptingModule)
+            .build(|router, _, storage| {
+                router
+                    .bank
+                    .init_balance(storage, &deployer, genesis_funds)
+                    .unwrap();
+            });
+        // let mut app = App::new(|router, _, storage| {
+        //     router
+        //         .bank
+        //         .init_balance(storage, &deployer, genesis_funds)
+        //         .unwrap();
+        // });
+        app.send_tokens(
+            deployer.clone(),
+            user.clone(),
+            &[coin(50000, DENOM), coin(50000, LOCAL_DENOM)],
+        )?;
+        app.send_tokens(
+            deployer.clone(),
+            executor.clone(),
+            &[coin(50000, DENOM), coin(50000, LOCAL_DENOM)],
+        )?;
 
         let vault_id = app.store_code(contract_vault());
         let primitive_id = app.store_code(contract_primitive());
@@ -64,6 +159,42 @@ impl QuasarVaultSuite {
                 Some(deployer.to_string()),
             )
             .unwrap();
+
+        // IbcChannelOpenMsg::OpenInit { channel: () }
+        // app.wasm_sudo(contract_addr, msg)
+        let endpoint = IbcEndpoint {
+            port_id: "wasm.my_addr".to_string(),
+            channel_id: "channel-1".to_string(),
+        };
+        let counterparty_endpoint = IbcEndpoint {
+            port_id: "icahost".to_string(),
+            channel_id: "channel-2".to_string(),
+        };
+
+        let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
+        let channel = IbcChannel::new(
+            endpoint,
+            counterparty_endpoint.clone(),
+            IbcOrder::Ordered,
+            version,
+            "connection-0".to_string(),
+        );
+
+        // Todo: need to figure out how to init the channel on the contract (enter ibc_channel_connect on primitive)
+        // let ibc_channel_open_msg = IbcChannelOpenMsg::OpenInit { channel };
+        // let res = app.execute(
+        //     primitive.clone(),
+        //     CosmosMsg::Ibc(IbcMsg::SendPacket {
+        //         channel_id: "channel-0".to_string(),
+        //         data: to_binary(&ibc_channel_open_msg)?,
+        //         timeout: IbcTimeout::with_block(IbcTimeoutBlock {
+        //             revision: 1,
+        //             height: app.block_info().height + 5,
+        //         }),
+        //     }),
+        // );
+        // res.unwrap();
+        // IbcChannelConnectMsg::OpenConfirm { channel: () }
 
         let vault = app
             .instantiate_contract(
@@ -127,7 +258,10 @@ impl QuasarVaultSuite {
         let msg = VaultExecuteMsg::Bond {};
         self.app
             .execute_contract(sender.clone(), self.vault.clone(), &msg, &funds)
-            .map_err(|err| err.downcast().unwrap())
+            .map_err(|err| match err.downcast::<VaultContractError>() {
+                Ok(err_unwrapped) => err_unwrapped,
+                Err(e) => VaultContractError::Std(StdError::GenericErr { msg: e.root_cause().to_string() }),
+            })
             .map(|_| ())
     }
 

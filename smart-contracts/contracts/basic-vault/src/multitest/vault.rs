@@ -2,7 +2,7 @@ use crate::multitest::common::*;
 use crate::multitest::suite::*;
 
 #[test]
-fn bond_and_receive_callback() {
+fn try_bond() {
     let mut suite = QuasarVaultSuite::init(None, None).unwrap();
     let err = suite
         .bond(
@@ -13,5 +13,9 @@ fn bond_and_receive_callback() {
             }],
         )
         .unwrap_err();
-    assert_eq!(err,VaultContractError::Std(cosmwasm_std::StdError::GenericErr{ msg: "we failed here ser 1 Uint128(333) [Coin { denom: \"ibc/ilovemymom\", amount: Uint128(333) }]".to_string() }));
+    // this error happens because our ibc channel is not open yet
+    assert_eq!(err,
+        VaultContractError::Std(cosmwasm_std::StdError::GenericErr{ msg: "alloc::string::String not found".to_string() }));
 }
+
+

@@ -89,3 +89,56 @@ pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");
+
+impl InvestmentInfo {
+    pub fn normalize_primitive_weights(&mut self) {
+        let mut total_weight = Decimal::zero();
+        for p in &self.primitives {
+            total_weight += p.weight;
+        }
+        for p in &mut self.primitives {
+            p.weight /= total_weight;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::mock_env;
+    use cosmwasm_std::{coins, from_binary, to_binary, Api, QuerierWrapper, Storage};
+    use cw_controllers::Claims;
+    use cw_storage_plus::Item;
+    use quasar_types::callback::{BondResponse, UnbondResponse};
+    use std::collections::HashMap;
+    use std::ops::Add;
+
+    use crate::msg::{PrimitiveConfig, PrimitiveInitMsg};
+
+    #[test]
+    fn test_investment_info() {
+        let mut invest = InvestmentInfo {
+            owner: Addr::unchecked("owner".to_string()),
+            min_withdrawal: Uint128::from(1000u128),
+            primitives: vec![
+                PrimitiveConfig {
+                    address: "primitive".to_string(),
+                    weight: Decimal::percent(50), // passing in unnormalized
+                    init: PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                        lock_period: 1,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/1".to_string(),
+                        local_denom: "uosmo".to_string(),
+                        base_denom: "ibc/blah".to_string(),
+                        quote_denom: "ibc/blah2".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                    }),
+                };
+                4
+            ],
+        };
+        invest.normalize_primitive_weights();
+        assert_eq!(invest.primitives[0].weight, Decimal::percent(25));
+    }
+}
