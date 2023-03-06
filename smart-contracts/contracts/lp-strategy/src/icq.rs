@@ -136,17 +136,9 @@ pub fn calc_total_balance(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        coin,
-        testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-        Deps, Empty, OwnedDeps,
-    };
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
 
-    use crate::{
-        ibc_lock::Lock,
-        state::{Config, CHANNELS, IBC_LOCK},
-        test_helpers::default_setup,
-    };
+    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
 
     use super::*;
 

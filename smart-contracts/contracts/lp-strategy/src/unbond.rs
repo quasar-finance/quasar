@@ -250,7 +250,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        CosmosMsg, IbcMsg,
+        CosmosMsg,
     };
 
     use crate::{state::Unbond, test_helpers::default_setup};
@@ -292,7 +292,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let mut env = mock_env();
+        let env = mock_env();
         let id = "my-id".to_string();
 
         UNBONDING_CLAIMS
@@ -357,7 +357,9 @@ mod tests {
         ];
 
         for unbond in unbonds.iter() {
-            UNBOND_QUEUE.push_back(deps.as_mut().storage, unbond);
+            UNBOND_QUEUE
+                .push_back(deps.as_mut().storage, unbond)
+                .unwrap();
         }
 
         let res = batch_unbond(deps.as_mut().storage, &env).unwrap();

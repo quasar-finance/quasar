@@ -1,22 +1,19 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
 
-
 use crate::bond::do_bond;
-use crate::error::{ContractError};
-use crate::helpers::{parse_seq};
+use crate::error::ContractError;
+use crate::helpers::parse_seq;
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::queries::{
     handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
     handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
@@ -26,8 +23,8 @@ use crate::queries::{
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK,
-    ICA_BALANCE, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
+    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, LP_SHARES, PENDING_ACK,
+    REPLIES, RETURNING,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -330,5 +327,5 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 }

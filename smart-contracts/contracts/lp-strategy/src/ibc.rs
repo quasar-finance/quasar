@@ -33,11 +33,14 @@ use quasar_types::ica::traits::Unpack;
 use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
-    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage,
+    Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -407,87 +410,99 @@ pub fn handle_ica_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     match ica_kind {
         IcaMessages::JoinSwapExternAmountIn(data) => {
-            // TODO move the below locking logic to a separate function
-            // get the ica address of the channel id
-            let ica_channel = ICA_CHANNEL.load(storage)?;
-            let ica_addr = get_ica_address(storage, ica_channel.clone())?;
-            let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
-            let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
-            let shares_out =
-                Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
-                    ContractError::ParseIntError {
-                        error: err,
-                        value: resp.share_out_amount,
-                    }
-                })?);
-
-            let denom = CONFIG.load(storage)?.pool_denom;
-
-            data.update_raw_amount_to_lp(shares_out)?;
-
-            let msg = do_ibc_lock_tokens(
-                storage,
-                ica_addr,
-                vec![Coin {
-                    denom,
-                    amount: shares_out,
-                }],
-            )?;
-
-            let outgoing = ica_send(
-                msg,
-                ica_channel,
-                IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-            )?;
-
-            let msg = create_ibc_ack_submsg(
-                storage,
-                &IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
-                outgoing,
-            )?;
-            Ok(IbcBasicResponse::new().add_submessage(msg))
+            handle_join_pool_ack(storage, &env, data, ack_bin)
         }
-        // todo move the lock_tokens ack handling to a seperate function
-        IcaMessages::LockTokens(data) => {
-            let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
-            let resp = MsgLockTokensResponse::unpack(ack)?;
-
-            // save the lock id in the contract
-            OSMO_LOCK.save(storage, &resp.id)?;
-
-            LAST_PENDING_BOND.save(storage, data)?;
-
-            let mut callbacks: Vec<WasmMsg> = vec![];
-            // TODO make execute a sub msg
-            for claim in &data.bonds {
-                let share_amount =
-                    create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
-                callbacks.push(WasmMsg::Execute {
-                    contract_addr: claim.owner.to_string(),
-                    msg: to_binary(&Callback::BondResponse(BondResponse {
-                        share_amount,
-                        bond_id: claim.bond_id.clone(),
-                    }))?,
-                    funds: vec![],
-                })
-            }
-
-            // set the bond lock state to unlocked
-            IBC_LOCK.update(storage, |old| -> Result<Lock, StdError> {
-                Ok(old.unlock_bond())
-            })?;
-
-            // TODO, do we want to also check queue state? and see if we can already start a new execution?
-            Ok(IbcBasicResponse::new()
-                .add_messages(callbacks)
-                .add_attribute("locked_tokens", ack_bin.to_base64())
-                .add_attribute("lock_id", resp.id.to_string()))
-        }
+        IcaMessages::LockTokens(data) => handle_lock_tokens_ack(storage, &env, data, ack_bin),
         IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
     }
+}
+
+fn handle_join_pool_ack(
+    storage: &mut dyn Storage,
+    env: &Env,
+    data: &mut PendingBond,
+    ack_bin: Binary,
+) -> Result<IbcBasicResponse, ContractError> {
+    // get the ica address of the channel id
+    let ica_channel = ICA_CHANNEL.load(storage)?;
+    let ica_addr = get_ica_address(storage, ica_channel.clone())?;
+    let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
+    let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
+    let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
+        ContractError::ParseIntError {
+            error: err,
+            value: resp.share_out_amount,
+        }
+    })?);
+
+    let denom = CONFIG.load(storage)?.pool_denom;
+
+    data.update_raw_amount_to_lp(shares_out)?;
+
+    let msg = do_ibc_lock_tokens(
+        storage,
+        ica_addr,
+        vec![Coin {
+            denom,
+            amount: shares_out,
+        }],
+    )?;
+
+    let outgoing = ica_send(
+        msg,
+        ica_channel,
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+    )?;
+
+    let msg = create_ibc_ack_submsg(
+        storage,
+        &IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
+        outgoing,
+    )?;
+    Ok(IbcBasicResponse::new().add_submessage(msg))
+}
+
+fn handle_lock_tokens_ack(
+    storage: &mut dyn Storage,
+    _env: &Env,
+    data: &mut PendingBond,
+    ack_bin: Binary,
+) -> Result<IbcBasicResponse, ContractError> {
+    let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
+    let resp = MsgLockTokensResponse::unpack(ack)?;
+
+    // save the lock id in the contract
+    OSMO_LOCK.save(storage, &resp.id)?;
+
+    LAST_PENDING_BOND.save(storage, data)?;
+
+    let mut callbacks: Vec<WasmMsg> = vec![];
+    // TODO make execute a sub msg
+    for claim in &data.bonds {
+        let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
+        callbacks.push(WasmMsg::Execute {
+            contract_addr: claim.owner.to_string(),
+            msg: to_binary(&Callback::BondResponse(BondResponse {
+                share_amount,
+                bond_id: claim.bond_id.clone(),
+            }))?,
+            funds: vec![],
+        })
+    }
+
+    // set the bond lock state to unlocked
+    IBC_LOCK.update(storage, |old| -> Result<Lock, StdError> {
+        Ok(old.unlock_bond())
+    })?;
+
+    // TODO, do we want to also check queue state? and see if we can already start a new execution?
+    Ok(IbcBasicResponse::new()
+        .add_messages(callbacks)
+        .add_attribute("locked_tokens", ack_bin.to_base64())
+        .add_attribute("lock_id", resp.id.to_string()))
 }
 
 fn handle_exit_pool_ack(
@@ -565,7 +580,7 @@ fn on_packet_failure(
         deps.storage,
         packet.sequence,
         &Trap {
-            error: format!("packet failure: {}", error),
+            error: format!("packet failure: {error}"),
             step,
         },
     )?;
@@ -576,7 +591,7 @@ fn on_packet_failure(
 mod test {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, CosmosMsg,
+        Addr,
     };
     use quasar_types::callback::StartUnbondResponse;
 
@@ -642,61 +657,7 @@ mod test {
         let env = mock_env();
         let total_amount = Uint128::new(100);
 
-        let config = CONFIG.load(deps.as_mut().storage).unwrap();
-
-        // mock unbonds
-        let pending_single_unbond = PendingSingleUnbond {
-            lp_shares: Uint128::new(100),
-            primitive_shares: Uint128::new(100),
-            owner: Addr::unchecked("owner"),
-            id: "unbond_id".to_string(),
-        };
-        let mut pending_unbonds = vec![pending_single_unbond.clone()];
-
-        // mock shares
-        SHARES
-            .save(
-                deps.as_mut().storage,
-                pending_single_unbond.owner.clone(),
-                &total_amount,
-            )
-            .unwrap();
-
-        // lock the ibc lock
-        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
-
-        let res =
-            &handle_start_unbond_ack(deps.as_mut().storage, &env.clone(), &mut pending_unbonds)
-                .unwrap()
-                .messages[0]
-                .msg;
-
-        // TODO: check if this is correct
-        let unlock_time = env.block.time.plus_seconds(config.lock_period);
-
-        let msg = Callback::StartUnbondResponse(StartUnbondResponse {
-            unbond_id: pending_single_unbond.id.clone(),
-            unlock_time,
-        });
-
-        let expected = CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: pending_single_unbond.owner.to_string(),
-            msg: to_binary(&msg).unwrap(),
-            funds: vec![],
-        });
-
-        let lock = IBC_LOCK.load(deps.as_mut().storage).unwrap();
-        assert!(lock.is_unlocked());
-
-        assert_eq!(res, &expected);
-    }
-
-    #[test]
-    fn handle_start_unbonding_ack_works_tshooting() {
-        let mut deps = mock_dependencies();
-        default_setup(deps.as_mut().storage).unwrap();
-        let env = mock_env();
-        let total_amount = Uint128::new(100);
+        let mut pending_unbonds = vec![];
 
         // mock pending unbonds
         let pending_unbond = PendingSingleUnbond {
@@ -705,8 +666,9 @@ mod test {
             owner: Addr::unchecked("owner"),
             id: "unbond_id".to_string(),
         };
+        pending_unbonds.push(pending_unbond.clone());
 
-        // mock shares
+        // TODO: we shouldn't need to mock shares here (possibly a bug)
         SHARES
             .save(
                 deps.as_mut().storage,
@@ -715,30 +677,32 @@ mod test {
             )
             .unwrap();
 
-        // lock the ibc lock
+        // lock the ibc_lock
         IBC_LOCK
             .save(deps.as_mut().storage, &Lock::new().lock_start_unbond())
             .unwrap();
 
-        // check if lock is locked
+        // make sure ibc_lock is locked
         let lock = IBC_LOCK.load(deps.as_mut().storage).unwrap();
         assert!(lock.is_locked());
 
-        let res = handle_start_unbond_ack(
-            deps.as_mut().storage,
-            &env.clone(),
-            &mut vec![pending_unbond.clone()],
-        )
-        .unwrap();
+        let res =
+            handle_start_unbond_ack(deps.as_mut().storage, &env.clone(), &mut pending_unbonds)
+                .unwrap();
 
+        let config = CONFIG.load(deps.as_mut().storage).unwrap();
+        let unlock_time = env.block.time.plus_seconds(config.lock_period);
+
+        // TODO: make a for loop so this works when having multiple pending unbonds
         let mut msgs: Vec<WasmMsg> = Vec::new();
+
+        let callback_msg = Callback::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: pending_unbond.id.to_string(),
+            unlock_time,
+        });
         let msg = WasmMsg::Execute {
             contract_addr: pending_unbond.owner.to_string(),
-            msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
-                unbond_id: "unbond_id".to_string(),
-                unlock_time: env.block.time.plus_seconds(100),
-            }))
-            .unwrap(),
+            msg: to_binary(&callback_msg).unwrap(),
             funds: vec![],
         };
         msgs.push(msg);
@@ -748,6 +712,7 @@ mod test {
             .add_attribute("callback-msgs", "1")
             .add_messages(msgs);
 
+        // make sure ibc_lock is now unlocked
         let lock = IBC_LOCK.load(deps.as_mut().storage).unwrap();
         assert!(lock.is_unlocked());
 
