@@ -18,6 +18,29 @@ import (
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
+// Param request
+
+func (k Keeper) TryUpdateChainParams(ctx sdk.Context) {
+
+	// Do not start a new procedure if module is disabled
+	if !k.IsEnabled(ctx) {
+		return
+	}
+
+	state := k.GetRequestState(ctx, types.KeyParamsRequestState)
+	if state.Pending() {
+		k.Logger(ctx).Info("ignoring current osmosis chain params pending request")
+	}
+
+	seq, err := k.sendParamsRequest(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in sending param request",
+			"seq", seq,
+			"error", err)
+	}
+	return
+}
+
 func (k Keeper) sendParamsRequest(ctx sdk.Context) (uint64, error) {
 	packetData := types.NewOsmosisParamsICQPacketData()
 	packet, err := utils.SendPacket(

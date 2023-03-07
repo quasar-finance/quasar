@@ -9,5 +9,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	// TODO : Also call param request from osmosis
 	case k.GetEpochIdentifier(ctx):
 		k.TryUpdateIncentivizedPools(ctx)
+		k.TryUpdateChainParams(ctx)
 	}
 }
