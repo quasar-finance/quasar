@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{OverflowError, StdError, Uint128};
 use quasar_types::error::Error as QError;
 use thiserror::Error;
 
@@ -68,8 +68,8 @@ pub enum ContractError {
     QError(#[from] QError),
 }
 
-impl From<cosmwasm_std::OverflowError> for ContractError {
-    fn from(err: cosmwasm_std::OverflowError) -> Self {
+impl From<OverflowError> for ContractError {
+    fn from(err: OverflowError) -> Self {
         ContractError::OverflowError(format!("{}", err))
     }
 }
