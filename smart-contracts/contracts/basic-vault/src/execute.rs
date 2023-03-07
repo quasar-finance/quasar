@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, StdError, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Attribute, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::{execute_burn, execute_mint};
