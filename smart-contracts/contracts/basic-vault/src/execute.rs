@@ -246,25 +246,26 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         acc
     });
 
-    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = primitive_funding_amounts
-        .iter()
-        .map(|(coin, prim_addr)| {
-            let deposit_stub = BondingStub {
-                address: prim_addr.clone(),
-                bond_response: Option::None,
-            };
-            deposit_stubs.push(deposit_stub);
+    let mut bond_msgs = Vec::new();
 
-            // todo: do we need it to reply
-            Ok(WasmMsg::Execute {
-                contract_addr: prim_addr.clone(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
-                    id: bond_seq.to_string(),
-                })?,
-                funds: vec![coin.clone().clone()],
-            })
-        })
-        .collect();
+    for (coin, prim_addr) in primitive_funding_amounts.clone() {
+        let deposit_stub = BondingStub {
+            address: prim_addr.clone(),
+            bond_response: Option::None,
+        };
+        deposit_stubs.push(deposit_stub);
+
+        // TODO: do we need it to reply?
+        let wasm_msg = WasmMsg::Execute {
+            contract_addr: prim_addr,
+            msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                id: bond_seq.to_string(),
+            })?,
+            funds: vec![coin.clone().clone()],
+        };
+
+        bond_msgs.push(wasm_msg);
+    }
 
     // save bonding state for use during the callback
     PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
@@ -329,7 +330,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
-        .add_messages(bond_msgs?))
+        .add_messages(bond_msgs))
     // .add_messages(remainder_msgs))
 }
 
