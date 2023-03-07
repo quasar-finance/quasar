@@ -71,7 +71,6 @@ pub fn may_pay_with_ratio(
     primitives: &Vec<PrimitiveConfig>,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // TODO: Normalize weights first
-
     let mut deposit_amount_weights = Vec::new();
     for pc in primitives {
         let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
@@ -118,7 +117,7 @@ pub fn may_pay_with_ratio(
                 acc
             });
 
-    if (token_weights.first().unwrap().weight == Decimal::zero()) {
+    if token_weights.first().unwrap().weight == Decimal::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser".to_string(),
         }));
@@ -139,13 +138,12 @@ pub fn may_pay_with_ratio(
     let ratio = CoinRatio {
         ratio: deposit_amount_weights,
     };
-
-    if (max_bond == Uint128::zero()) {
+    if max_bond == Uint128::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser 2".to_string(),
         }));
     }
-    if (max_bond == Uint128::MAX) {
+    if max_bond == Uint128::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser 3".to_string(),
         }));
@@ -156,42 +154,31 @@ pub fn may_pay_with_ratio(
     // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
     let mut remainder = funds.clone();
+    let mut coins: Vec<Coin> = Vec::new();
 
-    let coins: Result<Vec<Coin>, ContractError> = normed_ratio?
-        .iter()
-        .map(|r| {
-            let amount = must_pay_multi(funds, &r.denom).unwrap();
-            let expected_amount = max_bond
-                .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
-                .unwrap();
+    for r in normed_ratio? {
+        let amount = must_pay_multi(funds, &r.denom).unwrap();
+        let expected_amount =
+            max_bond.checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())?;
 
-            if expected_amount > amount {
-                return Err(ContractError::IncorrectBondingRatio {});
+        if expected_amount > amount {
+            return Err(ContractError::IncorrectBondingRatio {});
+        }
+
+        for c in remainder.iter_mut() {
+            if c.denom == r.denom {
+                c.amount = c.amount.checked_sub(expected_amount)?;
             }
+        }
 
-            remainder = remainder
-                .iter()
-                .map(|c| {
-                    if c.denom == r.denom {
-                        Coin {
-                            amount: c.amount.checked_sub(expected_amount).unwrap(),
-                            denom: c.denom.clone(),
-                        }
-                    } else {
-                        c.clone()
-                    }
-                })
-                .collect();
+        coins.push(Coin {
+            denom: r.denom.clone(),
+            amount: expected_amount,
+        });
+    }
 
-            Ok(Coin {
-                denom: r.denom.clone(),
-                amount: expected_amount,
-            })
-        })
-        .collect();
-
-    let c = coins?;
-    if (c.first().unwrap().amount == Uint128::zero()) {
+    let c = coins;
+    if c.first().unwrap().amount == Uint128::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here".to_string(),
         }));

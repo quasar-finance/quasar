@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError, Uint128};
+use cosmwasm_std::{CheckedMultiplyRatioError, OverflowError, StdError, Uint128};
 use quasar_types::error::Error as QError;
 use thiserror::Error;
 
@@ -64,12 +64,21 @@ pub enum ContractError {
     #[error("Overflow error: {0}")]
     OverflowError(String),
 
+    #[error("Multiply ratio error: {0}")]
+    MultiplyRatioError(String),
+
     #[error("{0}")]
     QError(#[from] QError),
 }
 
 impl From<OverflowError> for ContractError {
     fn from(err: OverflowError) -> Self {
+        ContractError::OverflowError(format!("{}", err))
+    }
+}
+
+impl From<CheckedMultiplyRatioError> for ContractError {
+    fn from(err: CheckedMultiplyRatioError) -> Self {
         ContractError::OverflowError(format!("{}", err))
     }
 }
