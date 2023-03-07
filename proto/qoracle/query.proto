@@ -19,6 +19,7 @@ service Query {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
 	}
 
+	/*
 	// DenomMappings queries list of denom-> symbol mappings which maps the denoms to their corresponding symbol fetched from price oracles.
 	rpc DenomMappings(QueryDenomMappingsRequest) returns (QueryDenomMappingsResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_mappings";
@@ -28,7 +29,7 @@ service Query {
 	rpc DenomPrices(QueryDenomPricesRequest) returns (QueryDenomPricesResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_prices";
 	}
-
+  */
 	// Pools queries the pools collected from pool oracles.
 	rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
 		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pools";

@@ -14,8 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
-	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
 	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
@@ -54,7 +52,6 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 // RegisterInterfaces registers the module's interface types
 func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(reg)
-	qbandtypes.RegisterInterfaces(reg)
 	qosmotypes.RegisterInterfaces(reg)
 }
 
@@ -78,11 +75,6 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
-	if err != nil {
-		panic(err)
-	}
-
-	err = qbandtypes.RegisterQueryHandlerClient(context.Background(), mux, qbandtypes.NewQueryClient(clientCtx))
 	if err != nil {
 		panic(err)
 	}
@@ -117,22 +109,19 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 
-	keeper          keeper.Keeper
-	bandchainKeeper qbandkeeper.Keeper
-	osmosisKeeper   qosmokeeper.Keeper
+	keeper        keeper.Keeper
+	osmosisKeeper qosmokeeper.Keeper
 }
 
 func NewAppModule(
 	cdc codec.Codec,
 	keeper keeper.Keeper,
-	bandchainKeeper qbandkeeper.Keeper,
 	osmosisKeeper qosmokeeper.Keeper,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic:  NewAppModuleBasic(cdc),
-		keeper:          keeper,
-		bandchainKeeper: bandchainKeeper,
-		osmosisKeeper:   osmosisKeeper,
+		AppModuleBasic: NewAppModuleBasic(cdc),
+		keeper:         keeper,
+		osmosisKeeper:  osmosisKeeper,
 	}
 }
 
@@ -165,9 +154,6 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-
-	qbandtypes.RegisterQueryServer(cfg.QueryServer(), am.bandchainKeeper)
-
 	qosmotypes.RegisterMsgServer(cfg.MsgServer(), qosmokeeper.NewMsgServerImpl(am.osmosisKeeper))
 	qosmotypes.RegisterQueryServer(cfg.QueryServer(), am.osmosisKeeper)
 }
@@ -178,14 +164,14 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.Ra
 	var genesisState genesistypes.GenesisState
 	cdc.MustUnmarshalJSON(gs, &genesisState)
 
-	InitGenesis(ctx, am.keeper, am.bandchainKeeper, am.osmosisKeeper, genesisState)
+	InitGenesis(ctx, am.keeper, am.osmosisKeeper, genesisState)
 
 	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the qoracle module's exported genesis state as raw JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper, am.bandchainKeeper, am.osmosisKeeper)
+	gs := ExportGenesis(ctx, am.keeper, am.osmosisKeeper)
 	return cdc.MustMarshalJSON(gs)
 }
 

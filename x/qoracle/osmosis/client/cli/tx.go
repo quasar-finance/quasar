@@ -4,12 +4,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/spf13/cobra"
-
-	//	qosmocli "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/client/cli"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 )
 
 var _ = strconv.Itoa(0)
@@ -24,12 +19,13 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(CmdUpdateOsmosisChainParams())
+	// cmd.AddCommand(CmdUpdateOsmosisChainParams())
 	// this line is used by starport scaffolding # 1
 
 	return cmd
 }
 
+/*
 func CmdUpdateOsmosisChainParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update-osmosis-chain-params",
@@ -56,3 +52,4 @@ func CmdUpdateOsmosisChainParams() *cobra.Command {
 
 	return cmd
 }
+*/

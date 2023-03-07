@@ -41,7 +41,7 @@ After this you should see block logs written in the stdout of your terminal.
 
 # Config and Start the Hermes Relayer
 
-Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/state by default the response should be:
+Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/state by default the response should be:
 ```json
 {
   "coin_rates_state": {

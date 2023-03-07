@@ -37,17 +37,20 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 				return nil, sdkerrors.Wrap(err, "failed to marshal quasar pool")
 			}
 			return bz, nil
-		case contractQuery.TokenPrice != nil:
-			price, err := qk.GetDenomPrice(ctx, contractQuery.TokenPrice.Denom)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to get token price")
-			}
+		/*
+			case contractQuery.TokenPrice != nil:
+				price, err := qk.GetDenomPrice(ctx, contractQuery.TokenPrice.Denom)
+				if err != nil {
+					return nil, sdkerrors.Wrap(err, "failed to get token price")
+				}
 
-			bz, err := price.MarshalJSON()
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal quasar token price")
-			}
-			return bz, nil
+				bz, err := price.MarshalJSON()
+				if err != nil {
+					return nil, sdkerrors.Wrap(err, "failed to marshal quasar token price")
+				}
+				return bz, nil
+
+		*/
 		default:
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown custom query variant"}
 		}

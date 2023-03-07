@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
 
-	qbandcli "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/client/cli"
 	qosmocli "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/client/cli"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -24,9 +23,8 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		CmdQueryParams(),
-		CmdQueryDenomPrices(),
+		// CmdQueryDenomPrices(),
 		CmdQueryPools(),
-		qbandcli.GetQueryCmd(),
 		qosmocli.GetQueryCmd(),
 	)
 

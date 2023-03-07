@@ -1,11 +1,7 @@
 package types
 
-// this line is used by starport scaffolding # genesis/types/import
-
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	types "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
@@ -13,19 +9,16 @@ import (
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		Params: types.DefaultParams(),
-		// DenomSymbolMappings:   DefaultSymbolMappings(),
-		BandchainGenesisState: DefaultBandchainGenesis(),
-		OsmosisGenesisState:   DefaultOsmosisGenesis(),
+		Params:              types.DefaultParams(),
+		OsmosisGenesisState: DefaultOsmosisGenesis(),
 	}
 }
 
 // NewGenesisState creates and returns a new GenesisState instance from the provided controller and host genesis state types
-func NewGenesisState(params types.Params, bandchainGenesisState BandchainGenesisState, osmosisGenesisState OsmosisGenesisState) *GenesisState {
+func NewGenesisState(params types.Params, osmosisGenesisState OsmosisGenesisState) *GenesisState {
 	return &GenesisState{
-		Params:                params,
-		BandchainGenesisState: bandchainGenesisState,
-		OsmosisGenesisState:   osmosisGenesisState,
+		Params:              params,
+		OsmosisGenesisState: osmosisGenesisState,
 	}
 }
 
@@ -36,67 +29,7 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	/*
-		// validateDenomPriceMappings validates the denom price mappings
-		for i, mapping := range gs.DenomSymbolMappings {
-			if err := mapping.Validate(); err != nil {
-				return fmt.Errorf("invalid denom price mapping at index %d: %w", i, err)
-			}
-		}
-
-	*/
-
-	if err := gs.BandchainGenesisState.Validate(); err != nil {
-		return err
-	}
-
 	if err := gs.OsmosisGenesisState.Validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// DefaultSymbolMappings creates and returns the default qoracle DefaultSymbolMappings
-func DefaultSymbolMappings() []types.DenomSymbolMapping {
-	return []types.DenomSymbolMapping{
-		{
-			Denom:        "uatom",
-			OracleSymbol: "ATOM",
-			Multiplier:   sdk.NewDecWithPrec(1, 6),
-		},
-		{
-			Denom:        "uosmo",
-			OracleSymbol: "OSMO",
-			Multiplier:   sdk.NewDecWithPrec(1, 6),
-		},
-	}
-}
-
-// DefaultBandchainGenesis creates and returns the default qoracle DefaultBandchainGenesis
-func DefaultBandchainGenesis() BandchainGenesisState {
-	return BandchainGenesisState{
-		Port:   qbandtypes.PortID,
-		Params: qbandtypes.DefaultParams(),
-	}
-}
-
-// NewBandchainGenesisState creates a returns a new BandchainGenesisState instance
-func NewBandchainGenesisState(port string, params qbandtypes.Params) BandchainGenesisState {
-	return BandchainGenesisState{
-		Port:   port,
-		Params: params,
-	}
-}
-
-// Validate performs basic validation of the BandchainGenesisState
-func (gs BandchainGenesisState) Validate() error {
-
-	if err := host.PortIdentifierValidator(gs.Port); err != nil {
-		return err
-	}
-
-	if err := gs.Params.Validate(); err != nil {
 		return err
 	}
 

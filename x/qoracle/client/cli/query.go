@@ -39,6 +39,7 @@ func CmdQueryParams() *cobra.Command {
 	return cmd
 }
 
+/*
 func CmdQueryDenomPrices() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "denom-prices",
@@ -74,6 +75,7 @@ func CmdQueryDenomPrices() *cobra.Command {
 
 	return cmd
 }
+*/
 
 func CmdQueryPools() *cobra.Command {
 	cmd := &cobra.Command{

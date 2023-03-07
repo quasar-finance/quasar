@@ -13,8 +13,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	// DefaultDenomPricesExpDuration is the default duration in which denom prices are valid
 	DefaultDenomPricesExpDuration = uint64(time.Minute * 6)
-	// ds1                           = DenomSymbolMapping{Denom: "", OracleSymbol: "", Multiplier: types.ZeroDec()}
-	DefaultDenomSymbolMapping = []DenomSymbolMapping{}
+	DefaultDenomSymbolMapping     = []DenomSymbolMapping{}
 )
 
 var (
@@ -28,24 +27,36 @@ func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
+/*
 // NewParams creates a new Params instance
-func NewParams(expDuration uint64, mapping []DenomSymbolMapping) Params {
+
+	func NewParams(expDuration uint64, mapping []DenomSymbolMapping) Params {
+		return Params{
+			DenomPricesExpDuration: expDuration,
+			Mappings:               mapping, // TODO - Is deep copy a better solution here.
+		}
+	}
+*/
+
+func NewParams() Params {
 	return Params{
-		DenomPricesExpDuration: expDuration,
-		Mappings:               mapping, // TODO - Is deep copy a better solution here.
+		// DenomPricesExpDuration: expDuration,
+		// Mappings:               mapping, // TODO - Is deep copy a better solution here.
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultDenomPricesExpDuration, DefaultDenomSymbolMapping)
+	return NewParams()
+	// return NewParams(DefaultDenomPricesExpDuration)
+	//DefaultDenomSymbolMapping)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
-		paramtypes.NewParamSetPair(KeyDenomSymbolMapping, &p.Mappings, validateDenomSymbolMapping),
+		// paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
+		// paramtypes.NewParamSetPair(KeyDenomSymbolMapping, &p.Mappings, validateDenomSymbolMapping),
 	}
 }
 

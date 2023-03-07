@@ -4,7 +4,6 @@ package quasarlabs.quasarnode.qoracle;
 import "gogoproto/gogo.proto";
 import "qoracle/params.proto";
 import "qoracle/denom_symbol_mapping.proto";
-import "qoracle/bandchain/params.proto";
 import "qoracle/osmosis/params.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types";
@@ -13,18 +12,9 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types";
 message GenesisState {
   Params params = 1 
     [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
-  // repeated DenomSymbolMapping denom_symbol_mappings = 2
-  //  [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"denom_symbol_mappings\""];
-  BandchainGenesisState bandchain_genesis_state = 3
-    [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"bandchain_genesis_state\""];
+
   OsmosisGenesisState osmosis_genesis_state = 4
     [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"osmosis_genesis_state\""];
-}
-
-// BandchainGenesisState defines the qoracle bandchain submodule's genesis state.
-message BandchainGenesisState {
-  string port = 1 [(gogoproto.moretags) = "yaml:\"port_id\""];
-  quasarlabs.quasarnode.qoracle.bandchain.Params params = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
 }
 
 // OsmosisGenesisState defines the qoracle osmosis submodule's genesis state.
