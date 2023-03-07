@@ -61,8 +61,17 @@ pub enum ContractError {
     #[error("Incorrect callback id, expected: {expected}, got: {:?}", ids)]
     IncorrectCallbackId { expected: String, ids: Vec<String> },
 
+    #[error("Overflow error: {0}")]
+    OverflowError(String),
+
     #[error("{0}")]
     QError(#[from] QError),
+}
+
+impl From<cosmwasm_std::OverflowError> for ContractError {
+    fn from(err: cosmwasm_std::OverflowError) -> Self {
+        ContractError::OverflowError(format!("{}", err))
+    }
 }
 
 impl From<cw20_base::ContractError> for ContractError {
