@@ -67,7 +67,7 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
 // TODO: test
 pub fn may_pay_with_ratio(
     deps: &Deps,
-    funds: &Vec<Coin>,
+    funds: &[Coin],
     primitives: &Vec<PrimitiveConfig>,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // TODO: Normalize weights first
@@ -102,10 +102,7 @@ pub fn may_pay_with_ratio(
             .iter()
             .fold(vec![], |mut acc, coin_weight| {
                 let existing_weight_idx = acc.iter().position(|cw| cw.denom == coin_weight.denom);
-                let existing_weight = match existing_weight_idx {
-                    Some(idx) => Some(acc.remove(idx)),
-                    None => None,
-                };
+                let existing_weight = existing_weight_idx.map(|idx| acc.remove(idx));
                 let new_weight = match existing_weight {
                     Some(weight) => weight.weight.checked_add(coin_weight.weight).unwrap(),
                     None => coin_weight.weight,
@@ -153,7 +150,7 @@ pub fn may_pay_with_ratio(
     // where funds is the max amount we can use in compliance with the ratio
     // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
-    let mut remainder = funds.clone();
+    let mut remainder = funds.to_owned();
     let mut coins: Vec<Coin> = Vec::new();
 
     for r in normed_ratio? {
