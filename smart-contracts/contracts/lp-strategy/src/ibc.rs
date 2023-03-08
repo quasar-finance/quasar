@@ -1,3 +1,6 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{

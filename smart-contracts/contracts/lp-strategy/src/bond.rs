@@ -286,7 +286,6 @@ mod tests {
         );
 
         // we should have minted exactly 100 shares by now,
-        // we should have minted exactly 100 shares by now,
         assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
     }
 
