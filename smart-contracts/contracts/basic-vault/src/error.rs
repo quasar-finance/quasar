@@ -73,13 +73,13 @@ pub enum ContractError {
 
 impl From<OverflowError> for ContractError {
     fn from(err: OverflowError) -> Self {
-        ContractError::OverflowError(format!("{}", err))
+        ContractError::OverflowError(format!("{err}"))
     }
 }
 
 impl From<CheckedMultiplyRatioError> for ContractError {
     fn from(err: CheckedMultiplyRatioError) -> Self {
-        ContractError::OverflowError(format!("{}", err))
+        ContractError::OverflowError(format!("{err}"))
     }
 }
 

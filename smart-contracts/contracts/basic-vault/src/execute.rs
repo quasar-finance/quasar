@@ -13,12 +13,12 @@ use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
     BondingStub, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR, BOND_STATE,
-    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY, UNBOND_STATE,
+    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
 // get_bonded returns the total amount of delegations from contract
 // it ensures they are all the same denom
-fn get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, ContractError> {
+fn _get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, ContractError> {
     let bonds = querier.query_all_delegations(contract)?;
     if bonds.is_empty() {
         return Ok(Uint128::zero());
@@ -37,7 +37,7 @@ fn get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, Cont
     })
 }
 
-fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
+fn _assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
     if supply.bonded != bonded {
         Err(ContractError::BondedMismatch {
             stored: supply.bonded,
@@ -51,7 +51,7 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
 // todo test
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
-pub fn must_pay_multi(funds: &Vec<Coin>, denom: &str) -> Result<Uint128, PaymentError> {
+pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentError> {
     match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
@@ -298,7 +298,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     let shares_to_mint = primitive_funding_amounts
         .iter()
-        .fold(Uint128::zero(), |acc, (coin, prim)| {
+        .fold(Uint128::zero(), |acc, (coin, _prim)| {
             acc.checked_add(coin.amount).unwrap()
         });
 
@@ -365,7 +365,7 @@ pub fn do_start_unbond(
     info: &MessageInfo,
     amount: Uint128,
 ) -> Result<(Vec<WasmMsg>, Vec<Attribute>), ContractError> {
-    if (amount.is_zero()) {
+    if amount.is_zero() {
         // skip start unbond
         return Ok((vec![], vec![]));
     }
@@ -388,37 +388,34 @@ pub fn do_start_unbond(
     execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
 
     let mut unbonding_stubs = vec![];
+    let mut start_unbond_msgs = Vec::new();
+    for pc in invest.primitives.iter() {
+        // lets get the amount of tokens to unbond for this primitive
+        // todo make sure weights are normalized!!
+        let primitive_share_amount =
+            amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
 
-    let start_unbond_msgs: Vec<_> = invest
-        .primitives
-        .iter()
-        .map(|pc| {
-            // lets get the amount of tokens to unbond for this primitive
-            // todo make sure weights are normalized!!
-            let primitive_share_amount =
-                amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
+        // todo: safety asertion - make sure we have enough shares to unbond for this user (else we have major code error)
+        // let our_shares = deps.querier.query_wasm_smart(pc.address, )
 
-            // todo: safety asertion - make sure we have enough shares to unbond for this user (else we have major code error)
-            // let our_shares = deps.querier.query_wasm_smart(pc.address, )
+        unbonding_stubs.push(UnbondingStub {
+            address: pc.address.clone(),
+            unlock_time: None,
+            unbond_response: None,
+            unbond_funds: vec![],
+        });
 
-            unbonding_stubs.push(UnbondingStub {
-                address: pc.address.clone(),
-                unlock_time: None,
-                unbond_response: None,
-                unbond_funds: vec![],
-            });
-
-            WasmMsg::Execute {
-                contract_addr: pc.address.clone(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
-                    id: bond_seq.to_string(),
-                    share_amount: primitive_share_amount,
-                })
-                .unwrap(),
-                funds: vec![],
-            }
-        })
-        .collect();
+        let msg = WasmMsg::Execute {
+            contract_addr: pc.address.clone(),
+            msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                id: bond_seq.to_string(),
+                share_amount: primitive_share_amount,
+            })
+            .unwrap(),
+            funds: vec![],
+        };
+        start_unbond_msgs.push(msg);
+    }
 
     // jimeny cricket, we need to save the unbonding state for use during the callback
     PENDING_UNBOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
@@ -437,10 +434,7 @@ pub fn do_start_unbond(
         },
     )?;
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
-    BONDING_SEQ.save(
-        deps.storage,
-        &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
-    )?;
+    BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
     // need to convert amount to the set of amounts for each primitive
 
@@ -558,35 +552,31 @@ pub fn do_unbond(
 }
 
 pub fn find_and_return_unbondable_msgs(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: &Env,
-    info: &MessageInfo,
-    unbond_id: &String,
+    _info: &MessageInfo,
+    unbond_id: &str,
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
 
-    Ok(unbond_stubs
-        .iter()
-        .filter_map(|stub| {
-            if let Some(unlock_time) = stub.unlock_time {
-                if (unlock_time < env.block.time) {
-                    Some(WasmMsg::Execute {
-                        contract_addr: stub.address.clone(),
-                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
-                            id: unbond_id.clone(),
-                        })
-                        .unwrap(),
-                        funds: vec![],
+    let mut unbond_msgs = Vec::new();
+    for stub in unbond_stubs.iter() {
+        if let Some(unlock_time) = stub.unlock_time {
+            if unlock_time < env.block.time {
+                let msg = WasmMsg::Execute {
+                    contract_addr: stub.address.to_owned(),
+                    msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
+                        id: unbond_id.to_owned(),
                     })
-                } else {
-                    None
-                }
-            } else {
-                None
+                    .unwrap(),
+                    funds: vec![],
+                };
+                unbond_msgs.push(msg);
             }
-        })
-        .collect())
+        }
+    }
+    Ok(unbond_msgs)
 }
 
 pub fn claim(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
