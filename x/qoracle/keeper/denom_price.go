@@ -18,10 +18,6 @@ func (k Keeper) GetDenomPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
 		// Last update time not found.
 		return sdk.ZeroDec(), err
 	}
-	// Check whether denom prices are outdated
-	// if ctx.BlockTime().Before(updatedAt.Add(time.Duration(k.GetPriceListExpDuration(ctx)))) {
-	//	return sdk.ZeroDec(), types.ErrPriceListOutdated
-	// }
 
 	memStore := ctx.KVStore(k.memKey)
 	priceBz := memStore.Get(types.GetDenomPriceKey(denom))
@@ -65,9 +61,7 @@ func (k Keeper) GetRelativeDenomPrice(ctx sdk.Context, denomIn, denomOut string)
 		// In this case, division by denomOutPrice is risky
 		return sdk.ZeroDec(), sdkerrors.Wrapf(types.ErrRelativeDenomPriceNotFound,
 			"denomInPrice: %s, denomOutPrice : %s", denomInPrice.String(), denomOutPrice.String())
-		//	"denomOutPrice: %s", denomOutPrice.String())
 	}
 
-	// Can this cause - non determinism
 	return denomInPrice.Quo(denomOutPrice), nil
 }

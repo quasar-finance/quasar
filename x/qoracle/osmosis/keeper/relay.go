@@ -38,7 +38,6 @@ func (k Keeper) TryUpdateChainParams(ctx sdk.Context) {
 			"seq", seq,
 			"error", err)
 	}
-	return
 }
 
 func (k Keeper) sendParamsRequest(ctx sdk.Context) (uint64, error) {

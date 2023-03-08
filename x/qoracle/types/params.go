@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	time "time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -27,37 +26,18 @@ func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
-/*
-// NewParams creates a new Params instance
-
-	func NewParams(expDuration uint64, mapping []DenomSymbolMapping) Params {
-		return Params{
-			DenomPricesExpDuration: expDuration,
-			Mappings:               mapping, // TODO - Is deep copy a better solution here.
-		}
-	}
-*/
-
 func NewParams() Params {
-	return Params{
-		// DenomPricesExpDuration: expDuration,
-		// Mappings:               mapping, // TODO - Is deep copy a better solution here.
-	}
+	return Params{}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams()
-	// return NewParams(DefaultDenomPricesExpDuration)
-	//DefaultDenomSymbolMapping)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		// paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
-		// paramtypes.NewParamSetPair(KeyDenomSymbolMapping, &p.Mappings, validateDenomSymbolMapping),
-	}
+	return paramtypes.ParamSetPairs{}
 }
 
 // Validate validates the set of params
@@ -69,22 +49,4 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
-}
-
-func validateDuration(i interface{}) error {
-	_, ok := i.(uint64)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	return nil
-}
-
-func validateDenomSymbolMapping(m interface{}) error {
-	_, ok := m.([]DenomSymbolMapping)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", m)
-	}
-	// TODO - Should also check if the param is sorted or not
-	return nil
 }
