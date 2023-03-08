@@ -9,7 +9,7 @@ ignite chain serve -c demos/paramchange/quasar.yml --home run/quasar/home --rese
 `
 4. Submit mind module param change proposal
 `
-quasarnoded tx gov submit-proposal param-change demos/paramchange/mint_param_change.json --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --home run/quasar/home --chain-id quasar --output json | jq
+quasarnoded tx gov submit-proposal param-change ./mint_param_change.json --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --home ~/.quasarnode --chain-id quasar --output json | jq
 
 `
 5. Query the proposal state.
