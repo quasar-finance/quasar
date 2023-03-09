@@ -23,8 +23,8 @@ const (
 	IBCTransferAmount              int64  = 10_000
 	ProposalTitle                  string = "title"
 	ProposalDescription            string = "description"
-	lpStrategyContractPath                = "../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
-	basicVaultStrategyContractPath        = "../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
+	lpStrategyContractPath                = "../../smart-contracts/artifacts/lp_strategy.wasm"
+	basicVaultStrategyContractPath        = "../../smart-contracts/artifacts/basic_vault.wasm"
 	osmosisPool1Path                      = "scripts/sample_pool1.json"
 	osmosisPool2Path                      = "scripts/sample_pool2.json"
 	osmosisPool3Path                      = "scripts/sample_pool3.json"
@@ -77,7 +77,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 
 	// Wait for IBC connections to be established
 	t.Log("Wait for chains to settle up the ibc connection states")
-	err := testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
+	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
 	// Find out connections between each pair of chains
@@ -109,6 +109,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 			"quote_denom":           "stake1",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
+			"expected_connection":   "connection-0",
 		},
 		map[string]any{
 			"lock_period":           6,
@@ -119,6 +120,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 			"quote_denom":           "fakestake",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
+			"expected_connection":   "connection-0",
 		},
 		map[string]any{
 			"lock_period":           6,
@@ -129,6 +131,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 			"quote_denom":           "uosmo",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
+			"expected_connection":   "connection-0",
 		},
 	)
 }
@@ -148,14 +151,6 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context, acc *ibc.Wallet, f
 	res := s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs1)
 	s.Require().NotEmpty(res.Address)
 	s.LpStrategyContractAddress1 = res.Address
-
-	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs1)
-	s.Require().NotEmpty(res.Address)
-	s.LpStrategyContractAddress2 = res.Address
-
-	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs1)
-	s.Require().NotEmpty(res.Address)
-	s.LpStrategyContractAddress3 = res.Address
 
 	// create channels for all the instantiated contracts address 1
 	s.CreateChannel(
@@ -180,6 +175,10 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context, acc *ibc.Wallet, f
 		),
 	)
 
+	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs2)
+	s.Require().NotEmpty(res.Address)
+	s.LpStrategyContractAddress2 = res.Address
+
 	// create channels for all the instantiated contracts address 2
 	s.CreateChannel(
 		ctx,
@@ -202,6 +201,10 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context, acc *ibc.Wallet, f
 			s.Quasar2OsmosisConn.Counterparty.ConnectionId,
 		),
 	)
+
+	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs3)
+	s.Require().NotEmpty(res.Address)
+	s.LpStrategyContractAddress3 = res.Address
 
 	// create channels for all the instantiated contracts address 3
 	s.CreateChannel(
@@ -274,6 +277,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 							"quote_denom":           "stake1",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
+							"expected_connection":   "connection-0",
 						},
 					},
 				},
@@ -290,6 +294,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 							"quote_denom":           "fakestake",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
+							"expected_connection":   "connection-0",
 						},
 					},
 				},
@@ -306,12 +311,14 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 							"quote_denom":           "uosmo",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
+							"expected_connection":   "connection-0",
 						},
 					},
 				},
 			},
 		})
 
+	// TODO make this work. 😫
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
