@@ -180,7 +180,8 @@ func (im IBCModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet acknowledgement: %v", err)
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest,
+			"cannot unmarshal ibc packet acknowledgement: %v, relayer: %s", err, relayer.String())
 	}
 
 	return im.keeper.OnAcknowledgementPacket(ctx, packet, ack)
@@ -192,5 +193,7 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
+	im.keeper.Logger(ctx).Error("osmosis param request state is timed out.",
+		"relayer address", relayer.String())
 	return im.keeper.OnTimeoutPacket(ctx, packet)
 }

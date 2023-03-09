@@ -29,7 +29,8 @@ func (k Keeper) TryUpdateChainParams(ctx sdk.Context) {
 
 	state := k.GetRequestState(ctx, types.KeyParamsRequestState)
 	if state.Pending() {
-		k.Logger(ctx).Info("ignoring current osmosis chain params pending request")
+		k.Logger(ctx).Info("tried to update osmosis chain params but another request is pending")
+		return
 	}
 
 	seq, err := k.sendParamsRequest(ctx)
@@ -394,6 +395,33 @@ func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.Re
 }
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
-	// TODO: Handle timeout
-	return nil
+
+	paramsState := k.GetRequestState(ctx, types.KeyParamsRequestState)
+	if paramsState.Pending() && paramsState.PacketSequence == packet.GetSequence() {
+		k.Logger(ctx).Error("osmosis param request state is timed out.",
+			"packet", packet.String())
+		paramsState.Fail()
+		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+	}
+
+	incentivizedPoolsState := k.GetRequestState(ctx, types.KeyIncentivizedPoolsRequestState)
+	if incentivizedPoolsState.Pending() && incentivizedPoolsState.PacketSequence == packet.GetSequence() {
+		k.Logger(ctx).Error("osmosis incentivized pools state request is timed out.",
+			"packet", packet.String())
+		incentivizedPoolsState.Fail()
+		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+
+	}
+
+	poolsState := k.GetRequestState(ctx, types.KeyPoolsRequestState)
+	if poolsState.Pending() && poolsState.PacketSequence == packet.GetSequence() {
+		k.Logger(ctx).Error("osmosis pool request is timed out.",
+			"packet", packet.String())
+		poolsState.Fail()
+		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+	}
+
+	k.Logger(ctx).Error("Unknown timeout for the icq channel.", "packet", packet.String())
+	return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "Unknown osmosis req packet timed out. packet %s", packet.String())
+
 }
