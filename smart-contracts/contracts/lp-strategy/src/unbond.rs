@@ -357,7 +357,9 @@ mod tests {
         ];
 
         for unbond in unbonds.iter() {
-            UNBOND_QUEUE.push_back(deps.as_mut().storage, unbond).unwrap();
+            UNBOND_QUEUE
+                .push_back(deps.as_mut().storage, unbond)
+                .unwrap();
         }
 
         let res = batch_unbond(deps.as_mut().storage, &env).unwrap();

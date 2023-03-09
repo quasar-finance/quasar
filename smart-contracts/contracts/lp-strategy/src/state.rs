@@ -34,6 +34,8 @@ pub struct Config {
     pub transfer_channel: String,
     // the channel for sending tokens back from the counterparty chain to quasar chain
     pub return_source_channel: String,
+    // expected_connection id on which the primitive should function
+    pub expected_connection: String,
 }
 
 pub(crate) const CONFIG: Item<Config> = Item::new("config");

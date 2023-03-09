@@ -67,6 +67,12 @@ pub enum ContractError {
     #[error("channel is not an icq channel")]
     NoIcqChannel,
 
+    #[error("no connection is found")]
+    NoConnectionFound,
+
+    #[error("incorrect connection id")]
+    IncorrectConnection,
+
     #[error("no timestamp time found for ibc packets")]
     NoTimestampTime,
 

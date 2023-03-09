@@ -24,6 +24,7 @@ pub struct InstantiateMsg {
     pub quote_denom: String,
     pub transfer_channel: String,
     pub return_source_channel: String,
+    pub expected_connection: String,
 }
 
 impl InstantiateMsg {

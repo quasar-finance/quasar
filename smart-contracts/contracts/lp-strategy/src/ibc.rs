@@ -13,6 +13,8 @@ use crate::state::{
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
@@ -34,10 +36,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
-    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage,
+    Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -58,6 +60,13 @@ pub fn ibc_channel_open(
 
 fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), ContractError> {
     ibc::enforce_order_and_version(&channel, None, &channel.version, channel.order.clone())?;
+    
+    // check the connection id vs the expected connection id
+    let config = CONFIG.load(deps.storage)?;
+    if &config.expected_connection != &channel.connection_id {
+        return Err(ContractError::IncorrectConnection);
+    }
+
     // save the channel state here
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -68,6 +77,8 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         },
         handshake_state: HandshakeState::Init,
     };
+
+
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
     Ok(())
 }
@@ -81,6 +92,21 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     })?;
 
     enforce_ica_order_and_metadata(&channel, None, &metadata)?;
+
+    // compare the expected connection id to the channel connection-id and the ica metadata connection-id
+    let config = CONFIG.load(deps.storage)?;
+    if &config.expected_connection
+        != metadata
+            .controller_connection_id()
+            .as_ref()
+            .ok_or(ContractError::NoConnectionFound)?
+    {
+        return Err(ContractError::IncorrectConnection);
+    }
+    if config.expected_connection != channel.connection_id {
+        return Err(ContractError::IncorrectConnection);
+    }
+
     // save the current state of the initializing channel
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -579,4 +605,54 @@ fn on_packet_failure(
 }
 
 #[cfg(test)]
-mod test {}
+mod tests {
+
+    use cosmwasm_std::{testing::mock_dependencies, IbcEndpoint, IbcOrder};
+
+    use crate::test_helpers::default_setup;
+
+    use super::*;
+
+    #[test]
+    fn handle_ica_channel_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let endpoint = IbcEndpoint {
+            port_id: "wasm.my_addr".to_string(),
+            channel_id: "channel-1".to_string(),
+        };
+        let counterparty_endpoint = IbcEndpoint {
+            port_id: "icahost".to_string(),
+            channel_id: "channel-2".to_string(),
+        };
+
+        let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
+        let channel = IbcChannel::new(
+            endpoint,
+            counterparty_endpoint.clone(),
+            IbcOrder::Ordered,
+            version,
+            "connection-0".to_string(),
+        );
+
+        handle_ica_channel(deps.as_mut(), channel.clone()).unwrap();
+
+        let expected = ChannelInfo {
+            id: channel.endpoint.channel_id.clone(),
+            counterparty_endpoint,
+            connection_id: "connection-0".to_string(),
+            channel_type: ChannelType::Ica {
+                channel_ty: IcaMetadata::with_connections("connection-0".to_string(), "connection-0".to_string()),
+                counter_party_address: None,
+            },
+            handshake_state: HandshakeState::Init,
+        };
+        assert_eq!(
+            CHANNELS
+                .load(deps.as_ref().storage, channel.endpoint.channel_id)
+                .unwrap(),
+            expected
+        )
+    }
+}

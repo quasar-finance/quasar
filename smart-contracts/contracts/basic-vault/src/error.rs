@@ -59,10 +59,7 @@ pub enum ContractError {
     DuplicateInitialBalanceAddresses {},
 
     #[error("Incorrect callback id, expected: {expected}, got: {:?}", ids)]
-    IncorrectCallbackId {
-        expected: String,
-        ids: Vec<String>,
-    },
+    IncorrectCallbackId { expected: String, ids: Vec<String> },
 
     #[error("{0}")]
     QError(#[from] QError),
