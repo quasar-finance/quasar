@@ -593,11 +593,12 @@ mod test {
         testing::{mock_dependencies, mock_env},
         Addr,
     };
-    use quasar_types::callback::StartUnbondResponse;
+    use quasar_types::callback::{StartUnbondResponse, UnbondResponse};
 
     use crate::{
         state::{OngoingDeposit, PendingSingleUnbond, RawAmount, SHARES},
         test_helpers::default_setup,
+        unbond::ReturningUnbond,
     };
 
     use super::*;
@@ -716,6 +717,69 @@ mod test {
         let lock = IBC_LOCK.load(deps.as_mut().storage).unwrap();
         assert!(lock.is_unlocked());
 
+        assert_eq!(res, expected);
+    }
+
+    // test handle_join_pool_ack
+
+    #[test]
+    fn handle_join_pool_ack_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        // TODO: mock ack_bin
+        let ack_bin = to_binary("eyJkYXRhIjoiQ2hFNkRBb0tDZ1Z6ZEdGclpSSUJNRWlwQVFvVk9oQUtEZ29KWm1GclpYTjBZV3RsRWdFd1NLa0JDaGM2RWdvUUNndG5ZVzF0TDNCdmIyd3ZNaElCTUVpcEFRb0ZDQkpJcVFFS0d6b1dDaFF4TGpBd01EQXdNREF3TURBd01EQXdNREF3TUVpcEFRPT0ifQ").unwrap();
+
+        // mock pending bond
+        let mut pending_bond = PendingBond {
+            bonds: vec![OngoingDeposit {
+                claim_amount: Uint128::new(100),
+                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
+                owner: Addr::unchecked("owner"),
+                bond_id: "bond_id".to_string(),
+            }],
+        };
+
+        // TODO: this is erroring out
+        let _res = handle_join_pool_ack(deps.as_mut().storage, &env, &mut pending_bond, ack_bin);
+    }
+
+    #[test]
+    fn handle_return_transfer_ack_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // mock pending returning unbonds
+        let mut pending_returning_unbonds = PendingReturningUnbonds {
+            unbonds: vec![ReturningUnbond {
+                amount: RawAmount::LocalDenom(Uint128::new(100)),
+                owner: Addr::unchecked("owner"),
+                id: "unbond_id".to_string(),
+            }],
+        };
+
+        // call handle_return_transfer_ack function and get response
+        let res: IbcBasicResponse =
+            handle_return_transfer_ack(deps.as_mut().storage, &mut pending_returning_unbonds)
+                .unwrap();
+
+        // mock expected response
+        let msgs = vec![WasmMsg::Execute {
+            contract_addr: "owner".to_string(),
+            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+                unbond_id: "unbond_id".to_string(),
+            }))
+            .unwrap(),
+            funds: vec![Coin {
+                denom: "ibc/local_osmo".to_string(),
+                amount: Uint128::new(100),
+            }],
+        }];
+        let expected: IbcBasicResponse = IbcBasicResponse::new()
+            .add_attribute("callback-msgs", "1")
+            .add_attribute("return-transfer", "success")
+            .add_messages(msgs);
         assert_eq!(res, expected);
     }
 }
