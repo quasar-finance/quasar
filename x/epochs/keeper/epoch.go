@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/protobuf/proto"
@@ -21,6 +22,28 @@ func (k Keeper) GetEpochInfo(ctx sdk.Context, identifier string) types.EpochInfo
 		panic(err)
 	}
 	return epoch
+}
+
+// AddEpochInfo adds a new epoch info. Will return an error if the epoch fails validation,
+// or re-uses an existing identifier.
+// This method also sets the start time if left unset, and sets the epoch start height.
+func (k Keeper) AddEpochInfo(ctx sdk.Context, epoch types.EpochInfo) error {
+	err := epoch.Validate()
+	if err != nil {
+		return err
+	}
+	// Check if identifier already exists
+	if (k.GetEpochInfo(ctx, epoch.Identifier) != types.EpochInfo{}) {
+		return fmt.Errorf("epoch with identifier %s already exists", epoch.Identifier)
+	}
+
+	// Initialize empty and default epoch values
+	if epoch.StartTime.Equal(time.Time{}) {
+		epoch.StartTime = ctx.BlockTime()
+	}
+	epoch.CurrentEpochStartHeight = ctx.BlockHeight()
+	k.SetEpochInfo(ctx, epoch)
+	return nil
 }
 
 // SetEpochInfo set epoch info.
