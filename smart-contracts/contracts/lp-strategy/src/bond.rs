@@ -23,15 +23,15 @@ pub struct Bond {
 
 // A deposit starts of by querying the state of the ica counterparty contract
 pub fn do_bond(
-    deps: DepsMut,
+    storage: &mut dyn Storage,
     env: Env,
     info: MessageInfo,
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
+    let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
 
     BOND_QUEUE.push_back(
-        deps.storage,
+        storage,
         &Bond {
             amount,
             owner: info.sender,
@@ -39,7 +39,7 @@ pub fn do_bond(
         },
     )?;
 
-    try_icq(deps.storage, env)
+    try_icq(storage, env)
 }
 
 // after the balance query, we can calculate the amount of the claim we need to create, we update the claims and transfer the funds
@@ -207,7 +207,7 @@ mod tests {
             .unwrap();
         let id = "my-id";
 
-        let res = do_bond(deps.as_mut(), env, info, id.to_string()).unwrap();
+        let res = do_bond(deps.as_mut().storage, env, info, id.to_string()).unwrap();
         assert_eq!(res, None)
     }
 
@@ -230,7 +230,7 @@ mod tests {
             sender: owner,
             funds: vec![coin(1000, config.local_denom)],
         };
-        let res = do_bond(deps.as_mut(), env.clone(), info, id.to_string()).unwrap();
+        let res = do_bond(deps.as_mut().storage, env.clone(), info, id.to_string()).unwrap();
         assert_eq!(res, try_icq(deps.as_mut().storage, env).unwrap())
     }
 
