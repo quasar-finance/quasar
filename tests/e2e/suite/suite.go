@@ -192,6 +192,7 @@ func (s *E2ETestSuite) CreateChannel(
 		DestPortName:   dstPort,
 		Order:          order,
 		Version:        version,
+		Override:       true,
 	})
 	s.Require().NoError(err)
 }

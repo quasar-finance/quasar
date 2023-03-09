@@ -18,13 +18,26 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type Accounts struct {
+	Authority    ibc.Wallet
+	Owner        ibc.Wallet
+	NewOwner     ibc.Wallet
+	MasterMinter ibc.Wallet
+}
+
 // E2ETestSuiteBuilder is a factory to simplify works behind running chains, configuring relayer and logging.
 type E2ETestSuiteBuilder struct {
 	t *testing.T
 
 	quasar         *cosmos.CosmosChain
+	QuasarAccounts Accounts
+
 	cosmos         *cosmos.CosmosChain
-	osmosis        *cosmos.CosmosChain
+	CosmosAccounts Accounts
+
+	osmosis         *cosmos.CosmosChain
+	OsmosisAccounts Accounts
+
 	relayer        *rly.CosmosRelayer
 	paths          map[string]path
 	rep            *testreporter.Reporter
@@ -41,11 +54,42 @@ type E2ETestSuiteBuilder struct {
 
 // NewE2ETestSuiteBuilder returns a new E2ETestSuiteBuilder.
 func NewE2ETestSuiteBuilder(t *testing.T) *E2ETestSuiteBuilder {
+	E2EBuilder := &E2ETestSuiteBuilder{}
 	logger := zaptest.NewLogger(t)
 
-	quasar := cosmos.NewCosmosChain(
+	ctx := context.Background()
+
+	chainConfig := ibc.ChainConfig{
+		Type:    "cosmos",
+		Name:    "quasar",
+		ChainID: "quasar",
+		Images: []ibc.DockerImage{
+			{
+				Repository: "quasar",
+				Version:    "local",
+			},
+		},
+		Bin:            "quasarnoded",
+		Bech32Prefix:   "quasar",
+		CoinType:       "118",
+		Denom:          "uqsr",
+		GasPrices:      "0.00uqsr",
+		GasAdjustment:  1.3,
+		TrustingPeriod: "508h",
+		NoHostMount:    false,
+		PreGenesis: func(cc ibc.ChainConfig) (err error) {
+			val := E2EBuilder.quasar.Validators[0]
+			E2EBuilder.QuasarAccounts, err = quasarPreGenesis(ctx, val)
+			return err
+		},
+		ModifyGenesis: modifyGenesis(
+			modifyGenesisSetVotingPeriod(VotingPeriod),
+		),
+	}
+
+	E2EBuilder.quasar = cosmos.NewCosmosChain(
 		t.Name(),
-		testconfig.QuasarChain,
+		chainConfig,
 		testconfig.DefaultNumValidators,
 		testconfig.DefaultNumNodes,
 		logger)
@@ -55,18 +99,17 @@ func NewE2ETestSuiteBuilder(t *testing.T) *E2ETestSuiteBuilder {
 	rep := testreporter.NewNopReporter()
 	erep := rep.RelayerExecReporter(t)
 
-	return &E2ETestSuiteBuilder{
-		t:            t,
-		quasar:       quasar,
-		relayer:      relayer,
-		paths:        map[string]path{},
-		rep:          rep,
-		erep:         erep,
-		dockerClient: dockerClient,
-		networkID:    networkID,
-		ic:           ibctest.NewInterchain().AddChain(quasar).AddRelayer(relayer, "relayer").WithLog(logger),
-		logger:       logger,
-	}
+	E2EBuilder.t = t
+	E2EBuilder.relayer = relayer
+	E2EBuilder.paths = map[string]path{}
+	E2EBuilder.rep = rep
+	E2EBuilder.erep = erep
+	E2EBuilder.dockerClient = dockerClient
+	E2EBuilder.networkID = networkID
+	E2EBuilder.ic = ibctest.NewInterchain().AddChain(E2EBuilder.quasar).AddRelayer(relayer, "relayer").WithLog(logger)
+	E2EBuilder.logger = logger
+
+	return E2EBuilder
 }
 
 // Quasar returns the quasar chain instance.
@@ -99,9 +142,53 @@ func (b *E2ETestSuiteBuilder) Cosmos() *cosmos.CosmosChain {
 func (b *E2ETestSuiteBuilder) UseOsmosis() {
 	b.checkBuilt()
 
+	ctx := context.Background()
+
+	osmosisConfig := ibc.ChainConfig{
+		Type:    "cosmos",
+		Name:    "osmosis",
+		ChainID: "osmosis",
+		Images: []ibc.DockerImage{
+			{
+				Repository: "osmosis",
+				Version:    "local",
+			},
+		},
+		Bin:            "osmosisd",
+		Bech32Prefix:   "osmo",
+		Denom:          "uosmo",
+		CoinType:       "118",
+		GasPrices:      "0.00uosmo",
+		GasAdjustment:  1.3,
+		TrustingPeriod: "508h",
+		NoHostMount:    false,
+		PreGenesis: func(cc ibc.ChainConfig) (err error) {
+			val := b.osmosis.Validators[0]
+			b.OsmosisAccounts, err = osmosisPreGenesis(ctx, val)
+			return err
+		},
+		ModifyGenesis: modifyGenesis(
+			modifyGenesisICAModule(
+				true,
+				[]string{
+					"/ibc.applications.transfer.v1.MsgTransfer",
+					"/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
+					"/osmosis.gamm.v1beta1.MsgJoinPool",
+					"/osmosis.gamm.v1beta1.MsgExitPool",
+					"/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+					"/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+					"/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+					"/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+					"/osmosis.lockup.MsgLockTokens",
+					"/osmosis.lockup.MsgBeginUnlocking",
+				},
+			),
+		),
+	}
+
 	b.osmosis = cosmos.NewCosmosChain(
 		b.t.Name(),
-		testconfig.OsmosisChain,
+		osmosisConfig,
 		testconfig.DefaultNumValidators,
 		testconfig.DefaultNumNodes,
 		b.logger,
@@ -117,20 +204,20 @@ func (b *E2ETestSuiteBuilder) Osmosis() *cosmos.CosmosChain {
 }
 
 // Link creates a pair of ibc clients, connection and a default transfer channel between chain1 and chain2.
-func (b *E2ETestSuiteBuilder) Link(chain1, chain2 ibc.Chain, pathName string) {
+func (b *E2ETestSuiteBuilder) Link(pathName string) {
 	b.checkBuilt()
 
 	b.ic.AddLink(ibctest.InterchainLink{
-		Chain1:            chain1,
-		Chain2:            chain2,
+		Chain1:            b.Quasar(),
+		Chain2:            b.Osmosis(),
 		Relayer:           b.relayer,
 		Path:              pathName,
 		CreateChannelOpts: ibc.DefaultChannelOpts(),
 	})
 
 	b.paths[pathName] = path{
-		chain1: chain1,
-		chain2: chain2,
+		chain1: b.Quasar(),
+		chain2: b.Osmosis(),
 	}
 }
 

@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.18"
-ARG RUNNER_IMAGE="gcr.io/distroless/static"
+ARG GO_VERSION="1.19"
+# todo remove unencessary flags.
+ARG RUNNER_IMAGE="ubuntu"
 
 # --------------------------------------------------------
 # Builder
@@ -47,7 +48,11 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Runner
 # --------------------------------------------------------
 
-FROM ${RUNNER_IMAGE}
+FROM alpine:3.17.2
+
+ENV PACKAGES bash
+
+RUN apk add --no-cache $PACKAGES
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 
@@ -58,4 +63,4 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-ENTRYPOINT ["quasarnoded"]
+#ENTRYPOINT ["quasarnoded"]

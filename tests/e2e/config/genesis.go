@@ -8,12 +8,12 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 
-// genesisModifiers takes genesis as an unmarshaled "any" value and, modifies it and returns the "any" back.
-type genesisModifiers func(gen any) (any, error)
+// GenesisModifiers takes genesis as an unmarshaled "any" value and, modifies it and returns the "any" back.
+type GenesisModifiers func(gen any) (any, error)
 
 // modifyGenesis is a helper function that chains multiple genesisModifiers funcs in order to make
 // chain configuration easier and a lot cleaner.
-func modifyGenesis(mods ...genesisModifiers) func(cc ibc.ChainConfig, genbz []byte) ([]byte, error) {
+func modifyGenesis(mods ...GenesisModifiers) func(cc ibc.ChainConfig, genbz []byte) ([]byte, error) {
 	return func(cc ibc.ChainConfig, genbz []byte) ([]byte, error) {
 		var gen any
 		err := json.Unmarshal(genbz, &gen)
@@ -33,7 +33,7 @@ func modifyGenesis(mods ...genesisModifiers) func(cc ibc.ChainConfig, genbz []by
 }
 
 // modifyGenesisSetVotingPeriod sets the governance module voting period to the given duration.
-func modifyGenesisSetVotingPeriod(period time.Duration) genesisModifiers {
+func modifyGenesisSetVotingPeriod(period time.Duration) GenesisModifiers {
 	return func(gen any) (any, error) {
 		err := dyno.Set(gen, VotingPeriod.String(), "app_state", "gov", "voting_params", "voting_period")
 		return gen, err
@@ -41,7 +41,7 @@ func modifyGenesisSetVotingPeriod(period time.Duration) genesisModifiers {
 }
 
 // modifyGenesisICAModule sets the params of ICA module.
-func modifyGenesisICAModule(enabled bool, allowMsgs []string) genesisModifiers {
+func modifyGenesisICAModule(enabled bool, allowMsgs []string) GenesisModifiers {
 	return func(gen any) (any, error) {
 		v := map[string]any{
 			"host_enabled":   enabled,
@@ -53,7 +53,7 @@ func modifyGenesisICAModule(enabled bool, allowMsgs []string) genesisModifiers {
 }
 
 // modifyGenesisICQModule sets the params of ICQ module.
-func modifyGenesisICQModule(enabled bool, allowQueries []string) genesisModifiers {
+func modifyGenesisICQModule(enabled bool, allowQueries []string) GenesisModifiers {
 	return func(gen any) (any, error) {
 		v := map[string]any{
 			"host_enabled":  enabled,

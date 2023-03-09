@@ -3,6 +3,7 @@ package suite
 import (
 	"context"
 	"encoding/json"
+	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"path/filepath"
 	"strconv"
 
@@ -57,7 +58,7 @@ func (s *E2ETestSuite) InstantiateContract(
 	cmds := []string{"wasm", "instantiate",
 		strconv.FormatUint(codeID, 10),
 		string(argsbz),
-		"--gas", "auto",
+		"--gas", "20000000",
 	}
 	if label != "" {
 		cmds = append(cmds, "--label", label)
@@ -88,16 +89,15 @@ func (s *E2ETestSuite) ExecuteContract(
 	keyName string,
 	contractAddr string,
 	funds sdk.Coins,
-	msg, result any,
+	msg string, result any,
 ) {
 	tn := GetFullNode(chain)
 
-	msgbz, err := json.Marshal(msg)
-	s.Require().NoError(err)
 	cmds := []string{"wasm", "execute",
 		contractAddr,
-		string(msgbz),
+		msg,
 		"--gas", "auto",
+		"--fees", "1000000uqsr",
 	}
 	if !funds.Empty() {
 		cmds = append(cmds, "--amount", funds.String())
@@ -112,4 +112,44 @@ func (s *E2ETestSuite) ExecuteContract(
 	if result != nil {
 		s.Require().NoError(json.Unmarshal(resp.Data, result), "failed to unmarshal result")
 	}
+}
+
+func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
+	tn := GetFullNode(chain)
+
+	logger := s.logger.With(
+		zap.String("chain_id", tn.Chain.Config().ChainID),
+		zap.String("test", tn.TestName),
+	)
+
+	cmds := []string{"gamm", "create-pool",
+		"--gas", "20000000",
+		"--fees", "1000000uosmo",
+	}
+
+	poolFile := "sample.json"
+	fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
+	err := fw.WriteFile(ctx, tn.VolumeName, poolFile, poolBytes)
+	s.Require().NoError(err, "failed to write pool file")
+
+	cmds = append(cmds, "--pool-file", filepath.Join(tn.HomeDir(), poolFile))
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to create pool")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
+func (s *E2ETestSuite) SendTokensToOneAddress(ctx context.Context, chain *cosmos.CosmosChain, fromAddress, toAddress ibc.Wallet, amount string) {
+	tn := GetFullNode(chain)
+
+	cmds := []string{"bank", "send",
+		fromAddress.Address, toAddress.Address,
+		amount,
+	}
+
+	txhash, err := tn.ExecTx(ctx, fromAddress.KeyName, cmds...)
+	s.Require().NoError(err, "failed to send tokens")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
 }
