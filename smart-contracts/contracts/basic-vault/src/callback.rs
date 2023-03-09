@@ -246,14 +246,15 @@ pub fn on_unbond(
     }
 
     // Construct message to return these funds to the user
-    let mut return_msgs = Vec::new();
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
-    for s in &unbond_stubs.stub {
-        return_msgs.push(BankMsg::Send {
+    let return_msgs: Vec<BankMsg> = unbond_stubs
+        .stub
+        .iter()
+        .map(|s| BankMsg::Send {
             to_address: user_address.to_string(),
             amount: s.unbond_funds.clone(),
-        });
-    }
+        })
+        .collect();
 
     // delete this pending unbond id from the state
     UNBOND_STATE.remove(deps.storage, unbond_id.clone());

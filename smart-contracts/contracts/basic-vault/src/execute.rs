@@ -151,30 +151,41 @@ pub fn may_pay_with_ratio(
     // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
     let mut remainder = funds.to_owned();
-    let mut coins: Vec<Coin> = Vec::new();
 
-    for r in normed_ratio? {
-        let amount = must_pay_multi(funds, &r.denom).unwrap();
-        let expected_amount =
-            max_bond.checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())?;
+    let coins: Result<Vec<Coin>, ContractError> = normed_ratio?
+        .iter()
+        .map(|r| {
+            let amount = must_pay_multi(funds, &r.denom).unwrap();
+            let expected_amount = max_bond
+                .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
+                .unwrap();
 
-        if expected_amount > amount {
-            return Err(ContractError::IncorrectBondingRatio {});
-        }
-
-        for c in remainder.iter_mut() {
-            if c.denom == r.denom {
-                c.amount = c.amount.checked_sub(expected_amount)?;
+            if expected_amount > amount {
+                return Err(ContractError::IncorrectBondingRatio {});
             }
-        }
 
-        coins.push(Coin {
-            denom: r.denom.clone(),
-            amount: expected_amount,
-        });
-    }
+            remainder = remainder
+                .iter()
+                .map(|c| {
+                    if c.denom == r.denom {
+                        Coin {
+                            amount: c.amount.checked_sub(expected_amount).unwrap(),
+                            denom: c.denom.clone(),
+                        }
+                    } else {
+                        c.clone()
+                    }
+                })
+                .collect();
 
-    let c = coins;
+            Ok(Coin {
+                denom: r.denom.clone(),
+                amount: expected_amount,
+            })
+        })
+        .collect();
+
+    let c = coins?;
     if c.first().unwrap().amount == Uint128::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here".to_string(),
@@ -243,26 +254,25 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         acc
     });
 
-    let mut bond_msgs = Vec::new();
+    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = primitive_funding_amounts
+        .iter()
+        .map(|(coin, prim_addr)| {
+            let deposit_stub = BondingStub {
+                address: prim_addr.clone(),
+                bond_response: Option::None,
+            };
+            deposit_stubs.push(deposit_stub);
 
-    for (coin, prim_addr) in primitive_funding_amounts.clone() {
-        let deposit_stub = BondingStub {
-            address: prim_addr.clone(),
-            bond_response: Option::None,
-        };
-        deposit_stubs.push(deposit_stub);
-
-        // TODO: do we need it to reply?
-        let wasm_msg = WasmMsg::Execute {
-            contract_addr: prim_addr,
-            msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
-                id: bond_seq.to_string(),
-            })?,
-            funds: vec![coin.clone().clone()],
-        };
-
-        bond_msgs.push(wasm_msg);
-    }
+            // todo: do we need it to reply
+            Ok(WasmMsg::Execute {
+                contract_addr: prim_addr.clone(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                    id: bond_seq.to_string(),
+                })?,
+                funds: vec![coin.clone().clone()],
+            })
+        })
+        .collect();
 
     // save bonding state for use during the callback
     PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
@@ -327,7 +337,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
-        .add_messages(bond_msgs))
+        .add_messages(bond_msgs?))
     // .add_messages(remainder_msgs))
 }
 
@@ -385,34 +395,36 @@ pub fn do_start_unbond(
     execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
 
     let mut unbonding_stubs = vec![];
-    let mut start_unbond_msgs = Vec::new();
-    for pc in invest.primitives.iter() {
-        // lets get the amount of tokens to unbond for this primitive
-        // todo make sure weights are normalized!!
-        let primitive_share_amount =
-            amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
+    let start_unbond_msgs: Vec<_> = invest
+        .primitives
+        .iter()
+        .map(|pc| {
+            // lets get the amount of tokens to unbond for this primitive
+            // todo make sure weights are normalized!!
+            let primitive_share_amount =
+                amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
 
-        // todo: safety asertion - make sure we have enough shares to unbond for this user (else we have major code error)
-        // let our_shares = deps.querier.query_wasm_smart(pc.address, )
+            // todo: safety asertion - make sure we have enough shares to unbond for this user (else we have major code error)
+            // let our_shares = deps.querier.query_wasm_smart(pc.address, )
 
-        unbonding_stubs.push(UnbondingStub {
-            address: pc.address.clone(),
-            unlock_time: None,
-            unbond_response: None,
-            unbond_funds: vec![],
-        });
+            unbonding_stubs.push(UnbondingStub {
+                address: pc.address.clone(),
+                unlock_time: None,
+                unbond_response: None,
+                unbond_funds: vec![],
+            });
 
-        let msg = WasmMsg::Execute {
-            contract_addr: pc.address.clone(),
-            msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
-                id: bond_seq.to_string(),
-                share_amount: primitive_share_amount,
-            })
-            .unwrap(),
-            funds: vec![],
-        };
-        start_unbond_msgs.push(msg);
-    }
+            WasmMsg::Execute {
+                contract_addr: pc.address.clone(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                    id: bond_seq.to_string(),
+                    share_amount: primitive_share_amount,
+                })
+                .unwrap(),
+                funds: vec![],
+            }
+        })
+        .collect();
 
     // jimeny cricket, we need to save the unbonding state for use during the callback
     PENDING_UNBOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
@@ -557,23 +569,27 @@ pub fn find_and_return_unbondable_msgs(
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
 
-    let mut unbond_msgs = Vec::new();
-    for stub in unbond_stubs.iter() {
-        if let Some(unlock_time) = stub.unlock_time {
-            if unlock_time < env.block.time {
-                let msg = WasmMsg::Execute {
-                    contract_addr: stub.address.to_owned(),
-                    msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
-                        id: unbond_id.to_owned(),
+    Ok(unbond_stubs
+        .iter()
+        .filter_map(|stub| {
+            if let Some(unlock_time) = stub.unlock_time {
+                if unlock_time < env.block.time {
+                    Some(WasmMsg::Execute {
+                        contract_addr: stub.address.clone(),
+                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
+                            id: unbond_id.to_owned(),
+                        })
+                        .unwrap(),
+                        funds: vec![],
                     })
-                    .unwrap(),
-                    funds: vec![],
-                };
-                unbond_msgs.push(msg);
+                } else {
+                    None
+                }
+            } else {
+                None
             }
-        }
-    }
-    Ok(unbond_msgs)
+        })
+        .collect())
 }
 
 pub fn claim(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
