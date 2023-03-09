@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, MessageInfo, Reply, Response, StdError,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -23,8 +23,8 @@ use crate::queries::{
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, LP_SHARES, PENDING_ACK,
-    REPLIES, RETURNING,
+    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
+    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -64,6 +64,8 @@ pub fn instantiate(
     // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
     ICA_BALANCE.save(deps.storage, &Uint128::one())?;
 
+    TIMED_OUT.save(deps.storage, &false)?;
+
     Ok(Response::default())
 }
 
@@ -90,7 +92,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     })?;
 
     PENDING_ACK.save(deps.storage, seq, &pending)?;
-    Ok(Response::default())
+    Ok(Response::default()
+        .add_attribute("pending-msg", seq.to_string())
+        .add_attribute("step", format!("{:?}", pending)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -102,24 +106,6 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Bond { id } => execute_bond(deps, env, info, id),
-        ExecuteMsg::TransferJoinLock {
-            channel,
-            to_address,
-        } => execute_transfer(deps, env, info, channel, to_address),
-        ExecuteMsg::DepositAndLockTokens {
-            pool_id,
-            amount,
-            denom,
-            share_out_min_amount,
-        } => execute_join_pool(
-            deps,
-            env,
-            info,
-            pool_id,
-            denom,
-            amount,
-            share_out_min_amount,
-        ),
         ExecuteMsg::StartUnbond { id, share_amount } => {
             execute_start_unbond(deps, env, info, id, share_amount)
         }
@@ -128,6 +114,7 @@ pub fn execute(
             execute_accept_returning_funds(deps, &env, info, id)
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
+        ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
     }
 }
 
@@ -173,6 +160,31 @@ pub fn execute_accept_returning_funds(
         .add_attribute("success", "true"))
 }
 
+pub fn execute_bond(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    id: String,
+) -> Result<Response, ContractError> {
+    let msg = do_bond(deps.storage, env, info.clone(), id)?;
+
+    // if msg is some, we are dispatching an icq
+    match msg {
+        Some(submsg) => {
+            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_bond())
+            })?;
+            Ok(Response::new()
+                .add_submessage(submsg)
+                .add_attribute("deposit", info.sender)
+                .add_attribute("kind", "dispatch"))
+        }
+        None => Ok(Response::new()
+            .add_attribute("deposit", info.sender)
+            .add_attribute("kind", "queue")),
+    }
+}
+
 pub fn execute_start_unbond(
     deps: DepsMut,
     env: Env,
@@ -192,10 +204,15 @@ pub fn execute_start_unbond(
     let msg = try_icq(deps.storage, env)?;
 
     match msg {
-        Some(submsg) => Ok(Response::new()
-            .add_submessage(submsg)
-            .add_attribute("start-unbond", info.sender)
-            .add_attribute("kind", "dispatch")),
+        Some(submsg) => {
+            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_start_unbond())
+            })?;
+            Ok(Response::new()
+                .add_submessage(submsg)
+                .add_attribute("start-unbond", info.sender)
+                .add_attribute("kind", "dispatch"))
+        }
         None => Ok(Response::new()
             .add_attribute("start-unbond", info.sender)
             .add_attribute("kind", "queue")),
@@ -213,35 +230,21 @@ pub fn execute_unbond(
     let msg = try_icq(deps.storage, env)?;
 
     match msg {
-        Some(submsg) => Ok(Response::new()
-            .add_submessage(submsg)
-            .add_attribute("unbond", info.sender)
-            .add_attribute("kind", "dispatch")),
+        Some(submsg) => {
+            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_unbond())
+            })?;
+            Ok(Response::new()
+                .add_submessage(submsg)
+                .add_attribute("unbond", info.sender)
+                .add_attribute("kind", "dispatch"))
+        }
         None => Ok(Response::new()
             .add_attribute("unbond", info.sender)
             .add_attribute("kind", "queue")),
     }
 }
 
-pub fn execute_bond(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    id: String,
-) -> Result<Response, ContractError> {
-    let msg = do_bond(deps, env, info.clone(), id)?;
-
-    // if msg is some, we are dispatching an icq
-    match msg {
-        Some(submsg) => Ok(Response::new()
-            .add_submessage(submsg)
-            .add_attribute("deposit", info.sender)
-            .add_attribute("kind", "dispatch")),
-        None => Ok(Response::new()
-            .add_attribute("deposit", info.sender)
-            .add_attribute("kind", "queue")),
-    }
-}
 
 // transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
 pub fn execute_transfer(
@@ -304,9 +307,21 @@ pub fn execute_join_pool(
         .add_attribute("denom", denom))
 }
 
+pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Response, ContractError> {
+    if TIMED_OUT.load(deps.storage)? && channel_id == ICA_CHANNEL.load(deps.storage)? {
+        Ok(Response::new().add_message(IbcMsg::CloseChannel { channel_id }))
+    } else {
+        Err(ContractError::IcaChannelAlreadySet)
+    }
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // migrate without changing any state objects
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    // update the config
+    CONFIG.save(deps.storage, &msg.config)?;
+
+    IBC_LOCK.save(deps.storage, &Lock::new())?;
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))

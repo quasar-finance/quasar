@@ -9,7 +9,7 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TRAPS,
+    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -60,10 +60,10 @@ pub fn ibc_channel_open(
 
 fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), ContractError> {
     ibc::enforce_order_and_version(&channel, None, &channel.version, channel.order.clone())?;
-    
+
     // check the connection id vs the expected connection id
     let config = CONFIG.load(deps.storage)?;
-    if &config.expected_connection != &channel.connection_id {
+    if config.expected_connection != channel.connection_id {
         return Err(ContractError::IncorrectConnection);
     }
 
@@ -77,7 +77,6 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         },
         handshake_state: HandshakeState::Init,
     };
-
 
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
     Ok(())
@@ -173,11 +172,18 @@ pub fn ibc_channel_connect(
                 return Err(ContractError::NoCounterpartyIcaAddress);
             }
 
-            // once we have an Open ICA channel, save it under ICA channel, if a channel already exists, reject incoming OPENS
+            // once we have an Open ICA channel, save it under ICA channel,
+            // if a channel already exists, and that channel is not timed out reject incoming OPENS
+            // if that channel is timed out, we overwrite the previous ICA channel for the new one
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
-            if channel.is_some() {
+            // to reject the msg here, ica should not be timed out
+            if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
+
                 return Err(ContractError::IcaChannelAlreadySet);
             }
+
+            // set timed out to false
+            TIMED_OUT.save(deps.storage, &false)?;
 
             ICA_CHANNEL.save(deps.storage, &msg.channel().endpoint.channel_id)?;
 
@@ -205,11 +211,13 @@ pub fn ibc_channel_connect(
 pub fn ibc_channel_close(
     _deps: DepsMut,
     _env: Env,
-    _channel: IbcChannelCloseMsg,
+    channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO: what to do here?
-    // we will have locked funds that need to be returned somehow
-    unimplemented!();
+    // for now we just close the channel
+    Ok(IbcBasicResponse::new()
+        .add_attribute("channel", channel.channel().endpoint.channel_id.clone())
+        .add_attribute("connection", channel.channel().connection_id.clone()))
 }
 
 /// The lp-strategy cannot receive any packets
@@ -567,15 +575,28 @@ fn handle_return_transfer_ack(
 }
 
 pub fn handle_failing_ack(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _pkt: IbcPacketAckMsg,
+    pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
+    let step = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    unlock_on_error(deps.storage, &step)?;
+    TRAPS.save(
+        deps.storage,
+        pkt.original_packet.sequence,
+        &Trap {
+            error: format!("packet failure: {}", error),
+            step,
+        },
+    )?;
     Ok(IbcBasicResponse::new().add_attribute("ibc-error", error.as_str()))
 }
 
+// if an ICA packet is timed out, we need to reject any further packets (only to the ICA channel or in total -> easiest in total until a new ICA channel is created)
+// once time out variable is set, a new ICA channel needs to be able to be opened for the contract to function and the ICA channel val and channels map need to be updated
+// what do we do with the trapped errors packets, are they able to be recovered over the new ICA channel?
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_packet_timeout(
     deps: DepsMut,
@@ -592,6 +613,9 @@ fn on_packet_failure(
 ) -> Result<IbcBasicResponse, ContractError> {
     let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
     unlock_on_error(deps.storage, &step)?;
+    if let IbcMsgKind::Ica(_) = &step {
+        TIMED_OUT.save(deps.storage, &true)?
+    }
     TRAPS.save(
         deps.storage,
         packet.sequence,
@@ -600,7 +624,6 @@ fn on_packet_failure(
             step,
         },
     )?;
-    // we unlock the failed packet
     Ok(IbcBasicResponse::default())
 }
 
@@ -643,7 +666,10 @@ mod tests {
             counterparty_endpoint,
             connection_id: "connection-0".to_string(),
             channel_type: ChannelType::Ica {
-                channel_ty: IcaMetadata::with_connections("connection-0".to_string(), "connection-0".to_string()),
+                channel_ty: IcaMetadata::with_connections(
+                    "connection-0".to_string(),
+                    "connection-0".to_string(),
+                ),
                 counter_party_address: None,
             },
             handshake_state: HandshakeState::Init,
