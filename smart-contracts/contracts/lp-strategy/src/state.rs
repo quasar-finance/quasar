@@ -42,6 +42,8 @@ pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
+// true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
+pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
 // Currently we only support one ICA channel to a single destination
 pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 // We also support one ICQ channel to Osmosis at the moment

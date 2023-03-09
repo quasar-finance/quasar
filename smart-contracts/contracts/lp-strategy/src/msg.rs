@@ -34,7 +34,9 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub config: Config,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -156,16 +158,9 @@ pub enum ExecuteMsg {
     AcceptReturningFunds {
         id: u64,
     },
-    // all execute msges below are used for testing and should be removed before productions
-    TransferJoinLock {
-        channel: String,
-        to_address: String,
-    },
-    DepositAndLockTokens {
-        pool_id: u64,
-        amount: Uint128,
-        denom: String,
-        share_out_min_amount: Uint128,
+    // try to close a channel where a timout occured
+    CloseChannel {
+        channel_id: String,
     },
     ReturnTransfer {
         amount: Uint128,
