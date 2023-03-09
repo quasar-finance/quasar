@@ -2,6 +2,7 @@
 
 members = [
     "contracts/icq",
+    "contracts/ibc-transfer",
     "contracts/lp-strategy",
     "contracts/basic-vault",
     "contracts/intergamm-bindings-test",
