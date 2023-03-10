@@ -26,7 +26,7 @@ func TestQueryEpochInfos(t *testing.T) {
 	// Invalid param
 	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})
 	require.NoError(t, err)
-	require.Len(t, epochInfosResponse.Epochs, 3)
+	require.Len(t, epochInfosResponse.Epochs, 4)
 
 	// check that EpochInfos are correct
 	// Epochs come ordered alphabetically by identifier
@@ -36,16 +36,22 @@ func TestQueryEpochInfos(t *testing.T) {
 	require.Equal(t, epochInfosResponse.Epochs[0].CurrentEpoch, int64(0))
 	require.Equal(t, epochInfosResponse.Epochs[0].CurrentEpochStartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[0].EpochCountingStarted, false)
-	require.Equal(t, epochInfosResponse.Epochs[1].Identifier, "minute")
+	require.Equal(t, epochInfosResponse.Epochs[1].Identifier, "hour")
 	require.Equal(t, epochInfosResponse.Epochs[1].StartTime, chainStartTime)
-	require.Equal(t, epochInfosResponse.Epochs[1].Duration, time.Minute)
+	require.Equal(t, epochInfosResponse.Epochs[1].Duration, time.Hour)
 	require.Equal(t, epochInfosResponse.Epochs[1].CurrentEpoch, int64(0))
 	require.Equal(t, epochInfosResponse.Epochs[1].CurrentEpochStartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[1].EpochCountingStarted, false)
-	require.Equal(t, epochInfosResponse.Epochs[2].Identifier, "week")
+	require.Equal(t, epochInfosResponse.Epochs[2].Identifier, "minute")
 	require.Equal(t, epochInfosResponse.Epochs[2].StartTime, chainStartTime)
-	require.Equal(t, epochInfosResponse.Epochs[2].Duration, time.Hour*24*7)
+	require.Equal(t, epochInfosResponse.Epochs[2].Duration, time.Minute)
 	require.Equal(t, epochInfosResponse.Epochs[2].CurrentEpoch, int64(0))
 	require.Equal(t, epochInfosResponse.Epochs[2].CurrentEpochStartTime, chainStartTime)
 	require.Equal(t, epochInfosResponse.Epochs[2].EpochCountingStarted, false)
+	require.Equal(t, epochInfosResponse.Epochs[3].Identifier, "week")
+	require.Equal(t, epochInfosResponse.Epochs[3].StartTime, chainStartTime)
+	require.Equal(t, epochInfosResponse.Epochs[3].Duration, time.Hour*24*7)
+	require.Equal(t, epochInfosResponse.Epochs[3].CurrentEpoch, int64(0))
+	require.Equal(t, epochInfosResponse.Epochs[3].CurrentEpochStartTime, chainStartTime)
+	require.Equal(t, epochInfosResponse.Epochs[3].EpochCountingStarted, false)
 }

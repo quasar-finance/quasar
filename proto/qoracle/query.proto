@@ -7,7 +7,6 @@ import "google/protobuf/timestamp.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qoracle/params.proto";
-import "qoracle/denom_symbol_mapping.proto";
 import "qoracle/pool.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
@@ -43,33 +42,6 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
-}
-
-// QueryDenomMappingsRequest is request type for the Query/DenomMappings RPC method.
-message QueryDenomMappingsRequest {
-	// pagination defines an optional pagination for the request.
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-// QueryDenomMappingsResponse is response type for the Query/DenomMappings RPC method.
-message QueryDenomMappingsResponse {
-	repeated DenomSymbolMapping mappings = 1 [(gogoproto.nullable) = false];
-	// pagination defines the pagination in the response.
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-// QueryDenomPricesRequest is request type for the Query/DenomPrices RPC method.
-message QueryDenomPricesRequest {
-	// pagination defines an optional pagination for the request.
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-// QueryDenomPricesResponse is response type for the Query/DenomPrices RPC method.
-message QueryDenomPricesResponse {
-	repeated cosmos.base.v1beta1.DecCoin prices = 1 [(gogoproto.nullable) = false];
-	google.protobuf.Timestamp updated_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
-	// pagination defines the pagination in the response.
-	cosmos.base.query.v1beta1.PageResponse pagination = 3;
 }
 
 // QueryPoolsRequest is request type for the Query/Pools RPC method.
