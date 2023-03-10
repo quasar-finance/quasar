@@ -16,8 +16,6 @@ use crate::state::{
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
@@ -181,7 +179,6 @@ pub fn ibc_channel_connect(
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
             // to reject the msg here, ica should not be timed out
             if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
-
                 return Err(ContractError::IcaChannelAlreadySet);
             }
 

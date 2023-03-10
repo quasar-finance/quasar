@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, MessageInfo, Reply, Response, StdError,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -23,8 +23,8 @@ use crate::queries::{
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, LP_SHARES, PENDING_ACK,
-    REPLIES, RETURNING,
+    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
+    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -244,7 +244,6 @@ pub fn execute_unbond(
             .add_attribute("kind", "queue")),
     }
 }
-
 
 // transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
 pub fn execute_transfer(
