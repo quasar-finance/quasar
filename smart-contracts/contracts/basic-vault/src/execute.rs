@@ -71,25 +71,40 @@ pub fn may_pay_with_ratio(
     primitives: &Vec<PrimitiveConfig>,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // TODO: Normalize weights first
-    let mut deposit_amount_weights = Vec::new();
-    for pc in primitives {
-        let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
-            pc.address.clone(),
-            &lp_strategy::msg::QueryMsg::PrimitiveShares {},
-        )?;
-        let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
-            pc.address.clone(),
-            &lp_strategy::msg::QueryMsg::IcaBalance {},
-        )?;
-        let coin_weight = CoinWeight {
-            weight: Decimal::from_ratio(
-                balance.amount.amount.checked_mul(pc.weight.numerator())?,
-                supply.total.checked_mul(pc.weight.denominator())?,
-            ),
-            denom: balance.amount.denom,
-        };
-        deposit_amount_weights.push(coin_weight);
-    }
+    // todo: Normalize weights first
+
+    // load cached balance of primitive contracts
+    let deposit_amount_weights: Vec<CoinWeight> = primitives
+        .iter()
+        .map(|pc| {
+            let supply: PrimitiveSharesResponse = deps
+                .querier
+                .query_wasm_smart(
+                    pc.address.clone(),
+                    &lp_strategy::msg::QueryMsg::PrimitiveShares {},
+                )
+                .unwrap();
+            let balance: IcaBalanceResponse = deps
+                .querier
+                .query_wasm_smart(
+                    pc.address.clone(),
+                    &lp_strategy::msg::QueryMsg::IcaBalance {},
+                )
+                .unwrap();
+
+            CoinWeight {
+                weight: Decimal::from_ratio(
+                    balance
+                        .amount
+                        .amount
+                        .checked_mul(pc.weight.numerator())
+                        .unwrap(),
+                    supply.total.checked_mul(pc.weight.denominator()).unwrap(),
+                ),
+                denom: balance.amount.denom,
+            }
+        })
+        .collect();
 
     if deposit_amount_weights.first().unwrap().weight == Decimal::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
