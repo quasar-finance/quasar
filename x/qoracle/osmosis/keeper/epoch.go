@@ -8,5 +8,6 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumb
 	switch epochIdentifier {
 	case k.GetEpochIdentifier(ctx):
 		k.TryUpdateIncentivizedPools(ctx)
+		k.TryUpdateChainParams(ctx)
 	}
 }

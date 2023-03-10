@@ -152,6 +152,17 @@ if hook, ok := im.ICS4Middleware.Hooks.(OnAcknowledgementPacketOverrideHooks); o
 }
 
 ->
+x/qtransfer/ibc_module.go -> 
+
+// OnAcknowledgementPacket implements the IBCMiddleware interface
+func (im IBCMiddleware) OnAcknowledgementPacket(
+ctx sdk.Context,
+packet channeltypes.Packet,
+acknowledgement []byte,
+relayer sdk.AccAddress,
+) 
+
+->
 x/qtransfer/wasm_hooks.go
 
 func (h WasmHooks) OnAcknowledgementPacketOverride(im IBCMiddleware, ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {

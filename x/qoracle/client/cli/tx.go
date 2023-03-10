@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	// qbandcli "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/client/cli"
 	qosmocli "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/client/cli"
 )
 
@@ -22,7 +21,5 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(qosmocli.GetTxCmd())
-	// this line is used by starport scaffolding # 1
-
 	return cmd
 }

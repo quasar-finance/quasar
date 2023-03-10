@@ -1,24 +1,22 @@
 package keeper
 
 import (
-	"time"
-
-	//sdkerrors "cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
+	"time"
 )
 
-// GetDenomPrice get the stable denom for the denom
+// NOTE -
+// Denom price will be updated in the future in their respective memory store key.
+// using either bandchain, chain link or USDC pool from osmosis. Code is kept for future use.
+
+// GetDenomPrice get the stable price for the denom
 func (k Keeper) GetDenomPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
-	updatedAt, err := k.GetDenomPricesUpdatedAt(ctx)
+	_, err := k.GetDenomPricesUpdatedAt(ctx)
 	if err != nil {
+		// Last update time not found.
 		return sdk.ZeroDec(), err
-	}
-	// Check whether denom prices are outdated
-	if ctx.BlockTime().Before(updatedAt.Add(time.Duration(k.GetPriceListExpDuration(ctx)))) {
-		return sdk.ZeroDec(), types.ErrPriceListOutdated
 	}
 
 	memStore := ctx.KVStore(k.memKey)
@@ -58,5 +56,12 @@ func (k Keeper) GetRelativeDenomPrice(ctx sdk.Context, denomIn, denomOut string)
 	if err != nil {
 		return sdk.ZeroDec(), err
 	}
+
+	if denomOutPrice.IsZero() || denomOutPrice.IsNil() || denomOutPrice.IsNegative() {
+		// In this case, division by denomOutPrice is risky
+		return sdk.ZeroDec(), sdkerrors.Wrapf(types.ErrRelativeDenomPriceNotFound,
+			"denomInPrice: %s, denomOutPrice : %s", denomInPrice.String(), denomOutPrice.String())
+	}
+
 	return denomInPrice.Quo(denomOutPrice), nil
 }

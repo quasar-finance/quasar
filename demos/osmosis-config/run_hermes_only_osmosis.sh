@@ -1,10 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 
-# BANDCHAIN="band-laozi-testnet6"
+project_dir="$(cd "$(dirname "${0}")/../.." ; pwd)" # Absolute path to project dir
+this_dir="${project_dir}/demos/osmosis-config"
+this_script="${this_dir}/$(basename "${0}")"
+
+echo "$project_dir"
+echo "$this_dir"
+echo "$this_script"
+
 
 rm -r ~/.hermes
 mkdir ~/.hermes
-
+cd $this_dir
 cp ./hermes_config.toml ~/.hermes/config.toml
 
 hermes keys add --chain quasar --mnemonic-file quasar_key.txt

@@ -126,6 +126,7 @@ mod tests {
                     quote_denom: "uatom".to_string(),
                     transfer_channel: "channel-0".to_string(),
                     return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
                 }),
             }],
         }
@@ -156,6 +157,7 @@ mod tests {
                             quote_denom: "uatom".to_string(),
                             transfer_channel: "channel-0".to_string(),
                             return_source_channel: "channel-0".to_string(),
+                            expected_connection: "connection-0".to_string(),
                         }),
                     }
                 })

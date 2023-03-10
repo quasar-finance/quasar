@@ -97,7 +97,7 @@ func (k Keeper) GetPoolsUpdatedAt(ctx sdk.Context) time.Time {
 
 	updatedAt, err := sdk.ParseTimeBytes(store.Get(types.KeyPoolsUpdatedAt))
 	if err != nil {
-		return time.Now()
+		return ctx.BlockTime()
 	}
 	return updatedAt
 }
@@ -130,14 +130,12 @@ func (k Keeper) removeAllPools(ctx sdk.Context) {
 
 func (k Keeper) SetLockableDurations(ctx sdk.Context, lockableDurations poolincentivestypes.QueryLockableDurationsResponse) {
 	store := ctx.KVStore(k.storeKey)
-
 	store.Set(types.KeyLockableDurations, k.cdc.MustMarshal(&lockableDurations))
 }
 
 // GetLockableDurations returns the latest received lockable durations from osmosis
 func (k Keeper) GetLockableDurations(ctx sdk.Context) []time.Duration {
 	store := ctx.KVStore(k.storeKey)
-
 	var lockableDurations poolincentivestypes.QueryLockableDurationsResponse
 	k.cdc.MustUnmarshal(store.Get(types.KeyLockableDurations), &lockableDurations)
 	return lockableDurations.LockableDurations
@@ -145,14 +143,12 @@ func (k Keeper) GetLockableDurations(ctx sdk.Context) []time.Duration {
 
 func (k Keeper) SetMintParams(ctx sdk.Context, mintParams minttypes.Params) {
 	store := ctx.KVStore(k.storeKey)
-
 	store.Set(types.KeyMintParams, k.cdc.MustMarshal(&mintParams))
 }
 
 // GetMintParams returns the latest received mint params from osmosis
 func (k Keeper) GetMintParams(ctx sdk.Context) minttypes.Params {
 	store := ctx.KVStore(k.storeKey)
-
 	var mintParams minttypes.Params
 	k.cdc.MustUnmarshal(store.Get(types.KeyMintParams), &mintParams)
 	return mintParams

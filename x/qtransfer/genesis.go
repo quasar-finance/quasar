@@ -10,6 +10,8 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, state types.GenesisState) {
 	err := k.CreateIntermediateAccountAccount(ctx)
 	if err != nil {
+		k.Logger(ctx).Error("InitGenesis failed during CreateIntermediateAccountAccount",
+			"error", err)
 		panic(err)
 	}
 

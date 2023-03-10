@@ -19,8 +19,6 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
-	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
@@ -94,13 +92,10 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	qbandScopedKeeper := capabilityKeeper.ScopeToModule(qbandtypes.SubModuleName)
 	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	qbandKeeper := factory.QbandchainKeeper(paramsKeeper, ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qbandScopedKeeper, qoracleKeeper)
 	qosmosisKeeper := factory.QosmosisKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qosmoScopedKeeper, qoracleKeeper)
-	qoracleKeeper.RegisterPriceOracle(qbandKeeper)
 	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
 	qoracleKeeper.Seal()
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
@@ -112,7 +107,6 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	require.NoError(t, factory.StateStore.LoadLatestVersion())
 
 	factory.SetQoracleDefaultParams(qoracleKeeper)
-	factory.SetQbandchainDefaultParams(qbandKeeper)
 	factory.SetQosmosisDefaultParams(qosmosisKeeper)
 
 	return &TestSetup{
@@ -130,7 +124,6 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			BankKeeper:       bankKeeper,
 			CapabilityKeeper: capabilityKeeper,
 			QoracleKeeper:    qoracleKeeper,
-			QbandchainKeeper: qbandKeeper,
 			QosmosisKeeper:   qosmosisKeeper,
 			QTransfer:        qtransferkeeper,
 		},
@@ -156,7 +149,6 @@ type testKeepers struct {
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper capabilitykeeper.Keeper
 	QoracleKeeper    qoraclekeeper.Keeper
-	QbandchainKeeper qbandkeeper.Keeper
 	QosmosisKeeper   qosmokeeper.Keeper
 	QTransfer        qtransferkeeper.Keeper
 }

@@ -53,7 +53,7 @@ impl Lock {
     }
 
     pub fn is_locked(&self) -> bool {
-        self.bond.is_locked() && self.start_unbond.is_locked() && self.unbond.is_locked()
+        self.bond.is_locked() || self.start_unbond.is_locked() || self.unbond.is_locked()
     }
 }
 

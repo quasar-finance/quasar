@@ -39,42 +39,6 @@ func CmdQueryParams() *cobra.Command {
 	return cmd
 }
 
-func CmdQueryDenomPrices() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "denom-prices",
-		Short: "shows the list of denom prices",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			queryClient := types.NewQueryClient(clientCtx)
-
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
-			if err != nil {
-				return err
-			}
-
-			req := &types.QueryDenomPricesRequest{
-				Pagination: pageReq,
-			}
-			res, err := queryClient.DenomPrices(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-	flags.AddPaginationFlagsToCmd(cmd, "denom prices")
-
-	return cmd
-}
-
 func CmdQueryPools() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pools",

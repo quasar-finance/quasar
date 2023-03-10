@@ -1,8 +1,6 @@
 package epochs
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
@@ -13,14 +11,10 @@ import (
 func InitGenesis(ctx sdk.Context, k *keeper.Keeper, genState types.GenesisState) {
 	// set epoch info from genesis
 	for _, epoch := range genState.Epochs {
-		// Initialize empty epoch values via Cosmos SDK
-		if epoch.StartTime.Equal(time.Time{}) {
-			epoch.StartTime = ctx.BlockTime()
+		err := k.AddEpochInfo(ctx, epoch)
+		if err != nil {
+			panic(err)
 		}
-
-		epoch.CurrentEpochStartHeight = ctx.BlockHeight()
-
-		k.SetEpochInfo(ctx, epoch)
 	}
 }
 

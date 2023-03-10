@@ -8,12 +8,9 @@ Install the main binary of this source code with the following command:
 ```bash
 make install
 ```
-Clone either the forked version of `osmosis` or osmosis v15 release candidate branch. and install the osmosisd binary with the following commands:
+Clone osmosis v15 release candidate branch. and install the osmosisd binary with the following commands:
 ```bash
 
-git clone https://github.com/quasar-finance/osmosis.git -b v12.0.0-icq --depth 1
-
-OR
 clone the tag/v15.0.0-rc0 , https://github.com/osmosis-labs/osmosis/releases/tag/v15.0.0-rc0
 
 cd ./osmosis
@@ -41,31 +38,24 @@ After this you should see block logs written in the stdout of your terminal.
 
 # Config and Start the Hermes Relayer
 
-Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/state by default the response should be:
+Before running the relayer checkout http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/state by  the response should be in the below format. 
+Values must be zero initially.
+
 ```json
 {
-  "coin_rates_state": {
-    "call_data": null,
-    "request_packet_sequence": "0",
-    "oracle_request_id": "0",
-    "result_packet_sequence": "0",
-    "result": null,
+  "params_request_state": {
+    "packet_sequence": "14",
+    "acknowledged": true,
     "failed": false,
-    "updated_at_height": "0"
+    "updated_at_height": "99"
   },
-  "osmosis_params_request_state": {
-    "packet_sequence": "0",
-    "acknowledged": false,
+  "incentivized_pools_state": {
+    "packet_sequence": "13",
+    "acknowledged": true,
     "failed": false,
-    "updated_at_height": "0"
+    "updated_at_height": "99"
   },
-  "osmosis_incentivized_pools_state": {
-    "packet_sequence": "0",
-    "acknowledged": false,
-    "failed": false,
-    "updated_at_height": "0"
-  },
-  "osmosis_pools_state": {
+  "pools_state": {
     "packet_sequence": "0",
     "acknowledged": false,
     "failed": false,
@@ -83,37 +73,7 @@ cd ./demos/osmosis-config
 
 [run_hermes_only_osmosis.sh](./run_hermes_only_osmosis.sh)
 ```
-### NOTE - Ignore bandchain 
-### For this demo of using the qoracle you can also avoid bandchain part; as bandchain part is anyway expected to be disabled or deprecated. We will consider 
-### bandchain for future enhancement. 
-
-Now after hermes starts to run you should see changes in `"packet_sequence"` field of `"coin_rates_state"` (which is about fetching coin prices from bandchain) and `"osmosis_incentivized_pools_state"` (which is about fetching list of incentivized pools from osmosis) This means that quasar sent the packets.
-
-After a while if the bandchain response with a successful receive a response like below from http://localhost:1311/quasarlabs/quasarnode/qoracle/oracle_prices
-```json
-{
-  "prices": [
-    {
-      "denom": "ATOM",
-      "amount": "14.338800000000000000"
-    },
-    {
-      "denom": "BNB",
-      "amount": "267.529999000000000000"
-    },
-    {
-      "denom": "BTC",
-      "amount": "19251.452500000000000000"
-    },
-    {
-      "denom": "OSMO",
-      "amount": "1.255382000000000000"
-    }
-  ],
-  "updated_at_height": "112"
-}
-```
-
+ 
 # Updating Osmosis Chain Params
 Before updating the osmosis chain params http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params returns empty result like:
 ```json
@@ -146,10 +106,11 @@ Before updating the osmosis chain params http://localhost:1311/quasarlabs/quasar
   }
 }
 ```
-To Update the chain params of osmosis in quasar run the following command:
-```bash
-quasarnoded tx qoracle osmosis update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --output json --keyring-backend test
-```
+## Update the chain params of osmosis in quasar run the following command. This will be happening automatically in the epoch hooks on every configured interval.
+
+- For testing this interval is set to 1 minute. In the live scenario it could be done once per day. 
+
+ 
 After hermes relayed the acknowledgement the result of http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params will change to:
 ```json
 {
@@ -224,9 +185,7 @@ After hermes relayed the acknowledgement the result of http://localhost:1311/qua
 }
 ```
 
-## NOTE - If you are ignoring bandchain protocol part ; then you should also ignore the APY/TVL Calculations at the moment. Without the stable prices 
-## that part is not feasible. Initially we can use qoracle only for the saving osmosis pool states locally.
-
+ 
 # Creating a Pool in Osmosis
 To create a pool in osmosis simply run the following command which will create a simple pool with `uosmo` and dummy `uatom` tokens:
 ```bash
@@ -325,4 +284,11 @@ And after about a minute (maximum) quasar should be updated as well so checking 
   }
 }
 ```
-Note that the `apy` and `tvl` values may be different in your case depending on the prices fetched from bandchain.
+Note that the `apy` and `tvl will be zero at this point. As in this version of the codebase we don't have integrated any stable price oracle yet.
+
+
+## TO DO QUICK TESTING for param update ; just run , run_test.sh and verify  chain_param after 2-3 minutes
+`
+curl  http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params
+` 
+- Values will not be zero. 

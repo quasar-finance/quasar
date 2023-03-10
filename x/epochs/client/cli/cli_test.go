@@ -111,5 +111,5 @@ func TestGetCmdEpochsInfos(t *testing.T) {
 	var resp types.QueryEpochsInfoResponse
 	err = clientCtx.Codec.UnmarshalJSON(out.Bytes(), &resp)
 	require.NoError(t, err)
-	require.Equal(t, 3, len(resp.Epochs))
+	require.Equal(t, 4, len(resp.Epochs))
 }

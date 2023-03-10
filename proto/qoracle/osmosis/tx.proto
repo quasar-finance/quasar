@@ -5,9 +5,10 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types";
 
 // Msg defines the Msg service.
 service Msg {
-  rpc UpdateChainParams(MsgUpdateChainParams) returns (MsgUpdateChainParamsResponse);
+  // rpc UpdateChainParams(MsgUpdateChainParams) returns (MsgUpdateChainParamsResponse);
 }
 
+/*
 message MsgUpdateChainParams {
   string creator = 1;
 }
@@ -15,3 +16,4 @@ message MsgUpdateChainParams {
 message MsgUpdateChainParamsResponse {
   uint64 packet_sequence = 1;
 }
+*/

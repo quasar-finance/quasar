@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
+    Uint128,
 };
 
 use cw2::set_contract_version;
@@ -17,7 +18,7 @@ use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
-use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info,
     query_unbonding_claims,
@@ -186,6 +187,28 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 // }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // for this migration, we only need to rebuild total_supply
+    let balances: Result<Vec<(Addr, Uint128)>, StdError> = cw20_base::state::BALANCES
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    let total = balances?
+        .iter()
+        .fold(Uint128::zero(), |sum, val| sum + val.1);
+    TOTAL_SUPPLY.update(
+        deps.storage,
+        |mut supply| -> Result<Supply, ContractError> {
+            supply.issued = total;
+            Ok(supply)
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("migrate", CONTRACT_NAME)
+        .add_attribute("succes", "true"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -201,7 +224,6 @@ mod tests {
     //     let cb = ExecuteMsg::BondResponse(bond_response);
     //     let mut deps = mock_dependencies();
     //     let env = mock_env();
-
     //     let info = MessageInfo {
     //         sender: env.clone().contract.address,
     //         funds: Vec::new(),

@@ -1,11 +1,6 @@
 package types
 
-import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-)
-
+/*
 const TypeMsgUpdateChainParams = "update_params"
 
 var _ sdk.Msg = &MsgUpdateChainParams{}
@@ -44,3 +39,4 @@ func (msg *MsgUpdateChainParams) ValidateBasic() error {
 	}
 	return nil
 }
+*/

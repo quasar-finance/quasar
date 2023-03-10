@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	time "time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -10,14 +9,16 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-const (
+var (
 	// DefaultDenomPricesExpDuration is the default duration in which denom prices are valid
 	DefaultDenomPricesExpDuration = uint64(time.Minute * 6)
+	DefaultDenomSymbolMapping     = []DenomSymbolMapping{}
 )
 
 var (
 	// KeyDenomPricesExpDuration is store's key for DenomPricesExpDuration
 	KeyDenomPricesExpDuration = []byte("DenomPricesExpDuration")
+	KeyDenomSymbolMapping     = []byte("DenomSymbolMapping")
 )
 
 // ParamKeyTable the param key table for launch module
@@ -25,23 +26,18 @@ func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
-// NewParams creates a new Params instance
-func NewParams(expDuration uint64) Params {
-	return Params{
-		DenomPricesExpDuration: expDuration,
-	}
+func NewParams() Params {
+	return Params{}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultDenomPricesExpDuration)
+	return NewParams()
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyDenomPricesExpDuration, &p.DenomPricesExpDuration, validateDuration),
-	}
+	return paramtypes.ParamSetPairs{}
 }
 
 // Validate validates the set of params
@@ -53,13 +49,4 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
-}
-
-func validateDuration(i interface{}) error {
-	_, ok := i.(uint64)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	return nil
 }

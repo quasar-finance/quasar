@@ -72,6 +72,7 @@ pub(crate) fn setup_default_config(
             local_denom: "ibc/local_osmo".to_string(),
             transfer_channel: "channel-0".to_string(),
             return_source_channel: "channel-0".to_string(),
+            expected_connection: "connection-0".to_string(),
         },
     )
 }
@@ -98,6 +99,7 @@ mod tests {
                 local_denom: "ibc/local_osmo".to_string(),
                 transfer_channel: "channel-0".to_string(),
                 return_source_channel: "channel-0".to_string(),
+                expected_connection: "connection-0".to_string(),
             }
         );
 

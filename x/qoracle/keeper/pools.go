@@ -22,10 +22,11 @@ func (k Keeper) GetPoolsRankedByAPY(ctx sdk.Context, denom string) []types.Pool 
 		var pool types.Pool
 		k.cdc.MustUnmarshal(iter.Value(), &pool)
 
-		if filterPool(pool, denom) {
+		if denom != "" && !IsDenomInPool(pool, denom) {
+			// Skip to next pool
 			continue
 		}
-
+		// If denom is empty or denom is in pool assets
 		pools = append(pools, pool)
 	}
 
@@ -34,13 +35,13 @@ func (k Keeper) GetPoolsRankedByAPY(ctx sdk.Context, denom string) []types.Pool 
 	return pools
 }
 
-func filterPool(pool types.Pool, denom string) bool {
-	// Filter out pools with the desired denom as asset
+func IsDenomInPool(pool types.Pool, denom string) bool {
+
 	if denom != "" {
 		for _, c := range pool.Assets {
 			if c.Denom == denom {
-				// If found ; return false to filter out
-				return false
+				// If found ; return true
+				return true
 			}
 		}
 		/*
@@ -52,7 +53,7 @@ func filterPool(pool types.Pool, denom string) bool {
 		*/
 	}
 
-	return true
+	return false
 }
 
 // GetPool returns a pool for the given id if exists.
