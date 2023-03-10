@@ -37,5 +37,5 @@ thiserror = "1.0.23"
 
 [dev-dependencies]
 anyhow = "1"
-cw-multi-test = {path = '../../packages/cw-multi-test'}
+cw-multi-test = {repository = "https://github.com/njerschow/cw-multi-test.git"}
 derivative = "2"
