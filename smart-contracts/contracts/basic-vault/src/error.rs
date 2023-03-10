@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{CheckedMultiplyRatioError, OverflowError, StdError, Uint128};
 use quasar_types::error::Error as QError;
 use thiserror::Error;
 
@@ -61,8 +61,44 @@ pub enum ContractError {
     #[error("Incorrect callback id, expected: {expected}, got: {:?}", ids)]
     IncorrectCallbackId { expected: String, ids: Vec<String> },
 
+    #[error("Overflow error: {0}")]
+    OverflowError(String),
+
+    #[error("Multiply ratio error: {0}")]
+    MultiplyRatioError(String),
+
+    #[error("Missing bond response")]
+    MissingBondResponse {},
+
+    #[error("Token weight vector is empty")]
+    TokenWeightsIsEMpty {},
+
+    #[error("Coins vector is empty")]
+    CoinsVectorIsEmpty {},
+
+    #[error("Denom not found in coins vector")]
+    DenomNotFoundInCoinsVector {},
+
     #[error("{0}")]
     QError(#[from] QError),
+}
+
+impl From<OverflowError> for ContractError {
+    fn from(err: OverflowError) -> Self {
+        ContractError::OverflowError(format!("{err}"))
+    }
+}
+
+impl From<CheckedMultiplyRatioError> for ContractError {
+    fn from(err: CheckedMultiplyRatioError) -> Self {
+        ContractError::OverflowError(format!("{err}"))
+    }
+}
+
+impl From<cw_utils::PaymentError> for ContractError {
+    fn from(err: cw_utils::PaymentError) -> Self {
+        ContractError::Std(StdError::generic_err(err.to_string()))
+    }
 }
 
 impl From<cw20_base::ContractError> for ContractError {

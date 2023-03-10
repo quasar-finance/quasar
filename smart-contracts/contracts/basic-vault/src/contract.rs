@@ -186,7 +186,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // for this migration, we only need to rebuild total_supply
     let balances: Result<Vec<(Addr, Uint128)>, StdError> = cw20_base::state::BALANCES
         .range(deps.storage, None, None, Order::Ascending)
