@@ -77,6 +77,7 @@ pub struct UnbondingStub {
 // (un)bonding sequence number (to map primitive responses to the right bond action)
 pub const BONDING_SEQ: Item<Uint128> = Item::new("bond_seq");
 // mapping from bonding sequence number to depositor/withdrawer address (todo: better way to do this?)
+// TODO addresses should be of type ADDR
 pub const BONDING_SEQ_TO_ADDR: Map<String, String> = Map::new("bond_seq_to_addr");
 // current bonds pending for a user
 pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_bond_ids");

@@ -58,7 +58,7 @@ echo "setting up go relayer"
 ./setup_go_relayer.sh
 
 echo "starting go relaying"
-# # run an instance of go relayer for each path, thus 3 in total
+# run an instance of go relayer for each path, thus 3 in total
 rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 300s -p events >> ./logs/quasar_cosmos_rly.log 2>&1  & 
 RLY_PID_1=$!
 

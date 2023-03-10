@@ -76,7 +76,7 @@ fn enforce_order_and_version(
 pub struct IcaMetadata {
     version: Version,
     encoding: Encoding,
-    tx_type: TxType,
+    pub tx_type: TxType,
     controller_connection_id: Option<String>,
     host_connection_id: Option<String>,
 }
@@ -92,6 +92,14 @@ impl IcaMetadata {
 
     pub fn tx_type(&self) -> &TxType {
         &self.tx_type
+    }
+
+    pub fn controller_connection_id(&self) -> &Option<String> {
+        &self.controller_connection_id
+    }
+
+    pub fn host_connection_id(&self) -> &Option<String> {
+        &self.host_connection_id
     }
 
     pub fn with_connections(

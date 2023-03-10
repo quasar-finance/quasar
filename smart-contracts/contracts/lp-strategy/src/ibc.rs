@@ -9,10 +9,12 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TRAPS,
+    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
@@ -34,10 +36,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse,
-    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    StdError, Storage, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage,
+    Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -58,6 +60,13 @@ pub fn ibc_channel_open(
 
 fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), ContractError> {
     ibc::enforce_order_and_version(&channel, None, &channel.version, channel.order.clone())?;
+
+    // check the connection id vs the expected connection id
+    let config = CONFIG.load(deps.storage)?;
+    if config.expected_connection != channel.connection_id {
+        return Err(ContractError::IncorrectConnection);
+    }
+
     // save the channel state here
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -68,6 +77,7 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
         },
         handshake_state: HandshakeState::Init,
     };
+
     CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
     Ok(())
 }
@@ -81,6 +91,21 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     })?;
 
     enforce_ica_order_and_metadata(&channel, None, &metadata)?;
+
+    // compare the expected connection id to the channel connection-id and the ica metadata connection-id
+    let config = CONFIG.load(deps.storage)?;
+    if &config.expected_connection
+        != metadata
+            .controller_connection_id()
+            .as_ref()
+            .ok_or(ContractError::NoConnectionFound)?
+    {
+        return Err(ContractError::IncorrectConnection);
+    }
+    if config.expected_connection != channel.connection_id {
+        return Err(ContractError::IncorrectConnection);
+    }
+
     // save the current state of the initializing channel
     let info = ChannelInfo {
         id: channel.endpoint.channel_id.clone(),
@@ -147,11 +172,18 @@ pub fn ibc_channel_connect(
                 return Err(ContractError::NoCounterpartyIcaAddress);
             }
 
-            // once we have an Open ICA channel, save it under ICA channel, if a channel already exists, reject incoming OPENS
+            // once we have an Open ICA channel, save it under ICA channel,
+            // if a channel already exists, and that channel is not timed out reject incoming OPENS
+            // if that channel is timed out, we overwrite the previous ICA channel for the new one
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
-            if channel.is_some() {
+            // to reject the msg here, ica should not be timed out
+            if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
+
                 return Err(ContractError::IcaChannelAlreadySet);
             }
+
+            // set timed out to false
+            TIMED_OUT.save(deps.storage, &false)?;
 
             ICA_CHANNEL.save(deps.storage, &msg.channel().endpoint.channel_id)?;
 
@@ -179,11 +211,13 @@ pub fn ibc_channel_connect(
 pub fn ibc_channel_close(
     _deps: DepsMut,
     _env: Env,
-    _channel: IbcChannelCloseMsg,
+    channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO: what to do here?
-    // we will have locked funds that need to be returned somehow
-    unimplemented!();
+    // for now we just close the channel
+    Ok(IbcBasicResponse::new()
+        .add_attribute("channel", channel.channel().endpoint.channel_id.clone())
+        .add_attribute("connection", channel.channel().connection_id.clone()))
 }
 
 /// The lp-strategy cannot receive any packets
@@ -238,7 +272,7 @@ pub fn handle_succesful_ack(
                         },
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -254,7 +288,7 @@ pub fn handle_succesful_ack(
                             step: IbcMsgKind::Ica(ica_kind.clone()),
                         },
                     )?;
-                    unlock_on_error(deps.storage, kind)?;
+                    unlock_on_error(deps.storage, &kind)?;
                     Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
                 }
             }
@@ -270,7 +304,7 @@ pub fn handle_succesful_ack(
                         step: IbcMsgKind::Icq,
                     },
                 )?;
-                unlock_on_error(deps.storage, kind)?;
+                unlock_on_error(deps.storage, &kind)?;
                 Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
             }
         },
@@ -358,9 +392,10 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
+    // TODO move the LP_SHARES.load to start_unbond
     let start_unbond = batch_start_unbond(storage, &env, total_lp)?;
 
-    let unbond = batch_unbond(storage, &env, total_balance, total_lp)?;
+    let unbond = batch_unbond(storage, &env)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
@@ -426,7 +461,6 @@ pub fn handle_ica_ack(
 
             let denom = CONFIG.load(storage)?.pool_denom;
 
-            // TODO update queue raw amounts here
             data.update_raw_amount_to_lp(shares_out)?;
 
             let msg = do_ibc_lock_tokens(
@@ -462,8 +496,10 @@ pub fn handle_ica_ack(
             LAST_PENDING_BOND.save(storage, data)?;
 
             let mut callbacks: Vec<WasmMsg> = vec![];
+            // TODO make execute a sub msg
             for claim in &data.bonds {
-                let share_amount = create_share(storage, claim.owner.clone(), claim.claim_amount)?;
+                let share_amount =
+                    create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
                 callbacks.push(WasmMsg::Execute {
                     contract_addr: claim.owner.to_string(),
                     msg: to_binary(&Callback::BondResponse(BondResponse {
@@ -486,7 +522,6 @@ pub fn handle_ica_ack(
                 .add_attribute("lock_id", resp.id.to_string()))
         }
         IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
-        // TODO hook up the unbond ICA messages
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
@@ -508,6 +543,7 @@ fn handle_exit_pool_ack(
         }
     })?);
 
+    // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_tokens)?;
     LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_sub(total_lp)?)
@@ -539,33 +575,110 @@ fn handle_return_transfer_ack(
 }
 
 pub fn handle_failing_ack(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _pkt: IbcPacketAckMsg,
+    pkt: IbcPacketAckMsg,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
+    let step = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    unlock_on_error(deps.storage, &step)?;
+    TRAPS.save(
+        deps.storage,
+        pkt.original_packet.sequence,
+        &Trap {
+            error: format!("packet failure: {}", error),
+            step,
+        },
+    )?;
     Ok(IbcBasicResponse::new().add_attribute("ibc-error", error.as_str()))
 }
 
+// if an ICA packet is timed out, we need to reject any further packets (only to the ICA channel or in total -> easiest in total until a new ICA channel is created)
+// once time out variable is set, a new ICA channel needs to be able to be opened for the contract to function and the ICA channel val and channels map need to be updated
+// what do we do with the trapped errors packets, are they able to be recovered over the new ICA channel?
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_packet_timeout(
     deps: DepsMut,
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: trap error like in acks
-    on_packet_failure(deps, msg.packet, "timeout".to_string())?;
-    Ok(IbcBasicResponse::default())
+    on_packet_failure(deps, msg.packet, "timeout".to_string())
 }
 
 fn on_packet_failure(
-    _deps: DepsMut,
-    _packet: IbcPacket,
-    _error: String,
+    deps: DepsMut,
+    packet: IbcPacket,
+    error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    todo!()
+    let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
+    unlock_on_error(deps.storage, &step)?;
+    if let IbcMsgKind::Ica(_) = &step {
+        TIMED_OUT.save(deps.storage, &true)?
+    }
+    TRAPS.save(
+        deps.storage,
+        packet.sequence,
+        &Trap {
+            error: format!("packet failure: {}", error),
+            step,
+        },
+    )?;
+    Ok(IbcBasicResponse::default())
 }
 
 #[cfg(test)]
-mod test {}
+mod tests {
+
+    use cosmwasm_std::{testing::mock_dependencies, IbcEndpoint, IbcOrder};
+
+    use crate::test_helpers::default_setup;
+
+    use super::*;
+
+    #[test]
+    fn handle_ica_channel_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let endpoint = IbcEndpoint {
+            port_id: "wasm.my_addr".to_string(),
+            channel_id: "channel-1".to_string(),
+        };
+        let counterparty_endpoint = IbcEndpoint {
+            port_id: "icahost".to_string(),
+            channel_id: "channel-2".to_string(),
+        };
+
+        let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
+        let channel = IbcChannel::new(
+            endpoint,
+            counterparty_endpoint.clone(),
+            IbcOrder::Ordered,
+            version,
+            "connection-0".to_string(),
+        );
+
+        handle_ica_channel(deps.as_mut(), channel.clone()).unwrap();
+
+        let expected = ChannelInfo {
+            id: channel.endpoint.channel_id.clone(),
+            counterparty_endpoint,
+            connection_id: "connection-0".to_string(),
+            channel_type: ChannelType::Ica {
+                channel_ty: IcaMetadata::with_connections(
+                    "connection-0".to_string(),
+                    "connection-0".to_string(),
+                ),
+                counter_party_address: None,
+            },
+            handshake_state: HandshakeState::Init,
+        };
+        assert_eq!(
+            CHANNELS
+                .load(deps.as_ref().storage, channel.endpoint.channel_id)
+                .unwrap(),
+            expected
+        )
+    }
+}

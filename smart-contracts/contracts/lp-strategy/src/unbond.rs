@@ -38,12 +38,7 @@ pub fn do_unbond(
     Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
-pub fn batch_unbond(
-    storage: &mut dyn Storage,
-    env: &Env,
-    _vault_value: Uint128,
-    _total_lp_shares: Uint128,
-) -> Result<Option<SubMsg>, ContractError> {
+pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
@@ -98,6 +93,7 @@ pub fn batch_unbond(
     )?))
 }
 
+// TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold it (with gas costs etc)
 pub fn transfer_batch_unbond(
     storage: &mut dyn Storage,
     env: &Env,
@@ -128,7 +124,7 @@ pub fn transfer_batch_unbond(
     )?)
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct PendingReturningUnbonds {
     pub unbonds: Vec<ReturningUnbond>,
@@ -158,7 +154,7 @@ impl PendingReturningUnbonds {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ReturningUnbond {
     pub amount: RawAmount,
@@ -252,7 +248,199 @@ struct Wasm {
 #[cfg(test)]
 mod tests {
 
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        CosmosMsg,
+    };
+
+    use crate::{state::Unbond, test_helpers::default_setup};
+
     use super::*;
+
+    #[test]
+    fn do_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let mut env = mock_env();
+        let id = "my-id".to_string();
+
+        let unbond = Unbond {
+            lp_shares: Uint128::new(100),
+            unlock_time: env.block.time,
+            owner: owner.clone(),
+            id: id.clone(),
+        };
+        UNBONDING_CLAIMS
+            .save(deps.as_mut().storage, (owner.clone(), id.clone()), &unbond)
+            .unwrap();
+
+        let time = mock_env().block.time.plus_seconds(101);
+        env.block.time = time;
+        do_unbond(deps.as_mut().storage, &env, owner, id).unwrap();
+        assert_eq!(
+            UNBOND_QUEUE
+                .pop_front(deps.as_mut().storage)
+                .unwrap()
+                .unwrap(),
+            unbond
+        )
+    }
+
+    #[test]
+    fn do_unbond_early_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (owner.clone(), id.clone()),
+                &Unbond {
+                    lp_shares: Uint128::new(100),
+                    unlock_time: env.block.time.plus_nanos(1),
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+            )
+            .unwrap();
+
+        let err = do_unbond(deps.as_mut().storage, &env, owner, id).unwrap_err();
+        assert_eq!(err, ContractError::SharesNotYetUnbonded)
+    }
+
+    #[test]
+    fn batch_unbond_empty_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        assert!(res.is_none())
+    }
+
+    #[test]
+    fn batch_unbond_multiple_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id".to_string();
+
+        // test specific setup
+        LP_SHARES
+            .save(deps.as_mut().storage, &Uint128::new(1000))
+            .unwrap();
+
+        let unbonds = vec![
+            Unbond {
+                lp_shares: Uint128::new(100),
+                unlock_time: env.block.time,
+                owner: owner.clone(),
+                id: id.clone(),
+            },
+            Unbond {
+                lp_shares: Uint128::new(101),
+                unlock_time: env.block.time,
+                owner: owner.clone(),
+                id: id.clone(),
+            },
+            Unbond {
+                lp_shares: Uint128::new(102),
+                unlock_time: env.block.time,
+                owner: owner.clone(),
+                id: id.clone(),
+            },
+        ];
+
+        for unbond in unbonds.iter() {
+            UNBOND_QUEUE
+                .push_back(deps.as_mut().storage, unbond)
+                .unwrap();
+        }
+
+        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        assert!(res.is_some());
+
+        // check that the packet is as we expect
+        let ica_address = get_ica_address(
+            deps.as_ref().storage,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+        )
+        .unwrap();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let msg = MsgExitSwapShareAmountIn {
+            sender: ica_address,
+            pool_id: config.pool_id,
+            token_out_denom: config.base_denom,
+            share_in_amount: Uint128::new(303).to_string(),
+            // TODO add a more robust estimation
+            token_out_min_amount: Uint128::one().to_string(),
+        };
+
+        let pkt = ica_send::<MsgExitSwapShareAmountIn>(
+            msg,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        )
+        .unwrap();
+
+        assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));
+    }
+
+    #[test]
+    fn transfer_batch_unbond_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id".to_string();
+
+        let pending = &PendingReturningUnbonds {
+            unbonds: vec![
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(101)),
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(102)),
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(103)),
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+            ],
+        };
+
+        let total_tokens = Uint128::new(306);
+        let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+
+        let res =
+            transfer_batch_unbond(deps.as_mut().storage, &env, pending, total_tokens).unwrap();
+
+        let msg = return_transfer(
+            deps.as_mut().storage,
+            &env,
+            total_tokens,
+            timeout_timestamp.timestamp().unwrap(),
+        )
+        .unwrap();
+
+        let pkt = ica_send::<MsgTransfer>(
+            msg,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        )
+        .unwrap();
+        assert_eq!(res.msg, CosmosMsg::Ibc(pkt));
+    }
 
     #[test]
     fn test_lp_to_local_denom() {
