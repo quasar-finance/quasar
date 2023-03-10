@@ -18,7 +18,7 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: types.DefaultGenesis(),
 			valid:    true,
 		},
-	} {
+	} { //for start
 		t.Run(tc.desc, func(t *testing.T) {
 			err := tc.genState.Validate()
 			if tc.valid {
@@ -27,5 +27,5 @@ func TestGenesisState_Validate(t *testing.T) {
 				require.Error(t, err)
 			}
 		})
-	}
-}
+	} // for end
+} // func end

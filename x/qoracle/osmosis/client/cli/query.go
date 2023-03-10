@@ -47,9 +47,9 @@ func GetCmdState() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryStateRequest{}
+			req := &types.QueryStateRequest{}
 
-			res, err := queryClient.State(cmd.Context(), params)
+			res, err := queryClient.State(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -77,9 +77,9 @@ func GetCmdChainParams() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryChainParamsRequest{}
+			req := &types.QueryChainParamsRequest{}
 
-			res, err := queryClient.ChainParams(cmd.Context(), params)
+			res, err := queryClient.ChainParams(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -107,9 +107,9 @@ func GetCmdIncentivizedPools() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryIncentivizedPoolsRequest{}
+			req := &types.QueryIncentivizedPoolsRequest{}
 
-			res, err := queryClient.IncentivizedPools(cmd.Context(), params)
+			res, err := queryClient.IncentivizedPools(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -137,9 +137,9 @@ func GetCmdPools() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryPoolsRequest{}
+			req := &types.QueryPoolsRequest{}
 
-			res, err := queryClient.Pools(cmd.Context(), params)
+			res, err := queryClient.Pools(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

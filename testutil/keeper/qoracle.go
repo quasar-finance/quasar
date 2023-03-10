@@ -6,46 +6,11 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
-	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
-
-func (kf KeeperFactory) QbandchainKeeper(
-	paramsKeeper paramskeeper.Keeper,
-	clientKeeper types.ClientKeeper,
-	ics4Wrapper porttypes.ICS4Wrapper,
-	channelKeeper types.ChannelKeeper,
-	portKeeper types.PortKeeper,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
-	qoracleKeeper qbandtypes.QOracle,
-) qbandkeeper.Keeper {
-	storeKey := sdk.NewKVStoreKey(qbandtypes.StoreKey)
-
-	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
-
-	paramsSubspace := paramsKeeper.Subspace(qbandtypes.SubModuleName)
-	k := qbandkeeper.NewKeeper(
-		kf.EncodingConfig.Marshaler,
-		storeKey,
-		paramsSubspace,
-		clientKeeper,
-		ics4Wrapper,
-		channelKeeper,
-		portKeeper,
-		scopedKeeper,
-		qoracleKeeper,
-	)
-
-	return k
-}
-
-func (kf KeeperFactory) SetQbandchainDefaultParams(k qbandkeeper.Keeper) {
-	k.SetParams(kf.Ctx, qbandtypes.DefaultParams())
-}
 
 func (kf KeeperFactory) QosmosisKeeper(
 	paramsKeeper paramskeeper.Keeper,

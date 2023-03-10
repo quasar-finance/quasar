@@ -156,4 +156,4 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   >  $HOME_OSMOSIS/config/genesis.json
 
 # Start
-$BINARY start --home $HOME_OSMOSIS
+$BINARY start --home $HOME_OSMOSIS > osmosis.log 2>&1 &

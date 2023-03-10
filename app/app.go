@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"io"
 	"net/http"
 	"os"
@@ -117,9 +118,6 @@ import (
 	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
 
 	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
-	qband "github.com/quasarlabs/quasarnode/x/qoracle/bandchain"
-	qbandkeeper "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/keeper"
-	qbandtypes "github.com/quasarlabs/quasarnode/x/qoracle/bandchain/types"
 	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmo "github.com/quasarlabs/quasarnode/x/qoracle/osmosis"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
@@ -187,6 +185,14 @@ func GetWasmEnabledProposals() []wasm.ProposalType {
 		panic(err)
 	}
 	return proposals
+}
+
+// overrideWasmVariables overrides the wasm variables to:
+//   - allow for larger wasm files
+func overrideWasmVariables() {
+	// Override Wasm size limitation from WASMD.
+	wasmtypes.MaxWasmSize = 3 * 1024 * 1024
+	wasmtypes.MaxProposalWasmSize = wasmtypes.MaxWasmSize
 }
 
 var (
@@ -294,15 +300,13 @@ type App struct {
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
-	scopedQBandchainKeeper    capabilitykeeper.ScopedKeeper
 	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	QTransferKeeper  qtransferkeeper.Keeper
-	EpochsKeeper     *epochsmodulekeeper.Keeper
-	QBandchainKeeper qbandkeeper.Keeper
-	QOsmosisKeeper   qosmokeeper.Keeper
-	QOracleKeeper    qoraclemodulekeeper.Keeper
+	QTransferKeeper qtransferkeeper.Keeper
+	EpochsKeeper    *epochsmodulekeeper.Keeper
+	QOsmosisKeeper  qosmokeeper.Keeper
+	QOracleKeeper   qoraclemodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
@@ -341,6 +345,7 @@ func New(
 	wasmOpts []wasm.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	overrideWasmVariables()
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -363,7 +368,6 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		epochsmoduletypes.StoreKey,
 		qoraclemoduletypes.StoreKey,
-		qbandtypes.StoreKey,
 		qosmotypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
@@ -404,7 +408,6 @@ func New(
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedQBandchainKeeper := app.CapabilityKeeper.ScopeToModule(qbandtypes.SubModuleName)
 	scopedQOsmosisKeeper := app.CapabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasm.ModuleName)
 
@@ -527,19 +530,6 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	app.QBandchainKeeper = qbandkeeper.NewKeeper(
-		appCodec,
-		keys[qbandtypes.StoreKey],
-		app.GetSubspace(qbandtypes.SubModuleName),
-		app.IBCKeeper.ClientKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		scopedQBandchainKeeper,
-		app.QOracleKeeper,
-	)
-	qbandIBCModule := qband.NewIBCModule(app.QBandchainKeeper)
-
 	app.QOsmosisKeeper = qosmokeeper.NewKeeper(
 		appCodec,
 		keys[qosmotypes.StoreKey],
@@ -554,10 +544,9 @@ func New(
 	)
 	qosmoIBCModule := qosmo.NewIBCModule(app.QOsmosisKeeper)
 
-	app.QOracleKeeper.RegisterPriceOracle(app.QBandchainKeeper)
 	app.QOracleKeeper.RegisterPoolOracle(app.QOsmosisKeeper)
 	app.QOracleKeeper.Seal()
-	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QBandchainKeeper, app.QOsmosisKeeper)
+	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QOsmosisKeeper)
 
 	app.QTransferKeeper = qtransferkeeper.NewKeeper(
 		appCodec,
@@ -570,7 +559,6 @@ func New(
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			app.QBandchainKeeper.EpochHooks(),
 			app.QOsmosisKeeper.EpochHooks(),
 		),
 	)
@@ -651,7 +639,6 @@ func New(
 		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
 		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
 		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
-		AddRoute(qbandtypes.SubModuleName, qbandIBCModule).
 		AddRoute(qosmotypes.SubModuleName, qosmoIBCModule)
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
@@ -872,7 +859,6 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedWasmKeeper = scopedWasmKeeper
-	app.scopedQBandchainKeeper = scopedQBandchainKeeper
 	app.scopedQOracleKeeper = scopedQOsmosisKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
@@ -1064,7 +1050,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(qbankmoduletypes.ModuleName)
 	// paramsKeeper.Subspace(orionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName).WithKeyTable(qoraclemoduletypes.ParamKeyTable())
-	paramsKeeper.Subspace(qbandtypes.SubModuleName)
 	paramsKeeper.Subspace(qosmotypes.SubModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)

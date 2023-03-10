@@ -1,0 +1,12 @@
+{
+    "title": "Enable ica unlock",
+    "description": "Add MsgBeginUnlocking to allowed ICA messages",
+    "changes": [
+        {
+        "subspace": "icahost",
+        "key": "AllowMessages",
+        "value": ["/ibc.applications.transfer.v1.MsgTransfer", "/cosmos.bank.v1beta1.MsgSend", "/cosmos.staking.v1beta1.MsgDelegate", "/cosmos.staking.v1beta1.MsgBeginRedelegate", "/cosmos.staking.v1beta1.MsgCreateValidator", "/cosmos.staking.v1beta1.MsgEditValidator", "/cosmos.staking.v1beta1.MsgUndelegate", "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward", "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress", "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission", "/cosmos.distribution.v1beta1.MsgFundCommunityPool", "/cosmos.gov.v1beta1.MsgVote", "/osmosis.gamm.v1beta1.MsgJoinPool", "/osmosis.gamm.v1beta1.MsgExitPool", "/osmosis.gamm.v1beta1.MsgSwapExactAmountIn", "/osmosis.gamm.v1beta1.MsgSwapExactAmountOut", "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn", "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut", "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut", "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn", "/osmosis.lockup.MsgLockTokens", "/osmosis.superfluid.MsgSuperfluidUnbondLock", "/osmosis.lockup.MsgBeginUnlocking" ]
+        }
+    ],
+    "deposit": "1000uqsr"
+}

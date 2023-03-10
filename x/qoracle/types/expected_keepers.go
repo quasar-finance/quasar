@@ -27,14 +27,6 @@ type ClientKeeper interface {
 	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
 }
 
-// PriceOracle defines an interface for price oracle submodules that will
-// fetch price of pre-defined list of symbols from oracle sources and deliver
-// them to qoracle module when needed.
-type PriceOracle interface {
-	Oracle
-	GetSymbolPriceList(ctx sdk.Context) (SymbolPriceList, error)
-}
-
 // PoolOracle defines an interface for pool oracle submodules that will
 // fetch pools from chains like osmosis and etc and deliver them to qoracle
 // with calculated TVL and APY.

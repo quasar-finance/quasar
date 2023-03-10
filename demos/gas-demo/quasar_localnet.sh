@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 ## This script helps to create a basic version of the quasar chain genesis file for development purposes.
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
@@ -21,22 +21,25 @@ RELAYER_ACC_GENESIS_COINS=10000000uqsr
 # Remove previous setup
 rm -rf $HOME_QSR
 
-$BINARY init $CHAIN_ID --chain-id $CHAIN_ID
+$BINARY init $CHAIN_ID --chain-id $CHAIN_ID --home $HOME_QSR
 
 # Bootstrap the quasar local network with single node
 
-echo $ALICE | $BINARY keys add alice --keyring-backend test --recover
-echo $BOB | $BINARY keys add bob --keyring-backend test --recover
-echo $USER_1 | $BINARY keys add user1 --keyring-backend test --recover
-echo $USER_2 | $BINARY keys add user2 --keyring-backend test --recover
-echo $RELAYER_ACC | $BINARY keys add relayer_acc --keyring-backend test --recover
-$BINARY add-genesis-account $($BINARY keys show alice --keyring-backend test -a) $ALICE_GENESIS_COINS
-$BINARY add-genesis-account $($BINARY keys show bob --keyring-backend test -a) $BOB_GENESIS_COINS
-$BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a) $USER_1_GENESIS_COINS
-$BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a) $USER_2_GENESIS_COINS
-$BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a) $RELAYER_ACC_GENESIS_COINS
-$BINARY gentx alice 100000000uqsr --chain-id $CHAIN_ID --keyring-backend test
-$BINARY collect-gentxs
+echo $ALICE | $BINARY keys add alice --keyring-backend test --recover --home $HOME_QSR
+echo $BOB | $BINARY keys add bob --keyring-backend test --recover --home $HOME_QSR
+echo $USER_1 | $BINARY keys add user1 --keyring-backend test --recover --home $HOME_QSR
+echo $USER_2 | $BINARY keys add user2 --keyring-backend test --recover --home $HOME_QSR
+echo $RELAYER_ACC | $BINARY keys add relayer_acc --keyring-backend test --recover --home $HOME_QSR
+
+
+$BINARY add-genesis-account $($BINARY keys show alice --keyring-backend test -a --home $HOME_QSR) $ALICE_GENESIS_COINS --home $HOME_QSR
+$BINARY add-genesis-account $($BINARY keys show bob --keyring-backend test -a --home $HOME_QSR) $BOB_GENESIS_COINS --home $HOME_QSR
+$BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a --home $HOME_QSR) $USER_1_GENESIS_COINS --home $HOME_QSR
+$BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a --home $HOME_QSR) $USER_2_GENESIS_COINS --home $HOME_QSR
+$BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a --home $HOME_QSR) $RELAYER_ACC_GENESIS_COINS --home $HOME_QSR
+$BINARY gentx alice 100000000uqsr --chain-id $CHAIN_ID --keyring-backend test --home $HOME_QSR
+$BINARY collect-gentxs --home $HOME_QSR
+
 
 # Check platform
 platform='unknown'
@@ -50,7 +53,7 @@ fi
 if [ $platform = 'linux' ]; then
   sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
   sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
-  sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uqsr"/g' $HOME_QSR/config/app.toml
+  sed -i 's+minimum-gas-prices = "0uqsr"+minimum-gas-prices = "0.001stake"+g' $HOME_QSR/config/app.toml
   sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
   sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
   sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
@@ -76,17 +79,19 @@ else
   exit 1
 fi
 
+
 cp $HOME_QSR/config/genesis.json $HOME_QSR/config/genesis_original.json
 cat $HOME_QSR/config/genesis_original.json |
   jq '.app_state.crisis.constant_fee.denom="uqsr"' |
   jq '.app_state.staking.params.bond_denom="uqsr"' |
   jq '.app_state.mint.params.mint_denom="uqsr"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uqsr",amount:"1"}]' |
-  jq '.app_state.gov.voting_params.voting_period="60s"' |
+  jq '.app_state.gov.voting_params.voting_period="120s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
   # jq '.app_state.qoracle.bandchain_genesis_state.params.authorized_channel="channel-0"' |
   jq '.app_state.qoracle.osmosis_genesis_state.params.authorized_channel="channel-0"' >$HOME_QSR/config/genesis.json
   # jq '.app_state.qoracle.bandchain_genesis_state.params.coin_rates_params.script_params.fee_limit[0].amount="200"' >$HOME_QSR/config/genesis.json
+
 
 # Start
 $BINARY start --home $HOME_QSR > quasar.log 2>&1

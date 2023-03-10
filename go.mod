@@ -30,9 +30,7 @@ require (
 )
 
 require (
-	cosmossdk.io/math v1.0.0-beta.6
 	github.com/CosmWasm/wasmvm v1.1.1
-	github.com/bandprotocol/bandchain-packet v0.0.3
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.3
 	github.com/strangelove-ventures/async-icq/v4 v4.0.0-rc0
@@ -45,11 +43,13 @@ require (
 	github.com/gin-gonic/gin v1.7.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/timonwong/loggercheck v0.9.3 // indirect
 	github.com/zondax/ledger-go v0.14.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
 require (

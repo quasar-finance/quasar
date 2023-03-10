@@ -12,4 +12,5 @@ var (
 	ErrFailedICQResponse   = sdkerrors.Register(SubModuleName, 4, "failed ICQ response")
 	ErrEpochNotFound       = sdkerrors.Register(SubModuleName, 5, "epoch not found")
 	ErrGaugeWeightNotFound = sdkerrors.Register(SubModuleName, 6, "gauge weight not found")
+	ErrOsmosisICQTimedOut  = sdkerrors.Register(SubModuleName, 7, "osmosis icq request timeout")
 )
