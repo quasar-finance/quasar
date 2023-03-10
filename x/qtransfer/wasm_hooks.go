@@ -357,7 +357,16 @@ func (h WasmHooks) OnTimeoutPacketOverride(im IBCMiddleware, ctx sdk.Context, pa
 	}
 	contractInfo := h.wasmKeeper.GetContractInfo(ctx, contractAddr)
 	// Skip if there's no contract with this address (it's a regular address) or the contract doesn't support IBC
-	if contractInfo == nil || contractInfo.IBCPortID == "" {
+	if contractInfo == nil {
+		h.keeper.Logger(ctx).Info("ContractInfo not found for ",
+			"address", contractAddr)
+		return nil
+	}
+
+	if contractInfo.IBCPortID == "" {
+		h.keeper.Logger(ctx).Info("Contract does not support ibc ",
+			"address", contractAddr,
+			"contractInfo", contractInfo.String())
 		return nil
 	}
 

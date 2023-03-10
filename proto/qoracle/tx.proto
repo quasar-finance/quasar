@@ -2,7 +2,6 @@ syntax = "proto3";
 package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
-import "qoracle/denom_symbol_mapping.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
 
