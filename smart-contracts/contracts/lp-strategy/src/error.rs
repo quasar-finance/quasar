@@ -43,9 +43,6 @@ pub enum ContractError {
     #[error("not enough claims")]
     InsufficientClaims,
 
-    #[error("not enough claims")]
-    InsufficientFunds,
-
     #[error("base denom not found")]
     BaseDenomNotFound,
 

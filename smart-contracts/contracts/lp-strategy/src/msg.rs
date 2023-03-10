@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
@@ -9,9 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Trap,
-    helpers::IbcMsgKind,
     ibc_lock,
-    state::{Config, Unbond},
+    state::{Config, PendingBond, Unbond},
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -32,9 +30,6 @@ impl InstantiateMsg {
     }
 }
 
-#[cw_serde]
-pub struct MigrateMsg {}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -49,27 +44,6 @@ pub enum QueryMsg {
     TrappedErrors {},
     UnbondingClaim { addr: Addr, id: String },
     ListUnbondingClaims {},
-    ListBondingClaims {},
-    ListPrimitiveShares {},
-    ListPendingAcks {},
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ListBondingClaimsResponse {
-    pub bonds: HashMap<(Addr, String), Uint128>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ListPrimitiveSharesResponse {
-    pub shares: HashMap<Addr, Uint128>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ListPendingAcksResponse {
-    pub pending: HashMap<u64, IbcMsgKind>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

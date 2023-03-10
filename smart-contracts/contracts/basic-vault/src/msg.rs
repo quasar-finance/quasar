@@ -8,7 +8,7 @@ use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
 use quasar_types::callback::{BondResponse, Callback, StartUnbondResponse, UnbondResponse};
 
-use crate::state::BondingStub;
+use crate::state::{BondingStub, InvestmentInfo};
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -168,9 +168,6 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
-
-#[cw_serde]
 pub struct UnbondingClaimResponse {
     pub pending_unbonds: Uint128,
     pub unbonds: HashMap<u64, Uint128>,
@@ -179,13 +176,7 @@ pub struct UnbondingClaimResponse {
 
 #[cw_serde]
 pub struct InvestmentResponse {
-    /// owner created the contract and takes a cut
-    pub owner: String,
-    /// This is the minimum amount we will pull out to reinvest, as well as a minimum
-    /// that can be unbonded (to avoid needless staking tx)
-    pub min_withdrawal: Uint128,
-    // the array of primitives to subscribe to for this vault
-    pub primitives: Vec<PrimitiveConfig>,
+    pub info: InvestmentInfo,
 }
 
 #[cw_serde]

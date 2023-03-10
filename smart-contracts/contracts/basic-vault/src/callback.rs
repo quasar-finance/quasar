@@ -79,13 +79,13 @@ pub fn on_bond(
 
     // at this point we know that the deposit has succeeded fully, and we can mint shares
     // lets updated all pending deposit info
-    PENDING_BOND_IDS.update(deps.storage, deps.api.addr_validate(&user_address)?, |ids| match ids {
+    PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
         Some(mut bond_ids) => {
-            let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).ok_or(ContractError::IncorrectCallbackId { expected: bond_id.clone(), ids: bond_ids.clone() })?;
+            let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).unwrap();
             bond_ids.remove(bond_index);
             Ok::<Vec<String>, ContractError>(bond_ids)
         }
-        None => Err(ContractError::IncorrectCallbackId { expected: "Some".to_string(), ids: vec!["None".to_string()] }), // todo: should this error? we should never be here
+        None => Ok(vec![]), // todo: should this error? we should never be here
     })?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
     BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
@@ -96,30 +96,31 @@ pub fn on_bond(
         .fold(Decimal::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
 
     // calculate shares to mint
-    let shares_to_mint = bond_stubs_new.iter().zip(invest.primitives.iter()).fold(
-        Uint128::zero(),
-        |acc, (s, pc)| {
-            acc.checked_add(
-                // omfg pls dont look at this code, i will make it cleaner
-                s.bond_response
-                    .as_ref()
-                    .unwrap()
-                    .share_amount
-                    .checked_multiply_ratio(
-                        pc.weight.numerator(),
-                        total_weight
-                            .numerator()
-                            .checked_multiply_ratio(
-                                pc.weight.denominator(),
-                                total_weight.denominator(),
-                            )
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .unwrap()
-        },
-    );
+    let shares_to_mint =
+        bond_stubs_new
+            .iter()
+            .zip(invest.primitives.iter())
+            .fold(Uint128::zero(), |acc, (s, pc)| {
+                acc.checked_add(
+                    // omfg pls dont look at this code, i will make it cleaner
+                    s.bond_response
+                        .as_ref()
+                        .unwrap()
+                        .share_amount
+                        .checked_multiply_ratio(
+                            pc.weight.numerator(),
+                            total_weight
+                                .numerator()
+                                .checked_multiply_ratio(
+                                    pc.weight.denominator(),
+                                    total_weight.denominator(),
+                                )
+                                .unwrap(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap()
+            });
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;

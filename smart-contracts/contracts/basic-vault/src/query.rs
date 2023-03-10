@@ -9,7 +9,9 @@ use crate::{
         DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PrimitiveInfo,
         TvlInfoResponse, UnbondingClaimResponse,
     },
-    state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
+    state::{
+        InvestmentInfo, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE,
+    },
 };
 
 pub fn query_unbonding_claims(
@@ -87,9 +89,11 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
     let res = InvestmentResponse {
-        owner: invest.owner.to_string(),
-        min_withdrawal: invest.min_withdrawal,
-        primitives: invest.primitives,
+        info: InvestmentInfo {
+            owner: invest.owner.clone(),
+            min_withdrawal: invest.min_withdrawal,
+            primitives: invest.primitives,
+        },
     };
     Ok(res)
 }
@@ -97,8 +101,7 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
 pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
-    let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps, &funds, &invest.primitives).unwrap();
+    let (primitive_funding_amounts, remainder) = may_pay_with_ratio(&deps, &funds, invest).unwrap();
 
     let res = DepositRatioResponse {
         primitive_funding_amounts,
