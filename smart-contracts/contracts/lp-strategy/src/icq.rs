@@ -34,7 +34,7 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Icq,
+        IbcMsgKind::Icq,
         send_packet_msg,
     )?))
 }
@@ -174,7 +174,7 @@ mod tests {
 
         assert_eq!(
             res,
-            Some(create_ibc_ack_submsg(deps.as_mut().storage, &IbcMsgKind::Icq, pkt).unwrap())
+            Some(create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt).unwrap())
         )
     }
 

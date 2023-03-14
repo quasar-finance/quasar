@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
+use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
@@ -154,4 +154,5 @@ pub enum ExecuteMsg {
     // try to close a channel where a timout occured
     CloseChannel { channel_id: String },
     ReturnTransfer { amount: Uint128 },
+    Ack { ack: IbcPacketAckMsg },
 }

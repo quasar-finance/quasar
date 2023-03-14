@@ -1,15 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, MessageInfo, Reply, Response, StdError,
-    StdResult, Uint128,
+    from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
+    Reply, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
+use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::parse_seq;
+use crate::helpers::{parse_seq, SubMsgKind};
+use crate::ibc::{handle_failing_ack, handle_succesful_ack};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
@@ -73,28 +75,82 @@ pub fn instantiate(
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
-    let pending = REPLIES.load(deps.storage, msg.id)?;
-    let data = msg
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr {
-            msg: format!("submsg error: {:?}", msg),
-        })?
-        .data
-        .ok_or(ContractError::NoReplyData)
-        .map_err(|_| StdError::NotFound {
-            kind: "reply-data".to_string(),
-        })?;
+    let reply = REPLIES.load(deps.storage, msg.id)?;
+    match reply {
+        SubMsgKind::Ibc(pending) => {
+            let data = msg
+                .result
+                .into_result()
+                .map_err(|msg| StdError::GenericErr {
+                    msg: format!("submsg error: {:?}", msg),
+                })?
+                .data
+                .ok_or(ContractError::NoReplyData)
+                .map_err(|_| StdError::NotFound {
+                    kind: "reply-data".to_string(),
+                })?;
 
-    let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
-        source_type: "protobuf-decode".to_string(),
-        msg: err.to_string(),
-    })?;
+            let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
+                source_type: "protobuf-decode".to_string(),
+                msg: err.to_string(),
+            })?;
 
-    PENDING_ACK.save(deps.storage, seq, &pending)?;
-    Ok(Response::default()
-        .add_attribute("pending-msg", seq.to_string())
-        .add_attribute("step", format!("{:?}", pending)))
+            PENDING_ACK.save(deps.storage, seq, &pending)?;
+            Ok(Response::default()
+                .add_attribute("pending-msg", seq.to_string())
+                .add_attribute("step", format!("{:?}", pending)))
+        }
+        SubMsgKind::Ack() => {
+            // if we have an error in our Ack submsg, something
+            todo!()
+            // match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone(), amount) {
+            //     Ok(response) => Ok(response),
+            //     Err(err) => {
+            //         TRAPS.save(
+            //             deps.storage,
+            //             pkt.original_packet.sequence,
+            //             &Trap {
+            //                 error: err.to_string(),
+            //                 step: IbcMsgKind::Transfer {
+            //                     pending: pending.clone(),
+            //                     amount,
+            //                 },
+            //             },
+            //         )?;
+            //         unlock_on_error(deps.storage, &kind)?;
+            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
+            //     }
+            // match handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind) {
+            //     Ok(response) => Ok(response),
+            //     Err(err) => {
+            //         TRAPS.save(
+            //             deps.storage,
+            //             pkt.original_packet.sequence,
+            //             &Trap {
+            //                 error: err.to_string(),
+            //                 step: IbcMsgKind::Ica(ica_kind.clone()),
+            //             },
+            //         )?;
+            //         unlock_on_error(deps.storage, &kind)?;
+            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
+            //     }
+            // }
+            // match handle_icq_ack(deps.storage, env, ack_bin, &pkt) {
+            //     Ok(response) => Ok(response),
+            //     Err(err) => {
+            //         TRAPS.save(
+            //             deps.storage,
+            //             pkt.original_packet.sequence,
+            //             &Trap {
+            //                 error: err.to_string(),
+            //                 step: IbcMsgKind::Icq,
+            //             },
+            //         )?;
+            //         unlock_on_error(deps.storage, &kind)?;
+            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
+            //     }
+        }
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -115,6 +171,26 @@ pub fn execute(
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
+        ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
+    }
+}
+
+pub fn execute_ack(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: IbcPacketAckMsg,
+) -> Result<Response, ContractError> {
+    if env.contract.address != info.sender {
+        return Err(ContractError::Unauthorized);
+    }
+
+    // TODO: trap error like in receive?
+    // pro's acks happen anyway, cons?
+    let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    match ack {
+        IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
+        IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
     }
 }
 

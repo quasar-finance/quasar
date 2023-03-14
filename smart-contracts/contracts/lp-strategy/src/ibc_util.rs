@@ -42,7 +42,7 @@ pub fn do_transfer(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Transfer {
+        IbcMsgKind::Transfer {
             pending: PendingBond { bonds: deposits },
             amount,
         },
@@ -83,7 +83,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(PendingBond {
+        IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(PendingBond {
             bonds: deposits,
         })),
         pkt,

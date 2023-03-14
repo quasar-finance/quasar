@@ -60,7 +60,7 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: &IbcMsgKind,
+    pending: IbcMsgKind,
     msg: IbcMsg,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
@@ -69,7 +69,7 @@ pub fn create_ibc_ack_submsg(
         id = val?.0;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, pending)?;
+    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending))?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -97,8 +97,9 @@ pub enum IcaMessages {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub enum MsgKind {
+pub enum SubMsgKind {
     Ibc(IbcMsgKind),
+    Ack(),
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

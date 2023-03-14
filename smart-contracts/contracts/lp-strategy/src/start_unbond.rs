@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg, Response,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -94,7 +94,7 @@ pub fn batch_start_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
         pkt,
     )?))
 }
@@ -102,8 +102,8 @@ pub fn batch_start_unbond(
 pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
     env: &Env,
-    unbonds: &mut Vec<PendingSingleUnbond>,
-) -> Result<IbcBasicResponse, ContractError> {
+    unbonds: Vec<PendingSingleUnbond>,
+) -> Result<Response, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
         let msg = start_internal_unbond(storage, env, unbond)?;
@@ -114,7 +114,7 @@ pub fn handle_start_unbond_ack(
         Ok(lock.unlock_start_unbond())
     })?;
 
-    Ok(IbcBasicResponse::new()
+    Ok(Response::new()
         .add_attribute("start-unbond", "succes")
         .add_attribute("callback-msgs", msgs.len().to_string())
         .add_messages(msgs))
@@ -138,7 +138,7 @@ fn single_unbond(
 fn start_internal_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    unbond: &PendingSingleUnbond,
+    unbond: PendingSingleUnbond,
 ) -> Result<WasmMsg, ContractError> {
     // check that we can create a new unbond
     if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
@@ -422,7 +422,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap();
+        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap();
         assert_eq!(
             res,
             WasmMsg::Execute {
@@ -460,7 +460,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap();
+        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap();
         assert_eq!(
             res,
             WasmMsg::Execute {
@@ -518,7 +518,7 @@ mod tests {
             )
             .unwrap();
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
         assert_eq!(res, ContractError::DuplicateKey)
     }
 
@@ -542,7 +542,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
         assert_eq!(
             res,
             ContractError::OverflowError(OverflowError {
@@ -570,7 +570,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, &unbond).unwrap_err();
+        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
         assert_eq!(
             res,
             ContractError::Std(StdError::NotFound {
