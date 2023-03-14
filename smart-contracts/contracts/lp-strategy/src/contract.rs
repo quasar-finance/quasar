@@ -245,7 +245,6 @@ pub fn execute_unbond(
     }
 }
 
-
 // transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
 pub fn execute_transfer(
     deps: DepsMut,

@@ -178,7 +178,6 @@ pub fn ibc_channel_connect(
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
             // to reject the msg here, ica should not be timed out
             if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
-
                 return Err(ContractError::IcaChannelAlreadySet);
             }
 
