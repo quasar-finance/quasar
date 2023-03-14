@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{
@@ -36,10 +37,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, DepsMut, Env, IbcBasicResponse, IbcChannel,
-    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
-    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, StdError, Storage,
-    Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, Decimal, Decimal256, DepsMut, Env,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
+    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
+    IbcTimeout, StdError, Storage, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -178,7 +179,6 @@ pub fn ibc_channel_connect(
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
             // to reject the msg here, ica should not be timed out
             if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
-
                 return Err(ContractError::IcaChannelAlreadySet);
             }
 
@@ -344,6 +344,7 @@ pub fn handle_transfer_ack(
     ))
 }
 
+// TODO move the parsing of the ICQ to it's own function, ideally we'd have a type that is contstructed in create ICQ and is parsed from a proto here
 pub fn handle_icq_ack(
     storage: &mut dyn Storage,
     env: Env,
@@ -358,6 +359,7 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+    // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
@@ -369,7 +371,7 @@ pub fn handle_icq_ack(
         .amount;
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
-    let _ = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
 
     let total_balance = calc_total_balance(
         storage,
@@ -382,9 +384,10 @@ pub fn handle_icq_ack(
                 })?,
         ),
         exit_pool.tokens_out,
-        // TODO fix me, spot price is intentionally messed
-        Uint128::one(),
-        // Uint128::new(spot_price.parse()?),
+        Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
+            error: err,
+            value: spot_price,
+        })?,
     )?;
 
     ICA_BALANCE.save(storage, &total_balance)?;
@@ -649,6 +652,13 @@ mod tests {
     use crate::test_helpers::default_setup;
 
     use super::*;
+
+    // #[test]
+    // fn handle_icq_ack_works() {
+    //     // base64 of '{"data":"ChU6EAoOCglmYWtlc3Rha2USATBIuQUKEToMCgoKBXVvc21vEgEwSLkFChc6EgoQCgtnYW1tL3Bvb2wvMxIBMEi5BQoFCBJIuQUKGzoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEi5BQ=="}'
+    //     let bin = Binary::from_base64("eyJkYXRhIjoiQ2hVNkVBb09DZ2xtWVd0bGMzUmhhMlVTQVRCSXVRVUtFVG9NQ2dvS0JYVnZjMjF2RWdFd1NMa0ZDaGM2RWdvUUNndG5ZVzF0TDNCdmIyd3ZNeElCTUVpNUJRb0ZDQkpJdVFVS0d6b1dDaFF4TGpBd01EQXdNREF3TURBd01EQXdNREF3TUVpNUJRPT0ifQ").unwrap();
+    //     handle_icq_ack(storage, env, ack_bin, pkt)
+    // }
 
     #[test]
     fn handle_ica_channel_works() {

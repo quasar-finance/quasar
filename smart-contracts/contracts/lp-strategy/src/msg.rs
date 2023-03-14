@@ -22,7 +22,9 @@ pub struct InstantiateMsg {
     pub local_denom: String,
     pub base_denom: String,
     pub quote_denom: String,
+    // TODO should this be outgoing_transfer_channel?
     pub transfer_channel: String,
+    // TODO rename to return_transfer_channel
     pub return_source_channel: String,
     pub expected_connection: String,
 }
@@ -144,25 +146,12 @@ pub struct IcaChannelResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Bond {
-        id: String,
-    },
-    StartUnbond {
-        id: String,
-        share_amount: Uint128,
-    },
-    Unbond {
-        id: String,
-    },
+    Bond { id: String },
+    StartUnbond { id: String, share_amount: Uint128 },
+    Unbond { id: String },
     // accept a dispatched transfer from osmosis
-    AcceptReturningFunds {
-        id: u64,
-    },
+    AcceptReturningFunds { id: u64 },
     // try to close a channel where a timout occured
-    CloseChannel {
-        channel_id: String,
-    },
-    ReturnTransfer {
-        amount: Uint128,
-    },
+    CloseChannel { channel_id: String },
+    ReturnTransfer { amount: Uint128 },
 }
