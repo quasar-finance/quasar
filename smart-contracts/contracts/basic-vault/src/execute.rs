@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, StdError, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, Attribute, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::{execute_burn, execute_mint};
@@ -13,7 +13,7 @@ use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
     BondingStub, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR, BOND_STATE,
-    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY, UNBOND_STATE,
+    INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
 // get_bonded returns the total amount of delegations from contract
@@ -105,7 +105,7 @@ pub fn may_pay_with_ratio(
         })
         .collect();
 
-    if (deposit_amount_weights.first().unwrap().weight == Decimal::zero()) {
+    if deposit_amount_weights.first().unwrap().weight == Decimal::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here".to_string(),
         }));
@@ -131,7 +131,7 @@ pub fn may_pay_with_ratio(
                 acc
             });
 
-    if (token_weights.first().unwrap().weight == Decimal::zero()) {
+    if token_weights.first().unwrap().weight == Decimal::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser".to_string(),
         }));
@@ -153,12 +153,12 @@ pub fn may_pay_with_ratio(
         ratio: deposit_amount_weights,
     };
 
-    if (max_bond == Uint128::zero()) {
+    if max_bond == Uint128::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser 2".to_string(),
         }));
     }
-    if (max_bond == Uint128::MAX) {
+    if max_bond == Uint128::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here ser 3".to_string(),
         }));
@@ -204,7 +204,7 @@ pub fn may_pay_with_ratio(
         .collect();
 
     let c = coins?;
-    if (c.first().unwrap().amount == Uint128::zero()) {
+    if c.first().unwrap().amount == Uint128::zero() {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here".to_string(),
         }));
@@ -323,7 +323,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     let shares_to_mint = primitive_funding_amounts
         .iter()
-        .fold(Uint128::zero(), |acc, (coin, prim)| {
+        .fold(Uint128::zero(), |acc, (coin, _prim)| {
             acc.checked_add(coin.amount).unwrap()
         });
 
@@ -390,7 +390,7 @@ pub fn do_start_unbond(
     info: &MessageInfo,
     amount: Uint128,
 ) -> Result<(Vec<WasmMsg>, Vec<Attribute>), ContractError> {
-    if (amount.is_zero()) {
+    if amount.is_zero() {
         // skip start unbond
         return Ok((vec![], vec![]));
     }
@@ -583,9 +583,9 @@ pub fn do_unbond(
 }
 
 pub fn find_and_return_unbondable_msgs(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: &Env,
-    info: &MessageInfo,
+    _info: &MessageInfo,
     unbond_id: &String,
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
@@ -595,7 +595,7 @@ pub fn find_and_return_unbondable_msgs(
         .iter()
         .filter_map(|stub| {
             if let Some(unlock_time) = stub.unlock_time {
-                if (unlock_time < env.block.time) {
+                if unlock_time < env.block.time {
                     Some(WasmMsg::Execute {
                         contract_addr: stub.address.clone(),
                         msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {

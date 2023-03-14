@@ -209,7 +209,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // for this migration, we only need to rebuild total_supply
     let balances: Result<Vec<(Addr, Uint128)>, StdError> = cw20_base::state::BALANCES
         .range(deps.storage, None, None, Order::Ascending)
@@ -258,8 +258,8 @@ mod tests {
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, MockQuerier},
-        Decimal, QuerierResult, SystemResult, ContractResult,
+        testing::{mock_dependencies, mock_env},
+        Decimal, QuerierResult, ContractResult,
     };
 
     use crate::msg::PrimitiveConfig;
@@ -332,7 +332,7 @@ mod test {
 
         // prepare 3 mock configs for prim1, prim2 and prim3
         deps.querier.update_wasm(|wq| match wq {
-            cosmwasm_std::WasmQuery::Smart { contract_addr, msg } => {
+            cosmwasm_std::WasmQuery::Smart { contract_addr, msg: _ } => {
                 if contract_addr == "prim1" {
                     QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
                         config: lp_strategy::state::Config {
