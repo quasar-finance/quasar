@@ -46,7 +46,7 @@ pub fn instantiate(
         total_supply: Uint128::zero(),
         // set self as minter, so we can properly execute mint and burn
         mint: Some(MinterData {
-            minter: env.contract.address.clone(),
+            minter: env.contract.address,
             cap: None,
         }),
     };

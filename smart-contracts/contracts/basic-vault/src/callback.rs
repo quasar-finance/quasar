@@ -21,7 +21,7 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!("We hit on_unbond with bond_id: {}", bond_id.clone()),
+        &format!("We hit on_unbond with bond_id: {}", bond_id),
     )?;
 
     // load investment info
@@ -100,7 +100,7 @@ pub fn on_bond(
         },
     )?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
+    BOND_STATE.save(deps.storage, bond_id, &bond_stubs_new)?;
 
     let total_weight = invest
         .primitives
@@ -153,7 +153,7 @@ pub fn on_bond(
 
     // call into cw20-base to mint the token, call as self as no one else is allowed
     let _sub_info = MessageInfo {
-        sender: env.contract.address.clone(),
+        sender: env.contract.address,
         funds: vec![],
     };
     // execute_mint(
@@ -219,7 +219,7 @@ pub fn on_unbond(
         deps.storage,
         &format!(
             "We hit on_unbond with unbond_id: {} and funds: {}",
-            unbond_id.clone(),
+            unbond_id,
             info.funds[0]
         ),
     )?;
