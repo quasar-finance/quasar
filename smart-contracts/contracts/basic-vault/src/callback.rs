@@ -4,6 +4,7 @@ use cosmwasm_std::{
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::{
+    msg::PrimitiveConfig,
     state::{
         BondingStub, Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT,
         PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
@@ -101,36 +102,34 @@ pub fn on_bond(
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
     BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
 
-    let total_weight = invest
-        .primitives
-        .iter()
-        .fold(Decimal::zero(), |acc, p| acc.checked_add(p.weight).unwrap());
+    let total_weight = invest.primitives.iter().try_fold(
+        Decimal::zero(),
+        |acc: Decimal, p: &PrimitiveConfig| -> Result<Decimal, _> { acc.checked_add(p.weight) },
+    )?;
 
     // calculate shares to mint
-    let shares_to_mint = bond_stubs_new.iter().zip(invest.primitives.iter()).fold(
-        Uint128::zero(),
-        |acc, (s, pc)| {
-            acc.checked_add(
-                // omfg pls dont look at this code, i will make it cleaner
-                s.bond_response
-                    .as_ref()
-                    .unwrap()
-                    .share_amount
-                    .checked_multiply_ratio(
-                        pc.weight.numerator(),
-                        total_weight
-                            .numerator()
-                            .checked_multiply_ratio(
+    let shares_to_mint = bond_stubs_new
+        .iter()
+        .zip(invest.primitives.iter())
+        .try_fold(
+            Uint128::zero(),
+            |acc, (s, pc)| -> Result<Uint128, ContractError> {
+                Ok(acc.checked_add(
+                    // omfg pls dont look at this code, i will make it cleaner -> cleaner but still ugly :D
+                    s.bond_response
+                        .as_ref()
+                        .ok_or(ContractError::BondResponseIsEmpty {})?
+                        .share_amount
+                        .checked_multiply_ratio(
+                            pc.weight.numerator(),
+                            total_weight.numerator().checked_multiply_ratio(
                                 pc.weight.denominator(),
                                 total_weight.denominator(),
-                            )
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .unwrap()
-        },
-    );
+                            )?,
+                        )?,
+                )?)
+            },
+        )?;
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -184,16 +183,15 @@ pub fn on_start_unbond(
         deps.storage,
         unbond_id.clone(),
         |s: Option<Unbond>| -> Result<Unbond, ContractError> {
-            // TODO change this to ok_or() or unwrap_or()
             // TODO update could/should be more efficient, shouldn't be a need to copy s
-            let mut unbond = s.unwrap();
+            let mut unbond = s.ok_or(ContractError::UnbondIsEmpty {})?;
             // update the stub where the address is the same as message sender with the unlock time
 
             unbond
                 .stub
                 .iter_mut()
                 .find(|s| s.address == info.sender)
-                .unwrap()
+                .ok_or(ContractError::UnbondStubIsEmpty {})?
                 .unlock_time = Option::Some(unlock_time);
             Ok(Unbond {
                 stub: unbond.stub,
@@ -231,7 +229,7 @@ pub fn on_unbond(
         .stub
         .iter_mut()
         .find(|s| s.address == info.sender)
-        .unwrap();
+        .ok_or(ContractError::UnbondStubIsEmpty {})?;
 
     // update info
     unbonding_stub.unbond_response = Option::Some(UnbondResponse {
@@ -269,7 +267,7 @@ pub fn on_unbond(
         Addr::unchecked(user_address),
         |ids| -> Result<Vec<String>, ContractError> {
             Ok(ids
-                .unwrap()
+                .ok_or(ContractError::UserDoNotHavePendingUnbonds {})?
                 .into_iter()
                 .filter(|id| id != &unbond_id)
                 .collect())

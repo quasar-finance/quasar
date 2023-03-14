@@ -79,6 +79,18 @@ pub enum ContractError {
     #[error("Denom not found in coins vector")]
     DenomNotFoundInCoinsVector {},
 
+    #[error("User does not have pending unbonds")]
+    UserDoNotHavePendingUnbonds {},
+
+    #[error("Bond response is empty")]
+    BondResponseIsEmpty {},
+
+    #[error("Unbond is empty")]
+    UnbondIsEmpty {},
+
+    #[error("Unbond stub is empty")]
+    UnbondStubIsEmpty {},
+
     #[error("{0}")]
     QError(#[from] QError),
 }
