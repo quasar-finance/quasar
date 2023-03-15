@@ -1,3 +1,4 @@
+
 # Set up - 
 - Up the quasar chain
 - Up the cosmos-hub chain
@@ -16,73 +17,73 @@
 - Note down all the module accounts. 
 
 
-# Prerequisites
-1. `go` version 1.19https://github.com/osmohttps://github.com/osmosis-labs/osmosishttps://github.com/osmosis-labs/osmosissis-labs/osmosis
-2. The cosmos-hub `gaia` repo should be cloned from  https://github.com/quasar-finance/gaia 
-3. The osmosis `osmosis` repo should be cloned from https://github.com/osmosis-labs/osmosis 
-4. The quasar `quasar` repo should be cloned from https://github.com/quasar-finance/quasar
+Commands - 
+## Prerequisites
 
-## Steps 
-- Create a demo directory in home directory. 
-- Clone a quasar and create a following directory  structure. 
-```bash
+1. `go` version 1.18
+2. The cosmos-hub `gaia` repo should be cloned from our fork https://github.com/quasar-finance/gaia and the branch `bugfix/replace_default_transfer_with_router_module` should be checked out.
+
+## Set up
+Create a demo directory in home directory. 
+Clone a quasar and create a following directory  structure. 
+```
 mkdir quasar-demo
 cd quasar-demo
 ```
 - clone quasar, gaia and osmosis.
+- For osmosis use,  git clone git@github.com:schnetzlerjoe/osmosis.git osmosis
+- For gaia use, https://github.com/quasar-finance/gaia branch bugfix/replace_default_transfer_with_router_module
 
 
 ## Up the quasar-chain, in the cloned quasar directory
-```bash
+```
 cd quasar-demo/quasar/demos/orion-manual-demo/
 ./quasar_localnet.sh
 ```
-You can do `tail -f quasar.log` to monitor quasar logs in a terminal.
+You can monitor the quasar logs in this terminal. 
 
 ## Up the osmosis chain, in the cloned osmosis (with ica) directory
-```bash
+```
 cd quasar-demo/quasar/demos/orion-manual-demo/
 ./osmo_localnet.sh
 ```
-You can do `tail -f osmosis.log` to monitor osmosis logs in a terminal.
+You can monitor the osmosis logs in this terminal. 
 
 ## Up the cosmos-hub chain, in the gaid cloned directory 
-```bash
+```
 cd quasar-demo/quasar/demos/orion-manual-demo/
 ./cosmos_localnet.sh
 ```
-You can do `tail -f osmosis.log` to monitor osmosis logs in a terminal.
+You can monitor the cosmos logs in this terminal. 
 
-## Relayer setup
-
-### copy hermes config 
-```bash
+## copy hermes config 
+```
 cp ~/quasar-demo/quasar/demos/orion-manual-demo/hermes_config.toml ~/.hermes/config.toml
 ```
 
-### hermes automatic setup
+## hermes automatic setup
 
 It is sufficient to just run the following:
-```bash
+```
 ./run_hermes.sh
 ```
 
-### hermes manual setup ; Recommended for new devs who want to understand each steps
+## hermes manual setup
 ### Hermes Key restore 
-```bash
+```
 hermes keys restore --mnemonic "jungle law popular reunion festival horn divorce quarter image gather october weird slide trend resource render abuse food tomorrow multiply price fun ask quarter" quasar
 ```
 
 2022-06-01T06:24:07.459912Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
 Success: Restored key 'testkey1' (quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew) on chain quasar
 
-```bash
+``` 
 hermes keys restore --mnemonic "blade trap agent boy note critic jazz nuclear eight lion pipe fresh tourist make broken inquiry close agree usual human stock move remain swim" cosmos
 ```
 2022-06-01T06:24:15.776985Z  INFO ThreadId(01) using default configuration from '/home/ak/.hermes/config.toml'
 Success: Restored key 'testkey2' (cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc) on chain cosmos
 
-```bash
+```
 hermes keys restore --mnemonic "act scale exhibit enough swamp vivid bleak eagle giggle brass desert debris network scrub hazard fame salon normal over between inform advance sick dinner" osmosis
 ```
 
@@ -91,17 +92,16 @@ Success: Restored key 'testkey3' (osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz) o
 
 ### Connecting the chains
 
-### First pre-check relayer balances in each chain
-```bash
+#### First pre-check relayer balances in each chain
+```
 quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
 gaiad q bank balances cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc  --node tcp://localhost:26669
 osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp://localhost:26679
 ```
-### Connect quasar and cosmos 
-```bash
+#### Connect quasar and cosmos 
+`
 hermes create connection quasar cosmos
-```
-
+`
 - Expected Example Output -
 - Connection handshake finished for [Connection {
     delay_period: 0ns,
@@ -180,10 +180,9 @@ Success: Connection {
 }
 
 
-- Post connection - check the relayer balances again; You will observe gas fee deduction
+- Post connection - check the relayer balances aganin; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
-
-```bash
+`
 hermes query connections quasar
 hermes query connections cosmos
 hermes query connection end quasar connection-0
@@ -196,13 +195,13 @@ hermes query client state quasar 07-tendermint-1
 hermes query client connections  quasar 07-tendermint-0
 hermes query client connections  quasar 07-tendermint-1
 hermes query client connections  cosmos 07-tendermint-0
-```
+`
 
 
-### Connect quasar and osmosis
-```bash
+#### Connect quasar and osmosis
+`
 hermes create connection quasar osmosis
-```
+`
 - Expected output - 
   
 Connection handshake finished for [Connection {
@@ -283,7 +282,7 @@ Success: Connection {
 
 - Post connection - check the relayer balances again; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
-```bash
+`
 hermes query connections quasar
 hermes query connections cosmos
 hermes query connection end quasar connection-0
@@ -298,12 +297,12 @@ hermes query client state osmosis 07-tendermint-0
 hermes query client connections  quasar 07-tendermint-0
 hermes query client connections  quasar 07-tendermint-1
 hermes query client connections  cosmos 07-tendermint-0
-```
+`
 
-### Connect osmosis and cosmos hub
-```bash
+#### Connect osmosis and cosmos hub
+`
 hermes create connection osmosis cosmos
-```
+`
 - Expected output -
 
 Connection handshake finished for [Connection {
@@ -384,8 +383,7 @@ Success: Connection {
 
 - Post connection - check the relayer balances aganin; You will observe gas fee deduction
 - Post connection - check the connection using hermes command.
-
-```bash
+`
 hermes query connections quasar
 hermes query connections cosmos
 hermes query connections osmosis
@@ -411,12 +409,12 @@ hermes query client connections  cosmos 07-tendermint-0
 hermes query client connections  cosmos 07-tendermint-1
 hermes query client connections  osmosis 07-tendermint-0
 hermes query client connections  osmosis 07-tendermint-1
-```
+`
 
 
 ### IBC token transfer channel creation 
 
-### Create token transfer channel between cosmos and quasar 
+#### Create token transfer channel between cosmos and quasar 
 ```
 hermes create channel --port-a transfer --port-b transfer cosmos connection-0
 ```
@@ -618,7 +616,7 @@ Tracking Hint
 - Channel ID - > [ Self - Connection ID, Counterparty port id, Counterparty channel id ]-> [ Client -ID, Counterparty clientid, Counterparty connection -id ] -> counterparty party Chain-ID
 
 
-```bash
+`
 hermes query channel end quasar transfer channel-0
 hermes query channel end quasar transfer channel-1
 
@@ -627,16 +625,16 @@ hermes query channel end cosmos transfer channel-1
 
 hermes query channel end osmosis transfer channel-0
 hermes query channel end osmosis transfer channel-1
-```
+`
 ### Start hermes
 
-```bash
+```
 hermes start
 ```
 
 ## IBC token transfer 
 - Prechecks all account lists 
-```bash
+```
   gaiad keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub/
   quasarnoded keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
   osmosisd keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/
@@ -644,7 +642,7 @@ hermes start
 
 - Prechecks account balances
 
-```bash
+```
 gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu  --node tcp://localhost:26669
 gaiad q bank balances cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89  --node tcp://localhost:26669
 
@@ -656,7 +654,7 @@ osmosisd q bank balances osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d --node tcp:
 
 ```
 ### IBC token transfer from cosmos to quasar
-- Precheck account balances 
+- Pre check account balances 
 
 ```
 gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu  --node tcp://localhost:26669

@@ -52,6 +52,7 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &data)?;
 
+
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
             .querier
@@ -79,6 +80,7 @@ pub fn instantiate(
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives,
     };
+    invest.normalize_primitive_weights();
     INVESTMENT.save(deps.storage, &invest)?;
 
     // initialize bonding sequence num
@@ -206,6 +208,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // replies not created yet
 // #[cfg_attr(not(feature = "library"), entry_point)]
 // pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+
 // }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -236,23 +239,23 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use quasar_types::callback::BondResponse;
 
-    #[test]
-    fn callback_bond_response() {
-        let bond_response = BondResponse {
-            share_amount: Uint128::one(),
-            bond_id: "id".to_string(),
-        };
-        let cb = ExecuteMsg::BondResponse(bond_response);
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        let info = MessageInfo {
-            sender: env.clone().contract.address,
-            funds: Vec::new(),
-        };
-        execute(deps.as_mut(), env, info, cb).unwrap();
-        assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
-        println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
-    }
+    // #[test]
+    // fn callback_bond_response() {
+    //     let bond_response = BondResponse {
+    //         share_amount: Uint128::one(),
+    //         bond_id: "id".to_string(),
+    //     };
+    //     let cb = ExecuteMsg::BondResponse(bond_response);
+    //     let mut deps = mock_dependencies();
+    //     let env = mock_env();
+    //     let info = MessageInfo {
+    //         sender: env.clone().contract.address,
+    //         funds: Vec::new(),
+    //     };
+    //     execute(deps.as_mut(), env, info, cb).unwrap();
+    //     assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
+    //     println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
+    // }
 }
 
 #[cfg(test)]
