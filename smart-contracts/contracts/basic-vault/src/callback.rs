@@ -270,7 +270,7 @@ pub fn on_unbond(
         Addr::unchecked(user_address),
         |ids| -> Result<Vec<String>, ContractError> {
             Ok(ids
-                .ok_or(ContractError::UserDoNotHavePendingUnbonds {})?
+                .ok_or(ContractError::NoPendingUnbonds {})?
                 .into_iter()
                 .filter(|id| id != &unbond_id)
                 .collect())

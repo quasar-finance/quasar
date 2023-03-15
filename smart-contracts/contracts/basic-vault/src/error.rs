@@ -61,9 +61,6 @@ pub enum ContractError {
     #[error("Incorrect callback id, expected: {expected}, got: {:?}", ids)]
     IncorrectCallbackId { expected: String, ids: Vec<String> },
 
-    #[error("Overflow error: {0}")]
-    OverflowError(String),
-
     #[error("Multiply ratio error: {0}")]
     MultiplyRatioError(String),
 
@@ -80,7 +77,7 @@ pub enum ContractError {
     DenomNotFoundInCoinsVector {},
 
     #[error("User does not have pending unbonds")]
-    UserDoNotHavePendingUnbonds {},
+    NoPendingUnbonds {},
 
     #[error("Bond response is empty")]
     BondResponseIsEmpty {},
@@ -96,24 +93,15 @@ pub enum ContractError {
 
     #[error("{0}")]
     QError(#[from] QError),
-}
 
-impl From<OverflowError> for ContractError {
-    fn from(err: OverflowError) -> Self {
-        ContractError::OverflowError(format!("{err}"))
-    }
-}
+    #[error("{0}")]
+    PaymentError(#[from] cw_utils::PaymentError),
 
-impl From<CheckedMultiplyRatioError> for ContractError {
-    fn from(err: CheckedMultiplyRatioError) -> Self {
-        ContractError::OverflowError(format!("{err}"))
-    }
-}
+    #[error("{0}")]
+    CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
 
-impl From<cw_utils::PaymentError> for ContractError {
-    fn from(err: cw_utils::PaymentError) -> Self {
-        ContractError::Std(StdError::generic_err(err.to_string()))
-    }
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
 }
 
 impl From<cw20_base::ContractError> for ContractError {
