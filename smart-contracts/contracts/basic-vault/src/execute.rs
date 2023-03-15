@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, StdError, SubMsg, Uint128, WasmMsg,
+    OverflowError, QuerierWrapper, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::{execute_burn, execute_mint};
@@ -13,13 +13,12 @@ use crate::msg::{ExecuteMsg, PrimitiveConfig};
 
 use crate::state::{
     BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
-    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, STRATEGY_BOND_ID, TOTAL_SUPPLY,
-    UNBOND_STATE,
+    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
 // get_bonded returns the total amount of delegations from contract
 // it ensures they are all the same denom
-fn get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, ContractError> {
+fn _get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, ContractError> {
     let bonds = querier.query_all_delegations(contract)?;
     if bonds.is_empty() {
         return Ok(Uint128::zero());
@@ -38,7 +37,7 @@ fn get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, Cont
     })
 }
 
-fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
+fn _assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
     if supply.bonded != bonded {
         Err(ContractError::BondedMismatch {
             stored: supply.bonded,
@@ -52,7 +51,7 @@ fn assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
 // todo test
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
-pub fn must_pay_multi(funds: &Vec<Coin>, denom: &str) -> Result<Uint128, PaymentError> {
+pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentError> {
     match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
@@ -68,7 +67,7 @@ pub fn must_pay_multi(funds: &Vec<Coin>, denom: &str) -> Result<Uint128, Payment
 // todo test
 pub fn may_pay_with_ratio(
     deps: &Deps,
-    funds: &Vec<Coin>,
+    funds: &[Coin],
     mut invest: InvestmentInfo,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // normalize primitives
@@ -78,59 +77,59 @@ pub fn may_pay_with_ratio(
     let deposit_amount_weights: Vec<CoinWeight> = invest
         .primitives
         .iter()
-        .map(|pc| {
-            let supply: PrimitiveSharesResponse = deps
-                .querier
-                .query_wasm_smart(
-                    pc.address.clone(),
-                    &lp_strategy::msg::QueryMsg::PrimitiveShares {},
-                )
-                .unwrap();
-            let balance: IcaBalanceResponse = deps
-                .querier
-                .query_wasm_smart(
-                    pc.address.clone(),
-                    &lp_strategy::msg::QueryMsg::IcaBalance {},
-                )
-                .unwrap();
+        .map(|pc| -> Result<CoinWeight, ContractError> {
+            let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
+                pc.address.clone(),
+                &lp_strategy::msg::QueryMsg::PrimitiveShares {},
+            )?;
+            let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
+                pc.address.clone(),
+                &lp_strategy::msg::QueryMsg::IcaBalance {},
+            )?;
 
-            CoinWeight {
+            Ok(CoinWeight {
                 weight: Decimal::from_ratio(
-                    balance
-                        .amount
-                        .amount
-                        .checked_mul(pc.weight.numerator())
-                        .unwrap(),
-                    supply.total.checked_mul(pc.weight.denominator()).unwrap(),
+                    balance.amount.amount.checked_mul(pc.weight.numerator())?,
+                    supply.total.checked_mul(pc.weight.denominator())?,
                 ),
                 denom: balance.amount.denom,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<CoinWeight>, ContractError>>()?;
 
-    if (deposit_amount_weights.first().unwrap().weight == Decimal::zero()) {
+    // TODO: change the error
+    if deposit_amount_weights
+        .first()
+        .ok_or(ContractError::CoinsWeightVectorIsEmpty {})?
+        .weight
+        == Decimal::zero()
+    {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "Deposit amount weight for primitive is zero".to_string(),
         }));
     }
 
-    let token_weights: Vec<CoinWeight> =
-        deposit_amount_weights
-            .iter()
-            .fold(vec![], |mut acc, coin_weight| {
-                // look through acc for existing denom and add weight, or else push it to the back of the vec
-                let existing_weight = acc.iter_mut().find(|cw| cw.denom == coin_weight.denom);
-                match existing_weight {
-                    Some(weight) => {
-                        weight.weight = weight.weight.checked_add(coin_weight.weight).unwrap()
-                    }
-                    None => acc.push(coin_weight.clone()),
-                };
+    let token_weights: Vec<CoinWeight> = deposit_amount_weights.clone().iter().try_fold(
+        vec![],
+        |mut acc: Vec<CoinWeight>,
+         coin_weight: &CoinWeight|
+         -> Result<Vec<CoinWeight>, ContractError> {
+            // look through acc for existing denom and add weight, or else push it to the back of the vec
+            let existing_weight = acc.iter_mut().find(|cw| cw.denom == coin_weight.denom);
+            match existing_weight {
+                Some(weight) => weight.weight = weight.weight.checked_add(coin_weight.weight)?,
+                None => acc.push(coin_weight.clone()),
+            };
+            Ok(acc)
+        },
+    )?;
 
-                acc
-            });
-
-    if (token_weights.first().unwrap().weight == Decimal::zero()) {
+    if token_weights
+        .first()
+        .ok_or(ContractError::TokenWeightsIsEMpty {})?
+        .weight
+        == Decimal::zero()
+    {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: format!(
                 "token weight is zero for {}",
@@ -141,7 +140,7 @@ pub fn may_pay_with_ratio(
 
     let mut max_bond = Uint128::MAX;
     for coin_weight in token_weights {
-        let amount = must_pay_multi(funds, &coin_weight.denom).unwrap();
+        let amount = must_pay_multi(funds, &coin_weight.denom)?;
         let bond_for_token = amount.multiply_ratio(
             coin_weight.weight.denominator(),
             coin_weight.weight.numerator(),
@@ -168,15 +167,14 @@ pub fn may_pay_with_ratio(
     // where funds is the max amount we can use in compliance with the ratio
     // and remainder is the change to return to user
     let normed_ratio = ratio.get_normed_ratio();
-    let mut remainder = funds.clone();
+    let mut remainder = funds.to_owned();
 
     let coins: Result<Vec<Coin>, ContractError> = normed_ratio?
         .iter()
         .map(|r| {
-            let amount = must_pay_multi(funds, &r.denom).unwrap();
-            let expected_amount = max_bond
-                .checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())
-                .unwrap();
+            let amount = must_pay_multi(funds, &r.denom)?;
+            let expected_amount =
+                max_bond.checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())?;
 
             if expected_amount > amount {
                 return Err(ContractError::IncorrectBondingRatio {});
@@ -184,17 +182,17 @@ pub fn may_pay_with_ratio(
 
             remainder = remainder
                 .iter()
-                .map(|c| {
+                .map(|c| -> Result<Coin, ContractError> {
                     if c.denom == r.denom {
-                        Coin {
-                            amount: c.amount.checked_sub(expected_amount).unwrap(),
+                        Ok(Coin {
+                            amount: c.amount.checked_sub(expected_amount)?,
                             denom: c.denom.clone(),
-                        }
+                        })
                     } else {
-                        c.clone()
+                        Ok(c.clone())
                     }
                 })
-                .collect();
+                .collect::<Result<Vec<Coin>, ContractError>>()?;
 
             Ok(Coin {
                 denom: r.denom.clone(),
@@ -204,7 +202,12 @@ pub fn may_pay_with_ratio(
         .collect();
 
     let c = coins?;
-    if (c.first().unwrap().amount == Uint128::zero()) {
+
+    if c.first()
+        .ok_or(ContractError::CoinsVectorIsEmpty {})?
+        .amount
+        == Uint128::zero()
+    {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: "we failed here".to_string(),
         }));
@@ -214,7 +217,12 @@ pub fn may_pay_with_ratio(
 }
 
 // todo test
-pub fn bond(deps: DepsMut, env: Env, info: MessageInfo, recipient: Option<String>) -> Result<Response, ContractError> {
+pub fn bond(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    recipient: Option<String>,
+) -> Result<Response, ContractError> {
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
         return Err(ContractError::NoFunds {});
     }
@@ -228,7 +236,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo, recipient: Option<String
         Some(r) => deps.api.addr_validate(&r)?,
         None => info.sender,
     };
-    
+
     let mut deposit_stubs = vec![];
 
     let (primitive_funding_amounts, remainder) =
@@ -265,11 +273,12 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo, recipient: Option<String
         None => Ok(vec![bond_seq.to_string()]),
     })?;
     BOND_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
-    BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &recipient_addr.to_string())?;
-    BONDING_SEQ.save(
+    BONDING_SEQ_TO_ADDR.save(
         deps.storage,
-        &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
+        bond_seq.to_string(),
+        &recipient_addr.to_string(),
     )?;
+    BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::new(1))?)?;
 
     let mut remainder_msgs = vec![];
 
@@ -322,7 +331,7 @@ pub fn do_start_unbond(
     info: &MessageInfo,
     amount: Uint128,
 ) -> Result<(Vec<WasmMsg>, Vec<Attribute>), ContractError> {
-    if (amount.is_zero()) {
+    if amount.is_zero() {
         // skip start unbond
         return Ok((vec![], vec![]));
     }
@@ -346,10 +355,10 @@ pub fn do_start_unbond(
 
     let mut unbonding_stubs = vec![];
 
-    let start_unbond_msgs: Vec<_> = invest
+    let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
         .iter()
-        .map(|pc| {
+        .map(|pc| -> Result<WasmMsg, ContractError> {
             // lets get the amount of tokens to unbond for this primitive
             // todo make sure weights are normalized!!
             let primitive_share_amount =
@@ -365,17 +374,16 @@ pub fn do_start_unbond(
                 unbond_funds: vec![],
             });
 
-            WasmMsg::Execute {
+            Ok(WasmMsg::Execute {
                 contract_addr: pc.address.clone(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: primitive_share_amount,
-                })
-                .unwrap(),
+                })?,
                 funds: vec![],
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<WasmMsg>, ContractError>>()?;
 
     // jimeny cricket, we need to save the unbonding state for use during the callback
     PENDING_UNBOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
@@ -394,10 +402,7 @@ pub fn do_start_unbond(
         },
     )?;
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
-    BONDING_SEQ.save(
-        deps.storage,
-        &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
-    )?;
+    BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
     // need to convert amount to the set of amounts for each primitive
 
@@ -519,35 +524,29 @@ pub fn do_unbond(
 }
 
 pub fn find_and_return_unbondable_msgs(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: &Env,
-    info: &MessageInfo,
+    _info: &MessageInfo,
     unbond_id: &String,
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
-
     Ok(unbond_stubs
         .iter()
-        .filter_map(|stub| {
-            if let Some(unlock_time) = stub.unlock_time {
-                if (unlock_time < env.block.time) {
-                    Some(WasmMsg::Execute {
-                        contract_addr: stub.address.clone(),
-                        msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
-                            id: unbond_id.clone(),
-                        })
-                        .unwrap(),
-                        funds: vec![],
-                    })
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+        .filter(|stub| {
+            stub.unlock_time
+                .map_or(false, |unlock_time| unlock_time < env.block.time)
         })
-        .collect())
+        .map(|stub| -> Result<WasmMsg, ContractError> {
+            Ok(WasmMsg::Execute {
+                contract_addr: stub.address.clone(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
+                    id: unbond_id.clone(),
+                })?,
+                funds: vec![],
+            })
+        })
+        .collect::<Result<Vec<WasmMsg>, ContractError>>()?)
 }
 
 pub fn claim(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {

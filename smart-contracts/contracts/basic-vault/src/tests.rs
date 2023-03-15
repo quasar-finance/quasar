@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, primitive};
 
     use cosmwasm_std::{
         from_binary,
@@ -15,8 +15,9 @@ mod tests {
     use cw20::BalanceResponse;
     use cw_multi_test::next_block;
     use lp_strategy::{
-        msg::{IcaBalanceResponse, PrimitiveSharesResponse},
+        msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
         start_unbond::StartUnbond,
+        state::Config,
     };
     use quasar_types::callback::{BondResponse, StartUnbondResponse};
 
@@ -77,24 +78,43 @@ mod tests {
                                         to_binary(&response).unwrap(),
                                     ))
                                 }
+                                lp_strategy::msg::QueryMsg::Config {} => {
+                                    let config = Config {
+                                        lock_period: 14,
+                                        pool_id: 1,
+                                        pool_denom: "gamm/pool/1".to_string(),
+                                        local_denom: this_denom.to_string(),
+                                        base_denom: "uosmo".to_string(),
+                                        quote_denom: "uatom".to_string(),
+                                        transfer_channel: "channel-0".to_string(),
+                                        return_source_channel: "channel-0".to_string(),
+                                        expected_connection: "connection-0".to_string(),
+                                    };
+                                    QuerierResult::Ok(ContractResult::Ok(
+                                        to_binary(&ConfigResponse { config }).unwrap(),
+                                    ))
+                                }
                                 _ => QuerierResult::Err(
                                     cosmwasm_std::SystemError::UnsupportedRequest {
-                                        kind: "Unmocked primitive query type".to_owned(),
+                                        kind: format!(
+                                            "Unmocked primitive query type: {:?}",
+                                            primitive_query
+                                        ),
                                     },
                                 ),
                             }
                         } else {
                             QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                kind: "Unmocked primitive query type".to_owned(),
+                                kind: format!("Unmocked primitive query type: {:?}", msg),
                             })
                         }
                     }
                     _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                        kind: "Unmocked wasm query type".to_owned(),
+                        kind: format!("Unmocked wasm query type: {:?}", wasm_query),
                     }),
                 },
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                    kind: "Unmocked query type".to_owned(),
+                    kind: format!("Unmocked query type: {:?}", request),
                 }),
             }
             // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
@@ -179,7 +199,7 @@ mod tests {
 
     #[test]
     fn proper_initialization() {
-        let mut deps = mock_dependencies_with_balances(&[]);
+        let mut deps = mock_deps_with_primitives(even_primitives());
         let msg = init_msg();
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();

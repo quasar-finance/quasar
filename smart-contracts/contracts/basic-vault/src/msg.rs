@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Addr, Binary, Coin, Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use quasar_types::callback::{BondResponse, Callback, StartUnbondResponse, UnbondResponse};
+use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
 use crate::state::{BondingStub, InvestmentInfo};
 

@@ -144,25 +144,12 @@ pub struct IcaChannelResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Bond {
-        id: String,
-    },
-    StartUnbond {
-        id: String,
-        share_amount: Uint128,
-    },
-    Unbond {
-        id: String,
-    },
+    Bond { id: String },
+    StartUnbond { id: String, share_amount: Uint128 },
+    Unbond { id: String },
     // accept a dispatched transfer from osmosis
-    AcceptReturningFunds {
-        id: u64,
-    },
+    AcceptReturningFunds { id: u64 },
     // try to close a channel where a timout occured
-    CloseChannel {
-        channel_id: String,
-    },
-    ReturnTransfer {
-        amount: Uint128,
-    },
+    CloseChannel { channel_id: String },
+    ReturnTransfer { amount: Uint128 },
 }
