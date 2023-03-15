@@ -1,3 +1,3 @@
 pub mod common;
-pub mod vault;
 pub mod suite;
+pub mod vault;

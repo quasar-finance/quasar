@@ -61,7 +61,7 @@ pub enum ExecuteMsg {
     /// Claim is used to claim your native tokens that you previously "unbonded"
     /// after the chain-defined waiting period (eg. 3 weeks)
     Claim {},
-    
+
     // Callback(Callback),
     BondResponse(BondResponse),
     StartUnbondResponse(StartUnbondResponse),

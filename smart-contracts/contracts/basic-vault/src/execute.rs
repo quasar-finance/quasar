@@ -378,7 +378,7 @@ pub fn do_start_unbond(
         })
         .collect::<Result<Vec<WasmMsg>, ContractError>>()?;
 
-    // jimeny cricket, we need to save the unbonding state for use during the callback
+    // We need to save the unbonding state for use during the callback
     PENDING_UNBOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
         Some(mut bond_ids) => {
             bond_ids.push(bond_seq.to_string());

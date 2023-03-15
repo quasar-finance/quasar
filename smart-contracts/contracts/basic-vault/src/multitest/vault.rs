@@ -14,8 +14,10 @@ fn try_bond() {
         )
         .unwrap_err();
     // this error happens because our ibc channel is not open yet
-    assert_eq!(err,
-        VaultContractError::Std(cosmwasm_std::StdError::GenericErr{ msg: "alloc::string::String not found".to_string() }));
+    assert_eq!(
+        err,
+        VaultContractError::Std(cosmwasm_std::StdError::GenericErr {
+            msg: "alloc::string::String not found".to_string()
+        })
+    );
 }
-
-

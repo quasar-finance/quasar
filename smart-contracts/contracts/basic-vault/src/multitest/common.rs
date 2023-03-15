@@ -3,12 +3,12 @@ pub use derivative::Derivative;
 
 pub use crate::contract::{
     execute as execute_vault, instantiate as instantiate_vault, query as query_vault,
-   
 };
 pub use crate::{
     error::ContractError as VaultContractError,
     msg::{
-        ExecuteMsg as VaultExecuteMsg, InstantiateMsg as VaultInstantiateMsg, QueryMsg as VaultQueryMsg,
+        ExecuteMsg as VaultExecuteMsg, InstantiateMsg as VaultInstantiateMsg,
+        QueryMsg as VaultQueryMsg,
     },
 };
 pub use cosmwasm_std::{coin, BlockInfo, Coin, Decimal, Empty, StdResult, Uint128};
@@ -17,13 +17,15 @@ pub use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 pub use cw_utils::Duration;
 
 pub use lp_strategy::{
-    contract::{execute as execute_primitive, instantiate as instantiate_primitive, query as query_primitive},
+    contract::{
+        execute as execute_primitive, instantiate as instantiate_primitive,
+        query as query_primitive,
+    },
     msg::{
         ExecuteMsg as PrimitiveExecuteMsg, InstantiateMsg as PrimitiveInstantiateMsg,
         QueryMsg as PrimitiveQueryMsg,
     },
 };
-
 
 pub const USER: &str = "user";
 pub const DEPLOYER: &str = "deployer";

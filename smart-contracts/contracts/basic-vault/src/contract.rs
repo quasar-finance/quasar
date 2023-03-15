@@ -18,7 +18,7 @@ use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{ bond, unbond, claim};
+use crate::execute::{bond, claim, unbond};
 use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info,
@@ -228,7 +228,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 mod test {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Decimal, QuerierResult, ContractResult,
+        ContractResult, Decimal, QuerierResult,
     };
 
     use crate::msg::PrimitiveConfig;
@@ -301,58 +301,71 @@ mod test {
 
         // prepare 3 mock configs for prim1, prim2 and prim3
         deps.querier.update_wasm(|wq| match wq {
-            cosmwasm_std::WasmQuery::Smart { contract_addr, msg: _ } => {
+            cosmwasm_std::WasmQuery::Smart {
+                contract_addr,
+                msg: _,
+            } => {
                 if contract_addr == "prim1" {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
-                        config: lp_strategy::state::Config {
-                            lock_period: 300,
-                            pool_id: 1,
-                            pool_denom: "gamm/pool/1".to_string(),
-                            local_denom: "ibc/SOME_DENOM".to_string(),
-                            base_denom: "uosmo".to_string(),
-                            quote_denom: "uqsr".to_string(),
-                            transfer_channel: "channel-0".to_string(),
-                            return_source_channel: "channel-0".to_string(),
-                            expected_connection: "connection-0".to_string(),
-                        },
-                    }).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(
+                        to_binary(&lp_strategy::msg::ConfigResponse {
+                            config: lp_strategy::state::Config {
+                                lock_period: 300,
+                                pool_id: 1,
+                                pool_denom: "gamm/pool/1".to_string(),
+                                local_denom: "ibc/SOME_DENOM".to_string(),
+                                base_denom: "uosmo".to_string(),
+                                quote_denom: "uqsr".to_string(),
+                                transfer_channel: "channel-0".to_string(),
+                                return_source_channel: "channel-0".to_string(),
+                                expected_connection: "connection-0".to_string(),
+                            },
+                        })
+                        .unwrap(),
+                    ))
                 } else if contract_addr == "prim2" {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
-                        config: lp_strategy::state::Config {
-                            lock_period: 300,
-                        pool_id: 1,
-                        pool_denom: "gamm/pool/2".to_string(),
-                        local_denom: "ibc/OTHER_DENOM".to_string(),
-                        base_denom: "uqsr".to_string(),
-                        quote_denom: "uosmo".to_string(),
-                        transfer_channel: "channel-0".to_string(),
-                        return_source_channel: "channel-0".to_string(),
-                        expected_connection: "connection-0".to_string(),
-                        },
-                    }).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(
+                        to_binary(&lp_strategy::msg::ConfigResponse {
+                            config: lp_strategy::state::Config {
+                                lock_period: 300,
+                                pool_id: 1,
+                                pool_denom: "gamm/pool/2".to_string(),
+                                local_denom: "ibc/OTHER_DENOM".to_string(),
+                                base_denom: "uqsr".to_string(),
+                                quote_denom: "uosmo".to_string(),
+                                transfer_channel: "channel-0".to_string(),
+                                return_source_channel: "channel-0".to_string(),
+                                expected_connection: "connection-0".to_string(),
+                            },
+                        })
+                        .unwrap(),
+                    ))
                 } else if contract_addr == "prim3" {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
-                        config: lp_strategy::state::Config {
-                            lock_period: 300,
-                            pool_id: 1,
-                            pool_denom: "gamm/pool/3".to_string(),
-                            local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
-                            base_denom: "uatom".to_string(),
-                            quote_denom: "uqsr".to_string(),
-                            transfer_channel: "channel-0".to_string(),
-                            return_source_channel: "channel-0".to_string(),
-                            expected_connection: "connection-0".to_string(),
-                        },
-                    }).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(
+                        to_binary(&lp_strategy::msg::ConfigResponse {
+                            config: lp_strategy::state::Config {
+                                lock_period: 300,
+                                pool_id: 1,
+                                pool_denom: "gamm/pool/3".to_string(),
+                                local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
+                                base_denom: "uatom".to_string(),
+                                quote_denom: "uqsr".to_string(),
+                                transfer_channel: "channel-0".to_string(),
+                                return_source_channel: "channel-0".to_string(),
+                                expected_connection: "connection-0".to_string(),
+                            },
+                        })
+                        .unwrap(),
+                    ))
                 } else {
                     QuerierResult::Err(cosmwasm_std::SystemError::NoSuchContract {
                         addr: contract_addr.to_string(),
                     })
                 }
             }
-            cosmwasm_std::WasmQuery::Raw { contract_addr: _, key: _ } => {
-                QuerierResult::Err(cosmwasm_std::SystemError::Unknown {})
-            }
+            cosmwasm_std::WasmQuery::Raw {
+                contract_addr: _,
+                key: _,
+            } => QuerierResult::Err(cosmwasm_std::SystemError::Unknown {}),
             cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
                 QuerierResult::Err(cosmwasm_std::SystemError::Unknown {})
             }
