@@ -293,7 +293,7 @@ pub fn handle_succesful_ack(
                 }
             }
         }
-        IbcMsgKind::Icq => match handle_icq_ack(deps.storage, env, ack_bin, &pkt) {
+        IbcMsgKind::Icq => match handle_icq_ack(deps.storage, env, ack_bin) {
             Ok(response) => Ok(response),
             Err(err) => {
                 TRAPS.save(
@@ -349,7 +349,6 @@ pub fn handle_icq_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
-    _pkt: &IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
@@ -647,18 +646,23 @@ fn on_packet_failure(
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{testing::mock_dependencies, IbcEndpoint, IbcOrder};
+    use cosmwasm_std::{testing::{mock_dependencies, mock_env}, IbcEndpoint, IbcOrder};
 
     use crate::test_helpers::default_setup;
 
     use super::*;
 
-    // #[test]
-    // fn handle_icq_ack_works() {
-    //     // base64 of '{"data":"ChU6EAoOCglmYWtlc3Rha2USATBIuQUKEToMCgoKBXVvc21vEgEwSLkFChc6EgoQCgtnYW1tL3Bvb2wvMxIBMEi5BQoFCBJIuQUKGzoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEi5BQ=="}'
-    //     let bin = Binary::from_base64("eyJkYXRhIjoiQ2hVNkVBb09DZ2xtWVd0bGMzUmhhMlVTQVRCSXVRVUtFVG9NQ2dvS0JYVnZjMjF2RWdFd1NMa0ZDaGM2RWdvUUNndG5ZVzF0TDNCdmIyd3ZNeElCTUVpNUJRb0ZDQkpJdVFVS0d6b1dDaFF4TGpBd01EQXdNREF3TURBd01EQXdNREF3TUVpNUJRPT0ifQ").unwrap();
-    //     handle_icq_ack(storage, env, ack_bin, pkt)
-    // }
+    #[test]
+    fn handle_icq_ack_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        default_setup(deps.as_mut().storage).unwrap();
+        // base64 of '{"data":"ChU6EAoOCglmYWtlc3Rha2USATBIuQUKEToMCgoKBXVvc21vEgEwSLkFChc6EgoQCgtnYW1tL3Bvb2wvMxIBMEi5BQoFCBJIuQUKGzoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEi5BQ=="}'
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hVNkVBb09DZ2xtWVd0bGMzUmhhMlVTQVRCSXVRVUtFVG9NQ2dvS0JYVnZjMjF2RWdFd1NMa0ZDaGM2RWdvUUNndG5ZVzF0TDNCdmIyd3ZNeElCTUVpNUJRb0ZDQkpJdVFVS0d6b1dDaFF4TGpBd01EQXdNREF3TURBd01EQXdNREF3TUVpNUJRPT0ifQ").unwrap();
+        // queues are empty at this point so we just expect a succesful response without anyhting else
+        handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
+    }
 
     #[test]
     fn handle_ica_channel_works() {
