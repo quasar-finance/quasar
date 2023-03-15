@@ -157,43 +157,28 @@ impl CounterPartyIcaMetadata {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display, Default)]
 pub enum Version {
     #[serde(rename = "ics27-1")]
     #[display(fmt = "ics27-1")]
+    #[default]
     Ics27_1,
 }
 
-impl Default for Version {
-    fn default() -> Self {
-        Version::Ics27_1
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display, Default)]
 pub enum Encoding {
     #[serde(rename = "proto3")]
     #[display(fmt = "proto3")]
+    #[default]
     Proto3,
 }
 
-impl Default for Encoding {
-    fn default() -> Self {
-        Encoding::Proto3
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Display, Default)]
 pub enum TxType {
     #[serde(rename = "sdk_multi_msg")]
     #[display(fmt = "sdk_multi_msg")]
+    #[default]
     SdkMultiMsg,
-}
-
-impl Default for TxType {
-    fn default() -> Self {
-        TxType::SdkMultiMsg
-    }
 }
 
 impl CounterPartyIcaMetadata {

@@ -1,10 +1,12 @@
-use cosmwasm_std::{to_binary, Env, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128};
+use cosmwasm_std::{
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Binary, StdResult
+};
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
     osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketData, Query};
+use quasar_types::icq::{InterchainQueryPacketData, Query, InterchainQueryPacketAck};
 
 use crate::{
     error::ContractError,
@@ -99,7 +101,7 @@ pub fn calc_total_balance(
     storage: &mut dyn Storage,
     ica_balance: Uint128,
     exit_pool: Vec<OsmoCoin>,
-    spot_price: Uint128,
+    spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
     // if we receive no tokens in the response, the total balance
@@ -130,7 +132,7 @@ pub fn calc_total_balance(
                     value: quote.amount.clone(),
                 }
             })?)
-            .checked_mul(spot_price)?,
+            .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
         )?)
 }
 
