@@ -3,7 +3,6 @@ package quasarlabs.quasarnode.qoracle;
 
 import "gogoproto/gogo.proto";
 import "qoracle/params.proto";
-import "qoracle/denom_symbol_mapping.proto";
 import "qoracle/osmosis/params.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types";

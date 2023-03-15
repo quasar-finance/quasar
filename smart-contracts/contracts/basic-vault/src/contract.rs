@@ -14,6 +14,7 @@ use cw20_base::contract::{
     execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
+use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
@@ -45,17 +46,41 @@ pub fn instantiate(
         total_supply: Uint128::zero(),
         // set self as minter, so we can properly execute mint and burn
         mint: Some(MinterData {
-            minter: env.contract.address.clone(),
+            minter: env.contract.address,
             cap: None,
         }),
     };
     TOKEN_INFO.save(deps.storage, &data)?;
 
-    let invest = InvestmentInfo {
+
+    for prim in msg.primitives.iter() {
+        let config: ConfigResponse = deps
+            .querier
+            .query_wasm_smart(&prim.address, &lp_strategy::msg::QueryMsg::Config {})?;
+        match &prim.init {
+            crate::msg::PrimitiveInitMsg::LP(init) => {
+                assert_eq!(config.config.base_denom, init.base_denom);
+                assert_eq!(config.config.expected_connection, init.expected_connection);
+                assert_eq!(config.config.local_denom, init.local_denom);
+                assert_eq!(config.config.lock_period, init.lock_period);
+                assert_eq!(config.config.pool_denom, init.pool_denom);
+                assert_eq!(config.config.pool_id, init.pool_id);
+                assert_eq!(config.config.quote_denom, init.quote_denom);
+                assert_eq!(
+                    config.config.return_source_channel,
+                    init.return_source_channel
+                );
+                assert_eq!(config.config.transfer_channel, init.transfer_channel);
+            }
+        }
+    }
+
+    let mut invest = InvestmentInfo {
         owner: info.sender,
         min_withdrawal: msg.min_withdrawal,
-        primitives: msg.primitives.clone(),
+        primitives: msg.primitives,
     };
+    invest.normalize_primitive_weights();
     INVESTMENT.save(deps.storage, &invest)?;
 
     // initialize bonding sequence num
@@ -183,6 +208,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 // replies not created yet
 // #[cfg_attr(not(feature = "library"), entry_point)]
 // pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+
 // }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -213,21 +239,160 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use quasar_types::callback::BondResponse;
 
+    // #[test]
+    // fn callback_bond_response() {
+    //     let bond_response = BondResponse {
+    //         share_amount: Uint128::one(),
+    //         bond_id: "id".to_string(),
+    //     };
+    //     let cb = ExecuteMsg::BondResponse(bond_response);
+    //     let mut deps = mock_dependencies();
+    //     let env = mock_env();
+    //     let info = MessageInfo {
+    //         sender: env.clone().contract.address,
+    //         funds: Vec::new(),
+    //     };
+    //     execute(deps.as_mut(), env, info, cb).unwrap();
+    //     assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
+    //     println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
+    // }
+}
+
+#[cfg(test)]
+mod test {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Decimal, QuerierResult, ContractResult,
+    };
+
+    use crate::msg::PrimitiveConfig;
+
+    use super::*;
+
     #[test]
-    fn callback_bond_response() {
-        let bond_response = BondResponse {
-            share_amount: Uint128::one(),
-            bond_id: "id".to_string(),
-        };
-        let cb = ExecuteMsg::BondResponse(bond_response);
+    fn instantiate_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
+
         let info = MessageInfo {
-            sender: env.clone().contract.address,
-            funds: Vec::new(),
+            sender: Addr::unchecked("owner"),
+            funds: vec![],
         };
-        execute(deps.as_mut(), env, info, cb).unwrap();
-        assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
-        println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
+
+        let msg = InstantiateMsg {
+            name: "vault".to_string(),
+            symbol: "VLT".to_string(),
+            decimals: 6,
+            min_withdrawal: Uint128::new(100),
+            primitives: vec![
+                PrimitiveConfig {
+                    weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                    address: "prim1".to_string(),
+                    init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                        lock_period: 300,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/1".to_string(),
+                        local_denom: "ibc/SOME_DENOM".to_string(),
+                        base_denom: "uosmo".to_string(),
+                        quote_denom: "uqsr".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                        expected_connection: "connection-0".to_string(),
+                    }),
+                },
+                PrimitiveConfig {
+                    weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                    address: "prim2".to_string(),
+                    init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                        lock_period: 300,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/2".to_string(),
+                        local_denom: "ibc/OTHER_DENOM".to_string(),
+                        base_denom: "uqsr".to_string(),
+                        quote_denom: "uosmo".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                        expected_connection: "connection-0".to_string(),
+                    }),
+                },
+                PrimitiveConfig {
+                    weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                    address: "prim3".to_string(),
+                    init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                        lock_period: 300,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/3".to_string(),
+                        local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
+                        base_denom: "uatom".to_string(),
+                        quote_denom: "uqsr".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                        expected_connection: "connection-0".to_string(),
+                    }),
+                },
+            ],
+        };
+
+        // prepare 3 mock configs for prim1, prim2 and prim3
+        deps.querier.update_wasm(|wq| match wq {
+            cosmwasm_std::WasmQuery::Smart { contract_addr, msg: _ } => {
+                if contract_addr == "prim1" {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
+                        config: lp_strategy::state::Config {
+                            lock_period: 300,
+                            pool_id: 1,
+                            pool_denom: "gamm/pool/1".to_string(),
+                            local_denom: "ibc/SOME_DENOM".to_string(),
+                            base_denom: "uosmo".to_string(),
+                            quote_denom: "uqsr".to_string(),
+                            transfer_channel: "channel-0".to_string(),
+                            return_source_channel: "channel-0".to_string(),
+                            expected_connection: "connection-0".to_string(),
+                        },
+                    }).unwrap()))
+                } else if contract_addr == "prim2" {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
+                        config: lp_strategy::state::Config {
+                            lock_period: 300,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/2".to_string(),
+                        local_denom: "ibc/OTHER_DENOM".to_string(),
+                        base_denom: "uqsr".to_string(),
+                        quote_denom: "uosmo".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                        expected_connection: "connection-0".to_string(),
+                        },
+                    }).unwrap()))
+                } else if contract_addr == "prim3" {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::ConfigResponse {
+                        config: lp_strategy::state::Config {
+                            lock_period: 300,
+                            pool_id: 1,
+                            pool_denom: "gamm/pool/3".to_string(),
+                            local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
+                            base_denom: "uatom".to_string(),
+                            quote_denom: "uqsr".to_string(),
+                            transfer_channel: "channel-0".to_string(),
+                            return_source_channel: "channel-0".to_string(),
+                            expected_connection: "connection-0".to_string(),
+                        },
+                    }).unwrap()))
+                } else {
+                    QuerierResult::Err(cosmwasm_std::SystemError::NoSuchContract {
+                        addr: contract_addr.to_string(),
+                    })
+                }
+            }
+            cosmwasm_std::WasmQuery::Raw { contract_addr: _, key: _ } => {
+                QuerierResult::Err(cosmwasm_std::SystemError::Unknown {})
+            }
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
+                QuerierResult::Err(cosmwasm_std::SystemError::Unknown {})
+            }
+            _ => todo!(),
+        });
+
+        instantiate(deps.as_mut(), env, info, msg).unwrap();
     }
 }

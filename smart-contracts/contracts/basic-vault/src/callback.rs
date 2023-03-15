@@ -22,7 +22,7 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!("We hit on_unbond with bond_id: {}", bond_id.clone()),
+        &format!("We hit on_unbond with bond_id: {}", bond_id),
     )?;
 
     // load investment info
@@ -101,7 +101,7 @@ pub fn on_bond(
         },
     )?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
+    BOND_STATE.save(deps.storage, bond_id, &bond_stubs_new)?;
 
     let total_weight = invest.primitives.iter().try_fold(
         Decimal::zero(),
@@ -111,6 +111,7 @@ pub fn on_bond(
     )?;
 
     // calculate shares to mint
+
     let shares_to_mint = bond_stubs_new
         .iter()
         .zip(invest.primitives.iter())
@@ -133,6 +134,7 @@ pub fn on_bond(
                 )?)
             },
         )?;
+
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -219,7 +221,7 @@ pub fn on_unbond(
         deps.storage,
         &format!(
             "We hit on_unbond with unbond_id: {} and funds: {}",
-            unbond_id.clone(),
+            unbond_id,
             info.funds[0]
         ),
     )?;
