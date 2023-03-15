@@ -125,7 +125,6 @@ pub fn on_bond(
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
 
-    // todo: i think supply structure needs to be simplified or augmented
     supply.issued += shares_to_mint;
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
@@ -157,8 +156,6 @@ pub fn on_start_unbond(
     unbond_id: String,
     unlock_time: Timestamp,
 ) -> Result<Response, ContractError> {
-    // load info.sender -> [..., unbond_id], and unbond_id -> [..., { address, unlock_time }]
-    // todo also i guess if unlock_time is now or earlier then we can send right now
     UNBOND_STATE.update(
         deps.storage,
         unbond_id.clone(),

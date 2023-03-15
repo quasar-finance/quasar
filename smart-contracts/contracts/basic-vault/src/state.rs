@@ -36,10 +36,6 @@ pub struct InvestmentInfo {
 pub struct Supply {
     /// issued is how many derivative tokens this contract has issued
     pub issued: Uint128,
-    /// bonded is how many native tokens exist bonded to the validator
-    pub bonded: Uint128,
-    /// claims is how many tokens need to be reserved paying back those who unbonded
-    pub claims: Uint128,
 }
 
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
@@ -76,7 +72,7 @@ pub struct UnbondingStub {
 
 // (un)bonding sequence number (to map primitive responses to the right bond action)
 pub const BONDING_SEQ: Item<Uint128> = Item::new("bond_seq");
-// mapping from bonding sequence number to depositor/withdrawer address (todo: better way to do this?)
+// mapping from bonding sequence number to depositor/withdrawer address
 pub const BONDING_SEQ_TO_ADDR: Map<String, String> = Map::new("bond_seq_to_addr");
 // current bonds pending for a user
 pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_bond_ids");

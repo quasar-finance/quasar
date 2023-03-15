@@ -1,51 +1,19 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, StdError, Uint128, WasmMsg,
+    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, StdError, Uint128, WasmMsg,
 };
 
-use cw20_base::contract::{execute_burn};
+use cw20_base::contract::execute_burn;
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
 
-
 use crate::state::{
     BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
-
-// get_bonded returns the total amount of delegations from contract
-// it ensures they are all the same denom
-fn _get_bonded(querier: &QuerierWrapper, contract: &Addr) -> Result<Uint128, ContractError> {
-    let bonds = querier.query_all_delegations(contract)?;
-    if bonds.is_empty() {
-        return Ok(Uint128::zero());
-    }
-    let denom = bonds[0].amount.denom.as_str();
-    bonds.iter().fold(Ok(Uint128::zero()), |racc, d| {
-        let acc = racc?;
-        if d.amount.denom.as_str() != denom {
-            Err(ContractError::DifferentBondDenom {
-                denom1: denom.into(),
-                denom2: d.amount.denom.to_string(),
-            })
-        } else {
-            Ok(acc + d.amount.amount)
-        }
-    })
-}
-
-fn _assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> {
-    if supply.bonded != bonded {
-        Err(ContractError::BondedMismatch {
-            stored: supply.bonded,
-            queried: bonded,
-        })
-    } else {
-        Ok(())
-    }
-}
 
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
@@ -164,9 +132,7 @@ pub fn may_pay_with_ratio(
 
     if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
-            msg: format!(
-                "Unable to correctly determine max_bond, value: {max_bond}"
-            ),
+            msg: format!("Unable to correctly determine max_bond, value: {max_bond}"),
         }));
     }
 
@@ -285,24 +251,21 @@ pub fn bond(
     )?;
     BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::new(1))?)?;
 
-    let mut remainder_msgs = vec![];
-
-    remainder.iter().for_each(|r| {
-        if r.amount > Uint128::zero() {
-            remainder_msgs.push(BankMsg::Send {
-                to_address: recipient_addr.to_string(),
-                amount: vec![Coin {
-                    denom: r.denom.clone(),
-                    amount: r.amount,
-                }],
-            });
-        }
-    });
+    let remainder_msg = BankMsg::Send {
+        to_address: recipient_addr.to_string(),
+        amount: remainder
+            .iter()
+            .map(|r| Coin {
+                denom: r.denom.clone(),
+                amount: r.amount,
+            })
+            .collect(),
+    };
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
         .add_messages(bond_msgs?)
-        .add_messages(remainder_msgs))
+        .add_message(remainder_msg))
 }
 
 pub fn unbond(

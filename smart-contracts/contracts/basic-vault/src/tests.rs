@@ -8,9 +8,9 @@ mod tests {
             mock_dependencies, mock_dependencies_with_balances, mock_env, mock_info, MockApi,
             MockQuerier, MockStorage,
         },
-        to_binary, Addr, Api, Binary, Coin, ContractResult, CustomQuery, Decimal, DepsMut, Empty,
-        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Storage,
-        Timestamp, Uint128,
+        to_binary, Addr, Api, BankMsg, Binary, Coin, ContractResult, CosmosMsg, CustomQuery,
+        Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        Response, Storage, Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
     use cw_multi_test::next_block;
@@ -410,8 +410,91 @@ mod tests {
             recipient: Option::None,
         };
         let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
-        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.messages.len(), 4);
         assert_eq!(res.attributes.first().unwrap().value, "1");
+
+        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[0].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar123");
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, "ibc/uosmo");
+                assert_eq!(funds[0].amount, Uint128::from(99u128));
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "1")
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+
+        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[1].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar124");
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, "ibc/uatom");
+                assert_eq!(funds[0].amount, Uint128::from(99u128));
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "1")
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+
+        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[2].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar125");
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, "ibc/ustars");
+                assert_eq!(funds[0].amount, Uint128::from(99u128));
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "1")
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+
+        if let CosmosMsg::Bank(msg) = &res.messages[3].msg {
+            if let BankMsg::Send { to_address, amount } = msg {
+                assert_eq!(to_address, TEST_CREATOR);
+                assert_eq!(amount.len(), 3);
+                assert_eq!(amount[0].amount, Uint128::from(1u128));
+                assert_eq!(amount[1].amount, Uint128::from(1u128));
+                assert_eq!(amount[2].amount, Uint128::from(1u128));
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
     }
 
     #[test]
@@ -436,7 +519,7 @@ mod tests {
             recipient: Option::None,
         };
         let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
-        assert_eq!(res.messages.len(), 3);
+        assert_eq!(res.messages.len(), 2);
         assert_eq!(res.attributes.first().unwrap().value, "1");
     }
 
@@ -492,9 +575,8 @@ mod tests {
             recipient: Option::None,
         };
         let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
-        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.messages.len(), 4);
         assert_eq!(res.attributes.first().unwrap().value, "1");
-        // todo: verify message passed back here
 
         // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
         let primitive_1_info = mock_info("quasar123", &[]);
@@ -561,9 +643,8 @@ mod tests {
             recipient: Option::None,
         };
         let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
-        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.messages.len(), 4);
         assert_eq!(res.attributes.first().unwrap().value, "1");
-        // todo: verify message passed back here
 
         // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
         let primitive_1_info = mock_info("quasar123", &[]);
