@@ -1,15 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, MessageInfo, Reply, Response, StdError,
-    StdResult, Uint128,
+    from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
+    Reply, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
+use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
-use crate::error::ContractError;
-use crate::helpers::parse_seq;
+use crate::error::{ContractError, Trap};
+use crate::helpers::{parse_seq, unlock_on_error, SubMsgKind};
+use crate::ibc::{handle_failing_ack, handle_succesful_ack};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
@@ -19,12 +21,12 @@ use crate::queries::{
     handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
     handle_list_primitive_shares, handle_list_unbonding_claims, handle_lock,
     handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query,
+    handle_unbonding_claim_query, handle_list_replies,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT,
+    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -70,31 +72,65 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
-    let pending = REPLIES.load(deps.storage, msg.id)?;
-    let data = msg
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr {
-            msg: format!("submsg error: {:?}", msg),
-        })?
-        .data
-        .ok_or(ContractError::NoReplyData)
-        .map_err(|_| StdError::NotFound {
-            kind: "reply-data".to_string(),
-        })?;
+    let reply = REPLIES.load(deps.storage, msg.id)?;
+    match reply {
+        SubMsgKind::Ibc(pending) => {
+            let data = msg
+                .result
+                .into_result()
+                .map_err(|msg| StdError::GenericErr {
+                    msg: format!("submsg error: {:?}", msg),
+                })?
+                .data
+                .ok_or(ContractError::NoReplyData)
+                .map_err(|_| StdError::NotFound {
+                    kind: "reply-data".to_string(),
+                })?;
 
-    let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
-        source_type: "protobuf-decode".to_string(),
-        msg: err.to_string(),
-    })?;
+            let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
+                source_type: "protobuf-decode".to_string(),
+                msg: err.to_string(),
+            })?;
 
-    PENDING_ACK.save(deps.storage, seq, &pending)?;
-    Ok(Response::default()
-        .add_attribute("pending-msg", seq.to_string())
-        .add_attribute("step", format!("{:?}", pending)))
+            PENDING_ACK.save(deps.storage, seq, &pending)?;
+
+            // cleanup the REPLIES state item
+            REPLIES.remove(deps.storage, msg.id);
+
+            Ok(Response::default()
+                .add_attribute("pending-msg", seq.to_string())
+                .add_attribute("step", format!("{:?}", pending)))
+        }
+        SubMsgKind::Ack(seq) => {
+            let mut resp = Response::new();
+
+            // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
+            // the entire state of the ack execution,
+            if let Err(error) = msg.result.into_result() {
+                let step = PENDING_ACK.load(deps.storage, seq)?;
+                unlock_on_error(deps.storage, &step)?;
+
+                // reassignment needed since add_attribute 
+                resp = resp.add_attribute("trapped-error", error.as_str());
+
+                TRAPS.save(
+                    deps.storage,
+                    seq,
+                    &Trap {
+                        error,
+                        step,
+                    },
+                )?;
+            }
+
+            // // cleanup the REPLIES state item
+            REPLIES.remove(deps.storage, msg.id);
+            Ok(resp)
+        }
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -115,6 +151,26 @@ pub fn execute(
         }
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
+        ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
+    }
+}
+
+pub fn execute_ack(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: IbcPacketAckMsg,
+) -> Result<Response, ContractError> {
+    if env.contract.address != info.sender {
+        return Err(ContractError::Unauthorized);
+    }
+
+    // TODO: trap error like in receive?
+    // pro's acks happen anyway, cons?
+    let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    match ack {
+        IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
+        IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
     }
 }
 
@@ -127,7 +183,7 @@ pub fn execute_return_funds(
     let msg = transfer_batch_unbond(
         deps.storage,
         &env,
-        &PendingReturningUnbonds {
+        PendingReturningUnbonds {
             unbonds: vec![ReturningUnbond {
                 amount: RawAmount::LpShares(Uint128::new(100)),
                 owner: info.sender,
@@ -345,6 +401,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
         QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
+        QueryMsg::ListReplies { } => to_binary(&handle_list_replies(deps)?),
     }
 }
 
