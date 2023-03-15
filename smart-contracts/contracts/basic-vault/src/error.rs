@@ -91,6 +91,9 @@ pub enum ContractError {
     #[error("Unbond stub is empty")]
     UnbondStubIsEmpty {},
 
+    #[error("Coins weight vector is empty")]
+    CoinsWeightVectorIsEmpty {},
+
     #[error("{0}")]
     QError(#[from] QError),
 }
