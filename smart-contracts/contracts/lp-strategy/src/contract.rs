@@ -9,8 +9,8 @@ use cw_utils::must_pay;
 use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
-use crate::error::ContractError;
-use crate::helpers::{parse_seq, SubMsgKind};
+use crate::error::{ContractError, Trap};
+use crate::helpers::{parse_seq, unlock_on_error, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -21,12 +21,12 @@ use crate::queries::{
     handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
     handle_list_primitive_shares, handle_list_unbonding_claims, handle_lock,
     handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query,
+    handle_unbonding_claim_query, handle_list_replies,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT,
+    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -72,7 +72,7 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
@@ -96,59 +96,39 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
             })?;
 
             PENDING_ACK.save(deps.storage, seq, &pending)?;
+
+            // cleanup the REPLIES state item
+            REPLIES.remove(deps.storage, msg.id);
+
             Ok(Response::default()
                 .add_attribute("pending-msg", seq.to_string())
                 .add_attribute("step", format!("{:?}", pending)))
         }
-        SubMsgKind::Ack() => {
-            // if we have an error in our Ack submsg, something
-            todo!()
-            // match handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending.clone(), amount) {
-            //     Ok(response) => Ok(response),
-            //     Err(err) => {
-            //         TRAPS.save(
-            //             deps.storage,
-            //             pkt.original_packet.sequence,
-            //             &Trap {
-            //                 error: err.to_string(),
-            //                 step: IbcMsgKind::Transfer {
-            //                     pending: pending.clone(),
-            //                     amount,
-            //                 },
-            //             },
-            //         )?;
-            //         unlock_on_error(deps.storage, &kind)?;
-            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
-            //     }
-            // match handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind) {
-            //     Ok(response) => Ok(response),
-            //     Err(err) => {
-            //         TRAPS.save(
-            //             deps.storage,
-            //             pkt.original_packet.sequence,
-            //             &Trap {
-            //                 error: err.to_string(),
-            //                 step: IbcMsgKind::Ica(ica_kind.clone()),
-            //             },
-            //         )?;
-            //         unlock_on_error(deps.storage, &kind)?;
-            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
-            //     }
-            // }
-            // match handle_icq_ack(deps.storage, env, ack_bin, &pkt) {
-            //     Ok(response) => Ok(response),
-            //     Err(err) => {
-            //         TRAPS.save(
-            //             deps.storage,
-            //             pkt.original_packet.sequence,
-            //             &Trap {
-            //                 error: err.to_string(),
-            //                 step: IbcMsgKind::Icq,
-            //             },
-            //         )?;
-            //         unlock_on_error(deps.storage, &kind)?;
-            //         Ok(IbcBasicResponse::new().add_attribute("trapped-error", err.to_string()))
-            //     }
+        SubMsgKind::Ack(seq) => {
+            let mut resp = Response::new();
+
+            // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
+            // the entire state of the ack execution,
+            if let Err(error) = msg.result.into_result() {
+                let step = PENDING_ACK.load(deps.storage, seq)?;
+                unlock_on_error(deps.storage, &step)?;
+
+                // reassignment needed since add_attribute 
+                resp = resp.add_attribute("trapped-error", error.as_str());
+
+                TRAPS.save(
+                    deps.storage,
+                    seq,
+                    &Trap {
+                        error,
+                        step,
+                    },
+                )?;
+            }
+
+            // // cleanup the REPLIES state item
+            REPLIES.remove(deps.storage, msg.id);
+            Ok(resp)
         }
     }
 }
@@ -203,7 +183,7 @@ pub fn execute_return_funds(
     let msg = transfer_batch_unbond(
         deps.storage,
         &env,
-        &PendingReturningUnbonds {
+        PendingReturningUnbonds {
             unbonds: vec![ReturningUnbond {
                 amount: RawAmount::LpShares(Uint128::new(100)),
                 owner: info.sender,
@@ -421,6 +401,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
         QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
+        QueryMsg::ListReplies { } => to_binary(&handle_list_replies(deps)?),
     }
 }
 

@@ -1,8 +1,7 @@
-use std::str::FromStr;
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{
-    create_ibc_ack_submsg, get_ica_address, unlock_on_error, IbcMsgKind, IcaMessages,
+    ack_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
@@ -17,6 +16,7 @@ use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingR
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
@@ -41,7 +41,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, Decimal, Decimal256, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
-    IbcTimeout, StdError, Storage, Uint128, WasmMsg,
+    IbcTimeout, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -238,13 +238,7 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    Ok(
-        IbcBasicResponse::new().add_submessage(SubMsg::new(WasmMsg::Execute {
-            contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&ExecuteMsg::Ack { ack: msg })?,
-            funds: vec![],
-        })),
-    )
+    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
 }
 
 pub fn handle_succesful_ack(
@@ -253,13 +247,12 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let mut kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
     match kind {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
-        IbcMsgKind::Transfer {
-            pending,
-            amount,
-        } => handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending, amount),
+        IbcMsgKind::Transfer { pending, amount } => {
+            handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending, amount)
+        }
         IbcMsgKind::Ica(ica_kind) => handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind),
         IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin, &pkt),
     }
@@ -358,8 +351,7 @@ pub fn handle_icq_ack(
                 .map_err(|err| ContractError::ParseIntError {
                     error: err,
                     value: lp_balance,
-                })?,
-        ),
+                })?)
     )?;
 
     let unbond = batch_unbond(storage, &env)?;
@@ -398,9 +390,7 @@ pub fn handle_icq_ack(
         attrs.push(Attribute::new("unbond-status", "empty"));
     }
 
-    Ok(Response::new()
-        .add_submessages(msges)
-        .add_attributes(attrs))
+    Ok(Response::new().add_submessages(msges).add_attributes(attrs))
 }
 
 pub fn handle_ica_ack(
@@ -411,7 +401,7 @@ pub fn handle_ica_ack(
     ica_kind: IcaMessages,
 ) -> Result<Response, ContractError> {
     match ica_kind {
-        IcaMessages::JoinSwapExternAmountIn(data) => {
+        IcaMessages::JoinSwapExternAmountIn(mut data) => {
             // TODO move the below locking logic to a separate function
             // get the ica address of the channel id
             let ica_channel = ICA_CHANNEL.load(storage)?;
@@ -502,7 +492,7 @@ pub fn handle_ica_ack(
 fn handle_exit_pool_ack(
     storage: &mut dyn Storage,
     env: &Env,
-    data: PendingReturningUnbonds,
+    mut data: PendingReturningUnbonds,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
