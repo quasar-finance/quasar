@@ -215,6 +215,7 @@ pub fn on_unbond(
     UNBOND_STATE.save(deps.storage, unbond_id.clone(), &unbond_stubs)?;
 
     // if still waiting on successful unbonds, then return
+    // todo: should we eagerly send back funds?
     if unbond_stubs
         .stub
         .iter()

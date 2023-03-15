@@ -313,13 +313,16 @@ pub fn do_start_unbond(
 
     let mut unbonding_stubs = vec![];
 
+    let num_primitives = Uint128::from(invest.primitives.len() as u128);
     let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
         .iter()
         .map(|pc| -> Result<WasmMsg, ContractError> {
             // lets get the amount of tokens to unbond for this primitive
-            let primitive_share_amount =
-                unbond_amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
+            let primitive_share_amount = unbond_amount.multiply_ratio(
+                pc.weight.numerator().checked_mul(num_primitives)?,
+                pc.weight.denominator(),
+            );
 
             unbonding_stubs.push(UnbondingStub {
                 address: pc.address.clone(),

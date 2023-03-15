@@ -8,18 +8,18 @@ mod tests {
             mock_dependencies, mock_dependencies_with_balances, mock_env, mock_info, MockApi,
             MockQuerier, MockStorage,
         },
-        to_binary, Addr, Api, BankMsg, Binary, Coin, ContractResult, CosmosMsg, CustomQuery,
-        Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
-        Response, Storage, Timestamp, Uint128, WasmMsg,
+        to_binary, Addr, Api, BankMsg, Binary, BlockInfo, Coin, ContractResult, CosmosMsg,
+        CustomQuery, Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Querier, QuerierResult,
+        QueryRequest, Response, Storage, Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
-    use cw_multi_test::next_block;
+    use cw_multi_test::{next_block, Wasm};
     use lp_strategy::{
         msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
         start_unbond::StartUnbond,
         state::Config,
     };
-    use quasar_types::callback::{BondResponse, StartUnbondResponse};
+    use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
     use crate::{
         contract::execute,
@@ -302,8 +302,6 @@ mod tests {
         let (coins, remainder) =
             may_pay_with_ratio(&deps.as_ref(), &even_deposit(), investment_response.info).unwrap();
 
-        println!("coins: {:?}", coins);
-        println!("remainder: {:?}", remainder);
         assert_eq!(coins.len(), 3);
         assert_eq!(coins[0].amount, Uint128::from(99u128)); // 99 because 0.33333 results in coins getting floored
         assert_eq!(coins[1].amount, Uint128::from(99u128));
@@ -315,87 +313,87 @@ mod tests {
         assert_eq!(remainder[2].amount, Uint128::from(1u128));
     }
 
-    // #[test]
-    // fn test_may_pay_with_uneven_ratio() {
-    //     let mut deps = mock_deps_with_primitives(vec![
-    //         (
-    //             "quasar123".to_string(),
-    //             "ibc/uosmo".to_string(),
-    //             Uint128::from(1000u128),
-    //             Uint128::from(1000u128),
-    //         ),
-    //         (
-    //             "quasar124".to_string(),
-    //             "ibc/uatom".to_string(),
-    //             Uint128::from(500u128),
-    //             Uint128::from(1000u128),
-    //         ),
-    //         (
-    //             "quasar125".to_string(),
-    //             "ibc/ustars".to_string(),
-    //             Uint128::from(250u128),
-    //             Uint128::from(100u128),
-    //         ),
-    //     ]);
-    //     let init_msg = init_msg_with_primitive_details(vec![
-    //         (
-    //             "quasar123".to_string(),
-    //             "ibc/uosmo".to_string(),
-    //             Decimal::one(),
-    //         ),
-    //         (
-    //             "quasar124".to_string(),
-    //             "ibc/uatom".to_string(),
-    //             Decimal::one(),
-    //         ),
-    //         (
-    //             "quasar125".to_string(),
-    //             "ibc/ustars".to_string(),
-    //             Decimal::from_ratio(3u128, 10u128),
-    //         ),
-    //     ]);
-    //     let info = mock_info(TEST_CREATOR, &[]);
-    //     let env = mock_env();
-    //     let res = init(deps.as_mut(), &init_msg, &env, &info);
-    //     assert_eq!(0, res.messages.len());
+    #[test]
+    fn test_may_pay_with_uneven_ratio() {
+        let mut deps = mock_deps_with_primitives(vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(1000u128),
+                Uint128::from(1000u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(500u128),
+                Uint128::from(1000u128),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Uint128::from(250u128),
+                Uint128::from(100u128),
+            ),
+        ]);
+        let init_msg = init_msg_with_primitive_details(vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Decimal::from_ratio(3u128, 10u128),
+            ),
+        ]);
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
 
-    //     let invest_query = crate::msg::QueryMsg::Investment {};
-    //     let query_res = query(deps.as_ref(), env.clone(), invest_query).unwrap();
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env.clone(), invest_query).unwrap();
 
-    //     let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-    //     let (coins, remainder) = may_pay_with_ratio(
-    //         &deps.as_ref(),
-    //         &vec![
-    //             Coin {
-    //                 denom: "ibc/uosmo".to_string(),
-    //                 amount: Uint128::from(100u128),
-    //             },
-    //             Coin {
-    //                 denom: "ibc/uatom".to_string(),
-    //                 amount: Uint128::from(100u128),
-    //             },
-    //             Coin {
-    //                 denom: "ibc/ustars".to_string(),
-    //                 amount: Uint128::from(100u128),
-    //             },
-    //         ],
-    //         investment_response.info,
-    //     )
-    //     .unwrap();
+        let (coins, remainder) = may_pay_with_ratio(
+            &deps.as_ref(),
+            &vec![
+                Coin {
+                    denom: "ibc/uosmo".to_string(),
+                    amount: Uint128::from(100u128),
+                },
+                Coin {
+                    denom: "ibc/uatom".to_string(),
+                    amount: Uint128::from(200u128),
+                },
+                Coin {
+                    denom: "ibc/ustars".to_string(),
+                    amount: Uint128::from(1000u128),
+                },
+            ],
+            investment_response.info,
+        )
+        .unwrap();
 
-    //     println!("coins: {:?}", coins);
-    //     println!("remainder: {:?}", remainder);
-    //     assert_eq!(coins.len(), 3);
-    //     assert_eq!(coins[0].amount, Uint128::from(36u128));
-    //     assert_eq!(coins[1].amount, Uint128::from(73u128));
-    //     assert_eq!(coins[2].amount, Uint128::from(4u128));
+        println!("coins: {:?}", coins);
+        println!("remainder: {:?}", remainder);
+        assert_eq!(coins.len(), 3);
+        assert_eq!(coins[0].amount, Uint128::from(36u128));
+        assert_eq!(coins[1].amount, Uint128::from(73u128));
+        assert_eq!(coins[2].amount, Uint128::from(4u128));
 
-    //     assert_eq!(remainder.len(), 3);
-    //     assert_eq!(remainder[0].amount, Uint128::from(1u128));
-    //     assert_eq!(remainder[1].amount, Uint128::from(1u128));
-    //     assert_eq!(remainder[2].amount, Uint128::from(1u128));
-    // }
+        assert_eq!(remainder.len(), 3);
+        assert_eq!(remainder[0].amount, Uint128::from(1u128));
+        assert_eq!(remainder[1].amount, Uint128::from(1u128));
+        assert_eq!(remainder[2].amount, Uint128::from(1u128));
+    }
 
     #[test]
     fn proper_bond() {
@@ -635,7 +633,7 @@ mod tests {
         let mut deps = mock_deps_with_primitives(even_primitives());
         let init_msg = init_msg_with_primitive_details(even_primitive_details());
         let info = mock_info(TEST_CREATOR, &even_deposit());
-        let env = mock_env();
+        let mut env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
         assert_eq!(0, res.messages.len());
 
@@ -703,9 +701,84 @@ mod tests {
             amount: Option::Some(balance.balance),
         };
         let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
-        assert_eq!(unbond_res.attributes[2].value, "99"); // burnt
-        assert_eq!(unbond_res.attributes[3].value, "2"); // bond_id
-        assert_eq!(unbond_res.attributes[6].value, "0"); // num_unbondable_ids
+        assert_eq!(unbond_res.messages.len(), 3);
+        assert_eq!(unbond_res.attributes[2].key, "burnt");
+        assert_eq!(unbond_res.attributes[2].value, "99");
+        assert_eq!(unbond_res.attributes[3].key, "bond_id");
+        assert_eq!(unbond_res.attributes[3].value, "2");
+        assert_eq!(unbond_res.attributes[6].key, "num_unbondable_ids");
+        assert_eq!(unbond_res.attributes[6].value, "0");
+
+        // todo replace with a macro
+        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[0].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar123");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                    from_binary(&msg).unwrap()
+                {
+                    assert_eq!(id, "2");
+                    assert_eq!(share_amount, Uint128::from(98u128));
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[1].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar124");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                    from_binary(&msg).unwrap()
+                {
+                    assert_eq!(id, "2");
+                    assert_eq!(share_amount, Uint128::from(98u128));
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[2].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar125");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                    from_binary(&msg).unwrap()
+                {
+                    assert_eq!(id, "2");
+                    assert_eq!(share_amount, Uint128::from(98u128));
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
 
         // get callbacks back
         let start_unbond_msg_p1 = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
@@ -736,7 +809,7 @@ mod tests {
 
         let start_unbond_msg_p3 = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
             unbond_id: "2".to_string(),
-            unlock_time: Timestamp::from_seconds(env.block.time.seconds() - 5),
+            unlock_time: Timestamp::from_seconds(env.block.time.seconds() + 60),
         });
         let start_unbond_res = execute(
             deps.as_mut(),
@@ -750,17 +823,171 @@ mod tests {
         // do unbond
         let do_unbond_info = mock_info(TEST_CREATOR, &[]);
         let do_unbond_msg = ExecuteMsg::Unbond { amount: None };
-        let do_unbond_res =
-            execute(deps.as_mut(), env.clone(), do_unbond_info, do_unbond_msg).unwrap();
-        println!("{:?}", do_unbond_res);
-        assert_eq!(unbond_res.attributes[2].value, "9"); // burnt
-        assert_eq!(unbond_res.attributes[3].value, "2"); // bond_id
-        assert_eq!(unbond_res.attributes[6].value, "0"); // num_unbondable_ids
+        let do_unbond_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            do_unbond_info.clone(),
+            do_unbond_msg.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(do_unbond_res.messages.len(), 0);
+        assert_eq!(do_unbond_res.attributes[2].key, "num_unbondable_ids");
+        assert_eq!(do_unbond_res.attributes[2].value, "0");
+
+        env.block.height += 4;
+        env.block.time = env.block.time.plus_seconds(30);
+
+        // unbond and see that 2 are unbondable
+        let do_unbond_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            do_unbond_info.clone(),
+            do_unbond_msg.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(do_unbond_res.messages.len(), 2);
+        assert_eq!(do_unbond_res.attributes[2].key, "num_unbondable_ids");
+        assert_eq!(do_unbond_res.attributes[2].value, "2");
+
+        if let CosmosMsg::Wasm(wasm_msg) = &do_unbond_res.messages[0].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar123");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "2");
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+        if let CosmosMsg::Wasm(wasm_msg) = &do_unbond_res.messages[1].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar124");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "2");
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+
+        env.block.height += 5;
+        env.block.time = env.block.time.plus_seconds(40);
+
+        // test that claim works the same way as unbond(amount:0)
+        let claim_msg = ExecuteMsg::Claim {};
+        let claim_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            do_unbond_info.clone(),
+            claim_msg.clone(),
+        )
+        .unwrap();
+
+        // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
+        assert_eq!(claim_res.messages.len(), 3);
+        assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
+        assert_eq!(claim_res.attributes[2].value, "3");
+
+        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[2].msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                // todo: This assertion will change because we should ideally only expect one here, pending arch discussions
+                assert_eq!(contract_addr, "quasar125");
+                assert!(funds.is_empty());
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                    assert_eq!(id, "2");
+                } else {
+                    assert!(false);
+                }
+            } else {
+                assert!(false);
+            }
+        } else {
+            assert!(false);
+        }
+
+        // start callbacks from primitives for unbond
+        let unbond_callback_msg = ExecuteMsg::UnbondResponse(UnbondResponse {
+            unbond_id: "2".to_string(),
+        });
+        let p1_unbond_callback_info = mock_info(
+            "quasar123",
+            &[Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(100u128),
+            }],
+        );
+        let p1_unbond_callback_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            p1_unbond_callback_info,
+            unbond_callback_msg.clone(),
+        )
+        .unwrap();
+        assert_eq!(p1_unbond_callback_res.messages.len(), 0);
+
+        let p2_unbond_callback_info = mock_info(
+            "quasar124",
+            &[Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(100u128),
+            }],
+        );
+        let p2_unbond_callback_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            p2_unbond_callback_info,
+            unbond_callback_msg.clone(),
+        )
+        .unwrap();
+        assert_eq!(p2_unbond_callback_res.messages.len(), 0);
+
+        let p3_unbond_callback_info = mock_info(
+            "quasar125",
+            &[Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(100u128),
+            }],
+        );
+        let p3_unbond_callback_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            p3_unbond_callback_info,
+            unbond_callback_msg.clone(),
+        )
+        .unwrap();
+        assert_eq!(p3_unbond_callback_res.messages.len(), 3);
     }
 
     #[test]
-    fn test_recipient_not_sender() {}
+    fn test_multi_user_bond_unbond() {}
 
     #[test]
-    fn test_multi_user_bond_unbond() {}
+    fn test_recipient_not_sender() {}
 }
