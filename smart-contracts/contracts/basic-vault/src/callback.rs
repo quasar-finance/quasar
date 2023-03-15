@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, OverflowError, Response,
+    Timestamp, Uint128,
 };
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
@@ -104,7 +105,9 @@ pub fn on_bond(
 
     let total_weight = invest.primitives.iter().try_fold(
         Decimal::zero(),
-        |acc: Decimal, p: &PrimitiveConfig| -> Result<Decimal, _> { acc.checked_add(p.weight) },
+        |acc: Decimal, p: &PrimitiveConfig| -> Result<Decimal, OverflowError> {
+            acc.checked_add(p.weight)
+        },
     )?;
 
     // calculate shares to mint
