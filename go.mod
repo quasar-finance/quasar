@@ -30,7 +30,7 @@ require (
 )
 
 require (
-	github.com/CosmWasm/wasmvm v1.1.1
+	github.com/CosmWasm/wasmvm v1.2.1
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.3
 	github.com/strangelove-ventures/async-icq/v4 v4.0.0-rc0
