@@ -83,7 +83,6 @@ pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_bond_ids"
 // current unbonds pending for a user
 pub const PENDING_UNBOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_unbond_ids");
 // map of bond id to bond state
-// todo: find the type of the vec items here (replace supply obvs)
 pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 // map of unbond id to unbond state
 pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");

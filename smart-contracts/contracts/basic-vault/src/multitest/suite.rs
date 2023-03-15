@@ -181,7 +181,7 @@ impl QuasarVaultSuite {
             "connection-0".to_string(),
         );
 
-        // Todo: need to figure out how to init the channel on the contract (enter ibc_channel_connect on primitive)
+        // Todo: keep track of this issue for ibc mock support in cw-multi-test: https://github.com/CosmWasm/cw-multi-test/issues/27
         // let ibc_channel_open_msg = IbcChannelOpenMsg::OpenInit { channel };
         // let res = app.execute(
         //     primitive.clone(),
@@ -257,12 +257,16 @@ impl QuasarVaultSuite {
     }
 
     pub fn bond(&mut self, sender: &Addr, funds: Vec<Coin>) -> Result<(), VaultContractError> {
-        let msg = VaultExecuteMsg::Bond { recipient: Option::None };
+        let msg = VaultExecuteMsg::Bond {
+            recipient: Option::None,
+        };
         self.app
             .execute_contract(sender.clone(), self.vault.clone(), &msg, &funds)
             .map_err(|err| match err.downcast::<VaultContractError>() {
                 Ok(err_unwrapped) => err_unwrapped,
-                Err(e) => VaultContractError::Std(StdError::GenericErr { msg: e.root_cause().to_string() }),
+                Err(e) => VaultContractError::Std(StdError::GenericErr {
+                    msg: e.root_cause().to_string(),
+                }),
             })
             .map(|_| ())
     }
