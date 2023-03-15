@@ -22,7 +22,9 @@ pub struct InstantiateMsg {
     pub local_denom: String,
     pub base_denom: String,
     pub quote_denom: String,
+    // TODO should this be outgoing_transfer_channel?
     pub transfer_channel: String,
+    // TODO rename to return_transfer_channel
     pub return_source_channel: String,
     pub expected_connection: String,
 }

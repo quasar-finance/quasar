@@ -1,4 +1,4 @@
-use cosmwasm_std::{DivideByZeroError, OverflowError, StdError};
+use cosmwasm_std::{CheckedMultiplyRatioError, DivideByZeroError, OverflowError, StdError};
 use quasar_types::error::Error as QError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -100,11 +100,17 @@ pub enum ContractError {
     #[error("parse int error: {error} caused by {value}")]
     ParseIntError { error: ParseIntError, value: String },
 
+    #[error("parse int error: {error} caused by {value}")]
+    ParseDecError { error: StdError, value: String },
+
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
+
+    #[error("{0}")]
+    CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
 
     #[error("{0}")]
     Utf8Error(#[from] Utf8Error),
