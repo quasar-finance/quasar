@@ -63,7 +63,6 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::mock_dependencies;
     use cosmwasm_std::Coin;
-    use cosmwasm_std::Storage;
     use cosmwasm_std::Uint128;
 
     #[test]
