@@ -75,7 +75,7 @@ pub fn instantiate(
         }
     }
 
-    let invest = InvestmentInfo {
+    let mut invest = InvestmentInfo {
         owner: info.sender,
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives,
