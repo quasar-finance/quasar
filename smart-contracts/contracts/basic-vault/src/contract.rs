@@ -18,7 +18,7 @@ use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{_bond_all_tokens, bond, claim, reinvest, unbond};
+use crate::execute::{ bond, unbond, claim};
 use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_tvl_info,
@@ -105,8 +105,6 @@ pub fn execute(
         ExecuteMsg::Bond { recipient } => bond(deps, env, info, recipient),
         ExecuteMsg::Unbond { amount } => unbond(deps, env, info, amount),
         ExecuteMsg::Claim {} => claim(deps, env, info),
-        ExecuteMsg::Reinvest {} => reinvest(deps, env, info),
-        ExecuteMsg::_BondAllTokens {} => _bond_all_tokens(deps, env, info),
 
         // callbacks entrypoint
         // you cant do this fuck me
@@ -224,31 +222,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use quasar_types::callback::BondResponse;
-
-    // #[test]
-    // fn callback_bond_response() {
-    //     let bond_response = BondResponse {
-    //         share_amount: Uint128::one(),
-    //         bond_id: "id".to_string(),
-    //     };
-    //     let cb = ExecuteMsg::BondResponse(bond_response);
-    //     let mut deps = mock_dependencies();
-    //     let env = mock_env();
-    //     let info = MessageInfo {
-    //         sender: env.clone().contract.address,
-    //         funds: Vec::new(),
-    //     };
-    //     execute(deps.as_mut(), env, info, cb).unwrap();
-    //     assert_ne!(DEBUG_TOOL.load(&deps.storage).unwrap().len(), 0);
-    //     println!("{:?}", DEBUG_TOOL.load(&deps.storage).unwrap())
-    // }
 }
 
 #[cfg(test)]

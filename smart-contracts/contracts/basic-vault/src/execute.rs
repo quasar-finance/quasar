@@ -495,108 +495,11 @@ pub fn find_and_return_unbondable_msgs(
         .collect::<Result<Vec<WasmMsg>, ContractError>>()?)
 }
 
-pub fn claim(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
-    Ok(Response::new())
+// claim is equivalent to calling unbond with amount: 0
+pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?.unwrap_or((vec![], vec![]));
 
-    // // find how many tokens the contract has
-    // let invest = INVESTMENT.load(deps.storage)?;
-    // let mut balance = deps
-    //     .querier
-    //     .query_balance(&env.contract.address, &invest.bond_denom)?;
-    // if balance.amount < invest.min_withdrawal {
-    //     return Err(ContractError::BalanceTooSmall {});
-    // }
-
-    // // check how much to send - min(balance, claims[sender]), and reduce the claim
-    // // Ensure we have enough balance to cover this and only send some claims if that is all we can cover
-    // let to_send =
-    //     CLAIMS.claim_tokens(deps.storage, &info.sender, &env.block, Some(balance.amount))?;
-    // if to_send == Uint128::zero() {
-    //     return Err(ContractError::NothingToClaim {});
-    // }
-
-    // // update total supply (lower claim)
-    // TOTAL_SUPPLY.update(deps.storage, |mut supply| -> StdResult<_> {
-    //     supply.claims = supply.claims.checked_sub(to_send)?;
-    //     Ok(supply)
-    // })?;
-
-    // // transfer tokens to the sender
-    // balance.amount = to_send;
-    // let res = Response::new()
-    //     .add_message(BankMsg::Send {
-    //         to_address: info.sender.to_string(),
-    //         amount: vec![balance],
-    //     })
-    //     .add_attribute("action", "claim")
-    //     .add_attribute("from", info.sender)
-    //     .add_attribute("amount", to_send);
-    // Ok(res)
-}
-
-/// reinvest will withdraw all pending rewards,
-/// then issue a callback to itself via _bond_all_tokens
-/// to reinvest the new earnings (and anything else that accumulated)
-pub fn reinvest(deps: DepsMut, env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
-    let _contract_addr = env.contract.address;
-    let _invest = INVESTMENT.load(deps.storage)?;
-    let _msg = to_binary(&ExecuteMsg::_BondAllTokens {})?;
-
-    // and bond them to the validator
-    let res = Response::new();
-    // TODO: Replace below with a WithdrawRewards message. if primitive::WithdrawRewards ends up being async, we will have to (a: pass in a callback msg, or b: implement the callback msg standard that we come up with)
-    // .add_message(DistributionMsg::WithdrawDelegatorReward {
-    //     validator: invest.validator,
-    // })
-    // .add_message(WasmMsg::Execute {
-    //     contract_addr: contract_addr.to_string(),
-    //     msg,
-    //     funds: vec![],
-    // });
-    Ok(res)
-}
-
-pub fn _bond_all_tokens(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-) -> Result<Response, ContractError> {
-    Ok(Response::new())
-
-    // // this is just meant as a call-back to ourself
-    // if info.sender != env.contract.address {
-    //     return Err(ContractError::Unauthorized {});
-    // }
-
-    // // find how many tokens we have to bond
-    // let invest = INVESTMENT.load(deps.storage)?;
-    // let mut balance = deps
-    //     .querier
-    //     .query_balance(&env.contract.address, &invest.bond_denom)?;
-
-    // // we deduct pending claims from our account balance before reinvesting.
-    // // if there is not enough funds, we just return a no-op
-    // match TOTAL_SUPPLY.update(deps.storage, |mut supply| -> StdResult<_> {
-    //     balance.amount = balance.amount.checked_sub(supply.claims)?;
-    //     // this just triggers the "no op" case if we don't have min_withdrawal left to reinvest
-    //     balance.amount.checked_sub(invest.min_withdrawal)?;
-    //     supply.bonded += balance.amount;
-    //     Ok(supply)
-    // }) {
-    //     Ok(_) => {}
-    //     // if it is below the minimum, we do a no-op (do not revert other state from withdrawal)
-    //     Err(StdError::Overflow { .. }) => return Ok(Response::default()),
-    //     Err(e) => return Err(ContractError::Std(e)),
-    // }
-
-    // // and bond them to the validator
-    // let res = Response::new()
-    //     // TODO: replace this with the entryMsg on the primitive, the response to this can of course be handled in the same way as the standard bond
-    //     // .add_message(StakingMsg::Delegate {
-    //     //     validator: invest.validator,
-    //     //     amount: balance.clone(),
-    //     // })
-    //     .add_attribute("action", "reinvest")
-    //     .add_attribute("bonded", balance.amount);
-    // Ok(res)
+    Ok(Response::new()
+        .add_messages(unbond_msgs)
+        .add_attributes(unbond_attrs))
 }
