@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Addr, Binary, Coin, Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
-use quasar_types::callback::{BondResponse, Callback, StartUnbondResponse, UnbondResponse};
+use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
-use crate::state::BondingStub;
+use crate::state::{BondingStub, Unbond};
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -148,8 +146,8 @@ pub enum QueryMsg {
     GetTvlInfo {},
 
     /// Get all unbonding claims of a user
-    #[returns(PendingBondsResponse)]
-    PendingUnbonds { address: Addr },
+    #[returns(PendingUnbondsResponse)]
+    PendingUnbonds { address: String },
 
     /// GetDebug shows us debug string info
     #[returns(GetDebugResponse)]
@@ -169,13 +167,6 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {}
-
-#[cw_serde]
-pub struct UnbondingClaimResponse {
-    pub pending_unbonds: Uint128,
-    pub unbonds: HashMap<u64, Uint128>,
-    pub unbonded: Uint128,
-}
 
 #[cw_serde]
 pub struct InvestmentResponse {
@@ -201,6 +192,14 @@ pub struct PendingBondsResponse {
     pub pending_bonds: Vec<BondingStub>,
     /// the bond ids that are registered as pending for a user
     pub pending_bond_ids: Vec<String>,
+}
+
+#[cw_serde]
+pub struct PendingUnbondsResponse {
+    /// the unbonds that are currently in the process of being withdrawn by an user
+    pub pending_unbonds: Vec<Unbond>,
+    /// the bond ids that are registered as pending for a user
+    pub pending_unbond_ids: Vec<String>,
 }
 
 #[cw_serde]
