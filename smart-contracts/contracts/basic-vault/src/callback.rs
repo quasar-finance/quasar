@@ -37,31 +37,24 @@ pub fn on_bond(
     }
 
     // update deposit state here before doing anything else & save!
-    let bond_stubs_new = bond_stubs
-        .iter()
-        .map(|s| {
-            if s.address == info.sender {
-                BondingStub {
-                    address: s.address.clone(),
-                    bond_response: Option::Some(BondResponse {
-                        share_amount,
-                        bond_id: bond_id.clone(),
-                    }),
-                }
-            } else {
-                s.to_owned()
-            }
-        })
-        .collect();
-    BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs_new)?;
+    bond_stubs.iter_mut().for_each(|s| {
+        if s.address == info.sender {
+            s.bond_response = Option::Some(BondResponse {
+                share_amount,
+                bond_id: bond_id.clone(),
+            });
+        }
+    });
+
+    BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs)?;
 
     // if still waiting on successful bonds, then return
-    if bond_stubs_new.iter().any(|s| s.bond_response.is_none()) {
+    if bond_stubs.iter().any(|s| s.bond_response.is_none()) {
         return Ok(Response::new()
             .add_attribute("action", "on_bond")
             .add_attribute(
                 "state",
-                bond_stubs_new
+                bond_stubs
                     .iter()
                     .fold(0u32, |acc, stub| {
                         if stub.bond_response.is_none() {
@@ -100,7 +93,7 @@ pub fn on_bond(
         },
     )?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
+    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs)?;
 
     let total_weight = invest
         .primitives
@@ -109,7 +102,7 @@ pub fn on_bond(
 
     // calculate shares to mint
     let shares_to_mint =
-        bond_stubs_new
+        bond_stubs
             .iter()
             .zip(invest.primitives.iter())
             .fold(Uint128::zero(), |acc, (s, pc)| {
@@ -157,15 +150,14 @@ pub fn on_bond(
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    // execute_mint(
-    //     deps,
-    //     env,
-    //     sub_info,
-    //     user_address.to_string(),
-    //     shares_to_mint,
-    // )?;
+    execute_mint(
+        deps,
+        env,
+        sub_info,
+        user_address.to_string(),
+        shares_to_mint,
+    )?;
 
-    // bond them to the validator
     let res = Response::new()
         .add_attribute("action", "bond")
         .add_attribute("from", info.sender)
@@ -205,7 +197,7 @@ pub fn on_start_unbond(
     )?;
 
     Ok(Response::new()
-        .add_attribute("action", "start_unbond")
+        .add_attribute("action", "on_start_unbond")
         .add_attribute("unbond_id", unbond_id)
         .add_attribute("unlock_time", unlock_time.to_string()))
 }

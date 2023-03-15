@@ -8,11 +8,17 @@ mod tests {
             mock_dependencies, mock_dependencies_with_balances, mock_env, mock_info, MockApi,
             MockQuerier, MockStorage,
         },
-        to_binary, Api, Binary, Coin, ContractResult, CustomQuery, Decimal, DepsMut, Empty, Env,
-        MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Storage, Uint128,
+        to_binary, Addr, Api, Binary, Coin, ContractResult, CustomQuery, Decimal, DepsMut, Empty,
+        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Storage,
+        Timestamp, Uint128,
     };
-    use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
-    use quasar_types::callback::BondResponse;
+    use cw20::BalanceResponse;
+    use cw_multi_test::next_block;
+    use lp_strategy::{
+        msg::{IcaBalanceResponse, PrimitiveSharesResponse},
+        start_unbond::StartUnbond,
+    };
+    use quasar_types::callback::{BondResponse, StartUnbondResponse};
 
     use crate::{
         contract::execute,
@@ -199,45 +205,70 @@ mod tests {
     //     assert_eq!(0, res.messages.len());
     // }
 
+    fn even_primitives() -> Vec<(String, String, Uint128, Uint128)> {
+        vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+        ]
+    }
+
+    fn even_primitive_details() -> Vec<(String, String, Decimal)> {
+        vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Decimal::one(),
+            ),
+        ]
+    }
+
+    fn even_deposit() -> Vec<Coin> {
+        vec![
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(100u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(100u128),
+            },
+            Coin {
+                denom: "ibc/ustars".to_string(),
+                amount: Uint128::from(100u128),
+            },
+        ]
+    }
+
     #[test]
-    fn test_may_pay_with_ratio() {
-        let mut deps = mock_deps_with_primitives(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Uint128::from(100u128),
-                Uint128::from(100u128),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Uint128::from(100u128),
-                Uint128::from(100u128),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Uint128::from(100u128),
-                Uint128::from(100u128),
-            ),
-        ]);
-        let init_msg = init_msg_with_primitive_details(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Decimal::one(),
-            ),
-        ]);
+    fn test_may_pay_with_even_ratio() {
+        let mut deps = mock_deps_with_primitives(even_primitives());
+        let init_msg = init_msg_with_primitive_details(even_primitive_details());
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
@@ -248,25 +279,8 @@ mod tests {
 
         let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let (coins, remainder) = may_pay_with_ratio(
-            &deps.as_ref(),
-            &vec![
-                Coin {
-                    denom: "ibc/uosmo".to_string(),
-                    amount: Uint128::from(100u128),
-                },
-                Coin {
-                    denom: "ibc/uatom".to_string(),
-                    amount: Uint128::from(100u128),
-                },
-                Coin {
-                    denom: "ibc/ustars".to_string(),
-                    amount: Uint128::from(100u128),
-                },
-            ],
-            investment_response.info,
-        )
-        .unwrap();
+        let (coins, remainder) =
+            may_pay_with_ratio(&deps.as_ref(), &even_deposit(), investment_response.info).unwrap();
 
         println!("coins: {:?}", coins);
         println!("remainder: {:?}", remainder);
@@ -280,4 +294,287 @@ mod tests {
         assert_eq!(remainder[1].amount, Uint128::from(1u128));
         assert_eq!(remainder[2].amount, Uint128::from(1u128));
     }
+
+    // #[test]
+    // fn test_may_pay_with_uneven_ratio() {
+    //     let mut deps = mock_deps_with_primitives(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Uint128::from(1000u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Uint128::from(500u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Uint128::from(250u128),
+    //             Uint128::from(100u128),
+    //         ),
+    //     ]);
+    //     let init_msg = init_msg_with_primitive_details(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Decimal::from_ratio(3u128, 10u128),
+    //         ),
+    //     ]);
+    //     let info = mock_info(TEST_CREATOR, &[]);
+    //     let env = mock_env();
+    //     let res = init(deps.as_mut(), &init_msg, &env, &info);
+    //     assert_eq!(0, res.messages.len());
+
+    //     let invest_query = crate::msg::QueryMsg::Investment {};
+    //     let query_res = query(deps.as_ref(), env.clone(), invest_query).unwrap();
+
+    //     let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+    //     let (coins, remainder) = may_pay_with_ratio(
+    //         &deps.as_ref(),
+    //         &vec![
+    //             Coin {
+    //                 denom: "ibc/uosmo".to_string(),
+    //                 amount: Uint128::from(100u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/uatom".to_string(),
+    //                 amount: Uint128::from(100u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/ustars".to_string(),
+    //                 amount: Uint128::from(100u128),
+    //             },
+    //         ],
+    //         investment_response.info,
+    //     )
+    //     .unwrap();
+
+    //     println!("coins: {:?}", coins);
+    //     println!("remainder: {:?}", remainder);
+    //     assert_eq!(coins.len(), 3);
+    //     assert_eq!(coins[0].amount, Uint128::from(36u128));
+    //     assert_eq!(coins[1].amount, Uint128::from(73u128));
+    //     assert_eq!(coins[2].amount, Uint128::from(4u128));
+
+    //     assert_eq!(remainder.len(), 3);
+    //     assert_eq!(remainder[0].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[1].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[2].amount, Uint128::from(1u128));
+    // }
+
+    #[test]
+    fn proper_bond_response_callback() {
+        let mut deps = mock_deps_with_primitives(even_primitives());
+        let init_msg = init_msg_with_primitive_details(even_primitive_details());
+        let info = mock_info(TEST_CREATOR, &even_deposit());
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.attributes.first().unwrap().value, "1");
+        // todo: verify message passed back here
+
+        // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+        let primitive_1_info = mock_info("quasar123", &[]);
+        let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p1_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_1_info,
+            primitive_1_msg,
+        )
+        .unwrap();
+        assert_eq!(p1_res.messages.len(), 0);
+
+        let primitive_2_info = mock_info("quasar124", &[]);
+        let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p2_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_2_info,
+            primitive_2_msg,
+        )
+        .unwrap();
+        assert_eq!(p2_res.messages.len(), 0);
+
+        let primitive_3_info = mock_info("quasar125", &[]);
+        let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p3_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_3_info,
+            primitive_3_msg,
+        )
+        .unwrap();
+        assert_eq!(p3_res.messages.len(), 0);
+
+        let balance_query = crate::msg::QueryMsg::Balance {
+            address: TEST_CREATOR.to_string(),
+        };
+        let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+        let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+
+        assert_eq!(balance.balance, Uint128::from(99u128));
+    }
+
+    #[test]
+    fn proper_unbond() {
+        let mut deps = mock_deps_with_primitives(even_primitives());
+        let init_msg = init_msg_with_primitive_details(even_primitive_details());
+        let info = mock_info(TEST_CREATOR, &even_deposit());
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.attributes.first().unwrap().value, "1");
+        // todo: verify message passed back here
+
+        // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+        let primitive_1_info = mock_info("quasar123", &[]);
+        let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p1_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_1_info.clone(),
+            primitive_1_msg,
+        )
+        .unwrap();
+        assert_eq!(p1_res.messages.len(), 0);
+
+        let primitive_2_info = mock_info("quasar124", &[]);
+        let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p2_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_2_info.clone(),
+            primitive_2_msg,
+        )
+        .unwrap();
+        assert_eq!(p2_res.messages.len(), 0);
+
+        let primitive_3_info = mock_info("quasar125", &[]);
+        let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+            share_amount: 100u128.into(),
+            bond_id: "1".to_string(),
+        });
+        let p3_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_3_info.clone(),
+            primitive_3_msg,
+        )
+        .unwrap();
+        assert_eq!(p3_res.messages.len(), 0);
+
+        let balance_query = crate::msg::QueryMsg::Balance {
+            address: TEST_CREATOR.to_string(),
+        };
+        let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+        let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+
+        assert_eq!(balance.balance, Uint128::from(99u128));
+
+        // start unbond
+        let unbond_info = mock_info(TEST_CREATOR, &[]);
+        let unbond_msg = ExecuteMsg::Unbond {
+            amount: Option::Some(balance.balance),
+        };
+        let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
+        assert_eq!(unbond_res.attributes[2].value, "99"); // burnt
+        assert_eq!(unbond_res.attributes[3].value, "2"); // bond_id
+        assert_eq!(unbond_res.attributes[6].value, "0"); // num_unbondable_ids
+
+        // get callbacks back
+        let start_unbond_msg_p1 = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: "2".to_string(),
+            unlock_time: Timestamp::from_seconds(env.block.time.seconds() + 5),
+        });
+        let start_unbond_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_1_info.clone(),
+            start_unbond_msg_p1,
+        )
+        .unwrap();
+        assert_eq!(start_unbond_res.messages.len(), 0);
+
+        let start_unbond_msg_p2 = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: "2".to_string(),
+            unlock_time: Timestamp::from_seconds(env.block.time.seconds() + 5),
+        });
+        let start_unbond_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_2_info.clone(),
+            start_unbond_msg_p2,
+        )
+        .unwrap();
+        assert_eq!(start_unbond_res.messages.len(), 0);
+
+        let start_unbond_msg_p3 = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+            unbond_id: "2".to_string(),
+            unlock_time: Timestamp::from_seconds(env.block.time.seconds() - 5),
+        });
+        let start_unbond_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            primitive_3_info.clone(),
+            start_unbond_msg_p3,
+        )
+        .unwrap();
+        assert_eq!(start_unbond_res.messages.len(), 0);
+
+        // do unbond
+        let do_unbond_info = mock_info(TEST_CREATOR, &[]);
+        let do_unbond_msg = ExecuteMsg::Unbond { amount: None };
+        let do_unbond_res =
+            execute(deps.as_mut(), env.clone(), do_unbond_info, do_unbond_msg).unwrap();
+        println!("{:?}", do_unbond_res);
+        assert_eq!(unbond_res.attributes[2].value, "9"); // burnt
+        assert_eq!(unbond_res.attributes[3].value, "2"); // bond_id
+        assert_eq!(unbond_res.attributes[6].value, "0"); // num_unbondable_ids
+    }
+
+    #[test]
+    fn test_recipient_not_sender() {}
 }

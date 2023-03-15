@@ -257,7 +257,7 @@ impl QuasarVaultSuite {
     }
 
     pub fn bond(&mut self, sender: &Addr, funds: Vec<Coin>) -> Result<(), VaultContractError> {
-        let msg = VaultExecuteMsg::Bond {};
+        let msg = VaultExecuteMsg::Bond { recipient: Option::None };
         self.app
             .execute_contract(sender.clone(), self.vault.clone(), &msg, &funds)
             .map_err(|err| match err.downcast::<VaultContractError>() {

@@ -49,7 +49,10 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Bond will bond all staking tokens sent with the message and release derivative tokens
-    Bond {},
+    /// recipient will receive the minted vault tokens
+    Bond {
+        recipient: Option<String>,
+    },
     /// Unbond will "burn" the given amount of derivative tokens and send the unbonded
     /// staking tokens to the message sender (after exit tax is deducted)
     Unbond {

@@ -79,7 +79,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Bond {} => bond(deps, env, info),
+        ExecuteMsg::Bond { recipient } => bond(deps, env, info, recipient),
         ExecuteMsg::Unbond { amount } => unbond(deps, env, info, amount),
         ExecuteMsg::Claim {} => claim(deps, env, info),
         ExecuteMsg::Reinvest {} => reinvest(deps, env, info),

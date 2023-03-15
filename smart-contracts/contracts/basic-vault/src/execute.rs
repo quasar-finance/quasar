@@ -125,7 +125,7 @@ pub fn may_pay_with_ratio(
                         weight.weight = weight.weight.checked_add(coin_weight.weight).unwrap()
                     }
                     None => acc.push(coin_weight.clone()),
-                }
+                };
 
                 acc
             });
@@ -214,7 +214,7 @@ pub fn may_pay_with_ratio(
 }
 
 // todo test
-pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn bond(deps: DepsMut, env: Env, info: MessageInfo, recipient: Option<String>) -> Result<Response, ContractError> {
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
         return Err(ContractError::NoFunds {});
     }
@@ -223,6 +223,12 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
+    // find recipient
+    let recipient_addr = match recipient {
+        Some(r) => deps.api.addr_validate(&r)?,
+        None => info.sender,
+    };
+    
     let mut deposit_stubs = vec![];
 
     let (primitive_funding_amounts, remainder) =
@@ -251,7 +257,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         .collect();
 
     // save bonding state for use during the callback
-    PENDING_BOND_IDS.update(deps.storage, info.sender.clone(), |ids| match ids {
+    PENDING_BOND_IDS.update(deps.storage, recipient_addr.clone(), |ids| match ids {
         Some(mut bond_ids) => {
             bond_ids.push(bond_seq.to_string());
             Ok::<Vec<String>, ContractError>(bond_ids)
@@ -259,7 +265,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         None => Ok(vec![bond_seq.to_string()]),
     })?;
     BOND_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
-    BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
+    BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &recipient_addr.to_string())?;
     BONDING_SEQ.save(
         deps.storage,
         &bond_seq.checked_add(Uint128::from(1u128)).unwrap(),
@@ -270,7 +276,7 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     remainder.iter().for_each(|r| {
         if (r.amount > Uint128::zero()) {
             remainder_msgs.push(BankMsg::Send {
-                to_address: info.sender.clone().to_string(),
+                to_address: recipient_addr.to_string(),
                 amount: vec![Coin {
                     denom: r.denom.clone(),
                     amount: r.amount,
@@ -278,12 +284,6 @@ pub fn bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             });
         }
     });
-
-    let shares_to_mint = primitive_funding_amounts
-        .iter()
-        .fold(Uint128::zero(), |acc, coin| {
-            acc.checked_add(coin.amount).unwrap()
-        });
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
@@ -469,6 +469,10 @@ pub fn do_start_unbond(
                 key: "burnt".to_string(),
                 value: amount.to_string(),
             },
+            Attribute {
+                key: "bond_id".to_string(),
+                value: bond_seq.to_string(),
+            },
         ],
     ))
 }
@@ -507,7 +511,7 @@ pub fn do_unbond(
                 value: info.sender.to_string(),
             },
             Attribute {
-                key: "unbondable_ids".to_string(),
+                key: "num_unbondable_ids".to_string(),
                 value: unbond_msgs.len().to_string(),
             },
         ],
