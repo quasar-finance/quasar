@@ -111,7 +111,7 @@ pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRat
 }
 
 pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBondsResponse> {
-    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address.clone()))?;
+    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
     pending_bond_ids.iter().for_each(|id| {

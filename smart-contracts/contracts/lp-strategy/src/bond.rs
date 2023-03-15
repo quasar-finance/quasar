@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Env, MessageInfo, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

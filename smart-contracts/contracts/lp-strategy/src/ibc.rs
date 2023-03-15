@@ -178,7 +178,6 @@ pub fn ibc_channel_connect(
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
             // to reject the msg here, ica should not be timed out
             if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
-
                 return Err(ContractError::IcaChannelAlreadySet);
             }
 
@@ -362,7 +361,8 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
-    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
+    // TODO we can make the LP_SHARES cache less error prone here
+    let lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -388,12 +388,21 @@ pub fn handle_icq_ack(
 
     ICA_BALANCE.save(storage, &total_balance)?;
 
-    let total_lp = LP_SHARES.load(storage)?;
-
     let bond = batch_bond(storage, &env, total_balance)?;
 
     // TODO move the LP_SHARES.load to start_unbond
-    let start_unbond = batch_start_unbond(storage, &env, total_lp)?;
+    let start_unbond = batch_start_unbond(
+        storage,
+        &env,
+        Uint128::new(
+            lp_balance
+                .parse()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: err,
+                    value: lp_balance,
+                })?,
+        ),
+    )?;
 
     let unbond = batch_unbond(storage, &env)?;
 
@@ -460,6 +469,10 @@ pub fn handle_ica_ack(
                 })?);
 
             let denom = CONFIG.load(storage)?.pool_denom;
+
+            LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
+                Ok(old.checked_add(shares_out)?)
+            })?;
 
             data.update_raw_amount_to_lp(shares_out)?;
 

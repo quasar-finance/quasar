@@ -1,12 +1,12 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Timestamp, Uint128,
 };
-use cw20_base::contract::execute_mint;
-use quasar_types::callback::{BondResponse, Callback, UnbondResponse};
+
+use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::{
     state::{
-        BondingStub, Unbond, UnbondingStub, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL,
+        BondingStub, Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL,
         INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
     ContractError,
@@ -21,12 +21,12 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!("We hit on_unbond with bond_id: {}", bond_id.clone()),
+        &format!("We hit on_unbond with bond_id: {}", bond_id),
     )?;
 
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
-    let mut bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
+    let bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
 
     // lets find the primitive for this response
     let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
@@ -100,7 +100,7 @@ pub fn on_bond(
         },
     )?;
     // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs_new)?;
+    BOND_STATE.save(deps.storage, bond_id, &bond_stubs_new)?;
 
     let total_weight = invest
         .primitives
@@ -153,8 +153,8 @@ pub fn on_bond(
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
     // call into cw20-base to mint the token, call as self as no one else is allowed
-    let sub_info = MessageInfo {
-        sender: env.contract.address.clone(),
+    let _sub_info = MessageInfo {
+        sender: env.contract.address,
         funds: vec![],
     };
     // execute_mint(
@@ -175,7 +175,7 @@ pub fn on_bond(
 
 pub fn on_start_unbond(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     unbond_id: String,
     unlock_time: Timestamp,
@@ -212,7 +212,7 @@ pub fn on_start_unbond(
 
 pub fn on_unbond(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     unbond_id: String,
 ) -> Result<Response, ContractError> {
@@ -220,13 +220,13 @@ pub fn on_unbond(
         deps.storage,
         &format!(
             "We hit on_unbond with unbond_id: {} and funds: {}",
-            unbond_id.clone(),
+            unbond_id,
             info.funds[0]
         ),
     )?;
 
     let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-    let invest = INVESTMENT.load(deps.storage)?;
+    let _invest = INVESTMENT.load(deps.storage)?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
     let mut unbonding_stub = unbond_stubs
