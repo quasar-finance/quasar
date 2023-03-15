@@ -23,7 +23,7 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!("We hit on_unbond with bond_id: {}", bond_id),
+        &format!("We hit on_unbond with bond_id: {bond_id}"),
     )?;
 
     // load investment info
@@ -92,7 +92,7 @@ pub fn on_bond(
         },
     )?;
 
-    BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs)?;
+    BOND_STATE.save(deps.storage, bond_id, &bond_stubs)?;
 
     let total_weight = invest.primitives.iter().try_fold(
         Decimal::zero(),
@@ -139,7 +139,7 @@ pub fn on_bond(
         deps,
         env,
         sub_info,
-        user_address.to_string(),
+        user_address,
         shares_to_mint,
     )?;
 

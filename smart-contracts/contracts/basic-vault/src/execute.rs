@@ -117,7 +117,7 @@ pub fn may_pay_with_ratio(
         }));
     }
 
-    let token_weights: Vec<CoinWeight> = deposit_amount_weights.clone().iter().try_fold(
+    let token_weights: Vec<CoinWeight> = deposit_amount_weights.iter().try_fold(
         vec![],
         |mut acc: Vec<CoinWeight>,
          coin_weight: &CoinWeight|
@@ -165,8 +165,7 @@ pub fn may_pay_with_ratio(
     if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: format!(
-                "Unable to correctly determine max_bond, value: {}",
-                max_bond
+                "Unable to correctly determine max_bond, value: {max_bond}"
             ),
         }));
     }
@@ -252,7 +251,7 @@ pub fn bond(
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
         .iter()
-        .zip(primitive_funding_amounts.clone())
+        .zip(primitive_funding_amounts)
         .map(|(pc, funds)| {
             let deposit_stub = BondingStub {
                 address: pc.address.clone(),
@@ -476,7 +475,7 @@ pub fn find_and_return_unbondable_msgs(
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
-    Ok(unbond_stubs
+    unbond_stubs
         .iter()
         .filter(|stub| {
             stub.unlock_time
@@ -491,7 +490,7 @@ pub fn find_and_return_unbondable_msgs(
                 funds: vec![],
             })
         })
-        .collect::<Result<Vec<WasmMsg>, ContractError>>()?)
+        .collect::<Result<Vec<WasmMsg>, ContractError>>()
 }
 
 // claim is equivalent to calling unbond with amount: 0
