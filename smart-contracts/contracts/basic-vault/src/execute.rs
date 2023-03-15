@@ -91,6 +91,7 @@ pub fn may_pay_with_ratio(
          coin_weight: &CoinWeight|
          -> Result<Vec<CoinWeight>, ContractError> {
             // look through acc for existing denom and add weight, or else push it to the back of the vec
+            // todo: verify this works for multiple tokens, this might not overwrite when two primitives have the same token
             let existing_weight = acc.iter_mut().find(|cw| cw.denom == coin_weight.denom);
             match existing_weight {
                 Some(weight) => weight.weight = weight.weight.checked_add(coin_weight.weight)?,

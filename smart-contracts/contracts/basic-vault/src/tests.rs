@@ -208,23 +208,6 @@ mod tests {
         assert_eq!(0, res.messages.len());
     }
 
-    // #[test]
-    // fn proper_on_bond_callback() {
-    //     let mut deps = mock_dependencies_with_balances(&[]);
-    //     let msg = init_msg();
-    //     let info = mock_info(TEST_CREATOR, &[]);
-    //     let env = mock_env();
-    //     _ = init(deps.as_mut(), &msg, &env, &info);
-
-    //     let execute_msg = ExecuteMsg::BondResponse(BondResponse {
-    //         share_amount: Uint128::from(100u128),
-    //         bond_id: Uint128::from(1u128).to_string(),
-    //     });
-
-    //     let res = execute(deps.as_mut(), env, info, execute_msg).unwrap();
-    //     assert_eq!(0, res.messages.len());
-    // }
-
     fn even_primitives() -> Vec<(String, String, Uint128, Uint128)> {
         vec![
             (
