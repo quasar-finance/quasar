@@ -1,15 +1,14 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    OverflowError, QuerierWrapper, Response, StdError, Uint128, WasmMsg,
+    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, StdError, Uint128, WasmMsg,
 };
 
-use cw20_base::contract::{execute_burn, execute_mint};
+use cw20_base::contract::{execute_burn};
 use cw_utils::PaymentError;
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, PrimitiveConfig};
+
 
 use crate::state::{
     BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -86,7 +85,7 @@ pub fn may_pay_with_ratio(
             )?;
 
             // if only one of the two is zero, we should error
-            if ((supply.total.is_zero() && !balance.amount.amount.is_zero()) || (!supply.total.is_zero() && balance.amount.amount.is_zero())) {
+            if (supply.total.is_zero() && !balance.amount.amount.is_zero()) || (!supply.total.is_zero() && balance.amount.amount.is_zero()) {
                 return Err(ContractError::Std(StdError::GenericErr {
                     msg: "Unexpected primitive state, either both supply and balance should be zero, or neither.".to_string(),
                 }));
@@ -163,7 +162,7 @@ pub fn may_pay_with_ratio(
         ratio: deposit_amount_weights,
     };
 
-    if (max_bond == Uint128::zero() || max_bond == Uint128::MAX) {
+    if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: format!(
                 "Unable to correctly determine max_bond, value: {}",
@@ -227,7 +226,7 @@ pub fn may_pay_with_ratio(
 
 pub fn bond(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -290,7 +289,7 @@ pub fn bond(
     let mut remainder_msgs = vec![];
 
     remainder.iter().for_each(|r| {
-        if (r.amount > Uint128::zero()) {
+        if r.amount > Uint128::zero() {
             remainder_msgs.push(BankMsg::Send {
                 to_address: recipient_addr.to_string(),
                 amount: vec![Coin {

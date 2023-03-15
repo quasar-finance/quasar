@@ -8,7 +8,7 @@ use quasar_types::callback::{BondResponse, UnbondResponse};
 use crate::{
     msg::PrimitiveConfig,
     state::{
-        BondingStub, Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT,
+        Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT,
         PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
     ContractError,
