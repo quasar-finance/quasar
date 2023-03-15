@@ -52,7 +52,6 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &data)?;
 
-
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
             .querier
@@ -204,12 +203,6 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
         debug: debug_string,
     })
 }
-
-// replies not created yet
-// #[cfg_attr(not(feature = "library"), entry_point)]
-// pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-
-// }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
@@ -390,7 +383,7 @@ mod test {
             cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
                 QuerierResult::Err(cosmwasm_std::SystemError::Unknown {})
             }
-            _ => todo!(),
+            _ => panic!("Unimplemented query path"),
         });
 
         instantiate(deps.as_mut(), env, info, msg).unwrap();

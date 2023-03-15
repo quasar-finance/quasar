@@ -398,6 +398,83 @@ mod tests {
     // }
 
     #[test]
+    fn proper_bond() {
+        let mut deps = mock_deps_with_primitives(even_primitives());
+        let init_msg = init_msg_with_primitive_details(even_primitive_details());
+        let info = mock_info(TEST_CREATOR, &even_deposit());
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        assert_eq!(res.messages.len(), 6);
+        assert_eq!(res.attributes.first().unwrap().value, "1");
+    }
+
+    #[test]
+    fn proper_bond_with_zero_primitive_balance() {
+        let mut deps = mock_deps_with_primitives(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(0u128),
+            Uint128::from(0u128),
+        )]);
+        let init_msg = init_msg_with_primitive_details(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::one(),
+        )]);
+        let info = mock_info(TEST_CREATOR, &even_deposit());
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        assert_eq!(res.messages.len(), 3);
+        assert_eq!(res.attributes.first().unwrap().value, "1");
+    }
+
+    #[test]
+    fn test_bond_with_bad_primitive_state() {
+        let mut deps_1 = mock_deps_with_primitives(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(0u128),
+            Uint128::from(1u128),
+        )]);
+        let mut deps_2 = mock_deps_with_primitives(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(1u128),
+            Uint128::from(0u128),
+        )]);
+        let init_msg = init_msg_with_primitive_details(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::one(),
+        )]);
+        let info = mock_info(TEST_CREATOR, &even_deposit());
+        let env = mock_env();
+        let _ = init(deps_1.as_mut(), &init_msg, &env, &info);
+        let _ = init(deps_2.as_mut(), &init_msg, &env, &info);
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let res_1 = execute(deps_1.as_mut(), env.clone(), info.clone(), deposit_msg.clone()).unwrap_err();
+        assert_eq!(res_1.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
+        let res_2 = execute(deps_2.as_mut(), env.clone(), info, deposit_msg).unwrap_err();
+        assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
+    
+    }
+
+    #[test]
     fn proper_bond_response_callback() {
         let mut deps = mock_deps_with_primitives(even_primitives());
         let init_msg = init_msg_with_primitive_details(even_primitive_details());
@@ -597,4 +674,7 @@ mod tests {
 
     #[test]
     fn test_recipient_not_sender() {}
+
+    #[test]
+    fn test_multi_user_bond_unbond() {}
 }

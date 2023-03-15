@@ -69,16 +69,15 @@ pub fn on_bond(
                     + "pending bonds",
             ));
     }
+    // at this point we know that the deposit has succeeded fully, and we can mint shares
 
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
-
-    // at this point we know that the deposit has succeeded fully, and we can mint shares
     // lets updated all pending deposit info
     PENDING_BOND_IDS.update(
         deps.storage,
         deps.api.addr_validate(&user_address)?,
-        |ids| match ids {
-            Some(mut bond_ids) => {
+        |ids| {
+            if let Some(mut bond_ids) = ids {
                 let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).ok_or(
                     ContractError::IncorrectCallbackId {
                         expected: bond_id.clone(),
@@ -87,14 +86,12 @@ pub fn on_bond(
                 )?;
                 bond_ids.remove(bond_index);
                 Ok::<Vec<String>, ContractError>(bond_ids)
+            } else {
+                Ok(vec![])
             }
-            None => Err(ContractError::IncorrectCallbackId {
-                expected: "Some".to_string(),
-                ids: vec!["None".to_string()],
-            }), // todo: should this error? we should never be here
         },
     )?;
-    // todo: this should save a claim for unlockable_at? will be improved during withdrawal impl
+
     BOND_STATE.save(deps.storage, bond_id.to_string(), &bond_stubs)?;
 
     let total_weight = invest.primitives.iter().try_fold(
@@ -105,48 +102,31 @@ pub fn on_bond(
     )?;
 
     // calculate shares to mint
-
-
-    let shares_to_mint = bond_stubs
-        .iter()
-        .zip(invest.primitives.iter())
-        .try_fold(
-            Uint128::zero(),
-            |acc, (s, pc)| -> Result<Uint128, ContractError> {
-                Ok(acc.checked_add(
-                    // omfg pls dont look at this code, i will make it cleaner -> cleaner but still ugly :D
-                    s.bond_response
-                        .as_ref()
-                        .ok_or(ContractError::BondResponseIsEmpty {})?
-                        .share_amount
-                        .checked_multiply_ratio(
-                            pc.weight.numerator(),
-                            total_weight.numerator().checked_multiply_ratio(
-                                pc.weight.denominator(),
-                                total_weight.denominator(),
-                            )?,
+    let shares_to_mint = bond_stubs.iter().zip(invest.primitives.iter()).try_fold(
+        Uint128::zero(),
+        |acc, (s, pc)| -> Result<Uint128, ContractError> {
+            Ok(acc.checked_add(
+                // omfg pls dont look at this code, i will make it cleaner -> cleaner but still ugly :D
+                s.bond_response
+                    .as_ref()
+                    .ok_or(ContractError::BondResponseIsEmpty {})?
+                    .share_amount
+                    .checked_multiply_ratio(
+                        pc.weight.numerator(),
+                        total_weight.numerator().checked_multiply_ratio(
+                            pc.weight.denominator(),
+                            total_weight.denominator(),
                         )?,
-                )?)
-            },
-        )?;
-
+                    )?,
+            )?)
+        },
+    )?;
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
 
     // todo: i think supply structure needs to be simplified or augmented
     supply.issued += shares_to_mint;
-    // TODO: this is just a safety assertion - do we keep it, or remove caching?
-    // in the end supply is just there to cache the (expected) results of get_bonded() so we don't
-    // have expensive queries everywhere
-    // assert_bonds(&supply, bonded)?;
-    // let to_mint = if supply.issued.is_zero() || bonded.is_zero() {
-    //     FALLBACK_RATIO * payment.amount
-    // } else {
-    //     payment.amount.multiply_ratio(supply.issued, bonded)
-    // };
-    // supply.bonded = bonded + payment.amount;
-    // supply.issued += to_mint;
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
     // call into cw20-base to mint the token, call as self as no one else is allowed
@@ -154,7 +134,7 @@ pub fn on_bond(
         sender: env.contract.address.clone(),
         funds: vec![],
     };
-    
+
     execute_mint(
         deps,
         env,
@@ -178,12 +158,11 @@ pub fn on_start_unbond(
     unlock_time: Timestamp,
 ) -> Result<Response, ContractError> {
     // load info.sender -> [..., unbond_id], and unbond_id -> [..., { address, unlock_time }]
-    // also i guess if unlock_time is now or earlier then we can send right now
+    // todo also i guess if unlock_time is now or earlier then we can send right now
     UNBOND_STATE.update(
         deps.storage,
         unbond_id.clone(),
         |s: Option<Unbond>| -> Result<Unbond, ContractError> {
-            // TODO update could/should be more efficient, shouldn't be a need to copy s
             let mut unbond = s.ok_or(ContractError::UnbondIsEmpty {})?;
             // update the stub where the address is the same as message sender with the unlock time
 
@@ -216,8 +195,7 @@ pub fn on_unbond(
         deps.storage,
         &format!(
             "We hit on_unbond with unbond_id: {} and funds: {}",
-            unbond_id,
-            info.funds[0]
+            unbond_id, info.funds[0]
         ),
     )?;
 
@@ -261,7 +239,6 @@ pub fn on_unbond(
 
     // delete this pending unbond id from the state
     UNBOND_STATE.remove(deps.storage, unbond_id.clone());
-    // todo: also need to remove the unbond id from the user's list of pending unbonds
     PENDING_UNBOND_IDS.update(
         deps.storage,
         Addr::unchecked(user_address),

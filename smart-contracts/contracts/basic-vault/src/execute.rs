@@ -48,7 +48,6 @@ fn _assert_bonds(supply: &Supply, bonded: Uint128) -> Result<(), ContractError> 
     }
 }
 
-// todo test
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
 pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentError> {
@@ -64,7 +63,6 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
     }
 }
 
-// todo test
 pub fn may_pay_with_ratio(
     deps: &Deps,
     funds: &[Coin],
@@ -78,26 +76,37 @@ pub fn may_pay_with_ratio(
         .primitives
         .iter()
         .map(|pc| -> Result<CoinWeight, ContractError> {
-            let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
-                pc.address.clone(),
-                &lp_strategy::msg::QueryMsg::PrimitiveShares {},
-            )?;
             let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
                 pc.address.clone(),
                 &lp_strategy::msg::QueryMsg::IcaBalance {},
             )?;
+            let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
+                pc.address.clone(),
+                &lp_strategy::msg::QueryMsg::PrimitiveShares {},
+            )?;
+
+            // if only one of the two is zero, we should error
+            if ((supply.total.is_zero() && !balance.amount.amount.is_zero()) || (!supply.total.is_zero() && balance.amount.amount.is_zero())) {
+                return Err(ContractError::Std(StdError::GenericErr {
+                    msg: "Unexpected primitive state, either both supply and balance should be zero, or neither.".to_string(),
+                }));
+            }
+
+            let ratio = match supply.total.is_zero() {
+                true => Decimal::one(),
+                false => Decimal::from_ratio(balance.amount.amount, supply.total),
+            };
 
             Ok(CoinWeight {
                 weight: Decimal::from_ratio(
-                    balance.amount.amount.checked_mul(pc.weight.numerator())?,
-                    supply.total.checked_mul(pc.weight.denominator())?,
+                    ratio.numerator().checked_mul(pc.weight.numerator())?,
+                    ratio.denominator().checked_mul(pc.weight.denominator())?,
                 ),
                 denom: balance.amount.denom,
             })
         })
         .collect::<Result<Vec<CoinWeight>, ContractError>>()?;
 
-    // TODO: change the error
     if deposit_amount_weights
         .first()
         .ok_or(ContractError::CoinsWeightVectorIsEmpty {})?
@@ -216,7 +225,6 @@ pub fn may_pay_with_ratio(
     Ok((c, remainder))
 }
 
-// todo test
 pub fn bond(
     deps: DepsMut,
     env: Env,
@@ -253,7 +261,6 @@ pub fn bond(
             };
             deposit_stubs.push(deposit_stub);
 
-            // todo: do we need it to reply
             Ok(WasmMsg::Execute {
                 contract_addr: pc.address.clone(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
@@ -335,22 +342,18 @@ pub fn do_start_unbond(
         // skip start unbond
         return Ok((vec![], vec![]));
     }
-    // check that user has vault tokens and the amount is > min_withdrawal
 
     let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
-    //TODO: Normalize primitive weights
-
-    // // ensure it is big enough to care
+    // check that user has vault tokens and the amount is > min_withdrawal
     if amount < invest.min_withdrawal {
         return Err(ContractError::UnbondTooSmall {
             min_bonded: invest.min_withdrawal,
         });
     }
 
-    // this should error if amount larger than sender balance
-    // todo: verify above statement
+    // burn if balance is more than or equal to amount (handled in execute_burn)
     execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
 
     let mut unbonding_stubs = vec![];
@@ -360,12 +363,8 @@ pub fn do_start_unbond(
         .iter()
         .map(|pc| -> Result<WasmMsg, ContractError> {
             // lets get the amount of tokens to unbond for this primitive
-            // todo make sure weights are normalized!!
             let primitive_share_amount =
                 amount.multiply_ratio(pc.weight.numerator(), pc.weight.denominator());
-
-            // todo: safety asertion - make sure we have enough shares to unbond for this user (else we have major code error)
-            // let our_shares = deps.querier.query_wasm_smart(pc.address, )
 
             unbonding_stubs.push(UnbondingStub {
                 address: pc.address.clone(),
@@ -404,60 +403,13 @@ pub fn do_start_unbond(
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
     BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
-    // need to convert amount to the set of amounts for each primitive
-
-    // // // calculate tax and remainer to unbond
-    // // let tax = amount * invest.exit_tax;
-
-    // // burn from the original caller
-    // execute_burn(deps.branch(), env.clone(), info.clone(), amount)?;
-    // // if tax > Uint128::zero() {
-    // //     let sub_info = MessageInfo {
-    // //         sender: env.contract.address.clone(),
-    // //         funds: vec![],
-    // //     };
-    // //     // call into cw20-base to mint tokens to owner, call as self as no one else is allowed
-    // //     execute_mint(
-    // //         deps.branch(),
-    // //         env.clone(),
-    // //         sub_info,
-    // //         invest.owner.to_string(),
-    // //         tax,
-    // //     )?;
-    // // }
-
-    // re-calculate bonded to ensure we have real values
-    // bonded is the total number of tokens we have delegated from this address
-    // let bonded = get_bonded(&deps.querier, &env.contract.address)?;
-
-    // // calculate how many native tokens this is worth and update supply
-    // // let remainder = amount.checked_sub(tax).map_err(StdError::overflow)?;
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
-    // // TODO: this is just a safety assertion - do we keep it, or remove caching?
-    // // in the end supply is just there to cache the (expected) results of get_bonded() so we don't
-    // // have expensive queries everywhere
-    // assert_bonds(&supply, bonded)?;
-    // let unbond = amount.multiply_ratio(bonded, supply.issued);
-    // // let unbond = remainder.multiply_ratio(bonded, supply.issued);
-    // supply.bonded = bonded.checked_sub(unbond).map_err(StdError::overflow)?;
     supply.issued = supply
         .issued
         .checked_sub(amount)
         .map_err(StdError::overflow)?;
-    // supply.issued = supply
-    //     .issued
-    //     .checked_sub(remainder)
-    //     .map_err(StdError::overflow)?;
-    // supply.claims += unbond;
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
-    // instead of creating a claim, we will be executing create claim on the vault primitive
-    // CLAIMS.create_claim(
-    //     deps.storage,
-    //     &info.sender,
-    //     unbond,
-    //     invest.unbonding_period.after(&env.block),
-    // )?;
+    TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
     Ok((
         start_unbond_msgs,
