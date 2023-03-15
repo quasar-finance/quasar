@@ -467,11 +467,16 @@ mod tests {
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
         };
-        let res_1 = execute(deps_1.as_mut(), env.clone(), info.clone(), deposit_msg.clone()).unwrap_err();
+        let res_1 = execute(
+            deps_1.as_mut(),
+            env.clone(),
+            info.clone(),
+            deposit_msg.clone(),
+        )
+        .unwrap_err();
         assert_eq!(res_1.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
         let res_2 = execute(deps_2.as_mut(), env.clone(), info, deposit_msg).unwrap_err();
         assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
-    
     }
 
     #[test]
