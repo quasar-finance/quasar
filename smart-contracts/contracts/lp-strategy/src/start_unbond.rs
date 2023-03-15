@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcBasicResponse, IbcTimeout, Storage, SubMsg, Uint128, WasmMsg, Response,
+    to_binary, Addr, Env, IbcTimeout, Response, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
