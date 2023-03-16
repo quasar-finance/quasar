@@ -187,12 +187,6 @@ fn on_packet_failure(
 
 #[cfg(test)]
 mod test {
-    
-    
-    
-
-    
-    
 
     // #[test]
     // fn test_ibc_packet_ack() -> Result<(), ContractError> {

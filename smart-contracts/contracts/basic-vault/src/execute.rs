@@ -123,7 +123,8 @@ pub fn get_deposit_and_remainder_for_ratio(
     // and remainder is the change to return to user
     let mut remainder = funds.to_owned();
 
-    let coins: Result<Vec<Coin>, ContractError> = ratio.ratio
+    let coins: Result<Vec<Coin>, ContractError> = ratio
+        .ratio
         .iter()
         .map(|r| {
             let amount = must_pay_multi(funds, &r.denom)?;
@@ -167,10 +168,10 @@ pub fn may_pay_with_ratio(
     invest.normalize_primitive_weights();
 
     // load cached balance of primitive contracts
-    let deposit_amount_ratio =
-        get_deposit_amount_weights(deps, &invest.primitives)?;
+    let deposit_amount_ratio = get_deposit_amount_weights(deps, &invest.primitives)?;
 
-    if deposit_amount_ratio.ratio
+    if deposit_amount_ratio
+        .ratio
         .first()
         .ok_or(ContractError::CoinsWeightVectorIsEmpty {})?
         .weight
@@ -205,7 +206,8 @@ pub fn may_pay_with_ratio(
         }));
     }
 
-    let (coins, remainder) = get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio)?;
+    let (coins, remainder) =
+        get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio)?;
 
     if coins
         .first()

@@ -967,12 +967,10 @@ mod tests {
 
         let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let funds = &[
-            Coin {
-                denom: "ibc/uosmo".to_string(),
-                amount: Uint128::from(200u128),
-            },
-        ];
+        let funds = &[Coin {
+            denom: "ibc/uosmo".to_string(),
+            amount: Uint128::from(200u128),
+        }];
 
         // load cached balance of primitive contracts
         let deposit_amount_ratio =
@@ -1099,7 +1097,6 @@ mod tests {
 
         let (coins, remainder) =
             get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio).unwrap();
-
 
         assert_eq!(coins.len(), 3);
         assert_eq!(coins[0].amount, Uint128::from(199u128)); // these numbers have been verified
