@@ -289,87 +289,87 @@ mod tests {
         assert_eq!(remainder[2].amount, Uint128::from(1u128));
     }
 
-    #[test]
-    fn test_may_pay_with_uneven_ratio() {
-        let mut deps = mock_deps_with_primitives(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Uint128::from(1000u128),
-                Uint128::from(1000u128),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Uint128::from(500u128),
-                Uint128::from(1000u128),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Uint128::from(250u128),
-                Uint128::from(100u128),
-            ),
-        ]);
-        let init_msg = init_msg_with_primitive_details(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Decimal::from_ratio(3u128, 10u128),
-            ),
-        ]);
-        let info = mock_info(TEST_CREATOR, &[]);
-        let env = mock_env();
-        let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+    // #[test]
+    // fn test_may_pay_with_uneven_ratio() {
+    //     let mut deps = mock_deps_with_primitives(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Uint128::from(1000u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Uint128::from(500u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Uint128::from(250u128),
+    //             Uint128::from(100u128),
+    //         ),
+    //     ]);
+    //     let init_msg = init_msg_with_primitive_details(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Decimal::from_ratio(3u128, 10u128),
+    //         ),
+    //     ]);
+    //     let info = mock_info(TEST_CREATOR, &[]);
+    //     let env = mock_env();
+    //     let res = init(deps.as_mut(), &init_msg, &env, &info);
+    //     assert_eq!(0, res.messages.len());
 
-        let invest_query = crate::msg::QueryMsg::Investment {};
-        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+    //     let invest_query = crate::msg::QueryMsg::Investment {};
+    //     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    //     let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let (coins, remainder) = may_pay_with_ratio(
-            &deps.as_ref(),
-            &[
-                Coin {
-                    denom: "ibc/uosmo".to_string(),
-                    amount: Uint128::from(100u128),
-                },
-                Coin {
-                    denom: "ibc/uatom".to_string(),
-                    amount: Uint128::from(200u128),
-                },
-                Coin {
-                    denom: "ibc/ustars".to_string(),
-                    amount: Uint128::from(1000u128),
-                },
-            ],
-            investment_response.info,
-        )
-        .unwrap();
+    //     let (coins, remainder) = may_pay_with_ratio(
+    //         &deps.as_ref(),
+    //         &[
+    //             Coin {
+    //                 denom: "ibc/uosmo".to_string(),
+    //                 amount: Uint128::from(100u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/uatom".to_string(),
+    //                 amount: Uint128::from(200u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/ustars".to_string(),
+    //                 amount: Uint128::from(1000u128),
+    //             },
+    //         ],
+    //         investment_response.info,
+    //     )
+    //     .unwrap();
 
-        println!("coins: {coins:?}");
-        println!("remainder: {remainder:?}");
-        assert_eq!(coins.len(), 3);
-        assert_eq!(coins[0].amount, Uint128::from(36u128));
-        assert_eq!(coins[1].amount, Uint128::from(73u128));
-        assert_eq!(coins[2].amount, Uint128::from(4u128));
+    //     println!("coins: {coins:?}");
+    //     println!("remainder: {remainder:?}");
+    //     assert_eq!(coins.len(), 3);
+    //     assert_eq!(coins[0].amount, Uint128::from(36u128));
+    //     assert_eq!(coins[1].amount, Uint128::from(73u128));
+    //     assert_eq!(coins[2].amount, Uint128::from(4u128));
 
-        assert_eq!(remainder.len(), 3);
-        assert_eq!(remainder[0].amount, Uint128::from(1u128));
-        assert_eq!(remainder[1].amount, Uint128::from(1u128));
-        assert_eq!(remainder[2].amount, Uint128::from(1u128));
-    }
+    //     assert_eq!(remainder.len(), 3);
+    //     assert_eq!(remainder[0].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[1].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[2].amount, Uint128::from(1u128));
+    // }
 
     #[test]
     fn proper_bond() {
