@@ -448,6 +448,16 @@ pub fn handle_ica_ack(
 
             LAST_PENDING_BOND.save(storage, &data)?;
 
+            let total_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
+                acc.checked_add(val.claim_amount)
+            })?;
+
+            LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+                old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_shares)?;
+                old.locked_shares = old.locked_shares.checked_add(total_shares)?;
+                Ok(old)
+            })?;
+
             let mut callbacks: Vec<WasmMsg> = vec![];
             // TODO make execute a sub msg
             for claim in &data.bonds {

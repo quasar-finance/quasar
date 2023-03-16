@@ -15,7 +15,7 @@ use crate::{
     ibc_lock::Lock,
     state::{
         PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, SHARES,
-        START_UNBOND_QUEUE, UNBONDING_CLAIMS,
+        START_UNBOND_QUEUE, UNBONDING_CLAIMS, LpCache,
     },
 };
 
@@ -75,6 +75,13 @@ pub fn batch_start_unbond(
 
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        old.locked_shares = old.locked_shares.checked_sub(to_unbond)?;
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
+        Ok(old)
+    })?;
+
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,
