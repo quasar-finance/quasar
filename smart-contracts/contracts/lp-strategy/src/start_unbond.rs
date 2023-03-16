@@ -441,12 +441,9 @@ mod tests {
         let env = mock_env();
 
         deps.querier.update_wasm(|q| match q {
-            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
-                QuerierResult::Ok(ContractResult::Ok(
-                    to_binary(&ContractInfoResponse::default())
-                    .unwrap(),
-                ))
-            }
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
+                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+            ),
             _ => unimplemented!(),
         });
         let w = QuerierWrapper::new(&deps.querier);
@@ -493,9 +490,9 @@ mod tests {
         let env = mock_env();
 
         deps.querier.update_wasm(|q| match q {
-            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
-                QuerierResult::Ok(ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()))
-            }
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
+                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+            ),
             _ => unimplemented!(),
         });
         let w = QuerierWrapper::new(&deps.querier);
