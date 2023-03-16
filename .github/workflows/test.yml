@@ -33,9 +33,9 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run unit-tests
-        run: cargo unit-test
+        run: cargo test --lib
       - name: Run vault-tests
-        run: cargo test-vault
+        run: cargo test --lib -p basic-vault
       # - name: Compile wasm code
       #   uses: docker://cosmwasm/rust-optimizer:0.12.6
       #   with:
