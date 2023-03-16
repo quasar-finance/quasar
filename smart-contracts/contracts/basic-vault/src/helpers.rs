@@ -9,6 +9,14 @@ pub fn can_unbond_from_primitive(
     unbond_id: &str,
     stub: &UnbondingStub,
 ) -> Result<bool, ContractError> {
+    // only attempt if we already know we passed unlock time.
+    if !stub
+        .unlock_time
+        .map_or(false, |unlock_time| unlock_time < env.block.time)
+    {
+        return Ok(false);
+    }
+
     let unbonding_claim_query = lp_strategy::msg::QueryMsg::UnbondingClaim {
         addr: env.contract.address.clone(),
         id: unbond_id.to_string(),
@@ -17,8 +25,9 @@ pub fn can_unbond_from_primitive(
         .querier
         .query_wasm_smart(stub.address.clone(), &unbonding_claim_query)?;
 
-    match unbonding_claim.unbond {
-        Some(unbond) => Ok(unbond.unlock_time < env.block.time),
-        None => Ok(false),
+    // if we attempted to unbond, don't attempt again
+    match unbonding_claim.unbond.attempted {
+        true => Ok(false),
+        false => Ok(unbonding_claim.unbond.unlock_time < env.block.time),
     }
 }

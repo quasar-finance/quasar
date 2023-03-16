@@ -6,8 +6,8 @@ mod tests {
         from_binary,
         testing::{mock_env, mock_info, MockApi, MockStorage},
         to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
-        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp,
-        Uint128, WasmMsg,
+        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, StdError,
+        StdResult, Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
 
@@ -25,23 +25,21 @@ mod tests {
         contract::query,
         execute::may_pay_with_ratio,
         msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
+        ContractError,
     };
 
     pub struct QuasarQuerier {
         // address, denom, share, balance
         pub primitive_states: Vec<(String, String, Uint128, Uint128)>,
-        // address, unlock_time
-        pub primitive_unlock_times: Vec<(String, Option<Timestamp>)>,
+        // address, unlock_time, attempted
+        pub primitive_unlock_times: Vec<(String, Timestamp, bool)>,
     }
 
     impl QuasarQuerier {
         pub fn new(primitive_states: Vec<(String, String, Uint128, Uint128)>) -> QuasarQuerier {
             QuasarQuerier {
                 primitive_states: primitive_states.clone(),
-                primitive_unlock_times: primitive_states
-                    .iter()
-                    .map(|ps| (ps.0.clone(), Option::None))
-                    .collect(),
+                primitive_unlock_times: vec![],
             }
         }
 
@@ -59,20 +57,37 @@ mod tests {
             (this_denom, total_share, total_balance)
         }
 
-        pub fn set_unbonding_time_for_primitive(&mut self, address: String, time: Timestamp) {
-            self.primitive_unlock_times.iter_mut().for_each(|put| {
-                if (put.0 == address) {
-                    put.1 = Option::Some(time);
+        pub fn set_unbonding_claim_for_primitive(
+            &mut self,
+            address: String,
+            time: Timestamp,
+            attempted: bool,
+        ) {
+            let put = self
+                .primitive_unlock_times
+                .iter_mut()
+                .find(|put| put.0 == address);
+            match put {
+                Some(p) => {
+                    p.1 = time;
+                    p.2 = attempted;
+                    return;
                 }
-            });
+                None => self.primitive_unlock_times.push((address, time, attempted)),
+            }
         }
 
-        pub fn get_unbonding_time_for_primitive(&self, address: String) -> Option<Timestamp> {
+        pub fn get_unbonding_claim_for_primitive(
+            &self,
+            address: String,
+        ) -> StdResult<(Timestamp, bool)> {
             let prim = self.primitive_unlock_times.iter().find(|p| p.0 == address);
 
             match prim {
-                Some(p) => p.1,
-                None => None,
+                Some(p) => Ok((p.1, p.2)),
+                None => Err(StdError::GenericErr {
+                    msg: "Unbonding claim not found".to_owned(),
+                }),
             }
         }
     }
@@ -119,22 +134,23 @@ mod tests {
                                 ))
                             }
                             lp_strategy::msg::QueryMsg::UnbondingClaim { addr, id } => {
-                                let unbond_time =
-                                    self.get_unbonding_time_for_primitive(contract_addr);
-                                QuerierResult::Ok(ContractResult::Ok(
-                                    to_binary(&UnbondingClaimResponse {
-                                        unbond: match unbond_time {
-                                            Some(time) => Some(Unbond {
+                                let query_result =
+                                    self.get_unbonding_claim_for_primitive(contract_addr);
+                                QuerierResult::Ok(match query_result {
+                                    Ok((unlock_time, attempted)) => ContractResult::Ok(
+                                        to_binary(&UnbondingClaimResponse {
+                                            unbond: Unbond {
                                                 lp_shares: Uint128::from(1u128),
-                                                unlock_time: time,
+                                                unlock_time,
+                                                attempted: attempted,
                                                 owner: Addr::unchecked(TEST_CREATOR),
                                                 id,
-                                            }),
-                                            None => None,
-                                        },
-                                    })
-                                    .unwrap(),
-                                ))
+                                            },
+                                        })
+                                        .unwrap(),
+                                    ),
+                                    Err(error) => ContractResult::Err(error.to_string()),
+                                })
                             }
                             _ => {
                                 QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
@@ -855,10 +871,18 @@ mod tests {
 
         env.block.height += 4;
         env.block.time = env.block.time.plus_seconds(30);
-        
+
         // set two of the primitives to be unbondable
-        deps.querier.set_unbonding_time_for_primitive("quasar123".to_owned(), env.block.time.minus_seconds(5));
-        deps.querier.set_unbonding_time_for_primitive("quasar124".to_owned(), env.block.time.minus_seconds(5));
+        deps.querier.set_unbonding_claim_for_primitive(
+            "quasar123".to_owned(),
+            env.block.time.minus_seconds(5),
+            false,
+        );
+        deps.querier.set_unbonding_claim_for_primitive(
+            "quasar124".to_owned(),
+            env.block.time.minus_seconds(5),
+            false,
+        );
 
         // unbond and see that 2 are unbondable
         let do_unbond_res = execute(
@@ -913,20 +937,39 @@ mod tests {
         } else {
             assert!(false);
         }
+        // set these two primitive unbonds to have been attempted already
+        deps.querier.set_unbonding_claim_for_primitive(
+            "quasar123".to_owned(),
+            env.block.time.minus_seconds(5),
+            true,
+        );
+        deps.querier.set_unbonding_claim_for_primitive(
+            "quasar124".to_owned(),
+            env.block.time.minus_seconds(5),
+            true,
+        );
 
         env.block.height += 5;
         env.block.time = env.block.time.plus_seconds(40);
+
+// set last of the primitives to be unbondable
+        deps.querier.set_unbonding_claim_for_primitive(
+            "quasar125".to_owned(),
+            env.block.time.minus_seconds(5),
+            false,
+        );
+        
 
         // test that claim works the same way as unbond(amount:0)
         let claim_msg = ExecuteMsg::Claim {};
         let claim_res = execute(deps.as_mut(), env.clone(), do_unbond_info, claim_msg).unwrap();
 
         // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
-        assert_eq!(claim_res.messages.len(), 2);
+        assert_eq!(claim_res.messages.len(), 1);
         assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
-        assert_eq!(claim_res.attributes[2].value, "2");
+        assert_eq!(claim_res.attributes[2].value, "1");
 
-        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[2].msg {
+        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[0].msg {
             if let WasmMsg::Execute {
                 contract_addr,
                 msg,
@@ -987,7 +1030,7 @@ mod tests {
         let p3_unbond_callback_info = mock_info(
             "quasar125",
             &[Coin {
-                denom: "ibc/uatom".to_string(),
+                denom: "ibc/ustars".to_string(),
                 amount: Uint128::from(100u128),
             }],
         );
@@ -999,6 +1042,45 @@ mod tests {
         )
         .unwrap();
         assert_eq!(p3_unbond_callback_res.messages.len(), 3);
+
+        if let CosmosMsg::Bank(bank_msg) = &p3_unbond_callback_res.messages[0].msg {
+            if let BankMsg::Send { to_address, amount } = bank_msg {
+                assert_eq!(to_address, TEST_CREATOR);
+                assert_eq!(amount.len(), 1);
+                assert_eq!(amount[0].denom, "ibc/uosmo");
+                assert_eq!(amount[0].amount, Uint128::from(100u128));
+            } else {
+               panic!("unexpected bank message");
+            }
+        } else {
+            panic!("unexpected message");
+        }
+
+        if let CosmosMsg::Bank(bank_msg) = &p3_unbond_callback_res.messages[1].msg {
+            if let BankMsg::Send { to_address, amount } = bank_msg {
+                assert_eq!(to_address, TEST_CREATOR);
+                assert_eq!(amount.len(), 1);
+                assert_eq!(amount[0].denom, "ibc/uatom");
+                assert_eq!(amount[0].amount, Uint128::from(100u128));
+            } else {
+               panic!("unexpected bank message");
+            }
+        } else {
+            panic!("unexpected message");
+        }
+
+        if let CosmosMsg::Bank(bank_msg) = &p3_unbond_callback_res.messages[2].msg {
+            if let BankMsg::Send { to_address, amount } = bank_msg {
+                assert_eq!(to_address, TEST_CREATOR);
+                assert_eq!(amount.len(), 1);
+                assert_eq!(amount[0].denom, "ibc/ustars");
+                assert_eq!(amount[0].amount, Uint128::from(100u128));
+            } else {
+               panic!("unexpected bank message");
+            }
+        } else {
+            panic!("unexpected message");
+        }
     }
 
     #[test]

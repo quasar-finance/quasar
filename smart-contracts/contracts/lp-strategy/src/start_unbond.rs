@@ -39,8 +39,6 @@ pub fn do_start_unbond(
         return Err(ContractError::InsufficientFunds);
     }
 
-    UNBONDING_CLAIMS.save(storage, (unbond.owner.clone(), unbond.id.clone()), &None)?;
-
     Ok(START_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
@@ -166,12 +164,13 @@ fn start_internal_unbond(
     UNBONDING_CLAIMS.save(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
-        &Option::Some(Unbond {
+        &Unbond {
             lp_shares: unbond.lp_shares,
             unlock_time,
+            attempted: false,
             id: unbond.id.clone(),
             owner: unbond.owner.clone(),
-        }),
+        },
     )?;
 
     let msg = Callback::StartUnbondResponse(StartUnbondResponse {
@@ -307,12 +306,13 @@ mod tests {
             .save(
                 deps.as_mut().storage,
                 (owner.clone(), id.clone()),
-                &Option::Some(Unbond {
+                &Unbond {
                     lp_shares: Uint128::new(420),
                     unlock_time: Timestamp::from_seconds(100),
+                    attempted: false,
                     owner: owner.clone(),
                     id: id.clone(),
-                }),
+                },
             )
             .unwrap();
 
@@ -509,12 +509,13 @@ mod tests {
             .save(
                 deps.as_mut().storage,
                 (owner.clone(), id.to_string()),
-                &Option::Some(Unbond {
+                &Unbond {
                     lp_shares: Uint128::new(100),
                     unlock_time,
+                    attempted: false,
                     owner,
                     id: id.to_string(),
-                }),
+                },
             )
             .unwrap();
 
