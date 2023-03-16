@@ -1,6 +1,6 @@
 module github.com/quasarlabs/quasarnode/tests/e2e
 
-go 1.18
+go 1.19
 
 require (
 	github.com/CosmWasm/wasmd v0.30.0
@@ -188,10 +188,10 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.13-ics
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+
+	github.com/strangelove-ventures/interchaintest/v4 => ../../../interchaintest // TODO remove once this PR https://github.com/strangelove-ventures/interchaintest/pull/420 is merged
 	// use informal system fork of tendermint
 	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
 
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
-
-	github.com/strangelove-ventures/interchaintest/v4 => ../../../interchaintest // TODO remove once this PR https://github.com/strangelove-ventures/interchaintest/pull/420 is merged
 )

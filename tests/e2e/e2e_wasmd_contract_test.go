@@ -60,6 +60,7 @@ type WasmdTestSuite struct {
 
 	OsmosisDenomInQuasar string
 	QuasarDenomInOsmosis string
+	AyyDenomInOsmosis    string
 
 	LpStrategyContractAddress1 string
 	LpStrategyContractAddress2 string
@@ -71,9 +72,6 @@ type WasmdTestSuite struct {
 func (s *WasmdTestSuite) SetupSuite() {
 	t := s.T()
 	ctx := context.Background()
-
-	// Send tokens to the respective account and create the required pools
-	s.SendAndCreatePools(ctx)
 
 	// Wait for IBC connections to be established
 	t.Log("Wait for chains to settle up the ibc connection states")
@@ -88,47 +86,51 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.Quasar2OsmosisTransferChan = s.QueryConnectionChannels(ctx, s.Quasar(), s.Quasar2OsmosisConn.Id)[0]
 	s.Osmosis2QuasarTransferChan = s.QueryConnectionChannels(ctx, s.Osmosis(), s.Osmosis2QuasarConn.Id)[0]
 
-	// Send tokens "stake1", "uosmo", "fakestake" from Osmosis to Quasar account
-	s.SendTokensFromOsmosisToQuasar(ctx)
-
 	// Generate the ibc denom of native tokens in other chains
 	s.OsmosisDenomInQuasar = ibcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
 	s.QuasarDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
+	s.AyyDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, "uayy")
 
 	// // Setup an account in quasar chain for contract deployment
 	quasarAccount := s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
 
+	// Send tokens "uayy" and "uqsr" from Quasar to Osmosis account
+	s.SendTokensFromQuasarToOsmosis(ctx)
+
+	// Send tokens to the respective account and create the required pools
+	s.CreatePools(ctx)
+
 	// Deploy the lp strategy contract
 	s.deployContracts(ctx, quasarAccount, lpStrategyContractPath, "lp_strategy_test",
 		map[string]any{
-			"lock_period":           6,
+			"lock_period":           300,
 			"pool_id":               1,
 			"pool_denom":            "gamm/pool/1",
 			"base_denom":            "uosmo",
 			"local_denom":           "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			"quote_denom":           "stake1",
+			"quote_denom":           "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
 			"expected_connection":   "connection-0",
 		},
 		map[string]any{
-			"lock_period":           6,
+			"lock_period":           300,
 			"pool_id":               2,
 			"pool_denom":            "gamm/pool/2",
-			"base_denom":            "stake1",
-			"local_denom":           "ibc/BC42BB1B7065ADF71AB8F5ECE6CDE06EF93674C343C22AEAA8AE51B7EF364F0B",
-			"quote_denom":           "fakestake",
+			"base_denom":            "ibc/DA3CEF7DEAF6983032E061030C63E13262957D223E9EDBBB7AF9B69F8F8BA090",
+			"local_denom":           "uayy",
+			"quote_denom":           "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
 			"expected_connection":   "connection-0",
 		},
 		map[string]any{
-			"lock_period":           6,
+			"lock_period":           300,
 			"pool_id":               3,
 			"pool_denom":            "gamm/pool/3",
-			"base_denom":            "fakestake",
-			"local_denom":           "ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1",
-			"quote_denom":           "uosmo",
+			"base_denom":            "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
+			"local_denom":           "uqsr",
+			"quote_denom":           "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
 			"return_source_channel": "channel-0",
 			"transfer_channel":      "channel-0",
 			"expected_connection":   "connection-0",
@@ -269,12 +271,12 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 					"weight":  "0.333333333333",
 					"init": map[string]any{
 						"l_p": map[string]any{
-							"lock_period":           6,
+							"lock_period":           300,
 							"pool_id":               1,
 							"pool_denom":            "gamm/pool/1",
 							"base_denom":            "uosmo",
 							"local_denom":           "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-							"quote_denom":           "stake1",
+							"quote_denom":           "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
 							"expected_connection":   "connection-0",
@@ -286,12 +288,12 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 					"weight":  "0.333333333333",
 					"init": map[string]any{
 						"l_p": map[string]any{
-							"lock_period":           6,
+							"lock_period":           300,
 							"pool_id":               2,
 							"pool_denom":            "gamm/pool/2",
-							"base_denom":            "stake1",
-							"local_denom":           "ibc/BC42BB1B7065ADF71AB8F5ECE6CDE06EF93674C343C22AEAA8AE51B7EF364F0B",
-							"quote_denom":           "fakestake",
+							"base_denom":            "ibc/DA3CEF7DEAF6983032E061030C63E13262957D223E9EDBBB7AF9B69F8F8BA090",
+							"local_denom":           "uayy",
+							"quote_denom":           "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
 							"expected_connection":   "connection-0",
@@ -303,12 +305,12 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 					"weight":  "0.333333333333",
 					"init": map[string]any{
 						"l_p": map[string]any{
-							"lock_period":           6,
+							"lock_period":           300,
 							"pool_id":               3,
 							"pool_denom":            "gamm/pool/3",
-							"base_denom":            "fakestake",
-							"local_denom":           "ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1",
-							"quote_denom":           "uosmo",
+							"base_denom":            "ibc/6BEEEE6CC17BA0EE37857A1E2AF6EC53C50DB6B6F89463A3933D0859C4CF6087",
+							"local_denom":           "uqsr",
+							"quote_denom":           "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
 							"return_source_channel": "channel-0",
 							"transfer_channel":      "channel-0",
 							"expected_connection":   "connection-0",
@@ -326,8 +328,8 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 		s.BasicVaultContractAddress,
 		sdk.NewCoins(
 			sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000),
-			sdk.NewInt64Coin("ibc/BC42BB1B7065ADF71AB8F5ECE6CDE06EF93674C343C22AEAA8AE51B7EF364F0B", 1000),
-			sdk.NewInt64Coin("ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1", 1000),
+			sdk.NewInt64Coin("uayy", 1000),
+			sdk.NewInt64Coin("uqsr", 1000),
 		),
 		"'{\"bond\":{}}'",
 		nil)
@@ -344,15 +346,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 	//s.Require().EqualValues(1000, balance)
 }
 
-func (s *WasmdTestSuite) SendAndCreatePools(ctx context.Context) {
-	// Send uqsr and uayy to Quasar authority account
-	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.Owner, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uayy")
-	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.MasterMinter, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uqsr")
-
-	// Send stake1 and uosmo to Osmosis authority account
-	s.SendTokensToOneAddress(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Owner, s.E2EBuilder.OsmosisAccounts.Authority, "10000000000000000stake1")
-	s.SendTokensToOneAddress(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.MasterMinter, s.E2EBuilder.OsmosisAccounts.Authority, "10000000000000000uosmo")
-
+func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
@@ -369,22 +363,34 @@ func (s *WasmdTestSuite) SendAndCreatePools(ctx context.Context) {
 	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Authority.KeyName, poolBz)
 }
 
-func (s *WasmdTestSuite) SendTokensFromOsmosisToQuasar(ctx context.Context) {
+func (s *WasmdTestSuite) SendTokensFromQuasarToOsmosis(ctx context.Context) {
+	// Send uqsr and uayy to Quasar authority account
+	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.Owner, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uayy")
+	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.MasterMinter, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uqsr")
+
+	// Send stake1 and uosmo to Osmosis authority account
+	s.SendTokensToOneAddress(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Owner, s.E2EBuilder.OsmosisAccounts.Authority, "10000000000000000stake1")
+	s.SendTokensToOneAddress(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.MasterMinter, s.E2EBuilder.OsmosisAccounts.Authority, "10000000000000000uosmo")
+
 	walletAmount := ibc.WalletAmount{
-		Address: s.E2EBuilder.QuasarAccounts.Authority.Address,
-		Denom:   "stake1",
-		Amount:  100000,
+		Address: s.E2EBuilder.OsmosisAccounts.Authority.Address,
+		Denom:   "uayy",
+		Amount:  1000000000,
 	}
-	transfer, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
+	transfer, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, s.E2EBuilder.QuasarAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
 
-	walletAmount.Denom = "uosmo"
-	transfer, err = s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
+	walletAmount.Denom = "uqsr"
+	transfer, err = s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, s.E2EBuilder.QuasarAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
 
-	walletAmount.Denom = "fakestake"
+	walletAmount = ibc.WalletAmount{
+		Address: s.E2EBuilder.QuasarAccounts.Authority.Address,
+		Denom:   "uosmo",
+		Amount:  1000000000,
+	}
 	transfer, err = s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())

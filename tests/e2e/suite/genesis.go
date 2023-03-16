@@ -73,25 +73,31 @@ func modifyGenesisSetVotingPeriod(period time.Duration) genesisModifiers {
 }
 
 // modifyGenesisICAModule sets the params of ICA module.
-func modifyGenesisICAModule(enabled bool, allowMsgs []string) genesisModifiers {
+func modifyGenesisICAModule(enabled bool, allowMsgs []string, Port string) genesisModifiers {
 	return func(gen any) (any, error) {
 		v := map[string]any{
-			"host_enabled":   enabled,
-			"allow_messages": allowMsgs,
+			"port": Port,
+			"params": map[string]any{
+				"host_enabled":   enabled,
+				"allow_messages": allowMsgs,
+			},
 		}
-		err := dyno.Set(gen, v, "app_state", "interchainaccounts", "host_genesis_state", "params")
+		err := dyno.Set(gen, v, "app_state", "interchainaccounts", "host_genesis_state")
 		return gen, err
 	}
 }
 
 // modifyGenesisICQModule sets the params of ICQ module.
-func modifyGenesisICQModule(enabled bool, allowQueries []string) genesisModifiers {
+func modifyGenesisICQModule(enabled bool, allowQueries []string, hostPort string) genesisModifiers {
 	return func(gen any) (any, error) {
 		v := map[string]any{
-			"host_enabled":  enabled,
-			"allow_queries": allowQueries,
+			"host_port": hostPort,
+			"params": map[string]any{
+				"host_enabled":  enabled,
+				"allow_queries": allowQueries,
+			},
 		}
-		err := dyno.Set(gen, v, "app_state", "interchainquery", "params")
+		err := dyno.Set(gen, v, "app_state", "interchainquery")
 		return gen, err
 	}
 }
