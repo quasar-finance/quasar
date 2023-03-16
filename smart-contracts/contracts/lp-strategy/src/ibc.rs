@@ -308,8 +308,9 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
-    // TODO we can make the LP_SHARES cache less error prone here
-    let lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
+    // TODO we can make the LP_SHARES cache less error prone here by using the actual state of lp shares
+    //  We then need to query locked shares aswell, since they are not part of balance
+    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -338,18 +339,13 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
+    let lp_balance = LP_SHARES.load(storage)?;
+
     // TODO move the LP_SHARES.load to start_unbond
     let start_unbond = batch_start_unbond(
         storage,
         &env,
-        Uint128::new(
-            lp_balance
-                .parse()
-                .map_err(|err| ContractError::ParseIntError {
-                    error: err,
-                    value: lp_balance,
-                })?,
-        ),
+        lp_balance
     )?;
 
     let unbond = batch_unbond(storage, &env)?;
