@@ -10,6 +10,7 @@ use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
 
+use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
@@ -30,62 +31,54 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
     }
 }
 
-pub fn may_pay_with_ratio(
+pub fn get_deposit_amount_weights(
     deps: &Deps,
-    funds: &[Coin],
-    mut invest: InvestmentInfo,
-) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-    // normalize primitives
-    invest.normalize_primitive_weights();
+    primitives: &Vec<PrimitiveConfig>,
+) -> Result<CoinRatio, ContractError> {
+    let weights = primitives
+    .iter()
+    .map(|pc| -> Result<CoinWeight, ContractError> {
+        let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
+            pc.address.clone(),
+            &lp_strategy::msg::QueryMsg::IcaBalance {},
+        )?;
+        let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
+            pc.address.clone(),
+            &lp_strategy::msg::QueryMsg::PrimitiveShares {},
+        )?;
 
-    // load cached balance of primitive contracts
-    let deposit_amount_weights: Vec<CoinWeight> = invest
-        .primitives
-        .iter()
-        .map(|pc| -> Result<CoinWeight, ContractError> {
-            let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
-                pc.address.clone(),
-                &lp_strategy::msg::QueryMsg::IcaBalance {},
-            )?;
-            let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
-                pc.address.clone(),
-                &lp_strategy::msg::QueryMsg::PrimitiveShares {},
-            )?;
+        // if only one of the two is zero, we should error
+        if (supply.total.is_zero() && !balance.amount.amount.is_zero()) || (!supply.total.is_zero() && balance.amount.amount.is_zero()) {
+            return Err(ContractError::Std(StdError::GenericErr {
+                msg: "Unexpected primitive state, either both supply and balance should be zero, or neither.".to_string(),
+            }));
+        }
 
-            // if only one of the two is zero, we should error
-            if (supply.total.is_zero() && !balance.amount.amount.is_zero()) || (!supply.total.is_zero() && balance.amount.amount.is_zero()) {
-                return Err(ContractError::Std(StdError::GenericErr {
-                    msg: "Unexpected primitive state, either both supply and balance should be zero, or neither.".to_string(),
-                }));
-            }
+        let ratio = match supply.total.is_zero() {
+            true => Decimal::one(),
+            false => Decimal::from_ratio(balance.amount.amount, supply.total),
+        };
 
-            let ratio = match supply.total.is_zero() {
-                true => Decimal::one(),
-                false => Decimal::from_ratio(balance.amount.amount, supply.total),
-            };
-
-            Ok(CoinWeight {
-                weight: Decimal::from_ratio(
-                    ratio.numerator().checked_mul(pc.weight.numerator())?,
-                    ratio.denominator().checked_mul(pc.weight.denominator())?,
-                ),
-                denom: balance.amount.denom,
-            })
+        Ok(CoinWeight {
+            weight: Decimal::from_ratio(
+                ratio.numerator().checked_mul(pc.weight.numerator())?,
+                ratio.denominator().checked_mul(pc.weight.denominator())?,
+            ),
+            denom: balance.amount.denom,
         })
-        .collect::<Result<Vec<CoinWeight>, ContractError>>()?;
+    })
+    .collect::<Result<Vec<CoinWeight>, ContractError>>()?;
 
-    if deposit_amount_weights
-        .first()
-        .ok_or(ContractError::CoinsWeightVectorIsEmpty {})?
-        .weight
-        == Decimal::zero()
-    {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: "Deposit amount weight for primitive is zero".to_string(),
-        }));
-    }
+    let mut ratio = CoinRatio { ratio: weights };
+    ratio.normalize()?;
 
-    let token_weights: Vec<CoinWeight> = deposit_amount_weights.iter().try_fold(
+    Ok(ratio)
+}
+
+pub fn get_token_amount_weights(
+    deposit_amount_weights: &Vec<CoinWeight>,
+) -> Result<Vec<CoinWeight>, ContractError> {
+    deposit_amount_weights.iter().try_fold(
         vec![],
         |mut acc: Vec<CoinWeight>,
          coin_weight: &CoinWeight|
@@ -99,22 +92,13 @@ pub fn may_pay_with_ratio(
             };
             Ok(acc)
         },
-    )?;
+    )
+}
 
-    if token_weights
-        .first()
-        .ok_or(ContractError::TokenWeightsIsEMpty {})?
-        .weight
-        == Decimal::zero()
-    {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: format!(
-                "token weight is zero for {}",
-                token_weights.first().unwrap().denom
-            ),
-        }));
-    }
-
+pub fn get_max_bond(
+    funds: &[Coin],
+    token_weights: &Vec<CoinWeight>,
+) -> Result<Uint128, ContractError> {
     let mut max_bond = Uint128::MAX;
     for coin_weight in token_weights {
         let amount = must_pay_multi(funds, &coin_weight.denom)?;
@@ -126,24 +110,20 @@ pub fn may_pay_with_ratio(
             max_bond = bond_for_token;
         }
     }
+    Ok(max_bond)
+}
 
-    let ratio = CoinRatio {
-        ratio: deposit_amount_weights,
-    };
-
-    if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
-        return Err(ContractError::Std(StdError::GenericErr {
-            msg: format!("Unable to correctly determine max_bond, value: {max_bond}"),
-        }));
-    }
-
+pub fn get_deposit_and_remainder_for_ratio(
+    funds: &[Coin],
+    max_bond: Uint128,
+    ratio: &CoinRatio,
+) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // verify that >0 of each token in ratio is passed in, return (funds, remainder))
     // where funds is the max amount we can use in compliance with the ratio
     // and remainder is the change to return to user
-    let normed_ratio = ratio.get_normed_ratio();
     let mut remainder = funds.to_owned();
 
-    let coins: Result<Vec<Coin>, ContractError> = normed_ratio?
+    let coins: Result<Vec<Coin>, ContractError> = ratio.ratio
         .iter()
         .map(|r| {
             let amount = must_pay_multi(funds, &r.denom)?;
@@ -175,9 +155,60 @@ pub fn may_pay_with_ratio(
         })
         .collect();
 
-    let c = coins?;
+    Ok((coins?, remainder))
+}
 
-    if c.first()
+pub fn may_pay_with_ratio(
+    deps: &Deps,
+    funds: &[Coin],
+    mut invest: InvestmentInfo,
+) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
+    // normalize primitives
+    invest.normalize_primitive_weights();
+
+    // load cached balance of primitive contracts
+    let deposit_amount_ratio =
+        get_deposit_amount_weights(deps, &invest.primitives)?;
+
+    if deposit_amount_ratio.ratio
+        .first()
+        .ok_or(ContractError::CoinsWeightVectorIsEmpty {})?
+        .weight
+        == Decimal::zero()
+    {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: "Deposit amount weight for primitive is zero".to_string(),
+        }));
+    }
+
+    let token_weights: Vec<CoinWeight> = get_token_amount_weights(&deposit_amount_ratio.ratio)?;
+
+    if token_weights
+        .first()
+        .ok_or(ContractError::TokenWeightsIsEMpty {})?
+        .weight
+        == Decimal::zero()
+    {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: format!(
+                "token weight is zero for {}",
+                token_weights.first().unwrap().denom
+            ),
+        }));
+    }
+
+    let max_bond = get_max_bond(funds, &token_weights)?;
+
+    if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
+        return Err(ContractError::Std(StdError::GenericErr {
+            msg: format!("Unable to correctly determine max_bond, value: {max_bond}"),
+        }));
+    }
+
+    let (coins, remainder) = get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio)?;
+
+    if coins
+        .first()
         .ok_or(ContractError::CoinsVectorIsEmpty {})?
         .amount
         == Uint128::zero()
@@ -187,7 +218,7 @@ pub fn may_pay_with_ratio(
         }));
     }
 
-    Ok((c, remainder))
+    Ok((coins, remainder))
 }
 
 pub fn bond(

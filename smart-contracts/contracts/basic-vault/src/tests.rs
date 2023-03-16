@@ -6,8 +6,8 @@ mod tests {
         from_binary,
         testing::{mock_env, mock_info, MockApi, MockStorage},
         to_binary, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty, Env,
-        MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp, Uint128,
-        WasmMsg,
+        Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response,
+        Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
 
@@ -15,13 +15,19 @@ mod tests {
         msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
         state::Config,
     };
-    use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
+    use quasar_types::{
+        callback::{BondResponse, StartUnbondResponse, UnbondResponse},
+        types::{CoinRatio, CoinWeight},
+    };
 
     use crate::{
         contract::execute,
         contract::instantiate,
         contract::query,
-        execute::may_pay_with_ratio,
+        execute::{
+            get_deposit_amount_weights, get_deposit_and_remainder_for_ratio, get_max_bond,
+            get_token_amount_weights, may_pay_with_ratio,
+        },
         msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
     };
 
@@ -227,6 +233,20 @@ mod tests {
         let res = execute(deps.as_mut(), env, info, deposit_msg).unwrap();
         assert_eq!(res.messages.len(), 2);
         assert_eq!(res.attributes.first().unwrap().value, "1");
+
+        if let CosmosMsg::Wasm(wasm_msg) = &res.messages.first().unwrap().msg {
+            if let WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            } = wasm_msg
+            {
+                assert_eq!(contract_addr, "quasar123");
+                assert_eq!(funds[0].amount, Uint128::from(100u128));
+            } else {
+                panic!("Wrong message type")
+            }
+        }
     }
 
     fn even_primitives() -> Vec<(String, String, Uint128, Uint128)> {
@@ -289,6 +309,691 @@ mod tests {
         ]
     }
 
+    fn uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
+        vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ]
+    }
+
+    fn uneven_primitive_details() -> Vec<(String, String, Decimal)> {
+        vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("2.0").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+        ]
+    }
+
+    fn uneven_deposit() -> Vec<Coin> {
+        vec![
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(200u128),
+            },
+        ]
+    }
+
+    #[test]
+    fn test_get_deposit_amount_weights() {
+        let primitive_states = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
+        let primitive_deets = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("3.5").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+        ];
+
+        let mut deps = mock_deps_with_primitives(primitive_states.clone());
+        let init_msg = init_msg_with_primitive_details(primitive_deets.clone());
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let weights =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let first_weight = Decimal::from_ratio(
+            primitive_deets[0].2 * primitive_states[0].3,
+            primitive_states[0].2,
+        );
+        let second_weight = Decimal::from_ratio(
+            primitive_deets[1].2 * primitive_states[1].3,
+            primitive_states[1].2,
+        );
+
+        let total = first_weight + second_weight;
+
+        let expected_first_weight = Decimal::from_ratio(
+            first_weight.numerator() * total.denominator(),
+            first_weight.denominator() * total.numerator(),
+        );
+        let expected_second_weight = Decimal::from_ratio(
+            second_weight.numerator() * total.denominator(),
+            second_weight.denominator() * total.numerator(),
+        );
+
+        assert_eq!(weights.ratio[0].weight, expected_first_weight);
+        assert_eq!(weights.ratio[1].weight, expected_second_weight);
+    }
+
+    #[test]
+    fn test_get_token_amount_weights() {
+        let primitive_states = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
+        let primitive_deets = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("3.5").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+        ];
+
+        let mut deps = mock_deps_with_primitives(primitive_states.clone());
+        let init_msg = init_msg_with_primitive_details(primitive_deets.clone());
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let weights =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let first_weight = Decimal::from_ratio(
+            primitive_deets[0].2 * primitive_states[0].3,
+            primitive_states[0].2,
+        );
+        let second_weight = Decimal::from_ratio(
+            primitive_deets[1].2 * primitive_states[1].3,
+            primitive_states[1].2,
+        );
+
+        let total = first_weight + second_weight;
+
+        let expected_first_weight = Decimal::from_ratio(
+            first_weight.numerator() * total.denominator(),
+            first_weight.denominator() * total.numerator(),
+        );
+        let expected_second_weight = Decimal::from_ratio(
+            second_weight.numerator() * total.denominator(),
+            second_weight.denominator() * total.numerator(),
+        );
+
+        let token_weights = get_token_amount_weights(&vec![
+            CoinWeight {
+                denom: "ibc/uosmo".to_string(),
+                weight: expected_first_weight,
+            },
+            CoinWeight {
+                denom: "ibc/uatom".to_string(),
+                weight: expected_second_weight,
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(token_weights[0].weight, expected_first_weight);
+        assert_eq!(token_weights[1].weight, expected_second_weight);
+    }
+
+    #[test]
+    fn test_get_token_amount_weights_duplicate_tokens() {}
+
+    #[test]
+    fn test_get_max_bond() {
+        let primitive_states = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
+        let primitive_deets = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("3.5").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+        ];
+
+        let funds = vec![
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(200u128),
+            },
+        ];
+
+        let mut deps = mock_deps_with_primitives(primitive_states.clone());
+        let init_msg = init_msg_with_primitive_details(primitive_deets.clone());
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let weights =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let first_weight = Decimal::from_ratio(
+            primitive_deets[0].2 * primitive_states[0].3,
+            primitive_states[0].2,
+        );
+        let second_weight = Decimal::from_ratio(
+            primitive_deets[1].2 * primitive_states[1].3,
+            primitive_states[1].2,
+        );
+
+        let total = first_weight + second_weight;
+
+        let expected_first_weight = Decimal::from_ratio(
+            first_weight.numerator() * total.denominator(),
+            first_weight.denominator() * total.numerator(),
+        );
+        let expected_second_weight = Decimal::from_ratio(
+            second_weight.numerator() * total.denominator(),
+            second_weight.denominator() * total.numerator(),
+        );
+
+        assert_eq!(weights.ratio[0].weight, expected_first_weight);
+        assert_eq!(weights.ratio[1].weight, expected_second_weight);
+
+        let token_weights = get_token_amount_weights(&vec![
+            CoinWeight {
+                denom: "ibc/uosmo".to_string(),
+                weight: expected_first_weight,
+            },
+            CoinWeight {
+                denom: "ibc/uatom".to_string(),
+                weight: expected_second_weight,
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(token_weights[0].weight, expected_first_weight);
+        assert_eq!(token_weights[1].weight, expected_second_weight);
+
+        let expected_max_bond = std::cmp::min(
+            Decimal::from_ratio(
+                funds[0].amount * token_weights[0].weight.denominator(),
+                token_weights[0].weight.numerator(),
+            )
+            .to_uint_floor(),
+            Decimal::from_ratio(
+                funds[1].amount * token_weights[1].weight.denominator(),
+                token_weights[1].weight.numerator(),
+            )
+            .to_uint_floor(),
+        );
+
+        let max_bond = get_max_bond(&funds, &token_weights).unwrap();
+
+        assert_eq!(max_bond, expected_max_bond);
+    }
+
+    #[test]
+    fn test_get_deposit_and_remainder_for_ratio() {
+        let primitive_states = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
+        let primitive_deets = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("3.5").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+        ];
+
+        let funds = vec![
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(200u128),
+            },
+        ];
+
+        let mut deps = mock_deps_with_primitives(primitive_states.clone());
+        let init_msg = init_msg_with_primitive_details(primitive_deets.clone());
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let weights =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let first_weight = Decimal::from_ratio(
+            primitive_deets[0].2 * primitive_states[0].3,
+            primitive_states[0].2,
+        );
+        let second_weight = Decimal::from_ratio(
+            primitive_deets[1].2 * primitive_states[1].3,
+            primitive_states[1].2,
+        );
+
+        let total = first_weight + second_weight;
+
+        let expected_first_weight = Decimal::from_ratio(
+            first_weight.numerator() * total.denominator(),
+            first_weight.denominator() * total.numerator(),
+        );
+        let expected_second_weight = Decimal::from_ratio(
+            second_weight.numerator() * total.denominator(),
+            second_weight.denominator() * total.numerator(),
+        );
+
+        let token_weights = get_token_amount_weights(&vec![
+            CoinWeight {
+                denom: "ibc/uosmo".to_string(),
+                weight: expected_first_weight,
+            },
+            CoinWeight {
+                denom: "ibc/uatom".to_string(),
+                weight: expected_second_weight,
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(token_weights[0].weight, expected_first_weight);
+        assert_eq!(token_weights[1].weight, expected_second_weight);
+
+        let expected_max_bond = std::cmp::min(
+            Decimal::from_ratio(
+                funds[0].amount * token_weights[0].weight.denominator(),
+                token_weights[0].weight.numerator(),
+            )
+            .to_uint_floor(),
+            Decimal::from_ratio(
+                funds[1].amount * token_weights[1].weight.denominator(),
+                token_weights[1].weight.numerator(),
+            )
+            .to_uint_floor(),
+        );
+
+        let max_bond = get_max_bond(&funds, &token_weights).unwrap();
+
+        assert_eq!(max_bond, expected_max_bond);
+
+        let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
+            &funds,
+            max_bond,
+            &CoinRatio {
+                ratio: token_weights.clone(),
+            },
+        )
+        .unwrap();
+
+        let expected_first_deposit = Decimal::from_ratio(
+            token_weights[0].weight.numerator() * max_bond,
+            token_weights[0].weight.denominator(),
+        );
+        let expected_second_deposit = Decimal::from_ratio(
+            token_weights[1].weight.numerator() * max_bond,
+            token_weights[1].weight.denominator(),
+        );
+
+        assert_eq!(deposit[0].amount, expected_first_deposit.to_uint_floor());
+        assert_eq!(deposit[1].amount, expected_second_deposit.to_uint_floor());
+
+        assert_eq!(
+            remainder[0].amount,
+            funds[0].amount - expected_first_deposit.to_uint_floor()
+        );
+        assert_eq!(
+            remainder[1].amount,
+            funds[1].amount - expected_second_deposit.to_uint_floor()
+        );
+    }
+
+    #[test]
+    fn test_get_deposit_and_remainder_for_ratio_three_primitives() {
+        let primitive_states = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Uint128::from(600u128),
+                Uint128::from(450u128),
+            ),
+        ];
+        let primitive_deets = vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("3.5").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Decimal::from_str("0.5").unwrap(),
+            ),
+        ];
+
+        let funds = vec![
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(200u128),
+            },
+            Coin {
+                denom: "ibc/ustars".to_string(),
+                amount: Uint128::from(200u128),
+            },
+        ];
+
+        let mut deps = mock_deps_with_primitives(primitive_states.clone());
+        let init_msg = init_msg_with_primitive_details(primitive_deets.clone());
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let weights =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let first_weight = Decimal::from_ratio(
+            primitive_deets[0].2 * primitive_states[0].3,
+            primitive_states[0].2,
+        );
+        let second_weight = Decimal::from_ratio(
+            primitive_deets[1].2 * primitive_states[1].3,
+            primitive_states[1].2,
+        );
+        let third_weight = Decimal::from_ratio(
+            primitive_deets[2].2 * primitive_states[2].3,
+            primitive_states[2].2,
+        );
+
+        let total = first_weight + second_weight + third_weight;
+
+        let expected_first_weight = Decimal::from_ratio(
+            first_weight.numerator() * total.denominator(),
+            first_weight.denominator() * total.numerator(),
+        );
+        let expected_second_weight = Decimal::from_ratio(
+            second_weight.numerator() * total.denominator(),
+            second_weight.denominator() * total.numerator(),
+        );
+        let expected_third_weight = Decimal::from_ratio(
+            third_weight.numerator() * total.denominator(),
+            third_weight.denominator() * total.numerator(),
+        );
+
+        assert_eq!(weights.ratio[0].weight, expected_first_weight);
+        assert_eq!(weights.ratio[1].weight, expected_second_weight);
+        assert_eq!(weights.ratio[2].weight, expected_third_weight);
+
+        let token_weights = get_token_amount_weights(&vec![
+            CoinWeight {
+                denom: "ibc/uosmo".to_string(),
+                weight: expected_first_weight,
+            },
+            CoinWeight {
+                denom: "ibc/uatom".to_string(),
+                weight: expected_second_weight,
+            },
+            CoinWeight {
+                denom: "ibc/ustars".to_string(),
+                weight: expected_third_weight,
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(token_weights[0].weight, expected_first_weight);
+        assert_eq!(token_weights[1].weight, expected_second_weight);
+        assert_eq!(token_weights[2].weight, expected_third_weight);
+
+        let expected_max_bond = std::cmp::min(
+            Decimal::from_ratio(
+                funds[0].amount * token_weights[0].weight.denominator(),
+                token_weights[0].weight.numerator(),
+            )
+            .to_uint_floor(),
+            Decimal::from_ratio(
+                funds[1].amount * token_weights[1].weight.denominator(),
+                token_weights[1].weight.numerator(),
+            )
+            .to_uint_floor(),
+        );
+
+        let max_bond = get_max_bond(&funds, &token_weights).unwrap();
+
+        assert_eq!(max_bond, expected_max_bond);
+
+        let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
+            &funds,
+            max_bond,
+            &CoinRatio {
+                ratio: token_weights.clone(),
+            },
+        )
+        .unwrap();
+
+        let expected_first_deposit = Decimal::from_ratio(
+            token_weights[0].weight.numerator() * max_bond,
+            token_weights[0].weight.denominator(),
+        );
+        let expected_second_deposit = Decimal::from_ratio(
+            token_weights[1].weight.numerator() * max_bond,
+            token_weights[1].weight.denominator(),
+        );
+        let expected_third_deposit = Decimal::from_ratio(
+            token_weights[2].weight.numerator() * max_bond,
+            token_weights[2].weight.denominator(),
+        );
+
+        assert_eq!(deposit[0].amount, expected_first_deposit.to_uint_floor());
+        assert_eq!(deposit[1].amount, expected_second_deposit.to_uint_floor());
+        assert_eq!(deposit[2].amount, expected_third_deposit.to_uint_floor());
+
+        assert_eq!(
+            remainder[0].amount,
+            funds[0].amount - expected_first_deposit.to_uint_floor()
+        );
+        assert_eq!(
+            remainder[1].amount,
+            funds[1].amount - expected_second_deposit.to_uint_floor()
+        );
+        assert_eq!(
+            remainder[2].amount,
+            funds[2].amount - expected_third_deposit.to_uint_floor()
+        );
+    }
+
+    #[test]
+    fn test_may_pay_with_one_primitive() {
+        let mut deps = mock_deps_with_primitives(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        )]);
+        let init_msg = init_msg_with_primitive_details(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::from_str("2.0").unwrap(),
+        )]);
+
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
+
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+
+        let funds = &[
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(200u128),
+            },
+        ];
+
+        // load cached balance of primitive contracts
+        let deposit_amount_ratio =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let token_weights: Vec<CoinWeight> =
+            get_token_amount_weights(&deposit_amount_ratio.ratio).unwrap();
+
+        let max_bond = get_max_bond(funds, &token_weights).unwrap();
+
+        let (coins, remainder) =
+            get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio).unwrap();
+
+        assert_eq!(coins.len(), 1);
+        assert_eq!(coins[0].amount, Uint128::from(200u128));
+
+        assert_eq!(remainder.len(), 1);
+        assert_eq!(remainder[0].amount, Uint128::from(0u128));
+    }
+
     #[test]
     fn test_may_pay_with_even_ratio() {
         let mut deps = mock_deps_with_primitives(even_primitives());
@@ -317,87 +1022,95 @@ mod tests {
         assert_eq!(remainder[2].amount, Uint128::from(1u128));
     }
 
-    // #[test]
-    // fn test_may_pay_with_uneven_ratio() {
-    //     let mut deps = mock_deps_with_primitives(vec![
-    //         (
-    //             "quasar123".to_string(),
-    //             "ibc/uosmo".to_string(),
-    //             Uint128::from(1000u128),
-    //             Uint128::from(1000u128),
-    //         ),
-    //         (
-    //             "quasar124".to_string(),
-    //             "ibc/uatom".to_string(),
-    //             Uint128::from(500u128),
-    //             Uint128::from(1000u128),
-    //         ),
-    //         (
-    //             "quasar125".to_string(),
-    //             "ibc/ustars".to_string(),
-    //             Uint128::from(250u128),
-    //             Uint128::from(100u128),
-    //         ),
-    //     ]);
-    //     let init_msg = init_msg_with_primitive_details(vec![
-    //         (
-    //             "quasar123".to_string(),
-    //             "ibc/uosmo".to_string(),
-    //             Decimal::one(),
-    //         ),
-    //         (
-    //             "quasar124".to_string(),
-    //             "ibc/uatom".to_string(),
-    //             Decimal::one(),
-    //         ),
-    //         (
-    //             "quasar125".to_string(),
-    //             "ibc/ustars".to_string(),
-    //             Decimal::from_ratio(3u128, 10u128),
-    //         ),
-    //     ]);
-    //     let info = mock_info(TEST_CREATOR, &[]);
-    //     let env = mock_env();
-    //     let res = init(deps.as_mut(), &init_msg, &env, &info);
-    //     assert_eq!(0, res.messages.len());
+    #[test]
+    fn test_may_pay_with_uneven_ratio() {
+        let mut deps = mock_deps_with_primitives(vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Uint128::from(150u128),
+                Uint128::from(200u128),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Uint128::from(250u128),
+                Uint128::from(300u128),
+            ),
+        ]);
+        let init_msg = init_msg_with_primitive_details(vec![
+            (
+                "quasar123".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("2.0").unwrap(),
+            ),
+            (
+                "quasar124".to_string(),
+                "ibc/uatom".to_string(),
+                Decimal::one(),
+            ),
+            (
+                "quasar125".to_string(),
+                "ibc/ustars".to_string(),
+                Decimal::one(),
+            ),
+        ]);
 
-    //     let invest_query = crate::msg::QueryMsg::Investment {};
-    //     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
+        let info = mock_info(TEST_CREATOR, &[]);
+        let env = mock_env();
+        let res = init(deps.as_mut(), &init_msg, &env, &info);
+        assert_eq!(0, res.messages.len());
 
-    //     let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+        let invest_query = crate::msg::QueryMsg::Investment {};
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    //     let (coins, remainder) = may_pay_with_ratio(
-    //         &deps.as_ref(),
-    //         &[
-    //             Coin {
-    //                 denom: "ibc/uosmo".to_string(),
-    //                 amount: Uint128::from(100u128),
-    //             },
-    //             Coin {
-    //                 denom: "ibc/uatom".to_string(),
-    //                 amount: Uint128::from(200u128),
-    //             },
-    //             Coin {
-    //                 denom: "ibc/ustars".to_string(),
-    //                 amount: Uint128::from(1000u128),
-    //             },
-    //         ],
-    //         investment_response.info,
-    //     )
-    //     .unwrap();
+        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-    //     println!("coins: {coins:?}");
-    //     println!("remainder: {remainder:?}");
-    //     assert_eq!(coins.len(), 3);
-    //     assert_eq!(coins[0].amount, Uint128::from(36u128));
-    //     assert_eq!(coins[1].amount, Uint128::from(73u128));
-    //     assert_eq!(coins[2].amount, Uint128::from(4u128));
+        let funds = &[
+            Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(200u128),
+            },
+            Coin {
+                denom: "ibc/uatom".to_string(),
+                amount: Uint128::from(150u128),
+            },
+            Coin {
+                denom: "ibc/ustars".to_string(),
+                amount: Uint128::from(140u128),
+            },
+        ];
 
-    //     assert_eq!(remainder.len(), 3);
-    //     assert_eq!(remainder[0].amount, Uint128::from(1u128));
-    //     assert_eq!(remainder[1].amount, Uint128::from(1u128));
-    //     assert_eq!(remainder[2].amount, Uint128::from(1u128));
-    // }
+        // load cached balance of primitive contracts
+        let deposit_amount_ratio =
+            get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
+                .unwrap();
+
+        let token_weights: Vec<CoinWeight> =
+            get_token_amount_weights(&deposit_amount_ratio.ratio).unwrap();
+
+        let max_bond = get_max_bond(funds, &token_weights).unwrap();
+
+        let (coins, remainder) =
+            get_deposit_and_remainder_for_ratio(funds, max_bond, &deposit_amount_ratio).unwrap();
+
+
+        assert_eq!(coins.len(), 3);
+        assert_eq!(coins[0].amount, Uint128::from(199u128)); // these numbers have been verified
+        assert_eq!(coins[1].amount, Uint128::from(133u128));
+        assert_eq!(coins[2].amount, Uint128::from(119u128));
+
+        assert_eq!(remainder.len(), 3);
+        assert_eq!(remainder[0].amount, Uint128::from(1u128));
+        assert_eq!(remainder[1].amount, Uint128::from(17u128));
+        assert_eq!(remainder[2].amount, Uint128::from(21u128));
+    }
 
     #[test]
     fn proper_bond() {
