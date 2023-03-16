@@ -448,7 +448,6 @@ mod tests {
         });
         let w = QuerierWrapper::new(&deps.querier);
 
-        print!("{:?}", w.query_wasm_contract_info(owner.clone()));
         assert!(w.query_wasm_contract_info(owner.clone()).is_ok());
 
         // test specific setup
