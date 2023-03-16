@@ -30,7 +30,7 @@ echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
 # swallow output
-OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
 ADDR1=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR1"
 
@@ -39,7 +39,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost 
 
 sleep 6
 
-OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
 ADDR2=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[1]')
 echo "Got address of deployed contract = $ADDR2"
 
@@ -48,7 +48,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icahost 
 
 sleep 6
 
-OUT3=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT3" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+OUT3=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT3" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
 ADDR3=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[2]')
 echo "Got address of deployed contract = $ADDR3"
 
@@ -74,7 +74,7 @@ echo "Got CODE_ID = $VAULT_CODE_ID"
 
 echo "Deploying contract (vault)"
 # swallow output
-OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
 VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
 
 echo "Got address of deployed contract = $VAULT_ADDR (vault)"
