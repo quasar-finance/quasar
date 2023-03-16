@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Env, IbcTimeout, Order, Storage, SubMsg, Timestamp, Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Coin, CosmosMsg, Env, IbcTimeout, Order, QuerierWrapper, Storage,
+    SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
@@ -169,21 +170,35 @@ pub struct ReturningUnbond {
 // TODO this only works for the happy path in the receiver
 pub fn finish_unbond(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
     unbond: &ReturningUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<CosmosMsg, ContractError> {
     let amount = match unbond.amount {
         RawAmount::LocalDenom(val) => val,
         RawAmount::LpShares(_) => return Err(ContractError::IncorrectRawAmount),
     };
-    let msg = WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
-            unbond_id: unbond.id.clone(),
-        }))?,
-        funds: vec![Coin {
-            denom: CONFIG.load(storage)?.local_denom,
-            amount,
-        }],
+    let msg: CosmosMsg = if querier
+        .query_wasm_contract_info(unbond.owner.as_str())
+        .is_ok()
+    {
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+                unbond_id: unbond.id.clone(),
+            }))?,
+            funds: vec![Coin {
+                denom: CONFIG.load(storage)?.local_denom,
+                amount,
+            }],
+        })
+    } else {
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: unbond.owner.to_string(),
+            amount: vec![Coin {
+                denom: CONFIG.load(storage)?.local_denom,
+                amount,
+            }],
+        })
     };
     Ok(msg)
 }

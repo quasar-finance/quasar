@@ -36,10 +36,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, Decimal, DepsMut, Env, IbcBasicResponse,
-    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    Response, StdError, Storage, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
+    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
+    IbcTimeout, Querier, QuerierWrapper, Response, StdError, Storage, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -251,7 +251,9 @@ pub fn handle_succesful_ack(
         IbcMsgKind::Transfer { pending, amount } => {
             handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending, amount)
         }
-        IbcMsgKind::Ica(ica_kind) => handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind),
+        IbcMsgKind::Ica(ica_kind) => {
+            handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind)
+        }
         IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin),
     }
 }
@@ -383,6 +385,7 @@ pub fn handle_icq_ack(
 
 pub fn handle_ica_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: Env,
     ack_bin: Binary,
     _pkt: &IbcPacketAckMsg,
@@ -463,14 +466,19 @@ pub fn handle_ica_ack(
             for claim in &data.bonds {
                 let share_amount =
                     create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
-                callbacks.push(WasmMsg::Execute {
-                    contract_addr: claim.owner.to_string(),
-                    msg: to_binary(&Callback::BondResponse(BondResponse {
-                        share_amount,
-                        bond_id: claim.bond_id.clone(),
-                    }))?,
-                    funds: vec![],
-                })
+                if querier
+                    .query_wasm_contract_info(claim.owner.as_str())
+                    .is_ok()
+                {
+                    callbacks.push(WasmMsg::Execute {
+                        contract_addr: claim.owner.to_string(),
+                        msg: to_binary(&Callback::BondResponse(BondResponse {
+                            share_amount,
+                            bond_id: claim.bond_id.clone(),
+                        }))?,
+                        funds: vec![],
+                    })
+                }
             }
 
             // set the bond lock state to unlocked
@@ -484,10 +492,10 @@ pub fn handle_ica_ack(
                 .add_attribute("locked_tokens", ack_bin.to_base64())
                 .add_attribute("lock_id", resp.id.to_string()))
         }
-        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, &env, data),
+        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, querier, &env, data),
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
-        IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, data),
+        IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
     }
 }
 
@@ -527,11 +535,12 @@ fn handle_exit_pool_ack(
 
 fn handle_return_transfer_ack(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
     data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let mut msgs: Vec<WasmMsg> = Vec::new();
-    for pending in data.unbonds.iter() {
-        let msg = finish_unbond(storage, pending)?;
+    let mut msgs: Vec<CosmosMsg> = Vec::new();
+    for unbond in data.unbonds.iter() {
+        let msg = finish_unbond(storage, querier, unbond)?;
         msgs.push(msg);
     }
     Ok(Response::new()
