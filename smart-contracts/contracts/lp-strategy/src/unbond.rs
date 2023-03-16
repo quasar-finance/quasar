@@ -86,18 +86,18 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
+        IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
             unbonds: pending,
         })),
         pkt,
     )?))
 }
 
-// TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold it (with gas costs etc)
+// TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold pending to get total_tokens (with gas costs etc)
 pub fn transfer_batch_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    pending: &PendingReturningUnbonds,
+    pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
     // the return transfer times out 400 seconds after we dispatch the ica msg towards osmosis
@@ -119,7 +119,7 @@ pub fn transfer_batch_unbond(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
+        IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
         pkt,
     )?)
 }
@@ -399,7 +399,7 @@ mod tests {
         let owner = Addr::unchecked("bob");
         let id = "my-id".to_string();
 
-        let pending = &PendingReturningUnbonds {
+        let pending = PendingReturningUnbonds {
             unbonds: vec![
                 ReturningUnbond {
                     amount: RawAmount::LocalDenom(Uint128::new(101)),
