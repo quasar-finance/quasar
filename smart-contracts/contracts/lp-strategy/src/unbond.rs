@@ -271,7 +271,7 @@ mod tests {
         let unbond = Unbond {
             lp_shares: Uint128::new(100),
             unlock_time: env.block.time,
-            attempted: false,
+            attempted: true,
             owner: owner.clone(),
             id: id.clone(),
         };
