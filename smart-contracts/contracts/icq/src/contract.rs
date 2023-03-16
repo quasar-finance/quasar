@@ -310,7 +310,7 @@ mod test {
             timeout: None,
         };
 
-        let msg = ExecuteMsg::Query(q.clone());
+        let msg = ExecuteMsg::Query(q);
         let info = mock_info("foobar", &[]);
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         if let CosmosMsg::Ibc(IbcMsg::SendPacket {

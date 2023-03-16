@@ -167,7 +167,7 @@ mod tests {
         };
 
         let expected =
-            InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.clone().pack()], None);
+            InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.pack()], None);
 
         let qvec: Vec<u8> = vec![
             10, 136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,
@@ -192,7 +192,7 @@ mod tests {
         ];
         assert_eq!(qvec, osmovec);
         for (i, val) in expected.data.iter().enumerate() {
-            assert_eq!(val, &qvec[i], "loc {:?}", i)
+            assert_eq!(val, &qvec[i], "loc {i:?}")
         }
         assert_eq!(qvec, expected.data)
     }
@@ -262,7 +262,7 @@ mod tests {
             48, 48, 48, 34, 1, 49,
         ];
         for (i, val) in encoded.iter().enumerate() {
-            assert_eq!(val, &msg[i], "loc {:?}", i)
+            assert_eq!(val, &msg[i], "loc {i:?}")
         }
         assert_eq!(encoded, msg);
         let _join_msg: MsgJoinSwapExternAmountIn = prost::Message::decode::<&[u8]>(&msg).unwrap();

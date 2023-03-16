@@ -1,12 +1,12 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Binary, StdResult
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
     osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketData, Query, InterchainQueryPacketAck};
+use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
@@ -201,7 +201,7 @@ mod tests {
 
         // lock the ibc lock
         IBC_LOCK
-            .save(deps.as_mut().storage, &&Lock::new().lock_start_unbond())
+            .save(deps.as_mut().storage, &Lock::new().lock_start_unbond())
             .unwrap();
 
         let res = try_icq(deps.as_mut().storage, env).unwrap();

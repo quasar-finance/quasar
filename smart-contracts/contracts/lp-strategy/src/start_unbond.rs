@@ -212,8 +212,8 @@ mod tests {
             .unwrap();
 
         let unbond = StartUnbond {
-            owner: owner,
-            id: id.to_string(),
+            owner,
+            id: id,
             primitive_shares: Uint128::new(1000),
         };
         do_start_unbond(deps.as_mut().storage, unbond).unwrap()
@@ -241,8 +241,8 @@ mod tests {
             primitive_shares: Uint128::new(300),
         };
         let unbond3 = StartUnbond {
-            owner: owner,
-            id: id.to_string(),
+            owner,
+            id: id,
             primitive_shares: Uint128::new(200),
         };
 
@@ -285,8 +285,8 @@ mod tests {
             .unwrap();
 
         let unbond = StartUnbond {
-            owner: owner,
-            id: id.to_string(),
+            owner,
+            id: id,
             primitive_shares: Uint128::new(1000),
         };
         let err = do_start_unbond(deps.as_mut().storage, unbond).unwrap_err();
@@ -317,8 +317,8 @@ mod tests {
             .unwrap();
 
         let unbond = StartUnbond {
-            owner: owner,
-            id: id,
+            owner,
+            id,
             primitive_shares: Uint128::new(1000),
         };
         let err = do_start_unbond(deps.as_mut().storage, unbond).unwrap_err();
@@ -339,12 +339,12 @@ mod tests {
             .unwrap();
 
         let unbond1 = StartUnbond {
-            owner: owner.clone(),
-            id: id.to_string(),
+            owner: owner,
+            id: id,
             primitive_shares: Uint128::new(1000),
         };
 
-        do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
+        do_start_unbond(deps.as_mut().storage, unbond1).unwrap();
 
         let res = batch_start_unbond(deps.as_mut().storage, &env, Uint128::new(1000)).unwrap();
         assert!(res.is_some());
@@ -366,7 +366,7 @@ mod tests {
         };
 
         let pkt = ica_send::<MsgBeginUnlocking>(
-            msg.clone(),
+            msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         )
@@ -464,7 +464,7 @@ mod tests {
         assert_eq!(
             res,
             WasmMsg::Execute {
-                contract_addr: owner.clone().to_string(),
+                contract_addr: owner.to_string(),
                 msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
                     unbond_id: id.to_string(),
                     unlock_time: env
@@ -538,7 +538,7 @@ mod tests {
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
             primitive_shares: Uint128::new(100),
-            owner: owner.clone(),
+            owner: owner,
             id: id.to_string(),
         };
 
@@ -566,7 +566,7 @@ mod tests {
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
             primitive_shares: Uint128::new(100),
-            owner: owner.clone(),
+            owner: owner,
             id: id.to_string(),
         };
 

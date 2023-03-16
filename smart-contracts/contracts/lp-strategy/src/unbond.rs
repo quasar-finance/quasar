@@ -351,8 +351,8 @@ mod tests {
             Unbond {
                 lp_shares: Uint128::new(102),
                 unlock_time: env.block.time,
-                owner: owner.clone(),
-                id: id.clone(),
+                owner: owner,
+                id: id,
             },
         ];
 
@@ -413,8 +413,8 @@ mod tests {
                 },
                 ReturningUnbond {
                     amount: RawAmount::LocalDenom(Uint128::new(103)),
-                    owner: owner.clone(),
-                    id: id.clone(),
+                    owner: owner,
+                    id: id,
                 },
             ],
         };

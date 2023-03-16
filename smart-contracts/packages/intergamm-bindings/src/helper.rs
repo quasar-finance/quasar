@@ -162,6 +162,6 @@ fn find_attr<'a>(attributes: &'a [Attribute], key: &str) -> Result<&'a Attribute
         .iter()
         .find(|attr| attr.key == key)
         .ok_or_else(|| StdError::GenericErr {
-            msg: format!("packet does not containt attribute {}", key),
+            msg: format!("packet does not containt attribute {key}"),
         })
 }

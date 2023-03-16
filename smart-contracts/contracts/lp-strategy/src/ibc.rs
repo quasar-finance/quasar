@@ -37,7 +37,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, Decimal, Decimal256, DepsMut, Env,
+    from_binary, to_binary, Attribute, Binary, Coin, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
     IbcTimeout, StdError, Storage, Uint128, WasmMsg,
@@ -603,7 +603,7 @@ pub fn handle_failing_ack(
         deps.storage,
         pkt.original_packet.sequence,
         &Trap {
-            error: format!("packet failure: {}", error),
+            error: format!("packet failure: {error}"),
             step,
         },
     )?;
@@ -636,7 +636,7 @@ fn on_packet_failure(
         deps.storage,
         packet.sequence,
         &Trap {
-            error: format!("packet failure: {}", error),
+            error: format!("packet failure: {error}"),
             step,
         },
     )?;

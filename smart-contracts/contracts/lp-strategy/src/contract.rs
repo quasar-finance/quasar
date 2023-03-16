@@ -78,7 +78,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         .result
         .into_result()
         .map_err(|msg| StdError::GenericErr {
-            msg: format!("submsg error: {:?}", msg),
+            msg: format!("submsg error: {msg:?}"),
         })?
         .data
         .ok_or(ContractError::NoReplyData)
@@ -94,7 +94,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     PENDING_ACK.save(deps.storage, seq, &pending)?;
     Ok(Response::default()
         .add_attribute("pending-msg", seq.to_string())
-        .add_attribute("step", format!("{:?}", pending)))
+        .add_attribute("step", format!("{pending:?}")))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, StdError, Uint128, WasmMsg,
+    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::execute_burn;
@@ -11,7 +10,7 @@ use quasar_types::types::{CoinRatio, CoinWeight};
 use crate::error::ContractError;
 
 use crate::state::{
-    BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
+    BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
