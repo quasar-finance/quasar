@@ -1,12 +1,14 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, Uint128};
+
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
-use crate::state::{BondingStub, Unbond};
+use crate::state::{BondingStub, InvestmentInfo, Unbond};
+
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -47,7 +49,10 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Bond will bond all staking tokens sent with the message and release derivative tokens
-    Bond {},
+    /// recipient will receive the minted vault tokens
+    Bond {
+        recipient: Option<String>,
+    },
     /// Unbond will "burn" the given amount of derivative tokens and send the unbonded
     /// staking tokens to the message sender (after exit tax is deducted)
     Unbond {
@@ -56,14 +61,6 @@ pub enum ExecuteMsg {
     /// Claim is used to claim your native tokens that you previously "unbonded"
     /// after the chain-defined waiting period (eg. 3 weeks)
     Claim {},
-    /// Reinvest will check for all accumulated rewards, withdraw them, and
-    /// re-bond them to the same validator. Anyone can call this, which updates
-    /// the value of the token (how much under custody).
-    Reinvest {},
-    /// _BondAllTokens can only be called by the contract itself, after all rewards have been
-    /// withdrawn. This is an example of using "callbacks" in message flows.
-    /// This can only be invoked by the contract itself as a return from Reinvest
-    _BondAllTokens {},
 
     // Callback(Callback),
     BondResponse(BondResponse),
@@ -170,13 +167,7 @@ pub struct MigrateMsg {}
 
 #[cw_serde]
 pub struct InvestmentResponse {
-    /// owner created the contract and takes a cut
-    pub owner: String,
-    /// This is the minimum amount we will pull out to reinvest, as well as a minimum
-    /// that can be unbonded (to avoid needless staking tx)
-    pub min_withdrawal: Uint128,
-    // the array of primitives to subscribe to for this vault
-    pub primitives: Vec<PrimitiveConfig>,
+    pub info: InvestmentInfo,
 }
 
 #[cw_serde]
