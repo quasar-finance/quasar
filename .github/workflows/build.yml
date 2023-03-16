@@ -14,11 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64]
-        targetos: [darwin, linux]
-        include:
-          - targetos: darwin
-            arch: arm64
+        arch: [amd64, arm64]
+        targetos: [linux]
     name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
     steps:
       - name: Check out repository code
@@ -33,8 +30,8 @@ jobs:
       - name: Display go version
         run: go version
       - name: Build quasarnoded
-        run: make build
+        run: make build-reproducible-${{ matrix.arch }}
       - uses: actions/upload-artifact@v2
         with:
           name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
-          path: build/quasarnoded
+          path: build/quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
