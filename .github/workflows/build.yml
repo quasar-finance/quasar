@@ -15,8 +15,10 @@ jobs:
     strategy:
       matrix:
         arch: [amd64]
-        targetos: [linux]
-
+        targetos: [darwin, linux]
+        include:
+          - targetos: darwin
+            arch: arm64
     name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
     steps:
       - name: Check out repository code
