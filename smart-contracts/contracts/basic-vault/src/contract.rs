@@ -107,7 +107,7 @@ pub fn execute(
         ExecuteMsg::Claim {} => claim(deps, env, info),
 
         // callbacks entrypoint
-        // you cant do this fuck me
+        // you cant do this - DONT TRY IT (unless you know what you're doing)
         // ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
         ExecuteMsg::BondResponse(bond_response) => on_bond(
             deps,

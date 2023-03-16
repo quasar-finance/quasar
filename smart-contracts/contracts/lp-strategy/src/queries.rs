@@ -9,12 +9,13 @@ use crate::{
     msg::{
         ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
-        ListPrimitiveSharesResponse, ListUnbondingClaimsResponse, LockResponse, LpSharesResponse,
-        PrimitiveSharesResponse, TrappedErrorsResponse, UnbondingClaimResponse, ListRepliesResponse,
+        ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
+        LockResponse, LpSharesResponse, PrimitiveSharesResponse, TrappedErrorsResponse,
+        UnbondingClaimResponse,
     },
     state::{
         Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-        PENDING_ACK, SHARES, TRAPS, UNBONDING_CLAIMS, REPLIES,
+        PENDING_ACK, REPLIES, SHARES, TRAPS, UNBONDING_CLAIMS,
     },
 };
 
@@ -138,7 +139,7 @@ pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse
 
 pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
     let replies: StdResult<HashMap<u64, SubMsgKind>> = REPLIES
-    .range(deps.storage, None, None, Order::Ascending)
-    .collect();
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
     Ok(ListRepliesResponse { replies: replies? })
 }

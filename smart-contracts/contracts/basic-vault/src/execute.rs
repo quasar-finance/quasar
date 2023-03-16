@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, StdError, Uint128, WasmMsg,
+    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
+    Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::execute_burn;
@@ -11,7 +11,7 @@ use quasar_types::types::{CoinRatio, CoinWeight};
 use crate::error::ContractError;
 
 use crate::state::{
-    BondingStub, InvestmentInfo, Supply, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
+    BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 
@@ -275,16 +275,22 @@ pub fn unbond(
     info: MessageInfo,
     amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
-    let (start_unbond_msgs, start_unbond_attrs) =
-        do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or((vec![], vec![]));
+    let start_unbond_response =
+        do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or(Response::new());
 
-    let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?.unwrap_or((vec![], vec![]));
+    let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
+
+    let start_unbond_msgs = start_unbond_response
+        .messages
+        .iter()
+        .map(|sm| sm.msg.clone());
+    let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
 
     Ok(Response::new()
         .add_messages(start_unbond_msgs)
         .add_messages(unbond_msgs)
-        .add_attributes(start_unbond_attrs)
-        .add_attributes(unbond_attrs))
+        .add_attributes(start_unbond_response.attributes)
+        .add_attributes(unbond_response.attributes))
 }
 
 pub fn do_start_unbond(
@@ -292,7 +298,7 @@ pub fn do_start_unbond(
     env: &Env,
     info: &MessageInfo,
     amount: Option<Uint128>,
-) -> Result<Option<(Vec<WasmMsg>, Vec<Attribute>)>, ContractError> {
+) -> Result<Option<Response>, ContractError> {
     let unbond_amount = amount.unwrap_or(Uint128::zero());
     if unbond_amount.is_zero() {
         // skip start unbond
@@ -370,27 +376,28 @@ pub fn do_start_unbond(
 
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
-    Ok(Some((
-        start_unbond_msgs,
-        vec![
-            Attribute {
-                key: "action".to_string(),
-                value: "start_unbond".to_string(),
-            },
-            Attribute {
-                key: "from".to_string(),
-                value: info.sender.to_string(),
-            },
-            Attribute {
-                key: "burnt".to_string(),
-                value: unbond_amount.to_string(),
-            },
-            Attribute {
-                key: "bond_id".to_string(),
-                value: bond_seq.to_string(),
-            },
-        ],
-    )))
+    Ok(Some(
+        Response::new()
+            .add_messages(start_unbond_msgs)
+            .add_attributes(vec![
+                Attribute {
+                    key: "action".to_string(),
+                    value: "start_unbond".to_string(),
+                },
+                Attribute {
+                    key: "from".to_string(),
+                    value: info.sender.to_string(),
+                },
+                Attribute {
+                    key: "burnt".to_string(),
+                    value: unbond_amount.to_string(),
+                },
+                Attribute {
+                    key: "bond_id".to_string(),
+                    value: bond_seq.to_string(),
+                },
+            ]),
+    ))
 }
 
 // find all unbondable pending unbonds where unlock_time < env.block.time
@@ -399,7 +406,7 @@ pub fn do_unbond(
     mut deps: DepsMut,
     env: &Env,
     info: &MessageInfo,
-) -> Result<Option<(Vec<WasmMsg>, Vec<Attribute>)>, ContractError> {
+) -> Result<Option<Response>, ContractError> {
     let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, info.sender.clone())?;
 
     let mut unbond_msgs: Vec<WasmMsg> = vec![];
@@ -415,30 +422,31 @@ pub fn do_unbond(
         unbond_msgs.append(current_unbond_msgs.as_mut());
     }
 
-    Ok(Some((
-        unbond_msgs.clone(),
-        vec![
-            Attribute {
-                key: "action".to_string(),
-                value: "unbond".to_string(),
-            },
-            Attribute {
-                key: "from".to_string(),
-                value: info.sender.to_string(),
-            },
-            Attribute {
-                key: "num_unbondable_ids".to_string(),
-                value: unbond_msgs.len().to_string(),
-            },
-        ],
-    )))
+    Ok(Some(
+        Response::new()
+            .add_messages(unbond_msgs.clone())
+            .add_attributes(vec![
+                Attribute {
+                    key: "action".to_string(),
+                    value: "unbond".to_string(),
+                },
+                Attribute {
+                    key: "from".to_string(),
+                    value: info.sender.to_string(),
+                },
+                Attribute {
+                    key: "num_unbondable_ids".to_string(),
+                    value: unbond_msgs.len().to_string(),
+                },
+            ]),
+    ))
 }
 
 pub fn find_and_return_unbondable_msgs(
     _deps: DepsMut,
     env: &Env,
     _info: &MessageInfo,
-    unbond_id: &String,
+    unbond_id: &str,
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
@@ -452,7 +460,7 @@ pub fn find_and_return_unbondable_msgs(
             Ok(WasmMsg::Execute {
                 contract_addr: stub.address.clone(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
-                    id: unbond_id.clone(),
+                    id: unbond_id.to_string(),
                 })?,
                 funds: vec![],
             })
@@ -462,9 +470,5 @@ pub fn find_and_return_unbondable_msgs(
 
 // claim is equivalent to calling unbond with amount: 0
 pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let (unbond_msgs, unbond_attrs) = do_unbond(deps, &env, &info)?.unwrap_or((vec![], vec![]));
-
-    Ok(Response::new()
-        .add_messages(unbond_msgs)
-        .add_attributes(unbond_attrs))
+    Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
 }

@@ -6,13 +6,12 @@ use crate::{
 };
 use cosmwasm_schema::{schemars, serde};
 use cosmwasm_std::{
-    testing::MockApi, to_binary, Addr, Binary, CosmosMsg, IbcChannel, IbcChannelConnectMsg,
-    IbcChannelOpenMsg, IbcEndpoint, IbcMsg, IbcOrder, IbcQuery, IbcTimeout, IbcTimeoutBlock,
+    testing::MockApi, Addr, Binary, IbcChannel, IbcEndpoint, IbcMsg, IbcOrder, IbcQuery,
     MemoryStorage, StdError,
 };
 use cw_multi_test::{
     ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
-    StakeKeeper, WasmKeeper, WasmSudo,
+    StakeKeeper, WasmKeeper,
 };
 
 #[derive(Derivative)]
@@ -173,9 +172,9 @@ impl QuasarVaultSuite {
         };
 
         let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
-        let channel = IbcChannel::new(
+        let _channel = IbcChannel::new(
             endpoint,
-            counterparty_endpoint.clone(),
+            counterparty_endpoint,
             IbcOrder::Ordered,
             version,
             "connection-0".to_string(),
@@ -239,7 +238,7 @@ impl QuasarVaultSuite {
     }
 
     pub fn query_balance(&self, addr: &Addr) -> StdResult<Coin> {
-        Ok(self.app.wrap().query_balance(addr.as_str(), DENOM)?)
+        self.app.wrap().query_balance(addr.as_str(), DENOM)
     }
 
     pub fn unbond(
@@ -272,7 +271,7 @@ impl QuasarVaultSuite {
     }
 
     pub fn query_deposit_ratio(&self, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
-        let msg = VaultQueryMsg::DepositRatio { funds: funds };
+        let msg = VaultQueryMsg::DepositRatio { funds };
         self.app.wrap().query_wasm_smart(self.vault.clone(), &msg)
     }
 

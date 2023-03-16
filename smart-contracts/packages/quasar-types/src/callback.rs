@@ -45,6 +45,6 @@ mod test {
             bond_id: "my_id".to_string(),
         }))
         .unwrap();
-        println!("{:?}", json);
+        println!("{json:?}");
     }
 }

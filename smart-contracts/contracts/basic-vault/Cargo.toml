@@ -34,7 +34,6 @@ lp-strategy = {path = "../lp-strategy", features = ["library"], default-features
 quasar-types = {path = "../../packages/quasar-types"}
 serde-json-wasm = {version = "0.4.1", default-features = false}
 thiserror = "1.0.23"
-cw-multi-test = {workspace = true}
 
 [dev-dependencies]
 anyhow = "1"

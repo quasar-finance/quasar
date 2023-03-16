@@ -19,9 +19,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::queries::{
     handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
     handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
-    handle_list_primitive_shares, handle_list_unbonding_claims, handle_lock,
+    handle_list_primitive_shares, handle_list_replies, handle_list_unbonding_claims, handle_lock,
     handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query, handle_list_replies,
+    handle_unbonding_claim_query,
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -82,7 +82,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 .result
                 .into_result()
                 .map_err(|msg| StdError::GenericErr {
-                    msg: format!("submsg error: {:?}", msg),
+                    msg: format!("submsg error: {msg:?}"),
                 })?
                 .data
                 .ok_or(ContractError::NoReplyData)
@@ -102,7 +102,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
             Ok(Response::default()
                 .add_attribute("pending-msg", seq.to_string())
-                .add_attribute("step", format!("{:?}", pending)))
+                .add_attribute("step", format!("{pending:?}")))
         }
         SubMsgKind::Ack(seq) => {
             let mut resp = Response::new();
@@ -113,17 +113,10 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 let step = PENDING_ACK.load(deps.storage, seq)?;
                 unlock_on_error(deps.storage, &step)?;
 
-                // reassignment needed since add_attribute 
+                // reassignment needed since add_attribute
                 resp = resp.add_attribute("trapped-error", error.as_str());
 
-                TRAPS.save(
-                    deps.storage,
-                    seq,
-                    &Trap {
-                        error,
-                        step,
-                    },
-                )?;
+                TRAPS.save(deps.storage, seq, &Trap { error, step })?;
             }
 
             // // cleanup the REPLIES state item
@@ -401,7 +394,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
         QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies { } => to_binary(&handle_list_replies(deps)?),
+        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
     }
 }
 

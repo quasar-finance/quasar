@@ -51,7 +51,7 @@ pub enum QueryMsg {
 #[entry_point]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     deps.api
-        .debug(format!("WASMDEBUG: execute: received msg: {:?}", msg).as_str());
+        .debug(format!("WASMDEBUG: execute: received msg: {msg:?}").as_str());
     match msg {
         ExecuteMsg::Transfer {
             to_address,

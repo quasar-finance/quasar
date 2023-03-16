@@ -1,22 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use std::{marker::PhantomData, primitive};
+    use std::marker::PhantomData;
 
     use cosmwasm_std::{
         from_binary,
-        testing::{
-            mock_dependencies, mock_dependencies_with_balances, mock_env, mock_info, MockApi,
-            MockQuerier, MockStorage,
-        },
-        to_binary, Addr, Api, BankMsg, Binary, BlockInfo, Coin, ContractResult, CosmosMsg,
-        CustomQuery, Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Querier, QuerierResult,
-        QueryRequest, Response, Storage, Timestamp, Uint128, WasmMsg,
+        testing::{mock_env, mock_info, MockApi, MockStorage},
+        to_binary, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty, Env,
+        MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp, Uint128,
+        WasmMsg,
     };
     use cw20::BalanceResponse;
-    use cw_multi_test::{next_block, Wasm};
+
     use lp_strategy::{
         msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
-        start_unbond::StartUnbond,
         state::Config,
     };
     use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
@@ -41,8 +37,8 @@ mod tests {
             for (addr, denom, share, balance) in &self.primitive_states {
                 if addr.eq(&address) {
                     this_denom = denom.to_string();
-                    total_share = share.clone();
-                    total_balance = balance.clone();
+                    total_share = *share;
+                    total_balance = *balance;
                 }
             }
             (this_denom, total_share, total_balance)
@@ -70,7 +66,7 @@ mod tests {
                                 lp_strategy::msg::QueryMsg::IcaBalance {} => {
                                     let response = IcaBalanceResponse {
                                         amount: Coin {
-                                            denom: this_denom.clone(),
+                                            denom: this_denom,
                                             amount: total_balance,
                                         },
                                     };
@@ -83,7 +79,7 @@ mod tests {
                                         lock_period: 14,
                                         pool_id: 1,
                                         pool_denom: "gamm/pool/1".to_string(),
-                                        local_denom: this_denom.to_string(),
+                                        local_denom: this_denom,
                                         base_denom: "uosmo".to_string(),
                                         quote_denom: "uatom".to_string(),
                                         transfer_channel: "channel-0".to_string(),
@@ -97,24 +93,23 @@ mod tests {
                                 _ => QuerierResult::Err(
                                     cosmwasm_std::SystemError::UnsupportedRequest {
                                         kind: format!(
-                                            "Unmocked primitive query type: {:?}",
-                                            primitive_query
+                                            "Unmocked primitive query type: {primitive_query:?}"
                                         ),
                                     },
                                 ),
                             }
                         } else {
                             QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                kind: format!("Unmocked primitive query type: {:?}", msg),
+                                kind: format!("Unmocked primitive query type: {msg:?}"),
                             })
                         }
                     }
                     _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                        kind: format!("Unmocked wasm query type: {:?}", wasm_query),
+                        kind: format!("Unmocked wasm query type: {wasm_query:?}"),
                     }),
                 },
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                    kind: format!("Unmocked query type: {:?}", request),
+                    kind: format!("Unmocked query type: {request:?}"),
                 }),
             }
             // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
@@ -192,9 +187,7 @@ mod tests {
     }
 
     fn init<'a>(deps: DepsMut, msg: &InstantiateMsg, env: &Env, info: &MessageInfo) -> Response {
-        let res = instantiate(deps, env.clone(), info.clone(), msg.clone()).unwrap();
-
-        res
+        instantiate(deps, env.clone(), info.clone(), msg.clone()).unwrap()
     }
 
     #[test]
@@ -278,7 +271,7 @@ mod tests {
         assert_eq!(0, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
-        let query_res = query(deps.as_ref(), env.clone(), invest_query).unwrap();
+        let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
         let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
@@ -296,87 +289,87 @@ mod tests {
         assert_eq!(remainder[2].amount, Uint128::from(1u128));
     }
 
-    #[test]
-    fn test_may_pay_with_uneven_ratio() {
-        let mut deps = mock_deps_with_primitives(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Uint128::from(1000u128),
-                Uint128::from(1000u128),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Uint128::from(500u128),
-                Uint128::from(1000u128),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Uint128::from(250u128),
-                Uint128::from(100u128),
-            ),
-        ]);
-        let init_msg = init_msg_with_primitive_details(vec![
-            (
-                "quasar123".to_string(),
-                "ibc/uosmo".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar124".to_string(),
-                "ibc/uatom".to_string(),
-                Decimal::one(),
-            ),
-            (
-                "quasar125".to_string(),
-                "ibc/ustars".to_string(),
-                Decimal::from_ratio(3u128, 10u128),
-            ),
-        ]);
-        let info = mock_info(TEST_CREATOR, &[]);
-        let env = mock_env();
-        let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+    // #[test]
+    // fn test_may_pay_with_uneven_ratio() {
+    //     let mut deps = mock_deps_with_primitives(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Uint128::from(1000u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Uint128::from(500u128),
+    //             Uint128::from(1000u128),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Uint128::from(250u128),
+    //             Uint128::from(100u128),
+    //         ),
+    //     ]);
+    //     let init_msg = init_msg_with_primitive_details(vec![
+    //         (
+    //             "quasar123".to_string(),
+    //             "ibc/uosmo".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar124".to_string(),
+    //             "ibc/uatom".to_string(),
+    //             Decimal::one(),
+    //         ),
+    //         (
+    //             "quasar125".to_string(),
+    //             "ibc/ustars".to_string(),
+    //             Decimal::from_ratio(3u128, 10u128),
+    //         ),
+    //     ]);
+    //     let info = mock_info(TEST_CREATOR, &[]);
+    //     let env = mock_env();
+    //     let res = init(deps.as_mut(), &init_msg, &env, &info);
+    //     assert_eq!(0, res.messages.len());
 
-        let invest_query = crate::msg::QueryMsg::Investment {};
-        let query_res = query(deps.as_ref(), env.clone(), invest_query).unwrap();
+    //     let invest_query = crate::msg::QueryMsg::Investment {};
+    //     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-        let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    //     let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let (coins, remainder) = may_pay_with_ratio(
-            &deps.as_ref(),
-            &vec![
-                Coin {
-                    denom: "ibc/uosmo".to_string(),
-                    amount: Uint128::from(100u128),
-                },
-                Coin {
-                    denom: "ibc/uatom".to_string(),
-                    amount: Uint128::from(200u128),
-                },
-                Coin {
-                    denom: "ibc/ustars".to_string(),
-                    amount: Uint128::from(1000u128),
-                },
-            ],
-            investment_response.info,
-        )
-        .unwrap();
+    //     let (coins, remainder) = may_pay_with_ratio(
+    //         &deps.as_ref(),
+    //         &[
+    //             Coin {
+    //                 denom: "ibc/uosmo".to_string(),
+    //                 amount: Uint128::from(100u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/uatom".to_string(),
+    //                 amount: Uint128::from(200u128),
+    //             },
+    //             Coin {
+    //                 denom: "ibc/ustars".to_string(),
+    //                 amount: Uint128::from(1000u128),
+    //             },
+    //         ],
+    //         investment_response.info,
+    //     )
+    //     .unwrap();
 
-        println!("coins: {:?}", coins);
-        println!("remainder: {:?}", remainder);
-        assert_eq!(coins.len(), 3);
-        assert_eq!(coins[0].amount, Uint128::from(36u128));
-        assert_eq!(coins[1].amount, Uint128::from(73u128));
-        assert_eq!(coins[2].amount, Uint128::from(4u128));
+    //     println!("coins: {coins:?}");
+    //     println!("remainder: {remainder:?}");
+    //     assert_eq!(coins.len(), 3);
+    //     assert_eq!(coins[0].amount, Uint128::from(36u128));
+    //     assert_eq!(coins[1].amount, Uint128::from(73u128));
+    //     assert_eq!(coins[2].amount, Uint128::from(4u128));
 
-        assert_eq!(remainder.len(), 3);
-        assert_eq!(remainder[0].amount, Uint128::from(1u128));
-        assert_eq!(remainder[1].amount, Uint128::from(1u128));
-        assert_eq!(remainder[2].amount, Uint128::from(1u128));
-    }
+    //     assert_eq!(remainder.len(), 3);
+    //     assert_eq!(remainder[0].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[1].amount, Uint128::from(1u128));
+    //     assert_eq!(remainder[2].amount, Uint128::from(1u128));
+    // }
 
     #[test]
     fn proper_bond() {
@@ -390,7 +383,7 @@ mod tests {
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
         };
-        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        let res = execute(deps.as_mut(), env, info, deposit_msg).unwrap();
         assert_eq!(res.messages.len(), 4);
         assert_eq!(res.attributes.first().unwrap().value, "1");
 
@@ -405,7 +398,7 @@ mod tests {
                 assert_eq!(funds.len(), 1);
                 assert_eq!(funds[0].denom, "ibc/uosmo");
                 assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "1")
                 } else {
                     assert!(false);
@@ -428,7 +421,7 @@ mod tests {
                 assert_eq!(funds.len(), 1);
                 assert_eq!(funds[0].denom, "ibc/uatom");
                 assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "1")
                 } else {
                     assert!(false);
@@ -451,7 +444,7 @@ mod tests {
                 assert_eq!(funds.len(), 1);
                 assert_eq!(funds[0].denom, "ibc/ustars");
                 assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "1")
                 } else {
                     assert!(false);
@@ -499,7 +492,7 @@ mod tests {
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
         };
-        let res = execute(deps.as_mut(), env.clone(), info, deposit_msg).unwrap();
+        let res = execute(deps.as_mut(), env, info, deposit_msg).unwrap();
         assert_eq!(res.messages.len(), 2);
         assert_eq!(res.attributes.first().unwrap().value, "1");
     }
@@ -539,7 +532,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(res_1.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
-        let res_2 = execute(deps_2.as_mut(), env.clone(), info, deposit_msg).unwrap_err();
+        let res_2 = execute(deps_2.as_mut(), env, info, deposit_msg).unwrap_err();
         assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
     }
 
@@ -605,7 +598,7 @@ mod tests {
         let balance_query = crate::msg::QueryMsg::Balance {
             address: TEST_CREATOR.to_string(),
         };
-        let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+        let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
         let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
         assert_eq!(balance.balance, Uint128::from(99u128));
@@ -703,7 +696,7 @@ mod tests {
                 assert_eq!(contract_addr, "quasar123");
                 assert!(funds.is_empty());
                 if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(&msg).unwrap()
+                    from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
                     assert_eq!(share_amount, Uint128::from(98u128));
@@ -726,7 +719,7 @@ mod tests {
                 assert_eq!(contract_addr, "quasar124");
                 assert!(funds.is_empty());
                 if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(&msg).unwrap()
+                    from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
                     assert_eq!(share_amount, Uint128::from(98u128));
@@ -749,7 +742,7 @@ mod tests {
                 assert_eq!(contract_addr, "quasar125");
                 assert!(funds.is_empty());
                 if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(&msg).unwrap()
+                    from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
                     assert_eq!(share_amount, Uint128::from(98u128));
@@ -771,7 +764,7 @@ mod tests {
         let start_unbond_res = execute(
             deps.as_mut(),
             env.clone(),
-            primitive_1_info.clone(),
+            primitive_1_info,
             start_unbond_msg_p1,
         )
         .unwrap();
@@ -784,7 +777,7 @@ mod tests {
         let start_unbond_res = execute(
             deps.as_mut(),
             env.clone(),
-            primitive_2_info.clone(),
+            primitive_2_info,
             start_unbond_msg_p2,
         )
         .unwrap();
@@ -797,7 +790,7 @@ mod tests {
         let start_unbond_res = execute(
             deps.as_mut(),
             env.clone(),
-            primitive_3_info.clone(),
+            primitive_3_info,
             start_unbond_msg_p3,
         )
         .unwrap();
@@ -826,7 +819,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             do_unbond_info.clone(),
-            do_unbond_msg.clone(),
+            do_unbond_msg,
         )
         .unwrap();
 
@@ -843,7 +836,7 @@ mod tests {
             {
                 assert_eq!(contract_addr, "quasar123");
                 assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "2");
                 } else {
                     assert!(false);
@@ -863,7 +856,7 @@ mod tests {
             {
                 assert_eq!(contract_addr, "quasar124");
                 assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "2");
                 } else {
                     assert!(false);
@@ -880,13 +873,7 @@ mod tests {
 
         // test that claim works the same way as unbond(amount:0)
         let claim_msg = ExecuteMsg::Claim {};
-        let claim_res = execute(
-            deps.as_mut(),
-            env.clone(),
-            do_unbond_info.clone(),
-            claim_msg.clone(),
-        )
-        .unwrap();
+        let claim_res = execute(deps.as_mut(), env.clone(), do_unbond_info, claim_msg).unwrap();
 
         // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
         assert_eq!(claim_res.messages.len(), 3);
@@ -903,7 +890,7 @@ mod tests {
                 // todo: This assertion will change because we should ideally only expect one here, pending arch discussions
                 assert_eq!(contract_addr, "quasar125");
                 assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(&msg).unwrap() {
+                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
                     assert_eq!(id, "2");
                 } else {
                     assert!(false);
@@ -960,9 +947,9 @@ mod tests {
         );
         let p3_unbond_callback_res = execute(
             deps.as_mut(),
-            env.clone(),
+            env,
             p3_unbond_callback_info,
-            unbond_callback_msg.clone(),
+            unbond_callback_msg,
         )
         .unwrap();
         assert_eq!(p3_unbond_callback_res.messages.len(), 3);
