@@ -462,18 +462,19 @@ pub fn handle_ica_ack(
                 Ok(old)
             })?;
 
-            for claim in &data.bonds {
             let mut callback_submsgs: Vec<SubMsg> = vec![];
+            for claim in data.bonds {
                 let share_amount =
                     create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
                 if querier
                     .query_wasm_contract_info(claim.owner.as_str())
                     .is_ok()
                 {
+
                 let wasm_msg = WasmMsg::Execute {
                     contract_addr: claim.owner.to_string(),
-                        share_amount,
                     msg: to_binary(&Callback::BondResponse(BondResponse {
+                        share_amount,
                         bond_id: claim.bond_id.clone(),
                     }))?,
                     funds: vec![],
