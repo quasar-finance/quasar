@@ -25,7 +25,8 @@ docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)
 
 echo "Running store code"
 RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
-CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
+echo $RES
+CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value') 
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
@@ -62,14 +63,14 @@ echo "primitive contracts:\n$ADDR1\n$ADDR2\n$ADDR3\n"
 # echo $BOND
 # $BOND
 
-VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"1.0","init":{"l_p":'$INIT1'}}]}'
+VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
 RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
-VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
+VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
 echo "Got CODE_ID = $VAULT_CODE_ID"
 
