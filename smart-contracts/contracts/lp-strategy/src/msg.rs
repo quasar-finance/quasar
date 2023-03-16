@@ -87,13 +87,13 @@ pub struct ListPendingAcksResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ListUnbondingClaimsResponse {
-    pub unbonds: HashMap<(Addr, String), Unbond>,
+    pub unbonds: HashMap<(Addr, String), Option<Unbond>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct UnbondingClaimResponse {
-    pub unbond: Unbond,
+    pub unbond: Option<Unbond>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

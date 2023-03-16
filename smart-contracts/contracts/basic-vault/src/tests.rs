@@ -5,15 +5,17 @@ mod tests {
     use cosmwasm_std::{
         from_binary,
         testing::{mock_env, mock_info, MockApi, MockStorage},
-        to_binary, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty, Env,
-        MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp, Uint128,
-        WasmMsg,
+        to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
+        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp,
+        Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
 
     use lp_strategy::{
-        msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
-        state::Config,
+        msg::{
+            ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse, UnbondingClaimResponse,
+        },
+        state::{Config, Unbond},
     };
     use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
@@ -26,10 +28,23 @@ mod tests {
     };
 
     pub struct QuasarQuerier {
+        // address, denom, share, balance
         pub primitive_states: Vec<(String, String, Uint128, Uint128)>,
+        // address, unlock_time
+        pub primitive_unlock_times: Vec<(String, Option<Timestamp>)>,
     }
 
     impl QuasarQuerier {
+        pub fn new(primitive_states: Vec<(String, String, Uint128, Uint128)>) -> QuasarQuerier {
+            QuasarQuerier {
+                primitive_states: primitive_states.clone(),
+                primitive_unlock_times: primitive_states
+                    .iter()
+                    .map(|ps| (ps.0.clone(), Option::None))
+                    .collect(),
+            }
+        }
+
         pub fn find_states_for_primitive(&self, address: String) -> (String, Uint128, Uint128) {
             let mut total_share = Uint128::zero();
             let mut total_balance = Uint128::zero();
@@ -43,6 +58,23 @@ mod tests {
             }
             (this_denom, total_share, total_balance)
         }
+
+        pub fn set_unbonding_time_for_primitive(&mut self, address: String, time: Timestamp) {
+            self.primitive_unlock_times.iter_mut().for_each(|put| {
+                if (put.0 == address) {
+                    put.1 = Option::Some(time);
+                }
+            });
+        }
+
+        pub fn get_unbonding_time_for_primitive(&self, address: String) -> Option<Timestamp> {
+            let prim = self.primitive_unlock_times.iter().find(|p| p.0 == address);
+
+            match prim {
+                Some(p) => p.1,
+                None => None,
+            }
+        }
     }
 
     impl Querier for QuasarQuerier {
@@ -51,59 +83,69 @@ mod tests {
             match request {
                 QueryRequest::Wasm(wasm_query) => match wasm_query {
                     cosmwasm_std::WasmQuery::Smart { contract_addr, msg } => {
-                        if let primitive_query =
-                            from_binary::<lp_strategy::msg::QueryMsg>(&msg).unwrap()
-                        {
-                            let (this_denom, total_share, total_balance) =
-                                self.find_states_for_primitive(contract_addr);
-                            match primitive_query {
-                                lp_strategy::msg::QueryMsg::PrimitiveShares {} => {
-                                    let response = PrimitiveSharesResponse { total: total_share };
-                                    QuerierResult::Ok(ContractResult::Ok(
-                                        to_binary(&response).unwrap(),
-                                    ))
-                                }
-                                lp_strategy::msg::QueryMsg::IcaBalance {} => {
-                                    let response = IcaBalanceResponse {
-                                        amount: Coin {
-                                            denom: this_denom,
-                                            amount: total_balance,
-                                        },
-                                    };
-                                    QuerierResult::Ok(ContractResult::Ok(
-                                        to_binary(&response).unwrap(),
-                                    ))
-                                }
-                                lp_strategy::msg::QueryMsg::Config {} => {
-                                    let config = Config {
-                                        lock_period: 14,
-                                        pool_id: 1,
-                                        pool_denom: "gamm/pool/1".to_string(),
-                                        local_denom: this_denom,
-                                        base_denom: "uosmo".to_string(),
-                                        quote_denom: "uatom".to_string(),
-                                        transfer_channel: "channel-0".to_string(),
-                                        return_source_channel: "channel-0".to_string(),
-                                        expected_connection: "connection-0".to_string(),
-                                    };
-                                    QuerierResult::Ok(ContractResult::Ok(
-                                        to_binary(&ConfigResponse { config }).unwrap(),
-                                    ))
-                                }
-                                _ => QuerierResult::Err(
-                                    cosmwasm_std::SystemError::UnsupportedRequest {
-                                        kind: format!(
-                                            "Unmocked primitive query type: {primitive_query:?}"
-                                        ),
-                                    },
-                                ),
+                        let primitive_query =
+                            from_binary::<lp_strategy::msg::QueryMsg>(&msg).unwrap();
+
+                        let (this_denom, total_share, total_balance) =
+                            self.find_states_for_primitive(contract_addr.clone());
+                        match primitive_query {
+                            lp_strategy::msg::QueryMsg::PrimitiveShares {} => {
+                                let response = PrimitiveSharesResponse { total: total_share };
+                                QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
                             }
-                        } else {
-                            QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                kind: format!("Unmocked primitive query type: {msg:?}"),
-                            })
+                            lp_strategy::msg::QueryMsg::IcaBalance {} => {
+                                let response = IcaBalanceResponse {
+                                    amount: Coin {
+                                        denom: this_denom,
+                                        amount: total_balance,
+                                    },
+                                };
+                                QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                            }
+                            lp_strategy::msg::QueryMsg::Config {} => {
+                                let config = Config {
+                                    lock_period: 14,
+                                    pool_id: 1,
+                                    pool_denom: "gamm/pool/1".to_string(),
+                                    local_denom: this_denom,
+                                    base_denom: "uosmo".to_string(),
+                                    quote_denom: "uatom".to_string(),
+                                    transfer_channel: "channel-0".to_string(),
+                                    return_source_channel: "channel-0".to_string(),
+                                    expected_connection: "connection-0".to_string(),
+                                };
+                                QuerierResult::Ok(ContractResult::Ok(
+                                    to_binary(&ConfigResponse { config }).unwrap(),
+                                ))
+                            }
+                            lp_strategy::msg::QueryMsg::UnbondingClaim { addr, id } => {
+                                let unbond_time =
+                                    self.get_unbonding_time_for_primitive(contract_addr);
+                                QuerierResult::Ok(ContractResult::Ok(
+                                    to_binary(&UnbondingClaimResponse {
+                                        unbond: match unbond_time {
+                                            Some(time) => Some(Unbond {
+                                                lp_shares: Uint128::from(1u128),
+                                                unlock_time: time,
+                                                owner: Addr::unchecked(TEST_CREATOR),
+                                                id,
+                                            }),
+                                            None => None,
+                                        },
+                                    })
+                                    .unwrap(),
+                                ))
+                            }
+                            _ => {
+                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                                    kind: format!(
+                                        "Unmocked primitive query type: {primitive_query:?}"
+                                    ),
+                                })
+                            }
                         }
                     }
+
                     _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                         kind: format!("Unmocked wasm query type: {wasm_query:?}"),
                     }),
@@ -122,7 +164,7 @@ mod tests {
         OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: QuasarQuerier { primitive_states },
+            querier: QuasarQuerier::new(primitive_states),
             custom_query_type: PhantomData,
         }
     }

@@ -1,15 +1,16 @@
 use cosmwasm_std::{
-    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction,
+    MessageInfo, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::execute_burn;
 use cw_utils::PaymentError;
-use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
+use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse, UnbondingClaimResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
 
+use crate::helpers::can_unbond_from_primitive;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
@@ -443,29 +444,30 @@ pub fn do_unbond(
 }
 
 pub fn find_and_return_unbondable_msgs(
-    _deps: DepsMut,
+    deps: DepsMut,
     env: &Env,
     _info: &MessageInfo,
     unbond_id: &str,
     unbond_stubs: Vec<UnbondingStub>,
 ) -> Result<Vec<WasmMsg>, ContractError> {
     // go through unbond_stubs and find ones where unlock_time < env.block.time and execute
-    unbond_stubs
-        .iter()
-        .filter(|stub| {
-            stub.unlock_time
-                .map_or(false, |unlock_time| unlock_time < env.block.time)
-        })
-        .map(|stub| -> Result<WasmMsg, ContractError> {
-            Ok(WasmMsg::Execute {
+    let mut unbond_msgs = vec![];
+
+    for stub in unbond_stubs.iter() {
+        let can_unbond = can_unbond_from_primitive(deps.as_ref(), env, unbond_id, &stub)?;
+
+        if (can_unbond) {
+            unbond_msgs.push(WasmMsg::Execute {
                 contract_addr: stub.address.clone(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
                     id: unbond_id.to_string(),
                 })?,
                 funds: vec![],
             })
-        })
-        .collect::<Result<Vec<WasmMsg>, ContractError>>()
+        }
+    }
+
+    Ok(unbond_msgs)
 }
 
 // claim is equivalent to calling unbond with amount: 0

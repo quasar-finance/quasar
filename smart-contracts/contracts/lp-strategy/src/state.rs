@@ -70,7 +70,7 @@ pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
 // TODO UNBONDING_CLAIMS should probably be a multi index map
-pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
+pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Option<Unbond>> = Map::new("unbonding_claims");
 // TODO make key borrowed
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 // the lock id on osmosis, for each combination of denom and lock duration, only one lock id should exist on osmosis

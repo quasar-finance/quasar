@@ -5,6 +5,7 @@ mod execute;
 pub mod msg;
 mod query;
 pub mod state;
+mod helpers;
 
 pub use crate::error::ContractError;
 

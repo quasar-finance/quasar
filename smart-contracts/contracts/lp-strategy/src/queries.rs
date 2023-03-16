@@ -20,7 +20,7 @@ use crate::{
 };
 
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
-    let unbonds: StdResult<HashMap<(Addr, String), Unbond>> = UNBONDING_CLAIMS
+    let unbonds: StdResult<HashMap<(Addr, String), Option<Unbond>>> = UNBONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     Ok(ListUnbondingClaimsResponse { unbonds: unbonds? })

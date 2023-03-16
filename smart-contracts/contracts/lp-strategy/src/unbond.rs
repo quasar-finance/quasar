@@ -29,13 +29,18 @@ pub fn do_unbond(
     owner: Addr,
     id: String,
 ) -> Result<(), ContractError> {
-    let unbond = UNBONDING_CLAIMS.load(storage, (owner, id))?;
+    let unbond_item = UNBONDING_CLAIMS.load(storage, (owner, id))?;
 
-    if unbond.unlock_time.nanos() > env.block.time.nanos() {
-        return Err(ContractError::SharesNotYetUnbonded);
+    match unbond_item {
+        Some(unbond) => {
+            if unbond.unlock_time.nanos() > env.block.time.nanos() {
+                return Err(ContractError::SharesNotYetUnbonded);
+            }
+
+            Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
+        }
+        None => Err(ContractError::SharesNotYetUnbonded),
     }
-
-    Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
 pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMsg>, ContractError> {
@@ -272,7 +277,7 @@ mod tests {
             id: id.clone(),
         };
         UNBONDING_CLAIMS
-            .save(deps.as_mut().storage, (owner.clone(), id.clone()), &unbond)
+            .save(deps.as_mut().storage, (owner.clone(), id.clone()), &Some(unbond.clone()))
             .unwrap();
 
         let time = mock_env().block.time.plus_seconds(101);
@@ -299,12 +304,12 @@ mod tests {
             .save(
                 deps.as_mut().storage,
                 (owner.clone(), id.clone()),
-                &Unbond {
+                &Some(Unbond {
                     lp_shares: Uint128::new(100),
                     unlock_time: env.block.time.plus_nanos(1),
                     owner: owner.clone(),
                     id: id.clone(),
-                },
+                }),
             )
             .unwrap();
 
