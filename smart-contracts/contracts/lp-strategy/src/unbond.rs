@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Env, IbcTimeout, Order, Storage, SubMsg, Timestamp, Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Coin, CosmosMsg, Env, IbcTimeout, Order, QuerierWrapper, Storage,
+    SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
@@ -17,8 +18,8 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     msg::ExecuteMsg,
     state::{
-        RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
-        UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
+        UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -65,8 +66,12 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
 
-    LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_exit)?)
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        // we remove the amount of shares we are are going to unlock from the locked amount
+        old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
+        // we add the amount of shares we are going to unlock to the total unlocked
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
+        Ok(old)
     })?;
 
     let msg = MsgExitSwapShareAmountIn {
@@ -165,21 +170,35 @@ pub struct ReturningUnbond {
 // TODO this only works for the happy path in the receiver
 pub fn finish_unbond(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
     unbond: &ReturningUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<CosmosMsg, ContractError> {
     let amount = match unbond.amount {
         RawAmount::LocalDenom(val) => val,
         RawAmount::LpShares(_) => return Err(ContractError::IncorrectRawAmount),
     };
-    let msg = WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
-            unbond_id: unbond.id.clone(),
-        }))?,
-        funds: vec![Coin {
-            denom: CONFIG.load(storage)?.local_denom,
-            amount,
-        }],
+    let msg: CosmosMsg = if querier
+        .query_wasm_contract_info(unbond.owner.as_str())
+        .is_ok()
+    {
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+                unbond_id: unbond.id.clone(),
+            }))?,
+            funds: vec![Coin {
+                denom: CONFIG.load(storage)?.local_denom,
+                amount,
+            }],
+        })
+    } else {
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: unbond.owner.to_string(),
+            amount: vec![Coin {
+                denom: CONFIG.load(storage)?.local_denom,
+                amount,
+            }],
+        })
     };
     Ok(msg)
 }
@@ -332,7 +351,14 @@ mod tests {
 
         // test specific setup
         LP_SHARES
-            .save(deps.as_mut().storage, &Uint128::new(1000))
+            .save(
+                deps.as_mut().storage,
+                &crate::state::LpCache {
+                    locked_shares: Uint128::new(500),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
             .unwrap();
 
         let unbonds = vec![
