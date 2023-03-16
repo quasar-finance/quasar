@@ -950,13 +950,12 @@ mod tests {
         env.block.height += 5;
         env.block.time = env.block.time.plus_seconds(40);
 
-// set last of the primitives to be unbondable
+        // set last of the primitives to be unbondable
         deps.querier.set_unbonding_claim_for_primitive(
             "quasar125".to_owned(),
             env.block.time.minus_seconds(5),
             false,
         );
-        
 
         // test that claim works the same way as unbond(amount:0)
         let claim_msg = ExecuteMsg::Claim {};
@@ -1048,7 +1047,7 @@ mod tests {
                 assert_eq!(amount[0].denom, "ibc/uosmo");
                 assert_eq!(amount[0].amount, Uint128::from(100u128));
             } else {
-               panic!("unexpected bank message");
+                panic!("unexpected bank message");
             }
         } else {
             panic!("unexpected message");
@@ -1061,7 +1060,7 @@ mod tests {
                 assert_eq!(amount[0].denom, "ibc/uatom");
                 assert_eq!(amount[0].amount, Uint128::from(100u128));
             } else {
-               panic!("unexpected bank message");
+                panic!("unexpected bank message");
             }
         } else {
             panic!("unexpected message");
@@ -1074,7 +1073,7 @@ mod tests {
                 assert_eq!(amount[0].denom, "ibc/ustars");
                 assert_eq!(amount[0].amount, Uint128::from(100u128));
             } else {
-               panic!("unexpected bank message");
+                panic!("unexpected bank message");
             }
         } else {
             panic!("unexpected message");

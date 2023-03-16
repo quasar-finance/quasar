@@ -175,11 +175,7 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::{
-        ibc_lock::Lock,
-        state::{IBC_LOCK},
-        test_helpers::default_setup,
-    };
+    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
 
     use super::*;
 

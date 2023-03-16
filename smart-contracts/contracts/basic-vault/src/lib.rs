@@ -2,10 +2,10 @@ mod callback;
 pub mod contract;
 mod error;
 mod execute;
+mod helpers;
 pub mod msg;
 mod query;
 pub mod state;
-mod helpers;
 
 pub use crate::error::ContractError;
 
