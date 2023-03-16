@@ -13,10 +13,9 @@ pub fn can_unbond_from_primitive(
         addr: env.contract.address.clone(),
         id: unbond_id.to_string(),
     };
-    let unbonding_claim_response = deps
+    let unbonding_claim: UnbondingClaimResponse = deps
         .querier
         .query_wasm_smart(stub.address.clone(), &unbonding_claim_query)?;
-    let unbonding_claim: UnbondingClaimResponse = from_binary(&unbonding_claim_response)?;
 
     match unbonding_claim.unbond {
         Some(unbond) => Ok(unbond.unlock_time < env.block.time),

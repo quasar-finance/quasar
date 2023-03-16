@@ -855,6 +855,10 @@ mod tests {
 
         env.block.height += 4;
         env.block.time = env.block.time.plus_seconds(30);
+        
+        // set two of the primitives to be unbondable
+        deps.querier.set_unbonding_time_for_primitive("quasar123".to_owned(), env.block.time.minus_seconds(5));
+        deps.querier.set_unbonding_time_for_primitive("quasar124".to_owned(), env.block.time.minus_seconds(5));
 
         // unbond and see that 2 are unbondable
         let do_unbond_res = execute(
@@ -918,9 +922,9 @@ mod tests {
         let claim_res = execute(deps.as_mut(), env.clone(), do_unbond_info, claim_msg).unwrap();
 
         // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
-        assert_eq!(claim_res.messages.len(), 3);
+        assert_eq!(claim_res.messages.len(), 2);
         assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
-        assert_eq!(claim_res.attributes[2].value, "3");
+        assert_eq!(claim_res.attributes[2].value, "2");
 
         if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[2].msg {
             if let WasmMsg::Execute {
