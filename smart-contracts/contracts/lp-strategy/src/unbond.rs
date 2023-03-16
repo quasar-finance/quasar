@@ -119,7 +119,7 @@ pub fn transfer_batch_unbond(
 
     Ok(create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending.clone())),
+        IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending)),
         pkt,
     )?)
 }
@@ -351,8 +351,8 @@ mod tests {
             Unbond {
                 lp_shares: Uint128::new(102),
                 unlock_time: env.block.time,
-                owner: owner,
-                id: id,
+                owner,
+                id,
             },
         ];
 
@@ -413,8 +413,8 @@ mod tests {
                 },
                 ReturningUnbond {
                     amount: RawAmount::LocalDenom(Uint128::new(103)),
-                    owner: owner,
-                    id: id,
+                    owner,
+                    id,
                 },
             ],
         };

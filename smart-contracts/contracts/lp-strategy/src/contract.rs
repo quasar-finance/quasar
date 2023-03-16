@@ -82,7 +82,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 .result
                 .into_result()
                 .map_err(|msg| StdError::GenericErr {
-                    msg: format!("submsg error: {:?}", msg),
+                    msg: format!("submsg error: {msg:?}"),
                 })?
                 .data
                 .ok_or(ContractError::NoReplyData)
@@ -102,7 +102,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
             Ok(Response::default()
                 .add_attribute("pending-msg", seq.to_string())
-                .add_attribute("step", format!("{:?}", pending)))
+                .add_attribute("step", format!("{pending:?}")))
         }
         SubMsgKind::Ack(seq) => {
             let mut resp = Response::new();

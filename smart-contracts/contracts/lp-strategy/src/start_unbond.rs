@@ -213,7 +213,7 @@ mod tests {
 
         let unbond = StartUnbond {
             owner,
-            id: id,
+            id,
             primitive_shares: Uint128::new(1000),
         };
         do_start_unbond(deps.as_mut().storage, unbond).unwrap()
@@ -242,7 +242,7 @@ mod tests {
         };
         let unbond3 = StartUnbond {
             owner,
-            id: id,
+            id,
             primitive_shares: Uint128::new(200),
         };
 
@@ -286,7 +286,7 @@ mod tests {
 
         let unbond = StartUnbond {
             owner,
-            id: id,
+            id,
             primitive_shares: Uint128::new(1000),
         };
         let err = do_start_unbond(deps.as_mut().storage, unbond).unwrap_err();
@@ -339,8 +339,8 @@ mod tests {
             .unwrap();
 
         let unbond1 = StartUnbond {
-            owner: owner,
-            id: id,
+            owner,
+            id,
             primitive_shares: Uint128::new(1000),
         };
 
@@ -538,7 +538,7 @@ mod tests {
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
             primitive_shares: Uint128::new(100),
-            owner: owner,
+            owner,
             id: id.to_string(),
         };
 
@@ -566,7 +566,7 @@ mod tests {
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
             primitive_shares: Uint128::new(100),
-            owner: owner,
+            owner,
             id: id.to_string(),
         };
 

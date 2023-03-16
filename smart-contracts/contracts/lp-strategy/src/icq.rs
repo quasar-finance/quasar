@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdResult, Storage, SubMsg,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg,
     Uint128,
 };
 use osmosis_std::types::{
@@ -7,7 +7,7 @@ use osmosis_std::types::{
     osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketAck, InterchainQueryPacketData, Query};
+use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
