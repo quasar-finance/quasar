@@ -9,7 +9,6 @@ use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
 use crate::state::{BondingStub, InvestmentInfo, Unbond};
 
-
 #[cw_serde]
 pub enum PrimitiveInitMsg {
     LP(lp_strategy::msg::InstantiateMsg),

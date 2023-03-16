@@ -1,7 +1,7 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};

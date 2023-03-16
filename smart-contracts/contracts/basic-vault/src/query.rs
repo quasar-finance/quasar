@@ -8,7 +8,8 @@ use crate::{
         PrimitiveInfo, TvlInfoResponse,
     },
     state::{
-        InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE,
+        InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
+        UNBOND_STATE,
     },
 };
 
@@ -83,8 +84,7 @@ pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBond
 }
 
 pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUnbondsResponse> {
-    let pending_unbond_ids =
-        PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
     let mut pending_unbonds: Vec<Unbond> = vec![];
 
     pending_unbond_ids.iter().for_each(|id: &String| {

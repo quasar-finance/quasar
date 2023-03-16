@@ -280,7 +280,10 @@ pub fn unbond(
 
     let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
 
-    let start_unbond_msgs = start_unbond_response.messages.iter().map(|sm| sm.msg.clone());
+    let start_unbond_msgs = start_unbond_response
+        .messages
+        .iter()
+        .map(|sm| sm.msg.clone());
     let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
 
     Ok(Response::new()

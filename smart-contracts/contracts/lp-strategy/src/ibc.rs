@@ -28,9 +28,7 @@ use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
-use quasar_types::ibc::{
-    enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState,
-};
+use quasar_types::ibc::{enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState};
 use quasar_types::ica::handshake::enforce_ica_order_and_metadata;
 use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
@@ -38,10 +36,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, Decimal, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
-    IbcTimeout, Response, StdError, Storage, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, Binary, Coin, Decimal, DepsMut, Env, IbcBasicResponse,
+    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket,
+    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
+    Response, StdError, Storage, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -350,7 +348,8 @@ pub fn handle_icq_ack(
                 .map_err(|err| ContractError::ParseIntError {
                     error: err,
                     value: lp_balance,
-                })?)
+                })?,
+        ),
     )?;
 
     let unbond = batch_unbond(storage, &env)?;
@@ -590,7 +589,10 @@ fn on_packet_failure(
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{testing::{mock_dependencies, mock_env}, IbcEndpoint, IbcOrder};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        IbcEndpoint, IbcOrder,
+    };
 
     use crate::test_helpers::default_setup;
 

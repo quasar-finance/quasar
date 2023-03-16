@@ -1,17 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use std::{marker::PhantomData};
+    use std::marker::PhantomData;
 
     use cosmwasm_std::{
         from_binary,
-        testing::{
-            mock_env, mock_info, MockApi, MockStorage,
-        },
-        to_binary, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Querier, QuerierResult,
-        QueryRequest, Response, Timestamp, Uint128, WasmMsg,
+        testing::{mock_env, mock_info, MockApi, MockStorage},
+        to_binary, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty, Env,
+        MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, Timestamp, Uint128,
+        WasmMsg,
     };
     use cw20::BalanceResponse;
-    
+
     use lp_strategy::{
         msg::{ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse},
         state::Config,
@@ -188,8 +187,6 @@ mod tests {
     }
 
     fn init<'a>(deps: DepsMut, msg: &InstantiateMsg, env: &Env, info: &MessageInfo) -> Response {
-        
-
         instantiate(deps, env.clone(), info.clone(), msg.clone()).unwrap()
     }
 
@@ -343,7 +340,8 @@ mod tests {
 
         let (coins, remainder) = may_pay_with_ratio(
             &deps.as_ref(),
-            &[Coin {
+            &[
+                Coin {
                     denom: "ibc/uosmo".to_string(),
                     amount: Uint128::from(100u128),
                 },
@@ -354,7 +352,8 @@ mod tests {
                 Coin {
                     denom: "ibc/ustars".to_string(),
                     amount: Uint128::from(1000u128),
-                }],
+                },
+            ],
             investment_response.info,
         )
         .unwrap();
@@ -874,13 +873,7 @@ mod tests {
 
         // test that claim works the same way as unbond(amount:0)
         let claim_msg = ExecuteMsg::Claim {};
-        let claim_res = execute(
-            deps.as_mut(),
-            env.clone(),
-            do_unbond_info,
-            claim_msg,
-        )
-        .unwrap();
+        let claim_res = execute(deps.as_mut(), env.clone(), do_unbond_info, claim_msg).unwrap();
 
         // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
         assert_eq!(claim_res.messages.len(), 3);

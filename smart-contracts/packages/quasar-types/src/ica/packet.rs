@@ -166,8 +166,7 @@ mod tests {
             share_out_min_amount: "1".to_string(),
         };
 
-        let expected =
-            InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.pack()], None);
+        let expected = InterchainAccountPacketData::new(Type::ExecuteTx, vec![join.pack()], None);
 
         let qvec: Vec<u8> = vec![
             10, 136, 1, 10, 47, 47, 111, 115, 109, 111, 115, 105, 115, 46, 103, 97, 109, 109, 46,

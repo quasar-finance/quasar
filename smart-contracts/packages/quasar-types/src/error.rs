@@ -1,4 +1,4 @@
-use cosmwasm_std::{IbcOrder, StdError, DivideByZeroError, OverflowError, CheckedFromRatioError};
+use cosmwasm_std::{CheckedFromRatioError, DivideByZeroError, IbcOrder, OverflowError, StdError};
 use prost::DecodeError;
 use thiserror::Error;
 
@@ -58,5 +58,4 @@ pub enum Error {
     DivideByZeroError(#[from] DivideByZeroError),
     #[error("{0}")]
     CheckedFromRatioError(#[from] CheckedFromRatioError),
-
 }

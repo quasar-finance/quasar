@@ -100,13 +100,6 @@ impl InvestmentInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    
-    
-    
-    
-    
-    
 
     use crate::msg::{PrimitiveConfig, PrimitiveInitMsg};
 
