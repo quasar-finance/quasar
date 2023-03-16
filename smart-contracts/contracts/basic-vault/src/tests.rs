@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         from_binary,
@@ -192,7 +192,7 @@ mod tests {
             decimals: 6,
             min_withdrawal: Uint128::one(),
             primitives: vec![PrimitiveConfig {
-                weight: Decimal::one(),
+                weight: Decimal::from_str("1.0").unwrap(),
                 address: "quasar123".to_string(),
                 init: PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
                     lock_period: 14, // this is supposed to be nanos i think
@@ -255,6 +255,34 @@ mod tests {
         let res = init(deps.as_mut(), &msg, &env, &info);
 
         assert_eq!(0, res.messages.len());
+    }
+
+    #[test]
+    fn proper_bond_with_one_primitive() {
+        let mut deps = mock_deps_with_primitives(vec![(
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        )]);
+        let msg = init_msg();
+        let info = mock_info(
+            TEST_CREATOR,
+            &[Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(100u128),
+            }],
+        );
+        let env = mock_env();
+        let res = init(deps.as_mut(), &msg, &env, &info);
+
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+
+        let res = execute(deps.as_mut(), env, info, deposit_msg).unwrap();
+        assert_eq!(res.messages.len(), 2);
+        assert_eq!(res.attributes.first().unwrap().value, "1");
     }
 
     fn even_primitives() -> Vec<(String, String, Uint128, Uint128)> {
