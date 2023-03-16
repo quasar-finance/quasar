@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Addr, Binary, Coin, Decimal, Uint128};
+use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
@@ -8,7 +8,6 @@ pub use cw_controllers::ClaimsResponse;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
 use crate::state::{BondingStub, InvestmentInfo, Unbond};
-
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {

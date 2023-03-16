@@ -1,6 +1,6 @@
 [alias]
 wasm = "build --release --target wasm32-unknown-unknown"
-unit-test = "test --lib"
 schema = "run --example schema"
 lint = "clippy -- -D warnings"
+unit-test = "test --lib"
 test-vault = "test --lib -p basic-vault"

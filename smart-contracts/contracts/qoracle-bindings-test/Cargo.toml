@@ -48,7 +48,6 @@ quasar-bindings = {path = "../../packages/quasar-bindings", version = "0.1.0"}
 schemars = "0.8.8"
 serde = {version = "1.0.137", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
-cw-multi-test = {workspace = true}
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

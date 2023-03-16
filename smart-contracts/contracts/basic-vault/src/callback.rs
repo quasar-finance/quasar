@@ -8,8 +8,8 @@ use quasar_types::callback::{BondResponse, UnbondResponse};
 use crate::{
     msg::PrimitiveConfig,
     state::{
-        Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT,
-        PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+        Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
+        PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
     ContractError,
 };
@@ -134,13 +134,7 @@ pub fn on_bond(
         funds: vec![],
     };
 
-    execute_mint(
-        deps,
-        env,
-        sub_info,
-        user_address,
-        shares_to_mint,
-    )?;
+    execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
     let res = Response::new()
         .add_attribute("action", "bond")

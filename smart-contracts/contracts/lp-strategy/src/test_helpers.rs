@@ -135,7 +135,7 @@ mod tests {
                 id: icq_chan.to_string(),
                 counterparty_endpoint: IbcEndpoint {
                     port_id: "icqhost".to_string(),
-                    channel_id: icq_chan.to_string(),
+                    channel_id: icq_chan,
                 },
                 connection_id: "connection-0".to_string(),
                 channel_type: ChannelType::Icq {

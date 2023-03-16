@@ -32,8 +32,10 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install cosmwasm check
-        run: cargo install cosmwasm-check
+      - name: Run unit-tests
+        run: cd smart-contracts && cargo test --lib
+      - name: Run vault-tests
+        run: cd smart-contracts && cargo test --lib -p basic-vault
       # - name: Compile wasm code
       #   uses: docker://cosmwasm/rust-optimizer:0.12.6
       #   with:
@@ -41,7 +43,4 @@ jobs:
       #       --rm -v "$(pwd)":/code 
       #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
       #       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
-      - name: Compile wasm code
-        run: cd smart-contracts && docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
-      - name: Run cosmwasm check
-        run: cd smart-contracts && cosmwasm-check artifacts/*.wasm
+      
