@@ -130,6 +130,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             REPLIES.remove(deps.storage, msg.id);
             Ok(resp)
         }
+        SubMsgKind::Callback(_callback) => Ok(Response::new()),
     }
 }
 

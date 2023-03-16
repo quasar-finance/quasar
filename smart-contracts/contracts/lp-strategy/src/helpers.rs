@@ -6,11 +6,11 @@ use crate::{
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    to_binary, Binary, Env, IbcMsg, IbcPacketAckMsg, Order, StdError, Storage, SubMsg, Uint128,
-    WasmMsg,
+    from_binary, to_binary, Binary, Env, IbcMsg, IbcPacketAckMsg, Order, StdError, Storage, SubMsg,
+    Uint128, WasmMsg,
 };
 use prost::Message;
-use quasar_types::ibc::MsgTransferResponse;
+use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +60,25 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
         } => Err(ContractError::NoIcqChannel),
         quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcqChannel),
     }
+}
+
+pub fn create_callback_submsg(
+    storage: &mut dyn Storage,
+    wasm_msg: WasmMsg,
+) -> Result<SubMsg, StdError> {
+    let last = REPLIES.range(storage, None, None, Order::Descending).next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0 + 1;
+    }
+    let data = match &wasm_msg {
+        WasmMsg::Execute { msg, .. } => from_binary(&msg)?,
+        _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
+    };
+    // do we need to register the message in the replies for handling?
+    REPLIES.save(storage, id, &data)?;
+
+    Ok(SubMsg::reply_always(wasm_msg, id))
 }
 
 pub fn create_ibc_ack_submsg(
@@ -131,6 +150,7 @@ pub enum IcaMessages {
 pub enum SubMsgKind {
     Ibc(IbcMsgKind),
     Ack(u64),
+    Callback(Callback), // in reply match for callback variant
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

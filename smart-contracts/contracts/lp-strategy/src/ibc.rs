@@ -1,7 +1,8 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{
-    ack_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error, IbcMsgKind, IcaMessages,
+    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error,
+    IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
@@ -461,23 +462,24 @@ pub fn handle_ica_ack(
                 Ok(old)
             })?;
 
-            let mut callbacks: Vec<WasmMsg> = vec![];
-            // TODO make execute a sub msg
             for claim in &data.bonds {
+            let mut callback_submsgs: Vec<SubMsg> = vec![];
                 let share_amount =
                     create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
                 if querier
                     .query_wasm_contract_info(claim.owner.as_str())
                     .is_ok()
                 {
-                    callbacks.push(WasmMsg::Execute {
-                        contract_addr: claim.owner.to_string(),
-                        msg: to_binary(&Callback::BondResponse(BondResponse {
-                            share_amount,
-                            bond_id: claim.bond_id.clone(),
-                        }))?,
-                        funds: vec![],
-                    })
+                let wasm_msg = WasmMsg::Execute {
+                    contract_addr: claim.owner.to_string(),
+                        share_amount,
+                    msg: to_binary(&Callback::BondResponse(BondResponse {
+                        bond_id: claim.bond_id.clone(),
+                    }))?,
+                    funds: vec![],
+                };
+
+                callback_submsgs.push(create_callback_submsg(storage, wasm_msg)?);
                 }
             }
 
@@ -488,7 +490,7 @@ pub fn handle_ica_ack(
 
             // TODO, do we want to also check queue state? and see if we can already start a new execution?
             Ok(Response::new()
-                .add_messages(callbacks)
+                .add_submessages(callback_submsgs)
                 .add_attribute("locked_tokens", ack_bin.to_base64())
                 .add_attribute("lock_id", resp.id.to_string()))
         }
