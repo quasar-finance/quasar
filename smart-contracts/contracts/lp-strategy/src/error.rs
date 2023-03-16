@@ -37,6 +37,9 @@ pub enum ContractError {
     #[error("map has duplicate key while no key should be present")]
     DuplicateKey,
 
+    #[error("caller is unauthorized")]
+    Unauthorized,
+
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 

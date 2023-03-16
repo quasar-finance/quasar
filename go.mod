@@ -19,7 +19,6 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.1
-	github.com/tendermint/starport v0.19.3
 	github.com/tendermint/tendermint v0.34.24
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
@@ -45,6 +44,7 @@ require (
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
+	github.com/onsi/ginkgo v1.16.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/timonwong/loggercheck v0.9.3 // indirect

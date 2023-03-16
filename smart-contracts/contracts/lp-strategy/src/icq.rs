@@ -1,12 +1,13 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Binary, StdResult
+    to_binary, Binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdResult, Storage, SubMsg,
+    Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
     osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketData, Query, InterchainQueryPacketAck};
+use quasar_types::icq::{InterchainQueryPacketAck, InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
@@ -34,7 +35,7 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Icq,
+        IbcMsgKind::Icq,
         send_packet_msg,
     )?))
 }
@@ -174,7 +175,7 @@ mod tests {
 
         assert_eq!(
             res,
-            Some(create_ibc_ack_submsg(deps.as_mut().storage, &IbcMsgKind::Icq, pkt).unwrap())
+            Some(create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt).unwrap())
         )
     }
 

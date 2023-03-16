@@ -5,16 +5,16 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     error::Trap,
-    helpers::{get_ica_address, get_total_shares, IbcMsgKind},
+    helpers::{get_ica_address, get_total_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListUnbondingClaimsResponse, LockResponse, LpSharesResponse,
-        PrimitiveSharesResponse, TrappedErrorsResponse, UnbondingClaimResponse,
+        PrimitiveSharesResponse, TrappedErrorsResponse, UnbondingClaimResponse, ListRepliesResponse,
     },
     state::{
         Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-        PENDING_ACK, SHARES, TRAPS, UNBONDING_CLAIMS,
+        PENDING_ACK, SHARES, TRAPS, UNBONDING_CLAIMS, REPLIES,
     },
 };
 
@@ -134,4 +134,11 @@ pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })
+}
+
+pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
+    let replies: StdResult<HashMap<u64, SubMsgKind>> = REPLIES
+    .range(deps.storage, None, None, Order::Ascending)
+    .collect();
+    Ok(ListRepliesResponse { replies: replies? })
 }
