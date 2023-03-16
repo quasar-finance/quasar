@@ -224,7 +224,7 @@ mod tests {
             }],
         );
         let env = mock_env();
-        let res = init(deps.as_mut(), &msg, &env, &info);
+        let _res = init(deps.as_mut(), &msg, &env, &info);
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
@@ -237,7 +237,7 @@ mod tests {
         if let CosmosMsg::Wasm(wasm_msg) = &res.messages.first().unwrap().msg {
             if let WasmMsg::Execute {
                 contract_addr,
-                msg,
+                msg: _,
                 funds,
             } = wasm_msg
             {
@@ -466,7 +466,7 @@ mod tests {
 
         let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let weights =
+        let _weights =
             get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
                 .unwrap();
 
@@ -675,7 +675,7 @@ mod tests {
 
         let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
 
-        let weights =
+        let _weights =
             get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives)
                 .unwrap();
 
