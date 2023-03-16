@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction,
+    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction,
     MessageInfo, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::execute_burn;
 use cw_utils::PaymentError;
-use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse, UnbondingClaimResponse};
+use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
@@ -454,9 +454,9 @@ pub fn find_and_return_unbondable_msgs(
     let mut unbond_msgs = vec![];
 
     for stub in unbond_stubs.iter() {
-        let can_unbond = can_unbond_from_primitive(deps.as_ref(), env, unbond_id, &stub)?;
+        let can_unbond = can_unbond_from_primitive(deps.as_ref(), env, unbond_id, stub)?;
 
-        if (can_unbond) {
+        if can_unbond {
             unbond_msgs.push(WasmMsg::Execute {
                 contract_addr: stub.address.clone(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {

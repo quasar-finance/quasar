@@ -25,7 +25,6 @@ mod tests {
         contract::query,
         execute::may_pay_with_ratio,
         msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
-        ContractError,
     };
 
     pub struct QuasarQuerier {
@@ -38,7 +37,7 @@ mod tests {
     impl QuasarQuerier {
         pub fn new(primitive_states: Vec<(String, String, Uint128, Uint128)>) -> QuasarQuerier {
             QuasarQuerier {
-                primitive_states: primitive_states.clone(),
+                primitive_states: primitive_states,
                 primitive_unlock_times: vec![],
             }
         }
@@ -71,7 +70,6 @@ mod tests {
                 Some(p) => {
                     p.1 = time;
                     p.2 = attempted;
-                    return;
                 }
                 None => self.primitive_unlock_times.push((address, time, attempted)),
             }
@@ -133,7 +131,7 @@ mod tests {
                                     to_binary(&ConfigResponse { config }).unwrap(),
                                 ))
                             }
-                            lp_strategy::msg::QueryMsg::UnbondingClaim { addr, id } => {
+                            lp_strategy::msg::QueryMsg::UnbondingClaim { addr: _, id } => {
                                 let query_result =
                                     self.get_unbonding_claim_for_primitive(contract_addr);
                                 QuerierResult::Ok(match query_result {
@@ -142,7 +140,7 @@ mod tests {
                                             unbond: Unbond {
                                                 lp_shares: Uint128::from(1u128),
                                                 unlock_time,
-                                                attempted: attempted,
+                                                attempted,
                                                 owner: Addr::unchecked(TEST_CREATOR),
                                                 id,
                                             },

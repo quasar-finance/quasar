@@ -177,7 +177,7 @@ mod tests {
 
     use crate::{
         ibc_lock::Lock,
-        state::{IBC_LOCK, LP_SHARES},
+        state::{IBC_LOCK},
         test_helpers::default_setup,
     };
 

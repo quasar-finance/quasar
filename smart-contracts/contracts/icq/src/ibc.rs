@@ -187,12 +187,12 @@ fn on_packet_failure(
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::state::QUERY_RESULT_COUNTER;
-    use crate::ContractError;
+    
+    
+    
 
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::{Binary, IbcAcknowledgement, IbcEndpoint, IbcPacket, IbcTimeout, Timestamp};
+    
+    
 
     // #[test]
     // fn test_ibc_packet_ack() -> Result<(), ContractError> {

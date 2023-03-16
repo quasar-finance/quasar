@@ -1,4 +1,4 @@
-use cosmwasm_std::{from_binary, Deps, Env, Uint128};
+use cosmwasm_std::{Deps, Env};
 use lp_strategy::msg::UnbondingClaimResponse;
 
 use crate::{state::UnbondingStub, ContractError};
