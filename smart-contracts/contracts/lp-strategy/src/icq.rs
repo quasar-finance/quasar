@@ -187,7 +187,9 @@ mod tests {
 
         assert_eq!(
             res.unwrap().msg,
-            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt).unwrap().msg
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt)
+                .unwrap()
+                .msg
         )
     }
 

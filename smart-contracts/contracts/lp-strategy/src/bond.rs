@@ -238,7 +238,10 @@ mod tests {
             funds: vec![coin(1000, config.local_denom)],
         };
         let res = do_bond(deps.as_mut().storage, env.clone(), info, id.to_string()).unwrap();
-        assert_eq!(res.unwrap().msg, try_icq(deps.as_mut().storage, env).unwrap().unwrap().msg)
+        assert_eq!(
+            res.unwrap().msg,
+            try_icq(deps.as_mut().storage, env).unwrap().unwrap().msg
+        )
     }
 
     #[test]
