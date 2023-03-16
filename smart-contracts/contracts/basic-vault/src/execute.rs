@@ -33,7 +33,7 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
 
 pub fn get_deposit_amount_weights(
     deps: &Deps,
-    primitives: &Vec<PrimitiveConfig>,
+    primitives: &[PrimitiveConfig],
 ) -> Result<CoinRatio, ContractError> {
     let weights = primitives
     .iter()
@@ -76,7 +76,7 @@ pub fn get_deposit_amount_weights(
 }
 
 pub fn get_token_amount_weights(
-    deposit_amount_weights: &Vec<CoinWeight>,
+    deposit_amount_weights: &[CoinWeight],
 ) -> Result<Vec<CoinWeight>, ContractError> {
     deposit_amount_weights.iter().try_fold(
         vec![],
