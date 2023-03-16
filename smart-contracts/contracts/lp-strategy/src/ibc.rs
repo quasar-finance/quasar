@@ -9,7 +9,7 @@ use crate::icq::calc_total_balance;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
+    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
     LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
@@ -339,14 +339,8 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
-    let lp_balance = LP_SHARES.load(storage)?;
-
     // TODO move the LP_SHARES.load to start_unbond
-    let start_unbond = batch_start_unbond(
-        storage,
-        &env,
-        lp_balance
-    )?;
+    let start_unbond = batch_start_unbond(storage, &env)?;
 
     let unbond = batch_unbond(storage, &env)?;
 
@@ -412,9 +406,13 @@ pub fn handle_ica_ack(
 
             let denom = CONFIG.load(storage)?.pool_denom;
 
-            LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
-                Ok(old.checked_add(shares_out)?)
-            })?;
+            LP_SHARES.update(
+                storage,
+                |mut old: LpCache| -> Result<LpCache, ContractError> {
+                    old.d_unlocked_shares = old.d_unlocked_shares.checked_add(shares_out)?;
+                    Ok(old)
+                },
+            )?;
 
             data.update_raw_amount_to_lp(shares_out)?;
 
@@ -500,8 +498,11 @@ fn handle_exit_pool_ack(
 
     // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_tokens)?;
-    LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_lp)?)
+
+    // remove the liquidated lp tokens from our unlocked lp tokens
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_sub(total_lp)?;
+        Ok(old)
     })?;
 
     ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {

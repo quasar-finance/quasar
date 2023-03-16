@@ -17,8 +17,8 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     msg::ExecuteMsg,
     state::{
-        RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT, UNBONDING_CLAIMS,
-        UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
+        UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -65,8 +65,12 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
 
-    LP_SHARES.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_exit)?)
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        // we remove the amount of shares we are are going to unlock from the locked amount
+        old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
+        // we add the amount of shares we are going to unlock to the total unlocked
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
+        Ok(old)
     })?;
 
     let msg = MsgExitSwapShareAmountIn {
@@ -332,7 +336,14 @@ mod tests {
 
         // test specific setup
         LP_SHARES
-            .save(deps.as_mut().storage, &Uint128::new(1000))
+            .save(
+                deps.as_mut().storage,
+                &crate::state::LpCache {
+                    locked_shares: Uint128::new(500),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
             .unwrap();
 
         let unbonds = vec![

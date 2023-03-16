@@ -58,10 +58,12 @@ pub fn prepare_total_balance_query(
         address,
         denom: config.pool_denom,
     };
-    // we simulate the result of an exit pool of our entire vault to get the total value in lp tokens
+    // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
+    // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
+    // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
     let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: LP_SHARES.load(storage)?.to_string(),
+        share_in_amount: LP_SHARES.load(storage)?.locked_shares.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
@@ -140,43 +142,54 @@ pub fn calc_total_balance(
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
 
-    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
+    use crate::{
+        ibc_lock::Lock,
+        state::{LpCache, IBC_LOCK},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
-    // #[test]
-    // fn try_icq_unlocked_works() {
-    //     let mut deps = mock_dependencies();
-    //     default_setup(deps.as_mut().storage).unwrap();
-    //     let env = mock_env();
+    #[test]
+    fn try_icq_unlocked_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
 
-    //     LP_SHARES
-    //         .save(deps.as_mut().storage, &Uint128::new(100))
-    //         .unwrap();
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(100),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
 
-    //     // lock the ibc lock
-    //     IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        // lock the ibc lock
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-    //     let res = try_icq(deps.as_mut().storage, env.clone()).unwrap();
+        let res = try_icq(deps.as_mut().storage, env.clone()).unwrap();
 
-    //     let pkt = IbcMsg::SendPacket {
-    //         channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
-    //         data: to_binary(
-    //             &prepare_total_balance_query(
-    //                 deps.as_ref().storage,
-    //                 ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-    //             )
-    //             .unwrap(),
-    //         )
-    //         .unwrap(),
-    //         timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-    //     };
+        let pkt = IbcMsg::SendPacket {
+            channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            data: to_binary(
+                &prepare_total_balance_query(
+                    deps.as_ref().storage,
+                    ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+                )
+                .unwrap(),
+            )
+            .unwrap(),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        };
 
-    //     assert_eq!(
-    //         res,
-    //         Some(create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt).unwrap())
-    //     )
-    // }
+        assert_eq!(
+            res.unwrap().msg,
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt).unwrap().msg
+        )
+    }
 
     #[test]
     fn try_icq_locked_bond_works() {

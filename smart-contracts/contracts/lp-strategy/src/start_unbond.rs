@@ -14,7 +14,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     ibc_lock::Lock,
     state::{
-        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
+        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, SHARES,
         START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
@@ -46,7 +46,6 @@ pub fn do_start_unbond(
 pub fn batch_start_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    total_lp_shares: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let mut to_unbond = Uint128::zero();
     let mut unbonds: Vec<PendingSingleUnbond> = vec![];
@@ -55,6 +54,8 @@ pub fn batch_start_unbond(
         return Ok(None);
     }
 
+    let total_lp_shares = LP_SHARES.load(storage)?;
+
     while !START_UNBOND_QUEUE.is_empty(storage)? {
         let unbond =
             START_UNBOND_QUEUE
@@ -62,7 +63,7 @@ pub fn batch_start_unbond(
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "start_unbond".to_string(),
                 })?;
-        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
+        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares.locked_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
             lp_shares,
@@ -192,7 +193,7 @@ mod tests {
     };
 
     use crate::{
-        state::{PendingSingleUnbond, SHARES},
+        state::{LpCache, PendingSingleUnbond, SHARES},
         test_helpers::default_setup,
     };
 
@@ -336,6 +337,17 @@ mod tests {
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
             .unwrap();
 
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+
         let unbond1 = StartUnbond {
             owner,
             id,
@@ -344,7 +356,7 @@ mod tests {
 
         do_start_unbond(deps.as_mut().storage, unbond1).unwrap();
 
-        let res = batch_start_unbond(deps.as_mut().storage, &env, Uint128::new(1000)).unwrap();
+        let res = batch_start_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_some());
 
         // check that the packet is as we expect
