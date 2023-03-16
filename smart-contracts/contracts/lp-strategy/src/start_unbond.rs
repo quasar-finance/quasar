@@ -14,8 +14,8 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     ibc_lock::Lock,
     state::{
-        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, SHARES,
-        START_UNBOND_QUEUE, UNBONDING_CLAIMS, LpCache,
+        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
+        SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -81,7 +81,6 @@ pub fn batch_start_unbond(
         old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
         Ok(old)
     })?;
-
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,

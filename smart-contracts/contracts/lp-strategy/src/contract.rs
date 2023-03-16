@@ -25,8 +25,8 @@ use crate::queries::{
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS, LpCache,
+    Config, LpCache, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
