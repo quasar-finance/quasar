@@ -254,7 +254,7 @@ pub fn handle_succesful_ack(
             handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending, amount)
         }
         IbcMsgKind::Ica(ica_kind) => handle_ica_ack(deps.storage, env, ack_bin, &pkt, ica_kind),
-        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin, &pkt),
+        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin),
     }
 }
 
@@ -296,7 +296,7 @@ pub fn handle_icq_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
-) -> Result<IbcBasicResponse, ContractError> {
+) -> Result<Response, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
