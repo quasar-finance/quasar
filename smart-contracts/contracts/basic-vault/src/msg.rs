@@ -5,6 +5,7 @@ use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
 pub use cw_controllers::ClaimsResponse;
+use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 
 use crate::state::{BondingStub, InvestmentInfo, Unbond};
@@ -209,7 +210,7 @@ pub struct PrimitiveInfo {
     pub base_denom: String,
     pub quote_denom: String,
     pub lp_denom: String,
-    pub lp_shares: Uint128,
+    pub lp_shares: LpCache,
 }
 
 #[cfg(test)]

@@ -1,4 +1,6 @@
-use cosmwasm_std::{to_binary, Addr, Env, IbcTimeout, Response, Storage, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg, Uint128, WasmMsg,
+};
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
 use quasar_types::{
@@ -14,8 +16,8 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     ibc_lock::Lock,
     state::{
-        PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, OSMO_LOCK, SHARES,
-        START_UNBOND_QUEUE, UNBONDING_CLAIMS,
+        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
+        SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -46,7 +48,6 @@ pub fn do_start_unbond(
 pub fn batch_start_unbond(
     storage: &mut dyn Storage,
     env: &Env,
-    total_lp_shares: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let mut to_unbond = Uint128::zero();
     let mut unbonds: Vec<PendingSingleUnbond> = vec![];
@@ -55,6 +56,8 @@ pub fn batch_start_unbond(
         return Ok(None);
     }
 
+    let total_lp_shares = LP_SHARES.load(storage)?;
+
     while !START_UNBOND_QUEUE.is_empty(storage)? {
         let unbond =
             START_UNBOND_QUEUE
@@ -62,7 +65,7 @@ pub fn batch_start_unbond(
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "start_unbond".to_string(),
                 })?;
-        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares)?;
+        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares.locked_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
             lp_shares,
@@ -74,6 +77,12 @@ pub fn batch_start_unbond(
 
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        old.locked_shares = old.locked_shares.checked_sub(to_unbond)?;
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
+        Ok(old)
+    })?;
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,
@@ -99,13 +108,15 @@ pub fn batch_start_unbond(
 
 pub fn handle_start_unbond_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
 ) -> Result<Response, ContractError> {
     let mut msgs: Vec<WasmMsg> = Vec::new();
     for unbond in unbonds {
-        let msg = start_internal_unbond(storage, env, unbond)?;
-        msgs.push(msg);
+        if let Some(msg) = start_internal_unbond(storage, querier, env, unbond)? {
+            msgs.push(msg);
+        }
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -135,9 +146,10 @@ fn single_unbond(
 // unbond starts unbonding an amount of lp shares
 fn start_internal_unbond(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: &Env,
     unbond: PendingSingleUnbond,
-) -> Result<WasmMsg, ContractError> {
+) -> Result<Option<WasmMsg>, ContractError> {
     // check that we can create a new unbond
     if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
@@ -178,22 +190,30 @@ fn start_internal_unbond(
         unlock_time,
     });
 
-    Ok(WasmMsg::Execute {
-        contract_addr: unbond.owner.to_string(),
-        msg: to_binary(&msg)?,
-        funds: vec![],
-    })
+    if querier
+        .query_wasm_contract_info(unbond.owner.as_str())
+        .is_ok()
+    {
+        Ok(Some(WasmMsg::Execute {
+            contract_addr: unbond.owner.to_string(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        }))
+    } else {
+        Ok(None)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, CosmosMsg, OverflowError, OverflowOperation, StdError, Timestamp, Uint128, WasmMsg,
+        Addr, Binary, ContractInfoResponse, ContractResult, CosmosMsg, OverflowError,
+        OverflowOperation, QuerierResult, StdError, Timestamp, Uint128, WasmMsg,
     };
 
     use crate::{
-        state::{PendingSingleUnbond, SHARES},
+        state::{LpCache, PendingSingleUnbond, SHARES},
         test_helpers::default_setup,
     };
 
@@ -338,6 +358,17 @@ mod tests {
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
             .unwrap();
 
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+
         let unbond1 = StartUnbond {
             owner,
             id,
@@ -346,7 +377,7 @@ mod tests {
 
         do_start_unbond(deps.as_mut().storage, unbond1).unwrap();
 
-        let res = batch_start_unbond(deps.as_mut().storage, &env, Uint128::new(1000)).unwrap();
+        let res = batch_start_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_some());
 
         // check that the packet is as we expect
@@ -411,9 +442,19 @@ mod tests {
         let id = "my-id";
         let env = mock_env();
 
+        deps.querier.update_wasm(|q| match q {
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
+                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+            ),
+            _ => unimplemented!(),
+        });
+        let w = QuerierWrapper::new(&deps.querier);
+
+        assert!(w.query_wasm_contract_info(owner.clone()).is_ok());
+
         // test specific setup
         SHARES
-            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .save(&mut deps.storage, owner.clone(), &Uint128::new(100))
             .unwrap();
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
@@ -422,9 +463,9 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap();
+        let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap();
         assert_eq!(
-            res,
+            res.unwrap(),
             WasmMsg::Execute {
                 contract_addr: owner.to_string(),
                 msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
@@ -449,9 +490,17 @@ mod tests {
         let id = "my-id";
         let env = mock_env();
 
+        deps.querier.update_wasm(|q| match q {
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
+                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+            ),
+            _ => unimplemented!(),
+        });
+        let w = QuerierWrapper::new(&deps.querier);
+
         // test specific setup
         SHARES
-            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(101))
+            .save(&mut deps.storage, owner.clone(), &Uint128::new(101))
             .unwrap();
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
@@ -460,9 +509,9 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap();
+        let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap();
         assert_eq!(
-            res,
+            res.unwrap(),
             WasmMsg::Execute {
                 contract_addr: owner.to_string(),
                 msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
@@ -491,9 +540,17 @@ mod tests {
         let id = "my-id";
         let env = mock_env();
 
+        deps.querier.update_wasm(|q| match q {
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
+                QuerierResult::Ok(ContractResult::Ok(Binary::from_base64("deadbeef").unwrap()))
+            }
+            _ => unimplemented!(),
+        });
+        let w = QuerierWrapper::new(&deps.querier);
+
         // test specific setup
         SHARES
-            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
+            .save(&mut deps.storage, owner.clone(), &Uint128::new(99))
             .unwrap();
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
@@ -507,7 +564,7 @@ mod tests {
             .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period);
         UNBONDING_CLAIMS
             .save(
-                deps.as_mut().storage,
+                &mut deps.storage,
                 (owner.clone(), id.to_string()),
                 &Unbond {
                     lp_shares: Uint128::new(100),
@@ -519,7 +576,7 @@ mod tests {
             )
             .unwrap();
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
+        let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(res, ContractError::DuplicateKey)
     }
 
@@ -532,9 +589,17 @@ mod tests {
         let id = "my-id";
         let env = mock_env();
 
+        deps.querier.update_wasm(|q| match q {
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
+                QuerierResult::Ok(ContractResult::Ok(Binary::from_base64("deadbeef").unwrap()))
+            }
+            _ => unimplemented!(),
+        });
+        let w = QuerierWrapper::new(&deps.querier);
+
         // test specific setup
         SHARES
-            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(99))
+            .save(&mut deps.storage, owner.clone(), &Uint128::new(99))
             .unwrap();
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
@@ -543,7 +608,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
+        let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
             ContractError::OverflowError(OverflowError {
@@ -563,6 +628,14 @@ mod tests {
         let id = "my-id";
         let env = mock_env();
 
+        deps.querier.update_wasm(|q| match q {
+            cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
+                QuerierResult::Ok(ContractResult::Ok(Binary::from_base64("deadbeef").unwrap()))
+            }
+            _ => unimplemented!(),
+        });
+        let w = QuerierWrapper::new(&deps.querier);
+
         // test specific setup
         let unbond = PendingSingleUnbond {
             lp_shares: Uint128::new(100),
@@ -571,7 +644,7 @@ mod tests {
             id: id.to_string(),
         };
 
-        let res = start_internal_unbond(deps.as_mut().storage, &env, unbond).unwrap_err();
+        let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
             ContractError::Std(StdError::NotFound {
