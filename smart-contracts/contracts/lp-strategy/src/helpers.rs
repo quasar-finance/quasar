@@ -74,7 +74,7 @@ pub fn create_callback_submsg(
 
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
-            SubMsgKind::Callback(ContractCallback::Callback(from_binary(&msg)?))
+            SubMsgKind::Callback(ContractCallback::Callback(from_binary(msg)?))
         }
         CosmosMsg::Bank(bank_msg) => {
             SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
