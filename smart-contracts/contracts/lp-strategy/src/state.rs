@@ -9,7 +9,7 @@ use cw_storage_plus::{Deque, Item, Map};
 use crate::{
     bond::Bond,
     error::{ContractError, Trap},
-    helpers::IbcMsgKind,
+    helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock::Lock,
     start_unbond::StartUnbond,
 };
@@ -41,7 +41,7 @@ pub struct Config {
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 // IBC related state items
-pub(crate) const REPLIES: Map<u64, IbcMsgKind> = Map::new("replies");
+pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
 pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
 // Currently we only support one ICA channel to a single destination
@@ -61,7 +61,7 @@ pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbo
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 
 // the amount of LP shares that the contract has entered into the pool
-pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
+pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
 // the latest known ica balance
 pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
@@ -77,8 +77,19 @@ pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
-
+// TODO, do we remove this state item? is it needed?
 pub(crate) const LAST_PENDING_BOND: Item<PendingBond> = Item::new("last_pending_bond");
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct LpCache {
+    // the amount of locked shares we currently have
+    pub locked_shares: Uint128,
+    // the amount of unlocked share we have for withdrawing
+    pub w_unlocked_shares: Uint128,
+    // the amount unlocked shares we have for depositing
+    pub d_unlocked_shares: Uint128,
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

@@ -36,10 +36,6 @@ pub struct InvestmentInfo {
 pub struct Supply {
     /// issued is how many derivative tokens this contract has issued
     pub issued: Uint128,
-    /// bonded is how many native tokens exist bonded to the validator
-    pub bonded: Uint128,
-    /// claims is how many tokens need to be reserved paying back those who unbonded
-    pub claims: Uint128,
 }
 
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
@@ -76,17 +72,62 @@ pub struct UnbondingStub {
 
 // (un)bonding sequence number (to map primitive responses to the right bond action)
 pub const BONDING_SEQ: Item<Uint128> = Item::new("bond_seq");
-// mapping from bonding sequence number to depositor/withdrawer address (todo: better way to do this?)
-// TODO addresses should be of type ADDR
+// mapping from bonding sequence number to depositor/withdrawer address
 pub const BONDING_SEQ_TO_ADDR: Map<String, String> = Map::new("bond_seq_to_addr");
 // current bonds pending for a user
 pub const PENDING_BOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_bond_ids");
 // current unbonds pending for a user
 pub const PENDING_UNBOND_IDS: Map<Addr, Vec<String>> = Map::new("pending_unbond_ids");
 // map of bond id to bond state
-// todo: find the type of the vec items here (replace supply obvs)
 pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 // map of unbond id to unbond state
 pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");
+
+impl InvestmentInfo {
+    pub fn normalize_primitive_weights(&mut self) {
+        let mut total_weight = Decimal::zero();
+        for p in &self.primitives {
+            total_weight += p.weight;
+        }
+        for p in &mut self.primitives {
+            p.weight /= total_weight;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::msg::{PrimitiveConfig, PrimitiveInitMsg};
+
+    #[test]
+    fn test_investment_info() {
+        let mut invest = InvestmentInfo {
+            owner: Addr::unchecked("owner".to_string()),
+            min_withdrawal: Uint128::from(1000u128),
+            primitives: vec![
+                PrimitiveConfig {
+                    address: "primitive".to_string(),
+                    weight: Decimal::percent(50), // passing in unnormalized
+                    init: PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                        lock_period: 1,
+                        pool_id: 1,
+                        pool_denom: "gamm/pool/1".to_string(),
+                        local_denom: "uosmo".to_string(),
+                        base_denom: "ibc/blah".to_string(),
+                        quote_denom: "ibc/blah2".to_string(),
+                        transfer_channel: "channel-0".to_string(),
+                        return_source_channel: "channel-0".to_string(),
+                        expected_connection: "connection-0".to_string(),
+                    }),
+                };
+                4
+            ],
+        };
+        invest.normalize_primitive_weights();
+        assert_eq!(invest.primitives[0].weight, Decimal::percent(25));
+    }
+}

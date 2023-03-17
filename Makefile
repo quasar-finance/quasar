@@ -95,8 +95,8 @@ endif
 
 all: install lint test
 
-#BUILD_TARGETS := build install
-BUILD_TARGETS_DEBUG := build install
+BUILD_TARGETS := build install
+#BUILD_TARGETS_DEBUG := build install
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/

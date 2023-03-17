@@ -1,12 +1,12 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128, Binary, StdResult
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
     osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketData, Query, InterchainQueryPacketAck};
+use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
@@ -34,7 +34,7 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        &IbcMsgKind::Icq,
+        IbcMsgKind::Icq,
         send_packet_msg,
     )?))
 }
@@ -58,10 +58,12 @@ pub fn prepare_total_balance_query(
         address,
         denom: config.pool_denom,
     };
-    // we simulate the result of an exit pool of our entire vault to get the total value in lp tokens
+    // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
+    // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
+    // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
     let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: LP_SHARES.load(storage)?.to_string(),
+        share_in_amount: LP_SHARES.load(storage)?.locked_shares.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
@@ -140,7 +142,11 @@ pub fn calc_total_balance(
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
 
-    use crate::{ibc_lock::Lock, state::IBC_LOCK, test_helpers::default_setup};
+    use crate::{
+        ibc_lock::Lock,
+        state::{LpCache, IBC_LOCK},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -151,7 +157,14 @@ mod tests {
         let env = mock_env();
 
         LP_SHARES
-            .save(deps.as_mut().storage, &Uint128::new(100))
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(100),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
             .unwrap();
 
         // lock the ibc lock
@@ -173,8 +186,10 @@ mod tests {
         };
 
         assert_eq!(
-            res,
-            Some(create_ibc_ack_submsg(deps.as_mut().storage, &IbcMsgKind::Icq, pkt).unwrap())
+            res.unwrap().msg,
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt)
+                .unwrap()
+                .msg
         )
     }
 
@@ -201,7 +216,7 @@ mod tests {
 
         // lock the ibc lock
         IBC_LOCK
-            .save(deps.as_mut().storage, &&Lock::new().lock_start_unbond())
+            .save(deps.as_mut().storage, &Lock::new().lock_start_unbond())
             .unwrap();
 
         let res = try_icq(deps.as_mut().storage, env).unwrap();

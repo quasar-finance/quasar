@@ -334,7 +334,7 @@ pub fn do_ibc_packet_ack(
     // Insert any further neede logic to handle acks here
     Ok(Response::new()
         .add_attribute("error", error.unwrap_or_else(|| "none".into()))
-        .add_attribute("response", format!("{:?}", response)))
+        .add_attribute("response", format!("{response:?}")))
 }
 
 #[cfg(test)]

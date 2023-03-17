@@ -1,58 +1,17 @@
-use std::collections::HashMap;
-
-use cosmwasm_std::{Addr, Coin, Deps, Env, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Deps, StdResult};
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
 
 use crate::{
     execute::may_pay_with_ratio,
     msg::{
-        DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PrimitiveInfo,
-        TvlInfoResponse, UnbondingClaimResponse,
+        DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PendingUnbondsResponse,
+        PrimitiveInfo, TvlInfoResponse,
     },
-    state::{BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
+    state::{
+        InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
+        UNBOND_STATE,
+    },
 };
-
-pub fn query_unbonding_claims(
-    deps: Deps,
-    env: Env,
-    addr: Addr,
-) -> StdResult<UnbondingClaimResponse> {
-    let ids = PENDING_UNBOND_IDS.load(deps.storage, addr)?;
-    let mut resp = UnbondingClaimResponse {
-        pending_unbonds: Uint128::zero(),
-        unbonds: HashMap::new(),
-        unbonded: Uint128::zero(),
-    };
-    for id in ids {
-        let stub = UNBOND_STATE.load(deps.storage, id)?;
-        let mut time = Timestamp::from_seconds(0);
-
-        // find the largest time
-        // TODO this should be done by an iter and remove clone
-        for pending in stub.stub.clone() {
-            if let Some(unlock) = pending.unlock_time {
-                if unlock.seconds() >= time.seconds() {
-                    time = unlock;
-                }
-            }
-        }
-        // if time is zero, all timestamps were None, so we don't have an unbonding time yet
-        if time.seconds() == 0 {
-            resp.pending_unbonds = resp.pending_unbonds.checked_add(stub.shares)?;
-        }
-        // if the current time is before the stub timestamp, funds are still unbondong
-        else if env.block.time < time {
-            // TODO make the addition save here
-            resp.unbonds
-                .entry(time.seconds())
-                .and_modify(|old| *old += stub.shares)
-                .or_insert(stub.shares);
-        } else {
-            resp.unbonded = resp.unbonded.checked_add(stub.shares)?;
-        }
-    }
-    Ok(resp)
-}
 
 pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
     let primitives = INVESTMENT.load(deps.storage)?.primitives;
@@ -87,9 +46,11 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
     let res = InvestmentResponse {
-        owner: invest.owner.to_string(),
-        min_withdrawal: invest.min_withdrawal,
-        primitives: invest.primitives,
+        info: InvestmentInfo {
+            owner: invest.owner.clone(),
+            min_withdrawal: invest.min_withdrawal,
+            primitives: invest.primitives,
+        },
     };
     Ok(res)
 }
@@ -97,8 +58,7 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
 pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
-    let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps, &funds, &invest.primitives).unwrap();
+    let (primitive_funding_amounts, remainder) = may_pay_with_ratio(&deps, &funds, invest).unwrap();
 
     let res = DepositRatioResponse {
         primitive_funding_amounts,
@@ -108,7 +68,7 @@ pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRat
 }
 
 pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBondsResponse> {
-    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address.clone()))?;
+    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
     pending_bond_ids.iter().for_each(|id| {
@@ -120,5 +80,20 @@ pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBond
     Ok(PendingBondsResponse {
         pending_bonds,
         pending_bond_ids,
+    })
+}
+
+pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUnbondsResponse> {
+    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let mut pending_unbonds: Vec<Unbond> = vec![];
+
+    pending_unbond_ids.iter().for_each(|id: &String| {
+        let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string()).unwrap();
+        pending_unbonds.push(unbond_stubs);
+    });
+
+    Ok(PendingUnbondsResponse {
+        pending_unbonds,
+        pending_unbond_ids,
     })
 }

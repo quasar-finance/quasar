@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Env, MessageInfo, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -177,7 +177,7 @@ mod tests {
 
     use crate::{
         ibc_lock::Lock,
-        state::{IBC_LOCK, LP_SHARES},
+        state::{LpCache, IBC_LOCK, LP_SHARES},
         test_helpers::default_setup,
     };
 
@@ -221,7 +221,14 @@ mod tests {
         let id = "my-id";
 
         LP_SHARES
-            .save(deps.as_mut().storage, &Uint128::new(100))
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(100),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
             .unwrap();
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
@@ -231,7 +238,10 @@ mod tests {
             funds: vec![coin(1000, config.local_denom)],
         };
         let res = do_bond(deps.as_mut().storage, env.clone(), info, id.to_string()).unwrap();
-        assert_eq!(res, try_icq(deps.as_mut().storage, env).unwrap())
+        assert_eq!(
+            res.unwrap().msg,
+            try_icq(deps.as_mut().storage, env).unwrap().unwrap().msg
+        )
     }
 
     #[test]

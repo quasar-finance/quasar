@@ -1,10 +1,14 @@
 use crate::{
     error::ContractError,
     ibc_lock::Lock,
+    msg::ExecuteMsg,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
     unbond::PendingReturningUnbonds,
 };
-use cosmwasm_std::{Binary, IbcMsg, Order, StdError, Storage, SubMsg, Uint128};
+use cosmwasm_std::{
+    to_binary, Binary, Env, IbcMsg, IbcPacketAckMsg, Order, StdError, Storage, SubMsg, Uint128,
+    WasmMsg,
+};
 use prost::Message;
 use quasar_types::ibc::MsgTransferResponse;
 use schemars::JsonSchema;
@@ -60,17 +64,44 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 
 pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
-    pending: &IbcMsgKind,
+    pending: IbcMsgKind,
     msg: IbcMsg,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
     if let Some(val) = last {
-        id = val?.0;
+        id = val?.0 + 1;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, pending)?;
+    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending))?;
     Ok(SubMsg::reply_always(msg, id))
+}
+
+pub fn ack_submsg(
+    storage: &mut dyn Storage,
+    env: Env,
+    msg: IbcPacketAckMsg,
+) -> Result<SubMsg, ContractError> {
+    let last = REPLIES.range(storage, None, None, Order::Descending).next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0 + 1;
+    }
+
+    // register the message in the replies for handling
+    // TODO do we need this state item here? or do we just need the reply hook
+    REPLIES.save(storage, id, &SubMsgKind::Ack(msg.original_packet.sequence))?;
+
+    // TODO for an ack, should the reply hook be always or only on error? Probably only on error
+    // On succeses, we need to cleanup the state item from REPLIES
+    Ok(SubMsg::reply_always(
+        WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&ExecuteMsg::Ack { ack: msg })?,
+            funds: vec![],
+        },
+        id,
+    ))
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
@@ -97,8 +128,9 @@ pub enum IcaMessages {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub enum MsgKind {
+pub enum SubMsgKind {
     Ibc(IbcMsgKind),
+    Ack(u64),
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

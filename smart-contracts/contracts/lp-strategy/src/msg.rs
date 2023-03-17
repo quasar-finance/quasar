@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
+use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Trap,
-    helpers::IbcMsgKind,
+    helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
-    state::{Config, Unbond},
+    state::{Config, LpCache, Unbond},
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -57,12 +57,19 @@ pub enum QueryMsg {
     ListBondingClaims {},
     ListPrimitiveShares {},
     ListPendingAcks {},
+    ListReplies {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ListBondingClaimsResponse {
     pub bonds: HashMap<(Addr, String), Uint128>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct ListRepliesResponse {
+    pub replies: HashMap<u64, SubMsgKind>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -104,7 +111,7 @@ pub struct TrappedErrorsResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct LpSharesResponse {
-    pub lp_shares: Uint128,
+    pub lp_shares: LpCache,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -154,4 +161,5 @@ pub enum ExecuteMsg {
     // try to close a channel where a timout occured
     CloseChannel { channel_id: String },
     ReturnTransfer { amount: Uint128 },
+    Ack { ack: IbcPacketAckMsg },
 }
