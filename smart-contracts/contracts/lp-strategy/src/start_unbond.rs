@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, CosmosMsg, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
+    Uint128, WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -13,7 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::get_total_shares,
-    helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
+    helpers::{
+        create_callback_submsg, create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages,
+    },
     ibc_lock::Lock,
     state::{
         LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
@@ -112,10 +115,12 @@ pub fn handle_start_unbond_ack(
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
 ) -> Result<Response, ContractError> {
-    let mut msgs: Vec<WasmMsg> = Vec::new();
+    let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
-        if let Some(msg) = start_internal_unbond(storage, querier, env, unbond)? {
-            msgs.push(msg);
+        if let Some(wasm_msg) = start_internal_unbond(storage, querier, env, unbond)? {
+            // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
+            let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
+            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
         }
     }
 
@@ -125,8 +130,8 @@ pub fn handle_start_unbond_ack(
 
     Ok(Response::new()
         .add_attribute("start-unbond", "succes")
-        .add_attribute("callback-msgs", msgs.len().to_string())
-        .add_messages(msgs))
+        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
+        .add_submessages(callback_submsgs))
 }
 
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond

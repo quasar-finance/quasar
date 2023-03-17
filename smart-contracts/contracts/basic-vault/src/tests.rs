@@ -218,7 +218,7 @@ mod tests {
             }],
         );
         let env = mock_env();
-        let res = init(deps.as_mut(), &msg, &env, &info);
+        let _res = init(deps.as_mut(), &msg, &env, &info);
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
