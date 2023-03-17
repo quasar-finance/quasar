@@ -163,7 +163,6 @@ fn on_packet_success(
         Err(_) => return Err(ContractError::DecodingFail {}),
     };
 
-
     handle_sample_callback(deps, env, resp, original)
 }
 

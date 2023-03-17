@@ -199,7 +199,7 @@ pub fn execute_query(deps: DepsMut, env: Env, msg: ICQQueryMsg) -> Result<Respon
 }
 
 #[entry_point]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(_deps: DepsMut, _env: Env, _msg: Reply) -> StdResult<Response> {
     Ok(Response::default())
 }
 

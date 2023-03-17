@@ -5,49 +5,8 @@ use crate::{
     ContractError,
 };
 use cosmos_sdk_proto::tendermint::abci::RequestQuery;
-use cosmwasm_std::{
-    attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Order, Reply, Response, StdError, StdResult,
-    Storage, Timestamp,
-};
+use cosmwasm_std::{attr, DepsMut, Env, IbcBasicResponse, IbcPacket, Storage, Timestamp};
 use prost::Message;
-
-pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Response> {
-    let val = msg
-        .result
-        .into_result()
-        .map_err(|msg| StdError::GenericErr { msg })?;
-
-    let event = val
-        .events
-        .iter()
-        .find(|e| e.ty == "send_packet")
-        .ok_or(StdError::NotFound {
-            kind: "send_packet_event".into(),
-        })?;
-
-    // here we can do further stuff with a succesful package if necessary, in this case we can simply
-    // save the package, under the sequence number and channel id
-    let seq = event
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "packet_sequence")
-        .ok_or(StdError::NotFound {
-            kind: "packet_sequence".into(),
-        })?;
-    let s = seq.value.parse::<u64>().map_err(|e| StdError::ParseErr {
-        target_type: "u64".into(),
-        msg: e.to_string(),
-    })?;
-    let channel = event
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "packet_src_channel")
-        .ok_or(StdError::NotFound {
-            kind: "packet_src_channel".into(),
-        })?;
-
-    Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
-}
 
 pub fn prepare_query(
     storage: &dyn Storage,
