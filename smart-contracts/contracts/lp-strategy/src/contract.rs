@@ -25,8 +25,8 @@ use crate::queries::{
 };
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-    PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
+    Config, LpCache, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
+    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -61,7 +61,14 @@ pub fn instantiate(
 
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
-    LP_SHARES.save(deps.storage, &Uint128::zero())?;
+    LP_SHARES.save(
+        deps.storage,
+        &LpCache {
+            locked_shares: Uint128::zero(),
+            w_unlocked_shares: Uint128::zero(),
+            d_unlocked_shares: Uint128::zero(),
+        },
+    )?;
 
     // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
     ICA_BALANCE.save(deps.storage, &Uint128::one())?;

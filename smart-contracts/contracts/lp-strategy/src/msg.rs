@@ -11,7 +11,7 @@ use crate::{
     error::Trap,
     helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
-    state::{Config, Unbond},
+    state::{Config, LpCache, Unbond},
 };
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -111,7 +111,7 @@ pub struct TrappedErrorsResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct LpSharesResponse {
-    pub lp_shares: Uint128,
+    pub lp_shares: LpCache,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

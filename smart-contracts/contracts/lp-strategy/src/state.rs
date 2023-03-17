@@ -61,7 +61,7 @@ pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbo
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 
 // the amount of LP shares that the contract has entered into the pool
-pub(crate) const LP_SHARES: Item<Uint128> = Item::new("lp_shares");
+pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
 // the latest known ica balance
 pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
@@ -79,6 +79,17 @@ pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // TODO, do we remove this state item? is it needed?
 pub(crate) const LAST_PENDING_BOND: Item<PendingBond> = Item::new("last_pending_bond");
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct LpCache {
+    // the amount of locked shares we currently have
+    pub locked_shares: Uint128,
+    // the amount of unlocked share we have for withdrawing
+    pub w_unlocked_shares: Uint128,
+    // the amount unlocked shares we have for depositing
+    pub d_unlocked_shares: Uint128,
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
