@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg, Uint128, WasmMsg,
+    to_binary, Addr, CosmosMsg, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
+    Uint128, WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -117,7 +118,10 @@ pub fn handle_start_unbond_ack(
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
         if let Some(wasm_msg) = start_internal_unbond(storage, querier, env, unbond)? {
-        callback_submsgs.push(create_callback_submsg(storage, wasm_msg)?);
+            // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
+            let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
+            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+        }
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
