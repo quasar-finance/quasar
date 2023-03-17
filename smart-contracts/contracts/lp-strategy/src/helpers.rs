@@ -72,12 +72,10 @@ pub fn create_callback_submsg(
         id = val?.0 + 1;
     }
     let data = match &wasm_msg {
-        WasmMsg::Execute { msg, .. } => from_binary(&msg)?,
+        WasmMsg::Execute { msg, .. } => from_binary(msg)?,
         _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
     };
-    // do we need to register the message in the replies for handling?
     REPLIES.save(storage, id, &data)?;
-
     Ok(SubMsg::reply_always(wasm_msg, id))
 }
 
