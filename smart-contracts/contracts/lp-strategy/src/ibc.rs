@@ -11,7 +11,7 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LAST_PENDING_BOND, LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -482,18 +482,7 @@ fn handle_lock_tokens_ack(
         Ok(old)
     })?;
 
-            let mut callback_submsgs: Vec<SubMsg> = vec![];
-            for claim in data.bonds {
-                let share_amount =
-                    create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
-                if querier
-                    .query_wasm_contract_info(claim.owner.as_str())
-                    .is_ok()
-                {
-
     let mut callback_submsgs: Vec<SubMsg> = vec![];
-
-    LAST_PENDING_BOND.save(storage, &data)?;
     for claim in data.bonds {
         let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
         if querier

@@ -78,7 +78,6 @@ pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // TODO, do we remove this state item? is it needed?
-pub(crate) const LAST_PENDING_BOND: Item<PendingBond> = Item::new("last_pending_bond");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
