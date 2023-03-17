@@ -1,7 +1,7 @@
 use crate::{
     msg::InterchainQueryPacketData,
     proto::{CosmosQuery, CosmosResponse},
-    state::{Origin, CHANNEL_INFO, CONFIG, PENDING_QUERIES, QUERY_RESULT_COUNTER, REPLIES},
+    state::{CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER},
     ContractError,
 };
 use cosmos_sdk_proto::tendermint::abci::RequestQuery;
@@ -46,7 +46,6 @@ pub(crate) fn handle_reply_sample(deps: DepsMut, msg: Reply) -> StdResult<Respon
             kind: "packet_src_channel".into(),
         })?;
 
-    PENDING_QUERIES.save(deps.storage, (s, &channel.value), &Origin::Sample)?;
     Ok(Response::new().add_attribute("reply_registered", msg.id.to_string()))
 }
 
@@ -65,21 +64,6 @@ pub fn prepare_query(
 
     // timeout is in nanoseconds
     Ok(env.block.time.plus_seconds(timeout_delta))
-}
-
-pub fn set_reply(deps: DepsMut, origin: &Origin) -> Result<u64, ContractError> {
-    let last = REPLIES
-        .range(deps.storage, None, None, Order::Descending)
-        .next();
-    let mut id: u64 = 0;
-    if let Some(val) = last {
-        id = val?.0;
-    }
-
-    // register the message in the replies for handling
-    REPLIES.save(deps.storage, id, origin)?;
-    // send response
-    Ok(id)
 }
 
 // for our sample origin callback, we increment the query counter and leave it at that

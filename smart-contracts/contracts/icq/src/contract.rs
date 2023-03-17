@@ -4,7 +4,7 @@ use cosmos_sdk_proto::tendermint::abci::RequestQuery;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo, Order, PortIdResponse,
-    Reply, Response, StdResult, SubMsg,
+    Reply, Response, StdResult,
 };
 use osmosis_std::types::osmosis::gamm::v1beta1::QueryNumPoolsRequest;
 use prost::Message;
@@ -12,13 +12,13 @@ use prost::Message;
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::helpers::{handle_reply_sample, prepare_query, set_reply, Query};
+use crate::helpers::{prepare_query, Query};
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, ICQQueryMsg, InitMsg, InterchainQueryPacketData,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
 };
 use crate::proto::CosmosQuery;
-use crate::state::{Config, Origin, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER, REPLIES};
+use crate::state::{Config, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:icq";
@@ -84,9 +84,8 @@ pub fn execute_balance_query(
         timeout: timeout.into(),
     };
 
-    let id = set_reply(deps, &Origin::Sample)?;
     let res = Response::new()
-        .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
+        .add_message(send_packet_msg)
         .add_attribute("action", "query");
     Ok(res)
 }
@@ -118,9 +117,8 @@ pub fn execute_all_balance_query(
         timeout: timeout.into(),
     };
 
-    let id = set_reply(deps, &Origin::Sample)?;
     let res = Response::new()
-        .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
+        .add_message(send_packet_msg)
         .add_attribute("action", "query");
     Ok(res)
 }
@@ -146,9 +144,8 @@ fn execute_mint_params_query(
         timeout: timeout.into(),
     };
 
-    let id = set_reply(deps, &Origin::Sample)?;
     let res = Response::new()
-        .add_submessage(SubMsg::reply_on_success(send_packet_msg, id))
+        .add_message(send_packet_msg)
         .add_attribute("action", "query");
     Ok(res)
 }
@@ -203,10 +200,7 @@ pub fn execute_query(deps: DepsMut, env: Env, msg: ICQQueryMsg) -> Result<Respon
 
 #[entry_point]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    let origin = REPLIES.load(deps.storage, msg.id)?;
-    match origin {
-        Origin::Sample => handle_reply_sample(deps, msg),
-    }
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
