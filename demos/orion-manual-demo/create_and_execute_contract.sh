@@ -2,6 +2,17 @@
 
 set -e
 
+on_error() {
+    echo "Some error occurred"
+
+    quasarnoded q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
+
+    afplay /System/Library/Sounds/Sosumi.aiff
+    afplay /System/Library/Sounds/Sosumi.aiff
+}
+
+trap 'on_error' ERR
+
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"
@@ -21,11 +32,11 @@ INIT1='{"lock_period":6,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uos
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
+# docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG) 
-CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value') 
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
@@ -38,7 +49,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icqhost 
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
 
 
-quasarnoded tx wasm execute $ADDR1 '{"bond":{"id": "my-id"}}' -y --from alice --keyring-backend test --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518 $TXFLAG
+# quasarnoded tx wasm execute $ADDR1 '{"bond":{"id": "my-id"}}' -y --from alice --keyring-backend test --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518 $TXFLAG
 # sleep 6
 
 # OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
@@ -64,42 +75,44 @@ quasarnoded tx wasm execute $ADDR1 '{"bond":{"id": "my-id"}}' -y --from alice --
 # echo $BOND
 # $BOND
 
-# VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
+VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
-# echo $VAULT_INIT
+echo $VAULT_INIT
 
-# echo "Running store code (vault)"
-# RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+echo "Running store code (vault)"
+RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
-# VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
+VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-# echo "Got CODE_ID = $VAULT_CODE_ID"
+echo "Got CODE_ID = $VAULT_CODE_ID"
 
-# echo "Deploying contract (vault)"
+echo "Deploying contract (vault)"
 # # swallow output
-# OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
-# VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
+OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
+VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
 
-# echo "Got address of deployed contract = $VAULT_ADDR (vault)"
+echo "Got address of deployed contract = $VAULT_ADDR (vault)"
 
-# echo "bonding multiple bonds"
-# echo "Command: quasarnoded tx wasm execute $VAULT_ADDR '{\"bond\":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1"
-# quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
-# sleep 5
-# quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
-# sleep 5
-# quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from bob --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
+echo "bonding multiple bonds"
+echo "Command: quasarnoded tx wasm execute $VAULT_ADDR '{\"bond\":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1"
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
+sleep 5
+echo "second bond"
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
+sleep 5
+echo "third bond"
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
+sleep 5
 
 # echo "Sleeping for 80 seconds"
 # sleep 80
 
-# echo "Querying alice balance"
-# quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+echo "Querying alice balance"
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
 
-
-# echo "Running unbond, command: quasarnoded tx wasm execute $VAULT_ADDR '{\"unbond\":{\"amount\":\"100\"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID"
-# quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
-# echo `quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID`
+echo "Running unbond, command: quasarnoded tx wasm execute $VAULT_ADDR '{\"unbond\":{\"amount\":\"100\"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID"
+quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+echo $(quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100"}}' -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID)
 
 # echo ""
 
@@ -113,4 +126,7 @@ quasarnoded tx wasm execute $ADDR1 '{"bond":{"id": "my-id"}}' -y --from alice --
 # quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
 # quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
-# cd -
+afplay /System/Library/Sounds/Funk.aiff
+say "I want to cry"
+
+cd -

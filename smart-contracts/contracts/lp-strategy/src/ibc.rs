@@ -236,7 +236,7 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
+    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
 }
 
 pub fn handle_succesful_ack(

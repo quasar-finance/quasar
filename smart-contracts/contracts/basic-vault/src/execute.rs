@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
+    Response, StdError, Uint128, WasmMsg, Storage, QuerierWrapper,
 };
 
 use cw20_base::contract::execute_burn;
@@ -13,7 +13,8 @@ use crate::error::ContractError;
 use crate::helpers::can_unbond_from_primitive;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
-    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+    BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY,
+    UNBOND_STATE,
 };
 
 // returns amount if the coin is found and amount is non-zero
@@ -32,7 +33,8 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
 }
 
 pub fn may_pay_with_ratio(
-    deps: &Deps,
+    storage: &mut dyn Storage,
+querier: QuerierWrapper,
     funds: &[Coin],
     mut invest: InvestmentInfo,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
@@ -44,11 +46,11 @@ pub fn may_pay_with_ratio(
         .primitives
         .iter()
         .map(|pc| -> Result<CoinWeight, ContractError> {
-            let balance: IcaBalanceResponse = deps.querier.query_wasm_smart(
+            let balance: IcaBalanceResponse = querier.query_wasm_smart(
                 pc.address.clone(),
                 &lp_strategy::msg::QueryMsg::IcaBalance {},
             )?;
-            let supply: PrimitiveSharesResponse = deps.querier.query_wasm_smart(
+            let supply: PrimitiveSharesResponse = querier.query_wasm_smart(
                 pc.address.clone(),
                 &lp_strategy::msg::QueryMsg::PrimitiveShares {},
             )?;
@@ -117,7 +119,7 @@ pub fn may_pay_with_ratio(
     }
 
     let mut max_bond = Uint128::MAX;
-    for coin_weight in token_weights {
+    for coin_weight in token_weights.clone().iter() {
         let amount = must_pay_multi(funds, &coin_weight.denom)?;
         let bond_for_token = amount.multiply_ratio(
             coin_weight.weight.denominator(),
@@ -129,7 +131,7 @@ pub fn may_pay_with_ratio(
     }
 
     let ratio = CoinRatio {
-        ratio: deposit_amount_weights,
+        ratio: deposit_amount_weights.clone(),
     };
 
     if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
@@ -176,7 +178,7 @@ pub fn may_pay_with_ratio(
         })
         .collect();
 
-    let c = coins?;
+    let c:Vec<Coin> = coins?.iter().filter(|c| !c.amount.is_zero()).cloned().collect();
 
     if c.first()
         .ok_or(ContractError::CoinsVectorIsEmpty {})?
@@ -187,6 +189,11 @@ pub fn may_pay_with_ratio(
             msg: "we failed here".to_string(),
         }));
     }
+
+    // lets print all incremental info
+    DEBUG_TOOL.save(storage, 
+        &format!("deposit_amount_weights: {:?}\ntoken_weights: {:?}\nmax_bond: {:?}\nratio: {:?}\nremainder: {:?}\ncoins: {:?}\n",
+         deposit_amount_weights, token_weights, max_bond, ratio,  remainder, c))?;
 
     Ok((c, remainder))
 }
@@ -213,8 +220,10 @@ pub fn bond(
 
     let mut deposit_stubs = vec![];
 
+let storage = deps.storage;
+let querier = deps.querier;
     let (primitive_funding_amounts, remainder) =
-        may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
+        may_pay_with_ratio(storage, querier, &info.funds, invest.clone())?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
@@ -238,31 +247,33 @@ pub fn bond(
         .collect();
 
     // save bonding state for use during the callback
-    PENDING_BOND_IDS.update(deps.storage, recipient_addr.clone(), |ids| match ids {
+    PENDING_BOND_IDS.update(storage, recipient_addr.clone(), |ids| match ids {
         Some(mut bond_ids) => {
             bond_ids.push(bond_seq.to_string());
             Ok::<Vec<String>, ContractError>(bond_ids)
         }
         None => Ok(vec![bond_seq.to_string()]),
     })?;
-    BOND_STATE.save(deps.storage, bond_seq.to_string(), &deposit_stubs)?;
+    BOND_STATE.save(storage, bond_seq.to_string(), &deposit_stubs)?;
     BONDING_SEQ_TO_ADDR.save(
-        deps.storage,
+        storage,
         bond_seq.to_string(),
         &recipient_addr.to_string(),
     )?;
-    BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::new(1))?)?;
+    BONDING_SEQ.save(storage, &bond_seq.checked_add(Uint128::new(1))?)?;
 
     let remainder_msg = BankMsg::Send {
         to_address: recipient_addr.to_string(),
         amount: remainder
             .iter()
+            .filter(|c| !c.amount.is_zero())
             .map(|r| Coin {
                 denom: r.denom.clone(),
                 amount: r.amount,
             })
             .collect(),
     };
+
 
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
