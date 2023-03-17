@@ -175,7 +175,11 @@ pub fn may_pay_with_ratio(
         })
         .collect();
 
-    let c = coins?;
+    let c: Vec<Coin> = coins?
+        .iter()
+        .filter(|c| !c.amount.is_zero())
+        .cloned()
+        .collect();
 
     if c.first()
         .ok_or(ContractError::CoinsVectorIsEmpty {})?
@@ -256,6 +260,7 @@ pub fn bond(
         to_address: recipient_addr.to_string(),
         amount: remainder
             .iter()
+            .filter(|c| !c.amount.is_zero())
             .map(|r| Coin {
                 denom: r.denom.clone(),
                 amount: r.amount,
