@@ -75,7 +75,7 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct ListBondingClaimsResponse {
-    pub bonds: HashMap<(Addr, String), Uint128>,
+    pub bonds: HashMap<Addr, (String, Uint128)>,
 }
 
 #[cw_serde]
