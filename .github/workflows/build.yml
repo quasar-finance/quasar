@@ -38,3 +38,9 @@ jobs:
           path: build/quasarnoded
       - name: Build smart contracts
         run: make compile-wasm-artifacts
+      - uses: actions/upload-artifact@v2
+        with:
+          name: smart-contracts
+          path: |
+            smart-contracts/basic_vault.wasm
+            smart-contracts/lp_strategy.wasm
