@@ -1823,4 +1823,118 @@ mod tests {
 
     #[test]
     fn test_recipient_not_sender() {}
+
+    #[test]
+    fn test_dup_token_deposits_cero_point() {
+        let env = mock_env();
+        let mut deps = mock_deps_with_primitives(vec![
+            (
+                // address
+                "quasar1".to_string(),
+                //denom on our chain (local)
+                "ibc/uosmo".to_string(),
+                // share
+                Uint128::from(100u128),
+                //balance
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar2".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "quasar3".to_string(),
+                "ibc/uosmo".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+        ]);
+
+        // instantiate contract
+        let init_info = mock_info(TEST_CREATOR, &[]);
+        let init_msg = init_msg_with_primitive_details(vec![
+            (
+                "quasar1".to_string(),
+                "ibc/uosmo".to_string(),
+                // weigts
+                Decimal::from_str("0.2").unwrap(),
+            ),
+            (
+                "quasar2".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("0.3").unwrap(),
+            ),
+            (
+                "quasar3".to_string(),
+                "ibc/uosmo".to_string(),
+                Decimal::from_str("0.5").unwrap(),
+            ),
+        ]);
+        let init_res = init(deps.as_mut(), &init_msg, &env, &init_info);
+        assert_eq!(0, init_res.messages.len());
+
+        // deposit 3 times to the same vault
+        let deposit_info = mock_info(
+            TEST_CREATOR,
+            &[Coin {
+                denom: "ibc/uosmo".to_string(),
+                amount: Uint128::from(10000u128),
+            }],
+        );
+        let deposit_msg = ExecuteMsg::Bond {
+            recipient: Option::None,
+        };
+        let deposit_res = execute(deps.as_mut(), env, deposit_info.clone(), deposit_msg).unwrap();
+        assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
+        assert_eq!(deposit_res.attributes.first().unwrap().value, "1");
+
+        // money sent to the vault
+        let money = deposit_info.funds[0].amount;
+
+        // total weight from init msg
+        let total_weight = init_msg
+            .primitives
+            .iter()
+            .fold(Decimal::zero(), |acc, x| acc + x.weight);
+        assert_eq!(total_weight, Decimal::from_str("1.0").unwrap());
+
+        // accum = (weights[] / total_weight) * total
+        let accum = init_msg.primitives.iter().fold(Decimal::zero(), |acc, x| {
+            acc + (x.weight / total_weight * Decimal::from_str(&money.to_string()).unwrap())
+        });
+
+        // total money output
+        let mut total = Uint128::zero();
+        deposit_res.messages.iter().for_each(|msg| {
+            if let CosmosMsg::Wasm(wasm_msg) = &msg.msg {
+                if let WasmMsg::Execute {
+                    contract_addr: _,
+                    funds,
+                    msg: _,
+                } = wasm_msg
+                {
+                    total += funds[0].amount;
+                }
+            }
+        });
+
+        let sum_of_weights: Decimal = init_msg.primitives.iter().map(|p| p.weight).sum();
+        println!("total: {}", total);
+
+        //
+        let accum = init_msg.primitives.iter().fold(Decimal::zero(), |acc, x| {
+            acc + (x.weight / total_weight * Decimal::from_str(&total.to_string()).unwrap())
+        });
+        println!("accum: {}", accum);
+
+        for (i, primitive) in init_msg.primitives.iter().enumerate() {
+            let weight = primitive.weight;
+            let amount = (weight / sum_of_weights) * total;
+            println!("weight: {}", weight);
+            println!("amount: {}", amount);
+            weight / total_weight * total == amount;
+        }
+    }
 }
