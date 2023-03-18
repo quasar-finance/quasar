@@ -10,10 +10,8 @@ use cw20_base::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
-use cw20_base::contract::{
-    execute_burn, execute_send, execute_transfer, query_balance,
-};
-use cw20_base::state::{MinterData};
+use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
+use cw20_base::state::MinterData;
 use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};

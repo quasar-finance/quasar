@@ -548,14 +548,16 @@ mod tests {
             second_weight.denominator() * total.numerator(),
         );
 
-        let token_weights = get_token_amount_weights(&[CoinWeight {
+        let token_weights = get_token_amount_weights(&[
+            CoinWeight {
                 denom: "ibc/uosmo".to_string(),
                 weight: expected_first_weight,
             },
             CoinWeight {
                 denom: "ibc/uatom".to_string(),
                 weight: expected_second_weight,
-            }])
+            },
+        ])
         .unwrap();
 
         assert_eq!(token_weights[0].weight, expected_first_weight);
@@ -645,14 +647,16 @@ mod tests {
         assert_eq!(weights.ratio[0].weight, expected_first_weight);
         assert_eq!(weights.ratio[1].weight, expected_second_weight);
 
-        let token_weights = get_token_amount_weights(&[CoinWeight {
+        let token_weights = get_token_amount_weights(&[
+            CoinWeight {
                 denom: "ibc/uosmo".to_string(),
                 weight: expected_first_weight,
             },
             CoinWeight {
                 denom: "ibc/uatom".to_string(),
                 weight: expected_second_weight,
-            }])
+            },
+        ])
         .unwrap();
 
         assert_eq!(token_weights[0].weight, expected_first_weight);
@@ -753,14 +757,16 @@ mod tests {
             second_weight.denominator() * total.numerator(),
         );
 
-        let token_weights = get_token_amount_weights(&[CoinWeight {
+        let token_weights = get_token_amount_weights(&[
+            CoinWeight {
                 denom: "ibc/uosmo".to_string(),
                 weight: expected_first_weight,
             },
             CoinWeight {
                 denom: "ibc/uatom".to_string(),
                 weight: expected_second_weight,
-            }])
+            },
+        ])
         .unwrap();
 
         assert_eq!(token_weights[0].weight, expected_first_weight);
@@ -918,7 +924,8 @@ mod tests {
         assert_eq!(weights.ratio[1].weight, expected_second_weight);
         assert_eq!(weights.ratio[2].weight, expected_third_weight);
 
-        let token_weights = get_token_amount_weights(&[CoinWeight {
+        let token_weights = get_token_amount_weights(&[
+            CoinWeight {
                 denom: "ibc/uosmo".to_string(),
                 weight: expected_first_weight,
             },
@@ -929,7 +936,8 @@ mod tests {
             CoinWeight {
                 denom: "ibc/ustars".to_string(),
                 weight: expected_third_weight,
-            }])
+            },
+        ])
         .unwrap();
 
         assert_eq!(token_weights[0].weight, expected_first_weight);

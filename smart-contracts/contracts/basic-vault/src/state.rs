@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Timestamp, Uint128};
-use cw20_base::state::{MinterData};
+use cw20_base::state::MinterData;
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
 use quasar_types::callback::{BondResponse, UnbondResponse};
