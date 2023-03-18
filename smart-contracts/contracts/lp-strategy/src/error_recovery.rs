@@ -1,6 +1,6 @@
 use std::fmt;
 
-use cosmwasm_std::{DepsMut, Env, Response, Storage, SubMsg, Uint128};
+use cosmwasm_std::{DepsMut, Env, Response, Storage, SubMsg, Uint128, IbcMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -78,7 +78,10 @@ fn handle_ica_recovery(
     ica: IcaMessages,
 ) -> Result<Response, ContractError> {
     match ica {
-        IcaMessages::JoinSwapExternAmountIn(pending) => handle_join_swap_recovery,
+        IcaMessages::JoinSwapExternAmountIn(pending) => {
+            handle_join_swap_recovery(storage, env, pending)?;
+            todo!()
+        },
         IcaMessages::LockTokens(_) => todo!(),
         IcaMessages::BeginUnlocking(_) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
@@ -96,13 +99,13 @@ fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: Pend
             Err(ContractError::IncorrectRawAmount)
         }
     }).collect();
+
     let total_exit: Uint128 = exits?.iter().try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, ContractError> {
         match val.amount  {
             RawAmount::LocalDenom(_) => unimplemented!(),
             RawAmount::LpShares(amount) => Ok(amount.checked_add(acc)?),
         }
     })?;
-
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount
@@ -112,8 +115,12 @@ fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: Pend
         Ok(old)
     })?;
 
+    let exit = do_exit_swap(storage, env, total_exit)?;
+    Ok(create_recovery_submsg(exit)?)
+}
+
+fn create_recovery_submsg(msg: IbcMsg) -> Result<SubMsg, ContractError> {
     todo!()
-    // do_exit_swap()
 }
 
 fn handle_lock_recovery() {}
