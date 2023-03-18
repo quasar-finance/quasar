@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::IcaMessages,
-    state::{PendingBond, RawAmount, TRAPS},
-    unbond::{transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
+    state::{PendingBond, RawAmount, TRAPS, LP_SHARES, LpCache},
+    unbond::{transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond, do_exit_swap},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -34,7 +34,7 @@ pub fn start_recovery(
                 crate::helpers::IbcMsgKind::Ica(ica) => todo!(),
                 // if ICQ was the last successful step, all we failed trying to empty our queues and dispatching any following
                 // IBC messages, meaning we don't have to do anything with a seperate try_icq endpoint
-                crate::helpers::IbcMsgKind::Icq => todo!(),
+                crate::helpers::IbcMsgKind::Icq => unimplemented!(),
             }
         }
         false => {
@@ -78,7 +78,7 @@ fn handle_ica_recovery(
     ica: IcaMessages,
 ) -> Result<Response, ContractError> {
     match ica {
-        IcaMessages::JoinSwapExternAmountIn(pending) => todo!(),
+        IcaMessages::JoinSwapExternAmountIn(pending) => handle_join_swap_recovery,
         IcaMessages::LockTokens(_) => todo!(),
         IcaMessages::BeginUnlocking(_) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
@@ -87,18 +87,34 @@ fn handle_ica_recovery(
 }
 
 // if the join_swap was succesful, the refund path means we have to
-// fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: PendingBond) {
+fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: PendingBond) -> Result<SubMsg, ContractError> {
     
-//     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-//         // we remove the amount of shares we are are going to unlock from the locked amount
-//         old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_exit)?;
-//         // we add the amount of shares we are going to unlock to the total unlocked
-//         old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
-//         Ok(old)
-//     })?;
+    let exits: Result<Vec<ReturningUnbond>, ContractError> = pending.bonds.iter().map(|val| {
+        if let RawAmount::LpShares(amount) = val.raw_amount {
+            Ok(ReturningUnbond { amount: val.raw_amount.clone(), owner: val.owner.clone(), id: val.bond_id.clone() })
+        } else {
+            Err(ContractError::IncorrectRawAmount)
+        }
+    }).collect();
+    let total_exit: Uint128 = exits?.iter().try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, ContractError> {
+        match val.amount  {
+            RawAmount::LocalDenom(_) => unimplemented!(),
+            RawAmount::LpShares(amount) => Ok(amount.checked_add(acc)?),
+        }
+    })?;
 
-//     do_exit_swap
-// }
+
+    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
+        // we remove the amount of shares we are are going to unlock from the locked amount
+        old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_exit)?;
+        // we add the amount of shares we are going to unlock to the total unlocked
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
+        Ok(old)
+    })?;
+
+    todo!()
+    // do_exit_swap()
+}
 
 fn handle_lock_recovery() {}
 
