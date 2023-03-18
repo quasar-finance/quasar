@@ -11,9 +11,9 @@ use cw20_base::allowances::{
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
-    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
+    execute_burn, execute_send, execute_transfer, query_balance,
 };
-use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
+use cw20_base::state::{MinterData};
 use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};

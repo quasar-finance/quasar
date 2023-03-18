@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 
 use cw20::Expiration;
-use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
+use cw20::{AllowanceResponse, BalanceResponse};
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
