@@ -39,6 +39,7 @@ pub fn do_bond(
         },
     )?;
 
+    // TODO: move this to the execute_bond function
     try_icq(storage, env)
 }
 
