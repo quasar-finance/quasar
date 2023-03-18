@@ -74,7 +74,7 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         Ok(old)
     })?;
 
-    let msg = do_exit_swap(
+    let msg = exit_swap(
         storage,
         env,
         total_exit,
@@ -83,18 +83,24 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     Ok(Some(msg))
 }
 
-// TODO test me
-pub(crate) fn do_exit_swap(
+pub(crate) fn exit_swap(
     storage: &mut dyn Storage,
     env: &Env,
     total_exit: Uint128,
     pending: PendingReturningUnbonds,
 ) -> Result<SubMsg, ContractError> {
+    let pkt = do_exit_swap(storage, env, total_exit)?;
+
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
+        pkt,
+    )?)
+}
+
+pub(crate) fn do_exit_swap(storage: &mut dyn Storage, env: &Env, total_exit: Uint128) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
-
-    // TODO do we verify here that total equals the sum of our pending, probably since it's part of core exit functionality
-
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
@@ -103,18 +109,12 @@ pub(crate) fn do_exit_swap(
         // TODO add a more robust estimation
         token_out_min_amount: Uint128::one().to_string(),
     };
-
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
         ICA_CHANNEL.load(storage)?,
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     )?;
-
-    Ok(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
-        pkt,
-    )?)
+    Ok(pkt)
 }
 
 // TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold pending to get total_tokens (with gas costs etc)
@@ -124,22 +124,7 @@ pub fn transfer_batch_unbond(
     pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    // the return transfer times out 400 seconds after we dispatch the ica msg towards osmosis
-    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
-
-    // we can unwrap here since we have just instantiated with a timestamp
-    let msg = return_transfer(
-        storage,
-        env,
-        total_tokens,
-        timeout_timestamp.timestamp().unwrap(),
-    )?;
-
-    let pkt = ica_send::<MsgTransfer>(
-        msg,
-        ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-    )?;
+    let pkt = do_transfer_batch_unbond(env, storage, total_tokens)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
@@ -147,6 +132,23 @@ pub fn transfer_batch_unbond(
         pkt,
     )?)
 }
+
+pub(crate) fn do_transfer_batch_unbond(env: &Env, storage: &mut dyn Storage, total_tokens: Uint128) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+    let msg = return_transfer(
+        storage,
+        env,
+        total_tokens,
+        timeout_timestamp.timestamp().unwrap(),
+    )?;
+    let pkt = ica_send::<MsgTransfer>(
+        msg,
+        ICA_CHANNEL.load(storage)?,
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+    )?;
+    Ok(pkt)
+}
+
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -529,7 +531,7 @@ mod tests {
     }
 
     #[test]
-    fn do_exit_swap_works() {
+    fn exit_swap_works() {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
@@ -562,7 +564,7 @@ mod tests {
                 RawAmount::LpShares(val) => acc + val,
             });
 
-        let msg = do_exit_swap(deps.as_mut().storage, &env, total_exit, pending).unwrap();
+        let msg = exit_swap(deps.as_mut().storage, &env, total_exit, pending).unwrap();
 
         let ica_address = get_ica_address(deps.as_ref().storage, ICA_CHANNEL.load(deps.as_ref().storage).unwrap()).unwrap();
         let config = CONFIG.load(deps.as_ref().storage).unwrap();
