@@ -1,3 +1,5 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{
@@ -20,8 +22,7 @@ use crate::state::{
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
+
 use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
