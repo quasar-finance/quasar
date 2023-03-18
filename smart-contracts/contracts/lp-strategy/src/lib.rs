@@ -1,6 +1,7 @@
 pub mod bond;
 pub mod contract;
 pub mod error;
+mod error_recovery;
 pub mod helpers;
 pub mod ibc;
 pub mod ibc_lock;
