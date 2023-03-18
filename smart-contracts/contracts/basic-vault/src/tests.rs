@@ -6,8 +6,8 @@ mod tests {
         from_binary,
         testing::{mock_env, mock_info, MockApi, MockStorage},
         to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
-        Env, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, StdError,
-        StdResult, Timestamp, Uint128, WasmMsg,
+        Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Response,
+        StdError, StdResult, Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
 
