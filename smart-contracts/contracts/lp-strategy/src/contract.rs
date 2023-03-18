@@ -2,15 +2,15 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    Reply, Response, StdError, StdResult, Uint128,
+    Reply, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
 use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
-use crate::error::{ContractError, Trap};
-use crate::helpers::{parse_seq, unlock_on_error, SubMsgKind};
+use crate::error::ContractError;
+use crate::helpers::SubMsgKind;
 use crate::ibc::{handle_failing_ack, handle_succesful_ack};
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -23,10 +23,11 @@ use crate::queries::{
     handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
     handle_unbonding_claim_query,
 };
+use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
+    LP_SHARES, REPLIES, RETURNING, TIMED_OUT,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -84,53 +85,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-        SubMsgKind::Ibc(pending) => {
-            let data = msg
-                .result
-                .into_result()
-                .map_err(|msg| StdError::GenericErr {
-                    msg: format!("submsg error: {msg:?}"),
-                })?
-                .data
-                .ok_or(ContractError::NoReplyData)
-                .map_err(|_| StdError::NotFound {
-                    kind: "reply-data".to_string(),
-                })?;
-
-            let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
-                source_type: "protobuf-decode".to_string(),
-                msg: err.to_string(),
-            })?;
-
-            PENDING_ACK.save(deps.storage, seq, &pending)?;
-
-            // cleanup the REPLIES state item
-            REPLIES.remove(deps.storage, msg.id);
-
-            Ok(Response::default()
-                .add_attribute("pending-msg", seq.to_string())
-                .add_attribute("step", format!("{pending:?}")))
-        }
-        SubMsgKind::Ack(seq) => {
-            let mut resp = Response::new();
-
-            // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
-            // the entire state of the ack execution,
-            if let Err(error) = msg.result.into_result() {
-                let step = PENDING_ACK.load(deps.storage, seq)?;
-                unlock_on_error(deps.storage, &step)?;
-
-                // reassignment needed since add_attribute
-                resp = resp.add_attribute("trapped-error", error.as_str());
-
-                TRAPS.save(deps.storage, seq, &Trap { error, step })?;
-            }
-
-            // // cleanup the REPLIES state item
-            REPLIES.remove(deps.storage, msg.id);
-            Ok(resp)
-        }
-        SubMsgKind::Callback(_callback) => Ok(Response::new()),
+        SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
+        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
+        SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
 
