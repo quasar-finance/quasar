@@ -15,14 +15,6 @@ pub const QUERY_RESULT_COUNTER: Item<u64> = Item::new("query_result_counter");
 // using the Origin enum, we can write a function for the callback on acknowledgement.
 // we want to use an enum and some form of state here so we support callbacks for multiple queries batches together
 // and different callbacks for the same set of queries from a different origin
-pub const PENDING_QUERIES: Map<(u64, &str), Origin> = Map::new("pending_queries");
-
-pub const REPLIES: Map<u64, Origin> = Map::new("replies");
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-pub enum Origin {
-    Sample,
-}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
