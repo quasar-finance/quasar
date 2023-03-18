@@ -194,6 +194,7 @@ mod tests {
     fn init_msg() -> InstantiateMsg {
         InstantiateMsg {
             name: "Blazar Vault".to_string(),
+            thesis: "to generate yield, I guess".to_string(),
             symbol: "BLZR".to_string(),
             decimals: 6,
             min_withdrawal: Uint128::one(),
@@ -222,6 +223,7 @@ mod tests {
     ) -> InstantiateMsg {
         InstantiateMsg {
             name: "Blazar Vault".to_string(),
+            thesis: "to generate yield, I guess".to_string(),
             symbol: "BLZR".to_string(),
             decimals: 6,
             min_withdrawal: Uint128::one(),

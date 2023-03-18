@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Timestamp, Uint128};
+use cw20_base::state::{MinterData, TokenInfo};
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -38,6 +39,17 @@ pub struct Supply {
     pub issued: Uint128,
 }
 
+#[cw_serde]
+pub struct VaultTokenInfo {
+    pub name: String,
+    pub thesis: String,
+    pub symbol: String,
+    pub decimals: u8,
+    pub total_supply: Uint128,
+    pub mint: Option<MinterData>,
+}
+
+pub const VAULT_TOKEN_INFO: Item<VaultTokenInfo> = Item::new("vault_token_info");
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
 pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
