@@ -24,12 +24,12 @@ impl Lock {
     }
 
     pub fn unlock_start_unbond(mut self) -> Self {
-        self.bond = IbcLock::Unlocked;
+        self.start_unbond = IbcLock::Unlocked;
         self
     }
 
     pub fn unlock_unbond(mut self) -> Self {
-        self.bond = IbcLock::Unlocked;
+        self.unbond = IbcLock::Unlocked;
         self
     }
 
@@ -39,12 +39,12 @@ impl Lock {
     }
 
     pub fn lock_start_unbond(mut self) -> Self {
-        self.bond = IbcLock::Locked;
+        self.start_unbond = IbcLock::Locked;
         self
     }
 
     pub fn lock_unbond(mut self) -> Self {
-        self.bond = IbcLock::Locked;
+        self.unbond = IbcLock::Locked;
         self
     }
 
