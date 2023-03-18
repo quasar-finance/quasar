@@ -5,13 +5,15 @@ use crate::helpers::{
     IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
-use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
+use crate::ibc_util::{
+    calculate_share_out_min_amount, do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
+};
 use crate::icq::calc_total_balance;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -21,7 +23,7 @@ use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
-    QueryCalcExitPoolCoinsFromSharesResponse,
+    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
 
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
@@ -271,14 +273,15 @@ pub fn handle_transfer_ack(
     // we need to save and fetch
     let config = CONFIG.load(storage)?;
 
+    let share_out_min_amount = calculate_share_out_min_amount(storage)?;
+
     let msg = do_ibc_join_pool_swap_extern_amount_in(
         storage,
         env,
         config.pool_id,
         config.base_denom.clone(),
         total_amount,
-        // TODO update share_out_min_amount to get a better estimate
-        Uint128::one(),
+        share_out_min_amount,
         pending.bonds,
     )?;
 
@@ -317,9 +320,10 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+    let join_pool = QueryCalcJoinPoolSharesResponse::decode(resp.responses[3].value.as_ref())?;
     let exit_pool =
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
 
     let total_balance = calc_total_balance(
         storage,
@@ -339,6 +343,7 @@ pub fn handle_icq_ack(
     )?;
 
     ICA_BALANCE.save(storage, &total_balance)?;
+    SIMULATED_JOIN_RESULT.save(storage, &join_pool)?;
 
     let bond = batch_bond(storage, &env, total_balance)?;
 

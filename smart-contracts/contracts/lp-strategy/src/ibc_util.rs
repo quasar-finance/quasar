@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
     Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError, Storage, SubMsg, Uint128,
 };
@@ -14,7 +16,7 @@ use quasar_types::ica::packet::ica_send;
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    state::{OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL},
+    state::{OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_JOIN_RESULT},
 };
 
 pub fn do_transfer(
@@ -48,6 +50,17 @@ pub fn do_transfer(
         },
         transfer,
     )?)
+}
+
+pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
+    let last_sim_join_pool_result = SIMULATED_JOIN_RESULT.load(storage)?;
+
+    // todo: better dynamic slippage estimation, especially for volatile tokens
+    // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
+    Ok(
+        Uint128::from_str(&last_sim_join_pool_result.share_out_amount)?
+            .checked_multiply_ratio(95u128, 100u128)?,
+    )
 }
 
 /// prepare the submsg for joining the pool
@@ -127,13 +140,20 @@ pub fn do_ibc_lock_tokens(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
-        Empty, IbcEndpoint, OwnedDeps,
+        Coin, Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+
     use cw_storage_plus::Map;
+    use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
         ica::handshake::IcaMetadata,
     };
+
+    use crate::state::SIMULATED_JOIN_RESULT;
+
+    use super::calculate_share_out_min_amount;
 
     fn default_instantiate(
         channels: &Map<String, ChannelInfo>,
@@ -180,6 +200,27 @@ mod tests {
         let _chan = channels
             .load(deps.as_ref().storage, "channel-0".to_string())
             .unwrap();
+    }
+
+    #[test]
+    fn test_calculate_share_out_min_amount() {
+        let mut deps = mock_dependencies();
+        SIMULATED_JOIN_RESULT
+            .save(
+                deps.as_mut().storage,
+                &QueryCalcJoinPoolSharesResponse {
+                    share_out_amount: "999999".to_string(),
+                    tokens_out: vec![OsmoCoin {
+                        denom: String::from("some-coin, does not matter"),
+                        amount: "100".to_string(),
+                    }],
+                },
+            )
+            .unwrap();
+
+        let min_amount_out = calculate_share_out_min_amount(deps.as_mut().storage).unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(949999u128));
     }
 
     #[test]
