@@ -14,7 +14,7 @@ use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub fn get_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
+pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     // workaround for a div-by-zero error on multi-asset vault side
     let mut sum = Uint128::one();
     for val in SHARES.range(storage, None, None, Order::Ascending) {
