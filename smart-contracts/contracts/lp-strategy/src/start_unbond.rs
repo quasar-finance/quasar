@@ -184,6 +184,7 @@ fn start_internal_unbond(
         &Unbond {
             lp_shares: unbond.lp_shares,
             unlock_time,
+            attempted: false,
             id: unbond.id.clone(),
             owner: unbond.owner.clone(),
         },
@@ -333,6 +334,7 @@ mod tests {
                 &Unbond {
                     lp_shares: Uint128::new(420),
                     unlock_time: Timestamp::from_seconds(100),
+                    attempted: false,
                     owner: owner.clone(),
                     id: id.clone(),
                 },
@@ -572,6 +574,7 @@ mod tests {
                 &Unbond {
                     lp_shares: Uint128::new(100),
                     unlock_time,
+                    attempted: false,
                     owner,
                     id: id.to_string(),
                 },

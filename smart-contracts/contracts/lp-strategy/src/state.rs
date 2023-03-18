@@ -95,6 +95,7 @@ pub struct LpCache {
 pub struct Unbond {
     pub lp_shares: Uint128,
     pub unlock_time: Timestamp,
+    pub attempted: bool,
     pub owner: Addr,
     pub id: String,
 }
