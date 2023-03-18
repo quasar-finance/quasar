@@ -183,6 +183,15 @@ fn on_packet_failure(
 #[cfg(test)]
 mod test {
 
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Binary, IbcAcknowledgement, IbcEndpoint, IbcPacket, IbcPacketAckMsg, IbcTimeout, Timestamp,
+    };
+
+    use crate::{state::QUERY_RESULT_COUNTER, ContractError};
+
+    use super::ibc_packet_ack;
+
     #[test]
     fn test_ibc_packet_ack() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
