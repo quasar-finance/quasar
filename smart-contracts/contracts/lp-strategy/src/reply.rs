@@ -49,7 +49,15 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
         // reassignment needed since add_attribute
         resp = resp.add_attribute("trapped-error", error.as_str());
 
-        TRAPS.save(deps.storage, seq, &Trap { error, step })?;
+        TRAPS.save(
+            deps.storage,
+            seq,
+            &Trap {
+                error,
+                step,
+                last_succesful: true,
+            },
+        )?;
     }
 
     // // cleanup the REPLIES state item

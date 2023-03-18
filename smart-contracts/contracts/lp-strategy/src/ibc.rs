@@ -600,6 +600,7 @@ pub fn handle_failing_ack(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
@@ -633,6 +634,7 @@ fn on_packet_failure(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(IbcBasicResponse::default())
