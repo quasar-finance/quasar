@@ -10,8 +10,8 @@ use crate::icq::calc_total_balance;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS, RawAmount,
+    LpCache, PendingBond, RawAmount, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -585,6 +585,7 @@ pub fn handle_failing_ack(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
@@ -618,6 +619,7 @@ fn on_packet_failure(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(IbcBasicResponse::default())
