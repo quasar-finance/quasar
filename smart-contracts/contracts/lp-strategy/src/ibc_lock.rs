@@ -7,6 +7,7 @@ pub struct Lock {
     pub bond: IbcLock,
     pub start_unbond: IbcLock,
     pub unbond: IbcLock,
+    pub recovery: IbcLock,
 }
 
 impl Lock {
@@ -15,6 +16,7 @@ impl Lock {
             bond: IbcLock::Unlocked,
             start_unbond: IbcLock::Unlocked,
             unbond: IbcLock::Unlocked,
+            recovery: IbcLock::Unlocked,
         }
     }
 
