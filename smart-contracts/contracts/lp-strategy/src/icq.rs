@@ -58,6 +58,9 @@ pub fn prepare_total_balance_query(
         address,
         denom: config.pool_denom,
     };
+    // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
+    //
+
     // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
