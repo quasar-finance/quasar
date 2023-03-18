@@ -19,8 +19,8 @@ pub use cw_utils::Duration;
 pub use lp_strategy::{
     contract::{
         execute as execute_primitive, instantiate as instantiate_primitive,
-        query as query_primitive,
     },
+    queries::query as query_primitive,
     msg::{
         ExecuteMsg as PrimitiveExecuteMsg, InstantiateMsg as PrimitiveInstantiateMsg,
         QueryMsg as PrimitiveQueryMsg,
