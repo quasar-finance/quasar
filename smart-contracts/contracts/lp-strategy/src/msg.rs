@@ -63,7 +63,7 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ListBondingClaimsResponse {
-    pub bonds: HashMap<(Addr, String), Uint128>,
+    pub bonds: HashMap<Addr, (String, Uint128)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
