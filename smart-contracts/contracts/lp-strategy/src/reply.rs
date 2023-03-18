@@ -1,9 +1,8 @@
 use cosmwasm_std::StdError;
 use cosmwasm_std::{DepsMut, Reply, Response};
-use quasar_types::callback::Callback;
 
 use crate::error::{ContractError, Trap};
-use crate::helpers::{parse_seq, unlock_on_error, IbcMsgKind};
+use crate::helpers::{parse_seq, unlock_on_error, ContractCallback, IbcMsgKind};
 use crate::state::{PENDING_ACK, REPLIES, TRAPS};
 
 pub fn handle_ibc_reply(
@@ -53,7 +52,7 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
         TRAPS.save(deps.storage, seq, &Trap { error, step })?;
     }
 
-    // cleanup the REPLIES state item
+    // // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
     Ok(resp)
 }
@@ -61,7 +60,7 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
 pub fn handle_callback_reply(
     deps: DepsMut,
     msg: Reply,
-    _callback: Callback,
+    _callback: ContractCallback,
 ) -> Result<Response, ContractError> {
     // TODO: if error, add manual withdraws to lp-strategy
 
