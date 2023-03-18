@@ -175,7 +175,6 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-
     use crate::{
         ibc_lock::Lock,
         state::{LpCache, IBC_LOCK, LP_SHARES},
