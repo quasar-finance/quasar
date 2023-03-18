@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
+    ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
         LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
@@ -77,13 +78,15 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         Ok(old)
     })?;
 
+    let token_out_min_amount = calculate_token_out_min_amount(storage)?;
+
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
         token_out_denom: config.base_denom,
         share_in_amount: total_exit.to_string(),
         // TODO add a more robust estimation
-        token_out_min_amount: Uint128::one().to_string(),
+        token_out_min_amount: token_out_min_amount.to_string(),
     };
 
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
@@ -275,7 +278,10 @@ mod tests {
         CosmosMsg,
     };
 
-    use crate::{state::Unbond, test_helpers::default_setup};
+    use crate::{
+        state::{Unbond, SIMULATED_EXIT_RESULT},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -395,6 +401,10 @@ mod tests {
                 .push_back(deps.as_mut().storage, unbond)
                 .unwrap();
         }
+
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::from(100u128))
+            .unwrap();
 
         let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_some());

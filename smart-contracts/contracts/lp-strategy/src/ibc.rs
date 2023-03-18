@@ -6,14 +6,16 @@ use crate::helpers::{
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
-    calculate_share_out_min_amount, do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
+    calculate_share_out_min_amount, consolidate_exit_pool_amount_into_local_denom,
+    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
 };
 use crate::icq::calc_total_balance;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -325,6 +327,12 @@ pub fn handle_icq_ack(
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
 
+    let spot_price =
+        Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
+            error: err,
+            value: spot_price,
+        })?;
+
     let total_balance = calc_total_balance(
         storage,
         Uint128::new(
@@ -335,15 +343,16 @@ pub fn handle_icq_ack(
                     value: balance,
                 })?,
         ),
-        exit_pool.tokens_out,
-        Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
-            error: err,
-            value: spot_price,
-        })?,
+        &exit_pool.tokens_out,
+        spot_price,
     )?;
+
+    let exit_pool_out =
+        consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
     ICA_BALANCE.save(storage, &total_balance)?;
     SIMULATED_JOIN_RESULT.save(storage, &join_pool)?;
+    SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
     let bond = batch_bond(storage, &env, total_balance)?;
 

@@ -1,10 +1,12 @@
-use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
+use osmosis_std::types::osmosis::gamm::v1beta1::{
+    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+};
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-use cosmwasm_std::{Addr, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 
 use crate::{
@@ -80,9 +82,11 @@ pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // TODO, do we remove this state item? is it needed?
 // whatever the above todo item is, does not apply to the following
-// we save the queried simulate swap during ICQ so we can read it right before join_pool
+// we save the queried simulate join swap during ICQ so we can read it right before bond join
 pub(crate) const SIMULATED_JOIN_RESULT: Item<QueryCalcJoinPoolSharesResponse> =
     Item::new("simulated_join_result");
+// we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
+pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

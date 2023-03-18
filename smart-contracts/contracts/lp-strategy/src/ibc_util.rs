@@ -1,13 +1,17 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError, Storage, SubMsg, Uint128,
+    Coin, ConversionOverflowError, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdError, Storage,
+    SubMsg, Uint128,
 };
 use osmosis_std::{
     shim::Duration,
     types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
+        osmosis::{
+            gamm::v1beta1::{MsgJoinSwapExternAmountIn, QueryCalcExitPoolCoinsFromSharesResponse},
+            lockup::MsgLockTokens,
+        },
     },
 };
 
@@ -16,7 +20,10 @@ use quasar_types::ica::packet::ica_send;
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    state::{OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_JOIN_RESULT},
+    state::{
+        OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
+        SIMULATED_JOIN_RESULT,
+    },
 };
 
 pub fn do_transfer(
@@ -52,6 +59,50 @@ pub fn do_transfer(
     )?)
 }
 
+pub fn consolidate_exit_pool_amount_into_local_denom(
+    storage: &mut dyn Storage,
+    exit_pool: &Vec<OsmoCoin>,
+    spot_price: Decimal,
+) -> Result<Uint128, ContractError> {
+    let config = CONFIG.load(storage)?;
+    println!("HERE");
+
+    // if we receive no tokens in the response, we can't exit the pool
+    // todo: Should this error?
+    if exit_pool.is_empty() {
+        return Ok(Uint128::zero());
+    }
+
+    // consolidate exit_pool.tokens_out into a single Uint128 by using spot price to convert the quote_denom to local_denom
+    let base = exit_pool
+        .iter()
+        .find(|coin| coin.denom == config.base_denom)
+        .ok_or(ContractError::BaseDenomNotFound)?;
+    let quote = exit_pool
+        .iter()
+        .find(|coin| coin.denom == config.quote_denom)
+        .ok_or(ContractError::QuoteDenomNotFound)?;
+
+    let res =
+        Ok(Uint128::new(base.amount.parse::<u128>().map_err(|err| {
+            ContractError::ParseIntError {
+                error: err,
+                value: base.amount.clone(),
+            }
+        })?)
+        .checked_add(
+            Uint128::new(quote.amount.parse::<u128>().map_err(|err| {
+                ContractError::ParseIntError {
+                    error: err,
+                    value: quote.amount.clone(),
+                }
+            })?)
+            .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
+        )?);
+    println!("HERE1");
+    res
+}
+
 pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
     let last_sim_join_pool_result = SIMULATED_JOIN_RESULT.load(storage)?;
 
@@ -61,6 +112,14 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
         Uint128::from_str(&last_sim_join_pool_result.share_out_amount)?
             .checked_multiply_ratio(95u128, 100u128)?,
     )
+}
+
+pub fn calculate_token_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
+    let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.load(storage)?;
+
+    // todo: better dynamic slippage estimation, especially for volatile tokens
+    // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
+    Ok(last_sim_exit_pool_result.checked_multiply_ratio(95u128, 100u128)?)
 }
 
 /// prepare the submsg for joining the pool
@@ -151,7 +210,10 @@ mod tests {
         ica::handshake::IcaMetadata,
     };
 
-    use crate::state::SIMULATED_JOIN_RESULT;
+    use crate::{
+        ibc_util::calculate_token_out_min_amount,
+        state::{SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT},
+    };
 
     use super::calculate_share_out_min_amount;
 
@@ -219,6 +281,18 @@ mod tests {
             .unwrap();
 
         let min_amount_out = calculate_share_out_min_amount(deps.as_mut().storage).unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(949999u128));
+    }
+
+    #[test]
+    fn test_calculate_token_out_min_amount() {
+        let mut deps = mock_dependencies();
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::from(999999u128))
+            .unwrap();
+
+        let min_amount_out = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
 
         assert_eq!(min_amount_out, Uint128::from(949999u128));
     }
