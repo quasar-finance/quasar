@@ -29,11 +29,11 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };
 
-        return Ok(Some(create_ibc_ack_submsg(
+        Ok(Some(create_ibc_ack_submsg(
             storage,
             IbcMsgKind::Icq,
             send_packet_msg,
-        )?));
+        )?))
     } else {
         Ok(None)
     }
