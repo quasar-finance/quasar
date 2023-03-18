@@ -6,11 +6,11 @@ use crate::{
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    to_binary, Binary, Env, IbcMsg, IbcPacketAckMsg, Order, StdError, Storage, SubMsg, Uint128,
-    WasmMsg,
+    from_binary, to_binary, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
+    StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
-use quasar_types::ibc::MsgTransferResponse;
+use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +60,30 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
         } => Err(ContractError::NoIcqChannel),
         quasar_types::ibc::ChannelType::Ics20 { channel_ty: _ } => Err(ContractError::NoIcqChannel),
     }
+}
+
+pub fn create_callback_submsg(
+    storage: &mut dyn Storage,
+    cosmos_msg: CosmosMsg,
+) -> Result<SubMsg, StdError> {
+    let last = REPLIES.range(storage, None, None, Order::Descending).next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0 + 1;
+    }
+
+    let data: SubMsgKind = match &cosmos_msg {
+        CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
+            SubMsgKind::Callback(ContractCallback::Callback(from_binary(msg)?))
+        }
+        CosmosMsg::Bank(bank_msg) => {
+            SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
+        }
+        _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
+    };
+
+    REPLIES.save(storage, id, &data)?;
+    Ok(SubMsg::reply_always(cosmos_msg, id))
 }
 
 pub fn create_ibc_ack_submsg(
@@ -131,6 +155,14 @@ pub enum IcaMessages {
 pub enum SubMsgKind {
     Ibc(IbcMsgKind),
     Ack(u64),
+    Callback(ContractCallback), // in reply match for callback variant
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum ContractCallback {
+    Callback(Callback),
+    Bank(BankMsg),
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

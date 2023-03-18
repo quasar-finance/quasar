@@ -30,11 +30,14 @@ pub fn do_unbond(
     owner: Addr,
     id: String,
 ) -> Result<(), ContractError> {
-    let unbond = UNBONDING_CLAIMS.load(storage, (owner, id))?;
+    let mut unbond = UNBONDING_CLAIMS.load(storage, (owner.clone(), id.clone()))?;
 
     if unbond.unlock_time.nanos() > env.block.time.nanos() {
         return Err(ContractError::SharesNotYetUnbonded);
     }
+
+    unbond.attempted = true;
+    UNBONDING_CLAIMS.save(storage, (owner, id), &unbond)?;
 
     Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
@@ -287,6 +290,7 @@ mod tests {
         let unbond = Unbond {
             lp_shares: Uint128::new(100),
             unlock_time: env.block.time,
+            attempted: true,
             owner: owner.clone(),
             id: id.clone(),
         };
@@ -321,6 +325,7 @@ mod tests {
                 &Unbond {
                     lp_shares: Uint128::new(100),
                     unlock_time: env.block.time.plus_nanos(1),
+                    attempted: false,
                     owner: owner.clone(),
                     id: id.clone(),
                 },
@@ -365,18 +370,21 @@ mod tests {
             Unbond {
                 lp_shares: Uint128::new(100),
                 unlock_time: env.block.time,
+                attempted: false,
                 owner: owner.clone(),
                 id: id.clone(),
             },
             Unbond {
                 lp_shares: Uint128::new(101),
                 unlock_time: env.block.time,
+                attempted: false,
                 owner: owner.clone(),
                 id: id.clone(),
             },
             Unbond {
                 lp_shares: Uint128::new(102),
                 unlock_time: env.block.time,
+                attempted: false,
                 owner,
                 id,
             },
