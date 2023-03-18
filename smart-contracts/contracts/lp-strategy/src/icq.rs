@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Coin, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
-    Uint128,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -73,7 +72,7 @@ pub fn prepare_full_query(
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
 
     // fetch current balance of contract for join_pool query
-    let balance = querier.query_balance(&env.contract.address, config.local_denom)?;
+    let balance = querier.query_balance(env.contract.address, config.local_denom)?;
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,

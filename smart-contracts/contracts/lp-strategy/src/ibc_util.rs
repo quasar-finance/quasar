@@ -8,10 +8,7 @@ use osmosis_std::{
     shim::Duration,
     types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{
-            gamm::v1beta1::{MsgJoinSwapExternAmountIn, QueryCalcExitPoolCoinsFromSharesResponse},
-            lockup::MsgLockTokens,
-        },
+        osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
     },
 };
 
@@ -199,7 +196,7 @@ pub fn do_ibc_lock_tokens(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
-        Coin, Empty, IbcEndpoint, OwnedDeps, Uint128,
+        Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
