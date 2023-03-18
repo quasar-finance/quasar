@@ -1,7 +1,5 @@
-use cosmwasm_schema::schemars::_private::NoSerialize;
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, OverflowError, Response,
-    Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, OverflowError, Response, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
