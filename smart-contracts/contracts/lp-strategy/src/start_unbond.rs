@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::get_total_shares,
+    helpers::get_total_primitive_shares,
     helpers::{
         create_callback_submsg, create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages,
     },
@@ -78,14 +78,14 @@ pub fn batch_start_unbond(
         })
     }
 
-    let config = CONFIG.load(storage)?;
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         old.locked_shares = old.locked_shares.checked_sub(to_unbond)?;
         old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
         Ok(old)
     })?;
+
+    let config = CONFIG.load(storage)?;
+    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,
@@ -141,11 +141,12 @@ fn single_unbond(
     unbond: &StartUnbond,
     total_lp_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let total_shares = get_total_shares(storage)?;
+    let total_primitive_shares = get_total_primitive_shares(storage)?;
+
     Ok(unbond
         .primitive_shares
         .checked_mul(total_lp_shares)?
-        .checked_div(total_shares)?)
+        .checked_div(total_primitive_shares)?)
 }
 
 // unbond starts unbonding an amount of lp shares
@@ -408,6 +409,54 @@ mod tests {
         )
         .unwrap();
         assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));
+    }
+
+    #[test]
+    fn single_unbond_big_math() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let env = mock_env();
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("other_user"),
+                &Uint128::new(900),
+            )
+            .unwrap();
+
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(10_000_000_000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+
+        let res = single_unbond(
+            deps.as_mut().storage,
+            &env,
+            &StartUnbond {
+                owner,
+                id,
+                primitive_shares: Uint128::new(100),
+            },
+            Uint128::new(10_000_000_000),
+        )
+        .unwrap();
+
+
+        // assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
+        // we have a share loss here due to truncation, is this avoidable?
+        assert_eq!(res, Uint128::new(999000999))
     }
 
     // this is an excellent first test to write a proptest for
