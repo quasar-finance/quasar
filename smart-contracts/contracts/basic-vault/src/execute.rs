@@ -10,8 +10,8 @@ use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
 
-use crate::msg::PrimitiveConfig;
 use crate::helpers::can_unbond_from_primitive;
+use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
