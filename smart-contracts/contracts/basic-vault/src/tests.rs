@@ -675,7 +675,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
     }
 
     #[test]
@@ -785,7 +785,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
 
         let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
             &funds,
@@ -957,7 +957,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
 
         let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
             &funds,
@@ -985,6 +985,8 @@ mod tests {
         assert_eq!(deposit[1].amount, expected_second_deposit.to_uint_floor());
         assert_eq!(deposit[2].amount, expected_third_deposit.to_uint_floor());
 
+        println!("remainder: {:?}", remainder);
+        println!("deposit: {:?}", deposit);
         assert_eq!(
             remainder[0].amount,
             funds[0].amount - expected_first_deposit.to_uint_floor()
