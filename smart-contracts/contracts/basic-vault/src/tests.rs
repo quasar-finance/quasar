@@ -1837,7 +1837,6 @@ mod tests {
             Uint128::new(1_000),
             Uint128::new(1_000_000_000),
         ];
-        let verbose = false;
 
         for deposit_amount in deposit_amounts {
             // test params
@@ -1887,6 +1886,7 @@ mod tests {
                 deposit_msg,
             )
             .unwrap();
+
             assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
 
             // total money sent to the vault
@@ -1905,13 +1905,8 @@ mod tests {
                     } = wasm_msg
                     {
                         // weight[i] / total_weight * total_money = money_output[i]
-                        let left = init_msg.primitives[i].weight / total_weight * total_money;
-                        let right = funds[0].amount;
-                        if verbose {
-                            println!("weights: {:?}", weights);
-                            println!("left: {}, right: {}", left, right);
-                        }
-                        assert_eq!(left, right);
+                        let expected = init_msg.primitives[i].weight / total_weight * total_money;
+                        assert_eq!(expected, funds[0].amount);
                     }
                 }
             }
