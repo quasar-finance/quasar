@@ -16,21 +16,38 @@ pub struct CoinWeight {
 }
 
 impl CoinRatio {
-    pub fn get_normed_ratio(&self) -> Result<Vec<CoinWeight>, Error> {
-        let mut normed_ratio = self.ratio.clone();
+    // pub fn get_normed_ratio(&self) -> Result<Vec<CoinWeight>, Error> {
+    //     let mut normed_ratio = self.ratio.clone();
+    //     let mut total_weight = Decimal::zero();
+    //     if self.ratio.is_empty() {
+    //         return Err(Error::EmptyCoinRatio);
+    //     }
+    //     for coin_weight in &normed_ratio {
+    //         total_weight = total_weight.checked_add(coin_weight.weight)?;
+    //     }
+    //     if total_weight.is_zero() {
+    //         total_weight = Decimal::one();
+    //     }
+    //     for coin_weight in &mut normed_ratio {
+    //         coin_weight.weight = coin_weight.weight.checked_div(total_weight)?;
+    //     }
+    //     Ok(normed_ratio)
+    // }
+
+    pub fn normalize(&mut self) -> Result<Vec<CoinWeight>, Error> {
         let mut total_weight = Decimal::zero();
         if self.ratio.is_empty() {
             return Err(Error::EmptyCoinRatio);
         }
-        for coin_weight in &normed_ratio {
+        for coin_weight in self.ratio.iter() {
             total_weight = total_weight.checked_add(coin_weight.weight)?;
         }
         if total_weight.is_zero() {
             total_weight = Decimal::one();
         }
-        for coin_weight in &mut normed_ratio {
+        for mut coin_weight in self.ratio.iter_mut() {
             coin_weight.weight = coin_weight.weight.checked_div(total_weight)?;
         }
-        Ok(normed_ratio)
+        Ok(self.ratio.clone())
     }
 }
