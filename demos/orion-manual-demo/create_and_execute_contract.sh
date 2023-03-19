@@ -8,7 +8,6 @@ on_error() {
     quasarnoded q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
 
     afplay /System/Library/Sounds/Sosumi.aiff
-    afplay /System/Library/Sounds/Sosumi.aiff
 }
 
 trap 'on_error' ERR
