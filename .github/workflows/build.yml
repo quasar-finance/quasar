@@ -42,5 +42,5 @@ jobs:
         with:
           name: smart-contracts
           path: |
-            smart-contracts/basic_vault.wasm
-            smart-contracts/lp_strategy.wasm
+            smart-contracts/artifacts/basic_vault.wasm
+            smart-contracts/artifacts/lp_strategy.wasm
