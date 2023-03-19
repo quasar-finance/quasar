@@ -79,22 +79,26 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
         .find(|coin| coin.denom == config.quote_denom)
         .ok_or(ContractError::QuoteDenomNotFound)?;
 
-    
-    Ok(Uint128::new(base.amount.parse::<u128>().map_err(|err| {
-            ContractError::ParseIntError {
+    Ok(Uint128::new(
+        base.amount
+            .parse::<u128>()
+            .map_err(|err| ContractError::ParseIntError {
                 error: err,
                 value: base.amount.clone(),
-            }
-        })?)
-        .checked_add(
-            Uint128::new(quote.amount.parse::<u128>().map_err(|err| {
-                ContractError::ParseIntError {
+            })?,
+    )
+    .checked_add(
+        Uint128::new(
+            quote
+                .amount
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
                     error: err,
                     value: quote.amount.clone(),
-                }
-            })?)
-            .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
-        )?)
+                })?,
+        )
+        .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
+    )?)
 }
 
 pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
