@@ -10,6 +10,7 @@ import (
 	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 )
 
+// "Looks good to me. Ready for launch. LFG" -@valeyo
 func main() {
 	rootCmd, _ := cmd.NewRootCmd()
 
