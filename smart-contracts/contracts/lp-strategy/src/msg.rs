@@ -4,8 +4,6 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Trap,
