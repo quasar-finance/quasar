@@ -77,7 +77,16 @@ pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
 pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
-// TODO, do we remove this state item? is it needed?
+// CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
+pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
+
+// TODO rename me
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum FundPath {
+    Bond { id: String },
+    Unbond { id: String },
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
