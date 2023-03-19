@@ -16,7 +16,6 @@ jobs:
       matrix:
         arch: [amd64]
         targetos: [linux]
-
     name: quasar ${{ matrix.arch }} for ${{ matrix.targetos }}
     steps:
       - name: Check out repository code
@@ -31,11 +30,11 @@ jobs:
       - name: Display go version
         run: go version
       - name: Build quasarnoded
-        run: make build
+        run: make build-reproducible-${{ matrix.arch }}
       - uses: actions/upload-artifact@v2
         with:
           name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
-          path: build/quasarnoded
+          path: build/quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
       - name: Build smart contracts
         run: make compile-wasm-artifacts
       - uses: actions/upload-artifact@v2
