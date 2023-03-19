@@ -421,8 +421,7 @@ mod tests {
             pool_id: config.pool_id,
             token_out_denom: config.base_denom,
             share_in_amount: Uint128::new(303).to_string(),
-            // TODO add a more robust estimation
-            token_out_min_amount: Uint128::one().to_string(),
+            token_out_min_amount: Uint128::from(95u128).to_string(),
         };
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
