@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{create_ibc_ack_submsg, get_ica_address, get_total_shares, IbcMsgKind, IcaMessages},
+    helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
