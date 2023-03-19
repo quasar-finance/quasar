@@ -85,6 +85,16 @@ pub(crate) const SIMULATED_JOIN_RESULT: Item<QueryCalcJoinPoolSharesResponse> =
     Item::new("simulated_join_result");
 // we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
 pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
+// CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
+pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
+
+// TODO rename me
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum FundPath {
+    Bond { id: String },
+    Unbond { id: String },
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
