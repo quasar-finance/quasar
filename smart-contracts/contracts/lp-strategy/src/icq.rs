@@ -22,28 +22,28 @@ pub fn try_icq(
     querier: QuerierWrapper,
     env: Env,
 ) -> Result<Option<SubMsg>, ContractError> {
-    if IBC_LOCK.load(storage)?.is_locked() {
-        return Ok(None);
+    if IBC_LOCK.load(storage)?.is_unlocked() {
+        // TODO fetching ICQ channel and confirming vs handshake version can be a single function
+        let icq_channel = ICQ_CHANNEL.load(storage)?;
+        check_icq_channel(storage, icq_channel.clone())?;
+
+        // deposit need to internally rebuild the amount of funds under the smart contract
+        let packet = prepare_full_query(storage, querier, env.clone(), ICA_CHANNEL.load(storage)?)?;
+
+        let send_packet_msg = IbcMsg::SendPacket {
+            channel_id: icq_channel,
+            data: to_binary(&packet)?,
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        };
+
+        Ok(Some(create_ibc_ack_submsg(
+            storage,
+            IbcMsgKind::Icq,
+            send_packet_msg,
+        )?))
+    } else {
+        Ok(None)
     }
-
-    // TODO fetching ICQ channel and confirming vs handshake version can be a single function
-    let icq_channel = ICQ_CHANNEL.load(storage)?;
-    check_icq_channel(storage, icq_channel.clone())?;
-
-    // deposit need to internally rebuild the amount of funds under the smart contract
-    let packet = prepare_full_query(storage, querier, env.clone(), ICA_CHANNEL.load(storage)?)?;
-
-    let send_packet_msg = IbcMsg::SendPacket {
-        channel_id: icq_channel,
-        data: to_binary(&packet)?,
-        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-    };
-
-    Ok(Some(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Icq,
-        send_packet_msg,
-    )?))
 }
 
 pub fn prepare_full_query(

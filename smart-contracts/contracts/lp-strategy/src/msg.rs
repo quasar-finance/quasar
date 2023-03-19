@@ -162,4 +162,5 @@ pub enum ExecuteMsg {
     CloseChannel { channel_id: String },
     ReturnTransfer { amount: Uint128 },
     Ack { ack: IbcPacketAckMsg },
+    TryIcq {},
 }

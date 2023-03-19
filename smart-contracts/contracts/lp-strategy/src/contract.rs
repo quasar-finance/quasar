@@ -2,17 +2,17 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    Reply, Response, StdError, StdResult, Uint128,
+    Reply, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
 use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
-use crate::error::{ContractError, Trap};
-use crate::helpers::{parse_seq, unlock_on_error, SubMsgKind};
+use crate::error::ContractError;
+use crate::helpers::SubMsgKind;
 use crate::ibc::{handle_failing_ack, handle_succesful_ack};
-use crate::ibc_lock::Lock;
+use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -23,10 +23,11 @@ use crate::queries::{
     handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
     handle_unbonding_claim_query,
 };
+use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL,
-    LP_SHARES, PENDING_ACK, REPLIES, RETURNING, TIMED_OUT, TRAPS,
+    Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_BALANCE,
+    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -84,53 +85,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-        SubMsgKind::Ibc(pending) => {
-            let data = msg
-                .result
-                .into_result()
-                .map_err(|msg| StdError::GenericErr {
-                    msg: format!("submsg error: {msg:?}"),
-                })?
-                .data
-                .ok_or(ContractError::NoReplyData)
-                .map_err(|_| StdError::NotFound {
-                    kind: "reply-data".to_string(),
-                })?;
-
-            let seq = parse_seq(data).map_err(|err| StdError::SerializeErr {
-                source_type: "protobuf-decode".to_string(),
-                msg: err.to_string(),
-            })?;
-
-            PENDING_ACK.save(deps.storage, seq, &pending)?;
-
-            // cleanup the REPLIES state item
-            REPLIES.remove(deps.storage, msg.id);
-
-            Ok(Response::default()
-                .add_attribute("pending-msg", seq.to_string())
-                .add_attribute("step", format!("{pending:?}")))
-        }
-        SubMsgKind::Ack(seq) => {
-            let mut resp = Response::new();
-
-            // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
-            // the entire state of the ack execution,
-            if let Err(error) = msg.result.into_result() {
-                let step = PENDING_ACK.load(deps.storage, seq)?;
-                unlock_on_error(deps.storage, &step)?;
-
-                // reassignment needed since add_attribute
-                resp = resp.add_attribute("trapped-error", error.as_str());
-
-                TRAPS.save(deps.storage, seq, &Trap { error, step })?;
-            }
-
-            // // cleanup the REPLIES state item
-            REPLIES.remove(deps.storage, msg.id);
-            Ok(resp)
-        }
-        SubMsgKind::Callback(_callback) => Ok(Response::new()),
+        SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
+        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
+        SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
 
@@ -153,7 +110,38 @@ pub fn execute(
         ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
+        ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
     }
+}
+
+pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    // if we're unlocked, we can empty the queues and send the submessages
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+    let sub_msg = try_icq(deps.storage, env)?;
+    let mut res = Response::new();
+
+    if let Some(sub_msg) = sub_msg {
+        if !BOND_QUEUE.is_empty(deps.storage)? {
+            lock.bond = IbcLock::Locked;
+            res = res.add_attribute("bond_queue", "locked");
+        }
+        if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_start_unbond();
+            res = res.add_attribute("start_unbond_queue", "locked");
+        }
+        if !UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_unbond();
+            res = res.add_attribute("unbond_queue", "locked");
+        }
+        if lock.is_unlocked() {
+            res = res.add_attribute("IBC_LOCK", "unlocked");
+        }
+        IBC_LOCK.save(deps.storage, &lock)?;
+        res = res.add_submessage(sub_msg);
+    } else {
+        res = res.add_attribute("IBC_LOCK", "locked");
+    }
+    Ok(res)
 }
 
 pub fn execute_ack(
@@ -407,4 +395,181 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use cosmwasm_std::{
+        attr,
+        testing::{mock_dependencies, mock_env},
+        Addr, Timestamp,
+    };
+
+    use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
+
+    use super::*;
+
+    #[test]
+    fn test_execute_try_icq_ibc_locked() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new().lock_bond().lock_start_unbond().lock_unbond();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+
+        assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
+        assert!(res.messages.is_empty());
+        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+    }
+
+    #[test]
+    fn test_execute_try_icq_ibc_unlocked_all_queues_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+
+        assert_eq!(res.attributes[0], attr("IBC_LOCK", "unlocked"));
+        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_unlocked());
+    }
+
+    #[test]
+    fn test_execute_try_icq_ibc_locked_all_queues_filled() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new().lock_bond().lock_start_unbond().lock_unbond();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::one(),
+                    owner: Addr::unchecked("juan".to_string()),
+                    bond_id: "bond_id_1".to_string(),
+                },
+            )
+            .unwrap();
+        START_UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("pepe".to_string()),
+                    id: "bond_id_10".to_string(),
+                    primitive_shares: Uint128::new(10),
+                },
+            )
+            .unwrap();
+        UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Unbond {
+                    owner: Addr::unchecked("pedro".to_string()),
+                    id: "bond_id_100".to_string(),
+                    lp_shares: Uint128::new(1000),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+
+        assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
+        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+        assert!(res.messages.is_empty());
+    }
+
+    #[test]
+    fn test_execute_try_icq_ibc_unlocked_bond_queue_full() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::one(),
+                    owner: Addr::unchecked("juan".to_string()),
+                    bond_id: "bond_id_1".to_string(),
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+        assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
+        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        assert!(lock.bond.is_locked());
+        assert!(lock.start_unbond.is_unlocked());
+        assert!(lock.unbond.is_unlocked());
+    }
+
+    #[test]
+    fn test_execute_try_icq_ibc_bond_queue_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        START_UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("pepe".to_string()),
+                    id: "bond_id_10".to_string(),
+                    primitive_shares: Uint128::new(10),
+                },
+            )
+            .unwrap();
+        UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Unbond {
+                    owner: Addr::unchecked("pedro".to_string()),
+                    id: "bond_id_100".to_string(),
+                    lp_shares: Uint128::new(1000),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+        assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
+        assert_eq!(res.attributes[1], attr("unbond_queue", "locked"));
+        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        assert!(lock.bond.is_unlocked());
+        assert!(lock.start_unbond.is_locked());
+        assert!(lock.unbond.is_locked());
+    }
+}
