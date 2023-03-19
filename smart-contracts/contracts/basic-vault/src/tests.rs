@@ -365,7 +365,7 @@ mod tests {
         ]
     }
 
-    fn uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
+    fn _uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
         vec![
             (
                 "quasar123".to_string(),
@@ -382,7 +382,7 @@ mod tests {
         ]
     }
 
-    fn uneven_primitive_details() -> Vec<(String, String, Decimal)> {
+    fn _uneven_primitive_details() -> Vec<(String, String, Decimal)> {
         vec![
             (
                 "quasar123".to_string(),
@@ -397,7 +397,7 @@ mod tests {
         ]
     }
 
-    fn uneven_deposit() -> Vec<Coin> {
+    fn _uneven_deposit() -> Vec<Coin> {
         vec![
             Coin {
                 denom: "ibc/uosmo".to_string(),
@@ -1825,116 +1825,96 @@ mod tests {
     fn test_recipient_not_sender() {}
 
     #[test]
-    fn test_dup_token_deposits_cero_point() {
+    fn test_dup_token_deposits() {
         let env = mock_env();
-        let mut deps = mock_deps_with_primitives(vec![
-            (
-                // address
-                "quasar1".to_string(),
-                //denom on our chain (local)
-                "ibc/uosmo".to_string(),
-                // share
-                Uint128::from(100u128),
-                //balance
-                Uint128::from(100u128),
-            ),
-            (
-                "quasar2".to_string(),
-                "ibc/uosmo".to_string(),
-                Uint128::from(100u128),
-                Uint128::from(100u128),
-            ),
-            (
-                "quasar3".to_string(),
-                "ibc/uosmo".to_string(),
-                Uint128::from(100u128),
-                Uint128::from(100u128),
-            ),
-        ]);
+        const ADDRESS: &str = "quasar";
+        const DENOM_LOCAL_CHAIN: &str = "ibc/uosmo";
+        const SHARES: Uint128 = Uint128::new(100);
+        const BALANCE: Uint128 = Uint128::new(100);
 
-        // instantiate contract
-        let init_info = mock_info(TEST_CREATOR, &[]);
-        let init_msg = init_msg_with_primitive_details(vec![
-            (
-                "quasar1".to_string(),
-                "ibc/uosmo".to_string(),
-                // weigts
+        let deposit_amounts = vec![
+            Uint128::new(10),
+            Uint128::new(1_000),
+            Uint128::new(1_000_000_000),
+        ];
+        let verbose = false;
+
+        for deposit_amount in deposit_amounts {
+            // test params
+            let weights = vec![
                 Decimal::from_str("0.2").unwrap(),
-            ),
-            (
-                "quasar2".to_string(),
-                "ibc/uosmo".to_string(),
                 Decimal::from_str("0.3").unwrap(),
-            ),
-            (
-                "quasar3".to_string(),
-                "ibc/uosmo".to_string(),
                 Decimal::from_str("0.5").unwrap(),
-            ),
-        ]);
-        let init_res = init(deps.as_mut(), &init_msg, &env, &init_info);
-        assert_eq!(0, init_res.messages.len());
+            ];
 
-        // deposit 3 times to the same vault
-        let deposit_info = mock_info(
-            TEST_CREATOR,
-            &[Coin {
-                denom: "ibc/uosmo".to_string(),
-                amount: Uint128::from(10000u128),
-            }],
-        );
-        let deposit_msg = ExecuteMsg::Bond {
-            recipient: Option::None,
-        };
-        let deposit_res = execute(deps.as_mut(), env, deposit_info.clone(), deposit_msg).unwrap();
-        assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
-        assert_eq!(deposit_res.attributes.first().unwrap().value, "1");
+            let mut primitive_states: Vec<(String, String, Uint128, Uint128)> = Vec::new();
+            let mut primitive_details: Vec<(String, String, Decimal)> = Vec::new();
+            for i in 1..=3 {
+                primitive_states.push((
+                    format!("{}{}", ADDRESS, i),
+                    DENOM_LOCAL_CHAIN.to_string(),
+                    SHARES,
+                    BALANCE,
+                ));
+                primitive_details.push((
+                    format!("{}{}", ADDRESS, i),
+                    DENOM_LOCAL_CHAIN.to_string(),
+                    weights[i - 1],
+                ));
+            }
+            let mut deps = mock_deps_with_primitives(primitive_states);
+            let init_info = mock_info(TEST_CREATOR, &[]);
 
-        // money sent to the vault
-        let money = deposit_info.funds[0].amount;
+            let init_msg = init_msg_with_primitive_details(primitive_details);
+            let init_res = init(deps.as_mut(), &init_msg, &env, &init_info);
+            assert_eq!(0, init_res.messages.len());
 
-        // total weight from init msg
-        let total_weight = init_msg
-            .primitives
-            .iter()
-            .fold(Decimal::zero(), |acc, x| acc + x.weight);
-        assert_eq!(total_weight, Decimal::from_str("1.0").unwrap());
+            // deposit 3 times to the same vault
+            let deposit_info = mock_info(
+                TEST_CREATOR,
+                &[Coin {
+                    denom: DENOM_LOCAL_CHAIN.to_string(),
+                    amount: deposit_amount,
+                }],
+            );
+            let deposit_msg = ExecuteMsg::Bond {
+                recipient: Option::None,
+            };
+            let deposit_res = execute(
+                deps.as_mut(),
+                env.clone(),
+                deposit_info.clone(),
+                deposit_msg,
+            )
+            .unwrap();
+            assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
 
-        // accum = (weights[] / total_weight) * total
-        let accum = init_msg.primitives.iter().fold(Decimal::zero(), |acc, x| {
-            acc + (x.weight / total_weight * Decimal::from_str(&money.to_string()).unwrap())
-        });
+            // total money sent to the vault
+            let total_money = deposit_info.funds[0].amount;
 
-        // total money output
-        let mut total = Uint128::zero();
-        deposit_res.messages.iter().for_each(|msg| {
-            if let CosmosMsg::Wasm(wasm_msg) = &msg.msg {
-                if let WasmMsg::Execute {
-                    contract_addr: _,
-                    funds,
-                    msg: _,
-                } = wasm_msg
-                {
-                    total += funds[0].amount;
+            // total weight from init msg
+            let total_weight: Decimal = init_msg.primitives.iter().map(|p| p.weight).sum();
+            assert_eq!(total_weight, Decimal::one());
+
+            for (i, msg) in deposit_res.messages.iter().enumerate() {
+                if let CosmosMsg::Wasm(wasm_msg) = &msg.msg {
+                    if let WasmMsg::Execute {
+                        contract_addr: _,
+                        funds,
+                        msg: _,
+                    } = wasm_msg
+                    {
+                        // weight[i] / total_weight * total_money = money_output[i]
+                        let left = init_msg.primitives[i].weight / total_weight * total_money;
+                        let right = funds[0].amount;
+                        if verbose {
+                            println!("weights: {:?}", weights);
+                            println!("left: {}, right: {}", left, right);
+                        }
+                        assert_eq!(left, right);
+                    }
                 }
             }
-        });
-
-        let sum_of_weights: Decimal = init_msg.primitives.iter().map(|p| p.weight).sum();
-        println!("total: {}", total);
-
-        //
-        let accum = init_msg.primitives.iter().fold(Decimal::zero(), |acc, x| {
-            acc + (x.weight / total_weight * Decimal::from_str(&total.to_string()).unwrap())
-        });
-        println!("accum: {}", accum);
-
-        for (i, primitive) in init_msg.primitives.iter().enumerate() {
-            let weight = primitive.weight;
-            let amount = (weight / sum_of_weights) * total;
-            println!("weight: {}", weight);
-            println!("amount: {}", amount);
-            weight / total_weight * total == amount;
         }
     }
 }
