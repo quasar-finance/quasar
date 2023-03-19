@@ -117,7 +117,7 @@ pub fn execute(
 pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     // if we're unlocked, we can empty the queues and send the submessages
     let mut lock = IBC_LOCK.load(deps.storage)?;
-    let sub_msg = try_icq(deps.storage, env)?;
+    let sub_msg = try_icq(deps.storage, deps.querier, env)?;
     let mut res = Response::new();
 
     if let Some(sub_msg) = sub_msg {
