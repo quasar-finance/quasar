@@ -62,7 +62,6 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
-    println!("HERE");
 
     // if we receive no tokens in the response, we can't exit the pool
     // todo: Should this error?
@@ -96,7 +95,6 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
             })?)
             .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
         )?);
-    println!("HERE1");
     res
 }
 
@@ -111,12 +109,19 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
     )
 }
 
-pub fn calculate_token_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
+// exit shares should never be more than total shares here
+pub fn calculate_token_out_min_amount(
+    storage: &mut dyn Storage,
+    exit_lp_shares: Uint128,
+    total_locked_shares: Uint128,
+) -> Result<Uint128, ContractError> {
     let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(last_sim_exit_pool_result.checked_multiply_ratio(95u128, 100u128)?)
+    Ok(last_sim_exit_pool_result
+        .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
+        .checked_multiply_ratio(95u128, 100u128)?)
 }
 
 /// prepare the submsg for joining the pool
@@ -289,9 +294,30 @@ mod tests {
             .save(deps.as_mut().storage, &Uint128::from(999999u128))
             .unwrap();
 
-        let min_amount_out = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
+        let exit_shares_amount = Uint128::from(100u128);
+        let total_shares_amount = Uint128::from(100u128);
+
+        let min_amount_out = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            exit_shares_amount,
+            total_shares_amount,
+        )
+        .unwrap();
 
         assert_eq!(min_amount_out, Uint128::from(949999u128));
+
+        // now lets test with a different amount of exit shares and total shares
+        let exit_shares_amount = Uint128::from(900u128);
+        let total_shares_amount = Uint128::from(100000u128);
+
+        let min_amount_out = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            exit_shares_amount,
+            total_shares_amount,
+        )
+        .unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(8549u128));
     }
 
     #[test]
