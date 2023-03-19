@@ -11,7 +11,7 @@ use cw20_base::allowances::{
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
-use cw20_base::state::MinterData;
+use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
@@ -25,8 +25,8 @@ use crate::query::{
     query_tvl_info,
 };
 use crate::state::{
-    InvestmentInfo, Supply, VaultTokenInfo, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION,
-    DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_TOKEN_INFO,
+    AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -39,9 +39,8 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // store token info using cw20-base format
-    let data = VaultTokenInfo {
+    let token_info = TokenInfo {
         name: msg.name,
-        thesis: msg.thesis,
         symbol: msg.symbol,
         decimals: msg.decimals,
         total_supply: Uint128::zero(),
@@ -51,7 +50,9 @@ pub fn instantiate(
             cap: None,
         }),
     };
-    VAULT_TOKEN_INFO.save(deps.storage, &data)?;
+    let additional_info = AdditionalTokenInfo { thesis: msg.thesis };
+    TOKEN_INFO.save(deps.storage, &token_info)?;
+    ADDITIONAL_TOKEN_INFO.save(deps.storage, &additional_info)?;
 
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
@@ -194,13 +195,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
-    let info = VAULT_TOKEN_INFO.load(deps.storage)?;
+    let token_info = TOKEN_INFO.load(deps.storage)?;
+    let additional_info = ADDITIONAL_TOKEN_INFO.load(deps.storage)?;
     let res = VaultTokenInfoResponse {
-        name: info.name,
-        thesis: info.thesis,
-        symbol: info.symbol,
-        decimals: info.decimals,
-        total_supply: info.total_supply,
+        name: token_info.name,
+        thesis: additional_info.thesis,
+        symbol: token_info.symbol,
+        decimals: token_info.decimals,
+        total_supply: token_info.total_supply,
     };
     Ok(res)
 }

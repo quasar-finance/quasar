@@ -40,16 +40,11 @@ pub struct Supply {
 }
 
 #[cw_serde]
-pub struct VaultTokenInfo {
-    pub name: String,
+pub struct AdditionalTokenInfo {
     pub thesis: String,
-    pub symbol: String,
-    pub decimals: u8,
-    pub total_supply: Uint128,
-    pub mint: Option<MinterData>,
 }
 
-pub const VAULT_TOKEN_INFO: Item<VaultTokenInfo> = Item::new("vault_token_info");
+pub const ADDITIONAL_TOKEN_INFO: Item<AdditionalTokenInfo> = Item::new("additional_token_info");
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
 pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
