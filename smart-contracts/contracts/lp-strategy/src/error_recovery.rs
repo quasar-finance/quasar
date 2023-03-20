@@ -72,10 +72,12 @@ fn handle_transfer_recovery(
         returning: returning?,
     };
 
-    // TODO, assert that raw amounts equal amount
     let msg = do_transfer_batch_unbond(storage, env, amount)?;
-    // create_recovery_submsg(msg, returning)
-    todo!()
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::RecoveryReturnTransfer(returning)),
+        msg,
+    )?)
 }
 
 fn handle_ica_recovery(

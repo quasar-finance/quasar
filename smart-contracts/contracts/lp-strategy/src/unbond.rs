@@ -152,6 +152,7 @@ pub(crate) fn do_transfer_batch_unbond(
     env: &Env,
     total_tokens: Uint128,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+     // TODO, assert that raw amounts equal amount
     let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
     let msg = return_transfer(
         storage,
