@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Trap,
@@ -14,7 +12,7 @@ use crate::{
     state::{Config, LpCache, Unbond},
 };
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub lock_period: u64,
     pub pool_id: u64,
@@ -40,118 +38,117 @@ pub struct MigrateMsg {
     pub config: Config,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(ChannelsResponse)]
     Channels {},
+    #[returns(ConfigResponse)]
     Config {},
+    #[returns(IcaAddressResponse)]
     IcaAddress {},
+    #[returns(LockResponse)]
     Lock {},
+    #[returns(LpSharesResponse)]
     LpShares {},
+    #[returns(PrimitiveSharesResponse)]
     PrimitiveShares {},
+    #[returns(IcaBalanceResponse)]
     IcaBalance {},
+    #[returns(IcaChannelResponse)]
     IcaChannel {},
+    #[returns(TrappedErrorsResponse)]
     TrappedErrors {},
+    #[returns(UnbondingClaimResponse)]
     UnbondingClaim { addr: Addr, id: String },
+    #[returns(ListUnbondingClaimsResponse)]
     ListUnbondingClaims {},
+    #[returns(ListBondingClaimsResponse)]
     ListBondingClaims {},
+    #[returns(ListPrimitiveSharesResponse)]
     ListPrimitiveShares {},
+    #[returns(ListPendingAcksResponse)]
     ListPendingAcks {},
+    #[returns(ListRepliesResponse)]
     ListReplies {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ListBondingClaimsResponse {
     pub bonds: HashMap<(Addr, String), Uint128>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ListRepliesResponse {
     pub replies: HashMap<u64, SubMsgKind>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ListPrimitiveSharesResponse {
     pub shares: HashMap<Addr, Uint128>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ListPendingAcksResponse {
     pub pending: HashMap<u64, IbcMsgKind>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ListUnbondingClaimsResponse {
     pub unbonds: HashMap<(Addr, String), Unbond>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct UnbondingClaimResponse {
     pub unbond: Unbond,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ChannelsResponse {
     pub channels: Vec<ChannelInfo>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TrappedErrorsResponse {
     pub errors: Vec<(u64, Trap)>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct LpSharesResponse {
     pub lp_shares: LpCache,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ConfigResponse {
     pub config: Config,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct LockResponse {
     pub lock: ibc_lock::Lock,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct IcaAddressResponse {
     pub address: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct PrimitiveSharesResponse {
     pub total: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct IcaBalanceResponse {
     pub amount: Coin,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct IcaChannelResponse {
     pub channel: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     Bond { id: String },
     StartUnbond { id: String, share_amount: Uint128 },
