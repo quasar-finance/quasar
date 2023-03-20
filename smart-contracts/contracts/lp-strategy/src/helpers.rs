@@ -126,18 +126,14 @@ pub fn get_usable_compound_balance(
             } else {
                 acc
             }
-        } else if let IbcMsgKind::Ica(msg) = trap.step {
-            if let IcaMessages::JoinSwapExternAmountIn(pb) = msg {
-                pb.bonds.iter().fold(acc, |acc2, bond| {
-                    if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
-                        acc2 + local_denom_amount
-                    } else {
-                        acc2
-                    }
-                })
-            } else {
-                acc
-            }
+        } else if let IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(pb)) = trap.step {
+            pb.bonds.iter().fold(acc, |acc2, bond| {
+                if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
+                    acc2 + local_denom_amount
+                } else {
+                    acc2
+                }
+            })
         } else {
             acc
         }
