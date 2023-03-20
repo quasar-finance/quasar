@@ -1,5 +1,3 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::helpers::{
@@ -9,6 +7,8 @@ use crate::helpers::{
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens};
 use crate::icq::calc_total_balance;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
@@ -404,6 +404,8 @@ pub fn handle_ica_ack(
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
+        IcaMessages::RecoveryExitPool(_) => todo!(),
+        IcaMessages::RecoveryReturnTransfer(_) => todo!(),
     }
 }
 

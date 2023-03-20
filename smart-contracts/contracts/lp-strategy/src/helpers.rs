@@ -74,7 +74,11 @@ pub fn create_callback_submsg(
 
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
-            SubMsgKind::Callback(ContractCallback::Callback(from_binary(msg)?))
+            SubMsgKind::Callback(ContractCallback::Callback {
+                callback: from_binary(msg)?,
+                amount: None,
+                owner: String::new(),
+            })
         }
         CosmosMsg::Bank(bank_msg) => {
             SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
@@ -139,7 +143,6 @@ pub enum IbcMsgKind {
     Icq,
 }
 
-
 // All enums supported by this contract
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -164,7 +167,11 @@ pub enum SubMsgKind {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ContractCallback {
-    Callback(Callback),
+    Callback {
+        callback: Callback,
+        amount: Option<Uint128>,
+        owner: String,
+    },
     Bank(BankMsg),
 }
 

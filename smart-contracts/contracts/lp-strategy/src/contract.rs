@@ -80,7 +80,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     match reply {
         SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
         SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
-        SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
+        SubMsgKind::Callback(callback) => handle_callback_reply(deps, msg, callback),
     }
 }
 
