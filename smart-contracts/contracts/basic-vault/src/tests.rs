@@ -367,7 +367,7 @@ mod tests {
         ]
     }
 
-    fn uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
+    fn _uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
         vec![
             (
                 "quasar123".to_string(),
@@ -384,7 +384,7 @@ mod tests {
         ]
     }
 
-    fn uneven_primitive_details() -> Vec<(String, String, Decimal)> {
+    fn _uneven_primitive_details() -> Vec<(String, String, Decimal)> {
         vec![
             (
                 "quasar123".to_string(),
@@ -399,7 +399,7 @@ mod tests {
         ]
     }
 
-    fn uneven_deposit() -> Vec<Coin> {
+    fn _uneven_deposit() -> Vec<Coin> {
         vec![
             Coin {
                 denom: "ibc/uosmo".to_string(),
@@ -677,7 +677,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
     }
 
     #[test]
@@ -787,7 +787,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
 
         let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
             &funds,
@@ -959,7 +959,7 @@ mod tests {
 
         let max_bond = get_max_bond(&funds, &token_weights).unwrap();
 
-        assert_eq!(max_bond, expected_max_bond);
+        assert_eq!(max_bond.to_uint_floor(), expected_max_bond);
 
         let (deposit, remainder) = get_deposit_and_remainder_for_ratio(
             &funds,
@@ -987,6 +987,8 @@ mod tests {
         assert_eq!(deposit[1].amount, expected_second_deposit.to_uint_floor());
         assert_eq!(deposit[2].amount, expected_third_deposit.to_uint_floor());
 
+        println!("remainder: {remainder:?}");
+        println!("deposit: {deposit:?}");
         assert_eq!(
             remainder[0].amount,
             funds[0].amount - expected_first_deposit.to_uint_floor()
@@ -1825,4 +1827,93 @@ mod tests {
 
     #[test]
     fn test_recipient_not_sender() {}
+
+    #[test]
+    fn test_dup_token_deposits() {
+        let env = mock_env();
+        const ADDRESS: &str = "quasar";
+        const DENOM_LOCAL_CHAIN: &str = "ibc/uosmo";
+        const SHARES: Uint128 = Uint128::new(100);
+        const BALANCE: Uint128 = Uint128::new(100);
+
+        let deposit_amounts = vec![
+            Uint128::new(10),
+            Uint128::new(1_000),
+            Uint128::new(1_000_000_000),
+        ];
+
+        for deposit_amount in deposit_amounts {
+            // test params
+            let weights = vec![
+                Decimal::from_str("0.2").unwrap(),
+                Decimal::from_str("0.3").unwrap(),
+                Decimal::from_str("0.5").unwrap(),
+            ];
+
+            let mut primitive_states: Vec<(String, String, Uint128, Uint128)> = Vec::new();
+            let mut primitive_details: Vec<(String, String, Decimal)> = Vec::new();
+            for i in 1..=3 {
+                primitive_states.push((
+                    format!("{}{}", ADDRESS, i),
+                    DENOM_LOCAL_CHAIN.to_string(),
+                    SHARES,
+                    BALANCE,
+                ));
+                primitive_details.push((
+                    format!("{}{}", ADDRESS, i),
+                    DENOM_LOCAL_CHAIN.to_string(),
+                    weights[i - 1],
+                ));
+            }
+            let mut deps = mock_deps_with_primitives(primitive_states);
+            let init_info = mock_info(TEST_CREATOR, &[]);
+
+            let init_msg = init_msg_with_primitive_details(primitive_details);
+            let init_res = init(deps.as_mut(), &init_msg, &env, &init_info);
+            assert_eq!(0, init_res.messages.len());
+
+            // deposit 3 times to the same vault
+            let deposit_info = mock_info(
+                TEST_CREATOR,
+                &[Coin {
+                    denom: DENOM_LOCAL_CHAIN.to_string(),
+                    amount: deposit_amount,
+                }],
+            );
+            let deposit_msg = ExecuteMsg::Bond {
+                recipient: Option::None,
+            };
+            let deposit_res = execute(
+                deps.as_mut(),
+                env.clone(),
+                deposit_info.clone(),
+                deposit_msg,
+            )
+            .unwrap();
+
+            assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
+
+            // total money sent to the vault
+            let total_money = deposit_info.funds[0].amount;
+
+            // total weight from init msg
+            let total_weight: Decimal = init_msg.primitives.iter().map(|p| p.weight).sum();
+            assert_eq!(total_weight, Decimal::one());
+
+            for (i, msg) in deposit_res.messages.iter().enumerate() {
+                if let CosmosMsg::Wasm(wasm_msg) = &msg.msg {
+                    if let WasmMsg::Execute {
+                        contract_addr: _,
+                        funds,
+                        msg: _,
+                    } = wasm_msg
+                    {
+                        // weight[i] / total_weight * total_money = money_output[i]
+                        let expected = init_msg.primitives[i].weight / total_weight * total_money;
+                        assert_eq!(expected, funds[0].amount);
+                    }
+                }
+            }
+        }
+    }
 }
