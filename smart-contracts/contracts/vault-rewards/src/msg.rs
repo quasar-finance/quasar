@@ -1,3 +1,4 @@
+use crate::state::DistributionSchedule;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
 use cw_asset::{Asset, AssetInfo};
@@ -50,13 +51,6 @@ pub struct ConfigResponse {
     pub total_claimed: Uint128,
     pub distribution_schedules: Vec<DistributionScheduleResponse>,
     pub current_distribution_rate_per_block: Uint128,
-}
-
-#[cw_serde]
-pub struct DistributionSchedule {
-    pub start: u64,
-    pub end: u64,
-    pub amount: Uint128,
 }
 
 #[cw_serde]
