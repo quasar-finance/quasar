@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
+    ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
         LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
@@ -46,6 +47,8 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
+    let lp_shares = LP_SHARES.load(storage)?;
+
     if UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
@@ -69,6 +72,10 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
 
+    // important to use lp_shares before it gets updated
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
+
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount
         old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
@@ -83,7 +90,7 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         token_out_denom: config.base_denom,
         share_in_amount: total_exit.to_string(),
         // TODO add a more robust estimation
-        token_out_min_amount: Uint128::one().to_string(),
+        token_out_min_amount: token_out_min_amount.to_string(),
     };
 
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
@@ -275,7 +282,10 @@ mod tests {
         CosmosMsg,
     };
 
-    use crate::{state::Unbond, test_helpers::default_setup};
+    use crate::{
+        state::{Unbond, SIMULATED_EXIT_RESULT},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -354,6 +364,8 @@ mod tests {
         let owner = Addr::unchecked("bob");
         let id = "my-id".to_string();
 
+        let total_locked_shares = Uint128::new(500);
+
         // test specific setup
         LP_SHARES
             .save(
@@ -396,8 +408,28 @@ mod tests {
                 .unwrap();
         }
 
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::from(100u128))
+            .unwrap();
+
         let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_some());
+
+        // checking above we have total exit amount = 100 + 101 + 102
+        // while total shares in lp cache is defined at 500, this is important for calculating token_min_out_amount
+        // these asserts are just a quality of life improvement since the failure in this test sucks
+        let expected_exit_amount = Uint128::from(100u128 + 101u128 + 102u128);
+        let actual_exit_amount = unbonds
+            .iter()
+            .fold(Uint128::zero(), |acc, u| acc + u.lp_shares);
+        assert_eq!(expected_exit_amount, actual_exit_amount);
+
+        let token_out_min_amount = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            expected_exit_amount,
+            total_locked_shares,
+        )
+        .unwrap();
 
         // check that the packet is as we expect
         let ica_address = get_ica_address(
@@ -411,8 +443,7 @@ mod tests {
             pool_id: config.pool_id,
             token_out_denom: config.base_denom,
             share_in_amount: Uint128::new(303).to_string(),
-            // TODO add a more robust estimation
-            token_out_min_amount: Uint128::one().to_string(),
+            token_out_min_amount: token_out_min_amount.to_string(),
         };
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(

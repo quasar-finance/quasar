@@ -1,3 +1,4 @@
+use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -78,6 +79,12 @@ pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // TODO, do we remove this state item? is it needed?
+// whatever the above todo item is, does not apply to the following
+// we save the queried simulate join swap during ICQ so we can read it right before bond join
+pub(crate) const SIMULATED_JOIN_RESULT: Item<QueryCalcJoinPoolSharesResponse> =
+    Item::new("simulated_join_result");
+// we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
+pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

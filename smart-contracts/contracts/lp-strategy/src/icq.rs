@@ -1,9 +1,12 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, Storage, SubMsg, Uint128,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
-    osmosis::gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceRequest},
+    osmosis::gamm::{
+        v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
+        v2::QuerySpotPriceRequest,
+    },
 };
 use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
@@ -14,14 +17,18 @@ use crate::{
     state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
 };
 
-pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, ContractError> {
+pub fn try_icq(
+    storage: &mut dyn Storage,
+    querier: QuerierWrapper,
+    env: Env,
+) -> Result<Option<SubMsg>, ContractError> {
     if IBC_LOCK.load(storage)?.is_unlocked() {
         // TODO fetching ICQ channel and confirming vs handshake version can be a single function
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
 
         // deposit need to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_total_balance_query(storage, ICA_CHANNEL.load(storage)?)?;
+        let packet = prepare_full_query(storage, querier, env.clone(), ICA_CHANNEL.load(storage)?)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
@@ -39,8 +46,10 @@ pub fn try_icq(storage: &mut dyn Storage, env: Env) -> Result<Option<SubMsg>, Co
     }
 }
 
-pub fn prepare_total_balance_query(
+pub fn prepare_full_query(
     storage: &dyn Storage,
+    querier: QuerierWrapper,
+    env: Env,
     channel: String,
 ) -> Result<InterchainQueryPacketData, ContractError> {
     let address = get_ica_address(storage, channel)?;
@@ -58,6 +67,21 @@ pub fn prepare_total_balance_query(
         address,
         denom: config.pool_denom,
     };
+    // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
+    // we use the current current balance of local_denom for this query. This is safe because at any point
+    // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
+
+    // fetch current balance of contract for join_pool query
+    let balance = querier.query_balance(env.contract.address, config.local_denom)?;
+
+    let join_pool = QueryCalcJoinPoolSharesRequest {
+        pool_id: config.pool_id,
+        tokens_in: vec![OsmoCoin {
+            denom: config.base_denom.clone(),
+            amount: balance.amount.to_string(),
+        }],
+    };
+
     // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
@@ -87,6 +111,10 @@ pub fn prepare_total_balance_query(
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
+            join_pool.encode_to_vec(),
+            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
+        )
+        .add_request(
             exit_pool.encode_to_vec(),
             "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
@@ -102,7 +130,7 @@ pub fn prepare_total_balance_query(
 pub fn calc_total_balance(
     storage: &mut dyn Storage,
     ica_balance: Uint128,
-    exit_pool: Vec<OsmoCoin>,
+    exit_pool: &Vec<OsmoCoin>,
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
@@ -140,7 +168,10 @@ pub fn calc_total_balance(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, MockQuerier},
+        Empty,
+    };
 
     use crate::{
         ibc_lock::Lock,
@@ -170,13 +201,18 @@ mod tests {
         // lock the ibc lock
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        let res = try_icq(deps.as_mut().storage, env.clone()).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = try_icq(deps.as_mut().storage, q, env.clone()).unwrap();
 
         let pkt = IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
             data: to_binary(
-                &prepare_total_balance_query(
+                &prepare_full_query(
                     deps.as_ref().storage,
+                    deps.as_ref().querier,
+                    env.clone(),
                     ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
                 )
                 .unwrap(),
@@ -204,7 +240,10 @@ mod tests {
             .save(deps.as_mut().storage, &Lock::new().lock_bond())
             .unwrap();
 
-        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = try_icq(deps.as_mut().storage, q, env).unwrap();
         assert_eq!(res, None)
     }
 
@@ -219,7 +258,10 @@ mod tests {
             .save(deps.as_mut().storage, &Lock::new().lock_start_unbond())
             .unwrap();
 
-        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = try_icq(deps.as_mut().storage, q, env).unwrap();
         assert_eq!(res, None)
     }
 
@@ -234,7 +276,10 @@ mod tests {
             .save(deps.as_mut().storage, &Lock::new().lock_unbond())
             .unwrap();
 
-        let res = try_icq(deps.as_mut().storage, env).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = try_icq(deps.as_mut().storage, q, env).unwrap();
         assert_eq!(res, None)
     }
 }
