@@ -51,7 +51,7 @@ pub fn instantiate(
         }),
     };
     let additional_info = AdditionalTokenInfo {
-        creation_time: env.block.time.clone(),
+        creation_time: env.block.time,
         thesis: msg.thesis,
     };
     TOKEN_INFO.save(deps.storage, &token_info)?;
