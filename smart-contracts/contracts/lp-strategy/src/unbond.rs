@@ -98,7 +98,11 @@ pub(crate) fn exit_swap(
     )?)
 }
 
-pub(crate) fn do_exit_swap(storage: &mut dyn Storage, env: &Env, total_exit: Uint128) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+pub(crate) fn do_exit_swap(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_exit: Uint128,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
     let msg = MsgExitSwapShareAmountIn {
@@ -124,7 +128,7 @@ pub fn transfer_batch_unbond(
     pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    let pkt = do_transfer_batch_unbond(env, storage, total_tokens)?;
+    let pkt = do_transfer_batch_unbond(storage, env, total_tokens)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
@@ -133,7 +137,11 @@ pub fn transfer_batch_unbond(
     )?)
 }
 
-pub(crate) fn do_transfer_batch_unbond(env: &Env, storage: &mut dyn Storage, total_tokens: Uint128) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+pub(crate) fn do_transfer_batch_unbond(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_tokens: Uint128,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
     let msg = return_transfer(
         storage,
@@ -148,7 +156,6 @@ pub(crate) fn do_transfer_batch_unbond(env: &Env, storage: &mut dyn Storage, tot
     )?;
     Ok(pkt)
 }
-
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -566,7 +573,11 @@ mod tests {
 
         let msg = exit_swap(deps.as_mut().storage, &env, total_exit, pending).unwrap();
 
-        let ica_address = get_ica_address(deps.as_ref().storage, ICA_CHANNEL.load(deps.as_ref().storage).unwrap()).unwrap();
+        let ica_address = get_ica_address(
+            deps.as_ref().storage,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+        )
+        .unwrap();
         let config = CONFIG.load(deps.as_ref().storage).unwrap();
 
         let expected = MsgExitSwapShareAmountIn {
