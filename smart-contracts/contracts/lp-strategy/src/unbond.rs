@@ -69,8 +69,8 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         });
     }
 
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-    let config = CONFIG.load(storage)?;
+    let _ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let _config = CONFIG.load(storage)?;
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount

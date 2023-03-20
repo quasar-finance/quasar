@@ -17,7 +17,7 @@ use crate::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
         IbcMsgKind,
     },
-    state::{Config, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
+    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
 };
 
 pub fn try_icq(

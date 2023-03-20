@@ -4,8 +4,8 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        Config, PendingBond, PendingSingleUnbond, RawAmount, BONDING_CLAIMS, CHANNELS,
-        CLAIMABLE_FUNDS, IBC_LOCK, REPLIES, SHARES, TRAPS,
+        Config, PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK,
+        REPLIES, SHARES, TRAPS,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -113,7 +113,7 @@ pub fn get_usable_bond_balance(
 
 pub fn get_usable_compound_balance(
     storage: &dyn Storage,
-    total_balance: Uint128,
+    _total_balance: Uint128,
 ) -> Result<Uint128, ContractError> {
     // two cases where we exclude funds, either transfer succeeded, but not ica, or transfer succeeded and subsequent ica failed
     let traps = TRAPS.range(storage, None, None, Order::Ascending);
@@ -126,22 +126,20 @@ pub fn get_usable_compound_balance(
             } else {
                 acc
             }
-        } else {
-            if let IbcMsgKind::Ica(msg) = trap.step {
-                if let IcaMessages::JoinSwapExternAmountIn(pb) = msg {
-                    pb.bonds.iter().fold(acc, |acc2, bond| {
-                        if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
-                            acc2 + local_denom_amount
-                        } else {
-                            acc2
-                        }
-                    })
-                } else {
-                    acc
-                }
+        } else if let IbcMsgKind::Ica(msg) = trap.step {
+            if let IcaMessages::JoinSwapExternAmountIn(pb) = msg {
+                pb.bonds.iter().fold(acc, |acc2, bond| {
+                    if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
+                        acc2 + local_denom_amount
+                    } else {
+                        acc2
+                    }
+                })
             } else {
                 acc
             }
+        } else {
+            acc
         }
     });
 

@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    Reply, Response, StdResult, Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;

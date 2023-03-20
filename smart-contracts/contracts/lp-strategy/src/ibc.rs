@@ -425,9 +425,9 @@ pub fn handle_ica_ack(
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
         // After a RecoveryExitPool, we do a return transfer that should hit RecoveryReturnTransfer
-        IcaMessages::RecoveryExitPool(pending) => todo!(),
+        IcaMessages::RecoveryExitPool(_pending) => todo!(),
         // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
-        IcaMessages::RecoveryReturnTransfer(pending) => todo!(),
+        IcaMessages::RecoveryReturnTransfer(_pending) => todo!(),
     }
 }
 

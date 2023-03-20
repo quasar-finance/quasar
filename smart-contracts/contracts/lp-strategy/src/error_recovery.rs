@@ -1,6 +1,4 @@
-use std::fmt;
-
-use cosmwasm_std::{Addr, DepsMut, Env, IbcMsg, Response, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, DepsMut, Env, Response, Storage, SubMsg, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +7,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
     state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, TRAPS},
-    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
+    unbond::{do_exit_swap, do_transfer_batch_unbond},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -32,7 +30,7 @@ pub fn start_recovery(
                         .add_attribute("error-recover-sequence", error_sequence.to_string())
                         .add_attribute("error-recovery-value", error.last_succesful.to_string()))
                 }
-                crate::helpers::IbcMsgKind::Ica(ica) => todo!(),
+                crate::helpers::IbcMsgKind::Ica(_ica) => todo!(),
                 // if ICQ was the last successful step, all we failed trying to empty our queues and dispatching any following
                 // IBC messages, meaning we don't have to do anything with a seperate try_icq endpoint
                 crate::helpers::IbcMsgKind::Icq => unimplemented!(),
@@ -110,7 +108,7 @@ fn handle_join_swap_recovery(
         .bonds
         .iter()
         .map(|val| {
-            if let RawAmount::LpShares(amount) = val.raw_amount {
+            if let RawAmount::LpShares(_amount) = val.raw_amount {
                 Ok(ReturningRecovery {
                     amount: val.raw_amount.clone(),
                     owner: val.owner.clone(),
@@ -128,7 +126,7 @@ fn handle_join_swap_recovery(
 
     let exits = exits_res?;
 
-    let total_exit: Uint128 = exits.clone().iter().try_fold(
+    let total_exit: Uint128 = exits.iter().try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val.amount {
