@@ -1,11 +1,12 @@
 use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
+use prost::bytes::buf;
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
-use cosmwasm_std::{Addr, Timestamp, Uint128};
-use cw_storage_plus::{Deque, Item, Map};
+use cosmwasm_std::{Addr, StdError, StdResult, Timestamp, Uint128};
+use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
 use crate::{
     bond::Bond,
@@ -40,7 +41,6 @@ pub struct Config {
 }
 
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
-
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
@@ -60,7 +60,6 @@ pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
 pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
-
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
@@ -85,6 +84,78 @@ pub(crate) const SIMULATED_JOIN_RESULT: Item<QueryCalcJoinPoolSharesResponse> =
     Item::new("simulated_join_result");
 // we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
 pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
+// CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
+pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
+
+impl PrimaryKey<'_> for FundPath {
+    type Prefix = Addr;
+
+    type SubPrefix = ();
+
+    type Suffix = u8;
+
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<Key> {
+        // this is a bit yikes but fuck it
+        match self {
+            FundPath::Bond { id } => vec![Key::Val8([0]), Key::Ref(id.as_bytes())],
+            FundPath::Unbond { id } => vec![Key::Val8([1]), Key::Ref(id.as_bytes())],
+        }
+    }
+}
+
+impl KeyDeserialize for FundPath {
+    type Output = FundPath;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        if value[0] == 0 {
+            Ok(FundPath::Bond {
+                id: String::from_utf8(value[1..].to_vec()).map_err(|err| {
+                    StdError::InvalidUtf8 {
+                        msg: err.to_string(),
+                    }
+                })?,
+            })
+        } else if value[0] == 1 {
+            Ok(FundPath::Unbond {
+                id: String::from_utf8(value[1..].to_vec()).map_err(|err| {
+                    StdError::InvalidUtf8 {
+                        msg: err.to_string(),
+                    }
+                })?,
+            })
+        } else {
+            Err(StdError::SerializeErr {
+                source_type: "key-de".to_string(),
+                msg: "enum variant not found".to_string(),
+            })
+        }
+    }
+}
+
+impl Prefixer<'_> for FundPath {
+    fn prefix(&self) -> Vec<Key> {
+        match self {
+            FundPath::Bond { id } => vec![Key::Ref(id.as_bytes())],
+            FundPath::Unbond { id } => vec![Key::Ref(id.as_bytes())],
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum FundPath {
+    Bond { id: String },
+    Unbond { id: String },
+}
+
+impl Display for FundPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

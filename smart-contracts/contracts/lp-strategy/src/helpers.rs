@@ -1,5 +1,6 @@
 use crate::{
     error::ContractError,
+    error_recovery::PendingReturningRecovery,
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
@@ -14,7 +15,7 @@ use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub fn get_total_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
+pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     // workaround for a div-by-zero error on multi-asset vault side
     let mut sum = Uint128::one();
     for val in SHARES.range(storage, None, None, Order::Ascending) {
@@ -148,6 +149,8 @@ pub enum IcaMessages {
     BeginUnlocking(Vec<PendingSingleUnbond>),
     ExitPool(PendingReturningUnbonds),
     ReturnTransfer(PendingReturningUnbonds),
+    RecoveryExitPool(PendingReturningRecovery),
+    RecoveryReturnTransfer(PendingReturningRecovery),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -215,6 +218,8 @@ pub(crate) fn unlock_on_error(
                 })?;
                 Ok(())
             }
+            IcaMessages::RecoveryExitPool(_) => todo!(),
+            IcaMessages::RecoveryReturnTransfer(_) => todo!(),
         },
         IbcMsgKind::Icq => {
             IBC_LOCK.update(storage, |lock| {

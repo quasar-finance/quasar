@@ -84,6 +84,37 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         Ok(old)
     })?;
 
+    let msg = exit_swap(
+        storage,
+        env,
+        total_exit,
+        PendingReturningUnbonds { unbonds: pending },
+    )?;
+    Ok(Some(msg))
+}
+
+pub(crate) fn exit_swap(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_exit: Uint128,
+    pending: PendingReturningUnbonds,
+) -> Result<SubMsg, ContractError> {
+    let pkt = do_exit_swap(storage, env, total_exit)?;
+
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
+        pkt,
+    )?)
+}
+
+pub(crate) fn do_exit_swap(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_exit: Uint128,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let config = CONFIG.load(storage)?;
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
@@ -92,20 +123,12 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         // TODO add a more robust estimation
         token_out_min_amount: token_out_min_amount.to_string(),
     };
-
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
         ICA_CHANNEL.load(storage)?,
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     )?;
-
-    Ok(Some(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
-            unbonds: pending,
-        })),
-        pkt,
-    )?))
+    Ok(pkt)
 }
 
 // TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold pending to get total_tokens (with gas costs etc)
@@ -115,28 +138,33 @@ pub fn transfer_batch_unbond(
     pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    // the return transfer times out 400 seconds after we dispatch the ica msg towards osmosis
-    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
-
-    // we can unwrap here since we have just instantiated with a timestamp
-    let msg = return_transfer(
-        storage,
-        env,
-        total_tokens,
-        timeout_timestamp.timestamp().unwrap(),
-    )?;
-
-    let pkt = ica_send::<MsgTransfer>(
-        msg,
-        ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-    )?;
+    let pkt = do_transfer_batch_unbond(storage, env, total_tokens)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending)),
         pkt,
     )?)
+}
+
+pub(crate) fn do_transfer_batch_unbond(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_tokens: Uint128,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+    let msg = return_transfer(
+        storage,
+        env,
+        total_tokens,
+        timeout_timestamp.timestamp().unwrap(),
+    )?;
+    let pkt = ica_send::<MsgTransfer>(
+        msg,
+        ICA_CHANNEL.load(storage)?,
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+    )?;
+    Ok(pkt)
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
@@ -541,5 +569,67 @@ mod tests {
             pending.unbonds[2].amount,
             RawAmount::LocalDenom(Uint128::new(1500))
         )
+    }
+
+    #[test]
+    fn exit_swap_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        let pending = PendingReturningUnbonds {
+            unbonds: vec![
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(100)),
+                },
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(50)),
+                },
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(150)),
+                },
+            ],
+        };
+
+        let total_exit = pending
+            .unbonds
+            .iter()
+            .fold(Uint128::zero(), |acc, u| match u.amount {
+                RawAmount::LocalDenom(_) => unimplemented!(),
+                RawAmount::LpShares(val) => acc + val,
+            });
+
+        let msg = exit_swap(deps.as_mut().storage, &env, total_exit, pending).unwrap();
+
+        let ica_address = get_ica_address(
+            deps.as_ref().storage,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+        )
+        .unwrap();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+
+        let expected = MsgExitSwapShareAmountIn {
+            sender: ica_address,
+            pool_id: config.pool_id,
+            token_out_denom: config.base_denom,
+            share_in_amount: total_exit.to_string(),
+            // TODO add a more robust estimation
+            token_out_min_amount: Uint128::one().to_string(),
+        };
+
+        let pkt = ica_send::<MsgExitSwapShareAmountIn>(
+            expected,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        )
+        .unwrap();
+
+        assert_eq!(msg.msg, CosmosMsg::Ibc(pkt))
     }
 }

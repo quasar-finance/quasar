@@ -1,16 +1,18 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use std::collections::HashMap;
 
-use cosmwasm_std::{Addr, Coin, Deps, Order, StdError, StdResult, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, StdResult, Uint128};
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     error::Trap,
-    helpers::{get_ica_address, get_total_shares, IbcMsgKind, SubMsgKind},
+    helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
-        LockResponse, LpSharesResponse, PrimitiveSharesResponse, TrappedErrorsResponse,
+        LockResponse, LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
         UnbondingClaimResponse,
     },
     state::{
@@ -18,6 +20,29 @@ use crate::{
         PENDING_ACK, REPLIES, SHARES, TRAPS, UNBONDING_CLAIMS,
     },
 };
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
+        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
+        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
+        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
+        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
+        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
+        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
+        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
+        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
+        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
+        QueryMsg::UnbondingClaim { addr, id } => {
+            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
+        }
+        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
+        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
+        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
+        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
+    }
+}
 
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
     let unbonds: StdResult<HashMap<(Addr, String), Unbond>> = UNBONDING_CLAIMS
@@ -77,7 +102,7 @@ pub fn handle_ica_channel(deps: Deps) -> StdResult<IcaChannelResponse> {
 }
 
 pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse> {
-    let total = get_total_shares(deps.storage).map_err(|err| StdError::GenericErr {
+    let total = get_total_primitive_shares(deps.storage).map_err(|err| StdError::GenericErr {
         msg: err.to_string(),
     })?;
 
@@ -117,8 +142,12 @@ pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
 }
 
 pub fn handle_list_bonding_claims(deps: Deps) -> StdResult<ListBondingClaimsResponse> {
-    let bonds: StdResult<HashMap<(Addr, String), Uint128>> = BONDING_CLAIMS
+    let bonds: StdResult<HashMap<Addr, (String, Uint128)>> = BONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| {
+            let val = res?;
+            Ok((val.0 .0, (val.0 .1, val.1)))
+        })
         .collect();
     Ok(ListBondingClaimsResponse { bonds: bonds? })
 }

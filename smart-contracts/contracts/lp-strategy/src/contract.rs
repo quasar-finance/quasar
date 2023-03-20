@@ -15,14 +15,7 @@ use crate::ibc::{handle_failing_ack, handle_succesful_ack};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::queries::{
-    handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
-    handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
-    handle_list_primitive_shares, handle_list_replies, handle_list_unbonding_claims, handle_lock,
-    handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -369,29 +362,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
-        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
-        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
-        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
-        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
-        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
-        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
-        QueryMsg::UnbondingClaim { addr, id } => {
-            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
-        }
-        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
-        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
-        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
-    }
 }
 
 #[cfg(test)]
