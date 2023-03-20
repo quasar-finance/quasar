@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
 
 use cw20::Expiration;
-use cw20::{AllowanceResponse, BalanceResponse, TokenInfoResponse};
+use cw20::{AllowanceResponse, BalanceResponse};
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
@@ -30,6 +30,8 @@ pub struct PrimitiveConfig {
 pub struct InstantiateMsg {
     /// name of the derivative token
     pub name: String,
+    /// description of the derivative token
+    pub thesis: String,
     /// symbol / ticker of the derivative token
     pub symbol: String,
     /// decimal places of the derivative token (for UI)
@@ -154,7 +156,7 @@ pub enum QueryMsg {
     #[returns(BalanceResponse)]
     Balance { address: String },
     /// Implements CW20. Returns metadata on the contract - name, decimals, supply, etc.
-    #[returns(TokenInfoResponse)]
+    #[returns(VaultTokenInfoResponse)]
     TokenInfo {},
     /// Implements CW20 "allowance" extension.
     /// Returns how much spender can use from owner account, 0 if unset.
@@ -191,6 +193,15 @@ pub struct PendingUnbondsResponse {
     pub pending_unbonds: Vec<Unbond>,
     /// the bond ids that are registered as pending for a user
     pub pending_unbond_ids: Vec<String>,
+}
+
+#[cw_serde]
+pub struct VaultTokenInfoResponse {
+    pub name: String,
+    pub thesis: String,
+    pub symbol: String,
+    pub decimals: u8,
+    pub total_supply: Uint128,
 }
 
 #[cw_serde]

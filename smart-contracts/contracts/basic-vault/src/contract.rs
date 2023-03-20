@@ -10,23 +10,23 @@ use cw20_base::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
-use cw20_base::contract::{
-    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
-};
+use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use lp_strategy::msg::ConfigResponse;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
-use crate::msg::{ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{
+    ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg, VaultTokenInfoResponse,
+};
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,
     query_tvl_info,
 };
 use crate::state::{
-    InvestmentInfo, Supply, BONDING_SEQ, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
-    INVESTMENT, TOTAL_SUPPLY,
+    AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -39,7 +39,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // store token info using cw20-base format
-    let data = TokenInfo {
+    let token_info = TokenInfo {
         name: msg.name,
         symbol: msg.symbol,
         decimals: msg.decimals,
@@ -50,7 +50,9 @@ pub fn instantiate(
             cap: None,
         }),
     };
-    TOKEN_INFO.save(deps.storage, &data)?;
+    let additional_info = AdditionalTokenInfo { thesis: msg.thesis };
+    TOKEN_INFO.save(deps.storage, &token_info)?;
+    ADDITIONAL_TOKEN_INFO.save(deps.storage, &additional_info)?;
 
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
@@ -179,7 +181,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
         QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
+        QueryMsg::TokenInfo {} => to_binary(&query_vault_token_info(deps)?),
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::Allowance { owner, spender } => {
             to_binary(&query_allowance(deps, owner, spender)?)
@@ -190,6 +192,19 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
         QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
     }
+}
+
+pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
+    let token_info = TOKEN_INFO.load(deps.storage)?;
+    let additional_info = ADDITIONAL_TOKEN_INFO.load(deps.storage)?;
+    let res = VaultTokenInfoResponse {
+        name: token_info.name,
+        thesis: additional_info.thesis,
+        symbol: token_info.symbol,
+        decimals: token_info.decimals,
+        total_supply: token_info.total_supply,
+    };
+    Ok(res)
 }
 
 pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
@@ -245,6 +260,7 @@ mod test {
 
         let msg = InstantiateMsg {
             name: "vault".to_string(),
+            thesis: "to generate yield, I guess".to_string(),
             symbol: "VLT".to_string(),
             decimals: 6,
             min_withdrawal: Uint128::new(100),
