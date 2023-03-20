@@ -6,6 +6,7 @@ mod helpers;
 pub mod msg;
 mod query;
 pub mod state;
+pub mod types;
 
 pub use crate::error::ContractError;
 
