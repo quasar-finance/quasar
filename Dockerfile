@@ -41,7 +41,19 @@ COPY . .
 # then ensure static linking
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
-    LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make build
+    GOWORK=off go build \
+            -mod=readonly \
+            -tags "netgo,ledger,muslc" \
+            -ldflags \
+                "-X github.com/cosmos/cosmos-sdk/version.Name="quasar" \
+                -X github.com/cosmos/cosmos-sdk/version.AppName="quasarnoded" \
+                -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION} \
+                -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
+                -X github.com/cosmos/cosmos-sdk/version.BuildTags='netgo,ledger,muslc' \
+                -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
+            -trimpath \
+    -o build/quasarnoded ./cmd/quasarnoded
+
 
 # --------------------------------------------------------
 # Runner

@@ -202,6 +202,7 @@ impl QuasarVaultSuite {
                 deployer.clone(),
                 &init_msg.unwrap_or(VaultInstantiateMsg {
                     name: "orion".to_string(),
+                    thesis: "to generate yield, I guess".to_string(),
                     symbol: "ORN".to_string(),
                     decimals: 6,
                     min_withdrawal: 1u128.into(),

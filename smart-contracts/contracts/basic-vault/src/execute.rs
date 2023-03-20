@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
+    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, Uint128, WasmMsg,
 };
 
 use cw20_base::contract::execute_burn;
@@ -9,13 +9,13 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-
 use crate::helpers::can_unbond_from_primitive;
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
+use crate::types::FromUint128;
 
 // returns amount if the coin is found and amount is non-zero
 // errors otherwise
@@ -61,10 +61,7 @@ pub fn get_deposit_amount_weights(
         };
 
         Ok(CoinWeight {
-            weight: Decimal::from_ratio(
-                ratio.numerator().checked_mul(pc.weight.numerator())?,
-                ratio.denominator().checked_mul(pc.weight.denominator())?,
-            ),
+            weight: ratio.checked_mul(pc.weight)?,
             denom: balance.amount.denom,
         })
     })
@@ -99,14 +96,12 @@ pub fn get_token_amount_weights(
 pub fn get_max_bond(
     funds: &[Coin],
     token_weights: &Vec<CoinWeight>,
-) -> Result<Uint128, ContractError> {
-    let mut max_bond = Uint128::MAX;
+) -> Result<Decimal, ContractError> {
+    let mut max_bond = Decimal::MAX;
     for coin_weight in token_weights {
         let amount = must_pay_multi(funds, &coin_weight.denom)?;
-        let bond_for_token = amount.multiply_ratio(
-            coin_weight.weight.denominator(),
-            coin_weight.weight.numerator(),
-        );
+        let bond_for_token = Decimal::from_uint128(amount).checked_div(coin_weight.weight)?;
+
         if bond_for_token < max_bond {
             max_bond = bond_for_token;
         }
@@ -116,7 +111,7 @@ pub fn get_max_bond(
 
 pub fn get_deposit_and_remainder_for_ratio(
     funds: &[Coin],
-    max_bond: Uint128,
+    max_bond: Decimal,
     ratio: &CoinRatio,
 ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
     // verify that >0 of each token in ratio is passed in, return (funds, remainder))
@@ -129,9 +124,8 @@ pub fn get_deposit_and_remainder_for_ratio(
         .iter()
         .filter(|r| r.weight > Decimal::zero())
         .map(|r| {
-            let amount = must_pay_multi(funds, &r.denom)?;
-            let expected_amount =
-                max_bond.checked_multiply_ratio(r.weight.numerator(), r.weight.denominator())?;
+            let amount = Decimal::from_uint128(must_pay_multi(funds, &r.denom)?);
+            let expected_amount = max_bond.checked_mul(r.weight)?;
 
             if expected_amount > amount {
                 return Err(ContractError::IncorrectBondingRatio {});
@@ -142,7 +136,7 @@ pub fn get_deposit_and_remainder_for_ratio(
                 .map(|c| -> Result<Coin, ContractError> {
                     if c.denom == r.denom {
                         Ok(Coin {
-                            amount: c.amount.checked_sub(expected_amount)?,
+                            amount: c.amount.checked_sub(expected_amount.to_uint_floor())?,
                             denom: c.denom.clone(),
                         })
                     } else {
@@ -153,7 +147,7 @@ pub fn get_deposit_and_remainder_for_ratio(
 
             Ok(Coin {
                 denom: r.denom.clone(),
-                amount: expected_amount,
+                amount: expected_amount.to_uint_floor(),
             })
         })
         .collect();
@@ -202,7 +196,7 @@ pub fn may_pay_with_ratio(
 
     let max_bond = get_max_bond(funds, &token_weights)?;
 
-    if max_bond == Uint128::zero() || max_bond == Uint128::MAX {
+    if max_bond == Decimal::zero() || max_bond == Decimal::MAX {
         return Err(ContractError::Std(StdError::GenericErr {
             msg: format!("Unable to correctly determine max_bond, value: {max_bond}"),
         }));
@@ -362,10 +356,10 @@ pub fn do_start_unbond(
         .iter()
         .map(|pc| -> Result<WasmMsg, ContractError> {
             // lets get the amount of tokens to unbond for this primitive
-            let primitive_share_amount = unbond_amount.multiply_ratio(
-                pc.weight.numerator().checked_mul(num_primitives)?,
-                pc.weight.denominator(),
-            );
+            let primitive_share_amount = Decimal::from_uint128(unbond_amount)
+                .checked_mul(pc.weight)?
+                .checked_mul(Decimal::from_uint128(num_primitives))?
+                .to_uint_floor();
 
             unbonding_stubs.push(UnbondingStub {
                 address: pc.address.clone(),
