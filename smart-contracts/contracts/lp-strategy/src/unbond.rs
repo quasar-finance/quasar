@@ -72,10 +72,6 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
 
-    // important to use lp_shares before it gets updated
-    let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
-
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount
         old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
@@ -84,10 +80,15 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         Ok(old)
     })?;
 
+    // important to use lp_shares before it gets updated
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
+
     let msg = exit_swap(
         storage,
         env,
         total_exit,
+        token_out_min_amount,
         PendingReturningUnbonds { unbonds: pending },
     )?;
     Ok(Some(msg))
@@ -97,9 +98,10 @@ pub(crate) fn exit_swap(
     storage: &mut dyn Storage,
     env: &Env,
     total_exit: Uint128,
+    token_out_min_amount: Uint128,
     pending: PendingReturningUnbonds,
 ) -> Result<SubMsg, ContractError> {
-    let pkt = do_exit_swap(storage, env, total_exit)?;
+    let pkt = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
@@ -111,16 +113,17 @@ pub(crate) fn exit_swap(
 pub(crate) fn do_exit_swap(
     storage: &mut dyn Storage,
     env: &Env,
+    token_out_min_amount: Uint128,
     total_exit: Uint128,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
+
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
         token_out_denom: config.base_denom,
         share_in_amount: total_exit.to_string(),
-        // TODO add a more robust estimation
         token_out_min_amount: token_out_min_amount.to_string(),
     };
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
@@ -605,7 +608,20 @@ mod tests {
                 RawAmount::LpShares(val) => acc + val,
             });
 
-        let msg = exit_swap(deps.as_mut().storage, &env, total_exit, pending).unwrap();
+        let locked_shares = Uint128::from(100u128);
+
+        let token_out_min_amount =
+            calculate_token_out_min_amount(deps.as_mut().storage, total_exit, locked_shares)
+                .unwrap();
+
+        let msg = exit_swap(
+            deps.as_mut().storage,
+            &env,
+            total_exit,
+            token_out_min_amount,
+            pending,
+        )
+        .unwrap();
 
         let ica_address = get_ica_address(
             deps.as_ref().storage,

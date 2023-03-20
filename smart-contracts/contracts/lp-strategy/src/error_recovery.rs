@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
+    ibc_util::calculate_token_out_min_amount,
     state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, TRAPS},
     unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
@@ -58,7 +59,9 @@ fn handle_transfer_recovery(
                 Ok(ReturningRecovery {
                     amount: RawAmount::LocalDenom(val),
                     owner: bond.owner.clone(),
-                    id: FundPath::Bond { id: bond.bond_id.clone() },
+                    id: FundPath::Bond {
+                        id: bond.bond_id.clone(),
+                    },
                 })
             } else {
                 Err(ContractError::ReturningTransferIncorrectAmount)
@@ -111,7 +114,9 @@ fn handle_join_swap_recovery(
                     owner: val.owner.clone(),
                     // since we are recovering from a join swap, we need do save
                     // as a Bond for bookkeeping on returned
-                    id: FundPath::Bond { id: val.bond_id.clone() },
+                    id: FundPath::Bond {
+                        id: val.bond_id.clone(),
+                    },
                 })
             } else {
                 Err(ContractError::IncorrectRawAmount)
@@ -119,7 +124,9 @@ fn handle_join_swap_recovery(
         })
         .collect();
 
-    let total_exit: Uint128 = exits?.iter().try_fold(
+    let e = exits?;
+
+    let total_exit: Uint128 = e.clone().iter().try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val.amount {
@@ -137,11 +144,16 @@ fn handle_join_swap_recovery(
         Ok(old)
     })?;
 
-    let exit = do_exit_swap(storage, env, total_exit)?;
+    let locked_shares = Uint128::from(100u128);
+
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, locked_shares).unwrap();
+
+    let exit = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {
-            returning: exits?,
+            returning: e,
         })),
         exit,
     )?)

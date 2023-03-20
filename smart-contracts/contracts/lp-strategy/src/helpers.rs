@@ -3,12 +3,15 @@ use crate::{
     error_recovery::PendingReturningRecovery,
     ibc_lock::Lock,
     msg::ExecuteMsg,
-    state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
+    state::{
+        Config, PendingBond, PendingSingleUnbond, RawAmount, BONDING_CLAIMS, CHANNELS,
+        CLAIMABLE_FUNDS, IBC_LOCK, REPLIES, SHARES, TRAPS,
+    },
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
     from_binary, to_binary, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
-    StdError, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
 use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
@@ -85,6 +88,64 @@ pub fn create_callback_submsg(
 
     REPLIES.save(storage, id, &data)?;
     Ok(SubMsg::reply_always(cosmos_msg, id))
+}
+
+// this function subtracts out the amount that has errored and sits stale somewhere
+pub fn get_usable_bond_balance(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    env: &Env,
+    config: &Config,
+) -> Result<Uint128, ContractError> {
+    // fetch current balance of contract for join_pool query
+    let balance =
+        querier.query_balance(env.contract.address.clone(), config.local_denom.clone())?;
+
+    let mut total_claimable = Uint128::zero();
+
+    for val in CLAIMABLE_FUNDS.range(storage, None, None, Order::Ascending) {
+        total_claimable = total_claimable.checked_add(val?.1)?;
+    }
+
+    // subtract out the amount that has errored and sits stale on our chain
+    Ok(balance.amount - total_claimable)
+}
+
+pub fn get_usable_compound_balance(
+    storage: &dyn Storage,
+    total_balance: Uint128,
+) -> Result<Uint128, ContractError> {
+    // two cases where we exclude funds, either transfer succeeded, but not ica, or transfer succeeded and subsequent ica failed
+    let traps = TRAPS.range(storage, None, None, Order::Ascending);
+
+    let excluded_funds = traps.fold(Uint128::zero(), |acc, wrapped_trap| {
+        let trap = wrapped_trap.unwrap().1;
+        if trap.last_succesful {
+            if let IbcMsgKind::Transfer { pending: _, amount } = trap.step {
+                acc + amount
+            } else {
+                acc
+            }
+        } else {
+            if let IbcMsgKind::Ica(msg) = trap.step {
+                if let IcaMessages::JoinSwapExternAmountIn(pb) = msg {
+                    pb.bonds.iter().fold(acc, |acc2, bond| {
+                        if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
+                            acc2 + local_denom_amount
+                        } else {
+                            acc2
+                        }
+                    })
+                } else {
+                    acc
+                }
+            } else {
+                acc
+            }
+        }
+    });
+
+    Ok(excluded_funds)
 }
 
 pub fn create_ibc_ack_submsg(
