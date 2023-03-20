@@ -604,6 +604,10 @@ mod tests {
             ],
         };
 
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::new(3000))
+            .unwrap();
+
         let total_exit = pending
             .unbonds
             .iter()
@@ -627,7 +631,7 @@ mod tests {
             token_out_denom: config.base_denom,
             share_in_amount: total_exit.to_string(),
             // TODO add a more robust estimation
-            token_out_min_amount: Uint128::one().to_string(),
+            token_out_min_amount: token_out_min_amount.to_string(),
         };
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
