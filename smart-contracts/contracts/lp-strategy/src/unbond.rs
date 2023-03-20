@@ -155,7 +155,7 @@ pub(crate) fn do_transfer_batch_unbond(
     env: &Env,
     total_tokens: Uint128,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
-     // TODO, assert that raw amounts equal amount
+    // TODO, assert that raw amounts equal amount
     let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
     let msg = return_transfer(
         storage,
@@ -601,6 +601,10 @@ mod tests {
             ],
         };
 
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::new(3000))
+            .unwrap();
+
         let total_exit = pending
             .unbonds
             .iter()
@@ -637,7 +641,7 @@ mod tests {
             token_out_denom: config.base_denom,
             share_in_amount: total_exit.to_string(),
             // TODO add a more robust estimation
-            token_out_min_amount: Uint128::one().to_string(),
+            token_out_min_amount: token_out_min_amount.to_string(),
         };
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
