@@ -25,7 +25,7 @@ pub fn start_recovery(
                 crate::helpers::IbcMsgKind::Transfer { pending, amount } => {
                     // cleanup error state to prevent multiple error recoveries
                     TRAPS.remove(deps.storage, error_sequence);
-                    let msg = handle_transfer_recovery(deps.storage, env, pending, amount)?;
+                    let msg = handle_transfer_recovery(deps.storage, env, pending, amount, error_sequence)?;
                     Ok(Response::new()
                         .add_submessage(msg)
                         .add_attribute("error-recover-sequence", error_sequence.to_string())
@@ -49,6 +49,7 @@ fn handle_transfer_recovery(
     env: &Env,
     bonds: PendingBond,
     amount: Uint128,
+    trapped_id: u64
 ) -> Result<SubMsg, ContractError> {
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
@@ -70,6 +71,7 @@ fn handle_transfer_recovery(
 
     let returning = PendingReturningRecovery {
         returning: returning?,
+        trapped_id: trapped_id,
     };
 
     let msg = do_transfer_batch_unbond(storage, env, amount)?;
@@ -84,10 +86,12 @@ fn handle_ica_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     ica: IcaMessages,
+    last_succesful: bool,
+    trapped_id: u64
 ) -> Result<Response, ContractError> {
     match ica {
         IcaMessages::JoinSwapExternAmountIn(pending) => {
-            handle_join_swap_recovery(storage, env, pending)?;
+            handle_join_swap_recovery(storage, env, pending, trapped_id)?;
             todo!()
         }
         IcaMessages::LockTokens(_) => todo!(),
@@ -104,6 +108,7 @@ fn handle_join_swap_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     pending: PendingBond,
+    trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
     let exits_res: Result<Vec<ReturningRecovery>, ContractError> = pending
         .bonds
@@ -149,6 +154,7 @@ fn handle_join_swap_recovery(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {
             returning: exits,
+            trapped_id,
         })),
         exit,
     )?)
@@ -176,6 +182,7 @@ fn handle_return_transfer_recovery() {}
 #[serde(rename_all = "snake_case")]
 pub struct PendingReturningRecovery {
     pub returning: Vec<ReturningRecovery>,
+    pub trapped_id: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]

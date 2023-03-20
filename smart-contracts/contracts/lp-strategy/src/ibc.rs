@@ -420,7 +420,11 @@ fn handle_recovery_return_transfer(
     for p in pending.returning {
         if let RawAmount::LocalDenom(val) = p.amount {
             CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
+        } else {
+            return Err(ContractError::IncorrectRawAmount);
         }
+        // remove the error from TRAPS
+        TRAPS.remove(storage, pending.trapped_id);
     }
     todo!()
 }
