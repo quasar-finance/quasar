@@ -146,7 +146,7 @@ impl Prefixer<'_> for FundPath {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum FundPath {
+pub enum FundPath {
     Bond { id: String },
     Unbond { id: String },
 }
@@ -243,6 +243,21 @@ pub enum RawAmount {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn keys_work() {
+        let bond = FundPath::Bond {
+            id: "our-id-here".to_string(),
+        };
+        let keys: Vec<u8> = bond
+            .key()
+            .iter()
+            .map(|k| k.as_ref().iter().map(|v| *v))
+            .flatten()
+            .collect();
+        let value = FundPath::from_vec(keys).unwrap();
+        assert_eq!(bond, value)
+    }
 
     #[test]
     fn test_update_raw_amount_to_lp() {

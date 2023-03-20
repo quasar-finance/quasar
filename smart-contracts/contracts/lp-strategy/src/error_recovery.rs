@@ -73,10 +73,12 @@ fn handle_transfer_recovery(
         returning: returning?,
     };
 
-    // TODO, assert that raw amounts equal amount
     let msg = do_transfer_batch_unbond(storage, env, amount)?;
-    // create_recovery_submsg(msg, returning)
-    todo!()
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::RecoveryReturnTransfer(returning)),
+        msg,
+    )?)
 }
 
 fn handle_ica_recovery(
@@ -104,7 +106,7 @@ fn handle_join_swap_recovery(
     env: &Env,
     pending: PendingBond,
 ) -> Result<SubMsg, ContractError> {
-    let exits: Result<Vec<ReturningRecovery>, ContractError> = pending
+    let exits_res: Result<Vec<ReturningRecovery>, ContractError> = pending
         .bonds
         .iter()
         .map(|val| {
@@ -124,9 +126,9 @@ fn handle_join_swap_recovery(
         })
         .collect();
 
-    let e = exits?;
+    let exits = exits_res?;
 
-    let total_exit: Uint128 = e.clone().iter().try_fold(
+    let total_exit: Uint128 = exits.clone().iter().try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val.amount {
@@ -153,7 +155,7 @@ fn handle_join_swap_recovery(
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {
-            returning: e,
+            returning: exits,
         })),
         exit,
     )?)
@@ -185,7 +187,7 @@ pub struct PendingReturningRecovery {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
-pub(crate) struct ReturningRecovery {
+pub struct ReturningRecovery {
     pub amount: RawAmount,
     pub owner: Addr,
     pub id: FundPath,
