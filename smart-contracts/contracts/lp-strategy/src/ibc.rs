@@ -1,7 +1,6 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
+use crate::error_recovery::PendingReturningRecovery;
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error,
     IbcMsgKind, IcaMessages,
@@ -12,6 +11,8 @@ use crate::ibc_util::{
     do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
 };
 use crate::icq::calc_total_balance;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
@@ -419,7 +420,24 @@ pub fn handle_ica_ack(
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
+        // After a RecoveryExitPool, we do a return transfer that should hit RecoveryReturnTransfer
+        IcaMessages::RecoveryExitPool(pending) => todo!(),
+        // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
+        IcaMessages::RecoveryReturnTransfer(pending) => todo!(),
     }
+}
+
+fn handle_recovery_return_transfer(
+    storage: &mut dyn Storage,
+    pending: PendingReturningRecovery,
+) -> Result<Response, ContractError> {
+    // if we have the succesfully received the recovery, we create an entry
+    for p in pending.returning {
+        if let RawAmount::LocalDenom(val) = p.amount {
+            CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
+        }
+    }
+    todo!()
 }
 
 fn handle_join_pool(

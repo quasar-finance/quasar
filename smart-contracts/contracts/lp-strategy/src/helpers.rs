@@ -1,5 +1,6 @@
 use crate::{
     error::ContractError,
+    error_recovery::PendingReturningRecovery,
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{PendingBond, PendingSingleUnbond, CHANNELS, IBC_LOCK, REPLIES, SHARES},
@@ -139,7 +140,6 @@ pub enum IbcMsgKind {
     Icq,
 }
 
-
 // All enums supported by this contract
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -149,8 +149,8 @@ pub enum IcaMessages {
     BeginUnlocking(Vec<PendingSingleUnbond>),
     ExitPool(PendingReturningUnbonds),
     ReturnTransfer(PendingReturningUnbonds),
-    RecoveryExitPool(PendingReturningUnbonds),
-    RecoveryReturnTransfer(PendingReturningUnbonds),
+    RecoveryExitPool(PendingReturningRecovery),
+    RecoveryReturnTransfer(PendingReturningRecovery),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
