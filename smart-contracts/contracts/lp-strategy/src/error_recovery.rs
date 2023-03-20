@@ -58,7 +58,9 @@ fn handle_transfer_recovery(
                 Ok(ReturningRecovery {
                     amount: RawAmount::LocalDenom(val),
                     owner: bond.owner.clone(),
-                    id: FundPath::Bond { id: bond.bond_id.clone() },
+                    id: FundPath::Bond {
+                        id: bond.bond_id.clone(),
+                    },
                 })
             } else {
                 Err(ContractError::ReturningTransferIncorrectAmount)
@@ -101,7 +103,7 @@ fn handle_join_swap_recovery(
     env: &Env,
     pending: PendingBond,
 ) -> Result<SubMsg, ContractError> {
-    let exits: Result<Vec<ReturningRecovery>, ContractError> = pending
+    let exits_res: Result<Vec<ReturningRecovery>, ContractError> = pending
         .bonds
         .iter()
         .map(|val| {
@@ -111,7 +113,9 @@ fn handle_join_swap_recovery(
                     owner: val.owner.clone(),
                     // since we are recovering from a join swap, we need do save
                     // as a Bond for bookkeeping on returned
-                    id: FundPath::Bond { id: val.bond_id.clone() },
+                    id: FundPath::Bond {
+                        id: val.bond_id.clone(),
+                    },
                 })
             } else {
                 Err(ContractError::IncorrectRawAmount)
@@ -119,7 +123,8 @@ fn handle_join_swap_recovery(
         })
         .collect();
 
-    let total_exit: Uint128 = exits?.iter().try_fold(
+    let exits = exits_res?;
+    let total_exit: Uint128 = exits.iter().try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val.amount {
@@ -141,7 +146,7 @@ fn handle_join_swap_recovery(
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {
-            returning: exits?,
+            returning: exits,
         })),
         exit,
     )?)
@@ -173,7 +178,7 @@ pub struct PendingReturningRecovery {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
 #[serde(rename_all = "snake_case")]
-pub(crate) struct ReturningRecovery {
+pub struct ReturningRecovery {
     pub amount: RawAmount,
     pub owner: Addr,
     pub id: FundPath,
