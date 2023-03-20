@@ -139,7 +139,8 @@ pub fn on_bond(
     let res = Response::new()
         .add_attribute("action", "bond")
         .add_attribute("from", info.sender)
-        .add_attribute("minted", shares_to_mint);
+        .add_attribute("minted", shares_to_mint)
+        .add_attribute("new_total_supply", supply.issued.to_string());
     Ok(res)
 }
 
