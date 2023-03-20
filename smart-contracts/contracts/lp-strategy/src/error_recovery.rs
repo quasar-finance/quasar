@@ -1,14 +1,14 @@
 use std::fmt;
 
-use cosmwasm_std::{DepsMut, Env, Response, Storage, SubMsg, Uint128, IbcMsg};
+use cosmwasm_std::{Addr, DepsMut, Env, IbcMsg, Response, Storage, SubMsg, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::IcaMessages,
-    state::{PendingBond, RawAmount, TRAPS, LP_SHARES, LpCache},
-    unbond::{transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond, do_exit_swap},
+    helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
+    state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, TRAPS},
+    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -50,15 +50,15 @@ fn handle_transfer_recovery(
     bonds: PendingBond,
     amount: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    let unbonds: Result<Vec<ReturningUnbond>, ContractError> = bonds
+    let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
         .iter()
         .map(|bond| {
             if let RawAmount::LocalDenom(val) = bond.raw_amount {
-                Ok(ReturningUnbond {
+                Ok(ReturningRecovery {
                     amount: RawAmount::LocalDenom(val),
                     owner: bond.owner.clone(),
-                    id: bond.bond_id.clone(),
+                    id: FundPath::Bond { id: bond.bond_id.clone() },
                 })
             } else {
                 Err(ContractError::ReturningTransferIncorrectAmount)
@@ -66,10 +66,14 @@ fn handle_transfer_recovery(
         })
         .collect();
 
-    let returning: PendingReturningUnbonds = PendingReturningUnbonds { unbonds: unbonds? };
+    let returning = PendingReturningRecovery {
+        returning: returning?,
+    };
 
     // TODO, assert that raw amounts equal amount
-    transfer_batch_unbond(storage, env, returning, amount)
+    let msg = do_transfer_batch_unbond(storage, env, amount)?;
+    // create_recovery_submsg(msg, returning)
+    todo!()
 }
 
 fn handle_ica_recovery(
@@ -81,31 +85,49 @@ fn handle_ica_recovery(
         IcaMessages::JoinSwapExternAmountIn(pending) => {
             handle_join_swap_recovery(storage, env, pending)?;
             todo!()
-        },
+        }
         IcaMessages::LockTokens(_) => todo!(),
         IcaMessages::BeginUnlocking(_) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
         IcaMessages::ReturnTransfer(_) => todo!(),
+        IcaMessages::RecoveryExitPool(_) => todo!(),
+        IcaMessages::RecoveryReturnTransfer(_) => todo!(),
     }
 }
 
 // if the join_swap was succesful, the refund path means we have to
-fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: PendingBond) -> Result<SubMsg, ContractError> {
-    
-    let exits: Result<Vec<ReturningUnbond>, ContractError> = pending.bonds.iter().map(|val| {
-        if let RawAmount::LpShares(amount) = val.raw_amount {
-            Ok(ReturningUnbond { amount: val.raw_amount.clone(), owner: val.owner.clone(), id: val.bond_id.clone() })
-        } else {
-            Err(ContractError::IncorrectRawAmount)
-        }
-    }).collect();
+fn handle_join_swap_recovery(
+    storage: &mut dyn Storage,
+    env: &Env,
+    pending: PendingBond,
+) -> Result<SubMsg, ContractError> {
+    let exits: Result<Vec<ReturningRecovery>, ContractError> = pending
+        .bonds
+        .iter()
+        .map(|val| {
+            if let RawAmount::LpShares(amount) = val.raw_amount {
+                Ok(ReturningRecovery {
+                    amount: val.raw_amount.clone(),
+                    owner: val.owner.clone(),
+                    // since we are recovering from a join swap, we need do save
+                    // as a Bond for bookkeeping on returned
+                    id: FundPath::Bond { id: val.bond_id.clone() },
+                })
+            } else {
+                Err(ContractError::IncorrectRawAmount)
+            }
+        })
+        .collect();
 
-    let total_exit: Uint128 = exits?.iter().try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, ContractError> {
-        match val.amount  {
-            RawAmount::LocalDenom(_) => unimplemented!(),
-            RawAmount::LpShares(amount) => Ok(amount.checked_add(acc)?),
-        }
-    })?;
+    let total_exit: Uint128 = exits?.iter().try_fold(
+        Uint128::zero(),
+        |acc, val| -> Result<Uint128, ContractError> {
+            match val.amount {
+                RawAmount::LocalDenom(_) => unimplemented!(),
+                RawAmount::LpShares(amount) => Ok(amount.checked_add(acc)?),
+            }
+        },
+    )?;
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount
@@ -116,12 +138,21 @@ fn handle_join_swap_recovery(storage: &mut dyn Storage, env: &Env, pending: Pend
     })?;
 
     let exit = do_exit_swap(storage, env, total_exit)?;
-    Ok(create_recovery_submsg(exit)?)
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {
+            returning: exits?,
+        })),
+        exit,
+    )?)
 }
 
-fn create_recovery_submsg(msg: IbcMsg) -> Result<SubMsg, ContractError> {
-    todo!()
-}
+// fn create_recovery_submsg(
+//     msg: IbcMsg,
+//     kind: IbcMsgKind
+// ) -> Result<SubMsg, ContractError> {
+
+// }
 
 fn handle_lock_recovery() {}
 
@@ -130,3 +161,20 @@ fn handle_begin_unlocking_recovery() {}
 fn handle_exit_pool_recovery() {}
 
 fn handle_return_transfer_recovery() {}
+
+// TODO refactor bonds/unbonds to a single struct item that is bidirectional with a direction enum
+// because we did not abstract nicely, we need a separate struct here
+// we should feel bad
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct PendingReturningRecovery {
+    pub returning: Vec<ReturningRecovery>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) struct ReturningRecovery {
+    pub amount: RawAmount,
+    pub owner: Addr,
+    pub id: FundPath,
+}

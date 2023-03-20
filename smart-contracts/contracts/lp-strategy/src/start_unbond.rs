@@ -453,7 +453,6 @@ mod tests {
         )
         .unwrap();
 
-
         // assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
         // we have a share loss here due to truncation, is this avoidable?
         assert_eq!(res, Uint128::new(999000999))
