@@ -115,6 +115,12 @@ pub(crate) fn do_exit_swap(
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
+
+    let lp_shares = LP_SHARES.load(storage)?;
+
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
+
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
