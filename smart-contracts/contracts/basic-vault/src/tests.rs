@@ -1854,13 +1854,13 @@ mod tests {
             let mut primitive_details: Vec<(String, String, Decimal)> = Vec::new();
             for i in 1..=3 {
                 primitive_states.push((
-                    format!("{}{}", ADDRESS, i),
+                    format!("{ADDRESS}{i}"),
                     DENOM_LOCAL_CHAIN.to_string(),
                     SHARES,
                     BALANCE,
                 ));
                 primitive_details.push((
-                    format!("{}{}", ADDRESS, i),
+                    format!("{ADDRESS}{i}"),
                     DENOM_LOCAL_CHAIN.to_string(),
                     weights[i - 1],
                 ));
