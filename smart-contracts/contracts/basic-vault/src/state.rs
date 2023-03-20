@@ -93,6 +93,9 @@ pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");
 
+// vault rewards contract
+pub const VAULT_REWARDS: Item<Addr> = Item::new("vault_rewards");
+
 impl InvestmentInfo {
     pub fn normalize_primitive_weights(&mut self) {
         let mut total_weight = Decimal::zero();
