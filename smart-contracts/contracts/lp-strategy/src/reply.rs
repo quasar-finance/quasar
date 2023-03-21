@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{Addr, BankMsg, StdError};
 use cosmwasm_std::{DepsMut, Reply, Response};
 use quasar_types::callback::Callback;
 
@@ -79,6 +79,7 @@ pub fn handle_callback_reply(
 
     if let Err(error) = msg.result.into_result() {
         match callback {
+            // if unbond response callback message, add the amount to the claimable funds map
             ContractCallback::Callback {
                 callback,
                 amount,
@@ -90,16 +91,38 @@ pub fn handle_callback_reply(
                         Some(amount) => {
                             let amt = amount;
                             CLAIMABLE_FUNDS.save(deps.storage, (owner, fund_path), &amt)?;
+                            res = res.add_attribute("unbond-callback-error", error.as_str());
                             Ok(amt)
                         }
                         // TODO: final release should not return an error but log
                         None => Err(ContractError::CallbackHasNoAmount {}),
                     }?;
-                    res = res.add_attribute("unbond-callback-error", error.as_str());
                 }
                 _ => {}
             },
-            _ => {}
+            // if bank callback, add the amount to the claimable funds map
+            ContractCallback::Bank {
+                bank_msg,
+                unbond_id,
+            } => match bank_msg {
+                BankMsg::Send { to_address, amount } => {
+                    println!("to_address: {:?}", to_address);
+                    println!("amount: {:?}", amount);
+                    CLAIMABLE_FUNDS.save(
+                        deps.storage,
+                        (
+                            Addr::unchecked(to_address),
+                            FundPath::Unbond {
+                                id: msg.id.to_string(),
+                            },
+                        ),
+                        // should we make sure users don't send more than one Coin? or this can't happen ever
+                        &amount[0].amount,
+                    )?;
+                    res = res.add_attribute("bank-callback-error", error.as_str());
+                }
+                _ => {}
+            },
         }
     }
 
@@ -115,13 +138,13 @@ pub fn handle_callback_reply(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{Addr, Reply, SubMsgResponse, Uint128};
+    use cosmwasm_std::{Addr, Coin, Reply, SubMsgResponse, Uint128};
     use quasar_types::callback::Callback;
 
     use crate::{helpers::ContractCallback, reply::handle_callback_reply, state::REPLIES};
 
     #[test]
-    fn test_handle_callback_reply_is_err() {
+    fn test_handle_callback_reply_is_unbond_err() {
         use cosmwasm_std::{testing::mock_dependencies, SubMsgResult, Uint128};
         use quasar_types::callback::UnbondResponse;
 
@@ -172,6 +195,68 @@ mod tests {
                 )
                 .unwrap(),
             Uint128::new(100)
+        );
+
+        // after cleanup it should be empty
+        assert!(REPLIES.load(&deps.storage, msg.id).is_err());
+    }
+
+    #[test]
+    fn test_handle_callback_reply_is_bank_err() {
+        use cosmwasm_std::{testing::mock_dependencies, SubMsgResult, Uint128};
+
+        use crate::{
+            helpers::SubMsgKind,
+            state::{FundPath, CLAIMABLE_FUNDS},
+        };
+
+        let mut deps = mock_dependencies();
+        let owner = Addr::unchecked("owner");
+
+        let bank_msg = BankMsg::Send {
+            to_address: owner.to_string(),
+            amount: vec![Coin {
+                denom: "denom".to_string(),
+                amount: Uint128::new(69),
+            }],
+        };
+
+        let contract_callback = ContractCallback::Bank {
+            bank_msg,
+            unbond_id: "unbond_id".to_string(),
+        };
+
+        let msg = Reply {
+            id: 1,
+            result: SubMsgResult::Err("error".to_string()),
+        };
+
+        // mocking replies
+        REPLIES
+            .save(
+                &mut deps.storage,
+                msg.id,
+                &SubMsgKind::Callback(contract_callback.clone()),
+            )
+            .unwrap();
+
+        let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
+        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes[0].key, "bank-callback-error");
+        assert_eq!(res.attributes[0].value, "error");
+
+        let fund_path = FundPath::Unbond {
+            id: "unbond_id".to_string(),
+        };
+
+        println!("owner: {:?}", owner);
+        println!("fund_path: {:?}", fund_path);
+
+        assert_eq!(
+            CLAIMABLE_FUNDS
+                .load(&deps.storage, (owner, fund_path),)
+                .unwrap(),
+            Uint128::new(69)
         );
 
         // after cleanup it should be empty
