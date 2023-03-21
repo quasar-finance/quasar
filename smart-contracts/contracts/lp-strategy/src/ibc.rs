@@ -606,6 +606,10 @@ fn handle_return_transfer_ack(
         callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
     }
 
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_unbond())
+    })?;
+
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
         .add_submessages(callback_submsgs)
