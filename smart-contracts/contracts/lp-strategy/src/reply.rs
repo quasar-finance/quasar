@@ -112,9 +112,7 @@ pub fn handle_callback_reply(
                         deps.storage,
                         (
                             Addr::unchecked(to_address),
-                            FundPath::Unbond {
-                                id: msg.id.to_string(),
-                            },
+                            FundPath::Unbond { id: unbond_id },
                         ),
                         // should we make sure users don't send more than one Coin? or this can't happen ever
                         &amount[0].amount,
@@ -248,9 +246,6 @@ mod tests {
         let fund_path = FundPath::Unbond {
             id: "unbond_id".to_string(),
         };
-
-        println!("owner: {:?}", owner);
-        println!("fund_path: {:?}", fund_path);
 
         assert_eq!(
             CLAIMABLE_FUNDS
