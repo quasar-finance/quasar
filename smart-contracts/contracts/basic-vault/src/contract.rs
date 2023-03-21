@@ -50,7 +50,10 @@ pub fn instantiate(
             cap: None,
         }),
     };
-    let additional_info = AdditionalTokenInfo { thesis: msg.thesis };
+    let additional_info = AdditionalTokenInfo {
+        creation_time: env.block.time,
+        thesis: msg.thesis,
+    };
     TOKEN_INFO.save(deps.storage, &token_info)?;
     ADDITIONAL_TOKEN_INFO.save(deps.storage, &additional_info)?;
 
