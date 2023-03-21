@@ -15,7 +15,7 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
-    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
+    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond}, start_unbond::{do_start_unbond, do_begin_unlocking},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -135,7 +135,12 @@ fn handle_last_failed_ica_recovery(
         // if the exit pool was actually succesful, we need to deserialize the saved ack result again to get the amount of tokens
         // users should get
         // TODO, can they get rejoined to the lp pool here? Maybe????
-        IcaMessages::ExitPool(_) => todo!(),
+        // probably gets compounded back again, how do we know here?, do we know at all?
+        // we let the exit pool get autocompounded by the contract again, to recover from here, we start a start_unlock for all stuck funds
+        IcaMessages::ExitPool(pending) => {
+            todo!()
+            // let msg = do_begin_unlocking(storage, env, to_unbond)?;
+        },
         // we just retry the transfer here
         IcaMessages::ReturnTransfer(_) => todo!(),
         // same as regular exit pool recovery
