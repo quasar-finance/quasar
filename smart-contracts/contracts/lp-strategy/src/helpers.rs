@@ -82,9 +82,11 @@ pub fn create_callback_submsg(
                 owner: Addr::unchecked(""),
             })
         }
-        CosmosMsg::Bank(bank_msg) => {
-            SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
-        }
+        CosmosMsg::Bank(bank_msg) => SubMsgKind::Callback(ContractCallback::Bank {
+            bank_msg: bank_msg.to_owned(),
+            // TODO: unbond_id?
+            unbond_id: "".to_string(),
+        }),
         _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
     };
 
@@ -174,7 +176,10 @@ pub enum ContractCallback {
         amount: Option<Uint128>,
         owner: Addr,
     },
-    Bank(BankMsg),
+    Bank {
+        bank_msg: BankMsg,
+        unbond_id: String,
+    },
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
