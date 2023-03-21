@@ -127,4 +127,7 @@ pub enum ContractError {
 
     #[error("could not serialize to json")]
     SerdeJsonSer,
+
+    #[error("The Callback has no amount set")]
+    CallbackHasNoAmount,
 }

@@ -7,7 +7,7 @@ use crate::{
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    from_binary, to_binary, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
+    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
     StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
@@ -75,7 +75,12 @@ pub fn create_callback_submsg(
 
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
-            SubMsgKind::Callback(ContractCallback::Callback(from_binary(msg)?))
+            SubMsgKind::Callback(ContractCallback::Callback {
+                callback: from_binary(msg)?,
+                amount: None,
+                // TODO: owner?
+                owner: Addr::unchecked(""),
+            })
         }
         CosmosMsg::Bank(bank_msg) => {
             SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
@@ -164,7 +169,11 @@ pub enum SubMsgKind {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ContractCallback {
-    Callback(Callback),
+    Callback {
+        callback: Callback,
+        amount: Option<Uint128>,
+        owner: Addr,
+    },
     Bank(BankMsg),
 }
 
