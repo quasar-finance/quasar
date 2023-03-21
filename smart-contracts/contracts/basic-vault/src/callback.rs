@@ -191,7 +191,8 @@ pub fn on_unbond(
     )?;
 
     let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-    let _invest = INVESTMENT.load(deps.storage)?;
+    // Investment looks to not be needed here
+    // let _invest = INVESTMENT.load(deps.storage)?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
     let mut unbonding_stub = unbond_stubs
@@ -247,4 +248,124 @@ pub fn on_unbond(
         .add_messages(return_msgs)
         .add_attribute("action", "on_unbond")
         .add_attribute("unbond_id", unbond_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Coin, CosmosMsg, MessageInfo,
+    };
+
+    use crate::state::UnbondingStub;
+
+    use super::*;
+
+    #[test]
+    fn on_unbond_works() {
+        let mut deps = mock_dependencies();
+
+        let prim1 = Addr::unchecked("primitive-1");
+        let prim2 = Addr::unchecked("primitive-2");
+        let prim3 = Addr::unchecked("primitive-3");
+
+        let env = mock_env();
+
+        let unbonds: Vec<(String, Unbond, MessageInfo)> = vec![(
+            "1".to_string(),
+            Unbond {
+                stub: vec![
+                    UnbondingStub {
+                        address: prim1.to_string(),
+                        unlock_time: None,
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "1".to_string(),
+                        }),
+                        unbond_funds: vec![Coin {
+                            denom: "uhbb".to_string(),
+                            amount: Uint128::new(100),
+                        }],
+                    },
+                    UnbondingStub {
+                        address: prim2.to_string(),
+                        unlock_time: None,
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "1".to_string(),
+                        }),
+                        unbond_funds: vec![Coin {
+                            denom: "uhbb".to_string(),
+                            amount: Uint128::new(1000),
+                        }],
+                    },
+                    UnbondingStub {
+                        address: prim3.to_string(),
+                        unlock_time: None,
+                        unbond_response: None,
+                        unbond_funds: vec![],
+                    },
+                ],
+                shares: Uint128::new(1000),
+            },
+            MessageInfo {
+                sender: prim3,
+                funds: vec![Coin {
+                    denom: "uhbb".to_string(),
+                    amount: Uint128::new(500),
+                }],
+            },
+        )];
+
+        BONDING_SEQ_TO_ADDR
+            .save(
+                deps.as_mut().storage,
+                "1".to_string(),
+                &"fake-user".to_string(),
+            )
+            .unwrap();
+        PENDING_UNBOND_IDS
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("fake-user"),
+                &vec!["1".to_string()],
+            )
+            .unwrap();
+
+        for (k, u, _) in unbonds.clone().into_iter() {
+            UNBOND_STATE.save(deps.as_mut().storage, k, &u).unwrap();
+        }
+
+        for (k, u, info) in unbonds.into_iter() {
+            let res = on_unbond(deps.as_mut(), env.clone(), info, k).unwrap();
+            assert_eq!(
+                res.messages[0].msg,
+                CosmosMsg::Bank(BankMsg::Send {
+                    to_address: "fake-user".to_string(),
+                    amount: vec![Coin {
+                        denom: "uhbb".to_string(),
+                        amount: Uint128::new(100)
+                    }]
+                })
+            );
+            assert_eq!(
+                res.messages[1].msg,
+                CosmosMsg::Bank(BankMsg::Send {
+                    to_address: "fake-user".to_string(),
+                    amount: vec![Coin {
+                        denom: "uhbb".to_string(),
+                        amount: Uint128::new(1000)
+                    }]
+                })
+            );
+            assert_eq!(
+                res.messages[2].msg,
+                CosmosMsg::Bank(BankMsg::Send {
+                    to_address: "fake-user".to_string(),
+                    amount: vec![Coin {
+                        denom: "uhbb".to_string(),
+                        amount: Uint128::new(500)
+                    }]
+                })
+            )
+        }
+    }
 }
