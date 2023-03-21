@@ -140,13 +140,17 @@ pub fn create_share(
 
     // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
     let shares = SHARES.may_load(storage, owner.clone())?;
-    SHARES.update(storage, owner.clone(), |old| -> Result<Uint128, ContractError> {
-        if let Some(existing) = old {
-            Ok(existing.checked_add(amount)?)
-        } else {
-            Ok(amount)
-        }
-    })?;
+    SHARES.update(
+        storage,
+        owner.clone(),
+        |old| -> Result<Uint128, ContractError> {
+            if let Some(existing) = old {
+                Ok(existing.checked_add(amount)?)
+            } else {
+                Ok(amount)
+            }
+        },
+    )?;
     Ok(claim)
 }
 
