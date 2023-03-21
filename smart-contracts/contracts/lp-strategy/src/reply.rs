@@ -106,8 +106,6 @@ pub fn handle_callback_reply(
                 unbond_id,
             } => match bank_msg {
                 BankMsg::Send { to_address, amount } => {
-                    println!("to_address: {:?}", to_address);
-                    println!("amount: {:?}", amount);
                     CLAIMABLE_FUNDS.save(
                         deps.storage,
                         (
