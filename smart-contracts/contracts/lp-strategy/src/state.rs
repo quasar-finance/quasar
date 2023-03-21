@@ -4,7 +4,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
-use cosmwasm_std::{Addr, StdError, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{
+    Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128,
+};
 use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
 use crate::{
@@ -42,6 +44,9 @@ pub struct Config {
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
+// RECOVERY_ACK contains ibc acknowledgements, these packets might be needed for recovery from errors
+pub(crate) const RECOVERY_ACK: Map<u64, IbcAcknowledgement> = Map::new("recovery_ack");
+
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
 pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
 // Currently we only support one ICA channel to a single destination
