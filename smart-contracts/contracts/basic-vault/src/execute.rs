@@ -437,39 +437,46 @@ pub fn do_unbond(
     env: &Env,
     info: &MessageInfo,
 ) -> Result<Option<Response>, ContractError> {
-    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, info.sender.clone())?;
+    let pending_unbond_ids_opt = PENDING_UNBOND_IDS.may_load(deps.storage, info.sender.clone())?;
 
-    let mut unbond_msgs: Vec<WasmMsg> = vec![];
-    for unbond_id in pending_unbond_ids.iter() {
-        let unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-        let mut current_unbond_msgs = find_and_return_unbondable_msgs(
-            deps.branch(),
-            env,
-            info,
-            unbond_id,
-            unbond_stubs.stub,
-        )?;
-        unbond_msgs.append(current_unbond_msgs.as_mut());
+    match pending_unbond_ids_opt {
+        Some(pending_unbond_ids) => {
+            let mut unbond_msgs: Vec<WasmMsg> = vec![];
+            for unbond_id in pending_unbond_ids.iter() {
+                let unbond_stubs_opt = UNBOND_STATE.may_load(deps.storage, unbond_id.clone())?;
+                if let Some(unbond_stubs) = unbond_stubs_opt {
+                    let mut current_unbond_msgs = find_and_return_unbondable_msgs(
+                        deps.branch(),
+                        env,
+                        info,
+                        unbond_id,
+                        unbond_stubs.stub,
+                    )?;
+                    unbond_msgs.append(current_unbond_msgs.as_mut());
+                }
+            }
+
+            Ok(Some(
+                Response::new()
+                    .add_messages(unbond_msgs.clone())
+                    .add_attributes(vec![
+                        Attribute {
+                            key: "action".to_string(),
+                            value: "unbond".to_string(),
+                        },
+                        Attribute {
+                            key: "from".to_string(),
+                            value: info.sender.to_string(),
+                        },
+                        Attribute {
+                            key: "num_unbondable_ids".to_string(),
+                            value: unbond_msgs.len().to_string(),
+                        },
+                    ]),
+            ))
+        }
+        None => Ok(None),
     }
-
-    Ok(Some(
-        Response::new()
-            .add_messages(unbond_msgs.clone())
-            .add_attributes(vec![
-                Attribute {
-                    key: "action".to_string(),
-                    value: "unbond".to_string(),
-                },
-                Attribute {
-                    key: "from".to_string(),
-                    value: info.sender.to_string(),
-                },
-                Attribute {
-                    key: "num_unbondable_ids".to_string(),
-                    value: unbond_msgs.len().to_string(),
-                },
-            ]),
-    ))
 }
 
 pub fn find_and_return_unbondable_msgs(
