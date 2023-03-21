@@ -77,6 +77,9 @@ pub enum ContractError {
     #[error("incorrect connection id")]
     IncorrectConnection,
 
+    #[error("raw ack in recovery could not be handled")]
+    IncorrectRecoveryAck,
+
     #[error("no timestamp time found for ibc packets")]
     NoTimestampTime,
 
