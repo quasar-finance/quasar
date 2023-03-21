@@ -73,6 +73,7 @@ pub fn prepare_full_query(
 
     // fetch current balance of contract for join_pool query
     let balance = querier.query_balance(env.contract.address, config.local_denom)?;
+    // todo: fold claimable funds
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
