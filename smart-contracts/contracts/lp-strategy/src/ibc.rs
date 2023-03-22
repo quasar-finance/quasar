@@ -2,8 +2,8 @@ use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
 use crate::error_recovery::PendingReturningRecovery;
 use crate::helpers::{
-    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error,
-    IbcMsgKind, IcaMessages,
+    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
+    get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
@@ -17,8 +17,8 @@ use cosmwasm_std::entry_point;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_BALANCE,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -316,10 +316,22 @@ pub fn handle_icq_ack(
 
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
     // we have only dispatched on query and a single kind at this point
-    let balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
+    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+    let base_balance =
+        Uint128::new(
+            raw_balance
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: err,
+                    value: raw_balance.to_string(),
+                })?,
+        );
+
+    let usable_base_balance = get_usable_compound_balance(storage, base_balance)?;
+
     // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
@@ -344,14 +356,7 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        Uint128::new(
-            balance
-                .parse::<u128>()
-                .map_err(|err| ContractError::ParseIntError {
-                    error: err,
-                    value: balance,
-                })?,
-        ),
+        usable_base_balance,
         &exit_pool.tokens_out,
         spot_price,
     )?;
@@ -427,9 +432,9 @@ pub fn handle_ica_ack(
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
         // After a RecoveryExitPool, we do a return transfer that should hit RecoveryReturnTransfer
-        IcaMessages::RecoveryExitPool(pending) => todo!(),
+        IcaMessages::RecoveryExitPool(_pending) => todo!(),
         // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
-        IcaMessages::RecoveryReturnTransfer(pending) => todo!(),
+        IcaMessages::RecoveryReturnTransfer(_pending) => todo!(),
     }
 }
 
@@ -607,6 +612,10 @@ fn handle_return_transfer_ack(
         let cosmos_msg = finish_unbond(storage, querier, unbond)?;
         callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
     }
+
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_unbond())
+    })?;
 
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())

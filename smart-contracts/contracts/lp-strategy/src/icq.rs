@@ -13,7 +13,10 @@ use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
-    helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
+    helpers::{
+        check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
+        IbcMsgKind,
+    },
     state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
 };
 
@@ -65,20 +68,20 @@ pub fn prepare_full_query(
     };
     let lp_balance = QueryBalanceRequest {
         address,
-        denom: config.pool_denom,
+        denom: config.pool_denom.clone(),
     };
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
     // we use the current current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
 
-    // fetch current balance of contract for join_pool query
-    let balance = querier.query_balance(env.contract.address, config.local_denom)?;
+    let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
+
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
         tokens_in: vec![OsmoCoin {
             denom: config.base_denom.clone(),
-            amount: balance.amount.to_string(),
+            amount: balance.to_string(),
         }],
     };
 

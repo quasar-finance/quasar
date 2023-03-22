@@ -114,7 +114,7 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 
 // exit shares should never be more than total shares here
 pub fn calculate_token_out_min_amount(
-    storage: &mut dyn Storage,
+    storage: &dyn Storage,
     exit_lp_shares: Uint128,
     total_locked_shares: Uint128,
 ) -> Result<Uint128, ContractError> {

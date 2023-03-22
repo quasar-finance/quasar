@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
+    ibc_util::calculate_token_out_min_amount,
     state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
     unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond}, start_unbond::{do_start_unbond, do_begin_unlocking},
 };
@@ -44,7 +45,7 @@ pub fn start_recovery(
                         .add_attribute("error-recover-sequence", error_sequence.to_string())
                         .add_attribute("error-recovery-value", error.last_succesful.to_string()))
                 }
-                crate::helpers::IbcMsgKind::Ica(ica) => todo!(),
+                crate::helpers::IbcMsgKind::Ica(_ica) => todo!(),
                 // if ICQ was the last successful step, all we failed trying to empty our queues and dispatching any following
                 // IBC messages, meaning we don't have to do anything with a seperate try_icq endpoint
                 crate::helpers::IbcMsgKind::Icq => unimplemented!(),
@@ -235,7 +236,13 @@ fn handle_join_swap_recovery(
         Ok(old)
     })?;
 
-    let exit = do_exit_swap(storage, env, total_exit)?;
+    // TODO update me
+    let locked_shares = Uint128::from(100u128);
+
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, locked_shares).unwrap();
+
+    let exit = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryExitPool(PendingReturningRecovery {

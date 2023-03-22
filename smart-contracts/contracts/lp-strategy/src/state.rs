@@ -1,9 +1,11 @@
 use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
+
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
+use cosmwasm_std::{Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
 use cosmwasm_std::{Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
@@ -155,7 +157,7 @@ pub enum FundPath {
 
 impl Display for FundPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -254,8 +256,7 @@ mod tests {
         let keys: Vec<u8> = bond
             .key()
             .iter()
-            .map(|k| k.as_ref().iter().map(|v| *v))
-            .flatten()
+            .flat_map(|k| k.as_ref().iter().copied())
             .collect();
         let value = FundPath::from_vec(keys).unwrap();
         assert_eq!(bond, value)
