@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
 use cosmwasm_std::{Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
-use cosmwasm_std::{Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
 use crate::{

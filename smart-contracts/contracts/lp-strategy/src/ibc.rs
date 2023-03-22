@@ -18,7 +18,7 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
     ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, RECOVERY_ACK,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;

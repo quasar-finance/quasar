@@ -1,7 +1,7 @@
 use std::fmt;
 
 use cosmwasm_std::{
-    from_binary, Addr, DepsMut, Env, IbcAcknowledgement, IbcMsg, Response, Storage, SubMsg, Uint128,
+    from_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::{
@@ -129,10 +129,10 @@ fn handle_last_failed_ica_recovery(
         IcaMessages::JoinSwapExternAmountIn(pending) => {
             todo!()
         }
-        IcaMessages::LockTokens(_) => todo!(),
+        IcaMessages::LockTokens(_, _) => todo!(),
         // if BeginUnlocking followup failed, our tokens, the amount of tokens in the request was actually succesful,
         // so we continue to a recovery exit swap
-        IcaMessages::BeginUnlocking(_) => todo!(),
+        IcaMessages::BeginUnlocking(_, _) => todo!(),
         // if the exit pool was actually succesful, we need to deserialize the saved ack result again to get the amount of tokens
         // users should get
         // TODO, can they get rejoined to the lp pool here? Maybe????

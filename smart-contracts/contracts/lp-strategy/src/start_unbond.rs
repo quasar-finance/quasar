@@ -107,7 +107,7 @@ pub fn batch_start_unbond(
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds, to_unbond)),
         pkt,
     )?))
 }

@@ -77,8 +77,8 @@ pub fn handle_callback_reply(
     // in Callback contract add callbacl(callback, amount)
     let mut res = Response::new();
 
-    if let Err(error) = msg.result.into_result() {
-        match callback {
+    if let Err(error) = msg.result.clone().into_result() {
+        match callback.clone() {
             // if unbond response callback message, add the amount to the claimable funds map
             ContractCallback::Callback {
                 callback,
@@ -126,7 +126,7 @@ pub fn handle_callback_reply(
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(res).add_attribute("reply-msg-id", msg.id.to_string())
+    Ok(res.add_attribute("reply-msg-id", msg.id.to_string())
         .add_attribute("reply-result", format!("{:?}", msg.result))
         .add_attribute("action", "handle-callback-reply")
         .add_attribute("callback-info", format!("{:?}", callback)))
@@ -323,4 +323,4 @@ mod tests {
         // after cleanup it should be empty
         assert!(REPLIES.is_empty(&deps.storage));
     }
-
+}
