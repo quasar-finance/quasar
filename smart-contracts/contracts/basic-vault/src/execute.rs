@@ -23,7 +23,7 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
     match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
-                Err(PaymentError::NoFunds {})
+                Err(PaymentError::MissingDenom(denom.to_string()))
             } else {
                 Ok(coin.amount)
             }
@@ -225,12 +225,20 @@ pub fn bond(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
+    let invest = INVESTMENT.load(deps.storage)?;
+
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
-        return Err(ContractError::NoFunds {});
+        return Err(ContractError::EmptyBalance {
+            denom: invest
+                .primitives
+                .iter()
+                .fold("".to_string(), |acc, p| match &p.init {
+                    crate::msg::PrimitiveInitMsg::LP(lp_init) => acc + &lp_init.local_denom + ",",
+                }),
+        });
     }
 
     // load vault info & sequence number
-    let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
     // find recipient
