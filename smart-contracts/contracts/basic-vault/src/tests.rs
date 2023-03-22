@@ -1854,13 +1854,13 @@ mod tests {
             let mut primitive_details: Vec<(String, String, Decimal)> = Vec::new();
             for i in 1..=3 {
                 primitive_states.push((
-                    format!("{}{}", ADDRESS, i),
+                    format!("{ADDRESS}{i}"),
                     DENOM_LOCAL_CHAIN.to_string(),
                     SHARES,
                     BALANCE,
                 ));
                 primitive_details.push((
-                    format!("{}{}", ADDRESS, i),
+                    format!("{ADDRESS}{i}"),
                     DENOM_LOCAL_CHAIN.to_string(),
                     weights[i - 1],
                 ));
@@ -1901,17 +1901,15 @@ mod tests {
             assert_eq!(total_weight, Decimal::one());
 
             for (i, msg) in deposit_res.messages.iter().enumerate() {
-                if let CosmosMsg::Wasm(wasm_msg) = &msg.msg {
-                    if let WasmMsg::Execute {
-                        contract_addr: _,
-                        funds,
-                        msg: _,
-                    } = wasm_msg
-                    {
-                        // weight[i] / total_weight * total_money = money_output[i]
-                        let expected = init_msg.primitives[i].weight / total_weight * total_money;
-                        assert_eq!(expected, funds[0].amount);
-                    }
+                if let CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: _,
+                    funds,
+                    msg: _,
+                }) = &msg.msg
+                {
+                    // weight[i] / total_weight * total_money = money_output[i]
+                    let expected = init_msg.primitives[i].weight / total_weight * total_money;
+                    assert_eq!(expected, funds[0].amount);
                 }
             }
         }

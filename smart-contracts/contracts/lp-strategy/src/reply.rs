@@ -49,7 +49,15 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
         // reassignment needed since add_attribute
         resp = resp.add_attribute("trapped-error", error.as_str());
 
-        TRAPS.save(deps.storage, seq, &Trap { error, step })?;
+        TRAPS.save(
+            deps.storage,
+            seq,
+            &Trap {
+                error,
+                step,
+                last_succesful: true,
+            },
+        )?;
     }
 
     // // cleanup the REPLIES state item
@@ -60,11 +68,15 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
 pub fn handle_callback_reply(
     deps: DepsMut,
     msg: Reply,
-    _callback: ContractCallback,
+    callback: ContractCallback,
 ) -> Result<Response, ContractError> {
     // TODO: if error, add manual withdraws to lp-strategy
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(Response::new())
+    Ok(Response::new()
+        .add_attribute("reply-msg-id", msg.id.to_string())
+        .add_attribute("reply-result", format!("{:?}", msg.result))
+        .add_attribute("action", "handle-callback-reply")
+        .add_attribute("callback-info", format!("{:?}", callback)))
 }

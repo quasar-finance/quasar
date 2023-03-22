@@ -17,14 +17,12 @@ pub use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 pub use cw_utils::Duration;
 
 pub use lp_strategy::{
-    contract::{
-        execute as execute_primitive, instantiate as instantiate_primitive,
-        query as query_primitive,
-    },
+    contract::{execute as execute_primitive, instantiate as instantiate_primitive},
     msg::{
         ExecuteMsg as PrimitiveExecuteMsg, InstantiateMsg as PrimitiveInstantiateMsg,
         QueryMsg as PrimitiveQueryMsg,
     },
+    queries::query as query_primitive,
 };
 
 pub const USER: &str = "user";
