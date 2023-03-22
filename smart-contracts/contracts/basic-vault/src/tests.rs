@@ -22,7 +22,6 @@ mod tests {
         callback::{BondResponse, StartUnbondResponse, UnbondResponse},
         types::{CoinRatio, CoinWeight},
     };
-    
 
     use crate::{
         contract::execute,
