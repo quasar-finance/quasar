@@ -55,6 +55,7 @@ pub fn prepare_full_query(
     env: Env,
     channel: String,
 ) -> Result<InterchainQueryPacketData, ContractError> {
+    // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
     let address = get_ica_address(storage, channel)?;
     let config = CONFIG.load(storage)?;
     // we query the current balance on our ica address
@@ -75,7 +76,6 @@ pub fn prepare_full_query(
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
 
     let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
-
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,

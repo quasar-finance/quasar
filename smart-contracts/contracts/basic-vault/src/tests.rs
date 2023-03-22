@@ -11,6 +11,7 @@ mod tests {
     };
     use cw20::BalanceResponse;
 
+    use cw_asset::AssetInfoBase;
     use lp_strategy::{
         msg::{
             ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse, UnbondingClaimResponse,
@@ -21,6 +22,7 @@ mod tests {
         callback::{BondResponse, StartUnbondResponse, UnbondResponse},
         types::{CoinRatio, CoinWeight},
     };
+    use vault_rewards::state::DistributionSchedule;
 
     use crate::{
         contract::execute,
@@ -213,6 +215,13 @@ mod tests {
                     expected_connection: "connection-0".to_string(),
                 }),
             }],
+            vault_rewards_code_id: 123,
+            reward_token: cw_asset::AssetInfoBase::Native("uqsr".to_string()),
+            reward_distribution_schedules: vec![vault_rewards::state::DistributionSchedule {
+                start: 1,
+                end: 501,
+                amount: Uint128::from(1000u128),
+            }],
         }
     }
 
@@ -227,6 +236,13 @@ mod tests {
             symbol: "BLZR".to_string(),
             decimals: 6,
             min_withdrawal: Uint128::one(),
+            vault_rewards_code_id: 123,
+            reward_token: cw_asset::AssetInfoBase::Native("uqsr".to_string()),
+            reward_distribution_schedules: vec![vault_rewards::state::DistributionSchedule {
+                start: 1,
+                end: 501,
+                amount: Uint128::from(1000u128),
+            }],
             primitives: primitive_details
                 .iter()
                 .map(|pd| {
@@ -262,7 +278,34 @@ mod tests {
         let env = mock_env();
         let res = init(deps.as_mut(), &msg, &env, &info);
 
-        assert_eq!(0, res.messages.len());
+        println!("res: {:?}", res);
+        assert_eq!(1, res.messages.len());
+
+        if let CosmosMsg::Wasm(WasmMsg::Instantiate {
+            code_id,
+            msg,
+            funds,
+            admin,
+            label,
+        }) = &res.messages[0].msg
+        {
+            assert_eq!(123, *code_id);
+            assert_eq!(0, funds.len());
+            assert_eq!(admin.clone().unwrap(), TEST_CREATOR);
+            assert_eq!(label, "vault-rewards");
+            let msg: vault_rewards::msg::InstantiateMsg = from_binary(msg).unwrap();
+            assert_eq!(
+                Uint128::from(1000u128),
+                msg.distribution_schedules[0].amount
+            );
+            if let AssetInfoBase::Native(native) = &msg.reward_token {
+                assert_eq!("uqsr", native);
+            } else {
+                panic!("Unexpected reward token type");
+            }
+        } else {
+            panic!("Unexpected message type");
+        }
     }
 
     #[test]
@@ -447,7 +490,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -517,7 +560,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -613,7 +656,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -726,7 +769,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -881,7 +924,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -1020,7 +1063,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -1059,7 +1102,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -1123,7 +1166,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &[]);
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let invest_query = crate::msg::QueryMsg::Investment {};
         let query_res = query(deps.as_ref(), env, invest_query).unwrap();
@@ -1176,7 +1219,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &even_deposit());
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
@@ -1285,7 +1328,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &even_deposit());
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
@@ -1341,7 +1384,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &even_deposit());
         let env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
@@ -1409,7 +1452,7 @@ mod tests {
         let info = mock_info(TEST_CREATOR, &even_deposit());
         let mut env = mock_env();
         let res = init(deps.as_mut(), &init_msg, &env, &info);
-        assert_eq!(0, res.messages.len());
+        assert_eq!(1, res.messages.len());
 
         let deposit_msg = ExecuteMsg::Bond {
             recipient: Option::None,
@@ -1870,7 +1913,7 @@ mod tests {
 
             let init_msg = init_msg_with_primitive_details(primitive_details);
             let init_res = init(deps.as_mut(), &init_msg, &env, &init_info);
-            assert_eq!(0, init_res.messages.len());
+            assert_eq!(1, init_res.messages.len());
 
             // deposit 3 times to the same vault
             let deposit_info = mock_info(

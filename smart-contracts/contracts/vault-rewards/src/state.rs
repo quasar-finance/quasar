@@ -25,6 +25,18 @@ impl Config {
         Ok(())
     }
 
+    pub fn add_distribution_schedules(
+        &mut self,
+        querier: &QuerierWrapper,
+        env: &Env,
+        schedules: Vec<DistributionSchedule>,
+    ) -> Result<(), VaultRewardsError> {
+        for schedule in schedules {
+            self.add_distribution_schedule(querier, env, schedule)?;
+        }
+        Ok(())
+    }
+
     pub fn update_distribution_schedule(
         &mut self,
         querier: &QuerierWrapper,
@@ -141,7 +153,7 @@ impl Config {
             .reward_token
             .query_balance(&querier, &env.contract.address)?;
         let total_distribution_amount = self.get_total_distribution_amount() + schedule.amount;
-        if reward_token_balance < total_distribution_amount {
+        if VALIDATE_FUNDS && reward_token_balance < total_distribution_amount {
             return Err(VaultRewardsError::InsufficientFunds {
                 contract_balance: reward_token_balance,
                 claim_amount: total_distribution_amount,
@@ -208,3 +220,6 @@ pub struct UserBalance {
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const REWARD_INDEX: Map<u64, RewardIndex> = Map::new("reward_index");
 pub const USER_REWARD_INDEX: Map<Addr, UserRewardIndex> = Map::new("user_reward_index");
+
+// to be changed in a future migration
+pub const VALIDATE_FUNDS: bool = false;

@@ -26,7 +26,7 @@ pub fn instantiate(
         distribution_schedules: vec![],
         total_claimed: Uint128::zero(),
     };
-    config.add_distribution_schedule(&deps.querier, &env, msg.distribution_schedule)?;
+    config.add_distribution_schedules(&deps.querier, &env, msg.distribution_schedules)?;
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::default())
 }

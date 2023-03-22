@@ -8,7 +8,7 @@ use cw_asset::AssetInfo;
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
-use vault_rewards::msg::DistributionSchedule;
+use vault_rewards::state::DistributionSchedule;
 
 use crate::state::{BondingStub, InvestmentInfo, Unbond};
 
@@ -54,7 +54,7 @@ pub struct InstantiateMsg {
     // vault reward token
     pub reward_token: AssetInfo,
     // vault reward token distribution schedule
-    pub reward_distribution_schedule: DistributionSchedule,
+    pub reward_distribution_schedules: Vec<DistributionSchedule>,
 }
 
 #[cw_serde]

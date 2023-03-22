@@ -2,7 +2,7 @@ use cosmwasm_std::{wasm_execute, Addr, Deps, Env, StdResult, Storage, WasmMsg};
 use lp_strategy::msg::UnbondingClaimResponse;
 use vault_rewards::msg::{ExecuteMsg as VaultRewardsExecuteMsg, VaultExecuteMsg};
 
-use crate::state::VAULT_REWARDS;
+use crate::state::{INVESTMENT, VAULT_REWARDS};
 use crate::{state::UnbondingStub, ContractError};
 
 pub fn can_unbond_from_primitive(
@@ -40,4 +40,12 @@ pub fn update_user_reward_index(storage: &dyn Storage, user: &Addr) -> StdResult
         &VaultRewardsExecuteMsg::Vault(VaultExecuteMsg::UpdateUserRewardIndex(user.to_string())),
         vec![],
     )
+}
+
+pub fn is_contract_owner(deps: &Deps, sus_owner: &Addr) -> Result<(), ContractError> {
+    let info = INVESTMENT.load(deps.storage)?;
+    if info.owner.as_str() != sus_owner.as_str() {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
