@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
+use cosmwasm_std::{Binary, Coin, Decimal, Timestamp, Uint128};
 
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse};
@@ -202,6 +202,7 @@ pub struct VaultTokenInfoResponse {
     pub symbol: String,
     pub decimals: u8,
     pub total_supply: Uint128,
+    pub creation_time: Timestamp,
 }
 
 #[cw_serde]
