@@ -49,7 +49,7 @@ impl Config {
         let mut schedule = self
             .distribution_schedules
             .get(idx)
-            .ok_or_else(|| VaultRewardsError::InvalidDistributionScheduleId {
+            .ok_or(VaultRewardsError::InvalidDistributionScheduleId {
                 max_id: self.distribution_schedules.len() as u64,
             })?
             .clone();
@@ -92,7 +92,7 @@ impl Config {
     ) -> Result<(), VaultRewardsError> {
         let cur_block_height = env.block.height;
         let idx = id.checked_sub(1).unwrap_or_default() as usize;
-        let schedule = self.distribution_schedules.get(idx).ok_or_else(|| {
+        let schedule = self.distribution_schedules.get(idx).ok_or({
             VaultRewardsError::InvalidDistributionScheduleId {
                 max_id: self.distribution_schedules.len() as u64,
             }
@@ -151,7 +151,7 @@ impl Config {
         }
         let reward_token_balance = self
             .reward_token
-            .query_balance(&querier, &env.contract.address)?;
+            .query_balance(querier, &env.contract.address)?;
         let total_distribution_amount = self.get_total_distribution_amount() + schedule.amount;
         if VALIDATE_FUNDS && reward_token_balance < total_distribution_amount {
             return Err(VaultRewardsError::InsufficientFunds {

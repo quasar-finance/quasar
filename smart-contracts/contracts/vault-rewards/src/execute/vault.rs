@@ -33,7 +33,7 @@ pub fn execute_update_user_reward_index(
     update_reward_index(deps.storage, &deps.querier, &env)?;
     Ok(Response::default().add_attributes(vec![
         ("action", "update_user_index"),
-        ("user", &user.to_string()),
+        ("user", user.as_ref()),
         ("vault_token_balance", &user_vault_token_balance.to_string()),
     ]))
 }

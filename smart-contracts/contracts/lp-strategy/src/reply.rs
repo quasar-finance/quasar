@@ -78,5 +78,5 @@ pub fn handle_callback_reply(
         .add_attribute("reply-msg-id", msg.id.to_string())
         .add_attribute("reply-result", format!("{:?}", msg.result))
         .add_attribute("action", "handle-callback-reply")
-        .add_attribute("callback-info", format!("{:?}", callback)))
+        .add_attribute("callback-info", format!("{callback:?}")))
 }

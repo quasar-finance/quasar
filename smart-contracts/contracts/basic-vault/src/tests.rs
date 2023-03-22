@@ -22,7 +22,7 @@ mod tests {
         callback::{BondResponse, StartUnbondResponse, UnbondResponse},
         types::{CoinRatio, CoinWeight},
     };
-    use vault_rewards::state::DistributionSchedule;
+    
 
     use crate::{
         contract::execute,
@@ -278,7 +278,7 @@ mod tests {
         let env = mock_env();
         let res = init(deps.as_mut(), &msg, &env, &info);
 
-        println!("res: {:?}", res);
+        println!("res: {res:?}");
         assert_eq!(1, res.messages.len());
 
         if let CosmosMsg::Wasm(WasmMsg::Instantiate {

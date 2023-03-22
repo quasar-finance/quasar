@@ -46,7 +46,7 @@ pub fn execute_withdraw_funds(
     Ok(Response::new().add_message(transfer).add_attributes(vec![
         ("action", "withdraw_funds"),
         ("asset", &asset.to_string()),
-        ("admin", &admin.to_string()),
+        ("admin", admin.as_ref()),
     ]))
 }
 
@@ -77,16 +77,16 @@ pub fn execute_update_distribution_schedule(
     CONFIG.save(deps.storage, &config)?;
     let mut attrs = vec![
         attr("action", "update_distribution_schedule"),
-        attr("id", &id.to_string()),
+        attr("id", id.to_string()),
     ];
     if let Some(start) = &update.start {
-        attrs.push(attr("schedule_start_updated_to", &start.to_string()));
+        attrs.push(attr("schedule_start_updated_to", start.to_string()));
     }
     if let Some(end) = &update.end {
-        attrs.push(attr("schedule_end_updated_to", &end.to_string()));
+        attrs.push(attr("schedule_end_updated_to", end.to_string()));
     }
     if let Some(amount) = &update.amount {
-        attrs.push(attr("schedule_amount_updated_to", &amount.to_string()));
+        attrs.push(attr("schedule_amount_updated_to", amount.to_string()));
     }
     Ok(Response::default().add_attributes(attrs))
 }

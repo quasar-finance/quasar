@@ -31,7 +31,7 @@ pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, V
         };
     }
     // update global reward index before calculating user claim amount
-    update_reward_index(deps.storage, &deps.querier, &env)?;
+    update_reward_index(deps.storage, &deps.querier, env)?;
     let claim_amount = get_claim_amount(deps.as_ref(), env, &config, &user_reward_index)?;
     let claim = Asset::new(config.reward_token.clone(), claim_amount).transfer_msg(&user)?;
     user_reward_index.history = vec![];
@@ -40,7 +40,7 @@ pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, V
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new().add_message(claim).add_attributes(vec![
         ("action", "claim"),
-        ("user", &user.to_string()),
+        ("user", user.as_ref()),
         ("amount", &claim_amount.to_string()),
     ]))
 }
@@ -63,7 +63,6 @@ pub fn get_claim_amount(
                     Some(Bound::inclusive(d.end)),
                     Order::Ascending,
                 )
-                .into_iter()
                 .collect::<StdResult<Vec<(u64, RewardIndex)>>>()
                 .unwrap();
             // iterate over reward indexes 2 at a time to calculate reward for each period
@@ -146,7 +145,7 @@ mod tests {
         let user5 = Addr::unchecked("user5");
 
         deps.querier
-            .with_token_balance(&user1.to_string(), &Uint128::new(100));
+            .with_token_balance(user1.as_ref(), &Uint128::new(100));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone()).unwrap();
 
         let res = execute_claim(deps.as_mut(), &env, user1.clone());
@@ -207,7 +206,7 @@ mod tests {
         env.block.height = 251;
 
         deps.querier
-            .with_token_balance(&user2.to_string(), &Uint128::new(100));
+            .with_token_balance(user2.as_ref(), &Uint128::new(100));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone()).unwrap();
 
         env.block.height = 300;
@@ -234,9 +233,9 @@ mod tests {
 
         // transfer balance from user1 to user2
         deps.querier
-            .with_token_balance(&user1.to_string(), &Uint128::zero());
+            .with_token_balance(user1.as_ref(), &Uint128::zero());
         deps.querier
-            .with_token_balance(&user2.to_string(), &Uint128::new(200));
+            .with_token_balance(user2.as_ref(), &Uint128::new(200));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone()).unwrap();
 
@@ -260,11 +259,11 @@ mod tests {
         env.block.height = 1250;
 
         deps.querier
-            .with_token_balance(&user3.to_string(), &Uint128::new(200));
+            .with_token_balance(user3.as_ref(), &Uint128::new(200));
         deps.querier
-            .with_token_balance(&user4.to_string(), &Uint128::new(400));
+            .with_token_balance(user4.as_ref(), &Uint128::new(400));
         deps.querier
-            .with_token_balance(&user5.to_string(), &Uint128::new(800));
+            .with_token_balance(user5.as_ref(), &Uint128::new(800));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user3.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user4.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user5.clone()).unwrap();
@@ -329,8 +328,8 @@ mod tests {
             .distribution_schedules
             .iter()
             .fold(Uint128::zero(), |acc, s| acc + s.amount);
-        println!("total_claim_amount: {}", total_claim_amount);
-        println!("expected_claim_amount: {}", expected_claim_amount);
+        println!("total_claim_amount: {total_claim_amount}");
+        println!("expected_claim_amount: {expected_claim_amount}");
         assert_eq!(total_claim_amount, expected_claim_amount);
     }
 
@@ -344,7 +343,7 @@ mod tests {
     ) {
         let res = execute_claim(deps.as_mut(), env, user.clone());
         if res.is_err() {
-            println!("res: {:?}", res);
+            println!("res: {res:?}");
         }
         assert!(res.is_ok());
         let res = res.unwrap();
@@ -369,8 +368,8 @@ mod tests {
             res.attributes,
             vec![
                 attr("action", "claim"),
-                attr("user", &user.to_string()),
-                attr("amount", &expected_claim_amount.to_string()),
+                attr("user", user.to_string()),
+                attr("amount", expected_claim_amount.to_string()),
             ]
         );
     }
