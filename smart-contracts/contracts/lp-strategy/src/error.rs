@@ -77,6 +77,9 @@ pub enum ContractError {
     #[error("incorrect connection id")]
     IncorrectConnection,
 
+    #[error("raw ack in recovery could not be handled")]
+    IncorrectRecoveryAck,
+
     #[error("no timestamp time found for ibc packets")]
     NoTimestampTime,
 
@@ -110,6 +113,9 @@ pub enum ContractError {
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
 
+    #[error("{0}, location {1}")]
+    TracedOverflowError(OverflowError, String),
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
@@ -124,4 +130,7 @@ pub enum ContractError {
 
     #[error("could not serialize to json")]
     SerdeJsonSer,
+
+    #[error("The Callback has no amount set")]
+    CallbackHasNoAmount,
 }

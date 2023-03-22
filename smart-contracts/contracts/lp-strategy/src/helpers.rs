@@ -10,7 +10,7 @@ use crate::{
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    from_binary, to_binary, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
+    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
     QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
@@ -19,8 +19,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
-    // workaround for a div-by-zero error on multi-asset vault side
-    let mut sum = Uint128::one();
+    let mut sum = Uint128::zero();
     for val in SHARES.range(storage, None, None, Order::Ascending) {
         sum = sum.checked_add(val?.1)?;
     }
@@ -78,11 +77,18 @@ pub fn create_callback_submsg(
 
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
-            SubMsgKind::Callback(ContractCallback::Callback(from_binary(msg)?))
+            SubMsgKind::Callback(ContractCallback::Callback {
+                callback: from_binary(msg)?,
+                amount: None,
+                // TODO: owner?
+                owner: Addr::unchecked(""),
+            })
         }
-        CosmosMsg::Bank(bank_msg) => {
-            SubMsgKind::Callback(ContractCallback::Bank(bank_msg.to_owned()))
-        }
+        CosmosMsg::Bank(bank_msg) => SubMsgKind::Callback(ContractCallback::Bank {
+            bank_msg: bank_msg.to_owned(),
+            // TODO: unbond_id?
+            unbond_id: "".to_string(),
+        }),
         _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
     };
 
@@ -108,7 +114,7 @@ pub fn get_usable_bond_balance(
     }
 
     // subtract out the amount that has errored and sits stale on our chain
-    Ok(balance.amount - total_claimable)
+    Ok(balance.amount.saturating_sub(total_claimable))
 }
 
 pub fn get_usable_compound_balance(
@@ -200,8 +206,10 @@ pub enum IbcMsgKind {
 #[serde(rename_all = "snake_case")]
 pub enum IcaMessages {
     JoinSwapExternAmountIn(PendingBond),
-    LockTokens(PendingBond),
-    BeginUnlocking(Vec<PendingSingleUnbond>),
+    // pending bonds int the lock and total shares to be locked
+    // should be gotten from the join pool
+    LockTokens(PendingBond, Uint128),
+    BeginUnlocking(Vec<PendingSingleUnbond>, Uint128),
     ExitPool(PendingReturningUnbonds),
     ReturnTransfer(PendingReturningUnbonds),
     RecoveryExitPool(PendingReturningRecovery),
@@ -219,8 +227,15 @@ pub enum SubMsgKind {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ContractCallback {
-    Callback(Callback),
-    Bank(BankMsg),
+    Callback {
+        callback: Callback,
+        amount: Option<Uint128>,
+        owner: Addr,
+    },
+    Bank {
+        bank_msg: BankMsg,
+        unbond_id: String,
+    },
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
@@ -249,13 +264,13 @@ pub(crate) fn unlock_on_error(
                 })?;
                 Ok(())
             }
-            IcaMessages::LockTokens(_) => {
+            IcaMessages::LockTokens(_, _) => {
                 IBC_LOCK.update(storage, |lock| {
                     Ok::<Lock, ContractError>(lock.unlock_bond())
                 })?;
                 Ok(())
             }
-            IcaMessages::BeginUnlocking(_) => {
+            IcaMessages::BeginUnlocking(_, _) => {
                 IBC_LOCK.update(storage, |lock| {
                     Ok::<Lock, ContractError>(lock.unlock_start_unbond())
                 })?;

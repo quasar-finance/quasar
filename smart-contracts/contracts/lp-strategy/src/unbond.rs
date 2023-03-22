@@ -60,7 +60,9 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
             .ok_or(ContractError::QueueItemNotFound {
                 queue: "unbond".to_string(),
             })?;
-        total_exit = total_exit.checked_add(unbond.lp_shares)?;
+        total_exit = total_exit
+            .checked_add(unbond.lp_shares)
+            .map_err(|err| ContractError::TracedOverflowError(err, "cal_total_exit".to_string()))?;
         // add the unbond to the pending unbonds
         pending.push(ReturningUnbond {
             amount: RawAmount::LpShares(unbond.lp_shares),
@@ -69,14 +71,15 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         });
     }
 
-    let _ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-    let _config = CONFIG.load(storage)?;
-
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         // we remove the amount of shares we are are going to unlock from the locked amount
-        old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
+        old.w_unlocked_shares = old
+            .w_unlocked_shares
+            .checked_sub(total_exit)
+            .map_err(|err| {
+                ContractError::TracedOverflowError(err, "update_unlocked_shares".to_string())
+            })?;
         // we add the amount of shares we are going to unlock to the total unlocked
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
         Ok(old)
     })?;
 
@@ -118,6 +121,11 @@ pub(crate) fn do_exit_swap(
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
+
+    let lp_shares = LP_SHARES.load(storage)?;
+
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
 
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
@@ -612,6 +620,7 @@ mod tests {
                 RawAmount::LocalDenom(_) => unimplemented!(),
                 RawAmount::LpShares(val) => acc + val,
             });
+
 
         let locked_shares = Uint128::from(100u128);
 

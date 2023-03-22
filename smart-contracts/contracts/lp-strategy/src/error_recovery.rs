@@ -1,4 +1,13 @@
-use cosmwasm_std::{Addr, DepsMut, Env, Response, Storage, SubMsg, Uint128};
+use std::fmt;
+
+use cosmwasm_std::{
+    from_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
+};
+use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
+use quasar_types::{
+    ibc::IcsAck,
+    ica::{packet::AckBody, traits::Unpack},
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -6,8 +15,8 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
-    state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, TRAPS},
-    unbond::{do_exit_swap, do_transfer_batch_unbond},
+    state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
+    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond}, start_unbond::{do_start_unbond, do_begin_unlocking},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -87,24 +96,74 @@ fn handle_transfer_recovery(
     )?)
 }
 
-fn handle_ica_recovery(
+fn handle_last_succesful_ica_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     ica: IcaMessages,
     _last_succesful: bool,
     trapped_id: u64,
-) -> Result<Response, ContractError> {
+) -> Result<SubMsg, ContractError> {
     match ica {
+        // in every succesful ica recovery, our last message was succesful, but our pending state is not,
+        // For a join swap, we need to exit all shares
         IcaMessages::JoinSwapExternAmountIn(pending) => {
-            handle_join_swap_recovery(storage, env, pending, trapped_id)?;
-            todo!()
+            handle_join_swap_recovery(storage, env, pending, trapped_id)
         }
-        IcaMessages::LockTokens(_) => todo!(),
-        IcaMessages::BeginUnlocking(_) => todo!(),
+        IcaMessages::LockTokens(_, _) => todo!(),
+        IcaMessages::BeginUnlocking(_, _) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
         IcaMessages::ReturnTransfer(_) => todo!(),
         IcaMessages::RecoveryExitPool(_) => todo!(),
         IcaMessages::RecoveryReturnTransfer(_) => todo!(),
+    }
+}
+fn handle_last_failed_ica_recovery(
+    storage: &mut dyn Storage,
+    env: &Env,
+    ica: IcaMessages,
+    trapped_id: u64,
+) -> Result<SubMsg, ContractError> {
+    match ica {
+        // recover by sending funds back
+        // since the ica failed, we should transfer the funds back, we do not yet expect a raw amount to be set to lp shares
+        // how do we know how much to return here?
+        IcaMessages::JoinSwapExternAmountIn(pending) => {
+            todo!()
+        }
+        IcaMessages::LockTokens(_, _) => todo!(),
+        // if BeginUnlocking followup failed, our tokens, the amount of tokens in the request was actually succesful,
+        // so we continue to a recovery exit swap
+        IcaMessages::BeginUnlocking(_, _) => todo!(),
+        // if the exit pool was actually succesful, we need to deserialize the saved ack result again to get the amount of tokens
+        // users should get
+        // TODO, can they get rejoined to the lp pool here? Maybe????
+        // probably gets compounded back again, how do we know here?, do we know at all?
+        // we let the exit pool get autocompounded by the contract again, to recover from here, we start a start_unlock for all stuck funds
+        IcaMessages::ExitPool(pending) => {
+            todo!()
+            // let msg = do_begin_unlocking(storage, env, to_unbond)?;
+        },
+        // we just retry the transfer here
+        IcaMessages::ReturnTransfer(_) => todo!(),
+        // same as regular exit pool recovery
+        IcaMessages::RecoveryExitPool(_) => todo!(),
+        // same as regular transfer recovery
+        IcaMessages::RecoveryReturnTransfer(_) => todo!(),
+    }
+}
+
+// kinda messed up that we create duplicate code here, should be solved with a single unpacking function that accepts
+// a closure for IcsAck::Result and IcsAck::Error
+fn de_succcesful_join(
+    ack_bin: IbcAcknowledgement,
+) -> Result<MsgJoinSwapExternAmountInResponse, ContractError> {
+    let ack: IcsAck = from_binary(&ack_bin.data)?;
+    if let IcsAck::Result(val) = ack {
+        let ack_body = AckBody::from_bytes(val.0.as_ref())?.to_any()?;
+        let ack = MsgJoinSwapExternAmountInResponse::unpack(ack_body)?;
+        Ok(ack)
+    } else {
+        Err(ContractError::IncorrectRecoveryAck)
     }
 }
 
@@ -115,13 +174,37 @@ fn handle_join_swap_recovery(
     pending: PendingBond,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
+    let ack_bin = RECOVERY_ACK.load(storage, trapped_id)?;
+    // in this case the recovery ack should contain a joinswapexternamountin response
+    // we try to deserialize it
+    let join_result = de_succcesful_join(ack_bin)?;
+
+    // we expect the total amount here to be in local_denom since, although the join was succesful
+    // the RawAmount cannot yet have been up updated
+    let total_lp = pending.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
+        if let RawAmount::LocalDenom(amount) = val.raw_amount {
+            Ok(acc.checked_add(amount)?)
+        } else {
+            return Err(ContractError::IncorrectRawAmount);
+        }
+    })?;
+    // now we need to divide up the lp shares amount our users according to the individual local denom amount
     let exits_res: Result<Vec<ReturningRecovery>, ContractError> = pending
         .bonds
         .iter()
         .map(|val| {
-            if let RawAmount::LpShares(_amount) = val.raw_amount {
+            // since the ICA followup failed, we need to figure out how to convert
+            if let RawAmount::LocalDenom(amount) = val.raw_amount {
                 Ok(ReturningRecovery {
-                    amount: val.raw_amount.clone(),
+                    // lp_shares_i = tokens_i * lp_total / tokens_total
+                    amount: RawAmount::LpShares(amount.checked_mul(total_lp)?.checked_div(
+                        Uint128::new(join_result.share_out_amount.parse().map_err(|err| {
+                            ContractError::ParseIntError {
+                                error: err,
+                                value: join_result.share_out_amount.clone(),
+                            }
+                        })?),
+                    )?),
                     owner: val.owner.clone(),
                     // since we are recovering from a join swap, we need do save
                     // as a Bond for bookkeeping on returned
@@ -136,7 +219,6 @@ fn handle_join_swap_recovery(
         .collect();
 
     let exits = exits_res?;
-
     let total_exit: Uint128 = exits.iter().try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
@@ -155,6 +237,7 @@ fn handle_join_swap_recovery(
         Ok(old)
     })?;
 
+    // TODO update me
     let locked_shares = Uint128::from(100u128);
 
     let token_out_min_amount =
