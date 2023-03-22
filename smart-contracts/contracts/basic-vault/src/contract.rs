@@ -19,7 +19,7 @@ use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
-use crate::helpers::update_user_reward_index;
+use crate::helpers::{is_contract_owner, update_user_reward_index};
 use crate::msg::{
     ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg, VaultTokenInfoResponse,
 };

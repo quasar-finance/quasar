@@ -78,6 +78,7 @@ dependencies = [
  "cw20-staking",
  "derivative",
  "lp-strategy",
+ "prost 0.9.0",
  "quasar-types",
  "serde-json-wasm 0.4.1",
  "thiserror",
