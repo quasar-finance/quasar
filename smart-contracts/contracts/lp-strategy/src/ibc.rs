@@ -16,9 +16,9 @@ use cosmwasm_std::entry_point;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_BALANCE,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT,
-    SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
+    LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -243,7 +243,7 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
+    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
 }
 
 pub fn handle_succesful_ack(
@@ -289,7 +289,7 @@ pub fn handle_transfer_ack(
         pending.bonds,
     )?;
 
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
+    TOTAL_VAULT_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_add(total_amount)?)
     })?;
 
@@ -357,7 +357,7 @@ pub fn handle_icq_ack(
     let exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
-    ICA_BALANCE.save(storage, &total_balance)?;
+    TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
     SIMULATED_JOIN_RESULT.save(storage, &join_pool)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
@@ -417,10 +417,12 @@ pub fn handle_ica_ack(
         IcaMessages::JoinSwapExternAmountIn(mut data) => {
             handle_join_pool(storage, &env, ack_bin, &mut data)
         }
-        IcaMessages::LockTokens(data) => {
-            handle_lock_tokens_ack(storage, &env, data, ack_bin, querier)
+        IcaMessages::LockTokens(data, lp_shares) => {
+            handle_lock_tokens_ack(storage, &env, data, lp_shares, ack_bin, querier)
         }
-        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, querier, &env, data),
+        IcaMessages::BeginUnlocking(data, total) => {
+            handle_start_unbond_ack(storage, querier, &env, data, total)
+        }
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
@@ -496,7 +498,7 @@ fn handle_join_pool(
 
     let msg = create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
+        IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone(), shares_out)),
         outgoing,
     )?;
     Ok(Response::new().add_submessage(msg))
@@ -506,6 +508,7 @@ fn handle_lock_tokens_ack(
     storage: &mut dyn Storage,
     _env: &Env,
     data: PendingBond,
+    total_lp_shares: Uint128,
     ack_bin: Binary,
     querier: QuerierWrapper,
 ) -> Result<Response, ContractError> {
@@ -514,7 +517,7 @@ fn handle_lock_tokens_ack(
 
     // save the lock id in the contract
     OSMO_LOCK.save(storage, &resp.id)?;
-    let total_lp_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
+    let expected_lp_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
         if let RawAmount::LpShares(val) = val.raw_amount {
             Ok(acc.checked_add(val)?)
         } else {
@@ -522,9 +525,24 @@ fn handle_lock_tokens_ack(
         }
     })?;
 
+    assert_eq!(total_lp_shares, expected_lp_shares);
+
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_lp_shares)?;
-        old.locked_shares = old.locked_shares.checked_add(total_lp_shares)?;
+        old.d_unlocked_shares =
+            old.d_unlocked_shares
+                .checked_sub(total_lp_shares)
+                .map_err(|err| {
+                    ContractError::TracedOverflowError(
+                        err,
+                        "update_unlocked_deposit_shares".to_string(),
+                    )
+                })?;
+        old.locked_shares = old
+            .locked_shares
+            .checked_add(total_lp_shares)
+            .map_err(|err| {
+                ContractError::TracedOverflowError(err, "update_locked_shares".to_string())
+            })?;
         Ok(old)
     })?;
 
@@ -569,7 +587,7 @@ fn handle_exit_pool_ack(
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
-    let total_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
+    let total_exited_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
         ContractError::ParseIntError {
             error: err,
             value: msg.token_out_amount,
@@ -577,22 +595,26 @@ fn handle_exit_pool_ack(
     })?);
 
     // return the sum of all lp tokens while converting them
-    let total_lp = data.lp_to_local_denom(total_tokens)?;
+    let total_lp = data.lp_to_local_denom(total_exited_tokens)?;
 
     // remove the liquidated lp tokens from our unlocked lp tokens
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_sub(total_lp)?;
+        old.w_unlocked_shares = old.w_unlocked_shares.checked_sub(total_lp).map_err(|err| {
+            ContractError::TracedOverflowError(err, "update_w_unlocked_shares".to_string())
+        })?;
         Ok(old)
     })?;
 
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_tokens)?)
+    TOTAL_VAULT_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
+        Ok(old.checked_sub(total_exited_tokens).map_err(|err| {
+            ContractError::TracedOverflowError(err, "update_ica_balance_shares".to_string())
+        })?)
     })?;
 
-    let sub_msg = transfer_batch_unbond(storage, env, data, total_tokens)?;
+    let sub_msg = transfer_batch_unbond(storage, env, data, total_exited_tokens)?;
     Ok(Response::new()
         .add_submessage(sub_msg)
-        .add_attribute("transfer-funds", total_tokens.to_string()))
+        .add_attribute("transfer-funds", total_exited_tokens.to_string()))
 }
 
 fn handle_return_transfer_ack(
@@ -600,10 +622,10 @@ fn handle_return_transfer_ack(
     querier: QuerierWrapper,
     data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let mut callback_submsgs: Vec<SubMsg> = vec![];
+    let mut callback_submsgs: Vec<CosmosMsg> = vec![];
     for unbond in data.unbonds.iter() {
         let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
+        callback_submsgs.push(cosmos_msg)
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -612,7 +634,7 @@ fn handle_return_transfer_ack(
 
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_submessages(callback_submsgs)
+        .add_messages(callback_submsgs)
         .add_attribute("return-transfer", "success"))
 }
 

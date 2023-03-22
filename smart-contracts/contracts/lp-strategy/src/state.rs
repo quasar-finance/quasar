@@ -64,7 +64,7 @@ pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
 // the latest known ica balance
-pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
+pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_balance");
 
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");

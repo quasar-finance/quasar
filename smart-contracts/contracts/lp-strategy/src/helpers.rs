@@ -19,8 +19,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
-    // workaround for a div-by-zero error on multi-asset vault side
-    let mut sum = Uint128::one();
+    let mut sum = Uint128::zero();
     for val in SHARES.range(storage, None, None, Order::Ascending) {
         sum = sum.checked_add(val?.1)?;
     }
@@ -108,7 +107,7 @@ pub fn get_usable_bond_balance(
     }
 
     // subtract out the amount that has errored and sits stale on our chain
-    Ok(balance.amount - total_claimable)
+    Ok(balance.amount.saturating_sub(total_claimable))
 }
 
 pub fn get_usable_compound_balance(
@@ -200,8 +199,10 @@ pub enum IbcMsgKind {
 #[serde(rename_all = "snake_case")]
 pub enum IcaMessages {
     JoinSwapExternAmountIn(PendingBond),
-    LockTokens(PendingBond),
-    BeginUnlocking(Vec<PendingSingleUnbond>),
+    // pending bonds int the lock and total shares to be locked
+    // should be gotten from the join pool
+    LockTokens(PendingBond, Uint128),
+    BeginUnlocking(Vec<PendingSingleUnbond>, Uint128),
     ExitPool(PendingReturningUnbonds),
     ReturnTransfer(PendingReturningUnbonds),
     RecoveryExitPool(PendingReturningRecovery),
@@ -249,13 +250,13 @@ pub(crate) fn unlock_on_error(
                 })?;
                 Ok(())
             }
-            IcaMessages::LockTokens(_) => {
+            IcaMessages::LockTokens(_, _) => {
                 IBC_LOCK.update(storage, |lock| {
                     Ok::<Lock, ContractError>(lock.unlock_bond())
                 })?;
                 Ok(())
             }
-            IcaMessages::BeginUnlocking(_) => {
+            IcaMessages::BeginUnlocking(_, _) => {
                 IBC_LOCK.update(storage, |lock| {
                     Ok::<Lock, ContractError>(lock.unlock_start_unbond())
                 })?;

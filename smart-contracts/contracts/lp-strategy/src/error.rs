@@ -110,6 +110,9 @@ pub enum ContractError {
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
 
+    #[error("{0}, location {1}")]
+    TracedOverflowError(OverflowError, String),
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 

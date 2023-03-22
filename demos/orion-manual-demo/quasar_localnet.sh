@@ -19,6 +19,7 @@ USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
 USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
 RELAYER_ACC_GENESIS_COINS=10000000uqsr,10000000000stake
 
+
 # Remove previous setup
 rm -rf $HOME_QSR
  
@@ -36,6 +37,8 @@ $BINARY add-genesis-account $($BINARY keys show bob   --keyring-backend test -a)
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a) $USER_1_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a) $USER_2_GENESIS_COINS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a) $RELAYER_ACC_GENESIS_COINS
+$BINARY add-genesis-account quasar1mxdu6enz8lzmajpsk9nxsyaw0aysy0e35qrlkd $RELAYER_ACC_GENESIS_COINS
+
 $BINARY gentx alice 100000000uqsr --chain-id $CHAIN_ID --keyring-backend test
 $BINARY collect-gentxs
 

@@ -76,7 +76,6 @@ pub fn prepare_full_query(
 
     let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
 
-
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
         tokens_in: vec![OsmoCoin {

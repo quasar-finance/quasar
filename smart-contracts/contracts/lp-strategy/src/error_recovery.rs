@@ -99,8 +99,8 @@ fn handle_ica_recovery(
             handle_join_swap_recovery(storage, env, pending, trapped_id)?;
             todo!()
         }
-        IcaMessages::LockTokens(_) => todo!(),
-        IcaMessages::BeginUnlocking(_) => todo!(),
+        IcaMessages::LockTokens(_, _) => todo!(),
+        IcaMessages::BeginUnlocking(_, _) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
         IcaMessages::ReturnTransfer(_) => todo!(),
         IcaMessages::RecoveryExitPool(_) => todo!(),

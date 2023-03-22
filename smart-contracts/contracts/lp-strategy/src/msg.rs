@@ -72,6 +72,13 @@ pub enum QueryMsg {
     ListPendingAcks {},
     #[returns(ListRepliesResponse)]
     ListReplies {},
+    #[returns(OsmoLockResponse)]
+    OsmoLock {},
+}
+
+#[cw_serde]
+pub struct OsmoLockResponse {
+    pub lock_id: u64,
 }
 
 #[cw_serde]
@@ -96,7 +103,7 @@ pub struct ListPendingAcksResponse {
 
 #[cw_serde]
 pub struct ListUnbondingClaimsResponse {
-    pub unbonds: HashMap<(Addr, String), Unbond>,
+    pub unbonds: HashMap<Addr, (String, Unbond)>,
 }
 
 #[cw_serde]

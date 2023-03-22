@@ -13,11 +13,11 @@ use crate::{
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
         LockResponse, LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
-        UnbondingClaimResponse,
+        UnbondingClaimResponse, OsmoLockResponse,
     },
     state::{
-        Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, LP_SHARES,
-        PENDING_ACK, REPLIES, SHARES, TRAPS, UNBONDING_CLAIMS,
+        Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
+        REPLIES, SHARES, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, OSMO_LOCK,
     },
 };
 
@@ -41,12 +41,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
         QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
+        QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
     }
 }
 
+pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {
+    Ok(OsmoLockResponse { lock_id: OSMO_LOCK.load(deps.storage)? })
+}
+
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
-    let unbonds: StdResult<HashMap<(Addr, String), Unbond>> = UNBONDING_CLAIMS
+    let unbonds: StdResult<HashMap<Addr, (String, Unbond)>> = UNBONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| {
+            let val = res?;
+            Ok((val.0 .0, (val.0 .1, val.1)))
+        })
         .collect();
     Ok(ListUnbondingClaimsResponse { unbonds: unbonds? })
 }
@@ -105,23 +114,11 @@ pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse>
     let total = get_total_primitive_shares(deps.storage).map_err(|err| StdError::GenericErr {
         msg: err.to_string(),
     })?;
-
-    if total.is_zero() {
-        Ok(PrimitiveSharesResponse {
-            total: Uint128::one(),
-        })
-    } else {
-        Ok(PrimitiveSharesResponse { total })
-    }
+     Ok(PrimitiveSharesResponse { total })
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
-    let balance = ICA_BALANCE.load(deps.storage)?;
-    let amount = if balance.is_zero() {
-        Uint128::one()
-    } else {
-        balance
-    };
+    let amount = TOTAL_VAULT_BALANCE.load(deps.storage)?;
 
     Ok(IcaBalanceResponse {
         amount: Coin {
