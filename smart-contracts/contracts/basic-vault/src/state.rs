@@ -42,6 +42,7 @@ pub struct Supply {
 #[cw_serde]
 pub struct AdditionalTokenInfo {
     pub thesis: String,
+    pub creation_time: Timestamp,
 }
 
 pub const ADDITIONAL_TOKEN_INFO: Item<AdditionalTokenInfo> = Item::new("additional_token_info");
