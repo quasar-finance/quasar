@@ -206,6 +206,7 @@ pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
         symbol: token_info.symbol,
         decimals: token_info.decimals,
         total_supply: token_info.total_supply,
+        creation_time: additional_info.creation_time,
     };
     Ok(res)
 }
