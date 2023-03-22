@@ -7,8 +7,7 @@ mod tests {
         testing::{mock_env, mock_info, MockApi, MockStorage},
         to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
         Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Reply,
-        Response, StdError, StdResult, SubMsg, SubMsgResponse, SubMsgResult, Timestamp, Uint128,
-        WasmMsg,
+        Response, StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp, Uint128, WasmMsg,
     };
     use cw20::BalanceResponse;
 
@@ -1496,7 +1495,7 @@ mod tests {
         assert_eq!(1, res.messages.len());
 
         let reply_msg = reply_msg();
-        let res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+        let _res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
 
         let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
         let deposit_msg = ExecuteMsg::Bond {
@@ -1547,18 +1546,18 @@ mod tests {
             primitive_3_msg,
         )
         .unwrap();
-        println!("p3_res: {:?}", p3_res);
+        println!("p3_res: {p3_res:?}");
         assert_eq!(p3_res.messages.len(), 1);
         if let CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr,
             msg,
-            funds,
+            funds: _,
         }) = &p3_res.messages[0].msg
         {
             assert_eq!(contract_addr, "vault_rewards_addr");
             if let vault_rewards::msg::ExecuteMsg::Vault(
                 vault_rewards::msg::VaultExecuteMsg::UpdateUserRewardIndex(user_reward_index),
-            ) = from_binary(&msg).unwrap()
+            ) = from_binary(msg).unwrap()
             {
                 assert_eq!(user_reward_index, TEST_DEPOSITOR);
             } else {
