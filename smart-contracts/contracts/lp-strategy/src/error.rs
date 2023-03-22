@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::num::ParseIntError;
 
+use crate::helpers::IbcMsgKind;
 use std::str::Utf8Error;
 use thiserror::Error;
-
-use crate::helpers::IbcMsgKind;
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -21,6 +20,8 @@ pub struct Trap {
     pub error: String,
     // the failed step and underlying values
     pub step: IbcMsgKind,
+    // last_succesful notes whether the IbcMsg of step was succesful on the counterparty chain
+    pub last_succesful: bool,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -46,7 +47,7 @@ pub enum ContractError {
     #[error("not enough claims")]
     InsufficientClaims,
 
-    #[error("not enough claims")]
+    #[error("not enough funds")]
     InsufficientFunds,
 
     #[error("base denom not found")]

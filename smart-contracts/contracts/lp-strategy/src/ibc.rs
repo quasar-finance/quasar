@@ -1,8 +1,9 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
+use crate::error_recovery::PendingReturningRecovery;
 use crate::helpers::{
-    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error,
-    IbcMsgKind, IcaMessages,
+    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
+    get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
@@ -10,17 +11,18 @@ use crate::ibc_util::{
     do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
 };
 use crate::icq::calc_total_balance;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TRAPS,
+    LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_BALANCE,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
+
 use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v1beta1::{
@@ -307,10 +309,22 @@ pub fn handle_icq_ack(
 
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
     // we have only dispatched on query and a single kind at this point
-    let balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
+    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+    let base_balance =
+        Uint128::new(
+            raw_balance
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: err,
+                    value: raw_balance.to_string(),
+                })?,
+        );
+
+    let usable_base_balance = get_usable_compound_balance(storage, base_balance)?;
+
     // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
@@ -335,14 +349,7 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        Uint128::new(
-            balance
-                .parse::<u128>()
-                .map_err(|err| ContractError::ParseIntError {
-                    error: err,
-                    value: balance,
-                })?,
-        ),
+        usable_base_balance,
         &exit_pool.tokens_out,
         spot_price,
     )?;
@@ -417,7 +424,28 @@ pub fn handle_ica_ack(
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
+        // After a RecoveryExitPool, we do a return transfer that should hit RecoveryReturnTransfer
+        IcaMessages::RecoveryExitPool(_pending) => todo!(),
+        // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
+        IcaMessages::RecoveryReturnTransfer(_pending) => todo!(),
     }
+}
+
+fn handle_recovery_return_transfer(
+    storage: &mut dyn Storage,
+    pending: PendingReturningRecovery,
+) -> Result<Response, ContractError> {
+    // if we have the succesfully received the recovery, we create an entry
+    for p in pending.returning {
+        if let RawAmount::LocalDenom(val) = p.amount {
+            CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
+        } else {
+            return Err(ContractError::IncorrectRawAmount);
+        }
+        // remove the error from TRAPS
+        TRAPS.remove(storage, pending.trapped_id);
+    }
+    todo!()
 }
 
 fn handle_join_pool(
@@ -486,13 +514,17 @@ fn handle_lock_tokens_ack(
 
     // save the lock id in the contract
     OSMO_LOCK.save(storage, &resp.id)?;
-    let total_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
-        acc.checked_add(val.claim_amount)
+    let total_lp_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
+        if let RawAmount::LpShares(val) = val.raw_amount {
+            Ok(acc.checked_add(val)?)
+        } else {
+            Err(ContractError::IncorrectRawAmount)
+        }
     })?;
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_shares)?;
-        old.locked_shares = old.locked_shares.checked_add(total_shares)?;
+        old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_lp_shares)?;
+        old.locked_shares = old.locked_shares.checked_add(total_lp_shares)?;
         Ok(old)
     })?;
 
@@ -574,6 +606,10 @@ fn handle_return_transfer_ack(
         callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
     }
 
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_unbond())
+    })?;
+
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
         .add_submessages(callback_submsgs)
@@ -595,6 +631,7 @@ pub fn handle_failing_ack(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
@@ -628,6 +665,7 @@ fn on_packet_failure(
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(IbcBasicResponse::default())
