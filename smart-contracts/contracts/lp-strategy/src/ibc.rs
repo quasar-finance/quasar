@@ -243,7 +243,15 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
+    // We save the ack binary here for error recovery in case of an join pool recovery
+    // this should be cleaned up from state in the ack submsg Ok case
+    RECOVERY_ACK.save(
+        deps.storage,
+        msg.original_packet.sequence,
+        &msg.acknowledgement,
+    )?;
+    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
+
 }
 
 pub fn handle_succesful_ack(

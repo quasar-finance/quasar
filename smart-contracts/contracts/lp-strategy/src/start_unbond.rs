@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
-    Uint128, WasmMsg,
+    Uint128, WasmMsg, IbcMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -103,9 +103,19 @@ pub fn batch_start_unbond(
         Ok(old)
     })?;
 
+    let pkt = do_begin_unlocking(storage, env, to_unbond)?;
+
+    Ok(Some(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
+        pkt,
+    )?))
+}
+
+pub fn do_begin_unlocking(storage: &mut dyn Storage, env: &Env, to_unbond: Uint128) -> Result<IbcMsg, ContractError> {
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-
+    
     let msg = MsgBeginUnlocking {
         owner: ica_address,
         id: OSMO_LOCK.load(storage)?,
@@ -121,11 +131,7 @@ pub fn batch_start_unbond(
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     )?;
 
-    Ok(Some(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds, to_unbond)),
-        pkt,
-    )?))
+    Ok(pkt)
 }
 
 pub fn handle_start_unbond_ack(
