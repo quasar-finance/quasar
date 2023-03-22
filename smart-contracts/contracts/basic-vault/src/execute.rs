@@ -9,7 +9,7 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::can_unbond_from_primitive;
+use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -346,6 +346,8 @@ pub fn do_start_unbond(
     }
 
     // burn if balance is more than or equal to amount (handled in execute_burn)
+    let update_user_rewards_idx_msg =
+        update_user_reward_index(deps.as_ref().storage, &info.sender)?;
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
@@ -409,6 +411,7 @@ pub fn do_start_unbond(
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
+            .add_message(update_user_rewards_idx_msg)
             .add_attributes(vec![
                 Attribute {
                     key: "action".to_string(),
