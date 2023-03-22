@@ -108,8 +108,8 @@ fn handle_last_succesful_ica_recovery(
         IcaMessages::JoinSwapExternAmountIn(pending) => {
             handle_join_swap_recovery(storage, env, pending, trapped_id)
         }
-        IcaMessages::LockTokens(_) => todo!(),
-        IcaMessages::BeginUnlocking(_) => todo!(),
+        IcaMessages::LockTokens(_, _) => todo!(),
+        IcaMessages::BeginUnlocking(_, _) => todo!(),
         IcaMessages::ExitPool(_) => todo!(),
         IcaMessages::ReturnTransfer(_) => todo!(),
         IcaMessages::RecoveryExitPool(_) => todo!(),

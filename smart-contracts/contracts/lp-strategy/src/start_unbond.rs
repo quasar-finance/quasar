@@ -36,11 +36,27 @@ pub fn do_start_unbond(
     storage: &mut dyn Storage,
     unbond: StartUnbond,
 ) -> Result<(), ContractError> {
+
     if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
-    if SHARES.load(storage, unbond.owner.clone())? < unbond.primitive_shares {
+    //verify here against the amount in the queue aswell
+    let queued_shares = START_UNBOND_QUEUE.iter(storage)?
+    .map(|val| {
+        let v = val?;
+        if v.id == unbond.id {
+            Err(ContractError::DuplicateKey)
+        } else {
+        Ok(v)
+        }
+    })
+    .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, ContractError> {
+        let v = val?;
+        Ok(acc + v.primitive_shares)
+    })?;
+
+    if SHARES.load(storage, unbond.owner.clone())? < (unbond.primitive_shares + queued_shares) {
         return Err(ContractError::InsufficientFunds);
     }
 
@@ -79,7 +95,10 @@ pub fn batch_start_unbond(
     }
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.locked_shares = old.locked_shares.checked_sub(to_unbond)?;
+        old.locked_shares = old.locked_shares.checked_sub(to_unbond)
+        .map_err(|err| {
+            ContractError::TracedOverflowError(err, "lower_locked_shares".to_string())
+        })?;
         old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
         Ok(old)
     })?;
@@ -120,6 +139,7 @@ pub fn handle_start_unbond_ack(
     querier: QuerierWrapper,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
+    total: Uint128,
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
@@ -132,6 +152,11 @@ pub fn handle_start_unbond_ack(
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_start_unbond())
+    })?;
+
+    LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
+        cache.w_unlocked_shares = cache.w_unlocked_shares.checked_add(total)?;
+        Ok(cache)
     })?;
 
     Ok(Response::new()
@@ -170,7 +195,10 @@ fn start_internal_unbond(
     // remove amount of shares
     let left = SHARES
         .load(storage, unbond.owner.clone())?
-        .checked_sub(unbond.primitive_shares)?;
+        .checked_sub(unbond.primitive_shares)
+        .map_err(|err| {
+            ContractError::TracedOverflowError(err, "lower_shares_to_unbond".to_string())
+        })?;
     // subtracting below zero here should trigger an error in check_sub
     if left.is_zero() {
         SHARES.remove(storage, unbond.owner.clone());

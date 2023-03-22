@@ -93,7 +93,9 @@ pub fn fold_bonds(
             &item.bond_id,
             total_balance,
         )?;
-        total = total.checked_add(item.amount)?;
+        total = total
+            .checked_add(item.amount)
+            .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
         deposits.push(OngoingDeposit {
             claim_amount,
             owner: item.owner,
@@ -133,19 +135,27 @@ pub fn create_share(
     match claim.cmp(&amount) {
         Ordering::Less => return Err(ContractError::InsufficientClaims),
         Ordering::Equal => BONDING_CLAIMS.remove(storage, (owner, bond_id)),
-        Ordering::Greater => {
-            BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?
-        }
+        Ordering::Greater => BONDING_CLAIMS.save(
+            storage,
+            (owner, bond_id),
+            &claim.checked_sub(amount).map_err(|err| {
+                ContractError::TracedOverflowError(err, "create_share".to_string())
+            })?,
+        )?,
     }
 
     // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
-    let shares = SHARES.may_load(storage, owner.clone())?;
     SHARES.update(
         storage,
         owner.clone(),
         |old| -> Result<Uint128, ContractError> {
             if let Some(existing) = old {
-                Ok(existing.checked_add(amount)?)
+                Ok(existing.checked_add(amount).map_err(|err| {
+                    ContractError::TracedOverflowError(
+                        err,
+                        "create_share_update_shares".to_string(),
+                    )
+                })?)
             } else {
                 Ok(amount)
             }
@@ -176,7 +186,8 @@ pub fn calculate_claim(
         Ok(user_balance)
     } else {
         Ok(user_balance
-            .checked_mul(total_shares)?
+            .checked_mul(total_shares)
+            .map_err(|err| ContractError::TracedOverflowError(err, "calculate_claim".to_string()))?
             .checked_div(total_balance)?)
     }
 }
