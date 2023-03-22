@@ -15,11 +15,11 @@ use crate::{
 #[cw_serde]
 pub struct InstantiateMsg {
     pub lock_period: u64,
-    pub pool_id: u64, // 2
+    pub pool_id: u64,       // 2
     pub pool_denom: String, // gamm/pool/2
     // if setup correctly, local_denom on quasar == base_denom on osmosis
     pub local_denom: String, // ibc/ED07
-    pub base_denom: String, // uosmo
+    pub base_denom: String,  // uosmo
     pub quote_denom: String, // uatom
     // TODO should this be outgoing_transfer_channel?
     pub transfer_channel: String,

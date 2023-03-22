@@ -73,7 +73,9 @@ pub fn prepare_full_query(
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
     // we use the current current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
+
     let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
+
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,

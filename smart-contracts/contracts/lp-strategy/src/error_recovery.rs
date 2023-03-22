@@ -24,7 +24,13 @@ pub fn start_recovery(
                 crate::helpers::IbcMsgKind::Transfer { pending, amount } => {
                     // cleanup error state to prevent multiple error recoveries
                     TRAPS.remove(deps.storage, error_sequence);
-                    let msg = handle_transfer_recovery(deps.storage, env, pending, amount, error_sequence)?;
+                    let msg = handle_transfer_recovery(
+                        deps.storage,
+                        env,
+                        pending,
+                        amount,
+                        error_sequence,
+                    )?;
                     Ok(Response::new()
                         .add_submessage(msg)
                         .add_attribute("error-recover-sequence", error_sequence.to_string())
@@ -48,7 +54,7 @@ fn handle_transfer_recovery(
     env: &Env,
     bonds: PendingBond,
     amount: Uint128,
-    trapped_id: u64
+    trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
@@ -86,7 +92,7 @@ fn handle_ica_recovery(
     env: &Env,
     ica: IcaMessages,
     last_succesful: bool,
-    trapped_id: u64
+    trapped_id: u64,
 ) -> Result<Response, ContractError> {
     match ica {
         IcaMessages::JoinSwapExternAmountIn(pending) => {
