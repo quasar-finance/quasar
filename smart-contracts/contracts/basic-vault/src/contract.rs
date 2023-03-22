@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Uint128,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -12,11 +12,14 @@ use cw20_base::allowances::{
 };
 use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
+use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
+use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
+use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg, VaultTokenInfoResponse,
 };
@@ -26,7 +29,7 @@ use crate::query::{
 };
 use crate::state::{
     AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -46,7 +49,7 @@ pub fn instantiate(
         total_supply: Uint128::zero(),
         // set self as minter, so we can properly execute mint and burn
         mint: Some(MinterData {
-            minter: env.contract.address,
+            minter: env.contract.address.clone(),
             cap: None,
         }),
     };
@@ -80,7 +83,7 @@ pub fn instantiate(
     }
 
     let mut invest = InvestmentInfo {
-        owner: info.sender,
+        owner: info.sender.clone(),
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives,
     };
@@ -96,7 +99,22 @@ pub fn instantiate(
 
     DEBUG_TOOL.save(deps.storage, &"Empty".to_string())?;
 
-    Ok(Response::new())
+    let init_vault_rewards = SubMsg::reply_always(
+        WasmMsg::Instantiate {
+            admin: Some(info.sender.to_string()),
+            code_id: msg.vault_rewards_code_id,
+            msg: to_binary(&VaultRewardsInstantiateMsg {
+                vault_token: env.contract.address.to_string(),
+                reward_token: msg.reward_token,
+                distribution_schedules: msg.reward_distribution_schedules,
+            })?,
+            funds: vec![],
+            label: "vault-rewards".to_string(),
+        },
+        REPLY_INIT_VAULT_REWARDS,
+    );
+
+    Ok(Response::new().add_submessage(init_vault_rewards))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -134,14 +152,35 @@ pub fn execute(
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
-            Ok(execute_transfer(deps, env, info, recipient, amount)?)
+            let recipient = deps.api.addr_validate(&recipient)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &recipient)?,
+            ];
+            Ok(
+                execute_transfer(deps, env, info, recipient.to_string(), amount)?
+                    .add_messages(update_user_reward_indexes),
+            )
         }
-        ExecuteMsg::Burn { amount } => Ok(execute_burn(deps, env, info, amount)?),
+        ExecuteMsg::Burn { amount } => {
+            let update_user_reward_index = update_user_reward_index(deps.storage, &info.sender)?;
+            Ok(execute_burn(deps, env, info, amount)?.add_message(update_user_reward_index))
+        }
         ExecuteMsg::Send {
             contract,
             amount,
             msg,
-        } => Ok(execute_send(deps, env, info, contract, amount, msg)?),
+        } => {
+            let contract = deps.api.addr_validate(&contract)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &contract)?,
+            ];
+            Ok(
+                execute_send(deps, env, info, contract.to_string(), amount, msg)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
         ExecuteMsg::IncreaseAllowance {
             spender,
             amount,
@@ -160,21 +199,77 @@ pub fn execute(
             owner,
             recipient,
             amount,
-        } => Ok(execute_transfer_from(
-            deps, env, info, owner, recipient, amount,
-        )?),
+        } => {
+            let recipient = deps.api.addr_validate(&recipient)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &recipient)?,
+            ];
+            Ok(
+                execute_transfer_from(deps, env, info, owner, recipient.to_string(), amount)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
         ExecuteMsg::BurnFrom { owner, amount } => {
-            Ok(execute_burn_from(deps, env, info, owner, amount)?)
+            let owner = deps.api.addr_validate(&owner)?;
+            let update_user_reward_index = update_user_reward_index(deps.storage, &owner)?;
+            Ok(
+                execute_burn_from(deps, env, info, owner.to_string(), amount)?
+                    .add_message(update_user_reward_index),
+            )
         }
         ExecuteMsg::SendFrom {
             owner,
             contract,
             amount,
             msg,
-        } => Ok(execute_send_from(
-            deps, env, info, owner, contract, amount, msg,
-        )?),
+        } => {
+            let contract = deps.api.addr_validate(&contract)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &contract)?,
+            ];
+            Ok(
+                execute_send_from(deps, env, info, owner, contract.to_string(), amount, msg)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
     }
+}
+
+pub const REPLY_INIT_VAULT_REWARDS: u64 = 777;
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        REPLY_INIT_VAULT_REWARDS => match msg.result {
+            SubMsgResult::Ok(res) => {
+                let vault_rewards =
+                    parse_instantiate_response_data(res.data.unwrap().as_slice()).unwrap();
+                update_rewards_contract(deps, vault_rewards.contract_address)
+            }
+            SubMsgResult::Err(e) => Err(StdError::generic_err(format!(
+                "error instantiating vault rewards contract: {e:?}"
+            )))?,
+        },
+        _ => {
+            unimplemented!()
+        }
+    }
+}
+
+fn update_rewards_contract(
+    deps: DepsMut,
+    rewards_contract: String,
+) -> Result<Response, ContractError> {
+    deps.api.addr_validate(&rewards_contract)?;
+
+    VAULT_REWARDS.save(deps.storage, &deps.api.addr_validate(&rewards_contract)?)?;
+
+    Ok(Response::default().add_attributes(vec![
+        ("action", "init_vault_rewards"),
+        ("contract_address", rewards_contract.as_str()),
+    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -316,6 +411,13 @@ mod test {
                     }),
                 },
             ],
+            vault_rewards_code_id: 123,
+            reward_token: cw_asset::AssetInfoBase::Native("uqsr".to_string()),
+            reward_distribution_schedules: vec![vault_rewards::state::DistributionSchedule {
+                start: 0,
+                end: 500,
+                amount: Uint128::from(1000u128),
+            }],
         };
 
         // prepare 3 mock configs for prim1, prim2 and prim3

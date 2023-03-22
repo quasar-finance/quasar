@@ -9,7 +9,7 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::can_unbond_from_primitive;
+use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -23,7 +23,7 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
     match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
-                Err(PaymentError::NoFunds {})
+                Err(PaymentError::MissingDenom(denom.to_string()))
             } else {
                 Ok(coin.amount)
             }
@@ -225,12 +225,20 @@ pub fn bond(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
+    let invest = INVESTMENT.load(deps.storage)?;
+
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
-        return Err(ContractError::NoFunds {});
+        return Err(ContractError::EmptyBalance {
+            denom: invest
+                .primitives
+                .iter()
+                .fold("".to_string(), |acc, p| match &p.init {
+                    crate::msg::PrimitiveInitMsg::LP(lp_init) => acc + &lp_init.local_denom + ",",
+                }),
+        });
     }
 
     // load vault info & sequence number
-    let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
     // find recipient
@@ -346,6 +354,8 @@ pub fn do_start_unbond(
     }
 
     // burn if balance is more than or equal to amount (handled in execute_burn)
+    let update_user_rewards_idx_msg =
+        update_user_reward_index(deps.as_ref().storage, &info.sender)?;
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
@@ -409,6 +419,7 @@ pub fn do_start_unbond(
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
+            .add_message(update_user_rewards_idx_msg)
             .add_attributes(vec![
                 Attribute {
                     key: "action".to_string(),

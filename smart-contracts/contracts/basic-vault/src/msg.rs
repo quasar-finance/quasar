@@ -4,9 +4,11 @@ use cosmwasm_std::{Binary, Coin, Decimal, Timestamp, Uint128};
 
 use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse};
+use cw_asset::AssetInfo;
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
+use vault_rewards::state::DistributionSchedule;
 
 use crate::state::{BondingStub, InvestmentInfo, Unbond};
 
@@ -46,6 +48,13 @@ pub struct InstantiateMsg {
     // pub entry_fee: Decimal,
     // pub exit_fee: Decimal,
     // pub fee_receiver: String, // address of the fee receiver
+
+    // vault rewards contract code id
+    pub vault_rewards_code_id: u64,
+    // vault reward token
+    pub reward_token: AssetInfo,
+    // vault reward token distribution schedule
+    pub reward_distribution_schedules: Vec<DistributionSchedule>,
 }
 
 #[cw_serde]

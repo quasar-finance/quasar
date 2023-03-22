@@ -85,7 +85,7 @@ fn handle_transfer_recovery(
 
     let returning = PendingReturningRecovery {
         returning: returning?,
-        trapped_id: trapped_id,
+        trapped_id,
     };
 
     let msg = do_transfer_batch_unbond(storage, env, amount)?;
@@ -100,6 +100,7 @@ fn handle_last_succesful_ica_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     ica: IcaMessages,
+    _last_succesful: bool,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
     match ica {

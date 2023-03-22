@@ -313,6 +313,7 @@ pub fn handle_icq_ack(
     env: Env,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
+    // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
