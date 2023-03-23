@@ -169,6 +169,7 @@ pub enum ExecuteMsg {
     Bond { id: String },
     StartUnbond { id: String, share_amount: Uint128 },
     Unbond { id: String },
+    SetDepositor { depositor: String },
     // accept a dispatched transfer from osmosis
     AcceptReturningFunds { id: u64 },
     // try to close a channel where a timout occured

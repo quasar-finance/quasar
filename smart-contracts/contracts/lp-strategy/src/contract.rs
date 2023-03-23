@@ -7,7 +7,7 @@ use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
 
-use crate::admin::check_or_set_admin;
+use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::SubMsgKind;
@@ -19,9 +19,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL,
     LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE, ADMIN,
+    UNBOND_QUEUE, DEPOSITOR,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -33,12 +33,16 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // check valid token info
     msg.validate()?;
+
+    // ADMIN here is only used to decide who can deposit
+    ADMIN.save(deps.storage, &info.sender)?;
+
     CONFIG.save(
         deps.storage,
         &Config {
@@ -106,6 +110,17 @@ pub fn execute(
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
+        ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
+    }
+}
+
+pub fn execute_set_depositor(deps: DepsMut, info: MessageInfo, depositor: String) -> Result<Response, ContractError> {
+    if info.sender == ADMIN.load(deps.storage)? {
+        let depositor_addr = deps.api.addr_validate(depositor.as_str())?;
+        DEPOSITOR.save(deps.storage, &depositor_addr)?;
+        Ok(Response::new().add_attribute("set-depositor", depositor))
+    } else {
+        Err(ContractError::Unauthorized)
     }
 }
 
@@ -206,7 +221,7 @@ pub fn execute_bond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
-    if !check_or_set_admin(deps.storage, &info.sender)? {
+    if !check_depositor(deps.storage, &info.sender)? {
         return Err(ContractError::Unauthorized);
     }
 
@@ -238,7 +253,7 @@ pub fn execute_start_unbond(
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
-    if !check_or_set_admin(deps.storage, &info.sender)? {
+    if !check_depositor(deps.storage, &info.sender)? {
         return Err(ContractError::Unauthorized);
     }
 
@@ -277,7 +292,7 @@ pub fn execute_unbond(
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
-    if !check_or_set_admin(deps.storage, &info.sender)? {
+    if !check_depositor(deps.storage, &info.sender)? {
         return Err(ContractError::Unauthorized);
     }
 

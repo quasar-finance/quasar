@@ -32,7 +32,7 @@ use crate::query::{
 };
 use crate::state::{
     AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS, CAP, Cap,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -62,6 +62,8 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &token_info)?;
     ADDITIONAL_TOKEN_INFO.save(deps.storage, &additional_info)?;
+
+    CAP.save(deps.storage, &Cap::new(info.sender.clone(), msg.total_cap))?;
 
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
@@ -442,6 +444,7 @@ mod test {
                 end: 500,
                 amount: Uint128::from(1000u128),
             }],
+            total_cap: Uint128::new(10_000_000_000_000)
         };
 
         // prepare 3 mock configs for prim1, prim2 and prim3

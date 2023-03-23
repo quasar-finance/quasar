@@ -44,6 +44,9 @@ pub struct InstantiateMsg {
     pub min_withdrawal: Uint128,
     // the array of primitives to subscribe to for this vault
     pub primitives: Vec<PrimitiveConfig>,
+    // the total amount of tokens that can be deposited, eg: max uosmo of the contract
+    pub total_cap: Uint128,
+
     // // to be extended & discussed later
     // pub entry_fee: Decimal,
     // pub exit_fee: Decimal,

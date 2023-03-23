@@ -233,6 +233,7 @@ mod tests {
                 end: 501,
                 amount: Uint128::from(1000u128),
             }],
+            total_cap: Uint128::new(10_000_000_000_000),
         }
     }
 
@@ -295,6 +296,7 @@ mod tests {
                     }
                 })
                 .collect(),
+            total_cap: Uint128::new(10_000_000_000_000),
         }
     }
 

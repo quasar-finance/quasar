@@ -14,7 +14,7 @@ use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
-    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE, CAP,
 };
 use crate::types::FromUint128;
 
@@ -252,6 +252,12 @@ pub fn bond(
 
     let (primitive_funding_amounts, remainder) =
         may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
+
+        CAP.update(deps.storage, |cap| -> Result<crate::state::Cap, ContractError> {
+            Ok(cap.update_current(primitive_funding_amounts.iter().fold(Uint128::zero(), |acc, val| {
+                val.amount + acc
+            }))?)
+        })?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives

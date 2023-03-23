@@ -44,7 +44,8 @@ pub struct Config {
 
 // the ADMIN in this case is the person allowed to deposit into the contract
 // this is set to the first depositor
-pub(crate) const ADMIN: Item<Addr> = Item::new("admin"); 
+pub(crate) const ADMIN: Item<Addr> = Item::new("admin");
+pub(crate) const DEPOSITOR: Item<Addr> = Item::new("depositor");
 
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
