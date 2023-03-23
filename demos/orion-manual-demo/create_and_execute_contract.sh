@@ -76,7 +76,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icahost 
 RES=$(quasarnoded tx wasm store artifacts/vault_rewards-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 VR_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-VAULT_INIT='{"thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}}]}'
+VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
 
@@ -96,9 +96,9 @@ echo "Got address of deployed contract = $VAULT_ADDR (vault)"
 
 echo "setting depositor"
 sleep 6
-quasarnoded tx wasm execute $ADDR1 '{"set_depositor": {"depositor": '$VAULT_ADDR'}}' --from alice --keyring-backend $TXFLAG
+quasarnoded tx wasm execute $ADDR1 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test $TXFLAG
 sleep 6
-quasarnoded tx wasm execute $ADDR2 '{"set_depositor": {"depositor": '$VAULT_ADDR'}}' --from alice --keyring-backend $TXFLAG
+quasarnoded tx wasm execute $ADDR2 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test $TXFLAG
 
 # echo "Seeding liquidity"
 # quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
