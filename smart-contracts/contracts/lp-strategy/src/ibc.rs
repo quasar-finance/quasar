@@ -382,26 +382,24 @@ pub fn handle_icq_ack(
         })?;
     } else {
         attrs.push(Attribute::new("bond-status", "empty"));
-    }
-
-    if let Some(msg) = start_unbond {
-        msges.push(msg);
-        attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
-        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-            Ok(lock.lock_start_unbond())
-        })?;
-    } else {
-        attrs.push(Attribute::new("start-unbond-status", "empty"));
-    }
-
-    if let Some(msg) = unbond {
-        msges.push(msg);
-        attrs.push(Attribute::new("unbond-status", "unbonding"));
-        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-            Ok(lock.lock_unbond())
-        })?;
-    } else {
-        attrs.push(Attribute::new("unbond-status", "empty"));
+        if let Some(msg) = start_unbond {
+            msges.push(msg);
+            attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
+            IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_start_unbond())
+            })?;
+        } else {
+            attrs.push(Attribute::new("start-unbond-status", "empty"));
+            if let Some(msg) = unbond {
+                msges.push(msg);
+                attrs.push(Attribute::new("unbond-status", "unbonding"));
+                IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+                    Ok(lock.lock_unbond())
+                })?;
+            } else {
+                attrs.push(Attribute::new("unbond-status", "empty"));
+            }
+        }
     }
 
     Ok(Response::new().add_submessages(msges).add_attributes(attrs))
