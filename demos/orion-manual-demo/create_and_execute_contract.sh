@@ -26,7 +26,7 @@ echo $NODE
 #     local_denom: the denom of the token used locally, in this testing case: the denom of the path transfer/channel-1/uosmo
 #     quote_denom is the denom other denom in the pool, stake for now
 INIT1='{"lock_period":6,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"stake","return_source_channel":"channel-0","transfer_channel":"channel-0","expected_connection":"connection-0"}'
-# INIT2='{"lock_period":6,"pool_id":2,"pool_denom":"gamm/pool/2","base_denom":"stake","local_denom":"ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878","quote_denom":"fakestake","return_source_channel":"channel-0","transfer_channel":"channel-0","expected_connection":"connection-0"}'
+INIT2='{"lock_period":6,"pool_id":3,"pool_denom":"gamm/pool/3","base_denom":"uosmo","local_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote_denom":"fakestake","return_source_channel":"channel-0","transfer_channel":"channel-0","expected_connection":"connection-0"}'
 # INIT3='{"lock_period":6,"pool_id":3,"pool_denom":"gamm/pool/3","base_denom":"fakestake","local_denom":"ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1","quote_denom":"uosmo","return_source_channel":"channel-0","transfer_channel":"channel-0","expected_connection":"connection-0"}'
 
 cd ../../smart-contracts
@@ -50,12 +50,12 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost 
 # quasarnoded tx wasm execute $ADDR1 '{"bond":{"id": "my-id"}}' -y --from alice --keyring-backend test --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518 $TXFLAG
 # sleep 6
 
-# OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
-# ADDR2=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[1]')
-# echo "Got address of deployed contract = $ADDR2"
+OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
+ADDR2=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[1]')
+echo "Got address of deployed contract = $ADDR2"
 
-# rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icqhost --order unordered --version icq-1 --override
-# rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
+rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icqhost --order unordered --version icq-1 --override
+rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
 
 # sleep 6
 
@@ -76,7 +76,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost 
 RES=$(quasarnoded tx wasm store artifacts/vault_rewards-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 VR_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-VAULT_INIT='{"thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
+VAULT_INIT='{"thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
 

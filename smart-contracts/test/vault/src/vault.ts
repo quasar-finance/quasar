@@ -69,6 +69,17 @@ export async function claim({
   return basicVaultClient.claim(stdFee, 'memo teehee', [])
 }
 
+// export async function try_icq({
+//   vaultAddress,
+// }: {
+//   vaultAddress: string
+//     }) {
+//     console.log("Trying ICQ manually...")
+
+//     let basicVaultClient = await getVault('alice', vaultAddress)
+//     return basicVaultClient.(stdFee, 'memo teehee', [])
+// }
+
 // query
 export async function getBalance(vaultAddress: string, of: 'alice' | 'bob') {
   let [_, wallet] = await getWallet(of)

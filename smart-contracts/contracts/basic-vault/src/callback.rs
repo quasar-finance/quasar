@@ -112,7 +112,6 @@ pub fn on_bond(
                         .ok_or(ContractError::BondResponseIsEmpty {})?
                         .share_amount,
                 )
-                .checked_mul(pc.weight.checked_mul(total_weight)?)?
                 .to_uint_floor(),
             )?)
         },

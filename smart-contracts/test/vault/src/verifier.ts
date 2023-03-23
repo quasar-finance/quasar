@@ -40,6 +40,12 @@ export async function expect_balance_increase(
         clearInterval(interval)
         r()
       }
+      // if its been longer than 90 seconds, display warning message
+      else if (new Date().getTime() - start.getTime() > 90000) {
+        console.log(
+          'WARNING: Bond test has been running for over 90 seconds. This may be a problem.',
+        )
+      }
     }, 5000)
   })
 }
@@ -75,6 +81,11 @@ export async function expect_unlock_time_passed(vaultAddress: string) {
         console.log('Ready to unbond')
         clearInterval(interval)
         r()
+      } // if its been longer than 90 seconds, display warning message
+      else if (new Date().getTime() - start.getTime() > 90000) {
+        console.log(
+          'WARNING: Bond test has been running for over 90 seconds. This may be a problem.',
+        )
       }
     }, 5000)
   })
@@ -114,9 +125,13 @@ export async function expect_chain_balance_increase() {
         clearInterval(interval)
         r()
       } else if (
-        Number(alice_balance.amount) > Number(orig_alice_balance.amount)
+        Number(alice_balance.amount) > Number(orig_alice_balance.amount) ||
+        Number(bob_balance.amount) > Number(orig_bob_balance.amount)
       ) {
         // if just alice, run try_icq
+        console.log(
+          'Only one balance increased. We may need to hit try icq dawg',
+        )
       }
     }, 5000)
   })

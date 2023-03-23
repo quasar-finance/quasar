@@ -368,7 +368,6 @@ pub fn do_start_unbond(
             // lets get the amount of tokens to unbond for this primitive
             let primitive_share_amount = Decimal::from_uint128(unbond_amount)
                 .checked_mul(pc.weight)?
-                .checked_mul(Decimal::from_uint128(num_primitives))?
                 .to_uint_floor();
 
             unbonding_stubs.push(UnbondingStub {
