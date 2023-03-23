@@ -20,7 +20,7 @@ use crate::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
         IbcMsgKind,
     },
-    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, INITIALIZED, LP_SHARES, OSMO_LOCK},
+    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK},
 };
 
 pub fn try_icq(
