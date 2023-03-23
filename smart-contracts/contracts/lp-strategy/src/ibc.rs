@@ -549,15 +549,6 @@ fn handle_lock_tokens_ack(
 
     // save the lock id in the contract
     OSMO_LOCK.save(storage, &resp.id)?;
-    let expected_lp_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
-        if let RawAmount::LpShares(val) = val.raw_amount {
-            Ok(acc.checked_add(val)?)
-        } else {
-            Err(ContractError::IncorrectRawAmount)
-        }
-    })?;
-
-    assert_eq!(total_lp_shares, expected_lp_shares);
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         old.d_unlocked_shares =
@@ -733,7 +724,7 @@ mod tests {
         // base64 of '{"data":"ChA6DAoKCgV1b3NtbxIBMEg4ChA6DAoKCgVzdGFrZRIBMEg4ChY6EgoQCgtnYW1tL3Bvb2wvMRIBMEg4Cic6IwoSNDk2MjY4NTg3NDQ1NTczOTAwEg0KBXVvc21vEgQxMDAwSDgKBAgSSDgKGjoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEg4"}'
         let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hBNkRBb0tDZ1YxYjNOdGJ4SUJNRWc0Q2hBNkRBb0tDZ1Z6ZEdGclpSSUJNRWc0Q2hZNkVnb1FDZ3RuWVcxdEwzQnZiMnd2TVJJQk1FZzRDaWM2SXdvU05EazJNalk0TlRnM05EUTFOVGN6T1RBd0VnMEtCWFZ2YzIxdkVnUXhNREF3U0RnS0JBZ1NTRGdLR2pvV0NoUXhMakF3TURBd01EQXdNREF3TURBd01EQXdNRWc0In0=").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
-        handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
+        handle_icq_ack(deps.as_mut().storage,  env, ack_bin).unwrap();
     }
 
     #[test]

@@ -127,7 +127,7 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(last_sim_join_pool_result)
+    Ok(last_sim_join_pool_result.checked_multiply_ratio(95u128, 100u128)?)
 }
 
 // exit shares should never be more than total shares here
@@ -293,13 +293,7 @@ mod tests {
         SIMULATED_JOIN_RESULT
             .save(
                 deps.as_mut().storage,
-                &QueryCalcJoinPoolSharesResponse {
-                    share_out_amount: "999999".to_string(),
-                    tokens_out: vec![OsmoCoin {
-                        denom: String::from("some-coin, does not matter"),
-                        amount: "100".to_string(),
-                    }],
-                },
+                &Uint128::new(999999),
             )
             .unwrap();
 
