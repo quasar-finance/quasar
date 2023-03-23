@@ -30,6 +30,7 @@ import {
   DistributionSchedule,
   QueryMsg,
   Coin,
+  VaultTokenInfoResponse,
   AllowanceResponse,
   BalanceResponse,
   ClaimsResponse,
@@ -46,7 +47,7 @@ import {
   PendingUnbondsResponse,
   Unbond,
   UnbondingStub,
-  VaultTokenInfoResponse,
+  TokenInfoResponse,
 } from './BasicVault.types'
 export interface BasicVaultReadOnlyInterface {
   contractAddress: string
@@ -66,7 +67,8 @@ export interface BasicVaultReadOnlyInterface {
   }) => Promise<PendingUnbondsResponse>
   getDebug: () => Promise<GetDebugResponse>
   balance: ({ address }: { address: string }) => Promise<BalanceResponse>
-  tokenInfo: () => Promise<VaultTokenInfoResponse>
+  tokenInfo: () => Promise<TokenInfoResponse>
+  additionalTokenInfo: () => Promise<TokenInfoResponse>
   allowance: ({
     owner,
     spender,
@@ -91,6 +93,7 @@ export class BasicVaultQueryClient implements BasicVaultReadOnlyInterface {
     this.getDebug = this.getDebug.bind(this)
     this.balance = this.balance.bind(this)
     this.tokenInfo = this.tokenInfo.bind(this)
+    this.additionalTokenInfo = this.additionalTokenInfo.bind(this)
     this.allowance = this.allowance.bind(this)
   }
 
@@ -164,9 +167,14 @@ export class BasicVaultQueryClient implements BasicVaultReadOnlyInterface {
       },
     })
   }
-  tokenInfo = async (): Promise<VaultTokenInfoResponse> => {
+  tokenInfo = async (): Promise<TokenInfoResponse> => {
     return this.client.queryContractSmart(this.contractAddress, {
       token_info: {},
+    })
+  }
+  additionalTokenInfo = async (): Promise<TokenInfoResponse> => {
+    return this.client.queryContractSmart(this.contractAddress, {
+      additional_token_info: {},
     })
   }
   allowance = async ({
@@ -352,6 +360,11 @@ export interface BasicVaultInterface extends BasicVaultReadOnlyInterface {
     memo?: string,
     funds?: Coin[],
   ) => Promise<ExecuteResult>
+  clearCache: (
+    fee?: number | StdFee | 'auto',
+    memo?: string,
+    funds?: Coin[],
+  ) => Promise<ExecuteResult>
 }
 export class BasicVaultClient extends BasicVaultQueryClient
   implements BasicVaultInterface {
@@ -382,6 +395,7 @@ export class BasicVaultClient extends BasicVaultQueryClient
     this.transferFrom = this.transferFrom.bind(this)
     this.sendFrom = this.sendFrom.bind(this)
     this.burnFrom = this.burnFrom.bind(this)
+    this.clearCache = this.clearCache.bind(this)
   }
 
   bond = async (
@@ -738,6 +752,22 @@ export class BasicVaultClient extends BasicVaultQueryClient
           amount,
           owner,
         },
+      },
+      fee,
+      memo,
+      funds,
+    )
+  }
+  clearCache = async (
+    fee: number | StdFee | 'auto' = 'auto',
+    memo?: string,
+    funds?: Coin[],
+  ): Promise<ExecuteResult> => {
+    return await this.client.execute(
+      this.sender,
+      this.contractAddress,
+      {
+        clear_cache: {},
       },
       fee,
       memo,

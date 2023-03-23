@@ -65,6 +65,8 @@ export type ExecuteMsg = {
     amount: Uint128;
     owner: string;
   };
+} | {
+  clear_cache: {};
 };
 export type Uint128 = string;
 export type Timestamp = Uint64;
@@ -162,6 +164,8 @@ export type QueryMsg = {
 } | {
   token_info: {};
 } | {
+  additional_token_info: {};
+} | {
   allowance: {
     owner: string;
     spender: string;
@@ -171,6 +175,14 @@ export interface Coin {
   amount: Uint128;
   denom: string;
   [k: string]: unknown;
+}
+export interface VaultTokenInfoResponse {
+  creation_time: Timestamp;
+  decimals: number;
+  name: string;
+  symbol: string;
+  thesis: string;
+  total_supply: Uint128;
 }
 export interface AllowanceResponse {
   allowance: Uint128;
@@ -240,11 +252,9 @@ export interface UnbondingStub {
   unbond_response?: UnbondResponse | null;
   unlock_time?: Timestamp | null;
 }
-export interface VaultTokenInfoResponse {
-  creation_time: Timestamp;
+export interface TokenInfoResponse {
   decimals: number;
   name: string;
   symbol: string;
-  thesis: string;
   total_supply: Uint128;
 }

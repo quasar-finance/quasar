@@ -339,6 +339,19 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "clear_cache"
+      ],
+      "properties": {
+        "clear_cache": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {

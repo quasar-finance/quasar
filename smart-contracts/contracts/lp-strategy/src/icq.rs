@@ -1,5 +1,8 @@
+use std::clone;
+
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    to_binary, Addr, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
+    Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -15,13 +18,15 @@ use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
+    bond::Bond,
     error::ContractError,
     helpers::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
         IbcMsgKind,
     },
     state::{
-        CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, SIMULATED_JOIN_AMOUNT_IN,
+        Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, SIMULATED_JOIN_AMOUNT_IN, UNBONDING_CLAIMS,
     },
 };
 
@@ -44,6 +49,28 @@ pub fn try_icq(
             data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
         };
+
+        // we dump pending bonds into the active bond queue
+        while !PENDING_BOND_QUEUE.is_empty(storage)? {
+            let bond = PENDING_BOND_QUEUE.pop_front(storage)?;
+            if let Some(bond) = bond {
+                BOND_QUEUE.push_back(storage, &bond)?;
+            }
+        }
+
+        let mut range: Vec<((Addr, String), Unbond)> = vec![];
+        for pending_unbonding_claim in
+            PENDING_UNBONDING_CLAIMS.range(storage, None, None, cosmwasm_std::Order::Ascending)
+        {
+            range.push(pending_unbonding_claim?);
+        }
+
+        for pending_unbonding_claim in range.iter() {
+            let (keys, unbond) = pending_unbonding_claim;
+
+            UNBONDING_CLAIMS.save(storage, keys.clone(), &unbond)?;
+            PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
+        }
 
         Ok(Some(create_ibc_ack_submsg(
             storage,

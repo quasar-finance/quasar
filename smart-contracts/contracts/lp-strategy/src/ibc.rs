@@ -399,7 +399,8 @@ pub fn handle_icq_ack(
     {
         scale_join_pool(storage, actual, join_pool, false)?
     } else {
-        scale_join_pool(storage, actual, join_pool, true)?
+        // this used to have scale true, keeping here for history
+        scale_join_pool(storage, actual, join_pool, false)?
     };
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
@@ -415,7 +416,7 @@ pub fn handle_icq_ack(
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
-    if SIMULATED_JOIN_AMOUNT_IN.load(storage)? != Uint128::zero() {
+    if scaled != Uint128::zero() {
         if let Some(msg) = bond {
             msges.push(msg);
             attrs.push(Attribute::new("bond-status", "bonding"));
@@ -447,7 +448,24 @@ pub fn handle_icq_ack(
         attrs.push(Attribute::new("unbond-status", "empty"));
     }
 
-    Ok(Response::new().add_submessages(msges).add_attributes(attrs))
+    Ok(Response::new()
+        .add_submessages(msges)
+        .add_attributes(attrs)
+        .add_attribute(
+            "BLBOBEOBFEOB",
+            if (actual == Uint128::zero()
+                || SIMULATED_JOIN_RESULT
+                    .may_load(storage)?
+                    .unwrap_or(Uint128::zero())
+                    == Uint128::zero())
+            {
+                "YES"
+            } else {
+                "NO"
+            },
+        )
+        .add_attribute("actual", actual.to_string())
+        .add_attribute("scaled", scaled.to_string()))
 }
 
 pub fn handle_ica_ack(
