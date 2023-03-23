@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
-    Uint128, WasmMsg, IbcMsg,
+    to_binary, Addr, CosmosMsg, Env, IbcMsg, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
+    Uint128, WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -36,25 +36,28 @@ pub fn do_start_unbond(
     storage: &mut dyn Storage,
     unbond: StartUnbond,
 ) -> Result<(), ContractError> {
-
     if UNBONDING_CLAIMS.has(storage, (unbond.owner.clone(), unbond.id.clone())) {
         return Err(ContractError::DuplicateKey);
     }
 
     //verify here against the amount in the queue aswell
-    let queued_shares = START_UNBOND_QUEUE.iter(storage)?
-    .map(|val| {
-        let v = val?;
-        if v.id == unbond.id {
-            Err(ContractError::DuplicateKey)
-        } else {
-        Ok(v)
-        }
-    })
-    .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, ContractError> {
-        let v = val?;
-        Ok(acc + v.primitive_shares)
-    })?;
+    let queued_shares = START_UNBOND_QUEUE
+        .iter(storage)?
+        .map(|val| {
+            let v = val?;
+            if v.id == unbond.id {
+                Err(ContractError::DuplicateKey)
+            } else {
+                Ok(v)
+            }
+        })
+        .try_fold(
+            Uint128::zero(),
+            |acc, val| -> Result<Uint128, ContractError> {
+                let v = val?;
+                Ok(acc + v.primitive_shares)
+            },
+        )?;
 
     if SHARES.load(storage, unbond.owner.clone())? < (unbond.primitive_shares + queued_shares) {
         return Err(ContractError::InsufficientFunds);
@@ -95,8 +98,7 @@ pub fn batch_start_unbond(
     }
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.locked_shares = old.locked_shares.checked_sub(to_unbond)
-        .map_err(|err| {
+        old.locked_shares = old.locked_shares.checked_sub(to_unbond).map_err(|err| {
             ContractError::TracedOverflowError(err, "lower_locked_shares".to_string())
         })?;
         old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
@@ -112,10 +114,14 @@ pub fn batch_start_unbond(
     )?))
 }
 
-pub fn do_begin_unlocking(storage: &mut dyn Storage, env: &Env, to_unbond: Uint128) -> Result<IbcMsg, ContractError> {
+pub fn do_begin_unlocking(
+    storage: &mut dyn Storage,
+    env: &Env,
+    to_unbond: Uint128,
+) -> Result<IbcMsg, ContractError> {
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-    
+
     let msg = MsgBeginUnlocking {
         owner: ica_address,
         id: OSMO_LOCK.load(storage)?,

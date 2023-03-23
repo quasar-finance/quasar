@@ -3,9 +3,12 @@ use cosmwasm_std::{
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
-    osmosis::gamm::{
-        v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-        v2::QuerySpotPriceRequest,
+    osmosis::{
+        gamm::{
+            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
+            v2::QuerySpotPriceRequest,
+        },
+        lockup::LockedRequest,
     },
 };
 use prost::Message;
@@ -17,7 +20,7 @@ use crate::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
         IbcMsgKind,
     },
-    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
+    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK},
 };
 
 pub fn try_icq(
@@ -99,8 +102,12 @@ pub fn prepare_full_query(
         quote_asset_denom: config.quote_denom,
     };
 
+    let lock_by_id = LockedRequest {
+        lock_id: OSMO_LOCK.may_load(storage)?.unwrap_or(1),
+    };
+
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    Ok(Query::new()
+    let q = Query::new()
         .add_request(
             base_balance.encode_to_vec(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
@@ -125,7 +132,11 @@ pub fn prepare_full_query(
             spot_price.encode_to_vec(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         )
-        .encode_pkt())
+        .add_request(
+            lock_by_id.encode_to_vec(),
+            "/osmosis.lockup.Query/LockedByID".to_string(),
+        );
+    Ok(q.encode_pkt())
 }
 
 // TODO add quote denom to base denom conversion

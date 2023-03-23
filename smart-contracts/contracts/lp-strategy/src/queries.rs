@@ -12,12 +12,12 @@ use crate::{
         ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
-        LockResponse, LpSharesResponse, PrimitiveSharesResponse, QueryMsg, TrappedErrorsResponse,
-        UnbondingClaimResponse, OsmoLockResponse,
+        LockResponse, LpSharesResponse, OsmoLockResponse, PrimitiveSharesResponse, QueryMsg,
+        TrappedErrorsResponse, UnbondingClaimResponse,
     },
     state::{
-        Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK,
-        REPLIES, SHARES, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, OSMO_LOCK,
+        Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
+        PENDING_ACK, REPLIES, SHARES, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
     },
 };
 
@@ -46,7 +46,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {
-    Ok(OsmoLockResponse { lock_id: OSMO_LOCK.load(deps.storage)? })
+    Ok(OsmoLockResponse {
+        lock_id: OSMO_LOCK.load(deps.storage)?,
+    })
 }
 
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
@@ -114,7 +116,7 @@ pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse>
     let total = get_total_primitive_shares(deps.storage).map_err(|err| StdError::GenericErr {
         msg: err.to_string(),
     })?;
-     Ok(PrimitiveSharesResponse { total })
+    Ok(PrimitiveSharesResponse { total })
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
