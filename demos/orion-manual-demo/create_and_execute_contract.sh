@@ -95,9 +95,10 @@ VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --outpu
 echo "Got address of deployed contract = $VAULT_ADDR (vault)"
 
 echo "setting depositor"
-echo quasarnoded tx wasm execute $ADDR1 "{\"set_depositor\": {\"depositor\": $VAULT_ADDR}}" --from alice --keyring-backend $TXFLAG
-echo quasarnoded tx wasm execute $ADDR2 "{\"set_depositor\": {\"depositor\": \"$VAULT_ADDR\"}}" --from alice --keyring-backend $TXFLAG
-
+sleep 6
+quasarnoded tx wasm execute $ADDR1 '{"set_depositor": {"depositor": '$VAULT_ADDR'}}' --from alice --keyring-backend $TXFLAG
+sleep 6
+quasarnoded tx wasm execute $ADDR2 '{"set_depositor": {"depositor": '$VAULT_ADDR'}}' --from alice --keyring-backend $TXFLAG
 
 # echo "Seeding liquidity"
 # quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
