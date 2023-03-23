@@ -14,6 +14,7 @@ pub mod start_unbond;
 pub mod state;
 pub mod test_helpers;
 pub mod unbond;
+mod admin;
 
 #[cfg(test)]
 mod tests {

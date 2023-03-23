@@ -387,7 +387,13 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
 
-        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        let cache = crate::state::LpCache {
+            locked_shares: Uint128::new(500),
+            w_unlocked_shares: Uint128::zero(),
+            d_unlocked_shares: Uint128::zero(),
+        };
+
+        let res = batch_unbond(deps.as_mut().storage, &env, cache).unwrap();
         assert!(res.is_none())
     }
 
@@ -447,7 +453,8 @@ mod tests {
             .save(deps.as_mut().storage, &Uint128::from(100u128))
             .unwrap();
 
-        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        let lp_cache = LP_SHARES.load(deps.as_mut().storage).unwrap();
+        let res = batch_unbond(deps.as_mut().storage, &env, lp_cache).unwrap();
         assert!(res.is_some());
 
         // checking above we have total exit amount = 100 + 101 + 102
