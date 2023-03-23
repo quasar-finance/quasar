@@ -330,19 +330,19 @@ pub fn unbond(
     let start_unbond_response =
         do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or(Response::new());
 
-    let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
+    // let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
 
     let start_unbond_msgs = start_unbond_response
         .messages
         .iter()
         .map(|sm| sm.msg.clone());
-    let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
+    // let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
 
     Ok(Response::new()
         .add_messages(start_unbond_msgs)
-        .add_messages(unbond_msgs)
-        .add_attributes(start_unbond_response.attributes)
-        .add_attributes(unbond_response.attributes))
+        // .add_messages(unbond_msgs)
+        .add_attributes(start_unbond_response.attributes))
+    // .add_attributes(unbond_response.attributes))
 }
 
 pub fn do_start_unbond(

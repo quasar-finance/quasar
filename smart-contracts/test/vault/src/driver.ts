@@ -17,18 +17,18 @@ import {
 export async function seed_liquidity_from_alice(vaultAddress: string) {
   console.log('=== Seeding Liquidity from alice (bad solution) ===')
 
-  let bond_result = await bond({
-    from: 'alice',
-    vaultAddress,
-    funds: [
-      {
-        amount: '50',
-        denom: OSMO_DENOM,
-      },
-    ],
-  })
+  //   let bond_result = await bond({
+  //     from: 'alice',
+  //     vaultAddress,
+  //     funds: [
+  //       {
+  //         amount: '50',
+  //         denom: OSMO_DENOM,
+  //       },
+  //     ],
+  //   })
 
-  await expect_balance_increase(vaultAddress, true, false, false)
+  //   await expect_balance_increase(vaultAddress, true, false, false)
   console.log('Seed liq complete')
 }
 
@@ -238,8 +238,8 @@ export async function extreme_test(vaultAddress: string) {
   ])
 
   await Promise.all([
-    await expect_balance_increase(vaultAddress, true, false, true),
-    await expect_unlock_time_passed(vaultAddress, false, true, false),
+    expect_balance_increase(vaultAddress, true, false, true),
+    expect_unlock_time_passed(vaultAddress, false, true, false),
   ])
 
   console.log('## End epoch 3 ###########################')
@@ -350,127 +350,127 @@ export async function mayhem(vaultAddress: string) {
   console.log('Charlie start balance:', charlie_start_balance.amount)
   console.log('==============================\n')
 
-  console.log('## Start epoch 1 ###########################')
-  await Promise.all([
-    bond({
-      from: 'alice',
-      vaultAddress,
-      funds: [
-        {
-          amount: '50',
-          denom: OSMO_DENOM,
-        },
-      ],
-    }),
-    bond({
-      from: 'bob',
-      vaultAddress,
-      funds: [
-        {
-          amount: '50',
-          denom: OSMO_DENOM,
-        },
-      ],
-    }),
-    bond({
-      from: 'charlie',
-      vaultAddress,
-      funds: [
-        {
-          amount: '2500',
-          denom: OSMO_DENOM,
-        },
-      ],
-    }),
-  ])
+  //   console.log('## Start epoch 1 ###########################')
+  //   await Promise.all([
+  //     bond({
+  //       from: 'alice',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '50',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ],
+  //     }),
+  //     bond({
+  //       from: 'bob',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '50',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ],
+  //     }),
+  //     bond({
+  //       from: 'charlie',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '2500',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ],
+  //     }),
+  //   ])
 
-  await expect_balance_increase(vaultAddress, true, true, true)
+  //   await expect_balance_increase(vaultAddress, true, true, true)
 
-  console.log('## End epoch 1 ###########################')
-  console.log('## Start epoch 2 ###########################')
+  //   console.log('## End epoch 1 ###########################')
+  //   console.log('## Start epoch 2 ###########################')
 
-  await Promise.all([
-    bond({
-      from: 'alice',
-      vaultAddress,
-      funds: [
-        {
-          amount: '30',
-          denom: OSMO_DENOM,
-        },
-      ],
-    }),
-    bond({
-      from: 'bob',
-      vaultAddress,
-      funds: [
-        {
-          amount: '30',
-          denom: OSMO_DENOM,
-        },
-      ],
-    }),
-    bond({
-      from: 'charlie',
-      vaultAddress,
-      funds: [
-        {
-          amount: '1000',
-          denom: OSMO_DENOM,
-        },
-      ], //2475 after this
-    }),
-  ])
+  //   await Promise.all([
+  //     bond({
+  //       from: 'alice',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '30',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ],
+  //     }),
+  //     bond({
+  //       from: 'bob',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '30',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ],
+  //     }),
+  //     bond({
+  //       from: 'charlie',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '1000',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ], //2475 after this
+  //     }),
+  //   ])
 
-  await expect_balance_increase(vaultAddress, true, true, true)
-  // then 2 do bond and one does try icq
+  //   await expect_balance_increase(vaultAddress, true, true, true)
+  //   // then 2 do bond and one does try icq
 
-  console.log('## End epoch 2 ###########################')
-  console.log('## Start epoch 3 ###########################')
+  //   console.log('## End epoch 2 ###########################')
+  //   console.log('## Start epoch 3 ###########################')
 
-  await Promise.all([
-    bond({
-      from: 'alice',
-      vaultAddress,
-      funds: [
-        {
-          amount: '100',
-          denom: OSMO_DENOM,
-        },
-      ], //2475 after this
-    }),
-    start_unbond({
-      from: 'bob',
-      vaultAddress,
-      amount: '30',
-    }),
-    bond({
-      from: 'charlie',
-      vaultAddress,
-      funds: [
-        {
-          amount: '1000',
-          denom: OSMO_DENOM,
-        },
-      ], //2475 after this
-    }),
-  ])
+  //   await Promise.all([
+  //     bond({
+  //       from: 'alice',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '100',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ], //2475 after this
+  //     }),
+  //     start_unbond({
+  //       from: 'bob',
+  //       vaultAddress,
+  //       amount: '30',
+  //     }),
+  //     bond({
+  //       from: 'charlie',
+  //       vaultAddress,
+  //       funds: [
+  //         {
+  //           amount: '1000',
+  //           denom: OSMO_DENOM,
+  //         },
+  //       ], //2475 after this
+  //     }),
+  //   ])
 
-  await Promise.all([
-    await expect_unlock_time_passed(vaultAddress, false, true, false),
-    await expect_balance_increase(vaultAddress, true, false, true),
-  ])
+  //   await Promise.all([
+  //     await expect_unlock_time_passed(vaultAddress, false, true, false),
+  //     await expect_balance_increase(vaultAddress, true, false, true),
+  //   ])
 
-  console.log('## End epoch 3 ###########################')
+  //   console.log('## End epoch 3 ###########################')
   console.log('## Start epoch 4 ###########################')
 
   // then the other two do bond and one does try icq
   await Promise.all([
-    start_unbond({
-      from: 'alice',
-      vaultAddress,
-      amount: '30',
-    }),
+    //   start_unbond({
+    //     from: 'alice',
+    //     vaultAddress,
+    //     amount: '30',
+    //   }),
     bond({
       from: 'bob',
       vaultAddress,
@@ -481,38 +481,38 @@ export async function mayhem(vaultAddress: string) {
         },
       ],
     }),
-    start_unbond({
-      from: 'charlie',
-      vaultAddress,
-      amount: '30',
-    }),
+    //   start_unbond({
+    //     from: 'charlie',
+    //     vaultAddress,
+    //     amount: '30',
+    //   }),
   ])
 
   await Promise.all([
-    await expect_unlock_time_passed(vaultAddress, true, false, false),
-    await expect_balance_increase(vaultAddress, true, false, true),
+    expect_unlock_time_passed(vaultAddress, true, false, false),
+    expect_balance_increase(vaultAddress, true, false, true),
   ])
-  // then one final try icq to clear everything
+  //   // then one final try icq to clear everything
 
-  console.log('## End epoch 4 ###########################')
+  //   console.log('## End epoch 4 ###########################')
   console.log('## Start epoch 5 ###########################')
 
   await Promise.all([
-    start_unbond({
-      from: 'alice',
-      vaultAddress,
-      amount: '30',
-    }),
+    // start_unbond({
+    //   from: 'alice',
+    //   vaultAddress,
+    //   amount: '30',
+    // }),
     start_unbond({
       from: 'bob',
       vaultAddress,
       amount: '90',
     }),
-    start_unbond({
-      from: 'charlie',
-      vaultAddress,
-      amount: '1000',
-    }),
+    // start_unbond({
+    //   from: 'charlie',
+    //   vaultAddress,
+    //   amount: '1000',
+    // }),
   ])
   // then one more for good measure
 

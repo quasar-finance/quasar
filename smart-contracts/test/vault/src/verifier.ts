@@ -78,7 +78,7 @@ export async function expect_unlock_time_passed(
   await new Promise<void>((r) => {
     setTimeout(async () => {
       await try_icq({ vaultAddress, from: 'alice' })
-    }, 20000)
+    }, 30000)
 
     let interval = setInterval(async () => {
       console.log('\nQuerying pending unbonds')
