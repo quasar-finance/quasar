@@ -7,12 +7,11 @@ import {
   getPendingUnbonds,
   start_unbond,
 } from './vault'
-import { expect_balance_increase } from './verifier'
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en'
-
-TimeAgo.addDefaultLocale(en)
-const ta = new TimeAgo('en-US')
+import {
+  expect_balance_increase,
+  expect_chain_balance_increase,
+  expect_unlock_time_passed,
+} from './verifier'
 
 export async function seed_liquidity_from_alice(vaultAddress: string) {
   console.log('=== Seeding Liquidity from alice (bad solution) ===')
@@ -117,46 +116,13 @@ export async function simple_test(vaultAddress: string) {
   //     JSON.stringify(start_unbond_result_2, null, 2),
   //   )
 
-  await new Promise<void>((r) => {
-    let interval = setInterval(async () => {
-      console.log('\nQuerying pending unbonds')
-      let alice_pending_unbonds = await getPendingUnbonds(vaultAddress, 'alice')
-      let bob_pending_unbonds = await getPendingUnbonds(vaultAddress, 'bob')
-      const alice_unlock_time =
-        Number(alice_pending_unbonds.pending_unbonds[0].stub[0].unlock_time) /
-        1000000 //millis
-      const bob_unlock_time =
-        Number(bob_pending_unbonds.pending_unbonds[0].stub[0].unlock_time) /
-        1000000 //millis
-      console.log('Alice unlock_time:', ta.format(alice_unlock_time))
-      console.log('Bob unlock_time:', ta.format(bob_unlock_time))
-
-      if (
-        alice_unlock_time !== 0 &&
-        alice_unlock_time < new Date().getTime() &&
-        bob_unlock_time !== 0 &&
-        bob_unlock_time < new Date().getTime()
-      ) {
-        console.log('\n=== Start Simple Unbond test passed ===')
-        console.log('Ready to unbond')
-        clearInterval(interval)
-        r()
-      }
-    }, 5000)
-  })
+  await expect_unlock_time_passed(vaultAddress)
 
   console.log('\n=== Start Simple Claim Test ===')
   let claim_result = await claim({ from: 'alice', vaultAddress })
-  console.log('Claim result for alice:', JSON.stringify(claim_result, null, 2))
+  let claim_result_2 = await claim({ from: 'bob', vaultAddress })
 
-  setInterval(async () => {
-    console.log('Querying claim result & balance')
-    let alice_pending_unbonds = await getPendingUnbonds(vaultAddress, 'alice')
-    let alice_balance = await getChainBalance('alice')
-    console.log(
-      'Alice pending unbonds:',
-      JSON.stringify(alice_pending_unbonds, null, 2),
-    )
-    console.log('Alice balance:', alice_balance)
-  }, 5000)
+  await expect_chain_balance_increase()
+
+  console.log('=== Simple Test Complete ===')
 }

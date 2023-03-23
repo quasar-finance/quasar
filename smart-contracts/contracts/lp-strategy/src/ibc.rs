@@ -364,6 +364,8 @@ pub fn handle_icq_ack(
             denom: config.pool_denom.clone(),
             amount: Uint128::zero().to_string(),
         });
+
+    let old_lp_shares = LP_SHARES.load(storage)?;
     // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
         cache.locked_shares = locked_lp_shares.amount.parse()?;
@@ -407,7 +409,7 @@ pub fn handle_icq_ack(
     // TODO move the LP_SHARES.load to start_unbond
     let start_unbond = batch_start_unbond(storage, &env)?;
 
-    let unbond = batch_unbond(storage, &env)?;
+    let unbond = batch_unbond(storage, &env, old_lp_shares)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();

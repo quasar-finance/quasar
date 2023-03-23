@@ -43,7 +43,11 @@ pub fn do_unbond(
     Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
-pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMsg>, ContractError> {
+pub fn batch_unbond(
+    storage: &mut dyn Storage,
+    env: &Env,
+    old_lp_shares: LpCache,
+) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
@@ -73,7 +77,7 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
 
     // important to use lp_shares before it gets updated
     let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
+        calculate_token_out_min_amount(storage, total_exit, old_lp_shares.locked_shares)?;
 
     let msg = exit_swap(
         storage,

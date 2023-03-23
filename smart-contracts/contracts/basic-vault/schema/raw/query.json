@@ -172,6 +172,20 @@
       "additionalProperties": false
     },
     {
+      "description": "Additional token metadata, includes regular token info too",
+      "type": "object",
+      "required": [
+        "additional_token_info"
+      ],
+      "properties": {
+        "additional_token_info": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Implements CW20 \"allowance\" extension. Returns how much spender can use from owner account, 0 if unset.",
       "type": "object",
       "required": [
