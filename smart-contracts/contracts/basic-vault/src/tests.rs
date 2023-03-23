@@ -3,8 +3,8 @@ mod tests {
     use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
-        from_binary,
-        testing::{mock_env, mock_info, MockApi, MockStorage},
+        coins, from_binary,
+        testing::{mock_dependencies, mock_env, mock_info, MockApi, MockStorage},
         to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
         Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Reply,
         Response, StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp, Uint128, WasmMsg,
@@ -12,6 +12,7 @@ mod tests {
     use cw20::BalanceResponse;
 
     use cw_asset::AssetInfoBase;
+    use cw_utils::PaymentError;
     use lp_strategy::{
         msg::{
             ConfigResponse, IcaBalanceResponse, PrimitiveSharesResponse, UnbondingClaimResponse,
@@ -2040,5 +2041,33 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_unbond_with_funds_for_none_and_some() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("pepe", &coins(420, "uqsr"));
+
+        let msg = ExecuteMsg::Unbond { amount: None };
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+
+        let msg = ExecuteMsg::Unbond {
+            amount: Some(Uint128::new(420)),
+        };
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_claim_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("juan", &coins(420, "uqsr"));
+
+        let msg = ExecuteMsg::Claim {};
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
     }
 }
