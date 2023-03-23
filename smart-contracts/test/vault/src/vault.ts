@@ -1,7 +1,7 @@
 import { StdFee } from '@cosmjs/amino'
 import { BasicVaultClient } from '../BasicVault.client'
 import { Coin } from '../BasicVault.types'
-import { FEE_DENOM } from './config'
+import { FEE_DENOM, OSMO_DENOM } from './config'
 import { getWallet } from './wallet'
 
 let stdFee: StdFee = {
@@ -70,7 +70,7 @@ export async function claim({
 }
 
 // query
-export async function getBalances(vaultAddress: string, of: 'alice' | 'bob') {
+export async function getBalance(vaultAddress: string, of: 'alice' | 'bob') {
   let [_, wallet] = await getWallet(of)
   let basicVaultClient = await getVault('alice', vaultAddress)
   const address = (await wallet.getAccounts())[0].address
@@ -102,4 +102,13 @@ export async function getPendingUnbonds(
 
   let pendingUnbonds = await basicVaultClient.pendingUnbonds({ address })
   return pendingUnbonds
+}
+
+// chain
+export async function getChainBalance(of: 'alice' | 'bob') {
+  let [client, wallet] = await getWallet(of)
+  const address = (await wallet.getAccounts())[0].address
+
+  const balance = await client.getBalance(address, OSMO_DENOM)
+  return balance
 }

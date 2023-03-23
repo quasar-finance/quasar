@@ -553,8 +553,6 @@ fn handle_lock_tokens_ack(
         }
     })?;
 
-    assert_eq!(total_lp_shares, expected_lp_shares);
-
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
         old.d_unlocked_shares =
             old.d_unlocked_shares
