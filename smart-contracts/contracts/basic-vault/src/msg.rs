@@ -47,11 +47,6 @@ pub struct InstantiateMsg {
     // the total amount of tokens that can be deposited, eg: max uosmo of the contract
     pub total_cap: Uint128,
 
-    // // to be extended & discussed later
-    // pub entry_fee: Decimal,
-    // pub exit_fee: Decimal,
-    // pub fee_receiver: String, // address of the fee receiver
-
     // vault rewards contract code id
     pub vault_rewards_code_id: u64,
     // vault reward token
