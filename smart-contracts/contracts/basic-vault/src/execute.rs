@@ -5,6 +5,7 @@ use cosmwasm_std::{
 
 use cw20_base::contract::execute_burn;
 use cw_utils::{nonpayable, PaymentError};
+
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 

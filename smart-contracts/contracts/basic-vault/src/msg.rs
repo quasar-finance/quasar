@@ -130,6 +130,7 @@ pub enum ExecuteMsg {
         owner: String,
         amount: Uint128,
     },
+    ClearCache {},
 }
 
 #[cw_serde]
