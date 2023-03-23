@@ -10,7 +10,7 @@ use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 use vault_rewards::state::DistributionSchedule;
 
-use crate::state::{BondingStub, InvestmentInfo, Unbond, Cap};
+use crate::state::{BondingStub, Cap, InvestmentInfo, Unbond};
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {

@@ -6,9 +6,11 @@ use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
+    bond::Bond,
     error::Trap,
     helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
+    start_unbond::StartUnbond,
     state::{Config, LpCache, Unbond},
 };
 
@@ -76,6 +78,16 @@ pub enum QueryMsg {
     OsmoLock {},
     #[returns(SimulatedJoinResponse)]
     SimulatedJoin {},
+    #[returns(GetQueuesResponse)]
+    GetQueues {},
+}
+
+#[cw_serde]
+pub struct GetQueuesResponse {
+    pub pending_bond_queue: Vec<Bond>,
+    pub bond_queue: Vec<Bond>,
+    pub start_unbond_queue: Vec<StartUnbond>,
+    pub unbond_queue: Vec<Unbond>,
 }
 
 #[cw_serde]

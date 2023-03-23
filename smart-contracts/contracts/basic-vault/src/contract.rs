@@ -23,8 +23,8 @@ use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
-    ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig, QueryMsg,
-    VaultTokenInfoResponse, GetCapResponse,
+    ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
+    QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,

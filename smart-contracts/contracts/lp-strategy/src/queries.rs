@@ -6,11 +6,11 @@ use cosmwasm_std::{to_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, St
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
-    error::Trap,
+    error::{Trap, ContractError},
     helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
-        ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
-        IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
+        ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
+        IcaBalanceResponse, IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
         LockResponse, LpSharesResponse, OsmoLockResponse, PrimitiveSharesResponse, QueryMsg,
         SimulatedJoinResponse, TrappedErrorsResponse, UnbondingClaimResponse,
@@ -18,8 +18,8 @@ use crate::{
     state::{
         Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
         PENDING_ACK, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
-        TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
-    },
+        TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, PENDING_BOND_QUEUE, START_UNBOND_QUEUE, BOND_QUEUE, UNBOND_QUEUE,
+    }, bond::Bond, start_unbond::StartUnbond,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -44,7 +44,29 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
         QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
         QueryMsg::SimulatedJoin {} => to_binary(&handle_simulated_join(deps)?),
+        QueryMsg::GetQueues {} => to_binary(&handle_get_queues(deps)?),
     }
+}
+
+pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
+    let pbq: Result<Vec<Bond>, ContractError> = PENDING_BOND_QUEUE.iter(deps.storage)?.map(|all| {
+        Ok(all?)
+    }).collect();
+    let bq: Result<Vec<Bond>, ContractError> = BOND_QUEUE.iter(deps.storage)?.map(|all| {
+        Ok(all?)
+    }).collect();
+    let suq: Result<Vec<StartUnbond>, ContractError> = START_UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
+        Ok(all?)
+    }).collect();
+    let uq: Result<Vec<Unbond>, ContractError> = UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
+        Ok(all?)
+    }).collect();
+    Ok(GetQueuesResponse {
+        pending_bond_queue: pbq?,
+        bond_queue: bq?,
+        start_unbond_queue: suq?,
+        unbond_queue: uq?,
+    })
 }
 
 pub fn handle_simulated_join(deps: Deps) -> StdResult<SimulatedJoinResponse> {
