@@ -32,6 +32,7 @@ $BINARY add-genesis-account $($BINARY keys show bob --keyring-backend test -a --
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_1_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_2_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a --home $HOME_OSMOSIS) $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
+$BINARY add-genesis-account osmo15td5pfjkmfn8d6l4t8dc67l3apgt9epw4ct298 $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY gentx alice 10000000uosmo --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
 $BINARY collect-gentxs --home $HOME_OSMOSIS
 
