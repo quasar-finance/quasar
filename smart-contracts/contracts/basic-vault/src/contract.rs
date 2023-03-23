@@ -23,7 +23,8 @@ use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
-    ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg, VaultTokenInfoResponse,
+    ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig, QueryMsg,
+    VaultTokenInfoResponse,
 };
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,
@@ -236,6 +237,26 @@ pub fn execute(
                     .add_messages(update_user_reward_indexes),
             )
         }
+        // calls the TryIcq ExecuteMsg in the lp-strategy contract
+        ExecuteMsg::ClearCache {} => {
+            let try_icq_msg = lp_strategy::msg::ExecuteMsg::TryIcq {};
+
+            let mut msgs: Vec<WasmMsg> = vec![];
+
+            let primitives = INVESTMENT.load(deps.storage)?.primitives;
+            primitives.iter().try_for_each(
+                |pc: &PrimitiveConfig| -> Result<(), ContractError> {
+                    let clear_cache_msg = WasmMsg::Execute {
+                        contract_addr: pc.address.to_string(),
+                        funds: vec![],
+                        msg: to_binary(&try_icq_msg)?,
+                    };
+                    msgs.push(clear_cache_msg);
+                    Ok(())
+                },
+            )?;
+            Ok(Response::new().add_messages(msgs))
+        }
     }
 }
 
@@ -343,7 +364,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
+        testing::{mock_dependencies, mock_env, mock_info},
         ContractResult, Decimal, QuerierResult,
     };
 
@@ -497,5 +518,76 @@ mod test {
         });
 
         instantiate(deps.as_mut(), env, info, msg).unwrap();
+    }
+
+    #[test]
+    fn test_try_clear_cache() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("lulu", &[]);
+
+        let primitive_configs = vec![
+            PrimitiveConfig {
+                weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                address: "prim1".to_string(),
+                init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                    lock_period: 300,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    local_denom: "ibc/SOME_DENOM".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom: "uqsr".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                }),
+            },
+            PrimitiveConfig {
+                weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                address: "prim2".to_string(),
+                init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                    lock_period: 300,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/2".to_string(),
+                    local_denom: "ibc/OTHER_DENOM".to_string(),
+                    base_denom: "uqsr".to_string(),
+                    quote_denom: "uosmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                }),
+            },
+        ];
+
+        let investment_info = InvestmentInfo {
+            owner: Addr::unchecked("lulu"),
+            min_withdrawal: Uint128::from(100u128),
+            primitives: primitive_configs,
+        };
+
+        INVESTMENT
+            .save(deps.as_mut().storage, &investment_info)
+            .unwrap();
+
+        let msg = ExecuteMsg::ClearCache {};
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+
+        assert_eq!(res.messages.len(), 2);
+        assert_eq!(
+            res.messages[0],
+            SubMsg::new(WasmMsg::Execute {
+                contract_addr: "prim1".to_string(),
+                funds: vec![],
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+            })
+        );
+        assert_eq!(
+            res.messages[1],
+            SubMsg::new(WasmMsg::Execute {
+                contract_addr: "prim2".to_string(),
+                funds: vec![],
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+            })
+        );
     }
 }
