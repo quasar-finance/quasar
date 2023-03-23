@@ -13,9 +13,10 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
-    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
-    SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, BOND_QUEUE,
+    LpCache, PendingBond, RawAmount, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK,
+    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -45,7 +46,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
-    IbcTimeout, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg, StdResult,
+    IbcTimeout, QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -249,7 +250,7 @@ pub fn ibc_packet_ack(
         msg.original_packet.sequence,
         &msg.acknowledgement,
     )?;
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
+    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
 }
 
 pub fn handle_succesful_ack(
@@ -387,25 +388,15 @@ pub fn handle_icq_ack(
     let exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
-
-    let queued_bond_balance: StdResult<Uint128> = BOND_QUEUE.iter(storage)?.fold(Ok(Uint128::zero()), |acc, val| {
-        Ok(acc? + val?.amount)
-    });
+    let queued_bond_balance: StdResult<Uint128> = BOND_QUEUE
+        .iter(storage)?
+        .fold(Ok(Uint128::zero()), |acc, val| Ok(acc? + val?.amount));
 
     let actual = get_usable_bond_balance(storage, queued_bond_balance?)?;
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
-    let scaled = if actual == Uint128::zero()
-        || SIMULATED_JOIN_RESULT
-            .may_load(storage)?
-            .unwrap_or(Uint128::zero())
-            == Uint128::zero()
-    {
-        scale_join_pool(storage, actual, join_pool, false)?
-    } else {
-        // this used to have scale true, keeping here for history
-        scale_join_pool(storage, actual, join_pool, false)?
-    };
+    let scaled = scale_join_pool(storage, actual, join_pool, false)?;
+
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
@@ -420,16 +411,15 @@ pub fn handle_icq_ack(
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
-    if scaled != Uint128::zero() {
-        if let Some(msg) = bond {
-            msges.push(msg);
-            attrs.push(Attribute::new("bond-status", "bonding"));
-            IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_bond())
-            })?;
-        } else {
-            attrs.push(Attribute::new("bond-status", "empty"));
-        }
+
+    if let Some(msg) = bond {
+        msges.push(msg);
+        attrs.push(Attribute::new("bond-status", "bonding"));
+        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+            Ok(lock.lock_bond())
+        })?;
+    } else {
+        attrs.push(Attribute::new("bond-status", "empty"));
     }
 
     if let Some(msg) = start_unbond {
@@ -453,7 +443,7 @@ pub fn handle_icq_ack(
     }
 
     Ok(Response::new()
-        .add_submessages(msges)
+        .add_messages(msges.iter().map(|msg| msg.msg.clone()))
         .add_attributes(attrs)
         // can we remove this?
         .add_attribute(
