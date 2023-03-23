@@ -4,7 +4,7 @@ use cosmwasm_std::{
     from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response, Uint128,
 };
 use cw2::set_contract_version;
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
 
 use crate::bond::do_bond;
@@ -231,6 +231,8 @@ pub fn execute_start_unbond(
     id: String,
     share_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
     do_start_unbond(
         deps.storage,
         StartUnbond {
@@ -264,6 +266,8 @@ pub fn execute_unbond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
     do_unbond(deps.storage, &env, info.sender.clone(), id)?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
@@ -368,10 +372,11 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        attr,
-        testing::{mock_dependencies, mock_env},
+        attr, coins,
+        testing::{mock_dependencies, mock_env, mock_info},
         Addr, Timestamp,
     };
+    use cw_utils::PaymentError;
 
     use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
 
@@ -542,5 +547,32 @@ mod tests {
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
         assert!(lock.unbond.is_locked());
+    }
+
+    #[test]
+    fn test_start_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("pepe", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::StartUnbond {
+            id: "bond_id_1".to_string(),
+            share_amount: Uint128::new(69),
+        };
+
+        let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("addr0000", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::Unbond {
+            id: "unbond_id".to_string(),
+        };
+
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
     }
 }
