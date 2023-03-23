@@ -389,7 +389,11 @@ pub fn handle_icq_ack(
     let actual = get_usable_bond_balance(storage, &querier, &env, &config)?;
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
-    let scaled = scale_join_pool(storage, actual, join_pool)?;
+    let scaled = if actual == Uint128::zero() || SIMULATED_JOIN_RESULT.load(storage) == Uint128::zero() {
+        SIMULATED_JOIN_RESULT.load(storage)?
+    } else {
+        scale_join_pool(storage, actual, join_pool)?
+    };
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
