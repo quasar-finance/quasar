@@ -17,8 +17,8 @@ use cosmwasm_std::entry_point;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
-    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, RECOVERY_ACK,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -250,8 +250,7 @@ pub fn ibc_packet_ack(
         msg.original_packet.sequence,
         &msg.acknowledgement,
     )?;
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
-
+    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
 }
 
 pub fn handle_succesful_ack(
@@ -555,7 +554,7 @@ fn handle_lock_tokens_ack(
         Ok(old)
     })?;
 
-    let mut callback_submsgs: Vec<SubMsg> = vec![];
+    let mut callback_submsgs: Vec<CosmosMsg> = vec![];
     for claim in data.bonds {
         let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
         if querier
@@ -572,7 +571,7 @@ fn handle_lock_tokens_ack(
             };
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?.msg);
         }
     }
 
@@ -583,7 +582,7 @@ fn handle_lock_tokens_ack(
 
     // TODO, do we want to also check queue state? and see if we can already start a new execution?
     Ok(Response::new()
-        .add_submessages(callback_submsgs)
+        .add_messages(callback_submsgs)
         .add_attribute("locked_tokens", ack_bin.to_base64())
         .add_attribute("lock_id", resp.id.to_string()))
 }
@@ -596,12 +595,13 @@ fn handle_exit_pool_ack(
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
-    let total_exited_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
-        ContractError::ParseIntError {
-            error: err,
-            value: msg.token_out_amount,
-        }
-    })?);
+    let total_exited_tokens =
+        Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
+            ContractError::ParseIntError {
+                error: err,
+                value: msg.token_out_amount,
+            }
+        })?);
 
     // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_exited_tokens)?;

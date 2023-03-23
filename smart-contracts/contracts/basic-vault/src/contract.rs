@@ -10,7 +10,9 @@ use cw20_base::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
-use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
+use cw20_base::contract::{
+    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
+};
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
@@ -280,7 +282,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
         QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_vault_token_info(deps)?),
+        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
+        QueryMsg::AdditionalTokenInfo {} => to_binary(&query_vault_token_info(deps)?),
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::Allowance { owner, spender } => {
             to_binary(&query_allowance(deps, owner, spender)?)

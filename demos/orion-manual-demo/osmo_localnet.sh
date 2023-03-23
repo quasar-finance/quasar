@@ -11,7 +11,7 @@ USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon 
 RELAYER_ACC="$(cat ./keys/osmo.key)"
 
 ALICE_GENESIS_COINS=20000000uosmo,2000000000stake,1000000000000fakestake
-BOB_GENESIS_COINS=10000000000000uosmo,1000000000000stake,1000000000000fakestake
+BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake,1000000000000fakestake
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
 USER_2_GENESIS_COINS=10000000000stake,10000000000uosmo
 RELAYER_ACC_GENESIS_COINS=10000000uosmo,10000000000stake
@@ -32,9 +32,7 @@ $BINARY add-genesis-account $($BINARY keys show bob --keyring-backend test -a --
 $BINARY add-genesis-account $($BINARY keys show user1 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_1_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show user2 --keyring-backend test -a --home $HOME_OSMOSIS) $USER_2_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY add-genesis-account $($BINARY keys show relayer_acc --keyring-backend test -a --home $HOME_OSMOSIS) $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
-$BINARY add-genesis-account osmo15td5pfjkmfn8d6l4t8dc67l3apgt9epw4ct298 $RELAYER_ACC_GENESIS_COINS --home $HOME_OSMOSIS
 $BINARY gentx alice 10000000uosmo --chain-id $CHAIN_ID --keyring-backend test --home $HOME_OSMOSIS
-
 $BINARY collect-gentxs --home $HOME_OSMOSIS
 
 # Check platform
