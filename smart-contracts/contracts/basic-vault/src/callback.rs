@@ -149,6 +149,14 @@ pub fn on_start_unbond(
     unbond_id: String,
     unlock_time: Timestamp,
 ) -> Result<Response, ContractError> {
+    let invest = INVESTMENT.load(deps.storage)?;
+    let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
+
+    // if we don't find a primitive, this is an unauthorized call
+    if primitive_config.is_none() {
+        return Err(ContractError::Unauthorized {});
+    }
+
     UNBOND_STATE.update(
         deps.storage,
         unbond_id.clone(),
@@ -181,6 +189,14 @@ pub fn on_unbond(
     info: MessageInfo,
     unbond_id: String,
 ) -> Result<Response, ContractError> {
+    let invest = INVESTMENT.load(deps.storage)?;
+    let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
+
+    // if we don't find a primitive, this is an unauthorized call
+    if primitive_config.is_none() {
+        return Err(ContractError::Unauthorized {});
+    }
+
     DEBUG_TOOL.save(
         deps.storage,
         &format!(
