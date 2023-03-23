@@ -57,23 +57,23 @@ echo "setting up go relayer"
 
 echo "starting go relaying"
 # run an instance of go relayer for each path, thus 3 in total
-rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 300s -p events >>./logs/quasar_cosmos_rly.log 2>&1 &
-RLY_PID_1=$!
+# rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 300s -p events >>./logs/quasar_cosmos_rly.log 2>&1 &
+# RLY_PID_1=$!
 
 rly start quasar_osmosis --debug-addr "localhost:7598" -p events --time-threshold 300s >>./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_2=$!
 
-rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >>./logs/cosmos_osmosis.log 2>&1 &
-RLY_PID_3=$!
+# rly start cosmos_osmosis --debug-addr "localhost:7599" -p events >>./logs/cosmos_osmosis.log 2>&1 &
+# RLY_PID_3=$!
 
 echo "ibc transferring uosmo"
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 10001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 
