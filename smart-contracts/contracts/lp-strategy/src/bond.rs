@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_ica_address, get_raw_total_shares},
+    helpers::{get_ica_address, get_total_primitive_shares},
     ibc_util::do_transfer,
     icq::try_icq,
     state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
@@ -115,7 +115,7 @@ fn create_claim(
     bond_id: &str,
     total_balance: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let total_shares = get_raw_total_shares(storage)?;
+    let total_shares = get_total_primitive_shares(storage)?;
 
     // calculate the correct size of the claim
     let claim_amount = calculate_claim(user_balance, total_balance, total_shares)?;

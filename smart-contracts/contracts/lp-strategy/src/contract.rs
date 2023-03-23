@@ -7,6 +7,7 @@ use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
 
+use crate::admin::check_or_set_admin;
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::SubMsgKind;
@@ -20,7 +21,7 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL,
     LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE,
+    UNBOND_QUEUE, ADMIN,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -205,6 +206,10 @@ pub fn execute_bond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
+    if !check_or_set_admin(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     let msg = do_bond(deps.storage, deps.querier, env, info.clone(), id)?;
 
     // if msg is some, we are dispatching an icq
@@ -232,6 +237,10 @@ pub fn execute_start_unbond(
     share_amount: Uint128,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
+
+    if !check_or_set_admin(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
 
     do_start_unbond(
         deps.storage,
@@ -267,6 +276,10 @@ pub fn execute_unbond(
     id: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
+
+    if !check_or_set_admin(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
 
     do_unbond(deps.storage, &env, info.sender.clone(), id)?;
 
