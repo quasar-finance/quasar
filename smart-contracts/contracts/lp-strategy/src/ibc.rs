@@ -435,26 +435,7 @@ pub fn handle_icq_ack(
         }
     }
 
-    Ok(Response::new()
-        .add_submessages(msges)
-        .add_attributes(attrs)
-        // can we remove this?
-        .add_attribute(
-            "BLBOBEOBFEOB",
-            if (actual == Uint128::zero()
-                || SIMULATED_JOIN_RESULT
-                    .may_load(storage)?
-                    .unwrap_or(Uint128::zero())
-                    == Uint128::zero())
-            {
-                "YES"
-            } else {
-                "NO"
-            },
-        )
-        .add_attribute("actual", actual.to_string())
-        .add_attribute("scaled", scaled.to_string())
-    )
+    Ok(Response::new().add_submessages(msges).add_attributes(attrs))
 }
 
 pub fn handle_ica_ack(

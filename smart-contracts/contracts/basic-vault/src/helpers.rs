@@ -28,9 +28,13 @@ pub fn can_unbond_from_primitive(
         .query_wasm_smart(stub.address.clone(), &unbonding_claim_query)?;
 
     // if we attempted to unbond, don't attempt again
-    match unbonding_claim.unbond.attempted {
-        true => Ok(false),
-        false => Ok(unbonding_claim.unbond.unlock_time < env.block.time),
+    if let Some(unbond) = unbonding_claim.unbond {
+        match unbond.attempted {
+            true => Ok(false),
+            false => Ok(unbond.unlock_time < env.block.time),
+        }
+    } else {
+        Ok(true)
     }
 }
 

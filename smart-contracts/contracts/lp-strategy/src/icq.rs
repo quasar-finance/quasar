@@ -42,25 +42,24 @@ pub fn try_icq(
 
         let ica_channel = ICA_CHANNEL.load(storage)?;
 
-
-        let mut pending_bonds_value =  Uint128::zero();
+        let mut pending_bonds_value = Uint128::zero();
         // we dump pending bonds into the active bond queue
         while !PENDING_BOND_QUEUE.is_empty(storage)? {
             let bond = PENDING_BOND_QUEUE.pop_front(storage)?;
             if let Some(bond) = bond {
                 BOND_QUEUE.push_back(storage, &bond)?;
-                pending_bonds_value.checked_add(bond.amount)?;
+                pending_bonds_value = pending_bonds_value.checked_add(bond.amount)?;
             }
         }
 
-         // deposit needs to internally rebuild the amount of funds under the smart contract
-         let packet = prepare_full_query(storage, env.clone(), ica_channel,  pending_bonds_value)?;
+        // deposit needs to internally rebuild the amount of funds under the smart contract
+        let packet = prepare_full_query(storage, env.clone(), ica_channel, pending_bonds_value)?;
 
-         let send_packet_msg = IbcMsg::SendPacket {
-             channel_id: icq_channel,
-             data: to_binary(&packet)?,
-             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-         };
+        let send_packet_msg = IbcMsg::SendPacket {
+            channel_id: icq_channel,
+            data: to_binary(&packet)?,
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        };
 
         let mut range: Vec<((Addr, String), Unbond)> = vec![];
         for pending_unbonding_claim in
@@ -111,7 +110,7 @@ pub fn prepare_full_query(
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
     // we use the current current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
-    // since we're going to be moving the entire pending bond queue to the bond queue in this icq, we  can 
+    // since we're going to be moving the entire pending bond queue to the bond queue in this icq, we  can
     // fold the PENDING_BOND_QUEUE
     let balance = get_usable_bond_balance(storage, bonding_amount)?;
 
@@ -263,8 +262,13 @@ mod tests {
         let pkt = IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
             data: to_binary(
-                &prepare_full_query(deps.as_mut().storage, env.clone(), ica_channel, Uint128::new(0))
-                    .unwrap(),
+                &prepare_full_query(
+                    deps.as_mut().storage,
+                    env.clone(),
+                    ica_channel,
+                    Uint128::new(0),
+                )
+                .unwrap(),
             )
             .unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),

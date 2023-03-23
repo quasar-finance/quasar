@@ -1,4 +1,9 @@
-import { getBalance, getChainBalance, getPendingUnbonds } from './vault'
+import {
+  getBalance,
+  getChainBalance,
+  getPendingUnbonds,
+  try_icq,
+} from './vault'
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en'
 import { get_max_unlock_time } from './helpers'
@@ -16,6 +21,10 @@ export async function expect_balance_increase(
   let alice_balance_initial = await getBalance(vaultAddress, 'alice')
   let bob_balance_initial = await getBalance(vaultAddress, 'bob')
   let charlie_balance_initial = await getBalance(vaultAddress, 'charlie')
+
+  setTimeout(async () => {
+    await try_icq({ vaultAddress, from: 'alice' })
+  }, 20000)
 
   await new Promise<void>((r) => {
     let interval = setInterval(async () => {
@@ -67,6 +76,10 @@ export async function expect_unlock_time_passed(
 ) {
   const start = new Date()
   await new Promise<void>((r) => {
+    setTimeout(async () => {
+      await try_icq({ vaultAddress, from: 'alice' })
+    }, 20000)
+
     let interval = setInterval(async () => {
       console.log('\nQuerying pending unbonds')
       let alice_pending_unbonds = await getPendingUnbonds(vaultAddress, 'alice')

@@ -138,14 +138,16 @@ pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractErro
         if !BOND_QUEUE.is_empty(deps.storage)? {
             lock.bond = IbcLock::Locked;
             res = res.add_attribute("bond_queue", "locked");
-        }
-        if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_start_unbond();
-            res = res.add_attribute("start_unbond_queue", "locked");
-        }
-        if !UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_unbond();
-            res = res.add_attribute("unbond_queue", "locked");
+        } else {
+            if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+                lock = lock.lock_start_unbond();
+                res = res.add_attribute("start_unbond_queue", "locked");
+            } else {
+                if !UNBOND_QUEUE.is_empty(deps.storage)? {
+                    lock = lock.lock_unbond();
+                    res = res.add_attribute("unbond_queue", "locked");
+                }
+            }
         }
         if lock.is_unlocked() {
             res = res.add_attribute("IBC_LOCK", "unlocked");

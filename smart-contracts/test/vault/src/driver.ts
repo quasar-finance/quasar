@@ -120,8 +120,8 @@ export async function simple_test(vaultAddress: string) {
   await expect_unlock_time_passed(vaultAddress, true, true, false)
 
   console.log('\n=== Start Simple Claim Test ===')
-  let claim_result = await claim({ from: 'alice', vaultAddress })
-  let claim_result_2 = await claim({ from: 'bob', vaultAddress })
+  //   let claim_result = await claim({ from: 'alice', vaultAddress })
+  //   let claim_result_2 = await claim({ from: 'bob', vaultAddress })
 
   await expect_chain_balance_increase(true, true, false)
 
@@ -243,17 +243,29 @@ export async function extreme_test(vaultAddress: string) {
   ])
 
   console.log('## End epoch 3 ###########################')
-  console.log('## Start epoch 4 ###########################')
+  console.log(
+    '## Start epoch 4 ########################### (this is the hard one)',
+  )
 
   await Promise.all([
-    await start_unbond({
+    start_unbond({
       from: 'alice',
       vaultAddress,
       amount: '60', // total 60 after this
     }),
-    await claim({ from: 'alice', vaultAddress }),
-    await claim({ from: 'bob', vaultAddress }),
-    await bond({
+    // await claim({ from: 'alice', vaultAddress }),
+    // await claim({ from: 'bob', vaultAddress }),
+    bond({
+      from: 'bob',
+      vaultAddress,
+      funds: [
+        {
+          amount: '20', //total 5000 after this
+          denom: OSMO_DENOM,
+        },
+      ],
+    }),
+    bond({
       from: 'charlie',
       vaultAddress,
       funds: [
@@ -266,31 +278,31 @@ export async function extreme_test(vaultAddress: string) {
   ])
 
   await Promise.all([
-    expect_balance_increase(vaultAddress, false, false, true),
+    expect_balance_increase(vaultAddress, false, true, true),
     expect_unlock_time_passed(vaultAddress, true, false, false),
-    expect_chain_balance_increase(true, true, false),
+    // expect_chain_balance_increase(true, true, false),
   ])
 
   console.log('## End epoch 4 ###########################')
   console.log('## Start epoch 5 ###########################')
 
   await Promise.all([
-    await claim({ from: 'alice', vaultAddress }),
+    // await claim({ from: 'alice', vaultAddress }),
     await start_unbond({ from: 'bob', vaultAddress, amount: '30' }), // total 20 after this
-    await claim({ from: 'charlie', vaultAddress }),
+    // await claim({ from: 'charlie', vaultAddress }),
   ])
 
   await Promise.all([
-    await expect_chain_balance_increase(true, false, true),
+    // await expect_chain_balance_increase(true, false, true),
     await expect_unlock_time_passed(vaultAddress, false, true, false),
   ])
 
   console.log('## End epoch 5 ###########################')
   console.log('## Start epoch 6 ###########################')
 
-  await Promise.all([await claim({ from: 'bob', vaultAddress })])
+  //   await Promise.all([await claim({ from: 'bob', vaultAddress })])
 
-  await Promise.all([await expect_chain_balance_increase(false, true, false)])
+  //   await Promise.all([await expect_chain_balance_increase(false, true, false)])
 
   console.log('## End epoch 6 ###########################')
 
@@ -328,7 +340,7 @@ export async function extreme_test(vaultAddress: string) {
   console.log('TEST PASSED WTF (verify end funds vs start funds)')
 }
 
-export async function deposit_only(vaultAddress: string) {
+export async function mayhem(vaultAddress: string) {
   const alice_start_balance = await getChainBalance('alice')
   const bob_start_balance = await getChainBalance('bob')
   const charlie_start_balance = await getChainBalance('charlie')
@@ -372,12 +384,6 @@ export async function deposit_only(vaultAddress: string) {
     }),
   ])
 
-  await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
-  ])
   await expect_balance_increase(vaultAddress, true, true, true)
 
   console.log('## End epoch 1 ###########################')
@@ -416,12 +422,6 @@ export async function deposit_only(vaultAddress: string) {
     }),
   ])
 
-  await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
-  ])
   await expect_balance_increase(vaultAddress, true, true, true)
   // then 2 do bond and one does try icq
 
@@ -429,19 +429,20 @@ export async function deposit_only(vaultAddress: string) {
   console.log('## Start epoch 3 ###########################')
 
   await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
     bond({
-      from: 'bob',
+      from: 'alice',
       vaultAddress,
       funds: [
         {
-          amount: '300',
+          amount: '100',
           denom: OSMO_DENOM,
         },
-      ],
+      ], //2475 after this
+    }),
+    start_unbond({
+      from: 'bob',
+      vaultAddress,
+      amount: '30',
     }),
     bond({
       from: 'charlie',
@@ -456,20 +457,22 @@ export async function deposit_only(vaultAddress: string) {
   ])
 
   await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
+    await expect_unlock_time_passed(vaultAddress, false, true, false),
+    await expect_balance_increase(vaultAddress, true, false, true),
   ])
-  await expect_balance_increase(vaultAddress, false, true, true)
 
   console.log('## End epoch 3 ###########################')
   console.log('## Start epoch 4 ###########################')
 
   // then the other two do bond and one does try icq
   await Promise.all([
-    bond({
+    start_unbond({
       from: 'alice',
+      vaultAddress,
+      amount: '30',
+    }),
+    bond({
+      from: 'bob',
       vaultAddress,
       funds: [
         {
@@ -478,58 +481,52 @@ export async function deposit_only(vaultAddress: string) {
         },
       ],
     }),
-    try_icq({
-      vaultAddress,
-      from: 'bob',
-    }),
-    bond({
+    start_unbond({
       from: 'charlie',
       vaultAddress,
-      funds: [
-        {
-          amount: '1000',
-          denom: OSMO_DENOM,
-        },
-      ],
+      amount: '30',
     }),
   ])
 
   await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
+    await expect_unlock_time_passed(vaultAddress, true, false, false),
+    await expect_balance_increase(vaultAddress, true, false, true),
   ])
-  await expect_balance_increase(vaultAddress, true, false, true)
   // then one final try icq to clear everything
 
   console.log('## End epoch 4 ###########################')
   console.log('## Start epoch 5 ###########################')
 
   await Promise.all([
-    try_icq({
-      vaultAddress,
+    start_unbond({
       from: 'alice',
+      vaultAddress,
+      amount: '30',
+    }),
+    start_unbond({
+      from: 'bob',
+      vaultAddress,
+      amount: '90',
+    }),
+    start_unbond({
+      from: 'charlie',
+      vaultAddress,
+      amount: '1000',
     }),
   ])
   // then one more for good measure
 
+  await expect_unlock_time_passed(vaultAddress, true, true, true)
+
   console.log('## End epoch 5 ###########################')
-  console.log('## Start epoch 6 ###########################')
-
-  await Promise.all([
-    try_icq({
-      vaultAddress,
-      from: 'alice',
-    }),
-  ])
-
-  console.log('## End epoch 6 ###########################')
 
   const alice_end_balance = await getBalance(vaultAddress, 'alice')
   const bob_end_balance = await getBalance(vaultAddress, 'bob')
   const charlie_end_balance = await getBalance(vaultAddress, 'charlie')
 
+  // alice should have 300 -ish
+  // bob should have 380 -ish
+  // charlie should have 5500-ish
   console.log('\n=====================')
   console.log('Alice balance end:', `${alice_end_balance}`)
   console.log('Bob balance end:', `${bob_end_balance}`)

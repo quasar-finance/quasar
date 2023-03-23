@@ -128,7 +128,7 @@ pub struct ListUnbondingClaimsResponse {
 
 #[cw_serde]
 pub struct UnbondingClaimResponse {
-    pub unbond: Unbond,
+    pub unbond: Option<Unbond>,
 }
 
 #[cw_serde]

@@ -76,6 +76,8 @@ sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
+sleep 6
+osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 
 sleep 10
 

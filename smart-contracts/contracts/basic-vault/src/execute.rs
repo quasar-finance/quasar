@@ -326,9 +326,6 @@ pub fn unbond(
     amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
-    if true {
-        return Err(ContractError::Unauthorized {});
-    }
 
     let start_unbond_response =
         do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or(Response::new());
@@ -536,8 +533,6 @@ pub fn find_and_return_unbondable_msgs(
 // claim is equivalent to calling unbond with amount: 0
 pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     nonpayable(&info)?;
-    if true {
-        return Err(ContractError::Unauthorized {});
-    }
+
     Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
 }
