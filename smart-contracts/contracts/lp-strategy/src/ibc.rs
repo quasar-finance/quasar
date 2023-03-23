@@ -11,27 +11,26 @@ use crate::ibc_util::{
     do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
 };
 use crate::icq::calc_total_balance;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
-    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, RECOVERY_ACK,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 
-use std::str::FromStr;
-
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
+use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
-use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
+use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
@@ -250,8 +249,7 @@ pub fn ibc_packet_ack(
         msg.original_packet.sequence,
         &msg.acknowledgement,
     )?;
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
-
+    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
 }
 
 pub fn handle_succesful_ack(
@@ -297,6 +295,7 @@ pub fn handle_transfer_ack(
         pending.bonds,
     )?;
 
+    // TODO move this update to after the lock
     TOTAL_VAULT_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_add(total_amount)?)
     })?;
@@ -349,6 +348,26 @@ pub fn handle_icq_ack(
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
+    let locked = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+    let gamms = if locked.is_some() {
+        locked.unwrap().coins
+    } else {
+        vec![]
+    };
+
+    let config = CONFIG.load(storage)?;
+    let locked_lp_shares = gamms
+        .into_iter()
+        .find(|val| val.denom == config.pool_denom)
+        .unwrap_or(OsmoCoin {
+            denom: config.pool_denom,
+            amount: Uint128::zero().to_string(),
+        });
+
+    LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
+        cache.locked_shares = locked_lp_shares.amount.parse()?;
+        Ok(cache)
+    });
 
     let spot_price =
         Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
@@ -596,12 +615,13 @@ fn handle_exit_pool_ack(
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
-    let total_exited_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
-        ContractError::ParseIntError {
-            error: err,
-            value: msg.token_out_amount,
-        }
-    })?);
+    let total_exited_tokens =
+        Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
+            ContractError::ParseIntError {
+                error: err,
+                value: msg.token_out_amount,
+            }
+        })?);
 
     // return the sum of all lp tokens while converting them
     let total_lp = data.lp_to_local_denom(total_exited_tokens)?;
