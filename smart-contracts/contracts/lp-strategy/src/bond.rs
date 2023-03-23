@@ -48,12 +48,12 @@ pub fn do_bond(
 pub fn batch_bond(
     storage: &mut dyn Storage,
     env: &Env,
-    query_balance: Uint128,
+    total_vault_value: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let transfer_chan = CONFIG.load(storage)?.transfer_channel;
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
-    if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
+    if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
         Ok(Some(do_transfer(
             storage,
             env,

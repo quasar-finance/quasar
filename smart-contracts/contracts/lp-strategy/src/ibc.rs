@@ -3,12 +3,12 @@ use crate::error::{ContractError, Never, Trap};
 use crate::error_recovery::PendingReturningRecovery;
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
-    get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
+    get_usable_bond_balance, get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
     calculate_share_out_min_amount, consolidate_exit_pool_amount_into_local_denom,
-    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
+    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, scale_join_pool,
 };
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
@@ -267,7 +267,7 @@ pub fn handle_succesful_ack(
         IbcMsgKind::Ica(ica_kind) => {
             handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind)
         }
-        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin),
+        IbcMsgKind::Icq => handle_icq_ack(deps.storage, deps.querier, env, ack_bin),
     }
 }
 
@@ -309,6 +309,7 @@ pub fn handle_transfer_ack(
 // TODO move the parsing of the ICQ to it's own function, ideally we'd have a type that is contstructed in create ICQ and is parsed from a proto here
 pub fn handle_icq_ack(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: Env,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
@@ -349,25 +350,25 @@ pub fn handle_icq_ack(
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
     let locked = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+    // parse the locked lp shares on Osmosis, a bit messy
     let gamms = if locked.is_some() {
         locked.unwrap().coins
     } else {
         vec![]
     };
-
     let config = CONFIG.load(storage)?;
     let locked_lp_shares = gamms
         .into_iter()
         .find(|val| val.denom == config.pool_denom)
         .unwrap_or(OsmoCoin {
-            denom: config.pool_denom,
+            denom: config.pool_denom.clone(),
             amount: Uint128::zero().to_string(),
         });
-
+    // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
         cache.locked_shares = locked_lp_shares.amount.parse()?;
         Ok(cache)
-    });
+    })?;
 
     let spot_price =
         Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
@@ -385,8 +386,11 @@ pub fn handle_icq_ack(
     let exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
+    let actual = get_usable_bond_balance(storage, &querier, &env, &config)?;
+
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
-    SIMULATED_JOIN_RESULT.save(storage, &join_pool)?;
+    let scaled = scale_join_pool(storage, actual, join_pool)?;
+    SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
     let bond = batch_bond(storage, &env, total_balance)?;

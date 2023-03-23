@@ -104,6 +104,7 @@ pub fn get_usable_bond_balance(
     config: &Config,
 ) -> Result<Uint128, ContractError> {
     // fetch current balance of contract for join_pool query
+    // the contract balance at this point in time contains funds send in the queue
     let balance =
         querier.query_balance(env.contract.address.clone(), config.local_denom.clone())?;
 

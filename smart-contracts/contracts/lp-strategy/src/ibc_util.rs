@@ -8,7 +8,10 @@ use osmosis_std::{
     shim::Duration,
     types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
+        osmosis::{
+            gamm::v1beta1::{MsgJoinSwapExternAmountIn, QueryCalcJoinPoolSharesResponse},
+            lockup::MsgLockTokens,
+        },
     },
 };
 
@@ -19,7 +22,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
         OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
-        SIMULATED_JOIN_RESULT,
+        SIMULATED_JOIN_AMOUNT, SIMULATED_JOIN_RESULT,
     },
 };
 
@@ -54,6 +57,24 @@ pub fn do_transfer(
         },
         transfer,
     )?)
+}
+
+pub fn scale_join_pool(
+    storage: &dyn Storage,
+    actual: Uint128,
+    join: QueryCalcJoinPoolSharesResponse,
+) -> Result<Uint128, ContractError> {
+    let token_in = SIMULATED_JOIN_AMOUNT.load(storage)?;
+    let join = join
+        .share_out_amount
+        .parse()
+        .map_err(|err| ContractError::ParseIntError {
+            error: err,
+            value: join.share_out_amount,
+        })?;
+    Ok(Uint128::new(join)
+        .checked_multiply_ratio(actual,token_in)?
+        )
 }
 
 pub fn consolidate_exit_pool_amount_into_local_denom(
@@ -106,10 +127,7 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(
-        Uint128::from_str(&last_sim_join_pool_result.share_out_amount)?
-            .checked_multiply_ratio(95u128, 100u128)?,
-    )
+    Ok(last_sim_join_pool_result)
 }
 
 // exit shares should never be more than total shares here

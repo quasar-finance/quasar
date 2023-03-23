@@ -20,7 +20,9 @@ use crate::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
         IbcMsgKind,
     },
-    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK},
+    state::{
+        CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, SIMULATED_JOIN_AMOUNT,
+    },
 };
 
 pub fn try_icq(
@@ -33,8 +35,9 @@ pub fn try_icq(
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
 
-        // deposit need to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, querier, env.clone(), ICA_CHANNEL.load(storage)?)?;
+        let ica_channel = ICA_CHANNEL.load(storage)?;
+        // deposit needs to internally rebuild the amount of funds under the smart contract
+        let packet = prepare_full_query(storage, querier, env.clone(), ica_channel)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
@@ -53,7 +56,7 @@ pub fn try_icq(
 }
 
 pub fn prepare_full_query(
-    storage: &dyn Storage,
+    storage: &mut dyn Storage,
     querier: QuerierWrapper,
     env: Env,
     channel: String,
@@ -77,8 +80,10 @@ pub fn prepare_full_query(
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
     // we use the current current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
-
     let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
+
+    // we save the amount to scale the slippage against in the icq ack for other incoming bonds
+    SIMULATED_JOIN_AMOUNT.save(storage, &balance)?;
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
@@ -220,16 +225,13 @@ mod tests {
 
         let res = try_icq(deps.as_mut().storage, q, env.clone()).unwrap();
 
+        let ica_channel = ICA_CHANNEL.load(deps.as_mut().storage);
+
         let pkt = IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
             data: to_binary(
-                &prepare_full_query(
-                    deps.as_ref().storage,
-                    deps.as_ref().querier,
-                    env.clone(),
-                    ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-                )
-                .unwrap(),
+                &prepare_full_query(deps.as_mut().storage, q, env.clone(), ica_channel.unwrap())
+                    .unwrap(),
             )
             .unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
