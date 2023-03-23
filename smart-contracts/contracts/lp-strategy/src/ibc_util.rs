@@ -22,7 +22,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
         OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
-        SIMULATED_JOIN_AMOUNT, SIMULATED_JOIN_RESULT,
+        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
     },
 };
 
@@ -65,7 +65,7 @@ pub fn scale_join_pool(
     join: QueryCalcJoinPoolSharesResponse,
     return_scaled: bool,
 ) -> Result<Uint128, ContractError> {
-    let token_in = SIMULATED_JOIN_AMOUNT.load(storage)?;
+    let token_in = SIMULATED_JOIN_AMOUNT_IN.load(storage)?;
     let join = join
         .share_out_amount
         .parse()

@@ -21,7 +21,7 @@ use crate::{
         IbcMsgKind,
     },
     state::{
-        CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, SIMULATED_JOIN_AMOUNT,
+        CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, SIMULATED_JOIN_AMOUNT_IN,
     },
 };
 
@@ -83,7 +83,7 @@ pub fn prepare_full_query(
     let balance = get_usable_bond_balance(storage, &querier, &env, &config)?;
 
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
-    SIMULATED_JOIN_AMOUNT.save(storage, &balance)?;
+    SIMULATED_JOIN_AMOUNT_IN.save(storage, &balance)?;
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,

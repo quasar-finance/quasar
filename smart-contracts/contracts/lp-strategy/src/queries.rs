@@ -17,7 +17,7 @@ use crate::{
     },
     state::{
         Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_ACK, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT, SIMULATED_JOIN_RESULT,
+        PENDING_ACK, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
         TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
     },
 };
@@ -49,7 +49,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn handle_simulated_join(deps: Deps) -> StdResult<SimulatedJoinResponse> {
     Ok(SimulatedJoinResponse {
-        amount: SIMULATED_JOIN_AMOUNT.may_load(deps.storage)?,
+        amount: SIMULATED_JOIN_AMOUNT_IN.may_load(deps.storage)?,
         result: SIMULATED_JOIN_RESULT.may_load(deps.storage)?,
     })
 }

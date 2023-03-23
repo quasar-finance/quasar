@@ -97,14 +97,6 @@ pub fn batch_start_unbond(
         })
     }
 
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.locked_shares = old.locked_shares.checked_sub(to_unbond).map_err(|err| {
-            ContractError::TracedOverflowError(err, "lower_locked_shares".to_string())
-        })?;
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
-        Ok(old)
-    })?;
-
     let pkt = do_begin_unlocking(storage, env, to_unbond)?;
 
     Ok(Some(create_ibc_ack_submsg(
@@ -145,7 +137,7 @@ pub fn handle_start_unbond_ack(
     querier: QuerierWrapper,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
-    total: Uint128,
+    total_start_unbonding: Uint128,
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
@@ -160,8 +152,10 @@ pub fn handle_start_unbond_ack(
         Ok(lock.unlock_start_unbond())
     })?;
 
+    // TODO, update the actual amount of locked lp shares in the lp cache here aswell
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
-        cache.w_unlocked_shares = cache.w_unlocked_shares.checked_add(total)?;
+        cache.w_unlocked_shares = cache.w_unlocked_shares.checked_add(total_start_unbonding)?;
+        cache.locked_shares = cache.locked_shares.checked_sub(total_start_unbonding)?;
         Ok(cache)
     })?;
 

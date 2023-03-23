@@ -85,7 +85,7 @@ pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // we save the queried simulate join swap during ICQ so we can read it right before bond join
 pub(crate) const SIMULATED_JOIN_RESULT: Item<Uint128> = Item::new("simulated_join_result");
 // we save the amount that went into the QueryCalcJoinPool, so we can scale up the slippage amount if more deposits come
-pub(crate) const SIMULATED_JOIN_AMOUNT: Item<Uint128> = Item::new("simulated_join_amount");
+pub(crate) const SIMULATED_JOIN_AMOUNT_IN: Item<Uint128> = Item::new("simulated_join_amount");
 // we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
 pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
 // CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either

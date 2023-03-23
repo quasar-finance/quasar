@@ -15,7 +15,7 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
     ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
-    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -415,14 +415,16 @@ pub fn handle_icq_ack(
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
-    if let Some(msg) = bond {
-        msges.push(msg);
-        attrs.push(Attribute::new("bond-status", "bonding"));
-        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-            Ok(lock.lock_bond())
-        })?;
-    } else {
-        attrs.push(Attribute::new("bond-status", "empty"));
+    if SIMULATED_JOIN_AMOUNT_IN.load(storage)? != Uint128::zero() {
+        if let Some(msg) = bond {
+            msges.push(msg);
+            attrs.push(Attribute::new("bond-status", "bonding"));
+            IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_bond())
+            })?;
+        } else {
+            attrs.push(Attribute::new("bond-status", "empty"));
+        }
     }
 
     if let Some(msg) = start_unbond {
