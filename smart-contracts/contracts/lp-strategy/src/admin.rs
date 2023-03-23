@@ -1,6 +1,9 @@
 use cosmwasm_std::{Addr, Storage};
 
-use crate::{error::ContractError, state::{ADMIN, DEPOSITOR}};
+use crate::{
+    error::ContractError,
+    state::{ADMIN, DEPOSITOR},
+};
 
 // check if sender is the admin
 pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, ContractError> {
@@ -22,13 +25,7 @@ mod tests {
         assert!(ADMIN.may_load(deps.as_mut().storage).unwrap().is_none());
         assert!(check_depositor(deps.as_mut().storage, &sender1).unwrap());
         assert_eq!(&ADMIN.load(deps.as_mut().storage).unwrap(), &sender1);
-        assert_eq!(
-            check_depositor(deps.as_mut().storage, &sender1),
-            Ok(true)
-        );
-        assert_eq!(
-            check_depositor(deps.as_mut().storage, &sender2),
-            Ok(false)
-        );
+        assert_eq!(check_depositor(deps.as_mut().storage, &sender1), Ok(true));
+        assert_eq!(check_depositor(deps.as_mut().storage, &sender2), Ok(false));
     }
 }

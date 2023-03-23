@@ -19,9 +19,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL,
-    LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE, DEPOSITOR,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -114,7 +114,11 @@ pub fn execute(
     }
 }
 
-pub fn execute_set_depositor(deps: DepsMut, info: MessageInfo, depositor: String) -> Result<Response, ContractError> {
+pub fn execute_set_depositor(
+    deps: DepsMut,
+    info: MessageInfo,
+    depositor: String,
+) -> Result<Response, ContractError> {
     if info.sender == ADMIN.load(deps.storage)? {
         let depositor_addr = deps.api.addr_validate(depositor.as_str())?;
         DEPOSITOR.save(deps.storage, &depositor_addr)?;

@@ -249,7 +249,7 @@ pub fn ibc_packet_ack(
         msg.original_packet.sequence,
         &msg.acknowledgement,
     )?;
-    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
+    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
 }
 
 pub fn handle_succesful_ack(
@@ -451,6 +451,7 @@ pub fn handle_icq_ack(
     Ok(Response::new()
         .add_submessages(msges)
         .add_attributes(attrs)
+        // can we remove this?
         .add_attribute(
             "BLBOBEOBFEOB",
             if (actual == Uint128::zero()
@@ -600,7 +601,7 @@ fn handle_lock_tokens_ack(
         Ok(old)
     })?;
 
-    let mut callback_submsgs: Vec<CosmosMsg> = vec![];
+    let mut callback_submsgs: Vec<SubMsg> = vec![];
     for claim in data.bonds {
         let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
         if querier
@@ -617,7 +618,7 @@ fn handle_lock_tokens_ack(
             };
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?.msg);
+            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
         }
     }
 
@@ -628,7 +629,7 @@ fn handle_lock_tokens_ack(
 
     // TODO, do we want to also check queue state? and see if we can already start a new execution?
     Ok(Response::new()
-        .add_messages(callback_submsgs)
+        .add_submessages(callback_submsgs)
         .add_attribute("locked_tokens", ack_bin.to_base64())
         .add_attribute("lock_id", resp.id.to_string()))
 }
@@ -663,10 +664,10 @@ fn handle_return_transfer_ack(
     querier: QuerierWrapper,
     data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let mut callback_submsgs: Vec<CosmosMsg> = vec![];
+    let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in data.unbonds.iter() {
         let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(cosmos_msg)
+        callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -675,7 +676,7 @@ fn handle_return_transfer_ack(
 
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_messages(callback_submsgs)
+        .add_submessages(callback_submsgs)
         .add_attribute("return-transfer", "success"))
 }
 
