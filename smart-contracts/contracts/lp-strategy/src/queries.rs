@@ -49,16 +49,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
-    let pbq: Result<Vec<Bond>, ContractError> = PENDING_BOND_QUEUE.iter(deps.storage)?.map(|all| {
+    let pbq: Result<Vec<Bond>, StdError> = PENDING_BOND_QUEUE.iter(deps.storage)?.map(|all| {
         Ok(all?)
     }).collect();
-    let bq: Result<Vec<Bond>, ContractError> = BOND_QUEUE.iter(deps.storage)?.map(|all| {
+    let bq: Result<Vec<Bond>, StdError> = BOND_QUEUE.iter(deps.storage)?.map(|all| {
         Ok(all?)
     }).collect();
-    let suq: Result<Vec<StartUnbond>, ContractError> = START_UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
+    let suq: Result<Vec<StartUnbond>, StdError> = START_UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
         Ok(all?)
     }).collect();
-    let uq: Result<Vec<Unbond>, ContractError> = UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
+    let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE.iter(deps.storage)?.map(|all| {
         Ok(all?)
     }).collect();
     Ok(GetQueuesResponse {

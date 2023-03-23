@@ -15,7 +15,7 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK, ICA_CHANNEL,
     ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
-    SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, BOND_QUEUE,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -45,7 +45,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
-    IbcTimeout, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    IbcTimeout, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg, StdResult,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -267,7 +267,7 @@ pub fn handle_succesful_ack(
         IbcMsgKind::Ica(ica_kind) => {
             handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind)
         }
-        IbcMsgKind::Icq => handle_icq_ack(deps.storage, deps.querier, env, ack_bin),
+        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin),
     }
 }
 
@@ -309,7 +309,6 @@ pub fn handle_transfer_ack(
 // TODO move the parsing of the ICQ to it's own function, ideally we'd have a type that is contstructed in create ICQ and is parsed from a proto here
 pub fn handle_icq_ack(
     storage: &mut dyn Storage,
-    querier: QuerierWrapper,
     env: Env,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
@@ -388,7 +387,12 @@ pub fn handle_icq_ack(
     let exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
-    let actual = get_usable_bond_balance(storage, &querier, &env, &config)?;
+
+    let queued_bond_balance: StdResult<Uint128> = BOND_QUEUE.iter(storage)?.fold(Ok(Uint128::zero()), |acc, val| {
+        Ok(acc? + val?.amount)
+    });
+
+    let actual = get_usable_bond_balance(storage, queued_bond_balance?)?;
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
     let scaled = if actual == Uint128::zero()

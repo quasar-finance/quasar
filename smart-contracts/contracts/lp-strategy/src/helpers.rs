@@ -90,14 +90,10 @@ pub fn create_callback_submsg(
 // this function subtracts out the amount that has errored and sits stale somewhere
 pub fn get_usable_bond_balance(
     storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    env: &Env,
-    config: &Config,
+    queued_amount: Uint128
 ) -> Result<Uint128, ContractError> {
     // fetch current balance of contract for join_pool query
     // the contract balance at this point in time contains funds send in the queue
-    let balance =
-        querier.query_balance(env.contract.address.clone(), config.local_denom.clone())?;
 
     let mut total_claimable = Uint128::zero();
 
@@ -106,7 +102,7 @@ pub fn get_usable_bond_balance(
     }
 
     // subtract out the amount that has errored and sits stale on our chain
-    Ok(balance.amount.saturating_sub(total_claimable))
+    Ok(queued_amount.saturating_sub(total_claimable))
 }
 
 pub fn get_usable_compound_balance(
