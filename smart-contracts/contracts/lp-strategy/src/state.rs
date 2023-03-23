@@ -40,6 +40,12 @@ pub struct Config {
     pub expected_connection: String,
 }
 
+// TODO remove the need for ADMIN
+
+// the ADMIN in this case is the person allowed to deposit into the contract
+// this is set to the first depositor
+pub(crate) const ADMIN: Item<Addr> = Item::new("admin"); 
+
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
