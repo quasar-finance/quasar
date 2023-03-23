@@ -574,7 +574,7 @@ fn handle_lock_tokens_ack(
         Ok(old)
     })?;
 
-    let mut callback_submsgs: Vec<SubMsg> = vec![];
+    let mut callback_submsgs: Vec<CosmosMsg> = vec![];
     for claim in data.bonds {
         let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
         if querier
@@ -591,7 +591,7 @@ fn handle_lock_tokens_ack(
             };
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?.msg);
         }
     }
 
@@ -602,7 +602,7 @@ fn handle_lock_tokens_ack(
 
     // TODO, do we want to also check queue state? and see if we can already start a new execution?
     Ok(Response::new()
-        .add_submessages(callback_submsgs)
+        .add_messages(callback_submsgs)
         .add_attribute("locked_tokens", ack_bin.to_base64())
         .add_attribute("lock_id", resp.id.to_string()))
 }

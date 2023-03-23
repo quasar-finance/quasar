@@ -2,8 +2,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 
 use cosmwasm_std::{Binary, Coin, Decimal, Timestamp, Uint128};
 
-use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse};
+use cw20::{Expiration, TokenInfoResponse};
 use cw_asset::AssetInfo;
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
@@ -165,8 +165,11 @@ pub enum QueryMsg {
     #[returns(BalanceResponse)]
     Balance { address: String },
     /// Implements CW20. Returns metadata on the contract - name, decimals, supply, etc.
-    #[returns(VaultTokenInfoResponse)]
+    #[returns(TokenInfoResponse)]
     TokenInfo {},
+    /// Additional token metadata, includes regular token info too
+    #[returns(VaultTokenInfoResponse)]
+    AdditionalTokenInfo {},
     /// Implements CW20 "allowance" extension.
     /// Returns how much spender can use from owner account, 0 if unset.
     #[returns(AllowanceResponse)]

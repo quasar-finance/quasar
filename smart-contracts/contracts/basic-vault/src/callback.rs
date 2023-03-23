@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, OverflowError, Response, Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, OverflowError, Response, SubMsg, Timestamp,
+    Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -134,8 +135,8 @@ pub fn on_bond(
     execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
     let res = Response::new()
-        .add_message(update_user_rewards_idx_msg)
-        .add_attribute("action", "bond")
+        .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
+        .add_attribute("action", "on_bond")
         .add_attribute("from", info.sender)
         .add_attribute("minted", shares_to_mint)
         .add_attribute("new_total_supply", supply.issued.to_string());
@@ -190,7 +191,6 @@ pub fn on_unbond(
     )?;
 
     let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-    let _invest = INVESTMENT.load(deps.storage)?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
     let mut unbonding_stub = unbond_stubs
