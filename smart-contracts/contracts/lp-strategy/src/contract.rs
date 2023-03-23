@@ -20,7 +20,7 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL,
     LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE,
+    UNBOND_QUEUE, OSMO_LOCK,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -54,6 +54,8 @@ pub fn instantiate(
     )?;
 
     IBC_LOCK.save(deps.storage, &Lock::new())?;
+
+    OSMO_LOCK.save(deps.storage, &u64::MAX)?;
 
     LP_SHARES.save(
         deps.storage,
