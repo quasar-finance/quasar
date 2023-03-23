@@ -31,7 +31,6 @@ pub struct InvestmentInfo {
     pub primitives: Vec<PrimitiveConfig>,
 }
 
-
 pub const CAP: Item<Cap> = Item::new("cap");
 
 #[cw_serde]
@@ -58,7 +57,7 @@ impl Cap {
         let new_total = self.current.checked_add(to_add)?;
         // if we go over cap, reject
         if new_total > self.total {
-            return Err(ContractError::OverCap {})
+            return Err(ContractError::OverCap {});
         };
         self.current = new_total;
         Ok(self)

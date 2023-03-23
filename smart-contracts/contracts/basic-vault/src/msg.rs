@@ -10,7 +10,7 @@ use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
 use vault_rewards::state::DistributionSchedule;
 
-use crate::state::{BondingStub, InvestmentInfo, Unbond};
+use crate::state::{BondingStub, InvestmentInfo, Unbond, Cap};
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -142,6 +142,9 @@ pub enum QueryMsg {
     /// Claims shows the number of tokens this address can access when they are done unbonding
     #[returns(ClaimsResponse)]
     Claims { address: String },
+
+    #[returns(GetCapResponse)]
+    GetCap {},
     /// Investment shows metadata on the staking info of the contract
     #[returns(InvestmentResponse)]
     Investment {},
@@ -186,6 +189,11 @@ pub struct MigrateMsg {}
 #[cw_serde]
 pub struct InvestmentResponse {
     pub info: InvestmentInfo,
+}
+
+#[cw_serde]
+pub struct GetCapResponse {
+    pub cap: Cap,
 }
 
 #[cw_serde]

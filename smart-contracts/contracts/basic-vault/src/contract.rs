@@ -24,15 +24,15 @@ use crate::execute::{bond, claim, unbond};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig, QueryMsg,
-    VaultTokenInfoResponse,
+    VaultTokenInfoResponse, GetCapResponse,
 };
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,
     query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS, CAP, Cap,
+    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
+    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -316,7 +316,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
         QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
         QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
+        QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
     }
+}
+
+fn query_cap(deps: Deps) -> StdResult<GetCapResponse> {
+    Ok(GetCapResponse {
+        cap: CAP.load(deps.storage)?,
+    })
 }
 
 pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
@@ -444,7 +451,7 @@ mod test {
                 end: 500,
                 amount: Uint128::from(1000u128),
             }],
-            total_cap: Uint128::new(10_000_000_000_000)
+            total_cap: Uint128::new(10_000_000_000_000),
         };
 
         // prepare 3 mock configs for prim1, prim2 and prim3
