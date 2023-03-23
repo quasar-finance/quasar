@@ -63,6 +63,7 @@ pub fn scale_join_pool(
     storage: &dyn Storage,
     actual: Uint128,
     join: QueryCalcJoinPoolSharesResponse,
+    return_scaled: bool,
 ) -> Result<Uint128, ContractError> {
     let token_in = SIMULATED_JOIN_AMOUNT.load(storage)?;
     let join = join
@@ -72,9 +73,12 @@ pub fn scale_join_pool(
             error: err,
             value: join.share_out_amount,
         })?;
-    Ok(Uint128::new(join)
-        .checked_multiply_ratio(actual,token_in)?
-        )
+
+    if (!return_scaled) {
+        return Ok(Uint128::new(join));
+    } else {
+        Ok(Uint128::new(join).checked_multiply_ratio(actual, token_in)?)
+    }
 }
 
 pub fn consolidate_exit_pool_amount_into_local_denom(
@@ -291,10 +295,7 @@ mod tests {
     fn test_calculate_share_out_min_amount() {
         let mut deps = mock_dependencies();
         SIMULATED_JOIN_RESULT
-            .save(
-                deps.as_mut().storage,
-                &Uint128::new(999999),
-            )
+            .save(deps.as_mut().storage, &Uint128::new(999999))
             .unwrap();
 
         let min_amount_out = calculate_share_out_min_amount(deps.as_mut().storage).unwrap();
