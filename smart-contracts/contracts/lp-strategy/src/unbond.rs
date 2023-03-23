@@ -71,18 +71,6 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         });
     }
 
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        // we remove the amount of shares we are are going to unlock from the locked amount
-        old.w_unlocked_shares = old
-            .w_unlocked_shares
-            .checked_sub(total_exit)
-            .map_err(|err| {
-                ContractError::TracedOverflowError(err, "update_unlocked_shares".to_string())
-            })?;
-        // we add the amount of shares we are going to unlock to the total unlocked
-        Ok(old)
-    })?;
-
     // important to use lp_shares before it gets updated
     let token_out_min_amount =
         calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
@@ -122,11 +110,6 @@ pub(crate) fn do_exit_swap(
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
 
-    let lp_shares = LP_SHARES.load(storage)?;
-
-    let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, lp_shares.locked_shares)?;
-
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
@@ -134,6 +117,7 @@ pub(crate) fn do_exit_swap(
         share_in_amount: total_exit.to_string(),
         token_out_min_amount: token_out_min_amount.to_string(),
     };
+
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
         ICA_CHANNEL.load(storage)?,

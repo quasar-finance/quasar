@@ -623,22 +623,8 @@ fn handle_exit_pool_ack(
             }
         })?);
 
-    // return the sum of all lp tokens while converting them
-    let total_lp = data.lp_to_local_denom(total_exited_tokens)?;
-
-    // remove the liquidated lp tokens from our unlocked lp tokens
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_sub(total_lp).map_err(|err| {
-            ContractError::TracedOverflowError(err, "update_w_unlocked_shares".to_string())
-        })?;
-        Ok(old)
-    })?;
-
-    TOTAL_VAULT_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_exited_tokens).map_err(|err| {
-            ContractError::TracedOverflowError(err, "update_ica_balance_shares".to_string())
-        })?)
-    })?;
+    // we don't need the sum of the lp tokens returned by lp_to_local_denom here
+    let _ = data.lp_to_local_denom(total_exited_tokens)?;
 
     let sub_msg = transfer_batch_unbond(storage, env, data, total_exited_tokens)?;
     Ok(Response::new()
