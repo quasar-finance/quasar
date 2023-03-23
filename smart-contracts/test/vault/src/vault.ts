@@ -1,7 +1,7 @@
 import { StdFee } from '@cosmjs/amino'
 import { BasicVaultClient } from '../BasicVault.client'
 import { Coin } from '../BasicVault.types'
-import { FEE_DENOM, OSMO_DENOM } from './config'
+import { FEE_DENOM, OSMO_DENOM, WalletOwners } from './config'
 import { getWallet } from './wallet'
 
 let stdFee: StdFee = {
@@ -11,10 +11,10 @@ let stdFee: StdFee = {
       amount: '100',
     },
   ],
-  gas: '900000',
+  gas: '1300000',
 }
 
-async function getVault(from: 'alice' | 'bob', vaultAddress: string) {
+async function getVault(from: WalletOwners, vaultAddress: string) {
   let [signingClient, wallet] = await getWallet(from)
   let address = (await wallet.getAccounts())[0].address
 
@@ -31,7 +31,7 @@ export async function bond({
   vaultAddress,
   funds,
 }: {
-  from: 'alice' | 'bob'
+  from: WalletOwners
   vaultAddress: string
   funds: Coin[]
 }) {
@@ -46,10 +46,11 @@ export async function start_unbond({
   vaultAddress,
   amount,
 }: {
-  from: 'alice' | 'bob'
+  from: WalletOwners
   vaultAddress: string
   amount: string //uint128
 }) {
+  await new Promise((r) => setTimeout(r, 5000))
   console.log('Start unbond ' + from + '...')
 
   let basicVaultClient = await getVault(from, vaultAddress)
@@ -60,7 +61,7 @@ export async function claim({
   from,
   vaultAddress,
 }: {
-  from: 'alice' | 'bob'
+  from: WalletOwners
   vaultAddress: string
 }) {
   console.log('Unbonding ' + from + '...')
@@ -69,19 +70,21 @@ export async function claim({
   return basicVaultClient.claim(stdFee, 'memo teehee', [])
 }
 
-// export async function try_icq({
-//   vaultAddress,
-// }: {
-//   vaultAddress: string
-//     }) {
-//     console.log("Trying ICQ manually...")
+export async function try_icq({
+  vaultAddress,
+  from,
+}: {
+  vaultAddress: string
+  from: WalletOwners
+}) {
+  console.log('Trying ICQ manually...')
 
-//     let basicVaultClient = await getVault('alice', vaultAddress)
-//     return basicVaultClient.(stdFee, 'memo teehee', [])
-// }
+  let basicVaultClient = await getVault(from, vaultAddress)
+  return basicVaultClient.clearCache(stdFee, 'memo teehee', [])
+}
 
 // query
-export async function getBalance(vaultAddress: string, of: 'alice' | 'bob') {
+export async function getBalance(vaultAddress: string, of: WalletOwners) {
   let [_, wallet] = await getWallet(of)
   let basicVaultClient = await getVault('alice', vaultAddress)
   const address = (await wallet.getAccounts())[0].address
@@ -91,10 +94,7 @@ export async function getBalance(vaultAddress: string, of: 'alice' | 'bob') {
   return balances
 }
 
-export async function getPendingBonds(
-  vaultAddress: string,
-  of: 'alice' | 'bob',
-) {
+export async function getPendingBonds(vaultAddress: string, of: WalletOwners) {
   let [_, wallet] = await getWallet(of)
   let basicVaultClient = await getVault('alice', vaultAddress)
   const address = (await wallet.getAccounts())[0].address
@@ -105,7 +105,7 @@ export async function getPendingBonds(
 
 export async function getPendingUnbonds(
   vaultAddress: string,
-  of: 'alice' | 'bob',
+  of: WalletOwners,
 ) {
   let [_, wallet] = await getWallet(of)
   let basicVaultClient = await getVault('alice', vaultAddress)
@@ -116,7 +116,7 @@ export async function getPendingUnbonds(
 }
 
 // chain
-export async function getChainBalance(of: 'alice' | 'bob') {
+export async function getChainBalance(of: WalletOwners) {
   let [client, wallet] = await getWallet(of)
   const address = (await wallet.getAccounts())[0].address
 

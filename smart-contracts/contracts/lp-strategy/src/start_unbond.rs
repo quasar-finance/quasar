@@ -20,7 +20,7 @@ use crate::{
     ibc_lock::Lock,
     state::{
         LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
-        SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
+        PENDING_UNBONDING_CLAIMS, SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -162,7 +162,7 @@ pub fn handle_start_unbond_ack(
     Ok(Response::new()
         .add_attribute("start-unbond", "succes")
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_submessages(callback_submsgs))
+        .add_messages(callback_submsgs.iter().map(|m| m.msg.clone())))
 }
 
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
@@ -213,7 +213,7 @@ fn start_internal_unbond(
         .plus_seconds(CONFIG.load(storage)?.lock_period);
 
     // add amount of unbonding claims
-    UNBONDING_CLAIMS.save(
+    PENDING_UNBONDING_CLAIMS.save(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {

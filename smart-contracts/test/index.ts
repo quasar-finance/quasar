@@ -1,5 +1,10 @@
 import prompts from 'prompts'
-import { seed_liquidity_from_alice, simple_test } from './vault/src/driver'
+import {
+  deposit_only,
+  extreme_test,
+  seed_liquidity_from_alice,
+  simple_test,
+} from './vault/src/driver'
 
 async function main() {
   let response = await prompts({
@@ -11,7 +16,9 @@ async function main() {
 
   await seed_liquidity_from_alice(response.vaultAddress)
 
-  await simple_test(response.vaultAddress)
+  //   await simple_test(response.vaultAddress)
+  //   await extreme_test(response.vaultAddress)
+  await deposit_only(response.vaultAddress)
 }
 
 main()

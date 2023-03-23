@@ -68,10 +68,10 @@ pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRat
 }
 
 pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBondsResponse> {
-    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let pending_bond_ids = PENDING_BOND_IDS.may_load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
-    pending_bond_ids.iter().for_each(|id| {
+    pending_bond_ids.clone().unwrap().iter().for_each(|id| {
         let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
 
         pending_bonds.append(deposit_stubs.as_mut());
@@ -79,21 +79,32 @@ pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBond
 
     Ok(PendingBondsResponse {
         pending_bonds,
-        pending_bond_ids,
+        pending_bond_ids: pending_bond_ids.unwrap(),
     })
 }
 
 pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUnbondsResponse> {
-    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let pending_unbond_ids = PENDING_UNBOND_IDS.may_load(deps.storage, Addr::unchecked(address))?;
     let mut pending_unbonds: Vec<Unbond> = vec![];
 
-    pending_unbond_ids.iter().for_each(|id: &String| {
-        let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string()).unwrap();
-        pending_unbonds.push(unbond_stubs);
-    });
+    if pending_unbond_ids.is_none() {
+        return Ok(PendingUnbondsResponse {
+            pending_unbonds,
+            pending_unbond_ids: vec![],
+        });
+    }
+
+    pending_unbond_ids
+        .clone()
+        .unwrap()
+        .iter()
+        .for_each(|id: &String| {
+            let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string()).unwrap();
+            pending_unbonds.push(unbond_stubs);
+        });
 
     Ok(PendingUnbondsResponse {
         pending_unbonds,
-        pending_unbond_ids,
+        pending_unbond_ids: pending_unbond_ids.unwrap(),
     })
 }

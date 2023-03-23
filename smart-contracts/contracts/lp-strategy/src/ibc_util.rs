@@ -74,7 +74,8 @@ pub fn scale_join_pool(
             value: join.share_out_amount,
         })?;
 
-    if (!return_scaled) {
+    // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
+    if (!return_scaled || token_in.is_zero()) {
         return Ok(Uint128::new(join));
     } else {
         Ok(Uint128::new(join).checked_multiply_ratio(actual, token_in)?)

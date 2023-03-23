@@ -10,7 +10,10 @@ use crate::{
     helpers::{get_ica_address, get_total_primitive_shares},
     ibc_util::do_transfer,
     icq::try_icq,
-    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
+    state::{
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL,
+        PENDING_BOND_QUEUE, SHARES,
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -31,7 +34,7 @@ pub fn do_bond(
 ) -> Result<Option<SubMsg>, ContractError> {
     let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
 
-    BOND_QUEUE.push_back(
+    PENDING_BOND_QUEUE.push_back(
         storage,
         &Bond {
             amount,

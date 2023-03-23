@@ -66,6 +66,7 @@ pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
 
 // all vault related state items
 pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");
+pub(crate) const PENDING_BOND_QUEUE: Deque<Bond> = Deque::new("pending_bond_queue");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
 pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
@@ -79,6 +80,8 @@ pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_bal
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
 // TODO UNBONDING_CLAIMS should probably be a multi index map
+pub(crate) const PENDING_UNBONDING_CLAIMS: Map<(Addr, String), Unbond> =
+    Map::new("unbonding_claims");
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
 // TODO make key borrowed
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
