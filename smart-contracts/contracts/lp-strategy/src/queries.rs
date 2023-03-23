@@ -13,11 +13,12 @@ use crate::{
         IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
         ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
         LockResponse, LpSharesResponse, OsmoLockResponse, PrimitiveSharesResponse, QueryMsg,
-        TrappedErrorsResponse, UnbondingClaimResponse,
+        SimulatedJoinResponse, TrappedErrorsResponse, UnbondingClaimResponse,
     },
     state::{
         Unbond, BONDING_CLAIMS, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_ACK, REPLIES, SHARES, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
+        PENDING_ACK, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT, SIMULATED_JOIN_RESULT,
+        TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
     },
 };
 
@@ -42,7 +43,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
         QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
         QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
+        QueryMsg::SimulatedJoin {} => to_binary(&handle_simulated_join(deps)?),
     }
+}
+
+pub fn handle_simulated_join(deps: Deps) -> StdResult<SimulatedJoinResponse> {
+    Ok(SimulatedJoinResponse {
+        amount: SIMULATED_JOIN_AMOUNT.may_load(deps.storage)?,
+        result: SIMULATED_JOIN_RESULT.may_load(deps.storage)?,
+    })
 }
 
 pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {

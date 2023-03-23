@@ -74,6 +74,14 @@ pub enum QueryMsg {
     ListReplies {},
     #[returns(OsmoLockResponse)]
     OsmoLock {},
+    #[returns(SimulatedJoinResponse)]
+    SimulatedJoin {},
+}
+
+#[cw_serde]
+pub struct SimulatedJoinResponse {
+    pub amount: Option<Uint128>,
+    pub result: Option<Uint128>,
 }
 
 #[cw_serde]
