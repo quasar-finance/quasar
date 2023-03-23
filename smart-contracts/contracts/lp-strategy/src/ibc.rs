@@ -436,7 +436,7 @@ pub fn handle_icq_ack(
     }
 
     Ok(Response::new()
-        .add_messages(msges.iter().map(|msg| msg.msg.clone()))
+        .add_submessages(msges))
         .add_attributes(attrs)
         // can we remove this?
         .add_attribute(
