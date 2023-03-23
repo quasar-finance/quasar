@@ -436,7 +436,7 @@ pub fn handle_icq_ack(
     }
 
     Ok(Response::new()
-        .add_submessages(msges))
+        .add_submessages(msges)
         .add_attributes(attrs)
         // can we remove this?
         .add_attribute(
@@ -453,7 +453,8 @@ pub fn handle_icq_ack(
             },
         )
         .add_attribute("actual", actual.to_string())
-        .add_attribute("scaled", scaled.to_string()))
+        .add_attribute("scaled", scaled.to_string())
+    )
 }
 
 pub fn handle_ica_ack(
