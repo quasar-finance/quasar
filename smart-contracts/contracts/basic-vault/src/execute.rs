@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 
 use cw20_base::contract::execute_burn;
-use cw_utils::PaymentError;
+use cw_utils::{nonpayable, PaymentError};
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
@@ -313,6 +313,8 @@ pub fn unbond(
     info: MessageInfo,
     amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
     let start_unbond_response =
         do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or(Response::new());
 
@@ -519,5 +521,6 @@ pub fn find_and_return_unbondable_msgs(
 
 // claim is equivalent to calling unbond with amount: 0
 pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
     Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
 }
