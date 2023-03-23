@@ -621,7 +621,6 @@ mod tests {
                 RawAmount::LpShares(val) => acc + val,
             });
 
-
         let locked_shares = Uint128::from(100u128);
 
         let token_out_min_amount =

@@ -15,8 +15,9 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
+    start_unbond::{do_begin_unlocking, do_start_unbond},
     state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
-    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond}, start_unbond::{do_start_unbond, do_begin_unlocking},
+    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -142,7 +143,7 @@ fn handle_last_failed_ica_recovery(
         IcaMessages::ExitPool(pending) => {
             todo!()
             // let msg = do_begin_unlocking(storage, env, to_unbond)?;
-        },
+        }
         // we just retry the transfer here
         IcaMessages::ReturnTransfer(_) => todo!(),
         // same as regular exit pool recovery

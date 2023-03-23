@@ -126,11 +126,11 @@ pub fn handle_callback_reply(
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(res.add_attribute("reply-msg-id", msg.id.to_string())
+    Ok(res
+        .add_attribute("reply-msg-id", msg.id.to_string())
         .add_attribute("reply-result", format!("{:?}", msg.result))
         .add_attribute("action", "handle-callback-reply")
         .add_attribute("callback-info", format!("{:?}", callback)))
-
 }
 
 // test handle callback reply
