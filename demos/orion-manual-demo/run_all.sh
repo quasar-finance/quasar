@@ -19,8 +19,8 @@ rm -rf ./logs
 mkdir ./logs
 
 # run cosmos and save pid
-./cosmos_localnet.sh &
-COSMOS_PID=$!
+# ./cosmos_localnet.sh &
+# COSMOS_PID=$!
 
 # run quasar and save pid
 ./quasar_localnet.sh &
