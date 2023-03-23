@@ -63,7 +63,8 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
 
     // // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(resp)
+    Ok(resp
+    .add_attribute("register-ack-seq", seq.to_string()))
 }
 
 pub fn handle_callback_reply(
