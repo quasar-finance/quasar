@@ -402,11 +402,6 @@ pub fn handle_icq_ack(
 
     let bond = batch_bond(storage, &env, total_balance)?;
 
-    // TODO move the LP_SHARES.load to start_unbond
-    let start_unbond = batch_start_unbond(storage, &env)?;
-
-    let unbond = batch_unbond(storage, &env, old_lp_shares)?;
-
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
@@ -420,7 +415,7 @@ pub fn handle_icq_ack(
         })?;
     } else {
         attrs.push(Attribute::new("bond-status", "empty"));
-        if let Some(msg) = start_unbond {
+        if let Some(msg) = batch_start_unbond(storage, &env)? {
             msges.push(msg);
             attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
             IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -428,7 +423,7 @@ pub fn handle_icq_ack(
             })?;
         } else {
             attrs.push(Attribute::new("start-unbond-status", "empty"));
-            if let Some(msg) = unbond {
+            if let Some(msg) = batch_unbond(storage, &env, old_lp_shares)? {
                 msges.push(msg);
                 attrs.push(Attribute::new("unbond-status", "unbonding"));
                 IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
