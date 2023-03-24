@@ -178,18 +178,18 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
-pub enum LockOnly {
+pub enum UnlockOnly {
     Bond,
     StartUnbond,
     Unbond,
 }
 
-impl Display for LockOnly {
+impl Display for UnlockOnly {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            LockOnly::Bond => write!(f, "bond"),
-            LockOnly::StartUnbond => write!(f, "start_unbond"),
-            LockOnly::Unbond => write!(f, "unbond"),
+            UnlockOnly::Bond => write!(f, "bond"),
+            UnlockOnly::StartUnbond => write!(f, "start_unbond"),
+            UnlockOnly::Unbond => write!(f, "unbond"),
         }
     }
 }
@@ -207,6 +207,6 @@ pub enum ExecuteMsg {
     ReturnTransfer { amount: Uint128 },
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
-    Unlock { lock_only: LockOnly },
+    Unlock { unlock_only: UnlockOnly },
     ManualTimeout { seq: u64 },
 }

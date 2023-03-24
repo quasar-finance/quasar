@@ -16,7 +16,7 @@ use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -112,7 +112,7 @@ pub fn execute(
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
-        ExecuteMsg::Unlock { lock_only } => execute_lock(deps, env, info, lock_only),
+        ExecuteMsg::Unlock { unlock_only } => execute_lock(deps, env, info, unlock_only),
         ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
     }
 }
@@ -121,19 +121,19 @@ pub fn execute_lock(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lock_only: LockOnly,
+    unlock_only: UnlockOnly,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut lock = IBC_LOCK.load(deps.storage)?;
+    let mut unlock = IBC_LOCK.load(deps.storage)?;
 
-    match lock_only {
-        LockOnly::Bond => lock = lock.lock_bond(),
-        LockOnly::StartUnbond => lock = lock.lock_start_unbond(),
-        LockOnly::Unbond => lock = lock.lock_unbond(),
+    match unlock_only {
+        UnlockOnly::Bond => unlock = unlock.lock_bond(),
+        UnlockOnly::StartUnbond => unlock = unlock.lock_start_unbond(),
+        UnlockOnly::Unbond => unlock = unlock.lock_unbond(),
     };
-    IBC_LOCK.save(deps.storage, &lock)?;
+    IBC_LOCK.save(deps.storage, &unlock)?;
 
-    Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
+    Ok(Response::new().add_attribute("unlock_only", unlock_only.to_string()))
 }
 
 pub fn manual_timeout(
