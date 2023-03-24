@@ -90,7 +90,7 @@ pub fn create_callback_submsg(
 // this function subtracts out the amount that has errored and sits stale somewhere
 pub fn get_usable_bond_balance(
     storage: &dyn Storage,
-    queued_amount: Uint128
+    queued_amount: Uint128,
 ) -> Result<Uint128, ContractError> {
     // fetch current balance of contract for join_pool query
     // the contract balance at this point in time contains funds send in the queue
@@ -224,6 +224,24 @@ pub enum ContractCallback {
         bank_msg: BankMsg,
         unbond_id: String,
     },
+}
+
+pub fn is_contract_admin(
+    querier: &QuerierWrapper,
+    env: &Env,
+    sus_admin: &Addr,
+) -> Result<(), ContractError> {
+    let contract_admin = querier
+        .query_wasm_contract_info(&env.contract.address)?
+        .admin;
+    if let Some(contract_admin) = contract_admin {
+        if contract_admin != *sus_admin {
+            return Err(ContractError::Unauthorized {});
+        }
+    } else {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {

@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
@@ -37,9 +40,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub config: Config,
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -177,6 +178,23 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
+pub enum UnlockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+}
+
+impl Display for UnlockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnlockOnly::Bond => write!(f, "bond"),
+            UnlockOnly::StartUnbond => write!(f, "start_unbond"),
+            UnlockOnly::Unbond => write!(f, "unbond"),
+        }
+    }
+}
+
+#[cw_serde]
 pub enum ExecuteMsg {
     Bond { id: String },
     StartUnbond { id: String, share_amount: Uint128 },
@@ -189,4 +207,6 @@ pub enum ExecuteMsg {
     ReturnTransfer { amount: Uint128 },
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
+    Unlock { unlock_only: UnlockOnly },
+    ManualTimeout { seq: u64 },
 }
