@@ -11,12 +11,12 @@ owner=$(echo "$output" | grep "owner" | awk '{print $2}' | tr -d '"')
 addresses=$(echo "$output" | grep "address:" | awk '{print $3}')
 weights=$(echo "$output" | grep "weight" | awk '{print $2}' | tr -d '"')
 
-if [ ! -f investment.txt ] || ! grep -q "timestamp;vault_address;min_withdrawal;owner" investment.txt || ! grep -q "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" investment.txt; then
-    echo "timestamp;vault_address;min_withdrawal;owner" > investment.txt
-    echo "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" >> investment.txt
+if [ ! -f log_investment.txt ] || ! grep -q "timestamp;vault_address;min_withdrawal;owner" log_investment.txt || ! grep -q "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" log_investment.txt; then
+    echo "timestamp;vault_address;min_withdrawal;owner" > log_investment.txt
+    echo "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" >> log_investment.txt
 fi
 
-echo "$(date -u +"%Y-%m-%dT%H:%M:%S");$VAULT_ADDR;$min_withdrawal;$owner" >> investment.txt
+echo "$(date -u +"%Y-%m-%dT%H:%M:%S");$VAULT_ADDR;$min_withdrawal;$owner" >> log_investment.txt
 
 for address in $addresses; do
     base_denom=$(echo "$output" | grep -A 12 "address: $address" | grep "base_denom" | awk '{print $2}')
@@ -29,5 +29,5 @@ for address in $addresses; do
     return_source_channel=$(echo "$output" | grep -A 12 "address: $address" | grep "return_source_channel" | awk '{print $2}')
     transfer_channel=$(echo "$output" | grep -A 12 "address: $address" | grep "transfer_channel" | awk '{print $2}')
     weight=$(echo "$output" | grep -A 12 "address: $address" | grep "weight" | awk '{print $2}' | tr -d '"')
-    echo "$(date -u +"%Y-%m-%dT%H:%M:%S");$address;$base_denom;$expected_connection;$local_denom;$lock_period;$pool_denom;$pool_id;$quote_denom;$return_source_channel;$transfer_channel;$weight" >> investment.txt
+    echo "$(date -u +"%Y-%m-%dT%H:%M:%S");$address;$base_denom;$expected_connection;$local_denom;$lock_period;$pool_denom;$pool_id;$quote_denom;$return_source_channel;$transfer_channel;$weight" >> log_investment.txt
 done

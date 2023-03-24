@@ -1,6 +1,6 @@
 #!/bin/sh
 
-while true; do
+# while true; do
   
     VAULT_ADDR=quasar1xzqhz0q969plap7awdjpls6vvrq57efk5vlkwr7kj5rzw9sq8j6s6wnxaj
     PRIM_ADDR="quasar1ck0qyewrpeqaqyyz3pp0qjsuseglukvqeuec37vgy4nah2hf0gfqyrt5vw"
@@ -49,6 +49,6 @@ while true; do
 
     echo "----------------------------------------"
 
-    sleep 5
+#     sleep 5
 
-done
+# done
