@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response, Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply, Response,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -11,7 +12,7 @@ use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::{is_contract_admin, SubMsgKind};
-use crate::ibc::{handle_failing_ack, handle_succesful_ack};
+use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
@@ -112,12 +113,8 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { lock_only } => execute_lock(deps, env, info, lock_only),
-        ExecuteMsg::ManualTimeout {} => execute_manual_timeout(deps, env),
+        ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
     }
-}
-
-pub fn execute_manual_timeout(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    Ok(Response::new())
 }
 
 pub fn execute_lock(
@@ -137,6 +134,22 @@ pub fn execute_lock(
     IBC_LOCK.save(deps.storage, &lock)?;
 
     Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
+}
+
+pub fn manual_timeout(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sequence: u64,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+
+    let response = on_packet_timeout(deps, sequence, "timeout".to_string())?;
+
+    Ok(Response::new()
+        .add_attributes(response.attributes)
+        .add_events(response.events)
+        .add_submessages(response.messages))
 }
 
 pub fn execute_set_depositor(
@@ -418,7 +431,10 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    IBC_LOCK.save(deps.storage, &Lock::new())?;
+    TIMED_OUT.save(deps.storage, &true)?;
+    IBC_LOCK.update(deps.storage, |lock| {
+        Ok(lock.lock_bond().lock_start_unbond().lock_unbond())
+    });
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)

@@ -208,5 +208,5 @@ pub enum ExecuteMsg {
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
     Unlock { lock_only: LockOnly },
-    ManualTimeout {},
+    ManualTimeout { seq: u64 },
 }
