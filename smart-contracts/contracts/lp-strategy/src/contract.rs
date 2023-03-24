@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg,  IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
-    Response,  Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply, Response,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -16,7 +16,7 @@ use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -112,9 +112,28 @@ pub fn execute(
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
-        ExecuteMsg::Unlock {} => todo!(),
+        ExecuteMsg::Unlock { lock_only } => execute_lock(deps, env, info, lock_only),
         ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
     }
+}
+
+pub fn execute_lock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    lock_only: LockOnly,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match lock_only {
+        LockOnly::Bond => lock = lock.lock_bond(),
+        LockOnly::StartUnbond => lock = lock.lock_start_unbond(),
+        LockOnly::Unbond => lock = lock.lock_unbond(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
 }
 
 pub fn manual_timeout(
@@ -416,7 +435,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     IBC_LOCK.update(deps.storage, |lock| {
         Ok(lock.lock_bond().lock_start_unbond().lock_unbond())
     });
-    
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
