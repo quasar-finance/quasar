@@ -7,12 +7,12 @@ import (
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
-func (kf KeeperFactory) EpochsKeeper(paramsKeeper paramskeeper.Keeper) *keeper.Keeper {
+func (f Factory) EpochsKeeper(paramsKeeper paramskeeper.Keeper) *keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, f.DB)
 
 	paramsKeeper.Subspace(types.ModuleName)
-	epochsKeeper := keeper.NewKeeper(kf.EncodingConfig.Marshaler, storeKey)
+	epochsKeeper := keeper.NewKeeper(f.EncodingConfig.Marshaler, storeKey)
 	epochsKeeper.SetHooks(
 		types.NewMultiEpochHooks(),
 	)

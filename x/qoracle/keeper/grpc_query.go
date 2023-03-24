@@ -96,7 +96,7 @@ func (q Keeper) Pools(c context.Context, req *types.QueryPoolsRequest) (*types.Q
 
 	var pools []types.Pool
 	prefixStore := prefix.NewStore(ctx.KVStore(q.storeKey), types.KeyMemPoolPrefix)
-	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
+	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		var pool types.Pool
 		err := q.cdc.Unmarshal(value, &pool)
 		if err != nil {

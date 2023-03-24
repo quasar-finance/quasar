@@ -46,7 +46,7 @@ func (m *MockChannelKeeper) GetChannel(arg0 types.Context, arg1, arg2 string) (t
 }
 
 // GetChannel indicates an expected call of GetChannel.
-func (mr *MockChannelKeeperMockRecorder) GetChannel(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) GetChannel(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannel), arg0, arg1, arg2)
 }
@@ -62,7 +62,7 @@ func (m *MockChannelKeeper) GetChannelClientState(arg0 types.Context, arg1, arg2
 }
 
 // GetChannelClientState indicates an expected call of GetChannelClientState.
-func (mr *MockChannelKeeperMockRecorder) GetChannelClientState(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) GetChannelClientState(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelClientState", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannelClientState), arg0, arg1, arg2)
 }
@@ -78,7 +78,7 @@ func (m *MockChannelKeeper) GetChannelConnection(arg0 types.Context, arg1, arg2 
 }
 
 // GetChannelConnection indicates an expected call of GetChannelConnection.
-func (mr *MockChannelKeeperMockRecorder) GetChannelConnection(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) GetChannelConnection(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelConnection", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannelConnection), arg0, arg1, arg2)
 }
@@ -93,7 +93,7 @@ func (m *MockChannelKeeper) GetConnection(arg0 types.Context, arg1 string) (expo
 }
 
 // GetConnection indicates an expected call of GetConnection.
-func (mr *MockChannelKeeperMockRecorder) GetConnection(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) GetConnection(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockChannelKeeper)(nil).GetConnection), arg0, arg1)
 }
@@ -108,7 +108,7 @@ func (m *MockChannelKeeper) GetNextSequenceSend(arg0 types.Context, arg1, arg2 s
 }
 
 // GetNextSequenceSend indicates an expected call of GetNextSequenceSend.
-func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNextSequenceSend", reflect.TypeOf((*MockChannelKeeper)(nil).GetNextSequenceSend), arg0, arg1, arg2)
 }

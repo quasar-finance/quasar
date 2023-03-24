@@ -29,11 +29,9 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	if err := gs.OsmosisGenesisState.Validate(); err != nil {
-		return err
-	}
+	err := gs.OsmosisGenesisState.Validate()
 
-	return nil
+	return err
 }
 
 // DefaultOsmosisGenesis creates and returns the default qoracle DefaultOsmosisGenesis
@@ -54,14 +52,11 @@ func NewOsmosisGenesisState(port string, params qosmotypes.Params) OsmosisGenesi
 
 // Validate performs basic validation of the OsmosisGenesisState
 func (gs OsmosisGenesisState) Validate() error {
-
 	if err := host.PortIdentifierValidator(gs.Port); err != nil {
 		return err
 	}
 
-	if err := gs.Params.Validate(); err != nil {
-		return err
-	}
+	err := gs.Params.Validate()
 
-	return nil
+	return err
 }

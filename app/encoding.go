@@ -10,7 +10,7 @@ import (
 )
 
 // makeEncodingConfig creates an EncodingConfig for an amino based test configuration.
-func makeEncodingConfig() params.EncodingConfig {
+func encodingConfigMaker() params.EncodingConfig {
 	amino := codec.NewLegacyAmino()
 	interfaceRegistry := types.NewInterfaceRegistry()
 	marshaler := codec.NewProtoCodec(interfaceRegistry)
@@ -26,7 +26,7 @@ func makeEncodingConfig() params.EncodingConfig {
 
 // MakeEncodingConfig creates an EncodingConfig for testing
 func MakeEncodingConfig() params.EncodingConfig {
-	encodingConfig := makeEncodingConfig()
+	encodingConfig := encodingConfigMaker()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)

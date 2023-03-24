@@ -87,7 +87,7 @@ func canCreateModuleAccountAtAddr(ctx sdk.Context, ak types.AccountKeeper, addr 
 		return fmt.Errorf("cannot create module account %s, "+
 			"due to an account at that address already existing & having sent txs", addr)
 	}
-	var overrideAccountTypes = map[reflect.Type]struct{}{
+	overrideAccountTypes := map[reflect.Type]struct{}{
 		reflect.TypeOf(&authtypes.BaseAccount{}):                 {},
 		reflect.TypeOf(&vestingtypes.DelayedVestingAccount{}):    {},
 		reflect.TypeOf(&vestingtypes.ContinuousVestingAccount{}): {},
@@ -103,7 +103,7 @@ func canCreateModuleAccountAtAddr(ctx sdk.Context, ak types.AccountKeeper, addr 
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 

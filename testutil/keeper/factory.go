@@ -10,7 +10,7 @@ import (
 )
 
 // Structure holding storage context for initializing test keepers
-type KeeperFactory struct {
+type Factory struct {
 	DB             *tmdb.MemDB
 	StateStore     store.CommitMultiStore
 	Ctx            sdk.Context
@@ -23,8 +23,8 @@ func NewKeeperFactory(
 	stateStore store.CommitMultiStore,
 	ctx sdk.Context,
 	encodingConfig params.EncodingConfig,
-) KeeperFactory {
-	return KeeperFactory{
+) Factory {
+	return Factory{
 		DB:             db,
 		StateStore:     stateStore,
 		Ctx:            ctx,
@@ -33,14 +33,14 @@ func NewKeeperFactory(
 }
 
 // TestModuleAccountPerms returns module account permissions for testing
-func (kf KeeperFactory) TestModuleAccountPerms() map[string][]string {
+func (kf Factory) TestModuleAccountPerms() map[string][]string {
 	moduleAccPerms := app.GetMaccPerms()
 	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
 	return moduleAccPerms
 }
 
 // BlockedModuleAccountAddrs returns all the app's module account addresses that are active
-func (kf KeeperFactory) BlockedModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
+func (f Factory) BlockedModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true

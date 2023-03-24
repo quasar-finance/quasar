@@ -6,9 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var (
-	_ sdk.Msg = &MsgCreateBalancerPool{}
-)
+var _ sdk.Msg = &MsgCreateBalancerPool{}
 
 func (msg MsgCreateBalancerPool) ValidateBasic() error {
 	panic("not implemented")

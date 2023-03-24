@@ -47,7 +47,7 @@ func (m *MockIBCTransferKeeper) GetDenomTrace(arg0 types.Context, arg1 bytes.Hex
 }
 
 // GetDenomTrace indicates an expected call of GetDenomTrace.
-func (mr *MockIBCTransferKeeperMockRecorder) GetDenomTrace(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockIBCTransferKeeperMockRecorder) GetDenomTrace(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDenomTrace", reflect.TypeOf((*MockIBCTransferKeeper)(nil).GetDenomTrace), arg0, arg1)
 }
@@ -61,7 +61,7 @@ func (m *MockIBCTransferKeeper) SendTransfer(arg0 types.Context, arg1, arg2 stri
 }
 
 // SendTransfer indicates an expected call of SendTransfer.
-func (mr *MockIBCTransferKeeperMockRecorder) SendTransfer(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
+func (mr *MockIBCTransferKeeperMockRecorder) SendTransfer(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransfer", reflect.TypeOf((*MockIBCTransferKeeper)(nil).SendTransfer), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }

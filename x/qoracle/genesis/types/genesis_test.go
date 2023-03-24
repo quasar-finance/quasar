@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestGenesisState_Validate tests ValidateGenesis
 func TestGenesisState_Validate(t *testing.T) {
 	for _, tc := range []struct {
 		desc     string
@@ -18,7 +19,7 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: types.DefaultGenesis(),
 			valid:    true,
 		},
-	} { //for start
+	} { // for end
 		t.Run(tc.desc, func(t *testing.T) {
 			err := tc.genState.Validate()
 			if tc.valid {

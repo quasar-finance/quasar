@@ -9,15 +9,11 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-var (
-	// DefaultWasmHooksEnabled is the default value for WasmHooksEnabled
-	DefaultWasmHooksEnabled = true
-)
+// DefaultWasmHooksEnabled is the default value for WasmHooksEnabled
+var DefaultWasmHooksEnabled = true
 
-var (
-	// KeyWasmHooksEnabled is parameter store key for WasmHooksEnabled
-	KeyWasmHooksEnabled = []byte("WasmHooksEnabled")
-)
+// KeyWasmHooksEnabled is parameter store key for WasmHooksEnabled
+var KeyWasmHooksEnabled = []byte("WasmHooksEnabled")
 
 // ParamKeyTable for qtransfer module
 func ParamKeyTable() paramtypes.KeyTable {
@@ -54,14 +50,12 @@ func (p Params) String() string {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateEnabled(p.WasmHooksEnabled); err != nil {
-		return err
-	}
-	return nil
+	err := validateEnabled(p.WasmHooksEnabled)
+	return err
 }
 
 // validateEnabled is used to validate the enabled param type.
-func validateEnabled(i interface{}) error {
+func validateEnabled(i any) error {
 	_, ok := i.(bool)
 	if !ok {
 		return fmt.Errorf("invalid qtransfer enabled parameter type: %T", i)

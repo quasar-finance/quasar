@@ -9,14 +9,14 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 )
 
-func (kf KeeperFactory) QTransferKeeper(paramsKeeper paramskeeper.Keeper, accountKeeper authkeeper.AccountKeeper) keeper.Keeper {
+func (f Factory) QTransferKeeper(paramsKeeper paramskeeper.Keeper, accountKeeper authkeeper.AccountKeeper) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 
-	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, f.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		kf.EncodingConfig.Marshaler,
+		f.EncodingConfig.Marshaler,
 		storeKey,
 		paramsSubspace,
 		accountKeeper,
@@ -25,6 +25,6 @@ func (kf KeeperFactory) QTransferKeeper(paramsKeeper paramskeeper.Keeper, accoun
 	return k
 }
 
-func (kf KeeperFactory) SetQTransferDefaultParams(k keeper.Keeper) {
-	k.SetParams(kf.Ctx, types.DefaultParams())
+func (f Factory) SetQTransferDefaultParams(k keeper.Keeper) {
+	k.SetParams(f.Ctx, types.DefaultParams())
 }

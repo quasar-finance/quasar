@@ -46,7 +46,7 @@ func (m *MockICS4Wrapper) GetAppVersion(arg0 types.Context, arg1, arg2 string) (
 }
 
 // GetAppVersion indicates an expected call of GetAppVersion.
-func (mr *MockICS4WrapperMockRecorder) GetAppVersion(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockICS4WrapperMockRecorder) GetAppVersion(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAppVersion", reflect.TypeOf((*MockICS4Wrapper)(nil).GetAppVersion), arg0, arg1, arg2)
 }
@@ -60,7 +60,7 @@ func (m *MockICS4Wrapper) SendPacket(arg0 types.Context, arg1 *types0.Capability
 }
 
 // SendPacket indicates an expected call of SendPacket.
-func (mr *MockICS4WrapperMockRecorder) SendPacket(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockICS4WrapperMockRecorder) SendPacket(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendPacket", reflect.TypeOf((*MockICS4Wrapper)(nil).SendPacket), arg0, arg1, arg2)
 }
@@ -74,7 +74,7 @@ func (m *MockICS4Wrapper) WriteAcknowledgement(arg0 types.Context, arg1 *types0.
 }
 
 // WriteAcknowledgement indicates an expected call of WriteAcknowledgement.
-func (mr *MockICS4WrapperMockRecorder) WriteAcknowledgement(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockICS4WrapperMockRecorder) WriteAcknowledgement(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteAcknowledgement", reflect.TypeOf((*MockICS4Wrapper)(nil).WriteAcknowledgement), arg0, arg1, arg2, arg3)
 }

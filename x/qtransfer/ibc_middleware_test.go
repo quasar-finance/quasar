@@ -287,7 +287,7 @@ func (suite *HooksTestSuite) TestPacketsThatShouldBeSkipped() {
 		} else {
 			suite.Require().Contains(ackStr, "error", tc.memo)
 		}
-		sequence += 1
+		sequence++
 	}
 }
 

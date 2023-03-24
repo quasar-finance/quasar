@@ -45,7 +45,7 @@ func (m *MockClientKeeper) ClientStore(arg0 types0.Context, arg1 string) types.K
 }
 
 // ClientStore indicates an expected call of ClientStore.
-func (mr *MockClientKeeperMockRecorder) ClientStore(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientKeeperMockRecorder) ClientStore(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientStore", reflect.TypeOf((*MockClientKeeper)(nil).ClientStore), arg0, arg1)
 }
@@ -60,7 +60,7 @@ func (m *MockClientKeeper) GetClientConsensusState(arg0 types0.Context, arg1 str
 }
 
 // GetClientConsensusState indicates an expected call of GetClientConsensusState.
-func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetClientConsensusState), arg0, arg1, arg2)
 }
@@ -75,7 +75,7 @@ func (m *MockClientKeeper) GetClientState(arg0 types0.Context, arg1 string) (exp
 }
 
 // GetClientState indicates an expected call of GetClientState.
-func (mr *MockClientKeeperMockRecorder) GetClientState(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientKeeperMockRecorder) GetClientState(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientState", reflect.TypeOf((*MockClientKeeper)(nil).GetClientState), arg0, arg1)
 }

@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"testing"
-
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

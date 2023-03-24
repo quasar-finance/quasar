@@ -1,7 +1,7 @@
 package types
 
 import (
-	//"cosmossdk.io/errors"
+	// "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

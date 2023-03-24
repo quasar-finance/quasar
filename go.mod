@@ -1,10 +1,10 @@
 module github.com/quasarlabs/quasarnode
 
-go 1.18
+go 1.20
 
 require (
-	github.com/CosmWasm/wasmd v0.31.0
-	github.com/cosmos/cosmos-sdk v0.45.14
+	github.com/CosmWasm/wasmd v0.31.1-0.20230322155833-d48bb69b391e
+	github.com/cosmos/cosmos-sdk v0.45.15
 	github.com/cosmos/ibc-go/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/mock v1.6.0
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.2
-	github.com/tendermint/tendermint v0.34.26
+	github.com/tendermint/tendermint v0.34.27
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa
 	google.golang.org/grpc v1.53.0
@@ -40,13 +40,14 @@ require (
 	cosmossdk.io/core v0.5.1 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.3 // indirect
 	github.com/Abirdcfly/dupword v0.0.7 // indirect
-	github.com/DataDog/zstd v1.4.5 // indirect
+	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20220817183557-09c6e030a677 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
+	github.com/cometbft/cometbft-db v0.7.0 // indirect
 	github.com/cosmos/cosmos-db v0.0.0-20221226095112-f3c38ecb5e32 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
@@ -62,6 +63,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
+	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tidwall/btree v1.5.0 // indirect
 	github.com/timonwong/loggercheck v0.9.3 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
@@ -94,13 +96,12 @@ require (
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/breml/bidichk v0.2.3 // indirect
 	github.com/breml/errchkjson v0.3.0 // indirect
-	github.com/btcsuite/btcd v0.22.2 // indirect
 	github.com/butuzov/ireturn v0.1.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/charithe/durationcheck v0.0.9 // indirect
 	github.com/chavacava/garif v0.0.0-20220630083739-93517212f375 // indirect
-	github.com/coinbase/rosetta-sdk-go v0.7.0 // indirect
+	github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
@@ -274,7 +275,7 @@ require (
 	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
@@ -290,14 +291,26 @@ require (
 )
 
 replace (
-	// To fix the security issue https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
-	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	// used latest commit of branch v3.3.0-icq
-	// github.com/cosmos/ibc-go/v4 => github.com/strangelove-ventures/ibc-go/v3 v3.0.0-20221014082552-99c8caa484af
+	// use cosmos fork of keyring
+	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
+	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
+	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
+
+	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
+	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
+	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.8.1
+
+	// Use regen gogoproto fork
+	// This for is replaced by cosmos/gogoproto in future versions
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	// use informal system fork of tendermint
-	// See https://twitter.com/informalinc/status/1613580954383040512
-	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
-	// To fix https://github.com/cosmos/cosmos-sdk/issues/8426
+
+	github.com/jhump/protoreflect => github.com/jhump/protoreflect v1.9.0
+
+	// use cometbft
+	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
+
+	// latest grpc doesn't work with with our modified proto compiler, so we need to enforce
+	// the following version across all dependencies.
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )

@@ -114,7 +114,6 @@ func (k Keeper) IsInitialized(ctx sdk.Context) bool {
 // by setting the corresponding update flag.
 func (k Keeper) UpdateMemStore(ctx sdk.Context) {
 	switch {
-
 	case k.IsPoolsUpdateAvailable(ctx):
 		// TODO: we should only update pools from the notifier source to help with gas consumption.
 		k.UpdatePools(ctx)
@@ -154,6 +153,7 @@ func (k Keeper) UpdatePools(ctx sdk.Context) {
 		poolStore := prefix.NewStore(memStore, types.KeyMemPoolPrefix)
 		osmosisPoolStore := prefix.NewStore(poolStore, types.KeyOsmosisPoolPrefix)
 		for _, pool := range pools {
+			pool := pool
 			osmosisPoolStore.Set([]byte(pool.Id), k.cdc.MustMarshal(&pool))
 		}
 	}

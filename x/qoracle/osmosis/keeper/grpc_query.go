@@ -70,7 +70,7 @@ func (q Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 
 	var pools []balancerpool.Pool
 	store := prefix.NewStore(ctx.KVStore(q.storeKey), types.KeyPoolPrefix)
-	pageRes, err := query.Paginate(store, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		var pool balancerpool.Pool
 		if err := q.cdc.Unmarshal(value, &pool); err != nil {
 			return err

@@ -4,16 +4,14 @@ import (
 	"fmt"
 )
 
-func ValidateEpochIdentifierInterface(i interface{}) error {
+func ValidateEpochIdentifierInterface(i any) error {
 	v, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-	if err := ValidateEpochIdentifierString(v); err != nil {
-		return err
-	}
+	err := ValidateEpochIdentifierString(v)
 
-	return nil
+	return err
 }
 
 func ValidateEpochIdentifierString(s string) error {

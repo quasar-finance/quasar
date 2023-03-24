@@ -39,7 +39,6 @@ func GetCmdState() *cobra.Command {
 		Short: "shows state of osmosis icq requests",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -69,7 +68,6 @@ func GetCmdChainParams() *cobra.Command {
 		Short: "shows the latest fetched osmosis chain params",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -99,7 +97,6 @@ func GetCmdIncentivizedPools() *cobra.Command {
 		Short: "shows the latest fetched osmosis incentivized pools list",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -129,7 +126,6 @@ func GetCmdPools() *cobra.Command {
 		Short: "shows the latest fetched osmosis pool details",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

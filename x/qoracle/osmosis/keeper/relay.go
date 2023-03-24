@@ -21,7 +21,6 @@ import (
 // Param request
 
 func (k Keeper) TryUpdateChainParams(ctx sdk.Context) {
-
 	// Do not start a new procedure if module is disabled
 	if !k.IsEnabled(ctx) {
 		return
@@ -395,7 +394,6 @@ func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.Re
 }
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
-
 	paramsState := k.GetRequestState(ctx, types.KeyParamsRequestState)
 	if paramsState.Pending() && paramsState.PacketSequence == packet.GetSequence() {
 		k.Logger(ctx).Error("osmosis param request state is timed out.",
@@ -423,5 +421,4 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 
 	k.Logger(ctx).Error("Unknown timeout for the icq channel.", "packet", packet.String())
 	return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "Unknown osmosis req packet timed out. packet %s", packet.String())
-
 }

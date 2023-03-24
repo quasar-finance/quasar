@@ -44,7 +44,7 @@ func (m *MockConnectionKeeper) GetAllConnections(arg0 types.Context) []types0.Id
 }
 
 // GetAllConnections indicates an expected call of GetAllConnections.
-func (mr *MockConnectionKeeperMockRecorder) GetAllConnections(arg0 interface{}) *gomock.Call {
+func (mr *MockConnectionKeeperMockRecorder) GetAllConnections(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllConnections", reflect.TypeOf((*MockConnectionKeeper)(nil).GetAllConnections), arg0)
 }
@@ -59,7 +59,7 @@ func (m *MockConnectionKeeper) GetConnection(arg0 types.Context, arg1 string) (t
 }
 
 // GetConnection indicates an expected call of GetConnection.
-func (mr *MockConnectionKeeperMockRecorder) GetConnection(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockConnectionKeeperMockRecorder) GetConnection(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockConnectionKeeper)(nil).GetConnection), arg0, arg1)
 }

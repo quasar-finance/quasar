@@ -49,14 +49,14 @@ func NewParams(
 	epochIdentifier string,
 	authorizedChan string,
 	timeoutHeight clienttypes.Height,
-	TimeoutTimestamp uint64,
+	timeoutTimestamp uint64,
 ) Params {
 	return Params{
 		Enabled:                enabled,
 		EpochIdentifier:        epochIdentifier,
 		AuthorizedChannel:      authorizedChan,
 		PacketTimeoutHeight:    timeoutHeight,
-		PacketTimeoutTimestamp: TimeoutTimestamp,
+		PacketTimeoutTimestamp: timeoutTimestamp,
 	}
 }
 
@@ -102,7 +102,7 @@ func (p Params) String() string {
 	return string(out)
 }
 
-func validateEnabled(i interface{}) error {
+func validateEnabled(i any) error {
 	_, ok := i.(bool)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -111,7 +111,7 @@ func validateEnabled(i interface{}) error {
 	return nil
 }
 
-func validateAuthorizedChannel(i interface{}) error {
+func validateAuthorizedChannel(i any) error {
 	channelID, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -126,7 +126,7 @@ func validateAuthorizedChannel(i interface{}) error {
 	return nil
 }
 
-func validateClientHeight(i interface{}) error {
+func validateClientHeight(i any) error {
 	_, ok := i.(clienttypes.Height)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -135,7 +135,7 @@ func validateClientHeight(i interface{}) error {
 	return nil
 }
 
-func validateDuration(i interface{}) error {
+func validateDuration(i any) error {
 	_, ok := i.(uint64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

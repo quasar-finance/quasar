@@ -25,29 +25,29 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 // IsEnabled retrieves the enabled boolean from the paramstore
 func (k Keeper) IsEnabled(ctx sdk.Context) (res bool) {
 	k.paramSpace.Get(ctx, types.KeyEnabled, &res)
-	return
+	return res
 }
 
 // GetEpochIdentifier retrieves the epoch identifier from the paramstore
 func (k Keeper) GetEpochIdentifier(ctx sdk.Context) (res string) {
 	k.paramSpace.Get(ctx, types.KeyEpochIdentifier, &res)
-	return
+	return res
 }
 
 // GetAuthorizedChannel retrieves the authorized channel from the paramstore
 func (k Keeper) GetAuthorizedChannel(ctx sdk.Context) (res string) {
 	k.paramSpace.Get(ctx, types.KeyAuthorizedChannel, &res)
-	return
+	return res
 }
 
 // GetPacketTimeoutHeight retrieves the timeout height from the paramstore
 func (k Keeper) GetPacketTimeoutHeight(ctx sdk.Context) (res clienttypes.Height) {
 	k.paramSpace.Get(ctx, types.KeyPacketTimeoutHeight, &res)
-	return
+	return res
 }
 
 // GetPacketTimeoutTimestamp retrieves the timeout timestamp from the paramstore
 func (k Keeper) GetPacketTimeoutTimestamp(ctx sdk.Context) (res uint64) {
 	k.paramSpace.Get(ctx, types.KeyPacketTimeoutTimestamp, &res)
-	return
+	return res
 }

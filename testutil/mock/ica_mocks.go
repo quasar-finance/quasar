@@ -46,7 +46,7 @@ func (m *MockICAControllerKeeper) GetActiveChannelID(arg0 types.Context, arg1, a
 }
 
 // GetActiveChannelID indicates an expected call of GetActiveChannelID.
-func (mr *MockICAControllerKeeperMockRecorder) GetActiveChannelID(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockICAControllerKeeperMockRecorder) GetActiveChannelID(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveChannelID", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetActiveChannelID), arg0, arg1, arg2)
 }
@@ -61,7 +61,7 @@ func (m *MockICAControllerKeeper) GetInterchainAccountAddress(arg0 types.Context
 }
 
 // GetInterchainAccountAddress indicates an expected call of GetInterchainAccountAddress.
-func (mr *MockICAControllerKeeperMockRecorder) GetInterchainAccountAddress(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockICAControllerKeeperMockRecorder) GetInterchainAccountAddress(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInterchainAccountAddress", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetInterchainAccountAddress), arg0, arg1, arg2)
 }
@@ -76,7 +76,7 @@ func (m *MockICAControllerKeeper) GetOpenActiveChannel(arg0 types.Context, arg1,
 }
 
 // GetOpenActiveChannel indicates an expected call of GetOpenActiveChannel.
-func (mr *MockICAControllerKeeperMockRecorder) GetOpenActiveChannel(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockICAControllerKeeperMockRecorder) GetOpenActiveChannel(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOpenActiveChannel", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetOpenActiveChannel), arg0, arg1, arg2)
 }
@@ -90,7 +90,7 @@ func (m *MockICAControllerKeeper) RegisterInterchainAccount(arg0 types.Context, 
 }
 
 // RegisterInterchainAccount indicates an expected call of RegisterInterchainAccount.
-func (mr *MockICAControllerKeeperMockRecorder) RegisterInterchainAccount(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockICAControllerKeeperMockRecorder) RegisterInterchainAccount(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterInterchainAccount", reflect.TypeOf((*MockICAControllerKeeper)(nil).RegisterInterchainAccount), arg0, arg1, arg2, arg3)
 }
@@ -105,7 +105,7 @@ func (m *MockICAControllerKeeper) SendTx(arg0 types.Context, arg1 *types0.Capabi
 }
 
 // SendTx indicates an expected call of SendTx.
-func (mr *MockICAControllerKeeperMockRecorder) SendTx(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockICAControllerKeeperMockRecorder) SendTx(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTx", reflect.TypeOf((*MockICAControllerKeeper)(nil).SendTx), arg0, arg1, arg2, arg3, arg4, arg5)
 }

@@ -158,8 +158,8 @@ func isIcs20Packet(packet channeltypes.Packet) (isIcs20 bool, ics20data transfer
 	return true, data
 }
 
-func isMemoWasmRouted(memo string) (isWasmRouted bool, metadata map[string]interface{}) {
-	metadata = make(map[string]interface{})
+func isMemoWasmRouted(memo string) (isWasmRouted bool, metadata map[string]any) {
+	metadata = make(map[string]any)
 
 	// If there is no memo, the packet was either sent with an earlier version of IBC, or the memo was
 	// intentionally left blank. Nothing to do here. Ignore the packet and pass it down the stack.
@@ -183,7 +183,7 @@ func isMemoWasmRouted(memo string) (isWasmRouted bool, metadata map[string]inter
 	return true, metadata
 }
 
-func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bool, contractAddr sdk.AccAddress, msgBytes []byte, err error) {
+func validateAndParseTransferMemo(memo, receiver string) (isWasmRouted bool, contractAddr sdk.AccAddress, msgBytes []byte, err error) {
 	isWasmRouted, metadata := isMemoWasmRouted(memo)
 	if !isWasmRouted {
 		return isWasmRouted, sdk.AccAddress{}, nil, nil
@@ -192,7 +192,7 @@ func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bo
 	wasmRaw := metadata["wasm"]
 
 	// Make sure the wasm key is a map. If it isn't, ignore this packet
-	wasm, ok := wasmRaw.(map[string]interface{})
+	wasm, ok := wasmRaw.(map[string]any)
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
 			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, "wasm metadata is not a JSON map object")
@@ -225,7 +225,7 @@ func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bo
 	}
 
 	// Make sure the msg key is a map. If it isn't, return an error
-	_, ok = wasm["msg"].(map[string]interface{})
+	_, ok = wasm["msg"].(map[string]any)
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
 			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["msg"] is not a map object`)

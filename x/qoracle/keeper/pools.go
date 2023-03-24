@@ -36,7 +36,6 @@ func (k Keeper) GetPoolsRankedByAPY(ctx sdk.Context, denom string) []types.Pool 
 }
 
 func IsDenomInPool(pool types.Pool, denom string) bool {
-
 	if denom != "" {
 		for _, c := range pool.Assets {
 			if c.Denom == denom {

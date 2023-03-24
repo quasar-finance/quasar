@@ -13,7 +13,7 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
-func (kf KeeperFactory) ParamsKeeper() paramskeeper.Keeper {
+func (kf Factory) ParamsKeeper() paramskeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	transientStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
@@ -24,38 +24,38 @@ func (kf KeeperFactory) ParamsKeeper() paramskeeper.Keeper {
 	return paramsKeeper
 }
 
-func (kf KeeperFactory) AccountKeeper(paramsKeeper paramskeeper.Keeper, maccPerms map[string][]string) authkeeper.AccountKeeper {
+func (f Factory) AccountKeeper(paramsKeeper paramskeeper.Keeper, maccPerms map[string][]string) authkeeper.AccountKeeper {
 	storeKey := sdk.NewKVStoreKey(authtypes.StoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, f.DB)
 
 	subspace := paramsKeeper.Subspace(authtypes.ModuleName)
 	accountKeeper := authkeeper.NewAccountKeeper(
-		kf.EncodingConfig.Marshaler, storeKey, subspace, authtypes.ProtoBaseAccount, maccPerms,
+		f.EncodingConfig.Marshaler, storeKey, subspace, authtypes.ProtoBaseAccount, maccPerms,
 	)
 
 	return accountKeeper
 }
 
-func (kf KeeperFactory) BankKeeper(paramsKeeper paramskeeper.Keeper, accountKeeper authkeeper.AccountKeeper, blockedMaccAddresses map[string]bool) bankkeeper.Keeper {
+func (f Factory) BankKeeper(paramsKeeper paramskeeper.Keeper, accountKeeper authkeeper.AccountKeeper, blockedMaccAddresses map[string]bool) bankkeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(banktypes.StoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, f.DB)
 
 	subspace := paramsKeeper.Subspace(banktypes.ModuleName)
 	bankKeeper := bankkeeper.NewBaseKeeper(
-		kf.EncodingConfig.Marshaler, storeKey, accountKeeper, subspace, blockedMaccAddresses,
+		f.EncodingConfig.Marshaler, storeKey, accountKeeper, subspace, blockedMaccAddresses,
 	)
 
 	return bankKeeper
 }
 
-func (kf KeeperFactory) CapabilityKeeper() capabilitykeeper.Keeper {
+func (f Factory) CapabilityKeeper() capabilitykeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(capabilitytypes.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(capabilitytypes.MemStoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	f.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, f.DB)
+	f.StateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 
 	capabilityKeeper := capabilitykeeper.NewKeeper(
-		kf.EncodingConfig.Marshaler, storeKey, memStoreKey,
+		f.EncodingConfig.Marshaler, storeKey, memStoreKey,
 	)
 
 	return *capabilityKeeper

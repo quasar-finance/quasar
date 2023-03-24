@@ -12,7 +12,7 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
-func (kf KeeperFactory) QosmosisKeeper(
+func (f Factory) QosmosisKeeper(
 	paramsKeeper paramskeeper.Keeper,
 	authority string,
 	clientKeeper types.ClientKeeper,
@@ -24,11 +24,11 @@ func (kf KeeperFactory) QosmosisKeeper(
 ) qosmokeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(qosmotypes.StoreKey)
 
-	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, f.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(qosmotypes.SubModuleName)
 	k := qosmokeeper.NewKeeper(
-		kf.EncodingConfig.Marshaler,
+		f.EncodingConfig.Marshaler,
 		storeKey,
 		paramsSubspace,
 		authority,
@@ -43,22 +43,22 @@ func (kf KeeperFactory) QosmosisKeeper(
 	return k
 }
 
-func (kf KeeperFactory) SetQosmosisDefaultParams(k qosmokeeper.Keeper) {
-	k.SetParams(kf.Ctx, qosmotypes.DefaultParams())
+func (f Factory) SetQosmosisDefaultParams(k qosmokeeper.Keeper) {
+	k.SetParams(f.Ctx, qosmotypes.DefaultParams())
 }
 
-func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, authority string) keeper.Keeper {
+func (f Factory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, authority string) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 	tKey := sdk.NewTransientStoreKey(types.TStoreKey)
 
-	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(memKey, storetypes.StoreTypeMemory, kf.DB)
-	kf.StateStore.MountStoreWithDB(tKey, storetypes.StoreTypeTransient, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, f.DB)
+	f.StateStore.MountStoreWithDB(memKey, storetypes.StoreTypeMemory, f.DB)
+	f.StateStore.MountStoreWithDB(tKey, storetypes.StoreTypeTransient, f.DB)
 
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	k := keeper.NewKeeper(
-		kf.EncodingConfig.Marshaler,
+		f.EncodingConfig.Marshaler,
 		storeKey,
 		memKey,
 		tKey,
@@ -69,6 +69,6 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, authorit
 	return k
 }
 
-func (kf KeeperFactory) SetQoracleDefaultParams(k keeper.Keeper) {
-	k.SetParams(kf.Ctx, types.DefaultParams())
+func (f Factory) SetQoracleDefaultParams(k keeper.Keeper) {
+	k.SetParams(f.Ctx, types.DefaultParams())
 }

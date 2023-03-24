@@ -8,7 +8,7 @@ import (
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 )
 
-func RegisterCodec(cdc *codec.LegacyAmino) {
+func RegisterCodec() {
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {

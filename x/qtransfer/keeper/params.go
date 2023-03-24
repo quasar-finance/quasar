@@ -20,5 +20,5 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 // WasmHooksEnabled returns whether wasm hooks are enabled
 func (k Keeper) WasmHooksEnabled(ctx sdk.Context) (res bool) {
 	k.paramSpace.Get(ctx, types.KeyWasmHooksEnabled, &res)
-	return
+	return res
 }

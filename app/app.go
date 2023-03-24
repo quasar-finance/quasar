@@ -2,12 +2,13 @@ package app
 
 import (
 	"fmt"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
@@ -94,8 +95,8 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	"github.com/quasarlabs/quasarnode/app/openapiconsole"
 	"github.com/spf13/cast"
-    "github.com/quasarlabs/quasarnode/app/openapiconsole"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -501,7 +502,6 @@ func New(
 	)
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
 
-	// icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// TODO AUDIT Above lines
@@ -915,7 +915,7 @@ func (app *App) LoadHeight(height int64) error {
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
-func (app *App) ModuleAccountAddrs() map[string]bool {
+func (*App) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -989,7 +989,7 @@ func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
-func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (*App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	// Register legacy tx routes.
@@ -1019,7 +1019,6 @@ func (app *App) RegisterTendermintService(clientCtx client.Context) {
 		app.BaseApp.GRPCQueryRouter(),
 		clientCtx,
 		app.interfaceRegistry,
-		//app.Query,
 	)
 }
 
@@ -1066,12 +1065,6 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// Required for ibctesting
-/*
-func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.StakingKeeper // Dereferencing the pointer
-}
-*/
 func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper // This is a *ibckeeper.Keeper
 }
@@ -1080,6 +1073,6 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
 }
 
-func (app *App) GetTxConfig() client.TxConfig {
+func (*App) GetTxConfig() client.TxConfig {
 	return MakeEncodingConfig().TxConfig
 }

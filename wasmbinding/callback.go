@@ -157,7 +157,7 @@ type ContractAck struct {
 }
 
 // OnSendPacket registers a packet's sequence number and address of the corresponding wasm contract
-func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel string, portID string, addr sdk.AccAddress) {
+func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel, portID string, addr sdk.AccAddress) {
 	if c.sentMessages == nil {
 		c.sentMessages = make(map[key]sdk.AccAddress)
 	}

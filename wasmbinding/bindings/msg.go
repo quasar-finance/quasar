@@ -48,17 +48,17 @@ type SendToken struct {
 }
 
 type OsmosisJoinPool struct {
-	ConnectionId     string     `json:"connection_id"`
+	ConnectionID     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
-	PoolId           uint64     `json:"pool_id"`
+	PoolID           uint64     `json:"pool_id"`
 	ShareOutAmount   int64      `json:"share_out_amount"`
 	TokenInMaxs      []sdk.Coin `json:"token_in_maxs"`
 }
 
 type OsmosisExitPool struct {
-	ConnectionId     string     `json:"connection_id"`
+	ConnectionID     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
-	PoolId           uint64     `json:"pool_id"`
+	PoolID           uint64     `json:"pool_id"`
 	ShareInAmount    int64      `json:"share_in_amount"`
 	TokenOutMins     []sdk.Coin `json:"token_out_mins"`
 }
