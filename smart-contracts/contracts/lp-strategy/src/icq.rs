@@ -58,7 +58,7 @@ pub fn try_icq(
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
             data: to_binary(&packet)?,
-            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
         let mut range: Vec<((Addr, String), Unbond)> = vec![];
@@ -271,7 +271,7 @@ mod tests {
                 .unwrap(),
             )
             .unwrap(),
-            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
         assert_eq!(

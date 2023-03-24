@@ -357,7 +357,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '50', //70
           denom: OSMO_DENOM,
         },
       ],
@@ -367,7 +367,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '50', //50
           denom: OSMO_DENOM,
         },
       ],
@@ -377,7 +377,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500',
+          amount: '2500', //2500
           denom: OSMO_DENOM,
         },
       ],
@@ -395,7 +395,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30',
+          amount: '30', //100
           denom: OSMO_DENOM,
         },
       ],
@@ -405,7 +405,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30',
+          amount: '30', //80
           denom: OSMO_DENOM,
         },
       ],
@@ -415,7 +415,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '1000',
+          amount: '1000', //3500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -434,7 +434,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '100',
+          amount: '100', //200
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -442,14 +442,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '30',
+      amount: '30', //50
     }),
     bond({
       from: 'charlie',
       vaultAddress,
       funds: [
         {
-          amount: '1000',
+          amount: '1000', //4500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -457,8 +457,8 @@ export async function mayhem(vaultAddress: string) {
   ])
 
   await Promise.all([
-    await expect_unlock_time_passed(vaultAddress, false, true, false),
-    await expect_balance_increase(vaultAddress, true, false, true),
+    expect_unlock_time_passed(vaultAddress, false, true, false),
+    expect_balance_increase(vaultAddress, true, false, true),
   ])
 
   console.log('## End epoch 3 ###########################')
@@ -469,14 +469,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '30',
+      amount: '30', // 170
     }),
     bond({
       from: 'bob',
       vaultAddress,
       funds: [
         {
-          amount: '220',
+          amount: '220', //270
           denom: OSMO_DENOM,
         },
       ],
@@ -484,13 +484,13 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'charlie',
       vaultAddress,
-      amount: '30',
+      amount: '30', //4470
     }),
   ])
 
   await Promise.all([
-    expect_unlock_time_passed(vaultAddress, true, false, false),
-    expect_balance_increase(vaultAddress, true, false, true),
+    expect_unlock_time_passed(vaultAddress, true, false, true),
+    expect_balance_increase(vaultAddress, false, true, false),
   ])
   //   // then one final try icq to clear everything
 
@@ -506,7 +506,7 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '90',
+      amount: '90', //180
     }),
     // start_unbond({
     //   from: 'charlie',

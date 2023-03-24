@@ -21,7 +21,7 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
-        OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
+        OngoingDeposit, PendingBond, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
         SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
     },
 };
@@ -41,7 +41,7 @@ pub fn do_transfer(
         amount,
     };
 
-    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(300));
+    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
     let transfer = IbcMsg::Transfer {
         channel_id,
         to_address,
@@ -178,7 +178,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
     let pkt = ica_send::<MsgJoinSwapExternAmountIn>(
         msg,
         ica_channel,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
     Ok(create_ibc_ack_submsg(
