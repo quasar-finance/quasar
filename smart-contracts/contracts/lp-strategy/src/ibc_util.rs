@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
-    Coin, ConversionOverflowError, Env, IbcMsg, IbcTimeout, StdError, Storage, SubMsg, Uint128,
+    Coin, ConversionOverflowError, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdError, Storage,
+    SubMsg, Uint128,
 };
 use osmosis_std::{
     shim::Duration,
@@ -14,7 +17,10 @@ use quasar_types::ica::packet::ica_send;
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    state::{OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL},
+    state::{
+        OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
+        SIMULATED_JOIN_RESULT,
+    },
 };
 
 pub fn do_transfer(
@@ -48,6 +54,77 @@ pub fn do_transfer(
         },
         transfer,
     )?)
+}
+
+pub fn consolidate_exit_pool_amount_into_local_denom(
+    storage: &mut dyn Storage,
+    exit_pool: &Vec<OsmoCoin>,
+    spot_price: Decimal,
+) -> Result<Uint128, ContractError> {
+    let config = CONFIG.load(storage)?;
+
+    // if we receive no tokens in the response, we can't exit the pool
+    // todo: Should this error?
+    if exit_pool.is_empty() {
+        return Ok(Uint128::zero());
+    }
+
+    // consolidate exit_pool.tokens_out into a single Uint128 by using spot price to convert the quote_denom to local_denom
+    let base = exit_pool
+        .iter()
+        .find(|coin| coin.denom == config.base_denom)
+        .ok_or(ContractError::BaseDenomNotFound)?;
+    let quote = exit_pool
+        .iter()
+        .find(|coin| coin.denom == config.quote_denom)
+        .ok_or(ContractError::QuoteDenomNotFound)?;
+
+    Ok(Uint128::new(
+        base.amount
+            .parse::<u128>()
+            .map_err(|err| ContractError::ParseIntError {
+                error: err,
+                value: base.amount.clone(),
+            })?,
+    )
+    .checked_add(
+        Uint128::new(
+            quote
+                .amount
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: err,
+                    value: quote.amount.clone(),
+                })?,
+        )
+        .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
+    )?)
+}
+
+pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
+    let last_sim_join_pool_result = SIMULATED_JOIN_RESULT.load(storage)?;
+
+    // todo: better dynamic slippage estimation, especially for volatile tokens
+    // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
+    Ok(
+        Uint128::from_str(&last_sim_join_pool_result.share_out_amount)?
+            .checked_multiply_ratio(95u128, 100u128)?,
+    )
+}
+
+// exit shares should never be more than total shares here
+pub fn calculate_token_out_min_amount(
+    storage: &mut dyn Storage,
+    exit_lp_shares: Uint128,
+    total_locked_shares: Uint128,
+) -> Result<Uint128, ContractError> {
+    let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.load(storage)?;
+
+    // todo: better dynamic slippage estimation, especially for volatile tokens
+    // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
+    Ok(last_sim_exit_pool_result
+        .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
+        .checked_multiply_ratio(95u128, 100u128)?)
 }
 
 /// prepare the submsg for joining the pool
@@ -127,13 +204,23 @@ pub fn do_ibc_lock_tokens(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
-        Empty, IbcEndpoint, OwnedDeps,
+        Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+
     use cw_storage_plus::Map;
+    use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
         ica::handshake::IcaMetadata,
     };
+
+    use crate::{
+        ibc_util::calculate_token_out_min_amount,
+        state::{SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT},
+    };
+
+    use super::calculate_share_out_min_amount;
 
     fn default_instantiate(
         channels: &Map<String, ChannelInfo>,
@@ -180,6 +267,60 @@ mod tests {
         let _chan = channels
             .load(deps.as_ref().storage, "channel-0".to_string())
             .unwrap();
+    }
+
+    #[test]
+    fn test_calculate_share_out_min_amount() {
+        let mut deps = mock_dependencies();
+        SIMULATED_JOIN_RESULT
+            .save(
+                deps.as_mut().storage,
+                &QueryCalcJoinPoolSharesResponse {
+                    share_out_amount: "999999".to_string(),
+                    tokens_out: vec![OsmoCoin {
+                        denom: String::from("some-coin, does not matter"),
+                        amount: "100".to_string(),
+                    }],
+                },
+            )
+            .unwrap();
+
+        let min_amount_out = calculate_share_out_min_amount(deps.as_mut().storage).unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(949999u128));
+    }
+
+    #[test]
+    fn test_calculate_token_out_min_amount() {
+        let mut deps = mock_dependencies();
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::from(999999u128))
+            .unwrap();
+
+        let exit_shares_amount = Uint128::from(100u128);
+        let total_shares_amount = Uint128::from(100u128);
+
+        let min_amount_out = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            exit_shares_amount,
+            total_shares_amount,
+        )
+        .unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(949999u128));
+
+        // now lets test with a different amount of exit shares and total shares
+        let exit_shares_amount = Uint128::from(900u128);
+        let total_shares_amount = Uint128::from(100000u128);
+
+        let min_amount_out = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            exit_shares_amount,
+            total_shares_amount,
+        )
+        .unwrap();
+
+        assert_eq!(min_amount_out, Uint128::from(8549u128));
     }
 
     #[test]

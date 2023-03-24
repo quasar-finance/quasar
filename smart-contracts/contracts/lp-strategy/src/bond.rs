@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, Env, MessageInfo, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,7 @@ pub struct Bond {
 // A deposit starts of by querying the state of the ica counterparty contract
 pub fn do_bond(
     storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     env: Env,
     info: MessageInfo,
     bond_id: String,
@@ -40,7 +41,7 @@ pub fn do_bond(
     )?;
 
     // TODO: move this to the execute_bond function
-    try_icq(storage, env)
+    try_icq(storage, querier, env)
 }
 
 // after the balance query, we can calculate the amount of the claim we need to create, we update the claims and transfer the funds
@@ -173,7 +174,8 @@ pub fn calculate_claim(
 mod tests {
     use cosmwasm_std::{
         coin,
-        testing::{mock_dependencies, mock_env},
+        testing::{mock_dependencies, mock_env, MockQuerier},
+        Empty,
     };
 
     use crate::{
@@ -208,7 +210,10 @@ mod tests {
             .unwrap();
         let id = "my-id";
 
-        let res = do_bond(deps.as_mut().storage, env, info, id.to_string()).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = do_bond(deps.as_mut().storage, q, env, info, id.to_string()).unwrap();
         assert_eq!(res, None)
     }
 
@@ -238,10 +243,13 @@ mod tests {
             sender: owner,
             funds: vec![coin(1000, config.local_denom)],
         };
-        let res = do_bond(deps.as_mut().storage, env.clone(), info, id.to_string()).unwrap();
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = do_bond(deps.as_mut().storage, q, env.clone(), info, id.to_string()).unwrap();
         assert_eq!(
             res.unwrap().msg,
-            try_icq(deps.as_mut().storage, env).unwrap().unwrap().msg
+            try_icq(deps.as_mut().storage, q, env).unwrap().unwrap().msg
         )
     }
 
