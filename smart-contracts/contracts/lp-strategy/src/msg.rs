@@ -160,4 +160,6 @@ pub enum ExecuteMsg {
     ReturnTransfer { amount: Uint128 },
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
+    Unlock {},
+    ManualTimeout {},
 }
