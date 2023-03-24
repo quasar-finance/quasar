@@ -226,6 +226,25 @@ pub enum ContractCallback {
     },
 }
 
+pub fn is_contract_admin(
+    querier: &QuerierWrapper,
+    env: &Env,
+    sus_admin: &Addr,
+) -> Result<(), VaultRewardsError> {
+    let contract_admin = querier
+        .query_wasm_contract_info(&env.contract.address)?
+        .admin;
+    if let Some(contract_admin) = contract_admin {
+        if contract_admin != *sus_admin {
+            return Err(VaultRewardsError::Unauthorized {});
+        }
+    } else {
+        return Err(VaultRewardsError::Unauthorized {});
+    }
+    Ok(())
+}
+
+
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
     let resp = MsgTransferResponse::decode(data.0.as_slice())?;
     Ok(resp.seq)
