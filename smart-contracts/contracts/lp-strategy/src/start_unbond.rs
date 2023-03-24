@@ -19,8 +19,9 @@ use crate::{
     },
     ibc_lock::Lock,
     state::{
-        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_UNBONDING_CLAIMS, SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
+        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
+        LP_SHARES, OSMO_LOCK, PENDING_UNBONDING_CLAIMS, SHARES, START_UNBOND_QUEUE,
+        UNBONDING_CLAIMS,
     },
 };
 
@@ -126,7 +127,7 @@ pub fn do_begin_unlocking(
     let pkt = ica_send::<MsgBeginUnlocking>(
         msg,
         ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
     Ok(pkt)
@@ -439,7 +440,7 @@ mod tests {
         let pkt = ica_send::<MsgBeginUnlocking>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
         assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));

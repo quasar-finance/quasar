@@ -17,6 +17,7 @@ use crate::{
 };
 
 pub const RETURN_SOURCE_PORT: &str = "transfer";
+pub const IBC_TIMEOUT_TIME: u64 = 7200;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]

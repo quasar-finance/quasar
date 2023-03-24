@@ -19,8 +19,8 @@ use crate::{
     ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
-        LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
-        UNBONDING_CLAIMS, UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, LP_SHARES, RETURNING,
+        RETURN_SOURCE_PORT, TIMEOUT_TIME, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -125,7 +125,7 @@ pub(crate) fn do_exit_swap(
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
         ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
     Ok(pkt)
 }
@@ -152,7 +152,8 @@ pub(crate) fn do_transfer_batch_unbond(
     total_tokens: Uint128,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     // TODO, assert that raw amounts equal amount
-    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+    let timeout_timestamp =
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
     let msg = return_transfer(
         storage,
         env,
@@ -162,7 +163,7 @@ pub(crate) fn do_transfer_batch_unbond(
     let pkt = ica_send::<MsgTransfer>(
         msg,
         ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
     Ok(pkt)
 }
@@ -484,7 +485,7 @@ mod tests {
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
 
@@ -520,7 +521,8 @@ mod tests {
         };
 
         let total_tokens = Uint128::new(306);
-        let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+        let timeout_timestamp =
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
 
         let res =
             transfer_batch_unbond(deps.as_mut().storage, &env, pending, total_tokens).unwrap();
@@ -536,7 +538,7 @@ mod tests {
         let pkt = ica_send::<MsgTransfer>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
         assert_eq!(res.msg, CosmosMsg::Ibc(pkt));
@@ -650,7 +652,7 @@ mod tests {
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
             expected,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
 
