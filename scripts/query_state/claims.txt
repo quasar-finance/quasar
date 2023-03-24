@@ -1,0 +1,1 @@
+timestamp;base_denom;ica_address;lp_denom;d_unlocked_shares;locked_shares;w_unlocked_shares;quote_denom
