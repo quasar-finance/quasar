@@ -250,7 +250,7 @@ pub fn ibc_packet_ack(
         msg.original_packet.sequence,
         &msg.acknowledgement,
     )?;
-    Ok(IbcBasicResponse::new().add_message(ack_submsg(deps.storage, env, msg)?.msg))
+    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
 }
 
 pub fn handle_succesful_ack(
