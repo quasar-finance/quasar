@@ -38,7 +38,6 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub config: Config,
 }
 
 #[cw_serde]
