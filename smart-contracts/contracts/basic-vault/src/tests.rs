@@ -155,13 +155,13 @@ mod tests {
                                 QuerierResult::Ok(match query_result {
                                     Ok((unlock_time, attempted)) => ContractResult::Ok(
                                         to_binary(&UnbondingClaimResponse {
-                                            unbond: Unbond {
+                                            unbond: Some(Unbond {
                                                 lp_shares: Uint128::from(1u128),
                                                 unlock_time,
                                                 attempted,
                                                 owner: Addr::unchecked(TEST_CREATOR),
                                                 id,
-                                            },
+                                            }),
                                         })
                                         .unwrap(),
                                     ),

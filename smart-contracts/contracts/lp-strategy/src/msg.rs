@@ -37,8 +37,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -189,5 +188,5 @@ pub enum ExecuteMsg {
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
     Unlock {},
-    ManualTimeout {},
+    ManualTimeout { seq: u64 },
 }

@@ -90,7 +90,7 @@ pub fn create_callback_submsg(
 // this function subtracts out the amount that has errored and sits stale somewhere
 pub fn get_usable_bond_balance(
     storage: &dyn Storage,
-    queued_amount: Uint128
+    queued_amount: Uint128,
 ) -> Result<Uint128, ContractError> {
     // fetch current balance of contract for join_pool query
     // the contract balance at this point in time contains funds send in the queue
@@ -243,7 +243,6 @@ pub fn is_contract_admin(
     }
     Ok(())
 }
-
 
 pub(crate) fn parse_seq(data: Binary) -> Result<u64, ContractError> {
     let resp = MsgTransferResponse::decode(data.0.as_slice())?;
