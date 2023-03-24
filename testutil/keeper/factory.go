@@ -33,14 +33,14 @@ func NewKeeperFactory(
 }
 
 // TestModuleAccountPerms returns module account permissions for testing
-func (kf Factory) TestModuleAccountPerms() map[string][]string {
+func (Factory) TestModuleAccountPerms() map[string][]string {
 	moduleAccPerms := app.GetMaccPerms()
 	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
 	return moduleAccPerms
 }
 
 // BlockedModuleAccountAddrs returns all the app's module account addresses that are active
-func (f Factory) BlockedModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
+func (Factory) BlockedModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true

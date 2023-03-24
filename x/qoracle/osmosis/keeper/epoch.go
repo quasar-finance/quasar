@@ -4,9 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
-	switch epochIdentifier {
-	case k.GetEpochIdentifier(ctx):
+func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, _ int64) {
+	if k.GetEpochIdentifier(ctx) == epochIdentifier {
 		k.TryUpdateIncentivizedPools(ctx)
 		k.TryUpdateChainParams(ctx)
 	}

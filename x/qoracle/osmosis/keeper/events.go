@@ -18,7 +18,7 @@ func EmitOsmosisRequestEvent(
 ) {
 	attributes := []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.SubModuleName),
-		sdk.NewAttribute(types.AttributeKeyPacketChannelId, packet.GetSourceChannel()),
+		sdk.NewAttribute(types.AttributeKeyPacketChannelID, packet.GetSourceChannel()),
 		sdk.NewAttribute(types.AttributeKeyPacketSequence, fmt.Sprintf("%d", packet.GetSequence())),
 		sdk.NewAttribute(types.AttributeKeyTitle, title),
 	}
@@ -39,7 +39,7 @@ func EmitOsmosisRequestEvent(
 func EmitAcknowledgementEvent(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement, err error) {
 	attributes := []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.SubModuleName),
-		sdk.NewAttribute(types.AttributeKeyPacketChannelId, packet.GetDestChannel()),
+		sdk.NewAttribute(types.AttributeKeyPacketChannelID, packet.GetDestChannel()),
 		sdk.NewAttribute(types.AttributeKeyPacketSequence, fmt.Sprintf("%d", packet.GetSequence())),
 		sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack.Success())),
 	}

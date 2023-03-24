@@ -190,7 +190,7 @@ func (suite *HooksTestSuite) TestRecvTransferWithMetadata() {
 	suite.chainA.StoreContractCode(&suite.Suite, "./bytecode/echo.wasm")
 	addr := suite.chainA.InstantiateContract(&suite.Suite, "{}")
 
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": {"echo": {"msg": "test"} } } }`, addr))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -211,7 +211,7 @@ func (suite *HooksTestSuite) TestFundsAreTransferredToTheContract() {
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": {"echo": {"msg": "test"} } } }`, addr))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -236,7 +236,7 @@ func (suite *HooksTestSuite) TestFundsAreReturnedOnFailedContractExec() {
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC with a message that the contract will reject
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"not_echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": {"not_echo": {"msg": "test"} } } }`, addr))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -272,7 +272,7 @@ func (suite *HooksTestSuite) TestPacketsThatShouldBeSkipped() {
 		// invalid receiver
 		{`{"wasm": {"contract": "quasar1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj", "msg": {}}}`, false},
 		// msg not an object
-		{fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": 1}}`, receiver), false},
+		{fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": 1}}`, receiver), false},
 	}
 
 	for _, tc := range testCases {
@@ -305,30 +305,30 @@ func (suite *HooksTestSuite) TestFundTracking() {
 	// Execute the contract via IBC
 	suite.receivePacket(
 		addr.String(),
-		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr))
+		fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": {"increment": {} } } }`, addr))
 
 	state := suite.chainA.QueryContract(
 		&suite.Suite, addr,
-		[]byte(fmt.Sprintf(`{"get_count": {"addr": "%s"}}`, types.IntermediateAccountAddress.String())))
+		[]byte(fmt.Sprintf(`{"get_count": {"addr": "%q"}}`, types.IntermediateAccountAddress.String())))
 	suite.Require().Equal(`{"count":0}`, state)
 
 	state = suite.chainA.QueryContract(
 		&suite.Suite, addr,
-		[]byte(fmt.Sprintf(`{"get_total_funds": {"addr": "%s"}}`, types.IntermediateAccountAddress)))
+		[]byte(fmt.Sprintf(`{"get_total_funds": {"addr": "%q"}}`, types.IntermediateAccountAddress)))
 	suite.Require().Equal(`{"total_funds":[]}`, state)
 
 	suite.receivePacketWithSequence(
 		addr.String(),
-		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr), 1)
+		fmt.Sprintf(`{"wasm": {"contract": "%q", "msg": {"increment": {} } } }`, addr), 1)
 
 	state = suite.chainA.QueryContract(
 		&suite.Suite, addr,
-		[]byte(fmt.Sprintf(`{"get_count": {"addr": "%s"}}`, types.IntermediateAccountAddress)))
+		[]byte(fmt.Sprintf(`{"get_count": {"addr": "%q"}}`, types.IntermediateAccountAddress)))
 	suite.Require().Equal(`{"count":1}`, state)
 
 	state = suite.chainA.QueryContract(
 		&suite.Suite, addr,
-		[]byte(fmt.Sprintf(`{"get_total_funds": {"addr": "%s"}}`, types.IntermediateAccountAddress)))
+		[]byte(fmt.Sprintf(`{"get_total_funds": {"addr": "%q"}}`, types.IntermediateAccountAddress)))
 	suite.Require().Equal(`{"total_funds":[{"denom":"ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878","amount":"1"}]}`, state)
 
 	// Check that the token has now been transferred to the contract

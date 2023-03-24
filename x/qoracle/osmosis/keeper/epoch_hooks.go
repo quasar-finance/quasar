@@ -17,7 +17,7 @@ func (k Keeper) EpochHooks() EpochHooks {
 	return EpochHooks{k}
 }
 
-func (h EpochHooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {}
+func (EpochHooks) BeforeEpochStart(_ sdk.Context, _ string, _ int64) {}
 
 func (h EpochHooks) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	h.k.AfterEpochEnd(ctx, epochIdentifier, epochNumber)

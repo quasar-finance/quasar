@@ -34,11 +34,11 @@ func NewIBCModule(k keeper.Keeper) IBCModule {
 func (im IBCModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
-	connectionHops []string,
+	_ []string,
 	portID string,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
-	counterparty channeltypes.Counterparty,
+	_ channeltypes.Counterparty,
 	version string,
 ) (string, error) {
 	if !im.keeper.IsEnabled(ctx) {
@@ -87,11 +87,11 @@ func (im IBCModule) validateChannelParams(
 func (im IBCModule) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
-	connectionHops []string,
+	_ []string,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
-	counterparty channeltypes.Counterparty,
+	_ channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
 	if !im.keeper.IsEnabled(ctx) {
@@ -115,11 +115,11 @@ func (im IBCModule) OnChanOpenTry(
 }
 
 // OnChanOpenAck implements the IBCModule interface
-func (im IBCModule) OnChanOpenAck(
-	ctx sdk.Context,
-	portID,
-	channelID string,
-	counterpartyChannelID string,
+func (IBCModule) OnChanOpenAck(
+	_ sdk.Context,
+	_ string,
+	_ string,
+	_ string,
 	counterpartyVersion string,
 ) error {
 	if counterpartyVersion != icqtypes.Version {
@@ -131,8 +131,8 @@ func (im IBCModule) OnChanOpenAck(
 // OnChanOpenConfirm implements the IBCModule interface
 func (im IBCModule) OnChanOpenConfirm(
 	ctx sdk.Context,
-	portID,
-	channelID string,
+	_ string,
+	_ string,
 ) error {
 	if !im.keeper.IsEnabled(ctx) {
 		return types.ErrDisabled
@@ -142,28 +142,28 @@ func (im IBCModule) OnChanOpenConfirm(
 }
 
 // OnChanCloseInit implements the IBCModule interface
-func (im IBCModule) OnChanCloseInit(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (IBCModule) OnChanCloseInit(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	return nil
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
-func (im IBCModule) OnChanCloseConfirm(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (IBCModule) OnChanCloseConfirm(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	return nil
 }
 
 // OnRecvPacket implements the IBCModule interface.
-func (im IBCModule) OnRecvPacket(
+func (IBCModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
-	relayer sdk.AccAddress,
+	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	err := sdkerrors.Wrapf(types.ErrInvalidChannelFlow, "cannot receive packet on qoracle module")
 	ack := channeltypes.NewErrorAcknowledgement(err)

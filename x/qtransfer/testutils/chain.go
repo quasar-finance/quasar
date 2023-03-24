@@ -14,7 +14,7 @@ type TestChain struct {
 	*ibctesting.TestChain
 }
 
-func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingApp() (testingApp ibctesting.TestingApp, genesisState map[string]json.RawMessage) {
 	db := dbm.NewMemDB()
 	encCdc := app.MakeEncodingConfig()
 	quasarApp := app.New(

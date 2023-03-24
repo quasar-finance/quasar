@@ -8,10 +8,10 @@ import (
 
 var _ sdk.Msg = &MsgCreateBalancerPool{}
 
-func (msg MsgCreateBalancerPool) ValidateBasic() error {
+func (MsgCreateBalancerPool) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgCreateBalancerPool) GetSigners() []sdk.AccAddress {
+func (MsgCreateBalancerPool) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }

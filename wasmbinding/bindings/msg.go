@@ -38,11 +38,11 @@ type TestScenario struct {
 }
 
 type RegisterICAOnZone struct {
-	ZoneId string `json:"zone_id"`
+	ZoneID string `json:"zone_id"`
 }
 
 type SendToken struct {
-	DestinationLocalZoneId string   `json:"destination_local_zone_id"`
+	DestinationLocalZoneID string   `json:"destination_local_zone_id"`
 	Receiver               string   `json:"receiver"`
 	Coin                   sdk.Coin `json:"coin"`
 }
@@ -64,31 +64,31 @@ type OsmosisExitPool struct {
 }
 
 type OsmosisLockTokens struct {
-	ConnectionId     string     `json:"connection_id"`
+	ConnectionID     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
 	Duration         uint64     `json:"duration"`
 	Coins            []sdk.Coin `json:"coins"`
 }
 
 type OsmosisBeginUnlocking struct {
-	ConnectionId     string     `json:"connection_id"`
+	ConnectionID     string     `json:"connection_id"`
 	TimeoutTimestamp uint64     `json:"timeout_timestamp"`
-	Id               uint64     `json:"id"`
+	ID               uint64     `json:"id"`
 	Coins            []sdk.Coin `json:"coins"`
 }
 
 type OsmosisJoinSwapExternAmountIn struct {
-	ConnectionId      string   `json:"connection_id"`
+	ConnectionID      string   `json:"connection_id"`
 	TimeoutTimestamp  uint64   `json:"timeout_timestamp"`
-	PoolId            uint64   `json:"pool_id"`
+	PoolID            uint64   `json:"pool_id"`
 	ShareOutMinAmount int64    `json:"share_out_min_amount"`
 	TokenIn           sdk.Coin `json:"token_in"`
 }
 
 type OsmosisExitSwapExternAmountOut struct {
-	ConnectionId     string   `json:"connection_id"`
+	ConnectionID     string   `json:"connection_id"`
 	TimeoutTimestamp uint64   `json:"timeout_timestamp"`
-	PoolId           uint64   `json:"pool_id"`
+	PoolID           uint64   `json:"pool_id"`
 	ShareInAmount    int64    `json:"share_in_amount"`
 	TokenOutMins     sdk.Coin `json:"token_out_mins"`
 }

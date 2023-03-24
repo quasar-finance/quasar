@@ -18,7 +18,7 @@ func BeginBlocker(ctx sdk.Context, k *keeper.Keeper) {
 
 		// If blocktime < initial epoch start time, return
 		if ctx.BlockTime().Before(epochInfo.StartTime) {
-			return
+			return false
 		}
 		// if epoch counting hasn't started, signal we need to start.
 		shouldInitialEpochStart := !epochInfo.EpochCountingStarted
@@ -44,7 +44,7 @@ func BeginBlocker(ctx sdk.Context, k *keeper.Keeper) {
 				),
 			)
 			k.AfterEpochEnd(ctx, epochInfo.Identifier, epochInfo.CurrentEpoch)
-			epochInfo.CurrentEpoch += 1
+			epochInfo.CurrentEpoch++
 			epochInfo.CurrentEpochStartTime = epochInfo.CurrentEpochStartTime.Add(epochInfo.Duration)
 			logger.Info(fmt.Sprintf("Starting epoch with identifier %s epoch number %d", epochInfo.Identifier, epochInfo.CurrentEpoch))
 		}

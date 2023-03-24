@@ -50,7 +50,7 @@ func NewKeeper(
 }
 
 // RegisterPoolOracle registers a pool oracle to the keeper.
-func (k *Keeper) RegisterPoolOracle(oracle types.PoolOracle) {
+func (k *Keeper) RegisterPoolOracle(_ types.PoolOracle) {
 	if k.sealed {
 		panic("cannot register a pool oracle to a sealed qoracle keeper")
 	}
@@ -175,6 +175,6 @@ func (k Keeper) removeAllPools(ctx sdk.Context) {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

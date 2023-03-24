@@ -163,7 +163,7 @@ func isMemoWasmRouted(memo string) (isWasmRouted bool, metadata map[string]any) 
 
 	// If there is no memo, the packet was either sent with an earlier version of IBC, or the memo was
 	// intentionally left blank. Nothing to do here. Ignore the packet and pass it down the stack.
-	if len(memo) == 0 {
+	if memo == "" {
 		return false, metadata
 	}
 

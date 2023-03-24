@@ -301,7 +301,7 @@ func (a appCreator) appExport(
 
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
-func initAppConfig() (string, any) {
+func initAppConfig() (customAppTemplate string, customAppConfig any) {
 	// The following code snippet is just for reference.
 
 	// WASMConfig defines configuration for the wasm module.
@@ -336,7 +336,7 @@ func initAppConfig() (string, any) {
 	// In simapp, we set the min gas prices to 0.
 	srvCfg.MinGasPrices = "0uqsr"
 
-	customAppConfig := CustomAppConfig{
+	customAppConfig = CustomAppConfig{
 		Config: *srvCfg,
 		WASM: WASMConfig{
 			LruSize:       1,
@@ -344,7 +344,7 @@ func initAppConfig() (string, any) {
 		},
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + `
+	customAppTemplate = serverconfig.DefaultConfigTemplate + `
 [wasm]
 # This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
 query_gas_limit = 300000

@@ -5,10 +5,10 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
-func RegisterCodec(cdc *codec.LegacyAmino) {
+func RegisterCodec(*codec.LegacyAmino) {
 }
 
-func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+func RegisterInterfaces(cdctypes.InterfaceRegistry) {
 }
 
 var (

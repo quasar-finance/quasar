@@ -66,11 +66,11 @@ func NewOsmosisIncentivizedPoolsICQPacketData() icqtypes.InterchainQueryPacketDa
 
 func NewOsmosisPoolsICQPacketData(poolIds []uint64) icqtypes.InterchainQueryPacketData {
 	reqs := make([]abcitypes.RequestQuery, len(poolIds))
-	for i, poolId := range poolIds {
+	for i, poolID := range poolIds {
 		reqs[i] = abcitypes.RequestQuery{
 			Path: OsmosisQueryPoolPath,
 			Data: ModuleCdc.MustMarshal(&gammtypes.QueryPoolRequest{
-				PoolId: poolId,
+				PoolId: poolID,
 			}),
 		}
 	}

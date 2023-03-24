@@ -17,7 +17,7 @@ type PoolsRankedByAPYRequest struct {
 }
 
 type PoolRequest struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 type TokenPriceRequest struct {

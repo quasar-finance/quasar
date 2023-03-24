@@ -13,13 +13,13 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
-func (kf Factory) ParamsKeeper() paramskeeper.Keeper {
+func (f Factory) ParamsKeeper() paramskeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	transientStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
-	kf.StateStore.MountStoreWithDB(transientStoreKey, sdk.StoreTypeTransient, kf.DB)
+	f.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, f.DB)
+	f.StateStore.MountStoreWithDB(transientStoreKey, sdk.StoreTypeTransient, f.DB)
 
-	paramsKeeper := paramskeeper.NewKeeper(kf.EncodingConfig.Marshaler, kf.EncodingConfig.Amino, storeKey, transientStoreKey)
+	paramsKeeper := paramskeeper.NewKeeper(f.EncodingConfig.Marshaler, f.EncodingConfig.Amino, storeKey, transientStoreKey)
 
 	return paramsKeeper
 }

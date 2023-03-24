@@ -11,18 +11,18 @@ var (
 	_ sdk.Msg = &MsgBeginUnlocking{}
 )
 
-func (msg MsgLockTokens) ValidateBasic() error {
+func (MsgLockTokens) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgLockTokens) GetSigners() []sdk.AccAddress {
+func (MsgLockTokens) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgBeginUnlocking) ValidateBasic() error {
+func (MsgBeginUnlocking) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgBeginUnlocking) GetSigners() []sdk.AccAddress {
+func (MsgBeginUnlocking) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }

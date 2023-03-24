@@ -27,7 +27,7 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 			}
 			return bz, nil
 		case contractQuery.Pool != nil:
-			pool, found := qk.GetPool(ctx, contractQuery.Pool.Id)
+			pool, found := qk.GetPool(ctx, contractQuery.Pool.ID)
 			if !found {
 				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "pool not found")
 			}

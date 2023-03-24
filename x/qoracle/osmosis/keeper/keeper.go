@@ -63,14 +63,14 @@ func NewKeeper(
 	}
 }
 
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/qoracle/%s", types.SubModuleName))
 }
 
 // BindPort stores the provided portID and binds to it, returning the associated capability
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
+	portCap := k.portKeeper.BindPort(ctx, portID)
+	return k.ClaimCapability(ctx, portCap, host.PortPath(portID))
 }
 
 // IsBound checks if the module already bound to the desired port
@@ -92,15 +92,15 @@ func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
-func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool {
-	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
+func (k Keeper) AuthenticateCapability(ctx sdk.Context, scopedCap *capabilitytypes.Capability, name string) bool {
+	return k.scopedKeeper.AuthenticateCapability(ctx, scopedCap, name)
 }
 
 // ClaimCapability wraps the scopedKeeper's ClaimCapability function
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
+func (k Keeper) ClaimCapability(ctx sdk.Context, scopedCap *capabilitytypes.Capability, name string) error {
+	return k.scopedKeeper.ClaimCapability(ctx, scopedCap, name)
 }
 
-func (k Keeper) Source() string {
+func (Keeper) Source() string {
 	return types.OracleSource
 }

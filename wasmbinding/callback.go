@@ -30,10 +30,10 @@ type CallbackPlugin struct {
 type key struct {
 	seq     uint64
 	channel string
-	portId  string
+	portID  string
 }
 
-func (c *CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
+func (*CallbackPlugin) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("wasm callback plugin")
 }
 

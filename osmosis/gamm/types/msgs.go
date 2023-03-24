@@ -17,66 +17,66 @@ var (
 	_ sdk.Msg = &MsgExitSwapShareAmountIn{}
 )
 
-func (msg MsgSwapExactAmountIn) ValidateBasic() error {
+func (MsgSwapExactAmountIn) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgSwapExactAmountIn) GetSigners() []sdk.AccAddress {
+func (MsgSwapExactAmountIn) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgSwapExactAmountOut) ValidateBasic() error {
+func (MsgSwapExactAmountOut) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgSwapExactAmountOut) GetSigners() []sdk.AccAddress {
+func (MsgSwapExactAmountOut) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgJoinPool) ValidateBasic() error {
+func (MsgJoinPool) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgJoinPool) GetSigners() []sdk.AccAddress {
+func (MsgJoinPool) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgExitPool) ValidateBasic() error {
+func (MsgExitPool) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgExitPool) GetSigners() []sdk.AccAddress {
+func (MsgExitPool) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgJoinSwapExternAmountIn) ValidateBasic() error {
+func (MsgJoinSwapExternAmountIn) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgJoinSwapExternAmountIn) GetSigners() []sdk.AccAddress {
+func (MsgJoinSwapExternAmountIn) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgJoinSwapShareAmountOut) ValidateBasic() error {
+func (MsgJoinSwapShareAmountOut) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgJoinSwapShareAmountOut) GetSigners() []sdk.AccAddress {
+func (MsgJoinSwapShareAmountOut) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgExitSwapExternAmountOut) ValidateBasic() error {
+func (MsgExitSwapExternAmountOut) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgExitSwapExternAmountOut) GetSigners() []sdk.AccAddress {
+func (MsgExitSwapExternAmountOut) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }
 
-func (msg MsgExitSwapShareAmountIn) ValidateBasic() error {
+func (MsgExitSwapShareAmountIn) ValidateBasic() error {
 	panic("not implemented")
 }
 
-func (msg MsgExitSwapShareAmountIn) GetSigners() []sdk.AccAddress {
+func (MsgExitSwapShareAmountIn) GetSigners() []sdk.AccAddress {
 	panic("not implemented")
 }

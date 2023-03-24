@@ -331,7 +331,7 @@ func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQ
 	}
 }
 
-func (k Keeper) handleOsmosisEpochsInfoResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisEpochsInfoResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp epochtypes.QueryEpochsInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -339,7 +339,7 @@ func (k Keeper) handleOsmosisEpochsInfoResponse(ctx sdk.Context, req abcitypes.R
 	return nil
 }
 
-func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp gammtypes.QueryPoolResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -353,7 +353,7 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 	return nil
 }
 
-func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp poolincentivestypes.QueryLockableDurationsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -361,7 +361,7 @@ func (k Keeper) handleOsmosisLockableDurationsResponse(ctx sdk.Context, req abci
 	return nil
 }
 
-func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp minttypes.QueryParamsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -369,7 +369,7 @@ func (k Keeper) handleOsmosisMintParamsResponse(ctx sdk.Context, req abcitypes.R
 	return nil
 }
 
-func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp minttypes.QueryEpochProvisionsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -377,7 +377,7 @@ func (k Keeper) handleOsmosisMintEpochProvisionsResponse(ctx sdk.Context, req ab
 	return nil
 }
 
-func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp poolincentivestypes.QueryIncentivizedPoolsResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -385,7 +385,7 @@ func (k Keeper) handleOsmosisIncentivizedPoolsResponse(ctx sdk.Context, req abci
 	return nil
 }
 
-func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
+func (k Keeper) handleOsmosisDistrInfoResponse(ctx sdk.Context, _ abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	var qresp poolincentivestypes.QueryDistrInfoResponse
 	k.cdc.MustUnmarshal(resp.GetValue(), &qresp)
 
@@ -408,7 +408,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 			"packet", packet.String())
 		incentivizedPoolsState.Fail()
 		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
-
 	}
 
 	poolsState := k.GetRequestState(ctx, types.KeyPoolsRequestState)

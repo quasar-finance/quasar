@@ -89,7 +89,7 @@ func convertRelativeToAbsoluteTimeout(
 	absTimeoutTimestamp uint64,
 	err error,
 ) {
-	clientId, clientState, err := channelKeeper.GetChannelClientState(ctx, port, channel)
+	clientID, clientState, err := channelKeeper.GetChannelClientState(ctx, port, channel)
 	if err != nil {
 		return clienttypes.ZeroHeight(), 0, err
 	}
@@ -106,7 +106,7 @@ func convertRelativeToAbsoluteTimeout(
 		absTimeoutHeight.RevisionHeight += timeoutHeight.RevisionHeight
 	}
 
-	consensusState, _ := clientKeeper.GetClientConsensusState(ctx, clientId, clientHeight)
+	consensusState, _ := clientKeeper.GetClientConsensusState(ctx, clientID, clientHeight)
 	if timeoutTimestamp != 0 {
 		// use local clock time as reference time if it is later than the
 		// consensus state timestamp of the counter party chain, otherwise
