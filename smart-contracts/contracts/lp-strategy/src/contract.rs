@@ -393,9 +393,6 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // update the config
-    CONFIG.save(deps.storage, &msg.config)?;
-
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
     Ok(Response::new()
