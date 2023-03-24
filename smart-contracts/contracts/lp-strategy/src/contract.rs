@@ -112,12 +112,12 @@ pub fn execute(
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
-        ExecuteMsg::Unlock { unlock_only } => execute_lock(deps, env, info, unlock_only),
+        ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
         ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
     }
 }
 
-pub fn execute_lock(
+pub fn execute_unlock(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -127,9 +127,9 @@ pub fn execute_lock(
     let mut unlock = IBC_LOCK.load(deps.storage)?;
 
     match unlock_only {
-        UnlockOnly::Bond => unlock = unlock.lock_bond(),
-        UnlockOnly::StartUnbond => unlock = unlock.lock_start_unbond(),
-        UnlockOnly::Unbond => unlock = unlock.lock_unbond(),
+        UnlockOnly::Bond => unlock = unlock.unlock_bond(),
+        UnlockOnly::StartUnbond => unlock = unlock.unlock_start_unbond(),
+        UnlockOnly::Unbond => unlock = unlock.unlock_unbond(),
     };
     IBC_LOCK.save(deps.storage, &unlock)?;
 
