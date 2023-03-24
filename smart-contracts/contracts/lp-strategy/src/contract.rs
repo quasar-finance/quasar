@@ -412,6 +412,11 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    TIMED_OUT.save(deps.storage, &true)?;
+    IBC_LOCK.update(deps.storage, |lock| {
+        Ok(lock.lock_bond().lock_start_unbond().lock_unbond())
+    });
+    
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
