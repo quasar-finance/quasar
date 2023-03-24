@@ -679,6 +679,7 @@ pub fn ibc_packet_timeout(
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
+    unlock_on_error(deps.storage, &step)?;
     on_packet_timeout(deps, msg.packet.sequence, "timeout".to_string())
 }
 
@@ -688,7 +689,6 @@ pub(crate) fn on_packet_timeout(
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
     let step = PENDING_ACK.load(deps.storage, sequence)?;
-    unlock_on_error(deps.storage, &step)?;
     if let IbcMsgKind::Ica(_) = &step {
         TIMED_OUT.save(deps.storage, &true)?
     }
