@@ -1,17 +1,19 @@
 #!/bin/bash
 
-VAULT_ADDR="quasar1xzqhz0q969plap7awdjpls6vvrq57efk5vlkwr7kj5rzw9sq8j6s6wnxaj"
+source values.sh
+VAULT_ADDR="$VAULT_ADDR" 
+RPC="$RPC"
 
-output=$(quasarnoded q wasm contract-state smart $VAULT_ADDR '{"investment":{}}' --node https://rpc-tst5.qsr.network:443)
+output=$(quasarnoded q wasm contract-state smart $VAULT_ADDR '{"investment":{}}' --node $RPC)
 
 min_withdrawal=$(echo "$output" | grep "min_withdrawal" | awk '{print $2}' | tr -d '"')
 owner=$(echo "$output" | grep "owner" | awk '{print $2}' | tr -d '"')
 addresses=$(echo "$output" | grep "address:" | awk '{print $3}')
 weights=$(echo "$output" | grep "weight" | awk '{print $2}' | tr -d '"')
 
-if [ ! -f investment.txt ] || ! grep -q "vault_address;min_withdrawal;owner" investment.txt || ! grep -q "Timestamp;Address;Local Denom;Pool ID;Base Denom;Expected Connection;Lock Period;Pool Denom;Quote Denom;Return Source Channel;Transfer Channel;Weight" investment.txt; then
-    echo "Timestamp;vault_address;min_withdrawal;owner" > investment.txt
-    echo "Timestamp;Address;Base Denom;Pool ID;Local Denom;Expected Connection;Lock Period;Pool Denom;Quote Denom;Return Source Channel;Transfer Channel;Weight" >> investment.txt
+if [ ! -f investment.txt ] || ! grep -q "timestamp;vault_address;min_withdrawal;owner" investment.txt || ! grep -q "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" investment.txt; then
+    echo "timestamp;vault_address;min_withdrawal;owner" > investment.txt
+    echo "timestamp;address;base_denom;pool_id;local_denom;expected_connection;lock_period;pool_denom;quote_denom;return_source_channel;transfer_channel;weight" >> investment.txt
 fi
 
 echo "$(date -u +"%Y-%m-%dT%H:%M:%S");$VAULT_ADDR;$min_withdrawal;$owner" >> investment.txt
