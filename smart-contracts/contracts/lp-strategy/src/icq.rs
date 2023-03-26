@@ -75,10 +75,13 @@ pub fn try_icq(
             PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
         }
 
+        let channel = ICQ_CHANNEL.load(storage)?;
+
         Ok(Some(create_ibc_ack_submsg(
             storage,
             IbcMsgKind::Icq,
             send_packet_msg,
+            channel
         )?))
     } else {
         Ok(None)
@@ -274,9 +277,11 @@ mod tests {
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
+        let channel = ICQ_CHANNEL.load(deps.as_mut().storage).unwrap();
+
         assert_eq!(
             res.unwrap().msg,
-            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt)
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt, channel)
                 .unwrap()
                 .msg
         )

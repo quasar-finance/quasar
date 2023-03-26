@@ -209,7 +209,7 @@ pub enum IcaMessages {
 #[serde(rename_all = "snake_case")]
 pub enum SubMsgKind {
     Ibc(IbcMsgKind, String),
-    Ack(u64),
+    Ack(u64, String),
     Callback(ContractCallback), // in reply match for callback variant
 }
 
