@@ -14,9 +14,9 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
-    IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, NEW_PENDING_ACK, RECOVERY_ACK,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS,
+    IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, OSMO_LOCK,
+    RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -259,7 +259,13 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let kind = NEW_PENDING_ACK.load(deps.storage, (pkt.original_packet.sequence, pkt.original_packet.src.channel_id))?;
+    let kind = NEW_PENDING_ACK.load(
+        deps.storage,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id,
+        ),
+    )?;
     match kind {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
         IbcMsgKind::Transfer { pending, amount } => {
@@ -659,7 +665,13 @@ pub fn handle_failing_ack(
     error: String,
 ) -> Result<Response, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
-    let step = NEW_PENDING_ACK.load(deps.storage, (pkt.original_packet.sequence, pkt.original_packet.src.channel_id))?;
+    let step = NEW_PENDING_ACK.load(
+        deps.storage,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id,
+        ),
+    )?;
     unlock_on_error(deps.storage, &step)?;
     TRAPS.save(
         deps.storage,
@@ -682,8 +694,12 @@ pub fn ibc_packet_timeout(
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-
-    on_packet_timeout(deps, msg.packet.sequence, msg.packet.src.channel_id, "timeout".to_string())
+    on_packet_timeout(
+        deps,
+        msg.packet.sequence,
+        msg.packet.src.channel_id,
+        "timeout".to_string(),
+    )
 }
 
 pub(crate) fn on_packet_timeout(

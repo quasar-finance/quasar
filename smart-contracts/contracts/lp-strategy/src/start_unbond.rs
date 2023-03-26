@@ -106,7 +106,7 @@ pub fn batch_start_unbond(
         storage,
         IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds, to_unbond)),
         pkt,
-        channel
+        channel,
     )?))
 }
 
