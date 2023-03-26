@@ -100,10 +100,13 @@ pub fn batch_start_unbond(
 
     let pkt = do_begin_unlocking(storage, env, to_unbond)?;
 
+    let channel = ICA_CHANNEL.load(storage)?;
+
     Ok(Some(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds, to_unbond)),
         pkt,
+        channel
     )?))
 }
 
