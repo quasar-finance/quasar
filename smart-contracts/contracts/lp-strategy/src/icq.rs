@@ -268,7 +268,7 @@ mod tests {
                 &prepare_full_query(
                     deps.as_mut().storage,
                     env.clone(),
-                    icq_channel,
+                    icq_channel.clone(),
                     Uint128::new(0),
                 )
                 .unwrap(),

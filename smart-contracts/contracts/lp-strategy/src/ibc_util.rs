@@ -43,7 +43,7 @@ pub fn do_transfer(
 
     let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
     let transfer = IbcMsg::Transfer {
-        channel_id,
+        channel_id: channel_id.clone(),
         to_address,
         amount: coin,
         timeout,
@@ -178,7 +178,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 
     let pkt = ica_send::<MsgJoinSwapExternAmountIn>(
         msg,
-        ica_channel,
+        ica_channel.clone(),
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
