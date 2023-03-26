@@ -156,6 +156,7 @@ pub fn ack_submsg(
     storage: &mut dyn Storage,
     env: Env,
     msg: IbcPacketAckMsg,
+    channel: String
 ) -> Result<SubMsg, ContractError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -165,7 +166,7 @@ pub fn ack_submsg(
 
     // register the message in the replies for handling
     // TODO do we need this state item here? or do we just need the reply hook
-    REPLIES.save(storage, id, &SubMsgKind::Ack(msg.original_packet.sequence))?;
+    REPLIES.save(storage, id, &SubMsgKind::Ack(msg.original_packet.sequence, channel))?;
 
     // TODO for an ack, should the reply hook be always or only on error? Probably only on error
     // On succeses, we need to cleanup the state item from REPLIES
