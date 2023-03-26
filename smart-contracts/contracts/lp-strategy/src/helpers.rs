@@ -140,6 +140,7 @@ pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
     pending: IbcMsgKind,
     msg: IbcMsg,
+    channel: String,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -147,7 +148,7 @@ pub fn create_ibc_ack_submsg(
         id = val?.0 + 1;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending))?;
+    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending, channel))?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -207,7 +208,7 @@ pub enum IcaMessages {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum SubMsgKind {
-    Ibc(IbcMsgKind),
+    Ibc(IbcMsgKind, String),
     Ack(u64),
     Callback(ContractCallback), // in reply match for callback variant
 }

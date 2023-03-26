@@ -113,7 +113,7 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
-        ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
+        ExecuteMsg::ManualTimeout { seq, channel } => manual_timeout(deps, env, info, seq, channel),
     }
 }
 
@@ -141,10 +141,11 @@ pub fn manual_timeout(
     env: Env,
     info: MessageInfo,
     sequence: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    let response = on_packet_timeout(deps, sequence, "timeout".to_string())?;
+    let response = on_packet_timeout(deps, sequence, channel, "timeout".to_string())?;
 
     Ok(Response::new()
         .add_attributes(response.attributes)

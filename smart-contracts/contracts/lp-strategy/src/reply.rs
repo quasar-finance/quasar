@@ -4,7 +4,7 @@ use quasar_types::callback::Callback;
 
 use crate::error::{ContractError, Trap};
 use crate::helpers::{parse_seq, unlock_on_error, ContractCallback, IbcMsgKind};
-use crate::state::{FundPath, CLAIMABLE_FUNDS, PENDING_ACK, REPLIES, TRAPS};
+use crate::state::{FundPath, CLAIMABLE_FUNDS, NEW_PENDING_ACK, REPLIES, TRAPS};
 
 pub fn handle_ibc_reply(
     deps: DepsMut,

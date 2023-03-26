@@ -119,7 +119,7 @@ pub struct ListPrimitiveSharesResponse {
 
 #[cw_serde]
 pub struct ListPendingAcksResponse {
-    pub pending: HashMap<u64, IbcMsgKind>,
+    pub pending: HashMap<String, IbcMsgKind>,
 }
 
 #[cw_serde]
@@ -178,7 +178,7 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
-pub enum UnlockOnly {
+pub enum    UnlockOnly {
     Bond,
     StartUnbond,
     Unbond,
@@ -208,5 +208,5 @@ pub enum ExecuteMsg {
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
     Unlock { unlock_only: UnlockOnly },
-    ManualTimeout { seq: u64 },
+    ManualTimeout { seq: u64, channel: String },
 }

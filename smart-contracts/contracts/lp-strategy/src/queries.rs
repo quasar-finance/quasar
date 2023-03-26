@@ -19,7 +19,7 @@ use crate::{
     start_unbond::StartUnbond,
     state::{
         Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN,
+        OSMO_LOCK, NEW_PENDING_ACK, PENDING_BOND_QUEUE, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN,
         SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
         UNBOND_QUEUE,
     },
@@ -195,8 +195,11 @@ pub fn handle_list_primitive_shares(deps: Deps) -> StdResult<ListPrimitiveShares
 }
 
 pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse> {
-    let pending: StdResult<HashMap<u64, IbcMsgKind>> = PENDING_ACK
+    let pending: StdResult<HashMap<String, IbcMsgKind>> = NEW_PENDING_ACK
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|(seq, chan), kind| {
+            (format!({}-{}, seq.to_string(), chan), kind)
+        })
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })
 }
