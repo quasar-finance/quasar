@@ -62,7 +62,9 @@ pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
-pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
+pub(crate) const OLD_PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
+
+pub(crate) const NEW_PENDING_ACK: Map<(u64, String), IbcMsgKind> = Map::new("new_pending_acks");
 // The map to store trapped errors,
 pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
 
