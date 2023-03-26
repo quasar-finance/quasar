@@ -476,22 +476,23 @@ pub fn handle_ica_ack(
     }
 }
 
-fn handle_recovery_return_transfer(
-    storage: &mut dyn Storage,
-    pending: PendingReturningRecovery,
-) -> Result<Response, ContractError> {
-    // if we have the succesfully received the recovery, we create an entry
-    for p in pending.returning {
-        if let RawAmount::LocalDenom(val) = p.amount {
-            CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
-        } else {
-            return Err(ContractError::IncorrectRawAmount);
-        }
-        // remove the error from TRAPS
-        TRAPS.remove(storage, pending.trapped_id);
-    }
-    todo!()
-}
+// fn handle_recovery_return_transfer(
+//     storage: &mut dyn Storage,
+//     pending: PendingReturningRecovery,
+
+// ) -> Result<Response, ContractError> {
+//     // if we have the succesfully received the recovery, we create an entry
+//     for p in pending.returning {
+//         if let RawAmount::LocalDenom(val) = p.amount {
+//             CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
+//         } else {
+//             return Err(ContractError::IncorrectRawAmount);
+//         }
+//         // remove the error from TRAPS
+//         TRAPS.remove(storage, (pending.trapped_id, ));
+//     }
+//     todo!()
+// }
 
 fn handle_join_pool(
     storage: &mut dyn Storage,
@@ -673,13 +674,16 @@ pub fn handle_failing_ack(
         deps.storage,
         (
             pkt.original_packet.sequence,
-            pkt.original_packet.src.channel_id,
+            pkt.original_packet.src.channel_id.clone(),
         ),
     )?;
     unlock_on_error(deps.storage, &step)?;
     TRAPS.save(
         deps.storage,
-        pkt.original_packet.sequence,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id,
+        ),
         &Trap {
             error: format!("packet failure: {error}"),
             step,
@@ -712,14 +716,14 @@ pub(crate) fn on_packet_timeout(
     channel: String,
     error: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let step = NEW_PENDING_ACK.load(deps.storage, (sequence, channel))?;
+    let step = NEW_PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
     unlock_on_error(deps.storage, &step)?;
     if let IbcMsgKind::Ica(_) = &step {
         TIMED_OUT.save(deps.storage, &true)?
     }
     TRAPS.save(
         deps.storage,
-        sequence,
+        (sequence, channel),
         &Trap {
             error: format!("packet failure: {error}"),
             step,
