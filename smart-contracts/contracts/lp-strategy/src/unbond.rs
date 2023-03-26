@@ -142,6 +142,8 @@ pub fn transfer_batch_unbond(
 ) -> Result<SubMsg, ContractError> {
     let pkt = do_transfer_batch_unbond(storage, env, total_tokens)?;
 
+    // this is an ica channel in transfer batch unbond which is fine because even though
+    // we are doing a transfer, its a return transfer which must be triggered by an ICA
     let channel = ICA_CHANNEL.load(storage)?;
 
     Ok(create_ibc_ack_submsg(
