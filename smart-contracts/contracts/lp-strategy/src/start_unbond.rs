@@ -217,7 +217,7 @@ fn start_internal_unbond(
         .plus_seconds(CONFIG.load(storage)?.lock_period);
 
     // add amount of unbonding claims
-    UNBONDING_CLAIMS.save(
+    PENDING_UNBONDING_CLAIMS.save(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {
