@@ -40,8 +40,6 @@ pub fn try_icq(
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
 
-        let ica_channel = ICA_CHANNEL.load(storage)?;
-
         let mut pending_bonds_value = Uint128::zero();
         // we dump pending bonds into the active bond queue
         while !PENDING_BOND_QUEUE.is_empty(storage)? {
@@ -53,7 +51,7 @@ pub fn try_icq(
         }
 
         // deposit needs to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, env.clone(), ica_channel, pending_bonds_value)?;
+        let packet = prepare_full_query(storage, env.clone(), pending_bonds_value)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
@@ -91,11 +89,11 @@ pub fn try_icq(
 pub fn prepare_full_query(
     storage: &mut dyn Storage,
     env: Env,
-    channel: String,
     bonding_amount: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
+    let ica_channel = ICA_CHANNEL.load(storage)?;
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
-    let address = get_ica_address(storage, channel)?;
+    let address = get_ica_address(storage, ica_channel)?;
     let config = CONFIG.load(storage)?;
     // we query the current balance on our ica address
     let base_balance = QueryBalanceRequest {
@@ -265,13 +263,7 @@ mod tests {
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),
             data: to_binary(
-                &prepare_full_query(
-                    deps.as_mut().storage,
-                    env.clone(),
-                    icq_channel.clone(),
-                    Uint128::new(0),
-                )
-                .unwrap(),
+                &prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(0)).unwrap(),
             )
             .unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
