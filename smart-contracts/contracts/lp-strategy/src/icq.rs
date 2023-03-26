@@ -81,7 +81,7 @@ pub fn try_icq(
             storage,
             IbcMsgKind::Icq,
             send_packet_msg,
-            channel
+            channel,
         )?))
     } else {
         Ok(None)

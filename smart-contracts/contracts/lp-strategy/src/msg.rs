@@ -178,7 +178,7 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
-pub enum    UnlockOnly {
+pub enum UnlockOnly {
     Bond,
     StartUnbond,
     Unbond,

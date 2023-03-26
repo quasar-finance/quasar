@@ -39,7 +39,12 @@ pub fn handle_ibc_reply(
         .add_attribute("step", format!("{pending:?}")))
 }
 
-pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64, channel: String) -> Result<Response, ContractError> {
+pub fn handle_ack_reply(
+    deps: DepsMut,
+    msg: Reply,
+    seq: u64,
+    channel: String,
+) -> Result<Response, ContractError> {
     let mut resp = Response::new();
 
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback

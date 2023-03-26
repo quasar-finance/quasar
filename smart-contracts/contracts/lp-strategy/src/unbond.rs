@@ -104,7 +104,7 @@ pub(crate) fn exit_swap(
         storage,
         IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
         pkt,
-        channel
+        channel,
     )?)
 }
 
@@ -148,7 +148,7 @@ pub fn transfer_batch_unbond(
         storage,
         IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending)),
         pkt,
-        channel
+        channel,
     )?)
 }
 

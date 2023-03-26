@@ -432,9 +432,9 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let ica_channel = ICA_CHANNEL.load(deps.storage)?;
-    let icq_channel = ICQ_CHANNEL.load(deps.storage)?;
+    let config = CONFIG.load(deps.as_ref().storage)?;
+    let ica_channel = ICA_CHANNEL.load(deps.as_ref().storage)?;
+    let icq_channel = ICQ_CHANNEL.load(deps.as_ref().storage)?;
 
     for ack in OLD_PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
         match ack?.1 {

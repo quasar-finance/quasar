@@ -180,7 +180,8 @@ fn handle_join_swap_recovery(
     pending: PendingBond,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let ack_bin = RECOVERY_ACK.load(storage, trapped_id)?;
+    let channel = ICA_CHANNEL.load(storage)?;
+    let ack_bin = RECOVERY_ACK.load(storage, (trapped_id, channel))?;
     // in this case the recovery ack should contain a joinswapexternamountin response
     // we try to deserialize it
     let join_result = de_succcesful_join(ack_bin)?;

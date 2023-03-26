@@ -52,7 +52,7 @@ pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
 // RECOVERY_ACK contains ibc acknowledgements, these packets might be needed for recovery from errors
-pub(crate) const RECOVERY_ACK: Map<u64, IbcAcknowledgement> = Map::new("recovery_ack");
+pub(crate) const RECOVERY_ACK: Map<(u64, String), IbcAcknowledgement> = Map::new("recovery_ack");
 
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
 pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
