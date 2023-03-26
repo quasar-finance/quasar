@@ -28,15 +28,16 @@ pub fn start_recovery(
     deps: DepsMut,
     env: &Env,
     error_sequence: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
-    let error = TRAPS.load(deps.storage, error_sequence)?;
+    let error = TRAPS.load(deps.storage, (error_sequence, channel.clone()))?;
     match error.last_succesful {
         true => {
             match error.step {
                 // if the transfer failed. The funds in pending are still located on Quasar, meaning we
                 crate::helpers::IbcMsgKind::Transfer { pending, amount } => {
                     // cleanup error state to prevent multiple error recoveries
-                    TRAPS.remove(deps.storage, error_sequence);
+                    TRAPS.remove(deps.storage, (error_sequence, channel));
                     let msg = handle_transfer_recovery(
                         deps.storage,
                         env,

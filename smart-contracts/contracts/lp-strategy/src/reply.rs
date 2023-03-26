@@ -50,7 +50,7 @@ pub fn handle_ack_reply(
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
     // the entire state of the ack execution,
     if let Err(error) = msg.result.into_result() {
-        let step = NEW_PENDING_ACK.load(deps.storage, (seq, channel))?;
+        let step = NEW_PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
         unlock_on_error(deps.storage, &step)?;
 
         // reassignment needed since add_attribute
@@ -58,7 +58,7 @@ pub fn handle_ack_reply(
 
         TRAPS.save(
             deps.storage,
-            seq,
+            (seq, channel),
             &Trap {
                 error,
                 step,
