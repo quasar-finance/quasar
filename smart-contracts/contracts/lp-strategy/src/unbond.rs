@@ -101,10 +101,13 @@ pub(crate) fn exit_swap(
 ) -> Result<SubMsg, ContractError> {
     let pkt = do_exit_swap(storage, env, total_exit)?;
 
+    let channel = ICA_CHANNEL.load(storage)?;
+
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
         pkt,
+        channel
     )?)
 }
 
@@ -146,10 +149,13 @@ pub fn transfer_batch_unbond(
 ) -> Result<SubMsg, ContractError> {
     let pkt = do_transfer_batch_unbond(storage, env, total_tokens)?;
 
+    let channel = ICA_CHANNEL.load(storage)?;
+
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending)),
         pkt,
+        channel
     )?)
 }
 
