@@ -436,19 +436,28 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     let ica_channel = ICA_CHANNEL.load(deps.as_ref().storage)?;
     let icq_channel = ICQ_CHANNEL.load(deps.as_ref().storage)?;
 
+    let mut acks = vec![];
     for ack in OLD_PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        match ack?.1 {
+        acks.push(ack?.clone());
+    }
+
+    for ack in acks.iter() {
+        match ack.1 {
             crate::helpers::IbcMsgKind::Transfer {
                 pending: _,
                 amount: _,
             } => {
-                NEW_PENDING_ACK.save(deps.storage, (ack?.0, config.transfer_channel), &ack?.1)?;
+                NEW_PENDING_ACK.save(
+                    deps.storage,
+                    (ack.0, config.transfer_channel.clone()),
+                    &ack.1,
+                )?;
             }
             crate::helpers::IbcMsgKind::Ica(_) => {
-                NEW_PENDING_ACK.save(deps.storage, (ack?.0, ica_channel), &ack?.1)?;
+                NEW_PENDING_ACK.save(deps.storage, (ack.0, ica_channel.clone()), &ack.1)?;
             }
             crate::helpers::IbcMsgKind::Icq => {
-                NEW_PENDING_ACK.save(deps.storage, (ack?.0, config.transfer_channel), &ack?.1)?;
+                NEW_PENDING_ACK.save(deps.storage, (ack.0, icq_channel.clone()), &ack.1)?;
             }
         }
     }
