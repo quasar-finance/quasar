@@ -260,15 +260,15 @@ mod tests {
 
         let res = try_icq(deps.as_mut().storage, q, env.clone()).unwrap();
 
-        let ica_channel = ICA_CHANNEL.load(deps.as_mut().storage).unwrap();
+        let icq_channel = ICQ_CHANNEL.load(deps.as_mut().storage).unwrap();
 
         let pkt = IbcMsg::SendPacket {
-            channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            channel_id: icq_channel.clone(),
             data: to_binary(
                 &prepare_full_query(
                     deps.as_mut().storage,
                     env.clone(),
-                    ica_channel,
+                    icq_channel,
                     Uint128::new(0),
                 )
                 .unwrap(),
@@ -277,11 +277,9 @@ mod tests {
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
-        let channel = ICQ_CHANNEL.load(deps.as_mut().storage).unwrap();
-
         assert_eq!(
             res.unwrap().msg,
-            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt, channel)
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt, icq_channel)
                 .unwrap()
                 .msg
         )
