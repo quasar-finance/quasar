@@ -248,8 +248,8 @@ pub fn ibc_packet_ack(
     RECOVERY_ACK.save(
         deps.storage,
         (
-            msg.original_packet.sequence,
-            msg.original_packet.src.channel_id,
+            msg.original_packet.sequence.clone(),
+            msg.original_packet.src.channel_id.clone(),
         ),
         &msg.acknowledgement,
     )?;
@@ -267,7 +267,7 @@ pub fn handle_succesful_ack(
         deps.storage,
         (
             pkt.original_packet.sequence,
-            pkt.original_packet.src.channel_id,
+            pkt.original_packet.src.channel_id.clone(),
         ),
     )?;
     match kind {
