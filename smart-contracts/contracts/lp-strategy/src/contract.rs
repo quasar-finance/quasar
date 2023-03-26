@@ -85,13 +85,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-<<<<<<< Updated upstream
         SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending, channel),
         SubMsgKind::Ack(seq, channel) => handle_ack_reply(deps, msg, seq, channel),
-=======
-        SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending),
-        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
->>>>>>> Stashed changes
         SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
