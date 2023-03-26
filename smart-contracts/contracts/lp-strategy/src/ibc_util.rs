@@ -56,6 +56,7 @@ pub fn do_transfer(
             amount,
         },
         transfer,
+        channel_id,
     )?)
 }
 
@@ -187,6 +188,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
             bonds: deposits,
         })),
         pkt,
+        ica_channel,
     )?)
 }
 
