@@ -197,8 +197,9 @@ pub fn handle_list_primitive_shares(deps: Deps) -> StdResult<ListPrimitiveShares
 pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse> {
     let pending: StdResult<HashMap<String, IbcMsgKind>> = NEW_PENDING_ACK
         .range(deps.storage, None, None, Order::Ascending)
-        .map(|(seq, chan), kind| {
-            (format!({}-{}, seq.to_string(), chan), kind)
+        .map(|res| {
+            let ((seq, chan), kind) = res?;
+            Ok((format!("{}-{}", seq.to_string(), chan), kind))
         })
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })
