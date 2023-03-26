@@ -16,7 +16,10 @@ use crate::{
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
     start_unbond::{do_begin_unlocking, do_start_unbond},
-    state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
+    state::{
+        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RECOVERY_ACK,
+        TRAPS,
+    },
     unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
 
@@ -66,6 +69,7 @@ fn handle_transfer_recovery(
     amount: Uint128,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
+    let config = CONFIG.load(storage)?;
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
         .iter()
@@ -94,6 +98,7 @@ fn handle_transfer_recovery(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryReturnTransfer(returning)),
         msg,
+        config.transfer_channel,
     )?)
 }
 
@@ -252,6 +257,7 @@ fn handle_join_swap_recovery(
             trapped_id,
         })),
         exit,
+        ICA_CHANNEL.load(storage)?,
     )?)
 }
 
