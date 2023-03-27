@@ -215,3 +215,32 @@ pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
         .collect();
     Ok(ListRepliesResponse { replies: replies? })
 }
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+
+    use super::*;
+
+    #[test]
+    fn get_trapped_errors_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let q = QueryMsg::TrappedErrors {};
+
+        TRAPS
+            .save(
+                deps.as_mut().storage,
+                (100, "channel-1".to_string()),
+                &Trap {
+                    error: "failed to do a thing".to_string(),
+                    step: IbcMsgKind::Icq,
+                    last_succesful: true,
+                },
+            )
+            .unwrap();
+
+        let res = query(deps.as_ref(), env, q).unwrap();
+    }
+}
