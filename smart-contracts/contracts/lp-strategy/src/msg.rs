@@ -119,7 +119,7 @@ pub struct ListPrimitiveSharesResponse {
 
 #[cw_serde]
 pub struct ListPendingAcksResponse {
-    pub pending: HashMap<u64, IbcMsgKind>,
+    pub pending: HashMap<String, IbcMsgKind>,
 }
 
 #[cw_serde]
@@ -139,7 +139,7 @@ pub struct ChannelsResponse {
 
 #[cw_serde]
 pub struct TrappedErrorsResponse {
-    pub errors: Vec<(u64, Trap)>,
+    pub errors: HashMap<String, Trap>,
 }
 
 #[cw_serde]
@@ -208,5 +208,5 @@ pub enum ExecuteMsg {
     Ack { ack: IbcPacketAckMsg },
     TryIcq {},
     Unlock { unlock_only: UnlockOnly },
-    ManualTimeout { seq: u64 },
+    ManualTimeout { seq: u64, channel: String },
 }

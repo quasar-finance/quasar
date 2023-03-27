@@ -16,7 +16,10 @@ use crate::{
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
     start_unbond::{do_begin_unlocking, do_start_unbond},
-    state::{FundPath, LpCache, PendingBond, RawAmount, LP_SHARES, RECOVERY_ACK, TRAPS},
+    state::{
+        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES,
+        NEW_RECOVERY_ACK, TRAPS,
+    },
     unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
 
@@ -25,15 +28,16 @@ pub fn start_recovery(
     deps: DepsMut,
     env: &Env,
     error_sequence: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
-    let error = TRAPS.load(deps.storage, error_sequence)?;
+    let error = TRAPS.load(deps.storage, (error_sequence, channel.clone()))?;
     match error.last_succesful {
         true => {
             match error.step {
                 // if the transfer failed. The funds in pending are still located on Quasar, meaning we
                 crate::helpers::IbcMsgKind::Transfer { pending, amount } => {
                     // cleanup error state to prevent multiple error recoveries
-                    TRAPS.remove(deps.storage, error_sequence);
+                    TRAPS.remove(deps.storage, (error_sequence, channel));
                     let msg = handle_transfer_recovery(
                         deps.storage,
                         env,
@@ -66,6 +70,7 @@ fn handle_transfer_recovery(
     amount: Uint128,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
+    let config = CONFIG.load(storage)?;
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
         .iter()
@@ -94,6 +99,7 @@ fn handle_transfer_recovery(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryReturnTransfer(returning)),
         msg,
+        config.transfer_channel,
     )?)
 }
 
@@ -175,7 +181,8 @@ fn handle_join_swap_recovery(
     pending: PendingBond,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let ack_bin = RECOVERY_ACK.load(storage, trapped_id)?;
+    let channel = ICA_CHANNEL.load(storage)?;
+    let ack_bin = NEW_RECOVERY_ACK.load(storage, (trapped_id, channel.clone()))?;
     // in this case the recovery ack should contain a joinswapexternamountin response
     // we try to deserialize it
     let join_result = de_succcesful_join(ack_bin)?;
@@ -252,6 +259,7 @@ fn handle_join_swap_recovery(
             trapped_id,
         })),
         exit,
+        channel,
     )?)
 }
 

@@ -21,7 +21,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
+    OLD_RECOVERY_ACK, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
     TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
@@ -85,8 +86,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-        SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
-        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
+        SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending, channel),
+        SubMsgKind::Ack(seq, channel) => handle_ack_reply(deps, msg, seq, channel),
         SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
@@ -113,7 +114,7 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
-        ExecuteMsg::ManualTimeout { seq } => manual_timeout(deps, env, info, seq),
+        ExecuteMsg::ManualTimeout { seq, channel } => manual_timeout(deps, env, info, seq, channel),
     }
 }
 
@@ -141,10 +142,11 @@ pub fn manual_timeout(
     env: Env,
     info: MessageInfo,
     sequence: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    let response = on_packet_timeout(deps, sequence, "timeout".to_string())?;
+    let response = on_packet_timeout(deps, sequence, channel, "timeout".to_string())?;
 
     Ok(Response::new()
         .add_attributes(response.attributes)
@@ -431,11 +433,6 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    TIMED_OUT.save(deps.storage, &true)?;
-    IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-        Ok(lock.lock_bond().lock_start_unbond().lock_unbond())
-    });
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))

@@ -19,7 +19,7 @@ use crate::{
     start_unbond::StartUnbond,
     state::{
         Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN,
+        NEW_PENDING_ACK, OSMO_LOCK, PENDING_BOND_QUEUE, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN,
         SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
         UNBOND_QUEUE,
     },
@@ -109,8 +109,12 @@ pub fn handle_unbonding_claim_query(
 }
 
 pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsResponse> {
-    let trapped: StdResult<Vec<(u64, Trap)>> = TRAPS
+    let trapped: StdResult<HashMap<String, Trap>> = TRAPS
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| {
+            let ((seq, chan), kind) = res?;
+            Ok((format!("{}-{}", seq.to_string(), chan), kind))
+        })
         .collect();
     Ok(TrappedErrorsResponse { errors: trapped? })
 }
@@ -195,8 +199,12 @@ pub fn handle_list_primitive_shares(deps: Deps) -> StdResult<ListPrimitiveShares
 }
 
 pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse> {
-    let pending: StdResult<HashMap<u64, IbcMsgKind>> = PENDING_ACK
+    let pending: StdResult<HashMap<String, IbcMsgKind>> = NEW_PENDING_ACK
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| {
+            let ((seq, chan), kind) = res?;
+            Ok((format!("{}-{}", seq.to_string(), chan), kind))
+        })
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })
 }
@@ -206,4 +214,33 @@ pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     Ok(ListRepliesResponse { replies: replies? })
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+
+    use super::*;
+
+    #[test]
+    fn get_trapped_errors_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let q = QueryMsg::TrappedErrors {};
+
+        TRAPS
+            .save(
+                deps.as_mut().storage,
+                (100, "channel-1".to_string()),
+                &Trap {
+                    error: "failed to do a thing".to_string(),
+                    step: IbcMsgKind::Icq,
+                    last_succesful: true,
+                },
+            )
+            .unwrap();
+
+        let res = query(deps.as_ref(), env, q).unwrap();
+    }
 }

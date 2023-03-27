@@ -4,12 +4,13 @@ use quasar_types::callback::Callback;
 
 use crate::error::{ContractError, Trap};
 use crate::helpers::{parse_seq, unlock_on_error, ContractCallback, IbcMsgKind};
-use crate::state::{FundPath, CLAIMABLE_FUNDS, PENDING_ACK, REPLIES, TRAPS};
+use crate::state::{FundPath, CLAIMABLE_FUNDS, NEW_PENDING_ACK, REPLIES, TRAPS};
 
 pub fn handle_ibc_reply(
     deps: DepsMut,
     msg: Reply,
     pending: IbcMsgKind,
+    channel: String,
 ) -> Result<Response, ContractError> {
     let data = msg
         .result
@@ -28,7 +29,7 @@ pub fn handle_ibc_reply(
         msg: err.to_string(),
     })?;
 
-    PENDING_ACK.save(deps.storage, seq, &pending)?;
+    NEW_PENDING_ACK.save(deps.storage, (seq, channel), &pending)?;
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
@@ -38,13 +39,18 @@ pub fn handle_ibc_reply(
         .add_attribute("step", format!("{pending:?}")))
 }
 
-pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response, ContractError> {
+pub fn handle_ack_reply(
+    deps: DepsMut,
+    msg: Reply,
+    seq: u64,
+    channel: String,
+) -> Result<Response, ContractError> {
     let mut resp = Response::new();
 
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
     // the entire state of the ack execution,
     if let Err(error) = msg.result.into_result() {
-        let step = PENDING_ACK.load(deps.storage, seq)?;
+        let step = NEW_PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
         unlock_on_error(deps.storage, &step)?;
 
         // reassignment needed since add_attribute
@@ -52,7 +58,7 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
 
         TRAPS.save(
             deps.storage,
-            seq,
+            (seq, channel),
             &Trap {
                 error,
                 step,
