@@ -139,7 +139,7 @@ pub struct ChannelsResponse {
 
 #[cw_serde]
 pub struct TrappedErrorsResponse {
-    pub errors: Vec<(u64, Trap)>,
+    pub errors: HashMap<u64, Trap>,
 }
 
 #[cw_serde]
