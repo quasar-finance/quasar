@@ -21,8 +21,9 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, OLD_PENDING_ACK, OSMO_LOCK, REPLIES,
-    RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE, OLD_RECOVERY_ACK, NEW_RECOVERY_ACK,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
+    OLD_RECOVERY_ACK, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -432,64 +433,6 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.as_ref().storage)?;
-    let ica_channel = ICA_CHANNEL.load(deps.as_ref().storage)?;
-    let icq_channel = ICQ_CHANNEL.load(deps.as_ref().storage)?;
-
-    let mut acks = vec![];
-    for ack in OLD_PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        acks.push(ack?.clone());
-    }
-
-    for ack in acks.iter() {
-        match ack.1 {
-            crate::helpers::IbcMsgKind::Transfer {
-                pending: _,
-                amount: _,
-            } => {
-                NEW_PENDING_ACK.save(
-                    deps.storage,
-                    (ack.0, config.transfer_channel.clone()),
-                    &ack.1,
-                )?;
-            }
-            crate::helpers::IbcMsgKind::Ica(_) => {
-                NEW_PENDING_ACK.save(deps.storage, (ack.0, ica_channel.clone()), &ack.1)?;
-            }
-            crate::helpers::IbcMsgKind::Icq => {
-                NEW_PENDING_ACK.save(deps.storage, (ack.0, icq_channel.clone()), &ack.1)?;
-            }
-        }
-    }
-
-    let mut old_rec = vec![];
-    for rec in OLD_RECOVERY_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        old_rec.push(rec?);
-    }    
-
-    for rec in old_rec.iter() {
-        let old = OLD_PENDING_ACK.load(deps.storage, rec.0)?;
-        match old {
-            crate::helpers::IbcMsgKind::Transfer {
-                pending: _,
-                amount: _,
-            } => {
-                NEW_RECOVERY_ACK.save(
-                    deps.storage,
-                    (rec.0, config.transfer_channel.clone()),
-                    &rec.1,
-                )?;
-            }
-            crate::helpers::IbcMsgKind::Ica(_) => {
-                NEW_RECOVERY_ACK.save(deps.storage, (rec.0, ica_channel.clone()), &rec.1)?;
-            }
-            crate::helpers::IbcMsgKind::Icq => {
-                NEW_RECOVERY_ACK.save(deps.storage, (rec.0, icq_channel.clone()), &rec.1)?;
-            }
-        }
-    }
-
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
