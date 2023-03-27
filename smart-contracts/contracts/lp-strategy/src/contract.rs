@@ -432,36 +432,6 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.as_ref().storage)?;
-    let ica_channel = ICA_CHANNEL.load(deps.as_ref().storage)?;
-    let icq_channel = ICQ_CHANNEL.load(deps.as_ref().storage)?;
-
-    let mut acks = vec![];
-    for ack in OLD_PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        acks.push(ack?.clone());
-    }
-
-    for ack in acks.iter() {
-        match ack.1 {
-            crate::helpers::IbcMsgKind::Transfer {
-                pending: _,
-                amount: _,
-            } => {
-                NEW_PENDING_ACK.save(
-                    deps.storage,
-                    (ack.0, config.transfer_channel.clone()),
-                    &ack.1,
-                )?;
-            }
-            crate::helpers::IbcMsgKind::Ica(_) => {
-                NEW_PENDING_ACK.save(deps.storage, (ack.0, ica_channel.clone()), &ack.1)?;
-            }
-            crate::helpers::IbcMsgKind::Icq => {
-                NEW_PENDING_ACK.save(deps.storage, (ack.0, icq_channel.clone()), &ack.1)?;
-            }
-        }
-    }
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
