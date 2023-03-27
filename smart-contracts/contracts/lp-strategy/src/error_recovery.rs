@@ -17,8 +17,8 @@ use crate::{
     ibc_util::calculate_token_out_min_amount,
     start_unbond::{do_begin_unlocking, do_start_unbond},
     state::{
-        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, NEW_RECOVERY_ACK,
-        TRAPS,
+        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES,
+        NEW_RECOVERY_ACK, TRAPS,
     },
     unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
