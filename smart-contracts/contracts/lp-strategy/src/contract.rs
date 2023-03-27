@@ -22,8 +22,8 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
-    OLD_RECOVERY_ACK, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    OLD_RECOVERY_ACK, OLD_TRAPS, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -433,6 +433,17 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let mut traps = vec![];
+
+    for old_trap in OLD_TRAPS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
+        traps.push(old_trap);
+    }
+
+    for t in traps {
+        let ut = t.unwrap();
+        TRAPS.save(deps.storage, (ut.0.clone(), "undefined".to_string()), &ut.1)?;
+    }
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
