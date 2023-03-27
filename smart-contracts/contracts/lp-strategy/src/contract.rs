@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply, Response,
-    Uint128,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
+    Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -439,12 +439,26 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         traps.push(old_trap);
     }
 
+    let mut attrs = vec![];
+    let mut i = 0;
     for t in traps {
-        let ut = t.unwrap();
-        TRAPS.save(deps.storage, (ut.0.clone(), "undefined".to_string()), &ut.1)?;
+        i += 1;
+        match t {
+            Ok(ut) => {
+                TRAPS.save(deps.storage, (ut.0.clone(), "undefined".to_string()), &ut.1)?;
+            }
+            Err(e) => {
+                attrs.push(Attribute::new(
+                    "error_".to_string() + &i.to_string(),
+                    e.to_string(),
+                ));
+                //ignore
+            }
+        }
     }
 
     Ok(Response::new()
+        .add_attributes(attrs)
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
 }
