@@ -140,6 +140,7 @@ pub fn create_ibc_ack_submsg(
     storage: &mut dyn Storage,
     pending: IbcMsgKind,
     msg: IbcMsg,
+    channel: String,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -147,7 +148,7 @@ pub fn create_ibc_ack_submsg(
         id = val?.0 + 1;
     }
     // register the message in the replies for handling
-    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending))?;
+    REPLIES.save(storage, id, &SubMsgKind::Ibc(pending, channel))?;
     Ok(SubMsg::reply_always(msg, id))
 }
 
@@ -155,6 +156,7 @@ pub fn ack_submsg(
     storage: &mut dyn Storage,
     env: Env,
     msg: IbcPacketAckMsg,
+    channel: String,
 ) -> Result<SubMsg, ContractError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -164,7 +166,11 @@ pub fn ack_submsg(
 
     // register the message in the replies for handling
     // TODO do we need this state item here? or do we just need the reply hook
-    REPLIES.save(storage, id, &SubMsgKind::Ack(msg.original_packet.sequence))?;
+    REPLIES.save(
+        storage,
+        id,
+        &SubMsgKind::Ack(msg.original_packet.sequence, channel),
+    )?;
 
     // TODO for an ack, should the reply hook be always or only on error? Probably only on error
     // On succeses, we need to cleanup the state item from REPLIES
@@ -207,8 +213,8 @@ pub enum IcaMessages {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum SubMsgKind {
-    Ibc(IbcMsgKind),
-    Ack(u64),
+    Ibc(IbcMsgKind, String),
+    Ack(u64, String),
     Callback(ContractCallback), // in reply match for callback variant
 }
 
