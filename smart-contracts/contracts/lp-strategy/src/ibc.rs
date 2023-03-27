@@ -15,7 +15,7 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, RawAmount, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
     IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, OSMO_LOCK,
-    RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+    NEW_RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
     TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
@@ -245,7 +245,7 @@ pub fn ibc_packet_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     // We save the ack binary here for error recovery in case of an join pool recovery
     // this should be cleaned up from state in the ack submsg Ok case
-    RECOVERY_ACK.save(
+    NEW_RECOVERY_ACK.save(
         deps.storage,
         (
             msg.original_packet.sequence.clone(),

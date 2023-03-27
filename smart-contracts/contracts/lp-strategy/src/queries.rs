@@ -109,7 +109,7 @@ pub fn handle_unbonding_claim_query(
 }
 
 pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsResponse> {
-    let trapped: StdResult<Vec<(String, Trap)>> = TRAPS
+    let trapped: StdResult<HashMap<String, Trap>> = TRAPS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let ((seq, chan), kind) = res?;
