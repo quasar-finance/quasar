@@ -106,6 +106,12 @@ pub enum ContractError {
     OverflowError(#[from] OverflowError),
 }
 
+impl From<ContractError> for StdError {
+    fn from(err: ContractError) -> Self {
+        StdError::generic_err(format!("Contract error: {err}"))
+    }
+}
+
 impl From<CheckedFromRatioError> for ContractError {
     fn from(err: CheckedFromRatioError) -> Self {
         ContractError::MultiplyRatioError(err.to_string())

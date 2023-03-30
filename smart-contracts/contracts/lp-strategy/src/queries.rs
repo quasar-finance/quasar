@@ -46,8 +46,8 @@ pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsRespons
 pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
     let channels: Vec<ChannelInfo> = CHANNELS
         .range(deps.storage, None, None, Order::Ascending)
-        .map(|kv| kv.unwrap().1)
-        .collect();
+        .map(|kv| kv.map(|(_, channel)| channel))
+        .collect::<Result<Vec<ChannelInfo>, StdError>>()?;
     Ok(ChannelsResponse { channels })
 }
 

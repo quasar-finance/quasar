@@ -58,7 +58,7 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
 pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
-    let (primitive_funding_amounts, remainder) = may_pay_with_ratio(&deps, &funds, invest).unwrap();
+    let (primitive_funding_amounts, remainder) = may_pay_with_ratio(&deps, &funds, invest)?;
 
     let res = DepositRatioResponse {
         primitive_funding_amounts,
@@ -71,11 +71,14 @@ pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBond
     let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
-    pending_bond_ids.iter().for_each(|id| {
-        let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
+    pending_bond_ids
+        .iter()
+        .try_for_each(|id| -> StdResult<()> {
+            let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string())?;
 
-        pending_bonds.append(deposit_stubs.as_mut());
-    });
+            pending_bonds.append(deposit_stubs.as_mut());
+            Ok(())
+        })?;
 
     Ok(PendingBondsResponse {
         pending_bonds,
@@ -87,10 +90,13 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
     let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
     let mut pending_unbonds: Vec<Unbond> = vec![];
 
-    pending_unbond_ids.iter().for_each(|id: &String| {
-        let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string()).unwrap();
-        pending_unbonds.push(unbond_stubs);
-    });
+    pending_unbond_ids
+        .iter()
+        .try_for_each(|id: &String| -> StdResult<_> {
+            let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string())?;
+            pending_unbonds.push(unbond_stubs);
+            Ok(())
+        })?;
 
     Ok(PendingUnbondsResponse {
         pending_unbonds,
