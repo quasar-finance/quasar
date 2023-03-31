@@ -8,6 +8,7 @@ pub struct Lock {
     pub start_unbond: IbcLock,
     pub unbond: IbcLock,
     pub recovery: IbcLock,
+    pub migration: IbcLock,
 }
 
 impl Lock {
@@ -17,6 +18,7 @@ impl Lock {
             start_unbond: IbcLock::Unlocked,
             unbond: IbcLock::Unlocked,
             recovery: IbcLock::Unlocked,
+            migration: IbcLock::Unlocked,
         }
     }
 
@@ -35,6 +37,11 @@ impl Lock {
         self
     }
 
+    pub fn unlock_migration(mut self) -> Self {
+        self.migration = IbcLock::Unlocked;
+        self
+    }
+
     pub fn lock_bond(mut self) -> Self {
         self.bond = IbcLock::Locked;
         self
@@ -50,12 +57,23 @@ impl Lock {
         self
     }
 
+    pub fn lock_migration(mut self) -> Self {
+        self.migration = IbcLock::Locked;
+        self
+    }
+
     pub fn is_unlocked(&self) -> bool {
-        self.bond.is_unlocked() && self.start_unbond.is_unlocked() && self.unbond.is_unlocked()
+        self.bond.is_unlocked()
+            && self.start_unbond.is_unlocked()
+            && self.unbond.is_unlocked()
+            && self.migration.is_unlocked()
     }
 
     pub fn is_locked(&self) -> bool {
-        self.bond.is_locked() || self.start_unbond.is_locked() || self.unbond.is_locked()
+        self.bond.is_locked()
+            || self.start_unbond.is_locked()
+            || self.unbond.is_locked()
+            || self.migration.is_locked()
     }
 }
 
