@@ -62,6 +62,7 @@ impl Lock {
         self
     }
 
+    // this doesnt take into account the recovery lock
     pub fn is_unlocked(&self) -> bool {
         self.bond.is_unlocked()
             && self.start_unbond.is_unlocked()
@@ -69,6 +70,7 @@ impl Lock {
             && self.migration.is_unlocked()
     }
 
+    // this doesnt take into account the recovery lock
     pub fn is_locked(&self) -> bool {
         self.bond.is_locked()
             || self.start_unbond.is_locked()
@@ -100,5 +102,92 @@ impl IbcLock {
 
     pub fn is_locked(&self) -> bool {
         self == &IbcLock::Locked
+    }
+}
+
+// write tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lock() {
+        // start from unlocked, lock one by one and check
+        let mut lock = Lock::new();
+        assert!(lock.is_unlocked());
+        assert!(!lock.is_locked());
+
+        lock = lock.lock_bond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.lock_start_unbond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.lock_unbond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        // manually lock recovery
+        lock.recovery = IbcLock::Locked;
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.lock_migration();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        // all should now be locked
+        assert!(lock.bond.is_locked());
+        assert!(lock.start_unbond.is_locked());
+        assert!(lock.unbond.is_locked());
+        assert!(lock.recovery.is_locked());
+        assert!(lock.migration.is_locked());
+
+        // none should be unlocked
+        assert!(!lock.bond.is_unlocked());
+        assert!(!lock.start_unbond.is_unlocked());
+        assert!(!lock.unbond.is_unlocked());
+        assert!(!lock.recovery.is_unlocked());
+        assert!(!lock.migration.is_unlocked());
+
+        // unlock one by one and check
+        lock = lock.unlock_bond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.unlock_start_unbond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.unlock_unbond();
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        // manually unlock recovery
+        lock.recovery = IbcLock::Unlocked;
+        assert!(!lock.is_unlocked());
+        assert!(lock.is_locked());
+
+        lock = lock.unlock_migration();
+        assert!(lock.is_unlocked());
+        assert!(!lock.is_locked());
+
+        // all should now be unlocked
+        assert!(lock.bond.is_unlocked());
+        assert!(lock.start_unbond.is_unlocked());
+        assert!(lock.unbond.is_unlocked());
+        assert!(lock.recovery.is_unlocked());
+        assert!(lock.migration.is_unlocked());
+
+        // none should be locked
+        assert!(!lock.bond.is_locked());
+        assert!(!lock.start_unbond.is_locked());
+        assert!(!lock.unbond.is_locked());
+        assert!(!lock.recovery.is_locked());
+        assert!(!lock.migration.is_locked());
+
+        println!("{lock:?}");
     }
 }
