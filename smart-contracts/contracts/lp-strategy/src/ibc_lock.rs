@@ -112,11 +112,12 @@ mod tests {
 
     #[test]
     fn test_lock() {
-        // start from unlocked, lock one by one and check
+        // start from unlocked
         let mut lock = Lock::new();
         assert!(lock.is_unlocked());
         assert!(!lock.is_locked());
 
+        // lock one by one and check
         lock = lock.lock_bond();
         assert!(!lock.is_unlocked());
         assert!(lock.is_locked());
@@ -138,7 +139,7 @@ mod tests {
         assert!(!lock.is_unlocked());
         assert!(lock.is_locked());
 
-        // all should now be locked
+        // all should be locked
         assert!(lock.bond.is_locked());
         assert!(lock.start_unbond.is_locked());
         assert!(lock.unbond.is_locked());
@@ -174,7 +175,7 @@ mod tests {
         assert!(lock.is_unlocked());
         assert!(!lock.is_locked());
 
-        // all should now be unlocked
+        // all should be unlocked
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_unlocked());
         assert!(lock.unbond.is_unlocked());
@@ -187,7 +188,5 @@ mod tests {
         assert!(!lock.unbond.is_locked());
         assert!(!lock.recovery.is_locked());
         assert!(!lock.migration.is_locked());
-
-        println!("{lock:?}");
     }
 }
