@@ -1,20 +1,21 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
-    Response, Uint128,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply, Response,
+    Uint128, coins,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
+use quasar_types::ica::packet::ica_send;
 
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{is_contract_admin, SubMsgKind};
+use crate::helpers::{is_contract_admin, SubMsgKind, get_ica_address, create_callback_submsg};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
-use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
+use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer, do_ibc_lock_tokens};
 use crate::icq::try_icq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
@@ -23,7 +24,7 @@ use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
     OLD_RECOVERY_ACK, OLD_TRAPS, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    TOTAL_VAULT_BALANCE, UNBOND_QUEUE, IBC_TIMEOUT_TIME, TRAPS
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -443,10 +444,23 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+
+    let ica_channel = ICA_CHANNEL.load(deps.storage)?;
+    let ica_address = get_ica_address(deps.storage, ica_channel.clone())?;
+    let config = CONFIG.load(deps.storage)?;
+
+    // lock a certain amount of base denom tokens
+    let lock = do_ibc_lock_tokens(deps.storage, ica_address, coins(msg.to_lock_amount.into(), config.base_denom))?;
+
+    let pkt = ica_send(lock, ica_channel, IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)))?;
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("succes", "true"))
+        .add_attribute("succes", "true")
+        .add_attribute("locking_tokens", msg.to_lock_amount)
+        .add_message(pkt)
+    )
 }
 
 #[cfg(test)]
