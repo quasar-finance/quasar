@@ -34,6 +34,7 @@ const VaultInfoWindow = ({ height }: { height: TPosition }) => {
 
   useEffect(() => {
     loadCap()
+    // idk why but it works like this only:
     setTimeout(() => loadTokenInfo(), 700)
   }, [])
 

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LockResponse",
+  "type": "object",
+  "required": [
+    "lock"
+  ],
+  "properties": {
+    "lock": {
+      "$ref": "#/definitions/Lock"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "IbcLock": {
+      "description": "IbcLock describes the current state of the contract Upon locking the contract, all current deposits and withdraws are going to be handled, Incoming withdraws are gathered once again gathered into a queue. Once the contract unlocks, if the queue has any deposits and/or withdraws, the contract locks and starts handling all current queries",
+      "type": "string",
+      "enum": [
+        "locked",
+        "unlocked"
+      ]
+    },
+    "Lock": {
+      "type": "object",
+      "required": [
+        "bond",
+        "recovery",
+        "start_unbond",
+        "unbond"
+      ],
+      "properties": {
+        "bond": {
+          "$ref": "#/definitions/IbcLock"
+        },
+        "recovery": {
+          "$ref": "#/definitions/IbcLock"
+        },
+        "start_unbond": {
+          "$ref": "#/definitions/IbcLock"
+        },
+        "unbond": {
+          "$ref": "#/definitions/IbcLock"
+        }
+      }
+    }
+  }
+}
