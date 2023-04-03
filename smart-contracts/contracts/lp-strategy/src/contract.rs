@@ -114,7 +114,11 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
-        ExecuteMsg::ManualTimeout { seq, channel } => manual_timeout(deps, env, info, seq, channel),
+        ExecuteMsg::ManualTimeout {
+            seq,
+            channel,
+            should_unlock,
+        } => manual_timeout(deps, env, info, seq, channel, should_unlock),
     }
 }
 
@@ -143,10 +147,17 @@ pub fn manual_timeout(
     info: MessageInfo,
     sequence: u64,
     channel: String,
+    should_unlock: bool,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    let response = on_packet_timeout(deps, sequence, channel, "timeout".to_string())?;
+    let response = on_packet_timeout(
+        deps,
+        sequence,
+        channel,
+        "timeout".to_string(),
+        should_unlock,
+    )?;
 
     Ok(Response::new()
         .add_attributes(response.attributes)
@@ -433,32 +444,7 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let mut traps = vec![];
-
-    for old_trap in OLD_TRAPS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        traps.push(old_trap);
-    }
-
-    let mut attrs = vec![];
-    let mut i = 0;
-    for t in traps {
-        i += 1;
-        match t {
-            Ok(ut) => {
-                TRAPS.save(deps.storage, (ut.0.clone(), "undefined".to_string()), &ut.1)?;
-            }
-            Err(e) => {
-                attrs.push(Attribute::new(
-                    "error_".to_string() + &i.to_string(),
-                    e.to_string(),
-                ));
-                //ignore
-            }
-        }
-    }
-
     Ok(Response::new()
-        .add_attributes(attrs)
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
 }
