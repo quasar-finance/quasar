@@ -40,6 +40,16 @@ pub fn on_bond(
         return Err(ContractError::Unauthorized {});
     }
 
+    // if we find a bond_stub coming from a primitive that already sent us one. fail
+    if bond_stubs
+        .iter()
+        .any(|s| s.address == info.sender && s.bond_response.is_some())
+    {
+        return Err(ContractError::DuplicateBondResponse {
+            bond_id: bond_id.clone(),
+        });
+    }
+
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
         if s.address == info.sender {
