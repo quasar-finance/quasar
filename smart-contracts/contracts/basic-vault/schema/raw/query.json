@@ -25,6 +25,19 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "get_cap"
+      ],
+      "properties": {
+        "get_cap": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Investment shows metadata on the staking info of the contract",
       "type": "object",
       "required": [
