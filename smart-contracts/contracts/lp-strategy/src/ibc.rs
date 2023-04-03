@@ -219,8 +219,7 @@ pub fn ibc_channel_close(
     _env: Env,
     channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: what to do here?
-    // for now we just close the channel
+    // TODO look up the channel, in channels, and update the state to closed
     Ok(IbcBasicResponse::new()
         .add_attribute("channel", channel.channel().endpoint.channel_id.clone())
         .add_attribute("connection", channel.channel().connection_id.clone()))
@@ -707,6 +706,7 @@ pub fn ibc_packet_timeout(
         msg.packet.sequence,
         msg.packet.src.channel_id,
         "timeout".to_string(),
+        true,
     )
 }
 
@@ -715,9 +715,12 @@ pub(crate) fn on_packet_timeout(
     sequence: u64,
     channel: String,
     error: String,
+    should_unlock: bool,
 ) -> Result<IbcBasicResponse, ContractError> {
     let step = NEW_PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
-    unlock_on_error(deps.storage, &step)?;
+    if should_unlock {
+        unlock_on_error(deps.storage, &step)?;
+    }
     if let IbcMsgKind::Ica(_) = &step {
         TIMED_OUT.save(deps.storage, &true)?
     }
