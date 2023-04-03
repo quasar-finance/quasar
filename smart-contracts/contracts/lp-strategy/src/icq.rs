@@ -203,14 +203,14 @@ pub fn calc_total_balance(
     Ok(ica_balance
         .checked_add(Uint128::new(base.amount.parse::<u128>().map_err(
             |err| ContractError::ParseIntError {
-                error: err,
+                error: format!("ica_balance:{:?}", err),
                 value: base.amount.clone(),
             },
         )?))?
         .checked_add(
             Uint128::new(quote.amount.parse::<u128>().map_err(|err| {
                 ContractError::ParseIntError {
-                    error: err,
+                    error: format!("quote_denom:{:?}", err),
                     value: quote.amount.clone(),
                 }
             })?)

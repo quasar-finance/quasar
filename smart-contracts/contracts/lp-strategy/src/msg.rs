@@ -41,7 +41,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub to_lock_amount: Uint128
+    pub to_lock_amount: Uint128,
 }
 
 #[cw_serde]

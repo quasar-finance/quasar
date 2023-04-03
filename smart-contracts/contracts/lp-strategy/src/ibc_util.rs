@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, num::ParseIntError};
 
 use cosmwasm_std::{
     Coin, ConversionOverflowError, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdError, Storage,
@@ -67,13 +67,21 @@ pub fn scale_join_pool(
     return_scaled: bool,
 ) -> Result<Uint128, ContractError> {
     let token_in = SIMULATED_JOIN_AMOUNT_IN.load(storage)?;
-    let join = join
-        .share_out_amount
-        .parse()
-        .map_err(|err| ContractError::ParseIntError {
-            error: err,
-            value: join.share_out_amount,
-        })?;
+    let join = match join
+    .share_out_amount
+    .parse::<u128>() {
+        Ok(val) => Ok(val),
+        Err(err) =>  {
+            match err.kind() {
+                    // if the string is empty, we return 0 shares out
+                    std::num::IntErrorKind::Empty => Ok(0),
+                    _ => Err(ContractError::ParseIntError {
+                    error: format!("scale:{}", err),
+                    value: join.share_out_amount,
+                    }),
+                }
+        },
+    }?;
 
     // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
     if (!return_scaled || token_in.is_zero()) {
@@ -110,7 +118,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
         base.amount
             .parse::<u128>()
             .map_err(|err| ContractError::ParseIntError {
-                error: err,
+                error: format!("base_amount:{}", err),
                 value: base.amount.clone(),
             })?,
     )
@@ -120,7 +128,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
                 .amount
                 .parse::<u128>()
                 .map_err(|err| ContractError::ParseIntError {
-                    error: err,
+                    error: format!("quote_amount:{}", err),
                     value: quote.amount.clone(),
                 })?,
         )
