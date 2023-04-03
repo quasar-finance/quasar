@@ -257,3 +257,118 @@ pub fn on_unbond(
         .add_attribute("action", "on_unbond")
         .add_attribute("unbond_id", unbond_id))
 }
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use crate::multitest::common::PrimitiveInstantiateMsg;
+    use crate::state::{BondingStub, BOND_STATE};
+    use crate::{
+        callback::on_bond,
+        msg::PrimitiveConfig,
+        multitest::common::{DENOM, LOCAL_DENOM},
+        state::{InvestmentInfo, INVESTMENT},
+        ContractError,
+    };
+    use cosmwasm_std::Addr;
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Decimal, Uint128,
+    };
+    use quasar_types::callback::BondResponse;
+
+    #[test]
+    fn fail_if_duplicate_bond_id() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("addr00001", &[]);
+
+        INVESTMENT
+            .save(
+                &mut deps.storage,
+                &InvestmentInfo {
+                    primitives: vec![
+                        PrimitiveConfig {
+                            weight: Decimal::from_str("0.33333333333").unwrap(),
+                            address: "addr00001".to_string(),
+                            init: crate::msg::PrimitiveInitMsg::LP(PrimitiveInstantiateMsg {
+                                lock_period: 64,
+                                pool_id: 1,
+                                pool_denom: "gamm/pool/1".to_string(),
+                                local_denom: LOCAL_DENOM.to_string(),
+                                base_denom: DENOM.to_string(),
+                                quote_denom: "uatom".to_string(),
+                                transfer_channel: "channel-0".to_string(),
+                                return_source_channel: "channel-0".to_string(),
+                                expected_connection: "connection-0".to_string(),
+                            }),
+                        },
+                        PrimitiveConfig {
+                            weight: Decimal::from_str("0.33333333333").unwrap(),
+                            address: "addr00002".to_string(),
+                            init: crate::msg::PrimitiveInitMsg::LP(PrimitiveInstantiateMsg {
+                                lock_period: 64,
+                                pool_id: 2,
+                                pool_denom: "gamm/pool/1".to_string(),
+                                local_denom: LOCAL_DENOM.to_string(),
+                                base_denom: DENOM.to_string(),
+                                quote_denom: "uatom".to_string(),
+                                transfer_channel: "channel-0".to_string(),
+                                return_source_channel: "channel-0".to_string(),
+                                expected_connection: "connection-0".to_string(),
+                            }),
+                        },
+                    ],
+                    owner: Addr::unchecked("owner".to_string()),
+                    min_withdrawal: 1u128.into(),
+                },
+            )
+            .unwrap();
+
+        let share_amount = 100u128;
+        let bond_id = "1".to_string();
+
+        BOND_STATE
+            .save(
+                &mut deps.storage,
+                bond_id.clone(),
+                &vec![
+                    BondingStub {
+                        address: "addr00001".to_string(),
+                        bond_response: None,
+                    },
+                    BondingStub {
+                        address: "addr00002".to_string(),
+                        bond_response: None,
+                    },
+                ],
+            )
+            .unwrap();
+
+        // first bond should work
+        let res = on_bond(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            share_amount.into(),
+            bond_id.clone(),
+        )
+        .unwrap();
+        assert_eq!(0, res.messages.len());
+
+        // second bond should fail
+        let res = on_bond(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            share_amount.into(),
+            bond_id,
+        )
+        .unwrap_err();
+        match res {
+            ContractError::DuplicateBondResponse { .. } => {}
+            _ => panic!("Unexpected error: {:?}", res),
+        }
+    }
+}

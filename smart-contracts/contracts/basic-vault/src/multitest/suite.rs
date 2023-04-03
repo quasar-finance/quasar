@@ -206,6 +206,7 @@ impl QuasarVaultSuite {
                     symbol: "ORN".to_string(),
                     decimals: 6,
                     min_withdrawal: 1u128.into(),
+                    total_cap: 100000000u128.into(),
                     primitives: vec![PrimitiveConfig {
                         weight: Decimal::from_str("0.33333333333")?,
                         address: primitive.to_string(),
