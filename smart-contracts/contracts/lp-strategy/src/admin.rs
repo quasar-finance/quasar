@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, Storage};
 
 use crate::{
     error::ContractError,
-    state::{ADMIN, DEPOSITOR},
+    state::{DEPOSITOR},
 };
 
 // check if sender is the admin
@@ -21,10 +21,9 @@ mod tests {
         let mut deps = mock_dependencies();
         let sender1 = Addr::unchecked("alice");
         let sender2 = Addr::unchecked("eve");
-
-        assert!(ADMIN.may_load(deps.as_mut().storage).unwrap().is_none());
+        
+        DEPOSITOR.save(deps.as_mut().storage, &sender1).unwrap();
         assert!(check_depositor(deps.as_mut().storage, &sender1).unwrap());
-        assert_eq!(&ADMIN.load(deps.as_mut().storage).unwrap(), &sender1);
         assert_eq!(check_depositor(deps.as_mut().storage, &sender1), Ok(true));
         assert_eq!(check_depositor(deps.as_mut().storage, &sender2), Ok(false));
     }

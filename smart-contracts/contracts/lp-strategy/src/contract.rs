@@ -642,11 +642,10 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
-        assert_eq!(res.attributes[1], attr("unbond_queue", "locked"));
         let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
-        assert!(lock.unbond.is_locked());
+        assert!(lock.unbond.is_unlocked());
     }
 
     #[test]

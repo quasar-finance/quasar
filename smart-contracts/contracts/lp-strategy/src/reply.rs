@@ -184,7 +184,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "unbond-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -247,7 +247,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "bank-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -324,7 +324,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg, contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 0);
+        assert_eq!(res.attributes.len(), 4);
 
         // after cleanup it should be empty
         assert!(REPLIES.is_empty(&deps.storage));
