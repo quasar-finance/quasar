@@ -1,4 +1,4 @@
-use std::clone;
+
 
 use cosmwasm_std::{
     to_binary, Addr, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
@@ -18,7 +18,6 @@ use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
-    bond::Bond,
     error::ContractError,
     helpers::{
         check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
@@ -32,7 +31,7 @@ use crate::{
 
 pub fn try_icq(
     storage: &mut dyn Storage,
-    querier: QuerierWrapper,
+    _querier: QuerierWrapper,
     env: Env,
 ) -> Result<Option<SubMsg>, ContractError> {
     if IBC_LOCK.load(storage)?.is_unlocked() {
@@ -69,7 +68,7 @@ pub fn try_icq(
         for pending_unbonding_claim in range.iter() {
             let (keys, unbond) = pending_unbonding_claim;
 
-            UNBONDING_CLAIMS.save(storage, keys.clone(), &unbond)?;
+            UNBONDING_CLAIMS.save(storage, keys.clone(), unbond)?;
             PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
         }
 
@@ -88,7 +87,7 @@ pub fn try_icq(
 
 pub fn prepare_full_query(
     storage: &mut dyn Storage,
-    env: Env,
+    _env: Env,
     bonding_amount: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
     let ica_channel = ICA_CHANNEL.load(storage)?;

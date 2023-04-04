@@ -1,4 +1,4 @@
-use std::{num::ParseIntError, str::FromStr};
+
 
 use cosmwasm_std::{
     Coin, ConversionOverflowError, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdError, Storage,
@@ -82,8 +82,8 @@ pub fn scale_join_pool(
     }?;
 
     // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
-    if (!return_scaled || token_in.is_zero()) {
-        return Ok(Uint128::new(join));
+    if !return_scaled || token_in.is_zero() {
+        Ok(Uint128::new(join))
     } else {
         Ok(Uint128::new(join).checked_multiply_ratio(actual, token_in)?)
     }

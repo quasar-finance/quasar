@@ -1,6 +1,6 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
-use crate::error_recovery::PendingReturningRecovery;
+
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
     get_usable_bond_balance, get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
@@ -13,9 +13,9 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, RawAmount, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+    LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK,
     IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK,
-    OSMO_LOCK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    OSMO_LOCK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT,
     TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
@@ -44,8 +44,7 @@ use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
     IbcTimeout, QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
@@ -247,7 +246,7 @@ pub fn ibc_packet_ack(
     NEW_RECOVERY_ACK.save(
         deps.storage,
         (
-            msg.original_packet.sequence.clone(),
+            msg.original_packet.sequence,
             msg.original_packet.src.channel_id.clone(),
         ),
         &msg.acknowledgement,

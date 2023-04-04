@@ -12,7 +12,7 @@ use quasar_types::ica::packet::ica_send;
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{create_callback_submsg, get_ica_address, is_contract_admin, SubMsgKind};
+use crate::helpers::{get_ica_address, is_contract_admin, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, do_transfer};
@@ -22,8 +22,7 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK,
-    OLD_PENDING_ACK, OLD_RECOVERY_ACK, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    IBC_TIMEOUT_TIME, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
     TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
@@ -190,16 +189,12 @@ pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractErro
         if !BOND_QUEUE.is_empty(deps.storage)? {
             lock.bond = IbcLock::Locked;
             res = res.add_attribute("bond_queue", "locked");
-        } else {
-            if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
-                lock = lock.lock_start_unbond();
-                res = res.add_attribute("start_unbond_queue", "locked");
-            } else {
-                if !UNBOND_QUEUE.is_empty(deps.storage)? {
-                    lock = lock.lock_unbond();
-                    res = res.add_attribute("unbond_queue", "locked");
-                }
-            }
+        } else if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_start_unbond();
+            res = res.add_attribute("start_unbond_queue", "locked");
+        } else if !UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_unbond();
+            res = res.add_attribute("unbond_queue", "locked");
         }
         if lock.is_unlocked() {
             res = res.add_attribute("IBC_LOCK", "unlocked");
