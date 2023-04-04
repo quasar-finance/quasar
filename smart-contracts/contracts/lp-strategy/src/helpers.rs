@@ -4,8 +4,8 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK, REPLIES,
-        SHARES, TRAPS, CONFIG,
+        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+        REPLIES, SHARES, TRAPS,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -74,7 +74,10 @@ pub fn create_callback_submsg(
             SubMsgKind::Callback(ContractCallback::Callback {
                 callback: from_binary(msg)?,
                 // if we send funds, we expect them to be in local denom
-                amount: funds.iter().find(|c| c.denom == local_denom).map(|val| val.amount),
+                amount: funds
+                    .iter()
+                    .find(|c| c.denom == local_denom)
+                    .map(|val| val.amount),
                 owner,
             })
         }
