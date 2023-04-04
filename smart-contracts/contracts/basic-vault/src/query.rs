@@ -4,8 +4,8 @@ use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, Que
 use crate::{
     execute::may_pay_with_ratio,
     msg::{
-        DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PendingUnbondsResponse,
-        PrimitiveInfo, TvlInfoResponse,
+        DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse, PendingBondsResponse,
+        PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
     },
     state::{
         InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
@@ -106,5 +106,13 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
     Ok(PendingUnbondsResponse {
         pending_unbonds,
         pending_unbond_ids: pending_unbond_ids.unwrap(),
+    })
+}
+
+pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBondsByIdResponse> {
+    let deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
+
+    Ok(PendingBondsByIdResponse {
+        pending_bonds: deposit_stubs,
     })
 }

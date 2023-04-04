@@ -217,18 +217,43 @@ impl Display for LockOnly {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Bond { id: String },
-    StartUnbond { id: String, share_amount: Uint128 },
-    Unbond { id: String },
-    SetDepositor { depositor: String },
+    Bond {
+        id: String,
+    },
+    StartUnbond {
+        id: String,
+        share_amount: Uint128,
+    },
+    Unbond {
+        id: String,
+    },
+    SetDepositor {
+        depositor: String,
+    },
     // accept a dispatched transfer from osmosis
-    AcceptReturningFunds { id: u64 },
+    AcceptReturningFunds {
+        id: u64,
+    },
     // try to close a channel where a timout occured
-    CloseChannel { channel_id: String },
-    ReturnTransfer { amount: Uint128 },
-    Ack { ack: IbcPacketAckMsg },
+    CloseChannel {
+        channel_id: String,
+    },
+    ReturnTransfer {
+        amount: Uint128,
+    },
+    Ack {
+        ack: IbcPacketAckMsg,
+    },
     TryIcq {},
-    Unlock { unlock_only: UnlockOnly },
-    ManualTimeout { seq: u64, channel: String },
-    Lock { lock_only: LockOnly },
+    Unlock {
+        unlock_only: UnlockOnly,
+    },
+    Lock {
+        lock_only: LockOnly,
+    },
+    ManualTimeout {
+        seq: u64,
+        channel: String,
+        should_unlock: bool,
+    },
 }

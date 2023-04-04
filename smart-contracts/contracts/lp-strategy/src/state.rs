@@ -68,7 +68,8 @@ pub(crate) const OLD_PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks"
 
 pub(crate) const NEW_PENDING_ACK: Map<(u64, String), IbcMsgKind> = Map::new("new_pending_acks");
 // The map to store trapped errors,
-pub(crate) const TRAPS: Map<(u64, String), Trap> = Map::new("traps");
+pub(crate) const OLD_TRAPS: Map<u64, Trap> = Map::new("traps");
+pub(crate) const TRAPS: Map<(u64, String), Trap> = Map::new("new_traps");
 
 // all vault related state items
 pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");

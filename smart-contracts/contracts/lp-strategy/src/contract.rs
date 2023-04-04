@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply, Response,
-    Uint128,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
+    Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -22,8 +22,8 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
-    OLD_RECOVERY_ACK, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    OLD_RECOVERY_ACK, OLD_TRAPS, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -114,8 +114,12 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
-        ExecuteMsg::ManualTimeout { seq, channel } => manual_timeout(deps, env, info, seq, channel),
         ExecuteMsg::Lock { lock_only } => execute_lock(deps, env, info, lock_only),
+        ExecuteMsg::ManualTimeout {
+            seq,
+            channel,
+            should_unlock,
+        } => manual_timeout(deps, env, info, seq, channel, should_unlock),
     }
 }
 
@@ -165,10 +169,17 @@ pub fn manual_timeout(
     info: MessageInfo,
     sequence: u64,
     channel: String,
+    should_unlock: bool,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    let response = on_packet_timeout(deps, sequence, channel, "timeout".to_string())?;
+    let response = on_packet_timeout(
+        deps,
+        sequence,
+        channel,
+        "timeout".to_string(),
+        should_unlock,
+    )?;
 
     Ok(Response::new()
         .add_attributes(response.attributes)
