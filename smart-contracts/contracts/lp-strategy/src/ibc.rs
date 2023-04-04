@@ -600,7 +600,12 @@ fn handle_lock_tokens_ack(
             };
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(
+                storage,
+                cosmos_msg,
+                claim.owner,
+                claim.bond_id,
+            )?);
         }
     }
 
@@ -649,7 +654,12 @@ fn handle_return_transfer_ack(
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in data.unbonds.iter() {
         let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
+        callback_submsgs.push(create_callback_submsg(
+            storage,
+            cosmos_msg,
+            unbond.owner.clone(),
+            unbond.id.clone(),
+        )?)
     }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {

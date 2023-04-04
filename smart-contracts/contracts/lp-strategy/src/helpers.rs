@@ -4,8 +4,8 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK, REPLIES,
-        SHARES, TRAPS,
+        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+        REPLIES, SHARES, TRAPS,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -59,6 +59,8 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 pub fn create_callback_submsg(
     storage: &mut dyn Storage,
     cosmos_msg: CosmosMsg,
+    owner: Addr,
+    callback_id: String,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -66,19 +68,22 @@ pub fn create_callback_submsg(
         id = val?.0 + 1;
     }
 
+    let local_denom = CONFIG.load(storage)?.local_denom;
     let data: SubMsgKind = match &cosmos_msg {
-        CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
+        CosmosMsg::Wasm(WasmMsg::Execute { msg, funds, .. }) => {
             SubMsgKind::Callback(ContractCallback::Callback {
                 callback: from_binary(msg)?,
-                amount: None,
-                // TODO: owner?
-                owner: Addr::unchecked(""),
+                // if we send funds, we expect them to be in local denom
+                amount: funds
+                    .iter()
+                    .find(|c| c.denom == local_denom)
+                    .map(|val| val.amount),
+                owner,
             })
         }
         CosmosMsg::Bank(bank_msg) => SubMsgKind::Callback(ContractCallback::Bank {
             bank_msg: bank_msg.to_owned(),
-            // TODO: unbond_id?
-            unbond_id: "".to_string(),
+            unbond_id: callback_id,
         }),
         _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
     };

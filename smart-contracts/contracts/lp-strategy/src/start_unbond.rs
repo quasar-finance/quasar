@@ -145,10 +145,14 @@ pub fn handle_start_unbond_ack(
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
-        if let Some(wasm_msg) = start_internal_unbond(storage, querier, env, unbond)? {
+        if let Some(msg) = start_internal_unbond(storage, querier, env, unbond.clone())? {
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
-            let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(
+                storage,
+                CosmosMsg::Wasm(msg),
+                unbond.owner,
+                unbond.id,
+            )?);
         }
     }
 
