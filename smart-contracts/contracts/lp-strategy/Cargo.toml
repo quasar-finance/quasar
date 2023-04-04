@@ -15,20 +15,22 @@ library = []
 
 
 [dependencies]
-uuid = { version = "1.1.2", default-features = false, features = ["v4","js"]}
+uuid = { version = "1.1.2", default-features = false, features = ["v4", "js"] }
 cw-utils = "0.16.0"
 cw2 = "0.16.0"
 cw20 = "0.16.0"
-cw20-base = { version = "0.16.0", features = ["library"]}
+cw20-base = { version = "0.16.0", features = ["library"] }
 cw-storage-plus = "1.0.1"
-cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"]}
+cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"] }
 cosmwasm-schema = { version = "1.0.0" }
-osmosis-std = {version = "0.13.2"}
+osmosis-std = { version = "0.13.2" }
 cosmos-sdk-proto = { version = "0.15", default-features = false }
 prost = { version = "0.11", default-features = false }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde-json-wasm = { version = "0.4.1", default-features = false }
 thiserror = { version = "1.0.23" }
-quasar-types = { path = "../../packages/quasar-types"}
+quasar-types = { path = "../../packages/quasar-types" }
 
+[dev-dependencies]
+cw-multi-test = "0.16.0"

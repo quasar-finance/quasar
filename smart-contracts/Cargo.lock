@@ -69,7 +69,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-asset",
  "cw-controllers 0.16.0",
- "cw-multi-test",
+ "cw-multi-test 0.16.2-alpha.0",
  "cw-storage-plus 1.0.1",
  "cw-utils 0.16.0",
  "cw2 0.16.0",
@@ -431,6 +431,25 @@ dependencies = [
 name = "cw-multi-test"
 version = "0.16.2-alpha.0"
 source = "git+https://github.com/njerschow/cw-multi-test.git#4cc9cc2dfb61f0f7f4edee38d6b56c25e424c68d"
+dependencies = [
+ "anyhow",
+ "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
+ "cw-utils 1.0.1",
+ "derivative",
+ "itertools",
+ "k256",
+ "prost 0.9.0",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-multi-test"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2eb84554bbfa6b66736abcd6a9bfdf237ee0ecb83910f746dff7f799093c80a"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
@@ -1005,7 +1024,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test",
+ "cw-multi-test 0.16.2-alpha.0",
  "cw-storage-plus 0.14.0",
  "cw-utils 0.14.0",
  "cw2 0.14.0",
@@ -1073,6 +1092,7 @@ dependencies = [
  "cosmos-sdk-proto 0.15.0",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-multi-test 0.16.2",
  "cw-storage-plus 1.0.1",
  "cw-utils 0.16.0",
  "cw2 0.16.0",
@@ -1317,7 +1337,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test",
+ "cw-multi-test 0.16.2-alpha.0",
  "cw-storage-plus 0.13.4",
  "cw2 0.13.4",
  "quasar-bindings",

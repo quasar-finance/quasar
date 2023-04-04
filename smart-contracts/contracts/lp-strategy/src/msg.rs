@@ -182,6 +182,7 @@ pub enum UnlockOnly {
     Bond,
     StartUnbond,
     Unbond,
+    Migration,
 }
 
 impl Display for UnlockOnly {
@@ -190,6 +191,26 @@ impl Display for UnlockOnly {
             UnlockOnly::Bond => write!(f, "bond"),
             UnlockOnly::StartUnbond => write!(f, "start_unbond"),
             UnlockOnly::Unbond => write!(f, "unbond"),
+            UnlockOnly::Migration => write!(f, "migration"),
+        }
+    }
+}
+
+#[cw_serde]
+pub enum LockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+    Migration,
+}
+
+impl Display for LockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LockOnly::Bond => write!(f, "bond"),
+            LockOnly::StartUnbond => write!(f, "start_unbond"),
+            LockOnly::Unbond => write!(f, "unbond"),
+            LockOnly::Migration => write!(f, "migration"),
         }
     }
 }
@@ -224,9 +245,8 @@ pub enum ExecuteMsg {
         ack: IbcPacketAckMsg,
     },
     TryIcq {},
-    Unlock {
-        unlock_only: UnlockOnly,
-    },
+    Unlock { unlock_only: UnlockOnly },
+    Lock { lock_only: LockOnly },
     ManualTimeout {
         seq: u64,
         channel: String,

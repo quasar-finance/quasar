@@ -16,7 +16,7 @@ use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, UnlockOnly};
+use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
@@ -114,12 +114,33 @@ pub fn execute(
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
         ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
         ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
+        ExecuteMsg::Lock { lock_only } => execute_lock(deps, env, info, lock_only),
         ExecuteMsg::ManualTimeout {
             seq,
             channel,
             should_unlock,
         } => manual_timeout(deps, env, info, seq, channel, should_unlock),
     }
+}
+
+pub fn execute_lock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    lock_only: LockOnly,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match lock_only {
+        LockOnly::Bond => lock = lock.lock_bond(),
+        LockOnly::StartUnbond => lock = lock.lock_start_unbond(),
+        LockOnly::Unbond => lock = lock.lock_unbond(),
+        LockOnly::Migration => lock = lock.lock_migration(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
 }
 
 pub fn execute_unlock(
@@ -129,14 +150,15 @@ pub fn execute_unlock(
     unlock_only: UnlockOnly,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut unlock = IBC_LOCK.load(deps.storage)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
 
     match unlock_only {
-        UnlockOnly::Bond => unlock = unlock.unlock_bond(),
-        UnlockOnly::StartUnbond => unlock = unlock.unlock_start_unbond(),
-        UnlockOnly::Unbond => unlock = unlock.unlock_unbond(),
+        UnlockOnly::Bond => lock = lock.unlock_bond(),
+        UnlockOnly::StartUnbond => lock = lock.unlock_start_unbond(),
+        UnlockOnly::Unbond => lock = lock.unlock_unbond(),
+        UnlockOnly::Migration => lock = lock.unlock_migration(),
     };
-    IBC_LOCK.save(deps.storage, &unlock)?;
+    IBC_LOCK.save(deps.storage, &lock)?;
 
     Ok(Response::new().add_attribute("unlock_only", unlock_only.to_string()))
 }
