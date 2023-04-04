@@ -107,7 +107,6 @@ pub fn execute(
         ExecuteMsg::AcceptReturningFunds { id } => {
             execute_accept_returning_funds(deps, &env, info, id)
         }
-        ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
@@ -245,28 +244,6 @@ pub fn execute_ack(
         IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
         IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
     }
-}
-
-pub fn execute_return_funds(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    amount: Uint128,
-) -> Result<Response, ContractError> {
-    let msg = transfer_batch_unbond(
-        deps.storage,
-        &env,
-        PendingReturningUnbonds {
-            unbonds: vec![ReturningUnbond {
-                amount: RawAmount::LpShares(Uint128::new(100)),
-                owner: info.sender,
-                id: String::from("1"),
-            }],
-        },
-        amount,
-    )?;
-
-    Ok(Response::new().add_submessage(msg))
 }
 
 pub fn execute_accept_returning_funds(
