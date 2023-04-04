@@ -46,7 +46,7 @@ pub fn update_user_reward_index(storage: &dyn Storage, user: &Addr) -> StdResult
     )
 }
 
-pub fn is_contract_owner(deps: &Deps, sus_owner: &Addr) -> Result<(), ContractError> {
+pub fn _is_contract_owner(deps: &Deps, sus_owner: &Addr) -> Result<(), ContractError> {
     let info = INVESTMENT.load(deps.storage)?;
     if info.owner.as_str() != sus_owner.as_str() {
         return Err(ContractError::Unauthorized {});

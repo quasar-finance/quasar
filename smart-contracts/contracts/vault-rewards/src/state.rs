@@ -134,7 +134,7 @@ impl Config {
         env: &Env,
         schedule: &DistributionSchedule,
     ) -> Result<(), VaultRewardsError> {
-        if &schedule.start <= &env.block.height {
+        if schedule.start <= env.block.height {
             return Err(VaultRewardsError::InvalidDistributionSchedule {
                 reason: "start must be in the future".to_string(),
             });
