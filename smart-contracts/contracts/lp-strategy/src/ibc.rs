@@ -404,6 +404,7 @@ pub fn handle_icq_ack(
     let actual = get_usable_bond_balance(storage, queued_bond_balance?)?;
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
+    // TODO remove scaled
     let scaled = scale_join_pool(storage, actual, join_pool, false)?;
 
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;

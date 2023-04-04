@@ -107,7 +107,7 @@ pub fn get_usable_bond_balance(
 
 pub fn get_usable_compound_balance(
     storage: &dyn Storage,
-    _total_balance: Uint128,
+    balance: Uint128,
 ) -> Result<Uint128, ContractError> {
     // two cases where we exclude funds, either transfer succeeded, but not ica, or transfer succeeded and subsequent ica failed
     let traps = TRAPS.range(storage, None, None, Order::Ascending);
@@ -120,6 +120,7 @@ pub fn get_usable_compound_balance(
             } else {
                 acc
             }
+        // if last msg was not succesful, we did not join the pool, so we have base_denom funds on the
         } else if let IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(pb)) = trap.step {
             pb.bonds.iter().fold(acc, |acc2, bond| {
                 if let RawAmount::LocalDenom(local_denom_amount) = &bond.raw_amount {
@@ -133,7 +134,7 @@ pub fn get_usable_compound_balance(
         }
     });
 
-    Ok(excluded_funds)
+    Ok(balance.saturating_sub(excluded_funds))
 }
 
 pub fn create_ibc_ack_submsg(
