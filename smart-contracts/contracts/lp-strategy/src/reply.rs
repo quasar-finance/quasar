@@ -90,7 +90,8 @@ pub fn handle_callback_reply(
                 callback,
                 amount,
                 owner,
-            } => if let Callback::UnbondResponse(ur) = callback {
+            } => {
+                if let Callback::UnbondResponse(ur) = callback {
                     let fund_path = FundPath::Unbond { id: ur.unbond_id };
                     match amount {
                         Some(amount) => {
@@ -102,12 +103,14 @@ pub fn handle_callback_reply(
                         // TODO: final release should not return an error but log
                         None => Err(ContractError::CallbackHasNoAmount {}),
                     }?;
-                },
+                }
+            }
             // if bank callback, add the amount to the claimable funds map
             ContractCallback::Bank {
                 bank_msg,
                 unbond_id,
-            } => if let BankMsg::Send { to_address, amount } = bank_msg {
+            } => {
+                if let BankMsg::Send { to_address, amount } = bank_msg {
                     CLAIMABLE_FUNDS.save(
                         deps.storage,
                         (
@@ -118,7 +121,8 @@ pub fn handle_callback_reply(
                         &amount[0].amount,
                     )?;
                     res = res.add_attribute("bank-callback-error", error.as_str());
-            },
+                }
+            }
         }
     }
 

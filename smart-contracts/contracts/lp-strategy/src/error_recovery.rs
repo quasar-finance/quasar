@@ -1,5 +1,3 @@
-
-
 use cosmwasm_std::{
     from_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
 };

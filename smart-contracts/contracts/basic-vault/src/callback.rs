@@ -1,13 +1,11 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, OverflowError, Response, SubMsg, Timestamp,
-    Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::{
     helpers::update_user_reward_index,
-    msg::PrimitiveConfig,
     state::{
         Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
         PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
@@ -45,9 +43,7 @@ pub fn on_bond(
         .iter()
         .any(|s| s.address == info.sender && s.bond_response.is_some())
     {
-        return Err(ContractError::DuplicateBondResponse {
-            bond_id: bond_id.clone(),
-        });
+        return Err(ContractError::DuplicateBondResponse { bond_id });
     }
 
     // update deposit state here before doing anything else & save!
@@ -103,17 +99,10 @@ pub fn on_bond(
 
     BOND_STATE.save(deps.storage, bond_id, &bond_stubs)?;
 
-    let total_weight = invest.primitives.iter().try_fold(
-        Decimal::zero(),
-        |acc: Decimal, p: &PrimitiveConfig| -> Result<Decimal, OverflowError> {
-            acc.checked_add(p.weight)
-        },
-    )?;
-
     // calculate shares to mint
     let shares_to_mint = bond_stubs.iter().zip(invest.primitives.iter()).try_fold(
         Uint128::zero(),
-        |acc, (s, pc)| -> Result<Uint128, ContractError> {
+        |acc, (s, _pc)| -> Result<Uint128, ContractError> {
             Ok(acc.checked_add(
                 // omfg pls dont look at this code, i will make it cleaner -> cleaner but still ugly :D
                 Decimal::from_uint128(
