@@ -229,6 +229,13 @@ impl QuasarVaultSuite {
             )
             .unwrap();
 
+        // set depositor on primitive as the vault address
+        let msg = PrimitiveExecuteMsg::SetDepositor {
+            depositor: vault.to_string(),
+        };
+        app.execute_contract(deployer.clone(), primitive.clone(), &msg, &[])
+            .unwrap();
+
         Ok(QuasarVaultSuite {
             app,
             user,

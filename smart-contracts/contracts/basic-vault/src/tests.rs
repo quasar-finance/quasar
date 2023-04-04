@@ -1440,7 +1440,7 @@ mod tests {
         let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
         let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
-        assert_eq!(balance.balance, Uint128::from(99u128));
+        assert_eq!(balance.balance, Uint128::from(300u128));
     }
 
     #[test]
@@ -1531,7 +1531,7 @@ mod tests {
         let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
         let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
-        assert_eq!(balance.balance, Uint128::from(99u128));
+        assert_eq!(balance.balance, Uint128::from(300u128));
 
         // start unbond
         let unbond_info = mock_info(TEST_DEPOSITOR, &[]);
@@ -1541,11 +1541,9 @@ mod tests {
         let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
         assert_eq!(unbond_res.messages.len(), 4);
         assert_eq!(unbond_res.attributes[2].key, "burnt");
-        assert_eq!(unbond_res.attributes[2].value, "99");
+        assert_eq!(unbond_res.attributes[2].value, "300");
         assert_eq!(unbond_res.attributes[3].key, "bond_id");
         assert_eq!(unbond_res.attributes[3].value, "2");
-        assert_eq!(unbond_res.attributes[6].key, "num_unbondable_ids");
-        assert_eq!(unbond_res.attributes[6].value, "0");
 
         // todo replace with a macro
         if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[0].msg {
@@ -1561,7 +1559,7 @@ mod tests {
                     from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(98u128));
+                    assert_eq!(share_amount, Uint128::from(99u128));
                 } else {
                     assert!(false);
                 }
@@ -1584,7 +1582,7 @@ mod tests {
                     from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(98u128));
+                    assert_eq!(share_amount, Uint128::from(99u128));
                 } else {
                     assert!(false);
                 }
@@ -1607,7 +1605,7 @@ mod tests {
                     from_binary(msg).unwrap()
                 {
                     assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(98u128));
+                    assert_eq!(share_amount, Uint128::from(99u128));
                 } else {
                     assert!(false);
                 }
@@ -1691,8 +1689,6 @@ mod tests {
         .unwrap();
 
         assert_eq!(do_unbond_res.messages.len(), 0);
-        assert_eq!(do_unbond_res.attributes[2].key, "num_unbondable_ids");
-        assert_eq!(do_unbond_res.attributes[2].value, "0");
 
         env.block.height += 4;
         env.block.time = env.block.time.plus_seconds(30);
@@ -1717,12 +1713,23 @@ mod tests {
             do_unbond_msg,
         )
         .unwrap();
+        // nothing here
+        assert_eq!(do_unbond_res.messages.len(), 0);
 
-        assert_eq!(do_unbond_res.messages.len(), 2);
-        assert_eq!(do_unbond_res.attributes[2].key, "num_unbondable_ids");
-        assert_eq!(do_unbond_res.attributes[2].value, "2");
+        let claim_msg = ExecuteMsg::Claim {};
+        let claim_res = execute(
+            deps.as_mut(),
+            env.clone(),
+            do_unbond_info.clone(),
+            claim_msg,
+        )
+        .unwrap();
 
-        if let CosmosMsg::Wasm(wasm_msg) = &do_unbond_res.messages[0].msg {
+        assert_eq!(claim_res.messages.len(), 2);
+        assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
+        assert_eq!(claim_res.attributes[2].value, "2");
+
+        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[0].msg {
             if let WasmMsg::Execute {
                 contract_addr,
                 msg,
@@ -1742,7 +1749,7 @@ mod tests {
         } else {
             assert!(false);
         }
-        if let CosmosMsg::Wasm(wasm_msg) = &do_unbond_res.messages[1].msg {
+        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[1].msg {
             if let WasmMsg::Execute {
                 contract_addr,
                 msg,
