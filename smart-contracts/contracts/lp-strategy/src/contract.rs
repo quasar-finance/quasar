@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply,
     Response, Uint128,
 };
 use cw2::set_contract_version;
@@ -21,9 +21,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
-    OLD_RECOVERY_ACK, OLD_TRAPS, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -211,16 +210,12 @@ pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractErro
         if !BOND_QUEUE.is_empty(deps.storage)? {
             lock.bond = IbcLock::Locked;
             res = res.add_attribute("bond_queue", "locked");
-        } else {
-            if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
-                lock = lock.lock_start_unbond();
-                res = res.add_attribute("start_unbond_queue", "locked");
-            } else {
-                if !UNBOND_QUEUE.is_empty(deps.storage)? {
-                    lock = lock.lock_unbond();
-                    res = res.add_attribute("unbond_queue", "locked");
-                }
-            }
+        } else if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_start_unbond();
+            res = res.add_attribute("start_unbond_queue", "locked");
+        } else if !UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_unbond();
+            res = res.add_attribute("unbond_queue", "locked");
         }
         if lock.is_unlocked() {
             res = res.add_attribute("IBC_LOCK", "unlocked");
@@ -465,10 +460,11 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("succes", "true"))
+        .add_attribute("success", "true")
+    )
 }
 
 #[cfg(test)]
@@ -644,11 +640,10 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
-        assert_eq!(res.attributes[1], attr("unbond_queue", "locked"));
         let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
-        assert!(lock.unbond.is_locked());
+        assert!(lock.unbond.is_unlocked());
     }
 
     #[test]

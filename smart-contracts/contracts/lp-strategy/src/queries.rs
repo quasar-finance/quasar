@@ -7,7 +7,7 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     bond::Bond,
-    error::{ContractError, Trap},
+    error::{Trap},
     helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
@@ -54,17 +54,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
     let pbq: Result<Vec<Bond>, StdError> = PENDING_BOND_QUEUE
         .iter(deps.storage)?
-        .map(|all| Ok(all?))
         .collect();
     let bq: Result<Vec<Bond>, StdError> =
-        BOND_QUEUE.iter(deps.storage)?.map(|all| Ok(all?)).collect();
+        BOND_QUEUE.iter(deps.storage)?.collect();
     let suq: Result<Vec<StartUnbond>, StdError> = START_UNBOND_QUEUE
         .iter(deps.storage)?
-        .map(|all| Ok(all?))
         .collect();
     let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE
         .iter(deps.storage)?
-        .map(|all| Ok(all?))
         .collect();
     Ok(GetQueuesResponse {
         pending_bond_queue: pbq?,
@@ -113,7 +110,7 @@ pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsRespons
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let ((seq, chan), kind) = res?;
-            Ok((format!("{}-{}", seq.to_string(), chan), kind))
+            Ok((format!("{}-{}", seq, chan), kind))
         })
         .collect();
     Ok(TrappedErrorsResponse { errors: trapped? })
@@ -203,7 +200,7 @@ pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let ((seq, chan), kind) = res?;
-            Ok((format!("{}-{}", seq.to_string(), chan), kind))
+            Ok((format!("{}-{}", seq, chan), kind))
         })
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })

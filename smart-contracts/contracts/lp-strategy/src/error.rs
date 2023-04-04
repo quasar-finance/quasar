@@ -3,7 +3,7 @@ use quasar_types::error::Error as QError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::num::ParseIntError;
+
 
 use crate::helpers::IbcMsgKind;
 use std::str::Utf8Error;
@@ -105,7 +105,7 @@ pub enum ContractError {
     DecodeError(#[from] prost::DecodeError),
 
     #[error("parse int error: {error} caused by {value}")]
-    ParseIntError { error: ParseIntError, value: String },
+    ParseIntError { error: String, value: String },
 
     #[error("parse int error: {error} caused by {value}")]
     ParseDecError { error: StdError, value: String },

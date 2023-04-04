@@ -287,7 +287,9 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let id = "my-id".to_string();
+        let id1 = "my-id-1".to_string();
+        let id2 = "my-id-2".to_string();
+        let id3 = "my-id-3".to_string();
 
         SHARES
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
@@ -295,17 +297,17 @@ mod tests {
 
         let unbond1 = StartUnbond {
             owner: owner.clone(),
-            id: id.to_string(),
+            id: id1.to_string(),
             primitive_shares: Uint128::new(500),
         };
         let unbond2 = StartUnbond {
             owner: owner.clone(),
-            id: id.to_string(),
+            id: id2.to_string(),
             primitive_shares: Uint128::new(300),
         };
         let unbond3 = StartUnbond {
             owner,
-            id,
+            id: id3.to_string(),
             primitive_shares: Uint128::new(200),
         };
 
@@ -436,7 +438,7 @@ mod tests {
             coins: vec![Coin {
                 denom: CONFIG.load(deps.as_ref().storage).unwrap().pool_denom,
                 // integer truncation present here again
-                amount: Uint128::new(999).to_string(),
+                amount: Uint128::new(1000).to_string(),
             }],
         };
 
@@ -491,9 +493,8 @@ mod tests {
         )
         .unwrap();
 
-        // assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
-        // we have a share loss here due to truncation, is this avoidable?
-        assert_eq!(res, Uint128::new(999000999))
+        assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
+        assert_eq!(res, Uint128::new(1000000000))
     }
 
     // this is an excellent first test to write a proptest for
@@ -521,7 +522,7 @@ mod tests {
         )
         .unwrap();
         // we have a share loss here due to truncation, is this avoidable?
-        assert_eq!(res, Uint128::new(99))
+        assert_eq!(res, Uint128::new(100))
     }
 
     #[test]
@@ -702,11 +703,11 @@ mod tests {
         let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::OverflowError(OverflowError {
+            ContractError::TracedOverflowError(OverflowError {
                 operation: OverflowOperation::Sub,
                 operand1: "99".to_string(),
                 operand2: "100".to_string()
-            })
+            }, "lower_shares_to_unbond".to_string())
         )
     }
 

@@ -1,6 +1,6 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
-use crate::error_recovery::PendingReturningRecovery;
+
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
     get_usable_bond_balance, get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
@@ -13,9 +13,9 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, RawAmount, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+    LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK,
     IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK,
-    OSMO_LOCK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    OSMO_LOCK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT,
     TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
@@ -44,8 +44,7 @@ use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
     IbcTimeout, QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
@@ -247,7 +246,7 @@ pub fn ibc_packet_ack(
     NEW_RECOVERY_ACK.save(
         deps.storage,
         (
-            msg.original_packet.sequence.clone(),
+            msg.original_packet.sequence,
             msg.original_packet.src.channel_id.clone(),
         ),
         &msg.acknowledgement,
@@ -336,7 +335,7 @@ pub fn handle_icq_ack(
             raw_balance
                 .parse::<u128>()
                 .map_err(|err| ContractError::ParseIntError {
-                    error: err,
+                    error: format!("base_balance:{}", err),
                     value: raw_balance.to_string(),
                 })?,
         );
@@ -358,10 +357,10 @@ pub fn handle_icq_ack(
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
-    let locked = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+    let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
     // parse the locked lp shares on Osmosis, a bit messy
-    let gamms = if locked.is_some() {
-        locked.unwrap().coins
+    let gamms = if let Some(lock) = lock {
+        lock.coins
     } else {
         vec![]
     };
@@ -508,7 +507,7 @@ fn handle_join_pool(
     let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
     let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
         ContractError::ParseIntError {
-            error: err,
+            error: format!("{}", err),
             value: resp.share_out_amount,
         }
     })?);
@@ -628,7 +627,7 @@ fn handle_exit_pool_ack(
     let total_exited_tokens =
         Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
             ContractError::ParseIntError {
-                error: err,
+                error: format!("{}", err),
                 value: msg.token_out_amount,
             }
         })?);
@@ -745,7 +744,7 @@ mod tests {
         IbcEndpoint, IbcOrder,
     };
 
-    use crate::test_helpers::default_setup;
+    use crate::{state::{Config, SIMULATED_JOIN_AMOUNT_IN}, test_helpers::default_setup};
 
     use super::*;
 
@@ -753,14 +752,44 @@ mod tests {
     fn handle_icq_ack_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-
         default_setup(deps.as_mut().storage).unwrap();
-        // base64 of '{"data":"ChA6DAoKCgV1b3NtbxIBMEg4ChA6DAoKCgVzdGFrZRIBMEg4ChY6EgoQCgtnYW1tL3Bvb2wvMRIBMEg4Cic6IwoSNDk2MjY4NTg3NDQ1NTczOTAwEg0KBXVvc21vEgQxMDAwSDgKBAgSSDgKGjoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEg4"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hBNkRBb0tDZ1YxYjNOdGJ4SUJNRWc0Q2hBNkRBb0tDZ1Z6ZEdGclpSSUJNRWc0Q2hZNkVnb1FDZ3RuWVcxdEwzQnZiMnd2TVJJQk1FZzRDaWM2SXdvU05EazJNalk0TlRnM05EUTFOVGN6T1RBd0VnMEtCWFZ2YzIxdkVnUXhNREF3U0RnS0JBZ1NTRGdLR2pvV0NoUXhMakF3TURBd01EQXdNREF3TURBd01EQXdNRWc0In0=").unwrap();
-        // queues are empty at this point so we just expect a succesful response without anyhting else
 
-        // commented below so it will compile
-        // handle_icq_ack(deps.as_mut().storage,  env, ack_bin).unwrap();
+        CONFIG
+            .save(
+                deps.as_mut().storage,
+                &Config {
+                    lock_period: 100,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom:
+                        "ibc/D176154B0C63D1F9C6DCFB4F70349EBF2E2B5A87A05902F57A6AE92B863E9AEC"
+                            .to_string(),
+                    local_denom: "ibc/local_osmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                },
+            )
+            .unwrap();
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+        SIMULATED_JOIN_AMOUNT_IN
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
+
+        // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
+        // queues are empty at this point so we just expect a succesful response without anyhting else
+        handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
 
     #[test]

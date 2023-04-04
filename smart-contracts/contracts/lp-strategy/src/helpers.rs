@@ -4,7 +4,7 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        Config, PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK,
+        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK,
         REPLIES, SHARES, TRAPS,
     },
     unbond::PendingReturningUnbonds,

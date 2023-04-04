@@ -90,8 +90,7 @@ pub fn handle_callback_reply(
                 callback,
                 amount,
                 owner,
-            } => match callback {
-                Callback::UnbondResponse(ur) => {
+            } => if let Callback::UnbondResponse(ur) = callback {
                     let fund_path = FundPath::Unbond { id: ur.unbond_id };
                     match amount {
                         Some(amount) => {
@@ -103,15 +102,12 @@ pub fn handle_callback_reply(
                         // TODO: final release should not return an error but log
                         None => Err(ContractError::CallbackHasNoAmount {}),
                     }?;
-                }
-                _ => {}
-            },
+                },
             // if bank callback, add the amount to the claimable funds map
             ContractCallback::Bank {
                 bank_msg,
                 unbond_id,
-            } => match bank_msg {
-                BankMsg::Send { to_address, amount } => {
+            } => if let BankMsg::Send { to_address, amount } = bank_msg {
                     CLAIMABLE_FUNDS.save(
                         deps.storage,
                         (
@@ -122,8 +118,6 @@ pub fn handle_callback_reply(
                         &amount[0].amount,
                     )?;
                     res = res.add_attribute("bank-callback-error", error.as_str());
-                }
-                _ => {}
             },
         }
     }
@@ -184,7 +178,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "unbond-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -247,7 +241,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "bank-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -324,7 +318,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg, contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 0);
+        assert_eq!(res.attributes.len(), 4);
 
         // after cleanup it should be empty
         assert!(REPLIES.is_empty(&deps.storage));

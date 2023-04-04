@@ -1,4 +1,4 @@
-use std::fmt;
+
 
 use cosmwasm_std::{
     from_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
@@ -15,16 +15,15 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
-    start_unbond::{do_begin_unlocking, do_start_unbond},
     state::{
         FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES,
         NEW_RECOVERY_ACK, TRAPS,
     },
-    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
+    unbond::{do_exit_swap, do_transfer_batch_unbond},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
-pub fn start_recovery(
+pub fn _start_recovery(
     deps: DepsMut,
     env: &Env,
     error_sequence: u64,
@@ -63,6 +62,7 @@ pub fn start_recovery(
 }
 
 // amount is the total amount we will try to transfer back to quasar, pending bond is the users the funds should return back to
+#[allow(dead_code)]
 fn handle_transfer_recovery(
     storage: &mut dyn Storage,
     env: &Env,
@@ -103,7 +103,7 @@ fn handle_transfer_recovery(
     )?)
 }
 
-fn handle_last_succesful_ica_recovery(
+fn _handle_last_succesful_ica_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     ica: IcaMessages,
@@ -124,17 +124,17 @@ fn handle_last_succesful_ica_recovery(
         IcaMessages::RecoveryReturnTransfer(_) => todo!(),
     }
 }
-fn handle_last_failed_ica_recovery(
-    storage: &mut dyn Storage,
-    env: &Env,
+fn _handle_last_failed_ica_recovery(
+    _storage: &mut dyn Storage,
+    _env: &Env,
     ica: IcaMessages,
-    trapped_id: u64,
+    _trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
     match ica {
         // recover by sending funds back
         // since the ica failed, we should transfer the funds back, we do not yet expect a raw amount to be set to lp shares
         // how do we know how much to return here?
-        IcaMessages::JoinSwapExternAmountIn(pending) => {
+        IcaMessages::JoinSwapExternAmountIn(_pending) => {
             todo!()
         }
         IcaMessages::LockTokens(_, _) => todo!(),
@@ -146,7 +146,7 @@ fn handle_last_failed_ica_recovery(
         // TODO, can they get rejoined to the lp pool here? Maybe????
         // probably gets compounded back again, how do we know here?, do we know at all?
         // we let the exit pool get autocompounded by the contract again, to recover from here, we start a start_unlock for all stuck funds
-        IcaMessages::ExitPool(pending) => {
+        IcaMessages::ExitPool(_pending) => {
             todo!()
             // let msg = do_begin_unlocking(storage, env, to_unbond)?;
         }
@@ -161,6 +161,7 @@ fn handle_last_failed_ica_recovery(
 
 // kinda messed up that we create duplicate code here, should be solved with a single unpacking function that accepts
 // a closure for IcsAck::Result and IcsAck::Error
+#[allow(dead_code)]
 fn de_succcesful_join(
     ack_bin: IbcAcknowledgement,
 ) -> Result<MsgJoinSwapExternAmountInResponse, ContractError> {
@@ -175,6 +176,7 @@ fn de_succcesful_join(
 }
 
 // if the join_swap was succesful, the refund path means we have to
+#[allow(dead_code)]
 fn handle_join_swap_recovery(
     storage: &mut dyn Storage,
     env: &Env,
@@ -193,7 +195,7 @@ fn handle_join_swap_recovery(
         if let RawAmount::LocalDenom(amount) = val.raw_amount {
             Ok(acc.checked_add(amount)?)
         } else {
-            return Err(ContractError::IncorrectRawAmount);
+            Err(ContractError::IncorrectRawAmount)
         }
     })?;
     // now we need to divide up the lp shares amount our users according to the individual local denom amount
@@ -208,7 +210,7 @@ fn handle_join_swap_recovery(
                     amount: RawAmount::LpShares(amount.checked_mul(total_lp)?.checked_div(
                         Uint128::new(join_result.share_out_amount.parse().map_err(|err| {
                             ContractError::ParseIntError {
-                                error: err,
+                                error: format!("join_swap_recovery:{}", err),
                                 value: join_result.share_out_amount.clone(),
                             }
                         })?),
@@ -270,13 +272,13 @@ fn handle_join_swap_recovery(
 
 // }
 
-fn handle_lock_recovery() {}
+fn _handle_lock_recovery() {}
 
-fn handle_begin_unlocking_recovery() {}
+fn _handle_begin_unlocking_recovery() {}
 
-fn handle_exit_pool_recovery() {}
+fn _handle_exit_pool_recovery() {}
 
-fn handle_return_transfer_recovery() {}
+fn _handle_return_transfer_recovery() {}
 
 // TODO refactor bonds/unbonds to a single struct item that is bidirectional with a direction enum
 // because we did not abstract nicely, we need a separate struct here

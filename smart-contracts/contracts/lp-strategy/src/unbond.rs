@@ -51,7 +51,7 @@ pub fn batch_unbond(
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
-    let lp_shares = LP_SHARES.load(storage)?;
+    let _lp_shares = LP_SHARES.load(storage)?;
 
     if UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
