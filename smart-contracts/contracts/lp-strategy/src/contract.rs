@@ -440,28 +440,10 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let ica_channel = ICA_CHANNEL.load(deps.storage)?;
-    let ica_address = get_ica_address(deps.storage, ica_channel.clone())?;
-    let config = CONFIG.load(deps.storage)?;
-
-    // lock a certain amount of base denom tokens
-    let lock = do_ibc_lock_tokens(
-        deps.storage,
-        ica_address,
-        coins(msg.to_lock_amount.into(), config.base_denom),
-    )?;
-
-    let pkt = ica_send(
-        lock,
-        ica_channel,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
-    )?;
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true")
-        .add_attribute("locking_tokens", msg.to_lock_amount)
-        .add_message(pkt))
+    )
 }
 
 #[cfg(test)]
