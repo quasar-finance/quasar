@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::num::ParseIntError;
 
+use crate::helpers::IbcMsgKind;
 use std::str::Utf8Error;
 use thiserror::Error;
-
-use crate::helpers::IbcMsgKind;
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -21,6 +20,8 @@ pub struct Trap {
     pub error: String,
     // the failed step and underlying values
     pub step: IbcMsgKind,
+    // last_succesful notes whether the IbcMsg of step was succesful on the counterparty chain
+    pub last_succesful: bool,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -46,7 +47,7 @@ pub enum ContractError {
     #[error("not enough claims")]
     InsufficientClaims,
 
-    #[error("not enough claims")]
+    #[error("not enough funds")]
     InsufficientFunds,
 
     #[error("base denom not found")]
@@ -75,6 +76,9 @@ pub enum ContractError {
 
     #[error("incorrect connection id")]
     IncorrectConnection,
+
+    #[error("raw ack in recovery could not be handled")]
+    IncorrectRecoveryAck,
 
     #[error("no timestamp time found for ibc packets")]
     NoTimestampTime,
@@ -109,6 +113,9 @@ pub enum ContractError {
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
 
+    #[error("{0}, location {1}")]
+    TracedOverflowError(OverflowError, String),
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
@@ -123,4 +130,7 @@ pub enum ContractError {
 
     #[error("could not serialize to json")]
     SerdeJsonSer,
+
+    #[error("The Callback has no amount set")]
+    CallbackHasNoAmount,
 }

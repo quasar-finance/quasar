@@ -1,11 +1,14 @@
+mod admin;
 pub mod bond;
 pub mod contract;
 pub mod error;
+mod error_recovery;
 pub mod helpers;
 pub mod ibc;
 pub mod ibc_lock;
 mod ibc_util;
 pub mod icq;
+pub mod integration_tests;
 pub mod msg;
 pub mod queries;
 pub mod reply;

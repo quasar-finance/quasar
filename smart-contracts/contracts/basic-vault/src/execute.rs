@@ -4,16 +4,17 @@ use cosmwasm_std::{
 };
 
 use cw20_base::contract::execute_burn;
-use cw_utils::PaymentError;
+use cw_utils::{nonpayable, PaymentError};
+
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::can_unbond_from_primitive;
+use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
-    BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+    BOND_STATE, CAP, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 use crate::types::FromUint128;
 
@@ -23,7 +24,7 @@ pub fn must_pay_multi(funds: &[Coin], denom: &str) -> Result<Uint128, PaymentErr
     match funds.iter().find(|c| c.denom == denom) {
         Some(coin) => {
             if coin.amount.is_zero() {
-                Err(PaymentError::NoFunds {})
+                Err(PaymentError::MissingDenom(denom.to_string()))
             } else {
                 Ok(coin.amount)
             }
@@ -225,12 +226,20 @@ pub fn bond(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
+    let invest = INVESTMENT.load(deps.storage)?;
+
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
-        return Err(ContractError::NoFunds {});
+        return Err(ContractError::EmptyBalance {
+            denom: invest
+                .primitives
+                .iter()
+                .fold("".to_string(), |acc, p| match &p.init {
+                    crate::msg::PrimitiveInitMsg::LP(lp_init) => acc + &lp_init.local_denom + ",",
+                }),
+        });
     }
 
     // load vault info & sequence number
-    let invest = INVESTMENT.load(deps.storage)?;
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
 
     // find recipient
@@ -243,6 +252,17 @@ pub fn bond(
 
     let (primitive_funding_amounts, remainder) =
         may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
+
+    CAP.update(
+        deps.storage,
+        |cap| -> Result<crate::state::Cap, ContractError> {
+            Ok(cap.update_current(
+                primitive_funding_amounts
+                    .iter()
+                    .fold(Uint128::zero(), |acc, val| val.amount + acc),
+            )?)
+        },
+    )?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
@@ -305,22 +325,24 @@ pub fn unbond(
     info: MessageInfo,
     amount: Option<Uint128>,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
     let start_unbond_response =
         do_start_unbond(deps.branch(), &env, &info, amount)?.unwrap_or(Response::new());
 
-    let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
+    // let unbond_response = do_unbond(deps, &env, &info)?.unwrap_or(Response::new());
 
     let start_unbond_msgs = start_unbond_response
         .messages
         .iter()
         .map(|sm| sm.msg.clone());
-    let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
+    // let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
 
     Ok(Response::new()
         .add_messages(start_unbond_msgs)
-        .add_messages(unbond_msgs)
-        .add_attributes(start_unbond_response.attributes)
-        .add_attributes(unbond_response.attributes))
+        // .add_messages(unbond_msgs)
+        .add_attributes(start_unbond_response.attributes))
+    // .add_attributes(unbond_response.attributes))
 }
 
 pub fn do_start_unbond(
@@ -346,6 +368,8 @@ pub fn do_start_unbond(
     }
 
     // burn if balance is more than or equal to amount (handled in execute_burn)
+    let update_user_rewards_idx_msg =
+        update_user_reward_index(deps.as_ref().storage, &info.sender)?;
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
@@ -358,7 +382,6 @@ pub fn do_start_unbond(
             // lets get the amount of tokens to unbond for this primitive
             let primitive_share_amount = Decimal::from_uint128(unbond_amount)
                 .checked_mul(pc.weight)?
-                .checked_mul(Decimal::from_uint128(num_primitives))?
                 .to_uint_floor();
 
             unbonding_stubs.push(UnbondingStub {
@@ -409,6 +432,7 @@ pub fn do_start_unbond(
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
+            .add_message(update_user_rewards_idx_msg)
             .add_attributes(vec![
                 Attribute {
                     key: "action".to_string(),
@@ -437,39 +461,46 @@ pub fn do_unbond(
     env: &Env,
     info: &MessageInfo,
 ) -> Result<Option<Response>, ContractError> {
-    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, info.sender.clone())?;
+    let pending_unbond_ids_opt = PENDING_UNBOND_IDS.may_load(deps.storage, info.sender.clone())?;
 
-    let mut unbond_msgs: Vec<WasmMsg> = vec![];
-    for unbond_id in pending_unbond_ids.iter() {
-        let unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
-        let mut current_unbond_msgs = find_and_return_unbondable_msgs(
-            deps.branch(),
-            env,
-            info,
-            unbond_id,
-            unbond_stubs.stub,
-        )?;
-        unbond_msgs.append(current_unbond_msgs.as_mut());
+    match pending_unbond_ids_opt {
+        Some(pending_unbond_ids) => {
+            let mut unbond_msgs: Vec<WasmMsg> = vec![];
+            for unbond_id in pending_unbond_ids.iter() {
+                let unbond_stubs_opt = UNBOND_STATE.may_load(deps.storage, unbond_id.clone())?;
+                if let Some(unbond_stubs) = unbond_stubs_opt {
+                    let mut current_unbond_msgs = find_and_return_unbondable_msgs(
+                        deps.branch(),
+                        env,
+                        info,
+                        unbond_id,
+                        unbond_stubs.stub,
+                    )?;
+                    unbond_msgs.append(current_unbond_msgs.as_mut());
+                }
+            }
+
+            Ok(Some(
+                Response::new()
+                    .add_messages(unbond_msgs.clone())
+                    .add_attributes(vec![
+                        Attribute {
+                            key: "action".to_string(),
+                            value: "unbond".to_string(),
+                        },
+                        Attribute {
+                            key: "from".to_string(),
+                            value: info.sender.to_string(),
+                        },
+                        Attribute {
+                            key: "num_unbondable_ids".to_string(),
+                            value: unbond_msgs.len().to_string(),
+                        },
+                    ]),
+            ))
+        }
+        None => Ok(None),
     }
-
-    Ok(Some(
-        Response::new()
-            .add_messages(unbond_msgs.clone())
-            .add_attributes(vec![
-                Attribute {
-                    key: "action".to_string(),
-                    value: "unbond".to_string(),
-                },
-                Attribute {
-                    key: "from".to_string(),
-                    value: info.sender.to_string(),
-                },
-                Attribute {
-                    key: "num_unbondable_ids".to_string(),
-                    value: unbond_msgs.len().to_string(),
-                },
-            ]),
-    ))
 }
 
 pub fn find_and_return_unbondable_msgs(
@@ -501,5 +532,7 @@ pub fn find_and_return_unbondable_msgs(
 
 // claim is equivalent to calling unbond with amount: 0
 pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
     Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
 }

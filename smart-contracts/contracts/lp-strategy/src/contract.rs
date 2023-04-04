@@ -1,33 +1,29 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    Reply, Response, StdResult, Uint128,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
+    Response, Uint128,
 };
 use cw2::set_contract_version;
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
 
+use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::SubMsgKind;
-use crate::ibc::{handle_failing_ack, handle_succesful_ack};
+use crate::helpers::{is_contract_admin, SubMsgKind};
+use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::queries::{
-    handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
-    handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
-    handle_list_primitive_shares, handle_list_replies, handle_list_unbonding_claims, handle_lock,
-    handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_BALANCE,
-    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OLD_PENDING_ACK,
+    OLD_RECOVERY_ACK, OLD_TRAPS, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
 
@@ -39,12 +35,16 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // check valid token info
     msg.validate()?;
+
+    // ADMIN here is only used to decide who can deposit
+    ADMIN.save(deps.storage, &info.sender)?;
+
     CONFIG.save(
         deps.storage,
         &Config {
@@ -62,6 +62,8 @@ pub fn instantiate(
 
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
+    OSMO_LOCK.save(deps.storage, &u64::MAX)?;
+
     LP_SHARES.save(
         deps.storage,
         &LpCache {
@@ -71,8 +73,7 @@ pub fn instantiate(
         },
     )?;
 
-    // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
-    ICA_BALANCE.save(deps.storage, &Uint128::one())?;
+    TOTAL_VAULT_BALANCE.save(deps.storage, &Uint128::zero())?;
 
     TIMED_OUT.save(deps.storage, &false)?;
 
@@ -85,8 +86,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-        SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
-        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
+        SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending, channel),
+        SubMsgKind::Ack(seq, channel) => handle_ack_reply(deps, msg, seq, channel),
         SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
@@ -111,6 +112,92 @@ pub fn execute(
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
+        ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
+        ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
+        ExecuteMsg::Lock { lock_only } => execute_lock(deps, env, info, lock_only),
+        ExecuteMsg::ManualTimeout {
+            seq,
+            channel,
+            should_unlock,
+        } => manual_timeout(deps, env, info, seq, channel, should_unlock),
+    }
+}
+
+pub fn execute_lock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    lock_only: LockOnly,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match lock_only {
+        LockOnly::Bond => lock = lock.lock_bond(),
+        LockOnly::StartUnbond => lock = lock.lock_start_unbond(),
+        LockOnly::Unbond => lock = lock.lock_unbond(),
+        LockOnly::Migration => lock = lock.lock_migration(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
+}
+
+pub fn execute_unlock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    unlock_only: UnlockOnly,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match unlock_only {
+        UnlockOnly::Bond => lock = lock.unlock_bond(),
+        UnlockOnly::StartUnbond => lock = lock.unlock_start_unbond(),
+        UnlockOnly::Unbond => lock = lock.unlock_unbond(),
+        UnlockOnly::Migration => lock = lock.unlock_migration(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("unlock_only", unlock_only.to_string()))
+}
+
+pub fn manual_timeout(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sequence: u64,
+    channel: String,
+    should_unlock: bool,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+
+    let response = on_packet_timeout(
+        deps,
+        sequence,
+        channel,
+        "timeout".to_string(),
+        should_unlock,
+    )?;
+
+    Ok(Response::new()
+        .add_attributes(response.attributes)
+        .add_events(response.events)
+        .add_submessages(response.messages))
+}
+
+pub fn execute_set_depositor(
+    deps: DepsMut,
+    info: MessageInfo,
+    depositor: String,
+) -> Result<Response, ContractError> {
+    if info.sender == ADMIN.load(deps.storage)? {
+        let depositor_addr = deps.api.addr_validate(depositor.as_str())?;
+        DEPOSITOR.save(deps.storage, &depositor_addr)?;
+        Ok(Response::new().add_attribute("set-depositor", depositor))
+    } else {
+        Err(ContractError::Unauthorized)
     }
 }
 
@@ -124,14 +211,16 @@ pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractErro
         if !BOND_QUEUE.is_empty(deps.storage)? {
             lock.bond = IbcLock::Locked;
             res = res.add_attribute("bond_queue", "locked");
-        }
-        if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_start_unbond();
-            res = res.add_attribute("start_unbond_queue", "locked");
-        }
-        if !UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_unbond();
-            res = res.add_attribute("unbond_queue", "locked");
+        } else {
+            if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+                lock = lock.lock_start_unbond();
+                res = res.add_attribute("start_unbond_queue", "locked");
+            } else {
+                if !UNBOND_QUEUE.is_empty(deps.storage)? {
+                    lock = lock.lock_unbond();
+                    res = res.add_attribute("unbond_queue", "locked");
+                }
+            }
         }
         if lock.is_unlocked() {
             res = res.add_attribute("IBC_LOCK", "unlocked");
@@ -211,6 +300,10 @@ pub fn execute_bond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     let msg = do_bond(deps.storage, deps.querier, env, info.clone(), id)?;
 
     // if msg is some, we are dispatching an icq
@@ -237,6 +330,12 @@ pub fn execute_start_unbond(
     id: String,
     share_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     do_start_unbond(
         deps.storage,
         StartUnbond {
@@ -270,6 +369,12 @@ pub fn execute_unbond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     do_unbond(deps.storage, &env, info.sender.clone(), id)?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
@@ -361,46 +466,19 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // update the config
-    CONFIG.save(deps.storage, &msg.config)?;
-
-    IBC_LOCK.save(deps.storage, &Lock::new())?;
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("succes", "true"))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
-        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
-        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
-        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
-        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
-        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
-        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
-        QueryMsg::UnbondingClaim { addr, id } => {
-            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
-        }
-        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
-        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
-        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        attr,
-        testing::{mock_dependencies, mock_env},
+        attr, coins,
+        testing::{mock_dependencies, mock_env, mock_info},
         Addr, Timestamp,
     };
+    use cw_utils::PaymentError;
 
     use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
 
@@ -571,5 +649,32 @@ mod tests {
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
         assert!(lock.unbond.is_locked());
+    }
+
+    #[test]
+    fn test_start_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("pepe", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::StartUnbond {
+            id: "bond_id_1".to_string(),
+            share_amount: Uint128::new(69),
+        };
+
+        let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("addr0000", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::Unbond {
+            id: "unbond_id".to_string(),
+        };
+
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
     }
 }

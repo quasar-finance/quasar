@@ -4,8 +4,8 @@ use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, Que
 use crate::{
     execute::may_pay_with_ratio,
     msg::{
-        DepositRatioResponse, InvestmentResponse, PendingBondsResponse, PendingUnbondsResponse,
-        PrimitiveInfo, TvlInfoResponse,
+        DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse, PendingBondsResponse,
+        PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
     },
     state::{
         InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
@@ -68,26 +68,25 @@ pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRat
 }
 
 pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBondsResponse> {
-    let pending_bond_ids = PENDING_BOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let pending_bond_ids = PENDING_BOND_IDS.may_load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
     pending_bond_ids
         .iter()
         .try_for_each(|id| -> StdResult<()> {
             let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string())?;
-
             pending_bonds.append(deposit_stubs.as_mut());
             Ok(())
         })?;
 
     Ok(PendingBondsResponse {
         pending_bonds,
-        pending_bond_ids,
+        pending_bond_ids: pending_bond_ids.unwrap(),
     })
 }
 
 pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUnbondsResponse> {
-    let pending_unbond_ids = PENDING_UNBOND_IDS.load(deps.storage, Addr::unchecked(address))?;
+    let pending_unbond_ids = PENDING_UNBOND_IDS.may_load(deps.storage, Addr::unchecked(address))?;
     let mut pending_unbonds: Vec<Unbond> = vec![];
 
     pending_unbond_ids
@@ -100,6 +99,14 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
 
     Ok(PendingUnbondsResponse {
         pending_unbonds,
-        pending_unbond_ids,
+        pending_unbond_ids: pending_unbond_ids,
+    })
+}
+
+pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBondsByIdResponse> {
+    let deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
+
+    Ok(PendingBondsByIdResponse {
+        pending_bonds: deposit_stubs,
     })
 }

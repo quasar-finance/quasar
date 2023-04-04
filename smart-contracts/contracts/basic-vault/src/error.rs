@@ -12,6 +12,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Vault is over cap")]
+    OverCap {},
+
     #[error("Validator '{validator}' not in current validator set")]
     NotInValidatorSet { validator: String },
 
@@ -47,6 +50,9 @@ pub enum ContractError {
 
     #[error("Invalid zero amount")]
     InvalidZeroAmount {},
+
+    #[error("Duplicate bond response for bond_id {bond_id}")]
+    DuplicateBondResponse { bond_id: String },
 
     #[error("Allowance is expired")]
     Expired {},

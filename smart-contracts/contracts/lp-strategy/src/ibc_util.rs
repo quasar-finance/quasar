@@ -8,7 +8,10 @@ use osmosis_std::{
     shim::Duration,
     types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v1beta1::MsgJoinSwapExternAmountIn, lockup::MsgLockTokens},
+        osmosis::{
+            gamm::v1beta1::{MsgJoinSwapExternAmountIn, QueryCalcJoinPoolSharesResponse},
+            lockup::MsgLockTokens,
+        },
     },
 };
 
@@ -18,8 +21,8 @@ use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
-        OngoingDeposit, PendingBond, CONFIG, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
-        SIMULATED_JOIN_RESULT,
+        OngoingDeposit, PendingBond, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
+        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
     },
 };
 
@@ -38,9 +41,9 @@ pub fn do_transfer(
         amount,
     };
 
-    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(300));
+    let timeout = IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
     let transfer = IbcMsg::Transfer {
-        channel_id,
+        channel_id: channel_id.clone(),
         to_address,
         amount: coin,
         timeout,
@@ -53,7 +56,31 @@ pub fn do_transfer(
             amount,
         },
         transfer,
+        channel_id,
     )?)
+}
+
+pub fn scale_join_pool(
+    storage: &dyn Storage,
+    actual: Uint128,
+    join: QueryCalcJoinPoolSharesResponse,
+    return_scaled: bool,
+) -> Result<Uint128, ContractError> {
+    let token_in = SIMULATED_JOIN_AMOUNT_IN.load(storage)?;
+    let join = join
+        .share_out_amount
+        .parse()
+        .map_err(|err| ContractError::ParseIntError {
+            error: err,
+            value: join.share_out_amount,
+        })?;
+
+    // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
+    if (!return_scaled || token_in.is_zero()) {
+        return Ok(Uint128::new(join));
+    } else {
+        Ok(Uint128::new(join).checked_multiply_ratio(actual, token_in)?)
+    }
 }
 
 pub fn consolidate_exit_pool_amount_into_local_denom(
@@ -106,15 +133,12 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(
-        Uint128::from_str(&last_sim_join_pool_result.share_out_amount)?
-            .checked_multiply_ratio(95u128, 100u128)?,
-    )
+    Ok(last_sim_join_pool_result.checked_multiply_ratio(95u128, 100u128)?)
 }
 
 // exit shares should never be more than total shares here
 pub fn calculate_token_out_min_amount(
-    storage: &mut dyn Storage,
+    storage: &dyn Storage,
     exit_lp_shares: Uint128,
     total_locked_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
@@ -154,8 +178,8 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
 
     let pkt = ica_send::<MsgJoinSwapExternAmountIn>(
         msg,
-        ica_channel,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        ica_channel.clone(),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
     Ok(create_ibc_ack_submsg(
@@ -164,6 +188,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
             bonds: deposits,
         })),
         pkt,
+        ica_channel,
     )?)
 }
 
@@ -273,16 +298,7 @@ mod tests {
     fn test_calculate_share_out_min_amount() {
         let mut deps = mock_dependencies();
         SIMULATED_JOIN_RESULT
-            .save(
-                deps.as_mut().storage,
-                &QueryCalcJoinPoolSharesResponse {
-                    share_out_amount: "999999".to_string(),
-                    tokens_out: vec![OsmoCoin {
-                        denom: String::from("some-coin, does not matter"),
-                        amount: "100".to_string(),
-                    }],
-                },
-            )
+            .save(deps.as_mut().storage, &Uint128::new(999999))
             .unwrap();
 
         let min_amount_out = calculate_share_out_min_amount(deps.as_mut().storage).unwrap();

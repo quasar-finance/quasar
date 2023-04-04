@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Uint128,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -10,23 +10,29 @@ use cw20_base::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
     execute_transfer_from, query_allowance,
 };
-use cw20_base::contract::{execute_burn, execute_send, execute_transfer, query_balance};
+use cw20_base::contract::{
+    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
+};
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
+use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
+use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
 use crate::execute::{bond, claim, unbond};
+use crate::helpers::update_user_reward_index;
 use crate::msg::{
-    ExecuteMsg, GetDebugResponse, InstantiateMsg, MigrateMsg, QueryMsg, VaultTokenInfoResponse,
+    ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
+    QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
-    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,
-    query_tvl_info,
+    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
+    query_pending_unbonds, query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY,
+    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
+    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -46,7 +52,7 @@ pub fn instantiate(
         total_supply: Uint128::zero(),
         // set self as minter, so we can properly execute mint and burn
         mint: Some(MinterData {
-            minter: env.contract.address,
+            minter: env.contract.address.clone(),
             cap: None,
         }),
     };
@@ -56,6 +62,8 @@ pub fn instantiate(
     };
     TOKEN_INFO.save(deps.storage, &token_info)?;
     ADDITIONAL_TOKEN_INFO.save(deps.storage, &additional_info)?;
+
+    CAP.save(deps.storage, &Cap::new(info.sender.clone(), msg.total_cap))?;
 
     for prim in msg.primitives.iter() {
         let config: ConfigResponse = deps
@@ -80,7 +88,7 @@ pub fn instantiate(
     }
 
     let mut invest = InvestmentInfo {
-        owner: info.sender,
+        owner: info.sender.clone(),
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives,
     };
@@ -96,7 +104,22 @@ pub fn instantiate(
 
     DEBUG_TOOL.save(deps.storage, &"Empty".to_string())?;
 
-    Ok(Response::new())
+    let init_vault_rewards = SubMsg::reply_always(
+        WasmMsg::Instantiate {
+            admin: Some(info.sender.to_string()),
+            code_id: msg.vault_rewards_code_id,
+            msg: to_binary(&VaultRewardsInstantiateMsg {
+                vault_token: env.contract.address.to_string(),
+                reward_token: msg.reward_token,
+                distribution_schedules: msg.reward_distribution_schedules,
+            })?,
+            funds: vec![],
+            label: "vault-rewards".to_string(),
+        },
+        REPLY_INIT_VAULT_REWARDS,
+    );
+
+    Ok(Response::new().add_submessage(init_vault_rewards))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -134,14 +157,35 @@ pub fn execute(
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
-            Ok(execute_transfer(deps, env, info, recipient, amount)?)
+            let recipient = deps.api.addr_validate(&recipient)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &recipient)?,
+            ];
+            Ok(
+                execute_transfer(deps, env, info, recipient.to_string(), amount)?
+                    .add_messages(update_user_reward_indexes),
+            )
         }
-        ExecuteMsg::Burn { amount } => Ok(execute_burn(deps, env, info, amount)?),
+        ExecuteMsg::Burn { amount } => {
+            let update_user_reward_index = update_user_reward_index(deps.storage, &info.sender)?;
+            Ok(execute_burn(deps, env, info, amount)?.add_message(update_user_reward_index))
+        }
         ExecuteMsg::Send {
             contract,
             amount,
             msg,
-        } => Ok(execute_send(deps, env, info, contract, amount, msg)?),
+        } => {
+            let contract = deps.api.addr_validate(&contract)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &contract)?,
+            ];
+            Ok(
+                execute_send(deps, env, info, contract.to_string(), amount, msg)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
         ExecuteMsg::IncreaseAllowance {
             spender,
             amount,
@@ -160,21 +204,97 @@ pub fn execute(
             owner,
             recipient,
             amount,
-        } => Ok(execute_transfer_from(
-            deps, env, info, owner, recipient, amount,
-        )?),
+        } => {
+            let recipient = deps.api.addr_validate(&recipient)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &recipient)?,
+            ];
+            Ok(
+                execute_transfer_from(deps, env, info, owner, recipient.to_string(), amount)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
         ExecuteMsg::BurnFrom { owner, amount } => {
-            Ok(execute_burn_from(deps, env, info, owner, amount)?)
+            let owner = deps.api.addr_validate(&owner)?;
+            let update_user_reward_index = update_user_reward_index(deps.storage, &owner)?;
+            Ok(
+                execute_burn_from(deps, env, info, owner.to_string(), amount)?
+                    .add_message(update_user_reward_index),
+            )
         }
         ExecuteMsg::SendFrom {
             owner,
             contract,
             amount,
             msg,
-        } => Ok(execute_send_from(
-            deps, env, info, owner, contract, amount, msg,
-        )?),
+        } => {
+            let contract = deps.api.addr_validate(&contract)?;
+            let update_user_reward_indexes = vec![
+                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &contract)?,
+            ];
+            Ok(
+                execute_send_from(deps, env, info, owner, contract.to_string(), amount, msg)?
+                    .add_messages(update_user_reward_indexes),
+            )
+        }
+        // calls the TryIcq ExecuteMsg in the lp-strategy contract
+        ExecuteMsg::ClearCache {} => {
+            let try_icq_msg = lp_strategy::msg::ExecuteMsg::TryIcq {};
+
+            let mut msgs: Vec<WasmMsg> = vec![];
+
+            let primitives = INVESTMENT.load(deps.storage)?.primitives;
+            primitives.iter().try_for_each(
+                |pc: &PrimitiveConfig| -> Result<(), ContractError> {
+                    let clear_cache_msg = WasmMsg::Execute {
+                        contract_addr: pc.address.to_string(),
+                        funds: vec![],
+                        msg: to_binary(&try_icq_msg)?,
+                    };
+                    msgs.push(clear_cache_msg);
+                    Ok(())
+                },
+            )?;
+            Ok(Response::new().add_messages(msgs))
+        }
     }
+}
+
+pub const REPLY_INIT_VAULT_REWARDS: u64 = 777;
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        REPLY_INIT_VAULT_REWARDS => match msg.result {
+            SubMsgResult::Ok(res) => {
+                let vault_rewards =
+                    parse_instantiate_response_data(res.data.unwrap().as_slice()).unwrap();
+                update_rewards_contract(deps, vault_rewards.contract_address)
+            }
+            SubMsgResult::Err(e) => Err(StdError::generic_err(format!(
+                "error instantiating vault rewards contract: {e:?}"
+            )))?,
+        },
+        _ => {
+            unimplemented!()
+        }
+    }
+}
+
+fn update_rewards_contract(
+    deps: DepsMut,
+    rewards_contract: String,
+) -> Result<Response, ContractError> {
+    deps.api.addr_validate(&rewards_contract)?;
+
+    VAULT_REWARDS.save(deps.storage, &deps.api.addr_validate(&rewards_contract)?)?;
+
+    Ok(Response::default().add_attributes(vec![
+        ("action", "init_vault_rewards"),
+        ("contract_address", rewards_contract.as_str()),
+    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -184,7 +304,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
         QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_vault_token_info(deps)?),
+        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
+        QueryMsg::AdditionalTokenInfo {} => to_binary(&query_vault_token_info(deps)?),
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::Allowance { owner, spender } => {
             to_binary(&query_allowance(deps, owner, spender)?)
@@ -194,7 +315,17 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
         QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
         QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
+        QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
+        QueryMsg::PendingBondsById { bond_id } => {
+            to_binary(&query_pending_bonds_by_id(deps, bond_id)?)
+        }
     }
+}
+
+fn query_cap(deps: Deps) -> StdResult<GetCapResponse> {
+    Ok(GetCapResponse {
+        cap: CAP.load(deps.storage)?,
+    })
 }
 
 pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
@@ -206,6 +337,7 @@ pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
         symbol: token_info.symbol,
         decimals: token_info.decimals,
         total_supply: token_info.total_supply,
+        creation_time: additional_info.creation_time,
     };
     Ok(res)
 }
@@ -243,7 +375,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
+        testing::{mock_dependencies, mock_env, mock_info},
         ContractResult, Decimal, QuerierResult,
     };
 
@@ -314,6 +446,14 @@ mod test {
                     }),
                 },
             ],
+            vault_rewards_code_id: 123,
+            reward_token: cw_asset::AssetInfoBase::Native("uqsr".to_string()),
+            reward_distribution_schedules: vec![vault_rewards::state::DistributionSchedule {
+                start: 0,
+                end: 500,
+                amount: Uint128::from(1000u128),
+            }],
+            total_cap: Uint128::new(10_000_000_000_000),
         };
 
         // prepare 3 mock configs for prim1, prim2 and prim3
@@ -390,5 +530,76 @@ mod test {
         });
 
         instantiate(deps.as_mut(), env, info, msg).unwrap();
+    }
+
+    #[test]
+    fn test_try_clear_cache() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("lulu", &[]);
+
+        let primitive_configs = vec![
+            PrimitiveConfig {
+                weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                address: "prim1".to_string(),
+                init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                    lock_period: 300,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    local_denom: "ibc/SOME_DENOM".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom: "uqsr".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                }),
+            },
+            PrimitiveConfig {
+                weight: Decimal::from_ratio(Uint128::one(), Uint128::new(3)),
+                address: "prim2".to_string(),
+                init: crate::msg::PrimitiveInitMsg::LP(lp_strategy::msg::InstantiateMsg {
+                    lock_period: 300,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/2".to_string(),
+                    local_denom: "ibc/OTHER_DENOM".to_string(),
+                    base_denom: "uqsr".to_string(),
+                    quote_denom: "uosmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                }),
+            },
+        ];
+
+        let investment_info = InvestmentInfo {
+            owner: Addr::unchecked("lulu"),
+            min_withdrawal: Uint128::from(100u128),
+            primitives: primitive_configs,
+        };
+
+        INVESTMENT
+            .save(deps.as_mut().storage, &investment_info)
+            .unwrap();
+
+        let msg = ExecuteMsg::ClearCache {};
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+
+        assert_eq!(res.messages.len(), 2);
+        assert_eq!(
+            res.messages[0],
+            SubMsg::new(WasmMsg::Execute {
+                contract_addr: "prim1".to_string(),
+                funds: vec![],
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+            })
+        );
+        assert_eq!(
+            res.messages[1],
+            SubMsg::new(WasmMsg::Execute {
+                contract_addr: "prim2".to_string(),
+                funds: vec![],
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+            })
+        );
     }
 }
