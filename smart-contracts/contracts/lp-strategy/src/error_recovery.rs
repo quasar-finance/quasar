@@ -23,7 +23,7 @@ use crate::{
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
-pub fn start_recovery(
+pub fn _start_recovery(
     deps: DepsMut,
     env: &Env,
     error_sequence: u64,
@@ -62,6 +62,7 @@ pub fn start_recovery(
 }
 
 // amount is the total amount we will try to transfer back to quasar, pending bond is the users the funds should return back to
+#[allow(dead_code)]
 fn handle_transfer_recovery(
     storage: &mut dyn Storage,
     env: &Env,
@@ -102,7 +103,7 @@ fn handle_transfer_recovery(
     )?)
 }
 
-fn handle_last_succesful_ica_recovery(
+fn _handle_last_succesful_ica_recovery(
     storage: &mut dyn Storage,
     env: &Env,
     ica: IcaMessages,
@@ -123,7 +124,7 @@ fn handle_last_succesful_ica_recovery(
         IcaMessages::RecoveryReturnTransfer(_) => todo!(),
     }
 }
-fn handle_last_failed_ica_recovery(
+fn _handle_last_failed_ica_recovery(
     _storage: &mut dyn Storage,
     _env: &Env,
     ica: IcaMessages,
@@ -160,6 +161,7 @@ fn handle_last_failed_ica_recovery(
 
 // kinda messed up that we create duplicate code here, should be solved with a single unpacking function that accepts
 // a closure for IcsAck::Result and IcsAck::Error
+#[allow(dead_code)]
 fn de_succcesful_join(
     ack_bin: IbcAcknowledgement,
 ) -> Result<MsgJoinSwapExternAmountInResponse, ContractError> {
@@ -174,6 +176,7 @@ fn de_succcesful_join(
 }
 
 // if the join_swap was succesful, the refund path means we have to
+#[allow(dead_code)]
 fn handle_join_swap_recovery(
     storage: &mut dyn Storage,
     env: &Env,
@@ -269,13 +272,13 @@ fn handle_join_swap_recovery(
 
 // }
 
-fn handle_lock_recovery() {}
+fn _handle_lock_recovery() {}
 
-fn handle_begin_unlocking_recovery() {}
+fn _handle_begin_unlocking_recovery() {}
 
-fn handle_exit_pool_recovery() {}
+fn _handle_exit_pool_recovery() {}
 
-fn handle_return_transfer_recovery() {}
+fn _handle_return_transfer_recovery() {}
 
 // TODO refactor bonds/unbonds to a single struct item that is bidirectional with a direction enum
 // because we did not abstract nicely, we need a separate struct here

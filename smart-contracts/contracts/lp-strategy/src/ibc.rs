@@ -357,10 +357,10 @@ pub fn handle_icq_ack(
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
-    let locked = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+    let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
     // parse the locked lp shares on Osmosis, a bit messy
-    let gamms = if locked.is_some() {
-        locked.unwrap().coins
+    let gamms = if let Some(lock) = lock {
+        lock.coins
     } else {
         vec![]
     };
@@ -743,7 +743,7 @@ mod tests {
         IbcEndpoint, IbcOrder,
     };
 
-    use crate::{state::Config, test_helpers::default_setup};
+    use crate::{state::{Config, SIMULATED_JOIN_AMOUNT_IN}, test_helpers::default_setup};
 
     use super::*;
 
