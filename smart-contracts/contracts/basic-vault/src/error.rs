@@ -51,6 +51,9 @@ pub enum ContractError {
     #[error("Invalid zero amount")]
     InvalidZeroAmount {},
 
+    #[error("Duplicate bond response for bond_id {bond_id}")]
+    DuplicateBondResponse { bond_id: String },
+
     #[error("Allowance is expired")]
     Expired {},
 
