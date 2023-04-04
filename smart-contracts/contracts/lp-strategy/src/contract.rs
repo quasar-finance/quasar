@@ -24,7 +24,7 @@ use crate::state::{
     ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
     TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
-use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
+use crate::unbond::{do_unbond};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";

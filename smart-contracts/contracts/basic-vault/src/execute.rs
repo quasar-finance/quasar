@@ -256,11 +256,11 @@ pub fn bond(
     CAP.update(
         deps.storage,
         |cap| -> Result<crate::state::Cap, ContractError> {
-            Ok(cap.update_current(
+            cap.update_current(
                 primitive_funding_amounts
                     .iter()
                     .fold(Uint128::zero(), |acc, val| val.amount + acc),
-            )?)
+            )
         },
     )?;
 
@@ -374,7 +374,6 @@ pub fn do_start_unbond(
 
     let mut unbonding_stubs = vec![];
 
-    let num_primitives = Uint128::from(invest.primitives.len() as u128);
     let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
         .iter()
