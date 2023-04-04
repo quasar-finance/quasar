@@ -151,6 +151,10 @@ pub enum QueryMsg {
     #[returns(PendingBondsResponse)]
     PendingBonds { address: String },
 
+    /// PendingBondsById shows the bonds that are currently in the process of being deposited for a bond id
+    #[returns(PendingBondsByIdResponse)]
+    PendingBondsById { bond_id: String },
+
     /// GetTvlInfo gets all info necessary for
     #[returns(TvlInfoResponse)]
     GetTvlInfo {},
@@ -204,6 +208,12 @@ pub struct PendingBondsResponse {
     pub pending_bonds: Vec<BondingStub>,
     /// the bond ids that are registered as pending for a user
     pub pending_bond_ids: Vec<String>,
+}
+
+#[cw_serde]
+pub struct PendingBondsByIdResponse {
+    /// the bonds that are currently in the process of being deposited for a user
+    pub pending_bonds: Vec<BondingStub>,
 }
 
 #[cw_serde]
