@@ -110,7 +110,7 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
 }
 
 pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBondsByIdResponse> {
-    let deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
+    let deposit_stubs = BOND_STATE.load(deps.storage, id).unwrap();
 
     Ok(PendingBondsByIdResponse {
         pending_bonds: deposit_stubs,
