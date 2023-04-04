@@ -4,8 +4,8 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK,
-        REPLIES, SHARES, TRAPS,
+        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK, REPLIES,
+        SHARES, TRAPS,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -59,6 +59,8 @@ pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), C
 pub fn create_callback_submsg(
     storage: &mut dyn Storage,
     cosmos_msg: CosmosMsg,
+    owner: Addr,
+    callback_id: String,
 ) -> Result<SubMsg, StdError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
@@ -72,13 +74,12 @@ pub fn create_callback_submsg(
                 callback: from_binary(msg)?,
                 amount: None,
                 // TODO: owner?
-                owner: Addr::unchecked(""),
+                owner,
             })
         }
         CosmosMsg::Bank(bank_msg) => SubMsgKind::Callback(ContractCallback::Bank {
             bank_msg: bank_msg.to_owned(),
-            // TODO: unbond_id?
-            unbond_id: "".to_string(),
+            unbond_id: callback_id,
         }),
         _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
     };

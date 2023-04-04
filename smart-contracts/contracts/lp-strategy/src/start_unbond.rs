@@ -145,10 +145,14 @@ pub fn handle_start_unbond_ack(
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
-        if let Some(wasm_msg) = start_internal_unbond(storage, querier, env, unbond)? {
+        if let Some(msg) = start_internal_unbond(storage, querier, env, unbond.clone())? {
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
-            let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(
+                storage,
+                CosmosMsg::Wasm(msg),
+                unbond.owner,
+                unbond.id,
+            )?);
         }
     }
 
@@ -493,7 +497,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
+        assert_eq!(
+            get_total_primitive_shares(deps.as_mut().storage).unwrap(),
+            Uint128::new(1000)
+        );
         assert_eq!(res, Uint128::new(1000000000))
     }
 
@@ -703,11 +710,14 @@ mod tests {
         let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::TracedOverflowError(OverflowError {
-                operation: OverflowOperation::Sub,
-                operand1: "99".to_string(),
-                operand2: "100".to_string()
-            }, "lower_shares_to_unbond".to_string())
+            ContractError::TracedOverflowError(
+                OverflowError {
+                    operation: OverflowOperation::Sub,
+                    operand1: "99".to_string(),
+                    operand2: "100".to_string()
+                },
+                "lower_shares_to_unbond".to_string()
+            )
         )
     }
 

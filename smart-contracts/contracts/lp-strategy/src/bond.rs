@@ -200,13 +200,14 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, MockQuerier},
-        Empty, to_binary, IbcTimeout, IbcMsg, CosmosMsg,
+        to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
 
     use crate::{
         ibc_lock::Lock,
-        state::{LpCache, IBC_LOCK, LP_SHARES, ICQ_CHANNEL},
-        test_helpers::default_setup, icq::prepare_full_query,
+        icq::prepare_full_query,
+        state::{LpCache, IBC_LOCK, ICQ_CHANNEL, LP_SHARES},
+        test_helpers::default_setup,
     };
 
     use super::*;
@@ -275,7 +276,8 @@ mod tests {
         assert!(res.is_some());
 
         // mocking the pending bonds is real ugly here
-        let packet = prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
+        let packet =
+            prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
@@ -283,10 +285,7 @@ mod tests {
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         });
 
-        assert_eq!(
-            res.unwrap().msg,
-            icq_msg
-        )
+        assert_eq!(res.unwrap().msg, icq_msg)
     }
 
     #[test]

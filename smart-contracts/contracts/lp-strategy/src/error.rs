@@ -4,7 +4,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-
 use crate::helpers::IbcMsgKind;
 use std::str::Utf8Error;
 use thiserror::Error;

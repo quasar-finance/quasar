@@ -1,5 +1,3 @@
-
-
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
