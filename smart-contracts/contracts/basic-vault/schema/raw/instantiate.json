@@ -11,6 +11,7 @@
     "reward_token",
     "symbol",
     "thesis",
+    "total_cap",
     "vault_rewards_code_id"
   ],
   "properties": {
@@ -54,6 +55,9 @@
     "thesis": {
       "description": "description of the derivative token",
       "type": "string"
+    },
+    "total_cap": {
+      "$ref": "#/definitions/Uint128"
     },
     "vault_rewards_code_id": {
       "type": "integer",

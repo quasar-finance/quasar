@@ -27,8 +27,8 @@ use crate::msg::{
     QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
-    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_unbonds,
-    query_tvl_info,
+    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
+    query_pending_unbonds, query_tvl_info,
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
@@ -300,7 +300,6 @@ fn update_rewards_contract(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        // todo remove or augment
         QueryMsg::Claims { address } => {
             to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
@@ -317,6 +316,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
         QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
         QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
+        QueryMsg::PendingBondsById { bond_id } => {
+            to_binary(&query_pending_bonds_by_id(deps, bond_id)?)
+        }
     }
 }
 
