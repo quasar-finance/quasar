@@ -1,28 +1,27 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, IbcTimeout, MessageInfo, Reply,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply,
     Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 use quasar_types::ibc::IcsAck;
-use quasar_types::ica::packet::ica_send;
 
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{get_ica_address, is_contract_admin, SubMsgKind};
+use crate::helpers::{is_contract_admin, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
-use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, do_transfer};
+use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    IBC_TIMEOUT_TIME, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
     TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
@@ -439,10 +438,10 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("succes", "true")
+        .add_attribute("success", "true")
     )
 }
 
