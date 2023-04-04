@@ -5,7 +5,7 @@ use crate::{
     msg::ExecuteMsg,
     state::{
         PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CLAIMABLE_FUNDS, IBC_LOCK, REPLIES,
-        SHARES, TRAPS,
+        SHARES, TRAPS, CONFIG,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -68,12 +68,13 @@ pub fn create_callback_submsg(
         id = val?.0 + 1;
     }
 
+    let local_denom = CONFIG.load(storage)?.local_denom;
     let data: SubMsgKind = match &cosmos_msg {
-        CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
+        CosmosMsg::Wasm(WasmMsg::Execute { msg, funds, .. }) => {
             SubMsgKind::Callback(ContractCallback::Callback {
                 callback: from_binary(msg)?,
-                amount: None,
-                // TODO: owner?
+                // if we send funds, we expect them to be in local denom
+                amount: funds.iter().find(|c| c.denom == local_denom).map(|val| val.amount),
                 owner,
             })
         }
