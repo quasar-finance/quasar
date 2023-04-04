@@ -237,8 +237,12 @@ pub enum ExecuteMsg {
         id: u64,
     },
     // try to close a channel where a timout occured
-    CloseChannel { channel_id: String },
-    Ack { ack: IbcPacketAckMsg },
+    CloseChannel {
+        channel_id: String,
+    },
+    Ack {
+        ack: IbcPacketAckMsg,
+    },
     TryIcq {},
     Unlock {
         unlock_only: UnlockOnly,

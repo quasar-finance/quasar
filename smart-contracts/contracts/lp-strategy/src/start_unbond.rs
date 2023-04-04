@@ -493,7 +493,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(get_total_primitive_shares(deps.as_mut().storage).unwrap(), Uint128::new(1000));
+        assert_eq!(
+            get_total_primitive_shares(deps.as_mut().storage).unwrap(),
+            Uint128::new(1000)
+        );
         assert_eq!(res, Uint128::new(1000000000))
     }
 
@@ -703,11 +706,14 @@ mod tests {
         let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::TracedOverflowError(OverflowError {
-                operation: OverflowOperation::Sub,
-                operand1: "99".to_string(),
-                operand2: "100".to_string()
-            }, "lower_shares_to_unbond".to_string())
+            ContractError::TracedOverflowError(
+                OverflowError {
+                    operation: OverflowOperation::Sub,
+                    operand1: "99".to_string(),
+                    operand2: "100".to_string()
+                },
+                "lower_shares_to_unbond".to_string()
+            )
         )
     }
 

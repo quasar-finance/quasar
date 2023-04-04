@@ -7,7 +7,7 @@ use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     bond::Bond,
-    error::{Trap},
+    error::Trap,
     helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
@@ -52,17 +52,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
-    let pbq: Result<Vec<Bond>, StdError> = PENDING_BOND_QUEUE
-        .iter(deps.storage)?
-        .collect();
-    let bq: Result<Vec<Bond>, StdError> =
-        BOND_QUEUE.iter(deps.storage)?.collect();
-    let suq: Result<Vec<StartUnbond>, StdError> = START_UNBOND_QUEUE
-        .iter(deps.storage)?
-        .collect();
-    let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE
-        .iter(deps.storage)?
-        .collect();
+    let pbq: Result<Vec<Bond>, StdError> = PENDING_BOND_QUEUE.iter(deps.storage)?.collect();
+    let bq: Result<Vec<Bond>, StdError> = BOND_QUEUE.iter(deps.storage)?.collect();
+    let suq: Result<Vec<StartUnbond>, StdError> = START_UNBOND_QUEUE.iter(deps.storage)?.collect();
+    let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE.iter(deps.storage)?.collect();
     Ok(GetQueuesResponse {
         pending_bond_queue: pbq?,
         bond_queue: bq?,
