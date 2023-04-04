@@ -134,7 +134,7 @@ pub fn get_usable_compound_balance(
         }
     });
 
-    Ok(balance.saturating_add(excluded_funds))
+    Ok(balance.saturating_sub(excluded_funds))
 }
 
 pub fn create_ibc_ack_submsg(
