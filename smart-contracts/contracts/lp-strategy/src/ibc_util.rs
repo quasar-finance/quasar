@@ -1,4 +1,4 @@
-use std::{str::FromStr, num::ParseIntError};
+use std::{num::ParseIntError, str::FromStr};
 
 use cosmwasm_std::{
     Coin, ConversionOverflowError, Decimal, Env, Fraction, IbcMsg, IbcTimeout, StdError, Storage,
@@ -67,20 +67,18 @@ pub fn scale_join_pool(
     return_scaled: bool,
 ) -> Result<Uint128, ContractError> {
     let token_in = SIMULATED_JOIN_AMOUNT_IN.load(storage)?;
-    let join = match join
-    .share_out_amount
-    .parse::<u128>() {
+    let join = match join.share_out_amount.parse::<u128>() {
         Ok(val) => Ok(val),
-        Err(err) =>  {
+        Err(err) => {
             match err.kind() {
-                    // if the string is empty, we return 0 shares out
-                    std::num::IntErrorKind::Empty => Ok(0),
-                    _ => Err(ContractError::ParseIntError {
+                // if the string is empty, we return 0 shares out
+                std::num::IntErrorKind::Empty => Ok(0),
+                _ => Err(ContractError::ParseIntError {
                     error: format!("scale:{}", err),
                     value: join.share_out_amount,
-                    }),
-                }
-        },
+                }),
+            }
+        }
     }?;
 
     // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
