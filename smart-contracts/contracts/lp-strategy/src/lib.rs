@@ -7,7 +7,6 @@ pub mod ibc;
 pub mod ibc_lock;
 mod ibc_util;
 pub mod icq;
-pub mod integration_tests;
 pub mod msg;
 pub mod queries;
 pub mod reply;
@@ -16,6 +15,9 @@ pub mod state;
 pub mod test_helpers;
 pub mod unbond;
 mod admin;
+
+#[cfg(test)]
+pub mod integration_tests;
 
 #[cfg(test)]
 mod tests {
