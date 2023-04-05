@@ -124,7 +124,7 @@ echo "Migrating to manually satisfy the bonds"
 MIGRATE1="{\"vault_addr\":\"$VAULT_ADDR\", \"callbacks\": [{\"share_amount\": \"1000\",\"bond_id\":\"1\"}]}"
 # satisfy 1 bond id, alice should have a 1000 shares now
 echo "quasarnoded tx wasm migrate $ADDR $CODE_ID "$MIGRATE1" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID"
-quasarnoded tx wasm migrate $ADDR $CODE_ID "$MIGRATE1" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasarnoded tx wasm migrate $ADDR1 $CODE_ID "$MIGRATE1" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 echo "Querying alice balance again, expect 1000 shares"
 quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
