@@ -131,13 +131,13 @@ quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"
 
 # satisfy 2 bond id, alice should have a 3300 shares now
 MIGRATE2="{\"vault_addr\":\"$VAULT_ADDR\", \"callbacks\": [{\"share_amount\": \"1100\",\"bond_id\":\"2\"}, {\"share_amount\": \"1200\",\"bond_id\":\"3\"}]}"
-quasarnoded tx wasm migrate $ADDR $CODE_ID "$MIGRATE2" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasarnoded tx wasm migrate $ADDR1 $CODE_ID "$MIGRATE2" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 echo "Querying alice balance again, expect 3300 shares"
 quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
 
 # trying to satisfy more bonds here should fail
-quasarnoded tx wasm migrate $ADDR $CODE_ID "{\"vault_addr\":\"$VAULT_ADDR\", \"callbacks\": [{\"share_amount\": \"1100\",\"bond_id\":\"2\"}, {\"share_amount\": \"1200\",\"bond_id\":\"3\"}]}" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID || true
+quasarnoded tx wasm migrate $ADDR1 $CODE_ID "{\"vault_addr\":\"$VAULT_ADDR\", \"callbacks\": [{\"share_amount\": \"1100\",\"bond_id\":\"2\"}, {\"share_amount\": \"1200\",\"bond_id\":\"3\"}]}" -y --from alice --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID || true
 
 # echo "Sleeping 120"
 # sleep 120
