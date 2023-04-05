@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
@@ -351,7 +351,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // do nothing
 
     Ok(Response::new()
@@ -363,7 +363,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 mod test {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        ContractResult, Decimal, QuerierResult,
+        ContractResult, Decimal, QuerierResult, Addr,
     };
 
     use crate::msg::PrimitiveConfig;
