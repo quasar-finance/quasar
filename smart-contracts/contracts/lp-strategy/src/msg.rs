@@ -6,7 +6,7 @@ use std::{
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
-use quasar_types::{ibc::ChannelInfo};
+use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     bond::Bond,
@@ -40,8 +40,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
