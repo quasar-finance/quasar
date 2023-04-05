@@ -49,8 +49,8 @@ osmosisd tx gamm create-pool --pool-file ./sample_pool3.json --node http://127.0
 ./run_hermes_v1.sh
 
 # echo "starting hermes"
-# hermes start >>./logs/hermes_start.log 2>&1 &
-# HERMES_PID=$!
+hermes start >>./logs/hermes_start.log 2>&1 &
+HERMES_PID=$!
 
 echo "setting up go relayer"
 ./setup_go_relayer.sh
@@ -60,7 +60,6 @@ echo "starting go relaying"
 # rly start quasar_cosmos --debug-addr "localhost:7597" --time-threshold 300s -p events >>./logs/quasar_cosmos_rly.log 2>&1 &
 # RLY_PID_1=$!
 
-# for the migration test, we don't need to actually run our relayer
 rly start quasar_osmosis --debug-addr "localhost:7598" -p events --time-threshold 300s >>./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_2=$!
 
@@ -80,12 +79,12 @@ osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32q
 sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 
-sleep 20
+sleep 10
 
 quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
-echo "killing relayer to fail bonds"
-kill $RLY_PID_2
 
 echo "setup ready for use"
+afplay /System/Library/Sounds/Funk.aiff
+say -r 200 "setup ready"
 
 wait
