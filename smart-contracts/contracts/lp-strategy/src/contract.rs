@@ -2,7 +2,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response, Uint128, WasmMsg, to_binary,
+    from_binary, to_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response,
+    Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -466,18 +467,22 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         pub bond_response: Option<BondResponse>,
     }
 
-
     let mut callbacks = Vec::new();
     for cb in msg.callbacks.iter() {
         // query the callback to see if the bond id is pending
-        let q: PendingBondsByIdResponse = deps.querier.query_wasm_smart(&addr, &QueryMsg::PendingBondsById { bond_id: cb.bond_id.clone() })?;
+        let q: PendingBondsByIdResponse = deps.querier.query_wasm_smart(
+            &addr,
+            &QueryMsg::PendingBondsById {
+                bond_id: cb.bond_id.clone(),
+            },
+        )?;
         // we check that there is not a single empty pending, panic if so
         // panicking is ok since we are doing a single migration here
         assert!(!q.pending_bonds.is_empty());
         callbacks.push(WasmMsg::Execute {
             contract_addr: addr.to_string(),
             msg: to_binary(&Callback::BondResponse(BondResponse {
-                share_amount: cb.share_amount.clone(),
+                share_amount: cb.share_amount,
                 bond_id: cb.bond_id.clone(),
             }))?,
             funds: vec![],
@@ -488,8 +493,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
         .add_attribute("callbacks", callbacks.len().to_string())
-        .add_messages(callbacks)
-    )    
+        .add_messages(callbacks))
 }
 
 #[cfg(test)]
