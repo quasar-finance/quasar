@@ -41,8 +41,6 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub vault_addr: String,
-    pub callbacks: Vec<BondResponse>,
 }
 
 #[cw_serde]

@@ -439,61 +439,13 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let addr = deps.api.addr_validate(msg.vault_addr.as_str())?;
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
 
-    // we inline the query to the basic-vault to prevent a cyclic dependency
-
-    #[cw_serde]
-    #[derive(QueryResponses)]
-    pub enum QueryMsg {
-        /// PendingBondsById shows the bonds that are currently in the process of being deposited for a bond id
-        #[returns(PendingBondsByIdResponse)]
-        PendingBondsById { bond_id: String },
-    }
-
-    #[cw_serde]
-    pub struct PendingBondsByIdResponse {
-        /// the bonds that are currently in the process of being deposited for a user
-        pub pending_bonds: Vec<BondingStub>,
-    }
-
-    #[cw_serde]
-    #[derive(Default)]
-    pub struct BondingStub {
-        // the contract address of the primitive
-        pub address: String,
-        // the response of the primitive upon successful bond or error
-        pub bond_response: Option<BondResponse>,
-    }
-
-    let mut callbacks = Vec::new();
-    for cb in msg.callbacks.iter() {
-        // query the callback to see if the bond id is pending
-        let q: PendingBondsByIdResponse = deps.querier.query_wasm_smart(
-            &addr,
-            &QueryMsg::PendingBondsById {
-                bond_id: cb.bond_id.clone(),
-            },
-        )?;
-        // we check that there is not a single empty pending, panic if so
-        // panicking is ok since we are doing a single migration here
-        assert!(!q.pending_bonds.is_empty());
-        callbacks.push(WasmMsg::Execute {
-            contract_addr: addr.to_string(),
-            msg: to_binary(&Callback::BondResponse(BondResponse {
-                share_amount: cb.share_amount,
-                bond_id: cb.bond_id.clone(),
-            }))?,
-            funds: vec![],
-        });
-    }
+    IBC_LOCK.save(deps.storage, &Lock::new())?;
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("success", "true")
-        .add_attribute("callbacks", callbacks.len().to_string())
-        .add_messages(callbacks))
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
