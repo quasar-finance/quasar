@@ -31,7 +31,7 @@ INIT1='{"lock_period":6,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uos
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
+# docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 
 echo "Running store code"
 RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
@@ -82,7 +82,7 @@ VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
