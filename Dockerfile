@@ -80,12 +80,15 @@ CMD ["quasarnoded"]
 # Development
 # --------------------------------------------------------
 
-FROM ubuntu:latest as dev
+FROM ubuntu:22.04 as dev
 
 ENV PACKAGES jq
 
-RUN apt update
-RUN apt install -y $PACKAGES
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+	apt update && \
+	apt install -y $PACKAGES
+
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 COPY --from=builder /quasar/ /quasar/src/quasar/
