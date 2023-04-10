@@ -59,7 +59,11 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Runner
 # --------------------------------------------------------
 
-FROM ${RUNNER_IMAGE}
+FROM alpine:3.17.2 as runner
+
+ENV PACKAGES bash
+
+RUN apk add --no-cache $PACKAGES
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 
@@ -70,4 +74,28 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-ENTRYPOINT ["quasarnoded"]
+CMD ["quasarnoded"]
+
+# --------------------------------------------------------
+# Development
+# --------------------------------------------------------
+
+FROM ubuntu:latest as dev
+
+ENV PACKAGES jq
+
+RUN apt update
+RUN apt install -y $PACKAGES
+
+COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
+COPY --from=builder /quasar/ /quasar/src/quasar/
+
+
+ENV HOME /quasar
+WORKDIR $HOME
+
+EXPOSE 26656
+EXPOSE 26657
+EXPOSE 1317
+
+CMD ["quasarnoded"]
