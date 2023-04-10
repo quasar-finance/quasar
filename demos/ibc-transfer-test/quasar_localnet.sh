@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ## This script helps to create a basic version of the quasar chain genesis file for development purposes.
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
 
