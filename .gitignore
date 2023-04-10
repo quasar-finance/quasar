@@ -17,3 +17,5 @@ vue/
 */**/artifacts
 */**/target
 local_testnet_run-*nodes/
+
+containers_homes/

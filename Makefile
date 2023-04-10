@@ -262,9 +262,21 @@ docker-build-nonroot:
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
 
-run_in_docker_compose: ##@docker Run dev env in docker compose
+docker-compose-run: ##@docker Run dev env in docker compose
 	@echo "Launching local dev environment with docker-compose"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
+
+docker-compose-run-rebuild: ##@docker Run dev env in docker compose (rebuild image)
+	@echo "Rebuilding image and launching local dev environment with docker-compose"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --build
+
+docker-attach-quasar: ##@docker Connect to a terminal prompt in quasar node container
+	@echo "Connecting to quasar docker container"
+	docker exec -it quasar-quasar-1 /bin/bash
+
+docker-mark-reinit-quasar: ##@docker Marks the development container to be reinitialized
+	@echo "Removing CONTAINER_FIRST_STARTUP from root to reinitialize the container on next run"
+	docker exec -it quasar-quasar-1 /bin/bash -c "rm /tmp/CONTAINER_FIRST_STARTUP"
 
 
 ###############################################################################

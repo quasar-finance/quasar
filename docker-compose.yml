@@ -9,5 +9,21 @@ services:
       - "1317:1317"
       - "26657:26657"
       - "9090:9090"
-    entrypoint:
-      - "src/quasar/demos/ibc-transfer-test/quasar_localnet.sh" # (Same genesis than mainnet))
+    entrypoint: "src/quasar/demos/base_local_setup/entrypoint.sh" # (Script that initializes only first time))
+
+    # Keeps the image running, useful to debug
+    # command: ["tail", "-f", "/dev/null" ]
+
+    # Local folder mounted. Useful for development
+    volumes:
+      - .:/quasar/src/quasar:ro
+      # - './containers_homes/quasar:/quasar/.quasarnode'
+  # osmosis:
+  #   build:
+  #     context: .
+  #     target: runner
+  #   image: quasar:local
+  #   ports:
+  #      - "1417:1317"
+  #      - "26757:26657"
+  #      - "9190:9090"
