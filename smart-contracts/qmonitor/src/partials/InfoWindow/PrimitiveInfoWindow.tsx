@@ -54,7 +54,9 @@ const PrimitiveInfoWindow = ({ height }: { height: TPosition }) => {
     let status = await querier.getPrimitiveLockStatus(
       investmentInfo!.primitives[pidx].address,
     )
-    let lockType = Object.keys(status.lock).find((l) => status.lock[l])
+    let lockType = Object.keys(status.lock).find(
+      (l) => status.lock[l] === 'locked',
+    )
     setLockStatus(
       lockType ? chalk.red(`locked (${lockType})`) : chalk.green('unlocked'),
     )
