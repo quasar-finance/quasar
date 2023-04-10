@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  quasar:
+    build:
+      context: .
+      target: dev
+    image: quasar:dev
+    ports:
+      - "1317:1317"
+      - "26657:26657"
+      - "9090:9090"
+    entrypoint:
+      - "src/quasar/demos/ibc-transfer-test/quasar_localnet.sh" # (Same genesis than mainnet))

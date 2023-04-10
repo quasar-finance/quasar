@@ -267,6 +267,11 @@ docker-build-nonroot:
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
 
+run_in_docker_compose: ##@docker Run dev env in docker compose
+	@echo "Launching local dev environment with docker-compose"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --build
+
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
