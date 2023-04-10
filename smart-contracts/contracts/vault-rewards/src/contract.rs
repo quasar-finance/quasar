@@ -7,7 +7,7 @@ use crate::execute::user::execute_claim;
 use crate::execute::vault::execute_update_user_reward_index;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VaultExecuteMsg};
-use crate::query::{query_config, query_pending_rewards};
+use crate::query::{query_config, query_pending_rewards, query_user_rewards_index};
 use crate::state::{Config, CONFIG};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -79,6 +79,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, VaultRewards
         QueryMsg::PendingRewards(user) => {
             let user = deps.api.addr_validate(&user)?;
             to_binary(&query_pending_rewards(deps, env, user)?)
+        }
+        QueryMsg::GetUserRewardsIndex(user) => {
+            let user = deps.api.addr_validate(&user)?;
+            to_binary(&query_user_rewards_index(deps, user)?)
         }
     }
     .map_err(|e| e.into())

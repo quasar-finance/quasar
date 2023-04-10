@@ -39,6 +39,7 @@ pub enum VaultExecuteMsg {
 pub enum QueryMsg {
     Config {},
     PendingRewards(String),
+    GetUserRewardsIndex(String),
 }
 
 #[cw_serde]

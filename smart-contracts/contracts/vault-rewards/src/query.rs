@@ -1,4 +1,4 @@
-use crate::execute::user::get_claim_amount;
+use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
 use crate::helpers::get_user_reward_index;
 use crate::msg::ConfigResponse;
 use crate::state::CONFIG;
@@ -32,6 +32,14 @@ pub fn query_pending_rewards(
     let config = CONFIG.load(deps.storage)?;
     let user_reward_index = get_user_reward_index(deps.storage, &user);
     get_claim_amount(deps, &env, &config, &user_reward_index)
+}
+
+pub fn query_user_rewards_index(
+    deps: Deps,
+    user: Addr,
+) -> Result<UserRewardIndex, VaultRewardsError> {
+    let user_reward_index = get_user_reward_index(deps.storage, &user);
+    Ok(user_reward_index)
 }
 
 #[cfg(test)]
