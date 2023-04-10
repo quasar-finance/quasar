@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use core::panic;
     use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
@@ -1219,87 +1220,71 @@ mod tests {
         assert_eq!(res.messages.len(), 4);
         assert_eq!(res.attributes.first().unwrap().value, "1");
 
-        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[0].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                assert_eq!(contract_addr, "quasar123");
-                assert_eq!(funds.len(), 1);
-                assert_eq!(funds[0].denom, "ibc/uosmo");
-                assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "1")
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &res.messages[0].msg
+        {
+            assert_eq!(contract_addr, "quasar123");
+            assert_eq!(funds.len(), 1);
+            assert_eq!(funds[0].denom, "ibc/uosmo");
+            assert_eq!(funds[0].amount, Uint128::from(99u128));
+            if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "1")
             } else {
-                assert!(false);
+                panic!("expected Bond msg")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
 
-        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[1].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                assert_eq!(contract_addr, "quasar124");
-                assert_eq!(funds.len(), 1);
-                assert_eq!(funds[0].denom, "ibc/uatom");
-                assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "1")
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &res.messages[1].msg
+        {
+            assert_eq!(contract_addr, "quasar124");
+            assert_eq!(funds.len(), 1);
+            assert_eq!(funds[0].denom, "ibc/uatom");
+            assert_eq!(funds[0].amount, Uint128::from(99u128));
+            if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "1")
             } else {
-                assert!(false);
+                panic!("expected Bond msg")
             }
         } else {
-            assert!(false);
+            panic!("expected Wasm msg")
         }
 
-        if let CosmosMsg::Wasm(wasm_msg) = &res.messages[2].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                assert_eq!(contract_addr, "quasar125");
-                assert_eq!(funds.len(), 1);
-                assert_eq!(funds[0].denom, "ibc/ustars");
-                assert_eq!(funds[0].amount, Uint128::from(99u128));
-                if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "1")
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &res.messages[2].msg
+        {
+            assert_eq!(contract_addr, "quasar125");
+            assert_eq!(funds.len(), 1);
+            assert_eq!(funds[0].denom, "ibc/ustars");
+            assert_eq!(funds[0].amount, Uint128::from(99u128));
+            if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "1")
             } else {
-                assert!(false);
+                panic!("expected Bond msg")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
 
-        if let CosmosMsg::Bank(msg) = &res.messages[3].msg {
-            if let BankMsg::Send { to_address, amount } = msg {
-                assert_eq!(to_address, TEST_DEPOSITOR);
-                assert_eq!(amount.len(), 3);
-                assert_eq!(amount[0].amount, Uint128::from(1u128));
-                assert_eq!(amount[1].amount, Uint128::from(1u128));
-                assert_eq!(amount[2].amount, Uint128::from(1u128));
-            } else {
-                assert!(false);
-            }
+        if let CosmosMsg::Bank(BankMsg::Send { to_address, amount }) = &res.messages[3].msg {
+            assert_eq!(to_address, TEST_DEPOSITOR);
+            assert_eq!(amount.len(), 3);
+            assert_eq!(amount[0].amount, Uint128::from(1u128));
+            assert_eq!(amount[1].amount, Uint128::from(1u128));
+            assert_eq!(amount[2].amount, Uint128::from(1u128));
         } else {
-            assert!(false);
+            panic!("unexpected message");
         }
     }
 
@@ -1546,74 +1531,62 @@ mod tests {
         assert_eq!(unbond_res.attributes[3].value, "2");
 
         // todo replace with a macro
-        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[0].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &unbond_res.messages[0].msg
+        {
+            assert_eq!(contract_addr, "quasar123");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                from_binary(msg).unwrap()
             {
-                assert_eq!(contract_addr, "quasar123");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(msg).unwrap()
-                {
-                    assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(99u128));
-                } else {
-                    assert!(false);
-                }
+                assert_eq!(id, "2");
+                assert_eq!(share_amount, Uint128::from(99u128));
             } else {
-                assert!(false);
+                panic!("expected start unbond")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
-        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[1].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &unbond_res.messages[1].msg
+        {
+            assert_eq!(contract_addr, "quasar124");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                from_binary(msg).unwrap()
             {
-                assert_eq!(contract_addr, "quasar124");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(msg).unwrap()
-                {
-                    assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(99u128));
-                } else {
-                    assert!(false);
-                }
+                assert_eq!(id, "2");
+                assert_eq!(share_amount, Uint128::from(99u128));
             } else {
-                assert!(false);
+                panic!("expected start unbond")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
-        if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[2].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &unbond_res.messages[2].msg
+        {
+            assert_eq!(contract_addr, "quasar125");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
+                from_binary(msg).unwrap()
             {
-                assert_eq!(contract_addr, "quasar125");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-                    from_binary(msg).unwrap()
-                {
-                    assert_eq!(id, "2");
-                    assert_eq!(share_amount, Uint128::from(99u128));
-                } else {
-                    assert!(false);
-                }
+                assert_eq!(id, "2");
+                assert_eq!(share_amount, Uint128::from(99u128));
             } else {
-                assert!(false);
+                panic!("expected start unbond")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
         if let CosmosMsg::Wasm(wasm_msg) = &unbond_res.messages[3].msg {
             if let WasmMsg::Execute {
@@ -1729,45 +1702,37 @@ mod tests {
         assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
         assert_eq!(claim_res.attributes[2].value, "2");
 
-        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[0].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                assert_eq!(contract_addr, "quasar123");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "2");
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &claim_res.messages[0].msg
+        {
+            assert_eq!(contract_addr, "quasar123");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "2");
             } else {
-                assert!(false);
+                panic!("expected unbond")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
-        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[1].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                assert_eq!(contract_addr, "quasar124");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "2");
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &claim_res.messages[1].msg
+        {
+            assert_eq!(contract_addr, "quasar124");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "2");
             } else {
-                assert!(false);
+                panic!("expected unbond")
             }
         } else {
-            assert!(false);
+            panic!("expected wasm msg")
         }
         // set these two primitive unbonds to have been attempted already
         deps.querier.set_unbonding_claim_for_primitive(
@@ -1800,26 +1765,22 @@ mod tests {
         assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
         assert_eq!(claim_res.attributes[2].value, "1");
 
-        if let CosmosMsg::Wasm(wasm_msg) = &claim_res.messages[0].msg {
-            if let WasmMsg::Execute {
-                contract_addr,
-                msg,
-                funds,
-            } = wasm_msg
-            {
-                // todo: This assertion will change because we should ideally only expect one here, pending arch discussions
-                assert_eq!(contract_addr, "quasar125");
-                assert!(funds.is_empty());
-                if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
-                    assert_eq!(id, "2");
-                } else {
-                    assert!(false);
-                }
+        if let CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr,
+            msg,
+            funds,
+        }) = &claim_res.messages[0].msg
+        {
+            // todo: This assertion will change because we should ideally only expect one here, pending arch discussions
+            assert_eq!(contract_addr, "quasar125");
+            assert!(funds.is_empty());
+            if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+                assert_eq!(id, "2");
             } else {
-                assert!(false);
+                panic!("expected unbond")
             }
         } else {
-            assert!(false);
+            panic!("ex[ected wasm msg")
         }
 
         // start callbacks from primitives for unbond
