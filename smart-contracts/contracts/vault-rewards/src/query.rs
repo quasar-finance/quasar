@@ -1,0 +1,38 @@
+use crate::execute::user::get_claim_amount;
+use crate::helpers::get_user_reward_index;
+use crate::msg::ConfigResponse;
+use crate::state::CONFIG;
+use crate::VaultRewardsError;
+use cosmwasm_std::{Addr, Deps, Env, Uint128};
+
+pub fn query_config(deps: Deps, env: Env) -> Result<ConfigResponse, VaultRewardsError> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(ConfigResponse {
+        reward_token: config.reward_token.clone(),
+        contract_balance: config
+            .reward_token
+            .query_balance(&deps.querier, env.contract.address)?,
+        total_claimed: config.total_claimed,
+        distribution_schedules: config
+            .distribution_schedules
+            .iter()
+            .enumerate()
+            .map(|(idx, s)| s.to_response(idx))
+            .collect(),
+        current_distribution_rate_per_block: config
+            .get_distribution_rate_at_height(env.block.height),
+    })
+}
+
+pub fn query_pending_rewards(
+    deps: Deps,
+    env: Env,
+    user: Addr,
+) -> Result<Uint128, VaultRewardsError> {
+    let config = CONFIG.load(deps.storage)?;
+    let user_reward_index = get_user_reward_index(deps.storage, &user);
+    get_claim_amount(deps, &env, &config, &user_reward_index)
+}
+
+#[cfg(test)]
+mod tests {}

@@ -1,11 +1,15 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    to_binary, Addr, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
+    Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
-    osmosis::gamm::{
-        v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-        v2::QuerySpotPriceRequest,
+    osmosis::{
+        gamm::{
+            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
+            v2::QuerySpotPriceRequest,
+        },
+        lockup::LockedRequest,
     },
 };
 use prost::Message;
@@ -13,13 +17,19 @@ use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
-    helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
-    state::{CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES},
+    helpers::{
+        check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
+        IbcMsgKind,
+    },
+    state::{
+        Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, SIMULATED_JOIN_AMOUNT_IN, UNBONDING_CLAIMS,
+    },
 };
 
 pub fn try_icq(
     storage: &mut dyn Storage,
-    querier: QuerierWrapper,
+    _querier: QuerierWrapper,
     env: Env,
 ) -> Result<Option<SubMsg>, ContractError> {
     if IBC_LOCK.load(storage)?.is_unlocked() {
@@ -27,19 +37,46 @@ pub fn try_icq(
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
 
-        // deposit need to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, querier, env.clone(), ICA_CHANNEL.load(storage)?)?;
+        let mut pending_bonds_value = Uint128::zero();
+        // we dump pending bonds into the active bond queue
+        while !PENDING_BOND_QUEUE.is_empty(storage)? {
+            let bond = PENDING_BOND_QUEUE.pop_front(storage)?;
+            if let Some(bond) = bond {
+                BOND_QUEUE.push_back(storage, &bond)?;
+                pending_bonds_value = pending_bonds_value.checked_add(bond.amount)?;
+            }
+        }
+
+        // deposit needs to internally rebuild the amount of funds under the smart contract
+        let packet = prepare_full_query(storage, env.clone(), pending_bonds_value)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
             data: to_binary(&packet)?,
-            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
+
+        let mut range: Vec<((Addr, String), Unbond)> = vec![];
+        for pending_unbonding_claim in
+            PENDING_UNBONDING_CLAIMS.range(storage, None, None, cosmwasm_std::Order::Ascending)
+        {
+            range.push(pending_unbonding_claim?);
+        }
+
+        for pending_unbonding_claim in range.iter() {
+            let (keys, unbond) = pending_unbonding_claim;
+
+            UNBONDING_CLAIMS.save(storage, keys.clone(), unbond)?;
+            PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
+        }
+
+        let channel = ICQ_CHANNEL.load(storage)?;
 
         Ok(Some(create_ibc_ack_submsg(
             storage,
             IbcMsgKind::Icq,
             send_packet_msg,
+            channel,
         )?))
     } else {
         Ok(None)
@@ -47,12 +84,13 @@ pub fn try_icq(
 }
 
 pub fn prepare_full_query(
-    storage: &dyn Storage,
-    querier: QuerierWrapper,
-    env: Env,
-    channel: String,
+    storage: &mut dyn Storage,
+    _env: Env,
+    bonding_amount: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
-    let address = get_ica_address(storage, channel)?;
+    let ica_channel = ICA_CHANNEL.load(storage)?;
+    // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
+    let address = get_ica_address(storage, ica_channel)?;
     let config = CONFIG.load(storage)?;
     // we query the current balance on our ica address
     let base_balance = QueryBalanceRequest {
@@ -65,21 +103,23 @@ pub fn prepare_full_query(
     };
     let lp_balance = QueryBalanceRequest {
         address,
-        denom: config.pool_denom,
+        denom: config.pool_denom.clone(),
     };
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
     // we use the current current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
+    // since we're going to be moving the entire pending bond queue to the bond queue in this icq, we  can
+    // fold the PENDING_BOND_QUEUE
+    let balance = get_usable_bond_balance(storage, bonding_amount)?;
 
-    // fetch current balance of contract for join_pool query
-    let balance = querier.query_balance(env.contract.address, config.local_denom)?;
-    // todo: fold claimable funds
+    // we save the amount to scale the slippage against in the icq ack for other incoming bonds
+    SIMULATED_JOIN_AMOUNT_IN.save(storage, &balance)?;
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
         tokens_in: vec![OsmoCoin {
             denom: config.base_denom.clone(),
-            amount: balance.amount.to_string(),
+            amount: balance.to_string(),
         }],
     };
 
@@ -97,8 +137,12 @@ pub fn prepare_full_query(
         quote_asset_denom: config.quote_denom,
     };
 
+    let lock_by_id = LockedRequest {
+        lock_id: OSMO_LOCK.may_load(storage)?.unwrap_or(1),
+    };
+
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    Ok(Query::new()
+    let q = Query::new()
         .add_request(
             base_balance.encode_to_vec(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
@@ -123,7 +167,11 @@ pub fn prepare_full_query(
             spot_price.encode_to_vec(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         )
-        .encode_pkt())
+        .add_request(
+            lock_by_id.encode_to_vec(),
+            "/osmosis.lockup.Query/LockedByID".to_string(),
+        );
+    Ok(q.encode_pkt())
 }
 
 // TODO add quote denom to base denom conversion
@@ -152,14 +200,14 @@ pub fn calc_total_balance(
     Ok(ica_balance
         .checked_add(Uint128::new(base.amount.parse::<u128>().map_err(
             |err| ContractError::ParseIntError {
-                error: err,
+                error: format!("ica_balance:{:?}", err),
                 value: base.amount.clone(),
             },
         )?))?
         .checked_add(
             Uint128::new(quote.amount.parse::<u128>().map_err(|err| {
                 ContractError::ParseIntError {
-                    error: err,
+                    error: format!("quote_denom:{:?}", err),
                     value: quote.amount.clone(),
                 }
             })?)
@@ -207,24 +255,20 @@ mod tests {
 
         let res = try_icq(deps.as_mut().storage, q, env.clone()).unwrap();
 
+        let icq_channel = ICQ_CHANNEL.load(deps.as_mut().storage).unwrap();
+
         let pkt = IbcMsg::SendPacket {
-            channel_id: ICQ_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            channel_id: icq_channel.clone(),
             data: to_binary(
-                &prepare_full_query(
-                    deps.as_ref().storage,
-                    deps.as_ref().querier,
-                    env.clone(),
-                    ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-                )
-                .unwrap(),
+                &prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(0)).unwrap(),
             )
             .unwrap(),
-            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
         assert_eq!(
             res.unwrap().msg,
-            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt)
+            create_ibc_ack_submsg(deps.as_mut().storage, IbcMsgKind::Icq, pkt, icq_channel)
                 .unwrap()
                 .msg
         )

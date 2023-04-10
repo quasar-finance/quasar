@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
@@ -6,20 +9,23 @@ use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
+    bond::Bond,
     error::Trap,
     helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
+    start_unbond::StartUnbond,
     state::{Config, LpCache, Unbond},
 };
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub lock_period: u64,
-    pub pool_id: u64,
-    pub pool_denom: String,
-    pub local_denom: String,
-    pub base_denom: String,
-    pub quote_denom: String,
+    pub pool_id: u64,       // 2
+    pub pool_denom: String, // gamm/pool/2
+    // if setup correctly, local_denom on quasar == base_denom on osmosis
+    pub local_denom: String, // ibc/ED07
+    pub base_denom: String,  // uosmo
+    pub quote_denom: String, // uatom
     // TODO should this be outgoing_transfer_channel?
     pub transfer_channel: String,
     // TODO rename to return_transfer_channel
@@ -34,9 +40,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub config: Config,
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -71,11 +75,36 @@ pub enum QueryMsg {
     ListPendingAcks {},
     #[returns(ListRepliesResponse)]
     ListReplies {},
+    #[returns(OsmoLockResponse)]
+    OsmoLock {},
+    #[returns(SimulatedJoinResponse)]
+    SimulatedJoin {},
+    #[returns(GetQueuesResponse)]
+    GetQueues {},
+}
+
+#[cw_serde]
+pub struct GetQueuesResponse {
+    pub pending_bond_queue: Vec<Bond>,
+    pub bond_queue: Vec<Bond>,
+    pub start_unbond_queue: Vec<StartUnbond>,
+    pub unbond_queue: Vec<Unbond>,
+}
+
+#[cw_serde]
+pub struct SimulatedJoinResponse {
+    pub amount: Option<Uint128>,
+    pub result: Option<Uint128>,
+}
+
+#[cw_serde]
+pub struct OsmoLockResponse {
+    pub lock_id: u64,
 }
 
 #[cw_serde]
 pub struct ListBondingClaimsResponse {
-    pub bonds: HashMap<(Addr, String), Uint128>,
+    pub bonds: HashMap<Addr, (String, Uint128)>,
 }
 
 #[cw_serde]
@@ -90,17 +119,17 @@ pub struct ListPrimitiveSharesResponse {
 
 #[cw_serde]
 pub struct ListPendingAcksResponse {
-    pub pending: HashMap<u64, IbcMsgKind>,
+    pub pending: HashMap<String, IbcMsgKind>,
 }
 
 #[cw_serde]
 pub struct ListUnbondingClaimsResponse {
-    pub unbonds: HashMap<(Addr, String), Unbond>,
+    pub unbonds: HashMap<Addr, (String, Unbond)>,
 }
 
 #[cw_serde]
 pub struct UnbondingClaimResponse {
-    pub unbond: Unbond,
+    pub unbond: Option<Unbond>,
 }
 
 #[cw_serde]
@@ -110,7 +139,7 @@ pub struct ChannelsResponse {
 
 #[cw_serde]
 pub struct TrappedErrorsResponse {
-    pub errors: Vec<(u64, Trap)>,
+    pub errors: HashMap<String, Trap>,
 }
 
 #[cw_serde]
@@ -149,15 +178,79 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
+pub enum UnlockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+    Migration,
+}
+
+impl Display for UnlockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnlockOnly::Bond => write!(f, "bond"),
+            UnlockOnly::StartUnbond => write!(f, "start_unbond"),
+            UnlockOnly::Unbond => write!(f, "unbond"),
+            UnlockOnly::Migration => write!(f, "migration"),
+        }
+    }
+}
+
+#[cw_serde]
+pub enum LockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+    Migration,
+}
+
+impl Display for LockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LockOnly::Bond => write!(f, "bond"),
+            LockOnly::StartUnbond => write!(f, "start_unbond"),
+            LockOnly::Unbond => write!(f, "unbond"),
+            LockOnly::Migration => write!(f, "migration"),
+        }
+    }
+}
+
+#[cw_serde]
 pub enum ExecuteMsg {
-    Bond { id: String },
-    StartUnbond { id: String, share_amount: Uint128 },
-    Unbond { id: String },
+    Bond {
+        id: String,
+    },
+    StartUnbond {
+        id: String,
+        share_amount: Uint128,
+    },
+    Unbond {
+        id: String,
+    },
+    SetDepositor {
+        depositor: String,
+    },
     // accept a dispatched transfer from osmosis
-    AcceptReturningFunds { id: u64 },
+    AcceptReturningFunds {
+        id: u64,
+    },
     // try to close a channel where a timout occured
-    CloseChannel { channel_id: String },
-    ReturnTransfer { amount: Uint128 },
-    Ack { ack: IbcPacketAckMsg },
+    CloseChannel {
+        channel_id: String,
+    },
+    Ack {
+        ack: IbcPacketAckMsg,
+    },
     TryIcq {},
+    Unlock {
+        unlock_only: UnlockOnly,
+    },
+    Lock {
+        lock_only: LockOnly,
+    },
+    ManualTimeout {
+        seq: u64,
+        channel: String,
+        should_unlock: bool,
+    },
 }

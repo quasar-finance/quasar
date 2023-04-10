@@ -1,14 +1,16 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Uint128};
+use cosmwasm_std::{Binary, Coin, Decimal, Timestamp, Uint128};
 
-use cw20::Expiration;
 use cw20::{AllowanceResponse, BalanceResponse};
+use cw20::{Expiration, TokenInfoResponse};
+use cw_asset::AssetInfo;
 pub use cw_controllers::ClaimsResponse;
 use lp_strategy::state::LpCache;
 use quasar_types::callback::{BondResponse, StartUnbondResponse, UnbondResponse};
+use vault_rewards::state::DistributionSchedule;
 
-use crate::state::{BondingStub, InvestmentInfo, Unbond};
+use crate::state::{BondingStub, Cap, InvestmentInfo, Unbond};
 
 #[cw_serde]
 pub enum PrimitiveInitMsg {
@@ -42,10 +44,15 @@ pub struct InstantiateMsg {
     pub min_withdrawal: Uint128,
     // the array of primitives to subscribe to for this vault
     pub primitives: Vec<PrimitiveConfig>,
-    // // to be extended & discussed later
-    // pub entry_fee: Decimal,
-    // pub exit_fee: Decimal,
-    // pub fee_receiver: String, // address of the fee receiver
+    // the total amount of tokens that can be deposited, eg: max uosmo of the contract
+    pub total_cap: Uint128,
+
+    // vault rewards contract code id
+    pub vault_rewards_code_id: u64,
+    // vault reward token
+    pub reward_token: AssetInfo,
+    // vault reward token distribution schedule
+    pub reward_distribution_schedules: Vec<DistributionSchedule>,
 }
 
 #[cw_serde]
@@ -121,6 +128,7 @@ pub enum ExecuteMsg {
         owner: String,
         amount: Uint128,
     },
+    ClearCache {},
 }
 
 #[cw_serde]
@@ -129,6 +137,9 @@ pub enum QueryMsg {
     /// Claims shows the number of tokens this address can access when they are done unbonding
     #[returns(ClaimsResponse)]
     Claims { address: String },
+
+    #[returns(GetCapResponse)]
+    GetCap {},
     /// Investment shows metadata on the staking info of the contract
     #[returns(InvestmentResponse)]
     Investment {},
@@ -139,6 +150,10 @@ pub enum QueryMsg {
     /// PendingBonds shows the bonds that are currently in the process of being deposited for a user
     #[returns(PendingBondsResponse)]
     PendingBonds { address: String },
+
+    /// PendingBondsById shows the bonds that are currently in the process of being deposited for a bond id
+    #[returns(PendingBondsByIdResponse)]
+    PendingBondsById { bond_id: String },
 
     /// GetTvlInfo gets all info necessary for
     #[returns(TvlInfoResponse)]
@@ -156,8 +171,11 @@ pub enum QueryMsg {
     #[returns(BalanceResponse)]
     Balance { address: String },
     /// Implements CW20. Returns metadata on the contract - name, decimals, supply, etc.
-    #[returns(VaultTokenInfoResponse)]
+    #[returns(TokenInfoResponse)]
     TokenInfo {},
+    /// Additional token metadata, includes regular token info too
+    #[returns(VaultTokenInfoResponse)]
+    AdditionalTokenInfo {},
     /// Implements CW20 "allowance" extension.
     /// Returns how much spender can use from owner account, 0 if unset.
     #[returns(AllowanceResponse)]
@@ -170,6 +188,11 @@ pub struct MigrateMsg {}
 #[cw_serde]
 pub struct InvestmentResponse {
     pub info: InvestmentInfo,
+}
+
+#[cw_serde]
+pub struct GetCapResponse {
+    pub cap: Cap,
 }
 
 #[cw_serde]
@@ -188,6 +211,12 @@ pub struct PendingBondsResponse {
 }
 
 #[cw_serde]
+pub struct PendingBondsByIdResponse {
+    /// the bonds that are currently in the process of being deposited for a user
+    pub pending_bonds: Vec<BondingStub>,
+}
+
+#[cw_serde]
 pub struct PendingUnbondsResponse {
     /// the unbonds that are currently in the process of being withdrawn by an user
     pub pending_unbonds: Vec<Unbond>,
@@ -202,6 +231,7 @@ pub struct VaultTokenInfoResponse {
     pub symbol: String,
     pub decimals: u8,
     pub total_supply: Uint128,
+    pub creation_time: Timestamp,
 }
 
 #[cw_serde]

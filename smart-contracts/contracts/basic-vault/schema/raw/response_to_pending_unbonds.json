@@ -1,63 +1,120 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "PendingBondsResponse",
+  "title": "PendingUnbondsResponse",
   "type": "object",
   "required": [
-    "pending_bond_ids",
-    "pending_bonds"
+    "pending_unbond_ids",
+    "pending_unbonds"
   ],
   "properties": {
-    "pending_bond_ids": {
+    "pending_unbond_ids": {
       "description": "the bond ids that are registered as pending for a user",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "pending_bonds": {
-      "description": "the bonds that are currently in the process of being deposited for a user",
+    "pending_unbonds": {
+      "description": "the unbonds that are currently in the process of being withdrawn by an user",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/BondingStub"
+        "$ref": "#/definitions/Unbond"
       }
     }
   },
   "additionalProperties": false,
   "definitions": {
-    "BondResponse": {
-      "description": "BondResponse is the response of a the primitive once the funds are succesfully bonded",
+    "Coin": {
       "type": "object",
       "required": [
-        "bond_id",
-        "share_amount"
+        "amount",
+        "denom"
       ],
       "properties": {
-        "bond_id": {
-          "type": "string"
+        "amount": {
+          "$ref": "#/definitions/Uint128"
         },
-        "share_amount": {
-          "description": "the amount of tokens that were bonded",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Uint128"
-            }
-          ]
+        "denom": {
+          "type": "string"
         }
       }
     },
-    "BondingStub": {
+    "Timestamp": {
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Uint64"
+        }
+      ]
+    },
+    "Uint128": {
+      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "type": "string"
+    },
+    "Uint64": {
+      "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+      "type": "string"
+    },
+    "Unbond": {
       "type": "object",
       "required": [
-        "address"
+        "shares",
+        "stub"
+      ],
+      "properties": {
+        "shares": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "stub": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnbondingStub"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "UnbondResponse": {
+      "type": "object",
+      "required": [
+        "unbond_id"
+      ],
+      "properties": {
+        "unbond_id": {
+          "type": "string"
+        }
+      }
+    },
+    "UnbondingStub": {
+      "type": "object",
+      "required": [
+        "address",
+        "unbond_funds"
       ],
       "properties": {
         "address": {
           "type": "string"
         },
-        "bond_response": {
+        "unbond_funds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coin"
+          }
+        },
+        "unbond_response": {
           "anyOf": [
             {
-              "$ref": "#/definitions/BondResponse"
+              "$ref": "#/definitions/UnbondResponse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unlock_time": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Timestamp"
             },
             {
               "type": "null"
@@ -66,10 +123,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "Uint128": {
-      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
-      "type": "string"
     }
   }
 }

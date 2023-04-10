@@ -1,35 +1,36 @@
 use crate::bond::{batch_bond, create_share};
 use crate::error::{ContractError, Never, Trap};
+
 use crate::helpers::{
-    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address, unlock_on_error,
-    IbcMsgKind, IcaMessages,
+    ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
+    get_usable_bond_balance, get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
     calculate_share_out_min_amount, consolidate_exit_pool_amount_into_local_denom,
-    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens,
+    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, scale_join_pool,
 };
 use crate::icq::calc_total_balance;
-
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, ICA_BALANCE, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TRAPS,
+    LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
+    ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OSMO_LOCK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use std::str::FromStr;
 
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
+use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
-use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
+use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
@@ -43,8 +44,8 @@ use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
-    IbcTimeout, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
+    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -217,8 +218,7 @@ pub fn ibc_channel_close(
     _env: Env,
     channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // TODO: what to do here?
-    // for now we just close the channel
+    // TODO look up the channel, in channels, and update the state to closed
     Ok(IbcBasicResponse::new()
         .add_attribute("channel", channel.channel().endpoint.channel_id.clone())
         .add_attribute("connection", channel.channel().connection_id.clone()))
@@ -241,7 +241,18 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg)?))
+    // We save the ack binary here for error recovery in case of an join pool recovery
+    // this should be cleaned up from state in the ack submsg Ok case
+    NEW_RECOVERY_ACK.save(
+        deps.storage,
+        (
+            msg.original_packet.sequence,
+            msg.original_packet.src.channel_id.clone(),
+        ),
+        &msg.acknowledgement,
+    )?;
+    let chan = msg.original_packet.src.channel_id.clone();
+    Ok(IbcBasicResponse::new().add_submessage(ack_submsg(deps.storage, env, msg, chan)?))
 }
 
 pub fn handle_succesful_ack(
@@ -250,7 +261,13 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let kind = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    let kind = NEW_PENDING_ACK.load(
+        deps.storage,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id.clone(),
+        ),
+    )?;
     match kind {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
         IbcMsgKind::Transfer { pending, amount } => {
@@ -287,7 +304,8 @@ pub fn handle_transfer_ack(
         pending.bonds,
     )?;
 
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
+    // TODO move this update to after the lock
+    TOTAL_VAULT_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
         Ok(old.checked_add(total_amount)?)
     })?;
 
@@ -303,14 +321,27 @@ pub fn handle_icq_ack(
     env: Env,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
+    // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
     // we have only dispatched on query and a single kind at this point
-    let balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
+    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+    let base_balance =
+        Uint128::new(
+            raw_balance
+                .parse::<u128>()
+                .map_err(|err| ContractError::ParseIntError {
+                    error: format!("base_balance:{}", err),
+                    value: raw_balance.to_string(),
+                })?,
+        );
+
+    let usable_base_balance = get_usable_compound_balance(storage, base_balance)?;
+
     // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
@@ -326,6 +357,28 @@ pub fn handle_icq_ack(
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
+    let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+    // parse the locked lp shares on Osmosis, a bit messy
+    let gamms = if let Some(lock) = lock {
+        lock.coins
+    } else {
+        vec![]
+    };
+    let config = CONFIG.load(storage)?;
+    let locked_lp_shares = gamms
+        .into_iter()
+        .find(|val| val.denom == config.pool_denom)
+        .unwrap_or(OsmoCoin {
+            denom: config.pool_denom.clone(),
+            amount: Uint128::zero().to_string(),
+        });
+
+    let old_lp_shares = LP_SHARES.load(storage)?;
+    // update the locked shares in our cache
+    LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
+        cache.locked_shares = locked_lp_shares.amount.parse()?;
+        Ok(cache)
+    })?;
 
     let spot_price =
         Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
@@ -335,14 +388,7 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        Uint128::new(
-            balance
-                .parse::<u128>()
-                .map_err(|err| ContractError::ParseIntError {
-                    error: err,
-                    value: balance,
-                })?,
-        ),
+        usable_base_balance,
         &exit_pool.tokens_out,
         spot_price,
     )?;
@@ -350,21 +396,26 @@ pub fn handle_icq_ack(
     let exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
-    ICA_BALANCE.save(storage, &total_balance)?;
-    SIMULATED_JOIN_RESULT.save(storage, &join_pool)?;
+    let queued_bond_balance: StdResult<Uint128> = BOND_QUEUE
+        .iter(storage)?
+        .fold(Ok(Uint128::zero()), |acc, val| Ok(acc? + val?.amount));
+
+    let actual = get_usable_bond_balance(storage, queued_bond_balance?)?;
+
+    TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
+    // TODO remove scaled
+    let scaled = scale_join_pool(storage, actual, join_pool, false)?;
+
+    SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
     let bond = batch_bond(storage, &env, total_balance)?;
-
-    // TODO move the LP_SHARES.load to start_unbond
-    let start_unbond = batch_start_unbond(storage, &env)?;
-
-    let unbond = batch_unbond(storage, &env)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
+
     if let Some(msg) = bond {
         msges.push(msg);
         attrs.push(Attribute::new("bond-status", "bonding"));
@@ -373,26 +424,24 @@ pub fn handle_icq_ack(
         })?;
     } else {
         attrs.push(Attribute::new("bond-status", "empty"));
-    }
-
-    if let Some(msg) = start_unbond {
-        msges.push(msg);
-        attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
-        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-            Ok(lock.lock_start_unbond())
-        })?;
-    } else {
-        attrs.push(Attribute::new("start-unbond-status", "empty"));
-    }
-
-    if let Some(msg) = unbond {
-        msges.push(msg);
-        attrs.push(Attribute::new("unbond-status", "unbonding"));
-        IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
-            Ok(lock.lock_unbond())
-        })?;
-    } else {
-        attrs.push(Attribute::new("unbond-status", "empty"));
+        if let Some(msg) = batch_start_unbond(storage, &env)? {
+            msges.push(msg);
+            attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
+            IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_start_unbond())
+            })?;
+        } else {
+            attrs.push(Attribute::new("start-unbond-status", "empty"));
+            if let Some(msg) = batch_unbond(storage, &env, old_lp_shares)? {
+                msges.push(msg);
+                attrs.push(Attribute::new("unbond-status", "unbonding"));
+                IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+                    Ok(lock.lock_unbond())
+                })?;
+            } else {
+                attrs.push(Attribute::new("unbond-status", "empty"));
+            }
+        }
     }
 
     Ok(Response::new().add_submessages(msges).add_attributes(attrs))
@@ -410,15 +459,39 @@ pub fn handle_ica_ack(
         IcaMessages::JoinSwapExternAmountIn(mut data) => {
             handle_join_pool(storage, &env, ack_bin, &mut data)
         }
-        IcaMessages::LockTokens(data) => {
-            handle_lock_tokens_ack(storage, &env, data, ack_bin, querier)
+        IcaMessages::LockTokens(data, lp_shares) => {
+            handle_lock_tokens_ack(storage, &env, data, lp_shares, ack_bin, querier)
         }
-        IcaMessages::BeginUnlocking(data) => handle_start_unbond_ack(storage, querier, &env, data),
+        IcaMessages::BeginUnlocking(data, total) => {
+            handle_start_unbond_ack(storage, querier, &env, data, total)
+        }
         IcaMessages::ExitPool(data) => handle_exit_pool_ack(storage, &env, data, ack_bin),
         // TODO decide where we unlock the transfer ack unlock, here or in the ibc hooks receive
         IcaMessages::ReturnTransfer(data) => handle_return_transfer_ack(storage, querier, data),
+        // After a RecoveryExitPool, we do a return transfer that should hit RecoveryReturnTransfer
+        IcaMessages::RecoveryExitPool(_pending) => todo!(),
+        // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
+        IcaMessages::RecoveryReturnTransfer(_pending) => todo!(),
     }
 }
+
+// fn handle_recovery_return_transfer(
+//     storage: &mut dyn Storage,
+//     pending: PendingReturningRecovery,
+
+// ) -> Result<Response, ContractError> {
+//     // if we have the succesfully received the recovery, we create an entry
+//     for p in pending.returning {
+//         if let RawAmount::LocalDenom(val) = p.amount {
+//             CLAIMABLE_FUNDS.save(storage, (p.owner, p.id), &val)?;
+//         } else {
+//             return Err(ContractError::IncorrectRawAmount);
+//         }
+//         // remove the error from TRAPS
+//         TRAPS.remove(storage, (pending.trapped_id, ));
+//     }
+//     todo!()
+// }
 
 fn handle_join_pool(
     storage: &mut dyn Storage,
@@ -434,7 +507,7 @@ fn handle_join_pool(
     let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
     let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
         ContractError::ParseIntError {
-            error: err,
+            error: format!("{}", err),
             value: resp.share_out_amount,
         }
     })?);
@@ -460,16 +533,19 @@ fn handle_join_pool(
         }],
     )?;
 
+    let channel = ICA_CHANNEL.load(storage)?;
+
     let outgoing = ica_send(
         msg,
         ica_channel,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
     let msg = create_ibc_ack_submsg(
         storage,
-        IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone())),
+        IbcMsgKind::Ica(IcaMessages::LockTokens(data.clone(), shares_out)),
         outgoing,
+        channel,
     )?;
     Ok(Response::new().add_submessage(msg))
 }
@@ -478,6 +554,7 @@ fn handle_lock_tokens_ack(
     storage: &mut dyn Storage,
     _env: &Env,
     data: PendingBond,
+    total_lp_shares: Uint128,
     ack_bin: Binary,
     querier: QuerierWrapper,
 ) -> Result<Response, ContractError> {
@@ -486,13 +563,23 @@ fn handle_lock_tokens_ack(
 
     // save the lock id in the contract
     OSMO_LOCK.save(storage, &resp.id)?;
-    let total_shares = data.bonds.iter().try_fold(Uint128::zero(), |acc, val| {
-        acc.checked_add(val.claim_amount)
-    })?;
 
     LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.d_unlocked_shares = old.d_unlocked_shares.checked_sub(total_shares)?;
-        old.locked_shares = old.locked_shares.checked_add(total_shares)?;
+        old.d_unlocked_shares =
+            old.d_unlocked_shares
+                .checked_sub(total_lp_shares)
+                .map_err(|err| {
+                    ContractError::TracedOverflowError(
+                        err,
+                        "update_unlocked_deposit_shares".to_string(),
+                    )
+                })?;
+        old.locked_shares = old
+            .locked_shares
+            .checked_add(total_lp_shares)
+            .map_err(|err| {
+                ContractError::TracedOverflowError(err, "update_locked_shares".to_string())
+            })?;
         Ok(old)
     })?;
 
@@ -513,7 +600,12 @@ fn handle_lock_tokens_ack(
             };
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(
+                storage,
+                cosmos_msg,
+                claim.owner,
+                claim.bond_id,
+            )?);
         }
     }
 
@@ -537,30 +629,21 @@ fn handle_exit_pool_ack(
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
-    let total_tokens = Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
-        ContractError::ParseIntError {
-            error: err,
-            value: msg.token_out_amount,
-        }
-    })?);
+    let total_exited_tokens =
+        Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
+            ContractError::ParseIntError {
+                error: format!("{}", err),
+                value: msg.token_out_amount,
+            }
+        })?);
 
-    // return the sum of all lp tokens while converting them
-    let total_lp = data.lp_to_local_denom(total_tokens)?;
+    // we don't need the sum of the lp tokens returned by lp_to_local_denom here
+    let _ = data.lp_to_local_denom(total_exited_tokens)?;
 
-    // remove the liquidated lp tokens from our unlocked lp tokens
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_sub(total_lp)?;
-        Ok(old)
-    })?;
-
-    ICA_BALANCE.update(storage, |old| -> Result<Uint128, ContractError> {
-        Ok(old.checked_sub(total_tokens)?)
-    })?;
-
-    let sub_msg = transfer_batch_unbond(storage, env, data, total_tokens)?;
+    let sub_msg = transfer_batch_unbond(storage, env, data, total_exited_tokens)?;
     Ok(Response::new()
         .add_submessage(sub_msg)
-        .add_attribute("transfer-funds", total_tokens.to_string()))
+        .add_attribute("transfer-funds", total_exited_tokens.to_string()))
 }
 
 fn handle_return_transfer_ack(
@@ -571,8 +654,17 @@ fn handle_return_transfer_ack(
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in data.unbonds.iter() {
         let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?)
+        callback_submsgs.push(create_callback_submsg(
+            storage,
+            cosmos_msg,
+            unbond.owner.clone(),
+            unbond.id.clone(),
+        )?)
     }
+
+    IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_unbond())
+    })?;
 
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
@@ -587,14 +679,24 @@ pub fn handle_failing_ack(
     error: String,
 ) -> Result<Response, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
-    let step = PENDING_ACK.load(deps.storage, pkt.original_packet.sequence)?;
+    let step = NEW_PENDING_ACK.load(
+        deps.storage,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id.clone(),
+        ),
+    )?;
     unlock_on_error(deps.storage, &step)?;
     TRAPS.save(
         deps.storage,
-        pkt.original_packet.sequence,
+        (
+            pkt.original_packet.sequence,
+            pkt.original_packet.src.channel_id,
+        ),
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
@@ -609,25 +711,36 @@ pub fn ibc_packet_timeout(
     _env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    on_packet_failure(deps, msg.packet, "timeout".to_string())
+    on_packet_timeout(
+        deps,
+        msg.packet.sequence,
+        msg.packet.src.channel_id,
+        "timeout".to_string(),
+        true,
+    )
 }
 
-fn on_packet_failure(
+pub(crate) fn on_packet_timeout(
     deps: DepsMut,
-    packet: IbcPacket,
+    sequence: u64,
+    channel: String,
     error: String,
+    should_unlock: bool,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let step = PENDING_ACK.load(deps.storage, packet.sequence)?;
-    unlock_on_error(deps.storage, &step)?;
+    let step = NEW_PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
+    if should_unlock {
+        unlock_on_error(deps.storage, &step)?;
+    }
     if let IbcMsgKind::Ica(_) = &step {
         TIMED_OUT.save(deps.storage, &true)?
     }
     TRAPS.save(
         deps.storage,
-        packet.sequence,
+        (sequence, channel),
         &Trap {
             error: format!("packet failure: {error}"),
             step,
+            last_succesful: false,
         },
     )?;
     Ok(IbcBasicResponse::default())
@@ -641,7 +754,10 @@ mod tests {
         IbcEndpoint, IbcOrder,
     };
 
-    use crate::test_helpers::default_setup;
+    use crate::{
+        state::{Config, SIMULATED_JOIN_AMOUNT_IN},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -649,10 +765,42 @@ mod tests {
     fn handle_icq_ack_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-
         default_setup(deps.as_mut().storage).unwrap();
-        // base64 of '{"data":"ChA6DAoKCgV1b3NtbxIBMEg4ChA6DAoKCgVzdGFrZRIBMEg4ChY6EgoQCgtnYW1tL3Bvb2wvMRIBMEg4Cic6IwoSNDk2MjY4NTg3NDQ1NTczOTAwEg0KBXVvc21vEgQxMDAwSDgKBAgSSDgKGjoWChQxLjAwMDAwMDAwMDAwMDAwMDAwMEg4"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hBNkRBb0tDZ1YxYjNOdGJ4SUJNRWc0Q2hBNkRBb0tDZ1Z6ZEdGclpSSUJNRWc0Q2hZNkVnb1FDZ3RuWVcxdEwzQnZiMnd2TVJJQk1FZzRDaWM2SXdvU05EazJNalk0TlRnM05EUTFOVGN6T1RBd0VnMEtCWFZ2YzIxdkVnUXhNREF3U0RnS0JBZ1NTRGdLR2pvV0NoUXhMakF3TURBd01EQXdNREF3TURBd01EQXdNRWc0In0=").unwrap();
+
+        CONFIG
+            .save(
+                deps.as_mut().storage,
+                &Config {
+                    lock_period: 100,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom:
+                        "ibc/D176154B0C63D1F9C6DCFB4F70349EBF2E2B5A87A05902F57A6AE92B863E9AEC"
+                            .to_string(),
+                    local_denom: "ibc/local_osmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                },
+            )
+            .unwrap();
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+        SIMULATED_JOIN_AMOUNT_IN
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
+
+        // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
