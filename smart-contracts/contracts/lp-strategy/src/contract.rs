@@ -633,7 +633,7 @@ mod tests {
             share_amount: Uint128::new(69),
         };
 
-        let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let res = execute(deps.as_mut(), env, info, msg);
         assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
     }
 

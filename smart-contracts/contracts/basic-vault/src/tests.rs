@@ -2059,7 +2059,7 @@ mod tests {
         let info = mock_info("pepe", &coins(420, "uqsr"));
 
         let msg = ExecuteMsg::Unbond { amount: None };
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
 
         let msg = ExecuteMsg::Unbond {

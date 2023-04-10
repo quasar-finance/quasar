@@ -208,7 +208,7 @@ fn handle_join_swap_recovery(
                     amount: RawAmount::LpShares(amount.checked_mul(total_lp)?.checked_div(
                         Uint128::new(join_result.share_out_amount.parse().map_err(|err| {
                             ContractError::ParseIntError {
-                                error: format!("join_swap_recovery:{}", err),
+                                error: format!("join_swap_recovery:{err}"),
                                 value: join_result.share_out_amount.clone(),
                             }
                         })?),
