@@ -235,10 +235,9 @@ mod tests {
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
-    
 
     use cw_storage_plus::Map;
-    
+
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
         ica::handshake::IcaMetadata,
