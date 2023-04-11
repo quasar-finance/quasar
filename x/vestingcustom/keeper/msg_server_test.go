@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "quasar/testutil/keeper"
+	keepertest "github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/x/vestingcustom/keeper"
 	"github.com/quasarlabs/quasarnode/x/vestingcustom/types"
 )

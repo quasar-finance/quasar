@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"testing"
 
+	testkeeper "github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/x/vestingcustom/types"
 	"github.com/stretchr/testify/require"
-	testkeeper "quasar/testutil/keeper"
 )
 
 func TestGetParams(t *testing.T) {
