@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"quasartodel/x/vestingcustom/keeper"
-	"quasartodel/x/vestingcustom/types"
+	"github.com/quasarlabs/quasarnode/x/vestingcustom/keeper"
+	"github.com/quasarlabs/quasarnode/x/vestingcustom/types"
 )
 
 func SimulateMsgCreateVestingAccount(

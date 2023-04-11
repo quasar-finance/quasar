@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"quasartodel/x/vestingcustom/types"
+	"github.com/quasarlabs/quasarnode/x/vestingcustom/types"
 )
 
 func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCreateVestingAccount) (*types.MsgCreateVestingAccountResponse, error) {

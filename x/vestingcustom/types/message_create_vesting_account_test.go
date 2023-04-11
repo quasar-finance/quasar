@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/quasarlabs/quasarnode/testutil/sample"
 	"github.com/stretchr/testify/require"
-	"quasartodel/testutil/sample"
 )
 
 func TestMsgCreateVestingAccount_ValidateBasic(t *testing.T) {
