@@ -28,6 +28,23 @@ pub fn get_user_reward_index(storage: &dyn Storage, user: &Addr) -> UserRewardIn
         })
 }
 
+// let mut user_reward_index = USER_REWARD_INDEX
+// .load(storage, user.clone())
+// .unwrap_or_else(|_| UserRewardIndex {
+//     balance: None,
+//     history: vec![],
+// });
+
+// if let Some(prev_balance) = user_reward_index.balance {
+// user_reward_index.history.push(DistributionSchedule {
+//     start: prev_balance.reward_index,
+//     end: env.block.height,
+//     amount: todo!(),
+// });
+// }
+
+// user_reward_index
+
 pub fn is_contract_admin(
     querier: &QuerierWrapper,
     env: &Env,
