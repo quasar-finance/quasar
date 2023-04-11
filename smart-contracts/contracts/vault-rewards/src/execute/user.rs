@@ -450,4 +450,54 @@ mod tests {
         assert_eq!(res1.unwrap(), Uint128::new(300000000)); // user1 holds 1/3 of the vaulth
         assert_eq!(res2.unwrap(), Uint128::new(600000000)); // user2 holds 2/3 of the vaulth
     }
+
+    #[test]
+    fn execute_get_claim_amount_without_distribution_schedule() {
+        let mut deps = mock_dependencies(&[]);
+        let mut env = mock_env();
+        let config = Config {
+            vault_token: Addr::unchecked("vault_token"),
+            reward_token: AssetInfo::native("reward_token"),
+            distribution_schedules: vec![],
+            total_claimed: Uint128::zero(),
+        };
+        env.block.height = 1;
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        let user1 = Addr::unchecked("user1");
+        let user2 = Addr::unchecked("user2");
+
+        deps.querier
+            .with_token_balance(user1.as_ref(), &Uint128::new(100));
+        deps.querier
+            .with_token_balance(user2.as_ref(), &Uint128::new(200));
+
+        let user_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let res = get_claim_amount(deps.as_ref(), &env, &config, &user_reward_index);
+
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+        assert!(res.is_ok());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+
+        let user1_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let user2_reward_index = get_user_reward_index(&deps.storage, &user2);
+        let res1 = get_claim_amount(deps.as_ref(), &env, &config, &user1_reward_index);
+        let res2 = get_claim_amount(deps.as_ref(), &env, &config, &user2_reward_index);
+
+        assert!(res1.is_err());
+        assert_eq!(res1.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+        assert!(res2.is_err());
+        assert_eq!(res2.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+    }
 }
