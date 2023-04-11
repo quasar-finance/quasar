@@ -278,9 +278,8 @@ mod test {
     use cosmwasm_std::Addr;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Decimal, Uint128,
+        Decimal,
     };
-    use quasar_types::callback::BondResponse;
 
     #[test]
     fn fail_if_duplicate_bond_id() {
@@ -362,14 +361,7 @@ mod test {
         assert_eq!(0, res.messages.len());
 
         // second bond should fail
-        let res = on_bond(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            share_amount.into(),
-            bond_id,
-        )
-        .unwrap_err();
+        let res = on_bond(deps.as_mut(), env, info, share_amount.into(), bond_id).unwrap_err();
         match res {
             ContractError::DuplicateBondResponse { .. } => {}
             _ => panic!("Unexpected error: {:?}", res),

@@ -134,7 +134,7 @@ pub fn handle_callback_reply(
         .add_attribute("reply-msg-id", msg.id.to_string())
         .add_attribute("reply-result", format!("{:?}", msg.result))
         .add_attribute("action", "handle-callback-reply")
-        .add_attribute("callback-info", format!("{:?}", callback)))
+        .add_attribute("callback-info", format!("{callback:?}")))
 }
 
 // test handle callback reply
@@ -277,7 +277,7 @@ mod tests {
                 unbond_id: "unbond_id".to_string(),
             }),
             amount: None,
-            owner: owner,
+            owner,
         };
         let msg = Reply {
             id: 1,
@@ -302,7 +302,7 @@ mod tests {
                 unbond_id: "unbond_id".to_string(),
             }),
             amount: Some(Uint128::new(100)),
-            owner: owner,
+            owner,
         };
         let msg = Reply {
             id: 1,

@@ -72,7 +72,7 @@ pub fn scale_join_pool(
                 // if the string is empty, we return 0 shares out
                 std::num::IntErrorKind::Empty => Ok(0),
                 _ => Err(ContractError::ParseIntError {
-                    error: format!("scale:{}", err),
+                    error: format!("scale:{err}"),
                     value: join.share_out_amount,
                 }),
             }
@@ -114,7 +114,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
         base.amount
             .parse::<u128>()
             .map_err(|err| ContractError::ParseIntError {
-                error: format!("base_amount:{}", err),
+                error: format!("base_amount:{err}"),
                 value: base.amount.clone(),
             })?,
     )
@@ -124,7 +124,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
                 .amount
                 .parse::<u128>()
                 .map_err(|err| ContractError::ParseIntError {
-                    error: format!("quote_amount:{}", err),
+                    error: format!("quote_amount:{err}"),
                     value: quote.amount.clone(),
                 })?,
         )
@@ -235,10 +235,9 @@ mod tests {
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
-    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
     use cw_storage_plus::Map;
-    use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
+
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
         ica::handshake::IcaMetadata,
