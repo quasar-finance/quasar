@@ -15,20 +15,22 @@ use cw_multi_test::{
 };
 use vault_rewards::state::DistributionSchedule;
 
+pub type QuasarVaultApp = App<
+    BankKeeper,
+    MockApi,
+    MemoryStorage,
+    FailingModule<Empty, Empty, Empty>,
+    WasmKeeper<Empty, Empty>,
+    StakeKeeper,
+    DistributionKeeper,
+    AcceptingModule,
+>;
+
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct QuasarVaultSuite {
     #[derivative(Debug = "ignore")]
-    pub app: App<
-        BankKeeper,
-        MockApi,
-        MemoryStorage,
-        FailingModule<Empty, Empty, Empty>,
-        WasmKeeper<Empty, Empty>,
-        StakeKeeper,
-        DistributionKeeper,
-        AcceptingModule,
-    >,
+    pub app: QuasarVaultApp,
     // The account that deploys everything
     pub deployer: Addr,
     // executor address

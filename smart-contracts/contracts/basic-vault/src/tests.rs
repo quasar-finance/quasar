@@ -291,7 +291,7 @@ fn init_msg_with_primitive_details(
     }
 }
 
-fn init<'a>(deps: DepsMut, msg: &InstantiateMsg, env: &Env, info: &MessageInfo) -> Response {
+fn init(deps: DepsMut, msg: &InstantiateMsg, env: &Env, info: &MessageInfo) -> Response {
     instantiate(deps, env.clone(), info.clone(), msg.clone()).unwrap()
 }
 

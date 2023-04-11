@@ -5,7 +5,7 @@ use crate::state::{
 };
 use crate::VaultRewardsError;
 use cosmwasm_std::{
-    Addr, Deps, DepsMut, Env, Order, Querier, QuerierWrapper, Response, StdResult, Uint128,
+    Addr, Deps, DepsMut, Env, Order, Response, StdResult, Uint128,
 };
 use cw20::Cw20Contract;
 use cw_asset::{Asset, AssetInfo};
@@ -86,7 +86,7 @@ pub fn get_claim_amount(
                 .unwrap();
 
             if reward_indexes.last().unwrap().0 != env.block.height && d.end == env.block.height {
-                reward_indexes.push((env.block.height.clone(), RewardIndex { vault_supply }));
+                reward_indexes.push((env.block.height, RewardIndex { vault_supply }));
             }
             // iterate over reward indexes 2 at a time to calculate reward for each period
             reward_indexes
@@ -437,17 +437,17 @@ mod tests {
         assert!(res.is_err());
         assert_eq!(res.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
 
-        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
         let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
         assert!(res.is_ok());
 
-        env.block.height = env.block.height + 10;
+        env.block.height += 10;
 
-        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
 
-        env.block.height = env.block.height + 10;
+        env.block.height += 10;
 
-        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
 
         let user1_reward_index = get_user_reward_index(&deps.storage, &user1);
         let user2_reward_index = get_user_reward_index(&deps.storage, &user2);
