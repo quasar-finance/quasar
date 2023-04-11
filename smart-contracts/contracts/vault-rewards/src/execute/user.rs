@@ -34,6 +34,18 @@ pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, V
     // update global reward index before calculating user claim amount
     update_reward_index(deps.storage, &deps.querier, env)?;
     let claim_amount = get_claim_amount(deps.as_ref(), env, &config, &user_reward_index)?;
+
+    // double check we have enough balance to cover this
+    let contract_reward_token_balance = config
+        .reward_token
+        .query_balance(&deps.querier, &env.contract.address)?;
+    if contract_reward_token_balance < claim_amount {
+        return Err(VaultRewardsError::InsufficientFunds {
+            contract_balance: contract_reward_token_balance,
+            claim_amount,
+        });
+    }
+
     let claim = Asset::new(config.reward_token.clone(), claim_amount).transfer_msg(&user)?;
     user_reward_index.history = vec![];
     USER_REWARD_INDEX.save(deps.storage, user.clone(), &user_reward_index)?;
@@ -110,15 +122,6 @@ pub fn get_claim_amount(
     claim_amount = claim_amount.min(config.get_total_distribution_amount() - config.total_claimed);
     if claim_amount.is_zero() {
         return Err(VaultRewardsError::NoRewardsToClaim {});
-    }
-    let contract_reward_token_balance = config
-        .reward_token
-        .query_balance(&deps.querier, &env.contract.address)?;
-    if contract_reward_token_balance < claim_amount {
-        return Err(VaultRewardsError::InsufficientFunds {
-            contract_balance: contract_reward_token_balance,
-            claim_amount,
-        });
     }
     Ok(claim_amount)
 }
@@ -414,20 +417,10 @@ mod tests {
         let user1 = Addr::unchecked("user1");
         let user2 = Addr::unchecked("user2");
 
-        let contract_reward_balance = Uint128::new(1000000000);
-
         deps.querier
             .with_token_balance(user1.as_ref(), &Uint128::new(100));
         deps.querier
             .with_token_balance(user2.as_ref(), &Uint128::new(200));
-
-        deps.querier.with_bank_balance(
-            MOCK_CONTRACT_ADDR,
-            vec![Coin {
-                denom: "reward_token".to_string(),
-                amount: contract_reward_balance,
-            }],
-        );
 
         let user_reward_index = get_user_reward_index(&deps.storage, &user1);
         let res = get_claim_amount(deps.as_ref(), &env, &config, &user_reward_index);
