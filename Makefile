@@ -12,6 +12,22 @@ MOCKSDIR = $(CURDIR)/testutil/mock
 
 export GO111MODULE = on
 
+## Helper function to show help with `make` or  `make help`
+
+.DEFAULT_GOAL := help
+
+HELP_FUN = \
+	%help; while(<>){push@{$$help{$$2//'targets'}},[$$1,$$3] \
+	if/^([\w-_]+)\s*:.*\#\#(?:@(\w+))?\s(.*)$$/}; \
+	print"$$_:\n", map"  $$_->[0]".(" "x(40-length($$_->[0])))."$$_->[1]\n",\
+	@{$$help{$$_}},"\n" for keys %help; \
+
+help: ##@misc Show this help
+	@echo "Usage: make [target] ...\n"
+	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
+
+
+
 # process build tags
 
 build_tags = netgo
@@ -267,21 +283,23 @@ docker-build-nonroot:
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
 
-docker-compose-run: ##@docker Run dev env in docker compose
+docker-compose-run: ##@docker Build and run dev env in docker compose
 	@echo "Launching local dev environment with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --no-recreate
 
-docker-compose-run-rebuild: ##@docker Run dev env in docker compose (rebuild image)
-	@echo "Rebuilding image and launching local dev environment with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --build
+docker-compose-run-recreate: ##@docker DESTROY dev env container and triggers app state cleanup
+	@echo "Rebuild local dev environment (will destroy application state)"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate
+#   You can also use this command to clean the initialized flag and trigger a fresh start
+#   `docker exec -it quasar /bin/bash -c "rm CONTAINER_FIRST_STARTUP"`
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in quasar node container
 	@echo "Connecting to quasar docker container"
 	docker exec -it quasar-quasar-1 /bin/bash
 
-docker-mark-reinit-quasar: ##@docker Marks the development container to be reinitialized
-	@echo "Removing CONTAINER_FIRST_STARTUP from root to reinitialize the container on next run"
-	docker exec -it quasar-quasar-1 /bin/bash -c "rm /tmp/CONTAINER_FIRST_STARTUP"
+docker-remove: ##@docker Remove docker container and docker image
+	@echo "Remove docker container and its image"
+	docker rm quasar-quasar-1 && docker rmi quasar:dev
 
 
 ###############################################################################
