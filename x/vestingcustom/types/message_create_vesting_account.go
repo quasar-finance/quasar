@@ -9,13 +9,14 @@ const TypeMsgCreateVestingAccount = "create_vesting_account"
 
 var _ sdk.Msg = &MsgCreateVestingAccount{}
 
-func NewMsgCreateVestingAccount(creator string, toAddress string, amount sdk.Coin, startTime int64, endTime int64) *MsgCreateVestingAccount {
+func NewMsgCreateVestingAccount(fromAddress string, toAddress sdk.AccAddress, amount sdk.Coins, startTime int64, endTime int64, delayed bool) *MsgCreateVestingAccount {
 	return &MsgCreateVestingAccount{
-		Creator:   creator,
-		ToAddress: toAddress,
-		Amount:    amount,
-		StartTime: startTime,
-		EndTime:   endTime,
+		FromAddress: fromAddress,
+		ToAddress:   toAddress.String(),
+		Amount:      amount,
+		StartTime:   startTime,
+		EndTime:     endTime,
+		Delayed:     delayed,
 	}
 }
 
@@ -28,7 +29,7 @@ func (msg *MsgCreateVestingAccount) Type() string {
 }
 
 func (msg *MsgCreateVestingAccount) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
+	creator, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -41,9 +42,41 @@ func (msg *MsgCreateVestingAccount) GetSignBytes() []byte {
 }
 
 func (msg *MsgCreateVestingAccount) ValidateBasic() error {
-	_, err := sdk.AccAddressFromBech32(msg.Creator)
+	from, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return err
 	}
+	to, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		return err
+	}
+	if err := sdk.VerifyAddressFormat(from); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid sender address: %s", err)
+	}
+
+	if err := sdk.VerifyAddressFormat(to); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid recipient address: %s", err)
+	}
+
+	if !msg.Amount.IsValid() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+	}
+
+	if !msg.Amount.IsAllPositive() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+	}
+
+	if msg.StartTime <= 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid start time")
+	}
+
+	if msg.EndTime <= 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid end time")
+	}
+
+	if msg.StartTime > msg.EndTime {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid start time higher than end time")
+	}
+
 	return nil
 }

@@ -14,11 +14,16 @@ service Msg {
 }
 
 message MsgCreateVestingAccount {
-  string creator = 1;
+  option (gogoproto.equal) = true;
+
+  string fromAddress = 1;
   string toAddress = 2;
-  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  repeated cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
   int64 startTime = 4;
   int64 endTime = 5;
+
+  bool  delayed = 6;
 }
 
 message MsgCreateVestingAccountResponse {
