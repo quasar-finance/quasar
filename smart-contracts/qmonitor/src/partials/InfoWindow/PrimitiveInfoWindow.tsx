@@ -7,6 +7,7 @@ import { assert } from 'console'
 import { InstantiateMsg } from '../../contracts/BasicVault.types'
 import { OsmosisClient } from '../../chain/Osmosis'
 import chalk = require('chalk')
+import { QuasarClient } from '../../chain/Quasar'
 
 const PrimitiveInfoWindow = ({ height }: { height: TPosition }) => {
   const { tab, investmentInfo } = useAppContext()
@@ -47,6 +48,15 @@ const PrimitiveInfoWindow = ({ height }: { height: TPosition }) => {
     setOsmoLockedShares(
       lockedShares.coins.map((b) => b.amount + b.denom).join(', '),
     )
+  }
+
+  async function loadQuasarBalances() {
+    let querier = await QuasarClient.getInstance()
+    let balances = await querier.getBalances(
+      investmentInfo!.primitives[pidx].address,
+    )
+
+    setQuasarBalance(balances.map((b) => b.amount + b.denom).join(', '))
   }
 
   async function loadLockedStatus() {
@@ -105,6 +115,7 @@ const PrimitiveInfoWindow = ({ height }: { height: TPosition }) => {
     try {
       await loadOsmoBalance()
       await loadOsmoLockedShares()
+      await loadQuasarBalances()
     } catch (e) {
       console.error('OOF:', osmoAddress, e)
     }
@@ -145,20 +156,23 @@ const PrimitiveInfoWindow = ({ height }: { height: TPosition }) => {
       <text left={2} top={6}>
         {`osmo locked shares: ${osmoLockedShares}`}
       </text>
+      <text left={2} top={7}>
+        {`quasar balance: ${quasarBalance}`}
+      </text>
 
-      <text left={2} top={8}>
+      <text left={2} top={9}>
         {`lock status: ${lockStatus}`}
       </text>
-      <text left={2} top={9}>
+      <text left={2} top={10}>
         {`pending acks: ${pendingAcks}`}
       </text>
-      <text left={2} top={10}>
+      <text left={2} top={11}>
         {`trapped errors: ${trappedErrors}`}
       </text>
 
       {Object.keys(investmentInfo.primitives[pidx].init.l_p).map((k, i) => {
         return (
-          <text left={2} top={11 + i} key={k + i}>
+          <text left={2} top={13 + i} key={k + i}>
             {`${k}: ${
               investmentInfo.primitives[pidx].init.l_p[
                 k as keyof InstantiateMsg
