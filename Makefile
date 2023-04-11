@@ -285,7 +285,7 @@ docker-build-nonroot:
 
 docker-compose-run: ##@docker Build and run dev env in docker compose
 	@echo "Launching local dev environment with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --no-recreate
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --build
 
 docker-compose-run-recreate: ##@docker DESTROY dev env container and triggers app state cleanup
 	@echo "Rebuild local dev environment (will destroy application state)"
