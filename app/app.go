@@ -569,6 +569,7 @@ func New(
 		app.GetSubspace(vestingcustommoduletypes.ModuleName),
 
 		app.AccountKeeper,
+		app.BankKeeper,
 	)
 	vestingcustomModule := vestingcustommodule.NewAppModule(appCodec, app.VestingcustomKeeper, app.AccountKeeper, app.BankKeeper)
 
