@@ -4,9 +4,7 @@ use crate::state::{
     USER_REWARD_INDEX,
 };
 use crate::VaultRewardsError;
-use cosmwasm_std::{
-    Addr, Deps, DepsMut, Env, Order, Response, StdResult, Uint128,
-};
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, Order, Response, StdResult, Uint128};
 use cw20::Cw20Contract;
 use cw_asset::{Asset, AssetInfo};
 use cw_storage_plus::Bound;
