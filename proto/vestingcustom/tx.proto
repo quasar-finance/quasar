@@ -2,12 +2,26 @@ syntax = "proto3";
 package quasarlabs.quasarnode.vestingcustom;
 
 // this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/quasarlabs/quasarnode/x/vestingcustom/types";
 
 // Msg defines the Msg service.
 service Msg {
-    // this line is used by starport scaffolding # proto/tx/rpc
+  rpc CreateVestingAccount(MsgCreateVestingAccount) returns (MsgCreateVestingAccountResponse);
+  // this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgCreateVestingAccount {
+  string creator = 1;
+  string toAddress = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  int64 startTime = 4;
+  int64 endTime = 5;
+}
+
+message MsgCreateVestingAccountResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
