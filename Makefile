@@ -278,23 +278,36 @@ docker-build-nonroot:
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
 
-docker-compose-run: ##@docker Build and run dev env in docker compose
-	@echo "Launching local dev environment with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --build
 
-docker-compose-run-recreate: ##@docker DESTROY dev env container and triggers app state cleanup
-	@echo "Rebuild local dev environment (will destroy application state)"
+docker-compose-up: ##@docker Run (and build if needed) env in docker compose
+	@echo "Launching local env with docker-compose"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
+
+docker-compose-up-detached: ##@docker Run (and build if needed) env in docker compose and detach console
+	@echo "Launching local env with docker-compose"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up -d
+
+docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
+	@echo "Recreate local env (will destroy application state)"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate
-#   You can also use this command to clean the initialized flag and trigger a fresh start
-#   `docker exec -it quasar /bin/bash -c "rm CONTAINER_FIRST_STARTUP"`
+
+docker-compose-up-recreate-rebuild: ##@docker DESTROY env containers and respawn them rebuilding image
+	@echo "Rebuild image and recreate local env (will destroy application state)"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate --build
+
+docker-compose-down: ##@docker DESTROY containers after stopping them
+	@echo "Stop docker containers and remove them (will destroy application state)"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml down
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in quasar node container
 	@echo "Connecting to quasar docker container"
 	docker exec -it quasar-quasar-1 /bin/bash
 
-docker-remove: ##@docker Remove docker container and docker image
-	@echo "Remove docker container and its image"
-	docker rm quasar-quasar-1 && docker rmi quasar:dev
+docker-attach: ##@docker Connect to a terminal prompt in desired node (ARGS="quasar" make docker-attach)
+	@echo "Connecting to quasar docker container"
+	docker exec -it $(ARGS) /bin/sh
+
+
 
 
 ###############################################################################
