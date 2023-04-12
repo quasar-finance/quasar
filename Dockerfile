@@ -97,8 +97,13 @@ COPY --from=builder /quasar/ /quasar/src/quasar/
 ENV HOME /quasar
 WORKDIR $HOME
 
+COPY demos/base_local_setup/entrypoint.sh /quasar/entrypoint.sh
+COPY demos/base_local_setup/quasar_localnet.sh /quasar/chain_init.sh
+RUN chmod +x entrypoint.sh && chmod +x chain_init.sh
+
 EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
 CMD ["quasarnoded"]
+ENTRYPOINT ["./entrypoint.sh"]

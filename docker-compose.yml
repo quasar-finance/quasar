@@ -1,5 +1,6 @@
-version: "3.8"
+version: "3.9"
 services:
+
   quasar:
     build:
       context: .
@@ -9,21 +10,18 @@ services:
       - "1317:1317"
       - "26657:26657"
       - "9090:9090"
-    entrypoint: "src/quasar/demos/base_local_setup/entrypoint.sh" # (Script that initializes only first time))
+    command: "quasarnoded start"
 
-    # Keeps the image running, useful to debug
-    # command: ["tail", "-f", "/dev/null" ]
+  osmosis:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile.quasar-osmosis
+    image: osmosis:dev
+    ports:
+       - "1417:1317"
+       - "26757:26657"
+       - "9190:9090"
 
-    # Local folder mounted. Useful for development
-    volumes:
-      - .:/quasar/src/quasar:ro
-      - './containers_homes/quasar:/quasar/.quasarnode'
-  # osmosis:
-  #   build:
-  #     context: .
-  #     target: runner
-  #   image: quasar:local
-  #   ports:
-  #      - "1417:1317"
-  #      - "26757:26657"
-  #      - "9190:9090"
+    command: "osmosisd start"
+  
