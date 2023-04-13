@@ -4,7 +4,7 @@ use std::{
 };
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
+use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Timestamp, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 
@@ -40,9 +40,15 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
+pub struct RecoverySingleUnbond {
+    pub lp_shares: Uint128,
+    pub id: String,
+}
+
+#[cw_serde]
 pub struct MigrateMsg {
     pub vault_address: Addr,
-    pub recover_unbond_ids: Vec<String>,
+    pub recover_unbonds: Vec<RecoverySingleUnbond>,
 }
 
 #[cw_serde]
