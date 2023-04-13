@@ -123,9 +123,9 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	vestingcustommodule "github.com/quasarlabs/quasarnode/x/vestingcustom"
-	vestingcustommodulekeeper "github.com/quasarlabs/quasarnode/x/vestingcustom/keeper"
-	vestingcustommoduletypes "github.com/quasarlabs/quasarnode/x/vestingcustom/types"
+	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
+	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
+	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -229,7 +229,7 @@ var (
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 		qtransfer.AppModuleBasic{},
-		vestingcustommodule.AppModuleBasic{},
+		qvestingmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -307,11 +307,11 @@ type App struct {
 	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
 
-	QTransferKeeper     qtransferkeeper.Keeper
-	EpochsKeeper        *epochsmodulekeeper.Keeper
-	QOsmosisKeeper      qosmokeeper.Keeper
-	QOracleKeeper       qoraclemodulekeeper.Keeper
-	VestingcustomKeeper vestingcustommodulekeeper.Keeper
+	QTransferKeeper qtransferkeeper.Keeper
+	EpochsKeeper    *epochsmodulekeeper.Keeper
+	QOsmosisKeeper  qosmokeeper.Keeper
+	QOracleKeeper   qoraclemodulekeeper.Keeper
+	QVestingKeeper  qvestingmodulekeeper.Keeper
 
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
@@ -378,7 +378,7 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
-		vestingcustommoduletypes.StoreKey, // TODO delete this if unused
+		qvestingmoduletypes.StoreKey, // TODO delete this if unused
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
@@ -562,16 +562,16 @@ func New(
 	)
 	qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
 
-	app.VestingcustomKeeper = *vestingcustommodulekeeper.NewKeeper(
+	app.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
 		appCodec,
-		keys[vestingcustommoduletypes.StoreKey],
-		keys[vestingcustommoduletypes.MemStoreKey],
-		app.GetSubspace(vestingcustommoduletypes.ModuleName),
+		keys[qvestingmoduletypes.StoreKey],
+		keys[qvestingmoduletypes.MemStoreKey],
+		app.GetSubspace(qvestingmoduletypes.ModuleName),
 
 		app.AccountKeeper,
 		app.BankKeeper,
 	)
-	vestingcustomModule := vestingcustommodule.NewAppModule(appCodec, app.VestingcustomKeeper, app.AccountKeeper, app.BankKeeper)
+	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
@@ -705,7 +705,7 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
-		vestingcustomModule,
+		qvestingModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -737,7 +737,7 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
-		vestingcustommoduletypes.ModuleName,
+		qvestingmoduletypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -763,7 +763,7 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
-		vestingcustommoduletypes.ModuleName,
+		qvestingmoduletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -799,7 +799,7 @@ func New(
 		// wasm after ibc transfer
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
-		vestingcustommoduletypes.ModuleName,
+		qvestingmoduletypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -826,7 +826,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
-		//vestingcustomModule, TODO fix or remove
+		//qvestingModule, TODO fix or remove
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
@@ -1078,7 +1078,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
-	paramsKeeper.Subspace(vestingcustommoduletypes.ModuleName)
+	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
