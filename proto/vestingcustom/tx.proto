@@ -22,8 +22,6 @@ message MsgCreateVestingAccount {
 
   int64 startTime = 4;
   int64 endTime = 5;
-
-  bool  delayed = 6;
 }
 
 message MsgCreateVestingAccountResponse {

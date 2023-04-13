@@ -36,7 +36,6 @@ type MsgCreateVestingAccount struct {
 	Amount      github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=amount,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"amount"`
 	StartTime   int64                                    `protobuf:"varint,4,opt,name=startTime,proto3" json:"startTime,omitempty"`
 	EndTime     int64                                    `protobuf:"varint,5,opt,name=endTime,proto3" json:"endTime,omitempty"`
-	Delayed     bool                                     `protobuf:"varint,6,opt,name=delayed,proto3" json:"delayed,omitempty"`
 }
 
 func (m *MsgCreateVestingAccount) Reset()         { *m = MsgCreateVestingAccount{} }
@@ -105,13 +104,6 @@ func (m *MsgCreateVestingAccount) GetEndTime() int64 {
 		return m.EndTime
 	}
 	return 0
-}
-
-func (m *MsgCreateVestingAccount) GetDelayed() bool {
-	if m != nil {
-		return m.Delayed
-	}
-	return false
 }
 
 type MsgCreateVestingAccountResponse struct {
@@ -224,9 +216,6 @@ func (this *MsgCreateVestingAccount) Equal(that interface{}) bool {
 	if this.EndTime != that1.EndTime {
 		return false
 	}
-	if this.Delayed != that1.Delayed {
-		return false
-	}
 	return true
 }
 
@@ -330,16 +319,6 @@ func (m *MsgCreateVestingAccount) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	if m.Delayed {
-		i--
-		if m.Delayed {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
 	if m.EndTime != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.EndTime))
 		i--
@@ -440,9 +419,6 @@ func (m *MsgCreateVestingAccount) Size() (n int) {
 	}
 	if m.EndTime != 0 {
 		n += 1 + sovTx(uint64(m.EndTime))
-	}
-	if m.Delayed {
-		n += 2
 	}
 	return n
 }
@@ -627,26 +603,6 @@ func (m *MsgCreateVestingAccount) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Delayed", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Delayed = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

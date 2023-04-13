@@ -9,14 +9,13 @@ const TypeMsgCreateVestingAccount = "create_vesting_account"
 
 var _ sdk.Msg = &MsgCreateVestingAccount{}
 
-func NewMsgCreateVestingAccount(fromAddress string, toAddress sdk.AccAddress, amount sdk.Coins, startTime int64, endTime int64, delayed bool) *MsgCreateVestingAccount {
+func NewMsgCreateVestingAccount(fromAddress string, toAddress sdk.AccAddress, amount sdk.Coins, startTime int64, endTime int64) *MsgCreateVestingAccount {
 	return &MsgCreateVestingAccount{
 		FromAddress: fromAddress,
 		ToAddress:   toAddress.String(),
 		Amount:      amount,
 		StartTime:   startTime,
 		EndTime:     endTime,
-		Delayed:     delayed,
 	}
 }
 

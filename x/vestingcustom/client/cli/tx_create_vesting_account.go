@@ -14,11 +14,6 @@ import (
 
 var _ = strconv.Itoa(0)
 
-// Transaction command flags
-const (
-	FlagDelayed = "delayed"
-)
-
 func CmdCreateVestingAccount() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-vesting-account [to-address] [amount] [start-time] [end-time]",
@@ -45,8 +40,6 @@ func CmdCreateVestingAccount() *cobra.Command {
 				return err
 			}
 
-			delayed, _ := cmd.Flags().GetBool(FlagDelayed)
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -58,11 +51,12 @@ func CmdCreateVestingAccount() *cobra.Command {
 				argAmount,
 				argStartTime,
 				argEndTime,
-				delayed,
 			)
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
+
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}

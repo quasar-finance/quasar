@@ -45,13 +45,7 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 
 	baseVestingAccount := vestingtypes.NewBaseVestingAccount(baseAccount.(*authtypes.BaseAccount), msg.Amount.Sort(), msg.EndTime)
 
-	var acc authtypes.AccountI
-
-	if msg.Delayed {
-		acc = vestingtypes.NewDelayedVestingAccountRaw(baseVestingAccount)
-	} else {
-		acc = vestingtypes.NewContinuousVestingAccountRaw(baseVestingAccount, msg.StartTime) // implementing start_time
-	}
+	acc := vestingtypes.NewContinuousVestingAccountRaw(baseVestingAccount, msg.StartTime)
 
 	ak.SetAccount(ctx, acc)
 
