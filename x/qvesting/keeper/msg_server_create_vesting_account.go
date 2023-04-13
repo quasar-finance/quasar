@@ -7,6 +7,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/spf13/cast"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
@@ -71,7 +72,11 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, vestingtypes.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeyAction, types.AttributeValueAction),
+			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+			sdk.NewAttribute(types.AttributeKeyAccount, msg.ToAddress),
+			sdk.NewAttribute(sdk.AttributeKeyAccountSequence, cast.ToString(acc.Sequence)),
 		),
 	)
 
