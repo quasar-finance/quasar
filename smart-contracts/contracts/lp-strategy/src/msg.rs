@@ -42,6 +42,7 @@ impl InstantiateMsg {
 #[cw_serde]
 pub struct MigrateMsg {
     pub vault_address: Addr,
+    pub recover_unbond_ids: Vec<String>,
 }
 
 #[cw_serde]

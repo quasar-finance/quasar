@@ -494,26 +494,28 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
                         },
                     )?;
 
-                PENDING_UNBONDING_CLAIMS.save(
-                    deps.storage,
-                    // todo: double check vault_address should be owner, also check that id is bond_id
-                    (msg.vault_address.clone(), single_unbond.id.to_string()),
-                    &Unbond {
-                        lp_shares: single_unbond.lp_shares,
-                        unlock_time: vault_pending_unbond
-                            .pending_unbonds
-                            .stub
-                            .iter()
-                            .find(|p| p.address == env.contract.address)
-                            .unwrap()
-                            .unlock_time
-                            .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
-                        attempted: false,
-                        // todo: same as above todo, who is owner?
-                        owner: single_unbond.owner.clone(),
-                        id: single_unbond.id.clone(),
-                    },
-                )?;
+                if msg.recover_unbond_ids.contains(&single_unbond.id) {
+                    PENDING_UNBONDING_CLAIMS.save(
+                        deps.storage,
+                        // todo: double check vault_address should be owner, also check that id is bond_id
+                        (msg.vault_address.clone(), single_unbond.id.to_string()),
+                        &Unbond {
+                            lp_shares: single_unbond.lp_shares,
+                            unlock_time: vault_pending_unbond
+                                .pending_unbonds
+                                .stub
+                                .iter()
+                                .find(|p| p.address == env.contract.address)
+                                .unwrap()
+                                .unlock_time
+                                .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
+                            attempted: false,
+                            // todo: same as above todo, who is owner?
+                            owner: single_unbond.owner.clone(),
+                            id: single_unbond.id.clone(),
+                        },
+                    )?;
+                }
             }
         }
     }
