@@ -1,8 +1,8 @@
-# x/vestingcustom: Custom Vesting Module for Quasar
+# x/qvesting: Custom Vesting Module for Quasar
 
 ## Overview
 
-The `x/vestingcustom` module is a custom implementation built on top of the built-in `x/auth/vesting` module to address the
+The `x/qvesting` module is a custom implementation built on top of the built-in `x/auth/vesting` module to address the
 limitations identified in the POC. This custom module extends the functionality of the `x/auth/vesting` module to provide
 better flexibility and support for defining the start time for vesting schedules.
 
@@ -19,13 +19,13 @@ better flexibility and support for defining the start time for vesting schedules
 To create a custom vesting account, you can use the following command:
 
 ```bash
-quasarnoded tx vestingcustom create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from my_treasury --chain-id quasarnode --keyring-backend test
+quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from my_treasury --chain-id quasarnode --keyring-backend test
 ```
 
 For a delayed vesting account, use the `--delayed` flag:
 
 ```bash
-quasarnoded tx vestingcustom create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --delayed --from my_treasury --chain-id quasarnode --keyring-backend test
+quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --delayed --from my_treasury --chain-id quasarnode --keyring-backend test
 ```
 
 #### Querying custom vesting account information
@@ -44,7 +44,7 @@ distribution module.
 
 ### Implementation Details
 
-The `x/vestingcustom` module is implemented as a wrapper around the `x/auth/vesting` module, with additional functionality
+The `x/qvesting` module is implemented as a wrapper around the `x/auth/vesting` module, with additional functionality
 for custom start times. It achieves this by using the underlying x/auth KVStore, which allows for the deprecation of the
 custom module once the project upgrades to version 0.47 of the Cosmos SDK, if desired.
 
@@ -54,7 +54,7 @@ other modules in the Cosmos SDK while still providing the desired vesting functi
 
 ### Future Work
 
-The `x/vestingcustom` module provides a foundation for managing vesting schedules in the Quasar blockchain project. In
+The `x/qvesting` module provides a foundation for managing vesting schedules in the Quasar blockchain project. In
 the future, further enhancements and optimizations can be explored, such as implementing periodic vesting, which has
 been marked as a nice-to-have feature. Our investors are likely to use the `create-vesting-account` command with a future
 `start_time` for continuous vesting, which is released using the same formula included in the POC.
