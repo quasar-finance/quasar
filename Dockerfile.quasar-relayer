@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+
+ARG RELAYER_VERSION="latest"
+ARG BASE_IMAGE=""
+
+# --------------------------------------------------------
+# Repack relayer with startup script
+# --------------------------------------------------------
+
+
+FROM ghcr.io/cosmos/relayer:latest AS relayer-bin
+
+
+FROM ubuntu:22.04 as dev
+
+
+ENV HOME /relayer
+WORKDIR $HOME
+
+ENV PACKAGES jq
+
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+	apt update && \
+	apt install -y $PACKAGES
+
+
+COPY --from=relayer-bin /bin/rly /bin/rly
+
+COPY demos/base_local_setup/entrypoint.sh /relayer/entrypoint.sh
+COPY demos/base_local_setup/relayer_localnet.sh /relayer/app_init.sh
+
+COPY demos/base_local_setup/keys/ ./keys/ 
+COPY demos/base_local_setup/go-relayer-config/ ./go-relayer-config/ 
+
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
+
+EXPOSE 26656
+EXPOSE 26657
+EXPOSE 1317
+
+CMD ["rly start"]
+ENTRYPOINT ["./entrypoint.sh"]
