@@ -46,22 +46,15 @@ elif [ "$unamestr" = 'Darwin' ]; then
 fi
 
 if [ $platform = 'linux' ]; then
-    # cleanup default osmo seeds
+  # cleanup default osmo seeds
 	sed -i 's/seeds.*/enable = \"\"/g' $HOME_OSMOSIS/config/config.toml
-    # fast block time for local test
-    sed -i 's+timeout_commit = "5s"+timeout_commit = "1s"+g' $HOME_OSMOSIS/config/config.toml
-    # 
+  # fast block time for local test
+  sed -i 's+timeout_commit = "5s"+timeout_commit = "1s"+g' $HOME_OSMOSIS/config/config.toml
+  # 
 	sed -i 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uosmo"/g' $HOME_OSMOSIS/config/app.toml
-	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26679"+g' $HOME_OSMOSIS/config/config.toml
-	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26679"+g' $HOME_OSMOSIS/config/client.toml	
-	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26662"+g' $HOME_OSMOSIS/config/config.toml
-	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6062"+g' $HOME_OSMOSIS/config/config.toml
-	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9096"+g' $HOME_OSMOSIS/config/app.toml
-	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8092"+g' $HOME_OSMOSIS/config/app.toml
-	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1312"+g' $HOME_OSMOSIS/config/app.toml
-	sed -i 's+address = ":8080"+address = ":8082"+g' $HOME_OSMOSIS/config/app.toml
+	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://0.0.0.0:26657"+g' $HOME_OSMOSIS/config/config.toml
 elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_OSMOSIS/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_OSMOSIS/config/app.toml

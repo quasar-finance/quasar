@@ -49,19 +49,13 @@ elif [ "$unamestr" = 'Darwin' ]; then
 fi
 
 if [ $platform = 'linux' ]; then
+	# fast block time for local test
+	sed -i 's+timeout_commit = "5s"+timeout_commit = "1s"+g' $HOME_QSR/config/config.toml
+	# 
 	sed -i 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
 	sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0uqsr"/g' $HOME_QSR/config/app.toml
-	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
-	sed -i 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
-	sed -i 's+laddr = "tcp://0.0.0.0:26656"+laddr = "tcp://0.0.0.0:26661"+g' $HOME_QSR/config/config.toml
-	sed -i 's+pprof_laddr = "localhost:6060"+pprof_laddr = "localhost:6061"+g' $HOME_QSR/config/config.toml
-    	# sed -i 's+skip_timeout_commit = false+skip_timeout_commit = true+g' $HOME_QSR/config/config.toml
-        sed -i 's+timeout_commit = "5s"+timeout_commit = "1s"+g' $HOME_QSR/config/config.toml
-	sed -i 's+address = "0.0.0.0:9090"+address = "0.0.0.0:9095"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = "0.0.0.0:9091"+address = "0.0.0.0:8091"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = "tcp://0.0.0.0:1317"+address = "tcp://0.0.0.0:1311"+g' $HOME_QSR/config/app.toml
-	sed -i 's+address = ":8080"+address = ":8081"+g' $HOME_QSR/config/app.toml
+	sed -i 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://0.0.0.0:26657"+g' $HOME_QSR/config/config.toml
 elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml

@@ -16,8 +16,8 @@ RUN apk add --no-cache \
     jq
 
 COPY demos/base_local_setup/entrypoint.sh /osmosis/entrypoint.sh
-COPY demos/base_local_setup/osmo_localnet.sh /osmosis/chain_init.sh
-RUN chmod +x entrypoint.sh && chmod +x chain_init.sh
+COPY demos/base_local_setup/osmo_localnet.sh /osmosis/app_init.sh
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
 
 
 EXPOSE 26656

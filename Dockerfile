@@ -98,8 +98,8 @@ ENV HOME /quasar
 WORKDIR $HOME
 
 COPY demos/base_local_setup/entrypoint.sh /quasar/entrypoint.sh
-COPY demos/base_local_setup/quasar_localnet.sh /quasar/chain_init.sh
-RUN chmod +x entrypoint.sh && chmod +x chain_init.sh
+COPY demos/base_local_setup/quasar_localnet.sh /quasar/app_init.sh
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
 
 EXPOSE 26656
 EXPOSE 26657
