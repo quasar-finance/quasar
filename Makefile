@@ -284,7 +284,7 @@ docker-build-nonroot:
 		-f Dockerfile .
 
 
-docker-compose-up: ##@docker Run (and build if needed) env in docker compose
+docker-compose-up: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
 	@echo "Launching local env with docker-compose"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
 
@@ -300,9 +300,9 @@ docker-compose-up-recreate-rebuild: ##@docker DESTROY env containers and respawn
 	@echo "Rebuild image and recreate local env (will destroy application state)"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate --build
 
-docker-compose-down: ##@docker DESTROY containers after stopping them
+docker-compose-stop: ##@docker Stop containers running in the background
 	@echo "Stop docker containers and remove them (will destroy application state)"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml down
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml stop
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in quasar node container
 	@echo "Connecting to quasar docker container"
