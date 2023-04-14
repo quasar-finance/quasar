@@ -19,8 +19,8 @@ use crate::{
     ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
-        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT,
-        UNBONDING_CLAIMS, UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, PENDING_UNBOND_QUEUE, RETURNING,
+        RETURN_SOURCE_PORT, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -40,7 +40,7 @@ pub fn do_unbond(
     unbond.attempted = true;
     UNBONDING_CLAIMS.save(storage, (owner, id), &unbond)?;
 
-    Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
+    Ok(PENDING_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
 pub fn batch_unbond(
@@ -138,7 +138,7 @@ pub fn transfer_batch_unbond(
     pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    let pkt = do_transfer_batch_unbond(storage, env, total_tokens)?;
+    let pkt = do_transfer_batch_unbond(storage, env, total_tokens, pending.clone())?;
 
     // this is an ica channel in transfer batch unbond which is fine because even though
     // we are doing a transfer, its a return transfer which must be triggered by an ICA
@@ -156,6 +156,7 @@ pub(crate) fn do_transfer_batch_unbond(
     storage: &mut dyn Storage,
     env: &Env,
     total_tokens: Uint128,
+    pending: PendingReturningUnbonds,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     // TODO, assert that raw amounts equal amount
     let timeout_timestamp =
@@ -165,6 +166,7 @@ pub(crate) fn do_transfer_batch_unbond(
         env,
         total_tokens,
         timeout_timestamp.timestamp().unwrap(),
+        pending,
     )?;
     let pkt = ica_send::<MsgTransfer>(
         msg,
@@ -253,6 +255,7 @@ fn return_transfer(
     env: &Env,
     amount: Uint128,
     timeout_timestamp: Timestamp,
+    pending: PendingReturningUnbonds,
 ) -> Result<MsgTransfer, ContractError> {
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
@@ -278,7 +281,7 @@ fn return_transfer(
         memo: serde_json_wasm::to_string(&IbcHook {
             wasm: Wasm {
                 contract: env.contract.address.clone(),
-                msg: ExecuteMsg::AcceptReturningFunds { id },
+                msg: ExecuteMsg::AcceptReturningFunds { id, pending },
             },
         })
         .map_err(|_| ContractError::SerdeJsonSer)?,
@@ -530,14 +533,15 @@ mod tests {
         let timeout_timestamp =
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
 
-        let res =
-            transfer_batch_unbond(deps.as_mut().storage, &env, pending, total_tokens).unwrap();
+        let res = transfer_batch_unbond(deps.as_mut().storage, &env, pending.clone(), total_tokens)
+            .unwrap();
 
         let msg = return_transfer(
             deps.as_mut().storage,
             &env,
             total_tokens,
             timeout_timestamp.timestamp().unwrap(),
+            pending,
         )
         .unwrap();
 

@@ -23,7 +23,8 @@ use crate::{
     },
     state::{
         Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, SIMULATED_JOIN_AMOUNT_IN, UNBONDING_CLAIMS,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, PENDING_UNBOND_QUEUE,
+        SIMULATED_JOIN_AMOUNT_IN, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -56,18 +57,24 @@ pub fn try_icq(
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
-        let mut range: Vec<((Addr, String), Unbond)> = vec![];
-        for pending_unbonding_claim in
-            PENDING_UNBONDING_CLAIMS.range(storage, None, None, cosmwasm_std::Order::Ascending)
-        {
-            range.push(pending_unbonding_claim?);
-        }
+        // let mut range: Vec<((Addr, String), Unbond)> = vec![];
+        // for pending_unbonding_claim in
+        //     PENDING_UNBONDING_CLAIMS.range(storage, None, None, cosmwasm_std::Order::Ascending)
+        // {
+        //     range.push(pending_unbonding_claim?);
+        // }
 
-        for pending_unbonding_claim in range.iter() {
-            let (keys, unbond) = pending_unbonding_claim;
+        // for pending_unbonding_claim in range.iter() {
+        //     let (keys, unbond) = pending_unbonding_claim;
 
-            UNBONDING_CLAIMS.save(storage, keys.clone(), unbond)?;
-            PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
+        //     UNBONDING_CLAIMS.save(storage, keys.clone(), unbond)?;
+        //     PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
+        // }
+        while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
+            let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
+            if let Some(unbond) = unbond {
+                UNBOND_QUEUE.push_back(storage, &unbond)?;
+            }
         }
 
         let channel = ICQ_CHANNEL.load(storage)?;

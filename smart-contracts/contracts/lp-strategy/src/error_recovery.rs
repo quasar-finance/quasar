@@ -17,7 +17,7 @@ use crate::{
         FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES,
         NEW_RECOVERY_ACK, TRAPS,
     },
-    unbond::{do_exit_swap, do_transfer_batch_unbond},
+    unbond::{do_exit_swap, do_transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond},
 };
 
 // start_recovery fetches an error from the TRAPPED_ERRORS and start the appropriate recovery from there
@@ -92,7 +92,23 @@ fn handle_transfer_recovery(
         trapped_id,
     };
 
-    let msg = do_transfer_batch_unbond(storage, env, amount)?;
+    let msg = do_transfer_batch_unbond(
+        storage,
+        env,
+        amount,
+        PendingReturningUnbonds {
+            // big TODO here, below should be different
+            unbonds: returning
+                .returning
+                .iter()
+                .map(|r| ReturningUnbond {
+                    amount: r.amount.clone(),
+                    owner: r.owner.clone(),
+                    id: "TODO!".to_string(),
+                })
+                .collect(),
+        },
+    )?;
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::RecoveryReturnTransfer(returning)),

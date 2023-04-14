@@ -2,8 +2,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response,
-    Timestamp, Uint128,
+    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Timestamp, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -13,7 +13,9 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind};
+use crate::helpers::{
+    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
+};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -24,9 +26,9 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, Unbond, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
     IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_UNBONDING_CLAIMS, REPLIES,
-    RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
 };
-use crate::unbond::do_unbond;
+use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -106,8 +108,8 @@ pub fn execute(
             execute_start_unbond(deps, env, info, id, share_amount)
         }
         ExecuteMsg::Unbond { id } => execute_unbond(deps, env, info, id),
-        ExecuteMsg::AcceptReturningFunds { id } => {
-            execute_accept_returning_funds(deps, &env, info, id)
+        ExecuteMsg::AcceptReturningFunds { id, pending } => {
+            execute_accept_returning_funds(deps.storage, deps.querier, info, id, pending)
         }
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
@@ -249,21 +251,34 @@ pub fn execute_ack(
 }
 
 pub fn execute_accept_returning_funds(
-    deps: DepsMut,
-    _env: &Env,
+    storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     info: MessageInfo,
     id: u64,
+    pending: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
     let returning_amount = RETURNING
-        .may_load(deps.storage, id)?
+        .may_load(storage, id)?
         .ok_or(ContractError::ReturningTransferNotFound)?;
 
-    let amount = must_pay(&info, CONFIG.load(deps.storage)?.local_denom.as_str())?;
+    let amount = must_pay(&info, CONFIG.load(storage)?.local_denom.as_str())?;
     if amount != returning_amount {
         return Err(ContractError::ReturningTransferIncorrectAmount);
     }
 
+    let mut callback_submsgs = vec![];
+    for unbond in pending.unbonds.iter() {
+        let cosmos_msg = finish_unbond(storage, querier, unbond)?;
+        callback_submsgs.push(create_callback_submsg(
+            storage,
+            cosmos_msg,
+            unbond.owner.clone(),
+            unbond.id.clone(),
+        )?)
+    }
+
     Ok(Response::new()
+        .add_submessages(callback_submsgs)
         .add_attribute("returning-transfer", id.to_string())
         .add_attribute("success", "true"))
 }
@@ -482,7 +497,8 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
             },
         )?;
 
-        PENDING_UNBONDING_CLAIMS.save(
+        // PENDING_UNBONDING_CLAIMS.save( TODO: Figure out if pending or real (check icq.rs)
+        UNBONDING_CLAIMS.save(
             deps.storage,
             // todo: double check vault_address should be owner, also check that id is bond_id
             (msg.vault_address.clone(), single_unbond.id.to_string()),

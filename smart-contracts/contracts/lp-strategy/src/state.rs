@@ -71,6 +71,7 @@ pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");
 pub(crate) const PENDING_BOND_QUEUE: Deque<Bond> = Deque::new("pending_bond_queue");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
 pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
+pub(crate) const PENDING_UNBOND_QUEUE: Deque<Unbond> = Deque::new("pending_unbond_queue");
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");

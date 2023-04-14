@@ -652,15 +652,16 @@ fn handle_return_transfer_ack(
     data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
-    for unbond in data.unbonds.iter() {
-        let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(create_callback_submsg(
-            storage,
-            cosmos_msg,
-            unbond.owner.clone(),
-            unbond.id.clone(),
-        )?)
-    }
+    // move this to returnTransfer
+    // for unbond in data.unbonds.iter() {
+    //     let cosmos_msg = finish_unbond(storage, querier, unbond)?;
+    //     callback_submsgs.push(create_callback_submsg(
+    //         storage,
+    //         cosmos_msg,
+    //         unbond.owner.clone(),
+    //         unbond.id.clone(),
+    //     )?)
+    // }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_unbond())
@@ -668,7 +669,7 @@ fn handle_return_transfer_ack(
 
     Ok(Response::new()
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_submessages(callback_submsgs)
+        // .add_submessages(callback_submsgs)
         .add_attribute("return-transfer", "success"))
 }
 

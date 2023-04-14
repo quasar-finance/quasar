@@ -134,6 +134,7 @@ export async function expect_chain_balance_increase(
   charlie: boolean,
 ) {
   const start = new Date()
+  await new Promise((r) => setTimeout(r, 10000))
   let orig_alice_balance = await getChainBalance('alice')
   let orig_bob_balance = await getChainBalance('bob')
   let orig_charlie_balance = await getChainBalance('charlie')
