@@ -4,7 +4,7 @@ use std::{
 };
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 use quasar_types::ibc::ChannelInfo;
 
