@@ -19,8 +19,8 @@ use crate::{
     ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
-        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, LP_SHARES, RETURNING,
-        RETURN_SOURCE_PORT, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, RETURNING, RETURN_SOURCE_PORT,
+        UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -50,8 +50,6 @@ pub fn batch_unbond(
 ) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
-
-    let _lp_shares = LP_SHARES.load(storage)?;
 
     if UNBOND_QUEUE.is_empty(storage)? {
         return Ok(None);
@@ -320,7 +318,7 @@ mod tests {
     };
 
     use crate::{
-        state::{Unbond, SIMULATED_EXIT_RESULT},
+        state::{Unbond, LP_SHARES, SIMULATED_EXIT_RESULT},
         test_helpers::default_setup,
     };
 

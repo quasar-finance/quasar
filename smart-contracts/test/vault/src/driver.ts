@@ -494,31 +494,34 @@ export async function mayhem(vaultAddress: string) {
   ])
   //   // then one final try icq to clear everything
 
-  //   console.log('## End epoch 4 ###########################')
+  console.log('## End epoch 4 ###########################')
   console.log('## Start epoch 5 ###########################')
 
   await Promise.all([
-    // start_unbond({
-    //   from: 'alice',
-    //   vaultAddress,
-    //   amount: '30',
-    // }),
+    claim({ from: 'alice', vaultAddress }),
     start_unbond({
       from: 'bob',
       vaultAddress,
       amount: '90', //180
     }),
-    // start_unbond({
-    //   from: 'charlie',
-    //   vaultAddress,
-    //   amount: '1000',
-    // }),
+    claim({ from: 'charlie', vaultAddress }),
   ])
   // then one more for good measure
 
-  await expect_unlock_time_passed(vaultAddress, true, true, true)
+  await Promise.all([
+    await expect_unlock_time_passed(vaultAddress, false, true, false),
+    await expect_chain_balance_increase(true, false, true),
+  ])
 
   console.log('## End epoch 5 ###########################')
+  console.log('## Start epoch 6 ###########################')
+
+  await Promise.all([claim({ from: 'bob', vaultAddress })])
+
+  await new Promise((r) => setTimeout(r, 5000))
+  await expect_chain_balance_increase(false, true, false)
+
+  console.log('## End epoch 6 ############################')
 
   const alice_end_balance = await getBalance(vaultAddress, 'alice')
   const bob_end_balance = await getBalance(vaultAddress, 'bob')

@@ -5,7 +5,7 @@ use crate::{
     execute::may_pay_with_ratio,
     msg::{
         DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse, PendingBondsResponse,
-        PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
+        PendingUnbondsByIdResponse, PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
     },
     state::{
         InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
@@ -114,5 +114,16 @@ pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBon
 
     Ok(PendingBondsByIdResponse {
         pending_bonds: deposit_stubs,
+    })
+}
+
+pub fn query_pending_unbonds_by_id(
+    deps: Deps,
+    id: String,
+) -> StdResult<PendingUnbondsByIdResponse> {
+    let unbond_stubs = UNBOND_STATE.load(deps.storage, id).unwrap();
+
+    Ok(PendingUnbondsByIdResponse {
+        pending_unbonds: unbond_stubs,
     })
 }

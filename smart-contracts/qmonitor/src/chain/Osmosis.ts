@@ -11,16 +11,16 @@ export class OsmosisClient {
     this.rpcUrl = OSMOSIS_RPC_NODE
   }
 
-  static async getInstance(): Promise<OsmosisClient> {
+  static getInstance(): OsmosisClient {
     if (!instance) {
       instance = new OsmosisClient()
-      await instance.init()
+      // await instance.init()
     }
     return instance
   }
 
   async init() {
-    const client = await createRPCQueryClient({ rpcEndpoint: this.rpcUrl })
+    // const client = await createRPCQueryClient({ rpcEndpoint: this.rpcUrl })
   }
 
   async getPoolInfo(poolId: string) {

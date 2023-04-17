@@ -14,7 +14,7 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
-    ICQ_CHANNEL, LP_SHARES, NEW_PENDING_ACK, NEW_RECOVERY_ACK, OSMO_LOCK, SIMULATED_EXIT_RESULT,
+    ICQ_CHANNEL, LP_SHARES, NEW_RECOVERY_ACK, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT,
     SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
@@ -261,7 +261,7 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let kind = NEW_PENDING_ACK.load(
+    let kind = PENDING_ACK.load(
         deps.storage,
         (
             pkt.original_packet.sequence,
@@ -679,7 +679,7 @@ pub fn handle_failing_ack(
     error: String,
 ) -> Result<Response, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
-    let step = NEW_PENDING_ACK.load(
+    let step = PENDING_ACK.load(
         deps.storage,
         (
             pkt.original_packet.sequence,
@@ -727,7 +727,7 @@ pub(crate) fn on_packet_timeout(
     error: String,
     should_unlock: bool,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let step = NEW_PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
+    let step = PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
     if should_unlock {
         unlock_on_error(deps.storage, &step)?;
     }

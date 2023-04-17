@@ -23,7 +23,7 @@ pub fn on_bond(
 ) -> Result<Response, ContractError> {
     DEBUG_TOOL.save(
         deps.storage,
-        &format!("We hit on_unbond with bond_id: {bond_id}"),
+        &format!("We hit on_bond with bond_id: {bond_id}"),
     )?;
 
     // load investment info
@@ -195,14 +195,6 @@ pub fn on_unbond(
     if primitive_config.is_none() {
         return Err(ContractError::Unauthorized {});
     }
-
-    DEBUG_TOOL.save(
-        deps.storage,
-        &format!(
-            "We hit on_unbond with unbond_id: {} and funds: {}",
-            unbond_id, info.funds[0]
-        ),
-    )?;
 
     let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
 
