@@ -467,7 +467,7 @@ mod tests {
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
         assert!(res.messages.is_empty());
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
     }
 
     #[test]
@@ -488,7 +488,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "unlocked"));
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_unlocked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_unlocked());
     }
 
     #[test]
@@ -541,7 +541,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
         assert!(res.messages.is_empty());
     }
 
@@ -572,7 +572,7 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
-        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
         assert!(lock.bond.is_locked());
         assert!(lock.start_unbond.is_unlocked());
         assert!(lock.unbond.is_unlocked());
@@ -617,7 +617,7 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
-        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
         assert!(lock.unbond.is_unlocked());
@@ -633,7 +633,7 @@ mod tests {
             share_amount: Uint128::new(69),
         };
 
-        let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let res = execute(deps.as_mut(), env, info, msg);
         assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
     }
 

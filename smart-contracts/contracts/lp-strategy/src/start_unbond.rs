@@ -301,17 +301,17 @@ mod tests {
 
         let unbond1 = StartUnbond {
             owner: owner.clone(),
-            id: id1.to_string(),
+            id: id1,
             primitive_shares: Uint128::new(500),
         };
         let unbond2 = StartUnbond {
             owner: owner.clone(),
-            id: id2.to_string(),
+            id: id2,
             primitive_shares: Uint128::new(300),
         };
         let unbond3 = StartUnbond {
             owner,
-            id: id3.to_string(),
+            id: id3,
             primitive_shares: Uint128::new(200),
         };
 
