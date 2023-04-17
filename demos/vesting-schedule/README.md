@@ -105,3 +105,39 @@ Verify the custom vesting account has been created successfully:
 ```bash
 quasarnoded query auth account <account_address>
 ```
+
+## Testing with Ledger Hardware Wallet
+
+To test the compatibility of the x/qvesting module with Ledger hardware wallets, follow these steps:
+
+Connect your Ledger device and ensure the Cosmos app is installed and running.
+
+Retrieve the Ledger account address and adding the key to the keyring:
+```bash
+quasarnoded keys add ledger_account --ledger
+```
+
+Fund the Ledger account.
+
+Create a create-vesting-account transaction using the Ledger account as the signer:
+```bash
+quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from ledger_account --chain-id quasar --keyring-backend test --generate-only > tx.json
+```
+
+Sign the transaction with the Ledger device:
+```bash
+quasarnoded tx sign tx.json --from ledger_account --chain-id quasar --keyring-backend test --output-document tx_signed.json
+```
+
+Broadcast the signed transaction:
+```bash
+quasarnoded tx broadcast tx_signed.json --chain-id quasar
+```
+
+Verify the custom vesting account has been created successfully:
+```bash
+quasarnoded query auth account <account_address>
+```
+
+By performing these tests, you can ensure that the x/qvesting module is compatible with multi-signature
+transactions and Ledger hardware wallets, providing a secure and reliable experience for all users.
