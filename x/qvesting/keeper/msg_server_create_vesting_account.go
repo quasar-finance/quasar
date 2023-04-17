@@ -71,7 +71,6 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeyAction, types.AttributeValueAction),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyAccount, msg.ToAddress),
 		),
