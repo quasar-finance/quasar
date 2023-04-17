@@ -176,7 +176,7 @@ mod tests {
         };
         let res = app.execute_contract(
             Addr::unchecked("not-admin"),
-            contract_addr.clone(),
+            contract_addr,
             &execute_msg,
             &[],
         );
@@ -411,7 +411,7 @@ mod tests {
         };
         let res = app.execute_contract(
             Addr::unchecked("non-admin"),
-            contract_addr.clone(),
+            contract_addr,
             &execute_msg,
             &[],
         );

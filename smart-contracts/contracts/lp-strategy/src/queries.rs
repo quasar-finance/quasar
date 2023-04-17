@@ -103,7 +103,7 @@ pub fn handle_trapped_errors_query(deps: Deps) -> StdResult<TrappedErrorsRespons
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let ((seq, chan), kind) = res?;
-            Ok((format!("{}-{}", seq, chan), kind))
+            Ok((format!("{seq}-{chan}"), kind))
         })
         .collect();
     Ok(TrappedErrorsResponse { errors: trapped? })
@@ -193,7 +193,7 @@ pub fn handle_list_pending_acks(deps: Deps) -> StdResult<ListPendingAcksResponse
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let ((seq, chan), kind) = res?;
-            Ok((format!("{}-{}", seq, chan), kind))
+            Ok((format!("{seq}-{chan}"), kind))
         })
         .collect();
     Ok(ListPendingAcksResponse { pending: pending? })
@@ -231,6 +231,6 @@ mod tests {
             )
             .unwrap();
 
-        let res = query(deps.as_ref(), env, q).unwrap();
+        let _res = query(deps.as_ref(), env, q).unwrap();
     }
 }

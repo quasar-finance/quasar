@@ -335,7 +335,7 @@ pub fn handle_icq_ack(
             raw_balance
                 .parse::<u128>()
                 .map_err(|err| ContractError::ParseIntError {
-                    error: format!("base_balance:{}", err),
+                    error: format!("base_balance:{err}"),
                     value: raw_balance.to_string(),
                 })?,
         );
@@ -507,7 +507,7 @@ fn handle_join_pool(
     let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
     let shares_out = Uint128::new(resp.share_out_amount.parse::<u128>().map_err(|err| {
         ContractError::ParseIntError {
-            error: format!("{}", err),
+            error: format!("{err}"),
             value: resp.share_out_amount,
         }
     })?);
@@ -632,7 +632,7 @@ fn handle_exit_pool_ack(
     let total_exited_tokens =
         Uint128::new(msg.token_out_amount.parse::<u128>().map_err(|err| {
             ContractError::ParseIntError {
-                error: format!("{}", err),
+                error: format!("{err}"),
                 value: msg.token_out_amount,
             }
         })?);

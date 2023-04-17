@@ -569,7 +569,7 @@ mod test {
             .unwrap();
 
         let msg = ExecuteMsg::ClearCache {};
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+        let res = execute(deps.as_mut(), env, info, msg).unwrap();
 
         assert_eq!(res.messages.len(), 2);
         assert_eq!(
