@@ -25,21 +25,16 @@ echo ">>> Add keys vester_continuous_ok and vester_continuous_ko for further ves
 quasarnoded keys add vester_continuous_ok --keyring-backend test
 VC_OK_ADDRESS=$(quasarnoded keys show vester_continuous_ok -a --keyring-backend test)
 
-echo ">>> Create signer1, signer2, and signer3 keys"
-quasarnoded keys add signer1 --keyring-backend test
-quasarnoded keys add signer2 --keyring-backend test
-quasarnoded keys add signer3 --keyring-backend test
 echo ">>> Create multi-sig account using signer1, signer2, and signer3"
 quasarnoded keys add multisig_account --multisig-threshold 2 --multisig "signer1,signer2,signer3" --keyring-backend test
-SIGNER1_ADDRESS=$(quasarnoded keys show signer1 -a --keyring-backend test)
-SIGNER2_ADDRESS=$(quasarnoded keys show signer2 -a --keyring-backend test)
-SIGNER3_ADDRESS=$(quasarnoded keys show signer3 -a --keyring-backend test)
+SIGNER1_ADDRESS=$(quasarnoded keys show signer1 -a --ledger)
+SIGNER2_ADDRESS=$(quasarnoded keys show signer2 -a --ledger)
+SIGNER3_ADDRESS=$(quasarnoded keys show signer3 -a --ledger)
 MULTISIG_ADDRESS=$(quasarnoded keys show multisig_account -a --keyring-backend test)
 echo "Signer 1: $SIGNER1_ADDRESS"
 echo "Signer 2: $SIGNER2_ADDRESS"
 echo "Signer 3: $SIGNER3_ADDRESS"
 echo "Multisig: $MULTISIG_ADDRESS"
-
 
 echo ">>> Fund multisig and signer accounts"
 quasarnoded tx bank send $MY_TREASURY $MULTISIG_ADDRESS 1000uqsr --from $MY_TREASURY --chain-id $CHAIN_ID --keyring-backend test -y
@@ -51,9 +46,9 @@ echo ">>> Create create-vesting-account transaction using multisig as the signer
 quasarnoded tx qvesting create-vesting-account $VC_OK_ADDRESS 1000uqsr $START_TIME_OK $END_TIME_OK --from $MULTISIG_ADDRESS --chain-id $CHAIN_ID --keyring-backend test --generate-only > tx.json
 
 echo ">>> Sign the transaction with each signer"
-quasarnoded tx sign tx.json --from signer1 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --keyring-backend test --output-document tx_signed1.json
-quasarnoded tx sign tx.json --from signer2 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --keyring-backend test --output-document tx_signed2.json
-quasarnoded tx sign tx.json --from signer3 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --keyring-backend test --output-document tx_signed3.json
+quasarnoded tx sign tx.json --from signer1 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --ledger --output-document tx_signed1.json
+quasarnoded tx sign tx.json --from signer2 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --ledger --output-document tx_signed2.json
+quasarnoded tx sign tx.json --from signer3 --multisig $MULTISIG_ADDRESS --chain-id $CHAIN_ID --ledger --output-document tx_signed3.json
 
 echo ">>> Assemble the signatures and broadcast the transaction"
 quasarnoded tx multisign tx.json multisig_account tx_signed1.json tx_signed2.json tx_signed3.json --chain-id $CHAIN_ID --keyring-backend test > tx_multisig.json
