@@ -15,6 +15,11 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/quasar/qvesting/params";
   }
+  // SpendableBalances queries the spenable balance of all coins for a single
+  // account.
+  rpc SpendableBalances(QuerySpendableBalancesRequest) returns (QuerySpendableBalancesResponse) {
+    option (google.api.http).get = "/cosmos/bank/v1beta1/spendable_balances/{address}";
+  }
   // this line is used by starport scaffolding # 2
 }
 
@@ -25,6 +30,30 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QuerySpendableBalancesRequest defines the gRPC request structure for querying
+// an account's spendable balances.
+message QuerySpendableBalancesRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the address to query spendable balances for.
+  string address = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QuerySpendableBalancesResponse defines the gRPC response structure for querying
+// an account's spendable balances.
+message QuerySpendableBalancesResponse {
+  // balances is the spendable balances of all the coins.
+  repeated cosmos.base.v1beta1.Coin balances = 1
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3
