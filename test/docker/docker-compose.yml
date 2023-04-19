@@ -6,6 +6,8 @@ services:
       context: ../../
       target: dev
       dockerfile: Dockerfile
+      tags:
+        - "quasar:dev"
     image: quasar:dev
     ports:
       - "1317:1317"
@@ -18,6 +20,8 @@ services:
       context: .
       target: dev
       dockerfile: Dockerfile.quasar-osmosis
+      tags:
+        - "osmosis:dev"
     image: osmosis:dev
     ports:
        - "1417:1317"
@@ -31,6 +35,8 @@ services:
       context: .
       target: dev
       dockerfile: Dockerfile.quasar-relayer
+      tags:
+        - "relayer:dev"
     image: relayer:dev
     depends_on:
       - quasar
