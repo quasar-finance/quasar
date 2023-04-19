@@ -288,27 +288,27 @@ docker-build-nonroot:
 # https://github.com/docker/compose/issues/10068
 # docker-compose-up-attached: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
 # 	@echo "Launching local env with docker-compose"
-# 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
+# 	docker compose -f test/docker/docker-compose.yml up
 
 docker-compose-up: ##@docker Run (and build if needed) env in docker compose and detach console
 	@echo "Launching local env with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up -d
+	docker compose -f test/docker/docker-compose.yml up -d
 
 docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
 	@echo "Recreate local env (will destroy application state)"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate
+	docker compose -f test/docker/docker-compose.yml up --force-recreate
 
 docker-compose-build: ##@docker DANGER: (Re)build docker images from scratch
 	@echo "Rebuilding image for local env"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml build
+	docker compose -f test/docker/docker-compose.yml build
 
 docker-compose-down: ##@docker Stop AND DELETE delete the containers
 	@echo "Stop docker containers and REMOVING THEM"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml down
+	docker compose -f test/docker/docker-compose.yml down
 
 docker-compose-stop: ##@docker Stop containers running in the background
 	@echo "Stop docker containers without removing them"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml stop
+	docker compose -f test/docker/docker-compose.yml stop
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node container
 	@echo "Connecting to quasar docker container"

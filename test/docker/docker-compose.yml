@@ -3,8 +3,9 @@ services:
 
   quasar:
     build:
-      context: .
+      context: ../../
       target: dev
+      dockerfile: Dockerfile
     image: quasar:dev
     ports:
       - "1317:1317"

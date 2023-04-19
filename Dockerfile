@@ -95,8 +95,8 @@ COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 ENV HOME /quasar
 WORKDIR $HOME
 
-COPY demos/base_local_setup/entrypoint.sh /quasar/entrypoint.sh
-COPY demos/base_local_setup/quasar_localnet.sh /quasar/app_init.sh
+COPY test/docker/bootstrap-scripts/entrypoint.sh /quasar/entrypoint.sh
+COPY test/docker/bootstrap-scripts/quasar_localnet.sh /quasar/app_init.sh
 RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
 
 EXPOSE 26656

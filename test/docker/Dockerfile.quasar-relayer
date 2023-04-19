@@ -27,11 +27,11 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 COPY --from=relayer-bin /bin/rly /bin/rly
 
-COPY demos/base_local_setup/entrypoint.sh /relayer/entrypoint.sh
-COPY demos/base_local_setup/relayer_localnet.sh /relayer/app_init.sh
+COPY bootstrap-scripts/entrypoint.sh /relayer/entrypoint.sh
+COPY bootstrap-scripts/relayer_localnet.sh /relayer/app_init.sh
 
-COPY demos/base_local_setup/keys/ ./keys/ 
-COPY demos/base_local_setup/go-relayer-config/ ./go-relayer-config/ 
+COPY bootstrap-scripts/keys/ ./keys/ 
+COPY bootstrap-scripts/go-relayer-config/ ./go-relayer-config/ 
 
 RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
 
