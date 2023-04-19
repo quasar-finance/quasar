@@ -32,4 +32,7 @@ services:
       target: dev
       dockerfile: Dockerfile.quasar-relayer
     image: relayer:dev
+    depends_on:
+      - quasar
+      - osmosis
     command: "rly start"
