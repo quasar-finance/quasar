@@ -290,25 +290,28 @@ docker-build-nonroot:
 # 	@echo "Launching local env with docker-compose"
 # 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml up
 
-docker-compose-up: ##@docker Run (and build if needed) env in docker compose and detach console
-	@echo "Launching local env with docker-compose"
+docker-compose-up: ##@docker Run local env, build only if no images available
+	@echo "Launching local env, building images if not available"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml up -d
 
 docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
 	@echo "Recreate local env (will destroy application state)"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml up --force-recreate
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml up -d --force-recreate
 
-docker-compose-build: ##@docker DANGER: (Re)build docker images from scratch
+docker-compose-build: ##@docker Build new image if there are code changes, won't recreate containers.
 	@echo "Rebuilding image for local env"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml build
 
-docker-compose-down: ##@docker Stop AND DELETE delete the containers
-	@echo "Stop docker containers and REMOVING THEM"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml down
+docker-compose-rebuild: docker-compose-build docker-compose-up-recreate ##@docker Recreate containers building new code if needed
+	@echo "Rebuilding images and restarting containers"
 
-docker-compose-stop: ##@docker Stop containers running in the background
+docker-compose-stop: ##@docker Stop containers without deleting them
 	@echo "Stop docker containers without removing them"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml stop
+
+docker-compose-down: ##@docker Stop AND DELETE delete the containers
+	@echo "Stopping docker containers and REMOVING THEM"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f test/docker/docker-compose.yml down
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node container
 	@echo "Connecting to quasar docker container"
