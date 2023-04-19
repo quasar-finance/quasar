@@ -41,15 +41,9 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct RecoverySingleUnbond {
-    pub lp_shares: Uint128,
-    pub id: String,
-}
-
-#[cw_serde]
 pub struct MigrateMsg {
     pub vault_address: Addr,
-    pub recover_unbonds: Vec<RecoverySingleUnbond>,
+    pub recover_unbonds: Vec<String>,
 }
 
 #[cw_serde]

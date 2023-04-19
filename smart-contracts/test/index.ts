@@ -30,9 +30,9 @@ async function main() {
 
   await seed_liquidity_from_alice(response.vaultAddress)
 
-  await simple_test(response.vaultAddress)
+  // await simple_test(response.vaultAddress)
   //   await extreme_test(response.vaultAddress)
-  // await mayhem(response.vaultAddress)
+  await mayhem(response.vaultAddress)
 }
 
 main()

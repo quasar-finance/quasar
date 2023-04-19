@@ -512,29 +512,81 @@ export async function mayhem(vaultAddress: string) {
   // then one more for good measure
 
   await Promise.all([
-    await expect_unlock_time_passed(vaultAddress, false, true, false),
-    await expect_chain_balance_increase(true, false, true),
+    expect_chain_balance_increase(true, false, true),
+    expect_unlock_time_passed(vaultAddress, false, true, false),
   ])
 
   console.log('## End epoch 5 ###########################')
   console.log('## Start epoch 6 ###########################')
 
+  await Promise.all([
+    start_unbond({
+      from: 'alice',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'alice')).balance,
+    }),
+    claim({ from: 'bob', vaultAddress }),
+    start_unbond({
+      from: 'charlie',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'charlie')).balance,
+    }),
+  ])
+
+  await new Promise((r) => setTimeout(r, 5000))
+  await Promise.all([
+    expect_chain_balance_increase(false, true, false),
+    expect_unlock_time_passed(vaultAddress, true, false, true),
+  ])
+
+  console.log('## End epoch 6 ############################')
+  console.log('## Start epoch 7 ###########################')
+
+  await Promise.all([
+    claim({ from: 'alice', vaultAddress }),
+    start_unbond({
+      from: 'bob',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'bob')).balance,
+    }),
+    claim({ from: 'charlie', vaultAddress }),
+  ])
+
+  await new Promise((r) => setTimeout(r, 5000))
+  await Promise.all([expect_chain_balance_increase(true, false, true)])
+
+  console.log('## End epoch 7 ###########################')
+  console.log('## End epoch 8 ############################')
+
   await Promise.all([claim({ from: 'bob', vaultAddress })])
 
   await new Promise((r) => setTimeout(r, 5000))
-  await expect_chain_balance_increase(false, true, false)
+  await Promise.all([expect_chain_balance_increase(false, true, false)])
 
-  console.log('## End epoch 6 ############################')
+  console.log('## End epoch 8 ###########################')
 
   const alice_end_balance = await getBalance(vaultAddress, 'alice')
   const bob_end_balance = await getBalance(vaultAddress, 'bob')
   const charlie_end_balance = await getBalance(vaultAddress, 'charlie')
 
-  // alice should have 300 -ish
-  // bob should have 380 -ish
-  // charlie should have 5500-ish
   console.log('\n=====================')
-  console.log('Alice balance end:', `${alice_end_balance}`)
-  console.log('Bob balance end:', `${bob_end_balance}`)
-  console.log('Charlie balance end:', `${charlie_end_balance}`)
+  console.log(
+    'Alice end:',
+    `${alice_end_balance}, start: ${alice_start_balance}, diff: ${
+      Number(alice_end_balance) - Number(alice_start_balance)
+    }`,
+  )
+  console.log(
+    'Bob end:',
+    `${bob_end_balance}, start: ${bob_start_balance}, diff: ${
+      Number(bob_end_balance) - Number(bob_start_balance)
+    }`,
+  )
+  console.log(
+    'Charlie end:',
+    `${charlie_end_balance}, start: ${charlie_start_balance}, diff: ${
+      Number(charlie_end_balance) - Number(charlie_start_balance)
+    }`,
+  )
+  console.log('=====================\n')
 }
