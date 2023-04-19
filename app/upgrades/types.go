@@ -5,6 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/quasarlabs/quasarnode/app/keepers"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -28,6 +29,7 @@ type Upgrade struct {
 		mm *module.Manager,
 		configurator module.Configurator,
 		bam BaseAppParamManager,
+		keepers *keepers.AppKeepers,
 	) upgradetypes.UpgradeHandler
 
 	// Store upgrades, should be used for any new modules introduced, new modules deleted, or store names renamed.
