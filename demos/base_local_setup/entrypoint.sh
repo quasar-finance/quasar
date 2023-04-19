@@ -3,13 +3,13 @@
 
 set -e
 
-CHAIN_INIT_SCRIPT=app_init.sh
+APP_INIT_SCRIPT=app_init.sh
 CONTAINER_FIRST_STARTUP_FLAG="CONTAINER_FIRST_STARTUP"
 
 if [ ! -e $CONTAINER_FIRST_STARTUP_FLAG ]; then
     echo "Initializing the container config"
     touch $CONTAINER_FIRST_STARTUP_FLAG
-    ./$CHAIN_INIT_SCRIPT
+    ./$APP_INIT_SCRIPT
 else
     echo "Node already initialized"
     
