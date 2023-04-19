@@ -86,8 +86,7 @@ ENV PACKAGES jq
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
 RUN --mount=type=cache,target=/var/cache/apt \
-	apt update && \
-	apt install -y $PACKAGES
+	apt-get update && apt-get install -y $PACKAGES
 
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
