@@ -17,7 +17,7 @@ use crate::state::{
     ICQ_CHANNEL, LP_SHARES, NEW_RECOVERY_ACK, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT,
     SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
-use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
+use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -648,10 +648,10 @@ fn handle_exit_pool_ack(
 
 fn handle_return_transfer_ack(
     storage: &mut dyn Storage,
-    querier: QuerierWrapper,
-    data: PendingReturningUnbonds,
+    _querier: QuerierWrapper,
+    _data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let mut callback_submsgs: Vec<SubMsg> = vec![];
+    let callback_submsgs: Vec<SubMsg> = vec![];
     // move this to returnTransfer
     // for unbond in data.unbonds.iter() {
     //     let cosmos_msg = finish_unbond(storage, querier, unbond)?;

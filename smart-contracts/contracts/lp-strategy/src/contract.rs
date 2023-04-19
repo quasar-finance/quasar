@@ -25,8 +25,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, Unbond, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_UNBONDING_CLAIMS, REPLIES,
-    RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
+    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING,
+    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 

@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
-    Uint128,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -22,9 +21,8 @@ use crate::{
         IbcMsgKind,
     },
     state::{
-        Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, PENDING_UNBOND_QUEUE,
-        SIMULATED_JOIN_AMOUNT_IN, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
+        PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,
     },
 };
 
