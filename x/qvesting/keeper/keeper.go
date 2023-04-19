@@ -56,7 +56,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // getAccountStore gets the account store of the given address.
 func (k Keeper) getAccountStore(ctx sdk.Context, addr sdk.AccAddress) prefix.Store {
-	store := ctx.KVStore(k.storeKey) // TODO: this is the wrong store
+	store := ctx.KVStore(k.storeKey)
 
 	return prefix.NewStore(store, banktypes.CreateAccountBalancesPrefix(addr))
 }

@@ -21,12 +21,19 @@ func CmdQuerySpendableBalances() *cobra.Command {
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
 
-			params := &types.QuerySpendableBalancesRequest{
-				Address: reqAddress,
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
 			}
 
-			res, err := queryClient.SpendableBalances(cmd.Context(), params)
+			params := &types.QuerySpendableBalancesRequest{
+				Address:    reqAddress,
+				Pagination: pageReq,
+			}
+
+			res, err := queryClient.SpendableBalances(ctx, params)
 			if err != nil {
 				return err
 			}
@@ -36,6 +43,7 @@ func CmdQuerySpendableBalances() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "spendable-balances")
 
 	return cmd
 }
