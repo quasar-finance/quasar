@@ -1,19 +1,18 @@
 #!/bin/bash
 
+# TODO: Before running this script go to the main branch, execute a "git checkout v0.1.0" and "make install" the binary in order to start from the mainnet version.
+# TODO: Now checkout the upgrade branch and you are able to execute this test script.
+
 # Kill existing quasarnoded processes
 echo ">>> Killing existing quasarnoded processes..."
 pkill quasarnoded || true
 
 # Entry point to run quasar_localnet.sh
-./quasar_localnet.sh
+../quasar_localnet.sh
 
 # Define variables
 CHAIN_ID=quasar
 UPGRADE_HEIGHT=30
-
-#TODO run this script as main branch, pre build the new binary from the new branch and set it up manually on the cosmovisor folder
-#TODO git checkout v0.1.0
-#TODO make install
 
 echo ">>> Sleeping 10 seconds to create some initial blocks"
 sleep 10
@@ -43,13 +42,7 @@ while true; do
 done
 
 # Check if the upgrade has been successful
-UPGRADE_SUCCESS=$(quasarnoded query gov proposal $PROPOSAL_ID --chain-id $CHAIN_ID --output json | jq -r '.proposal.status')
+quasarnoded query gov proposal 1 --chain-id $CHAIN_ID --output json
 
-if [ "$UPGRADE_SUCCESS" == "Passed" ]; then
-  echo ">>> Software upgrade was successful"
-else
-  echo ">>> Software upgrade failed"
-fi
-
-echo ">>> Asking for the new binary version, it should be changed"
-quasarnoded version
+# TODO: Now that the governance proposal has been success the chain should have been halted. You can check the quasar.log file expecting to find: UPGRADE "v0.1.1" NEEDED at height: 30: CONSENSUS FAILURE!!!
+# TODO: You can now "make install" the new version and check that blocks are produced as expected by running "quasarnoded start". It should start producing blocks from height 31.
