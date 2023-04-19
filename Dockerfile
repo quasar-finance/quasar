@@ -91,7 +91,6 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
-COPY --from=builder /quasar/ /quasar/src/quasar/
 
 
 ENV HOME /quasar
