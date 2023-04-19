@@ -861,7 +861,7 @@ func (app *App) setupUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				app.BaseApp,
-				// TODO pass the keepers necessary for the upgrades
+				&app.AppKeepers,
 			),
 		)
 	}
