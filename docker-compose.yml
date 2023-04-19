@@ -10,7 +10,7 @@ services:
       - "1317:1317"
       - "26657:26657"
       - "9090:9090"
-    command: "quasarnoded start >>./logs/quasar_quasar.log 2>&1"
+    command: "quasarnoded start >> ./logs/quasar_quasar.log 2>&1"
 
   osmosis:
     build:
