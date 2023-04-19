@@ -31,8 +31,4 @@ services:
       target: dev
       dockerfile: Dockerfile.quasar-relayer
     image: relayer:dev
-    # ports:
-    #    - "1417:1317"
-    #    - "26757:26657"
-    #    - "9190:9090"
     command: "rly start"
