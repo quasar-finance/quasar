@@ -350,7 +350,7 @@ mod tests {
         env.block.time = time;
         do_unbond(deps.as_mut().storage, &env, owner, id).unwrap();
         assert_eq!(
-            UNBOND_QUEUE
+            PENDING_UNBOND_QUEUE
                 .pop_front(deps.as_mut().storage)
                 .unwrap()
                 .unwrap(),
