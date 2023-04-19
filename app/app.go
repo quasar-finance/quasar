@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/quasarlabs/quasarnode/app/keepers"
+	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
 	"io"
 	"net/http"
 	"os"
@@ -246,7 +248,7 @@ var (
 		wasm.ModuleName: {authtypes.Burner},
 	}
 
-	Upgrades = []upgrades.Upgrade{}
+	Upgrades = []upgrades.Upgrade{v0.Upgrade}
 )
 
 var (
@@ -268,6 +270,7 @@ func init() {
 // capabilities aren't needed for testing.
 type App struct {
 	*baseapp.BaseApp
+	keepers.AppKeepers
 
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -279,48 +282,6 @@ type App struct {
 	keys    map[string]*sdk.KVStoreKey
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
-
-	// keepers
-	AccountKeeper    authkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
-	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    stakingkeeper.Keeper
-	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       mintkeeper.Keeper
-	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
-	CrisisKeeper     crisiskeeper.Keeper
-	UpgradeKeeper    upgradekeeper.Keeper
-	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper
-	WasmKeeper       wasm.Keeper
-
-	// make scoped keepers public for test purposes
-	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
-	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
-	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
-	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
-	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
-
-	QTransferKeeper qtransferkeeper.Keeper
-	EpochsKeeper    *epochsmodulekeeper.Keeper
-	QOsmosisKeeper  qosmokeeper.Keeper
-	QOracleKeeper   qoraclemodulekeeper.Keeper
-	QVestingKeeper  qvestingmodulekeeper.Keeper
-
-	ICAControllerKeeper icacontrollerkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
-	// transfer module
-	RawIcs20TransferAppModule transfer.AppModule
-	TransferStack             *qtransfer.IBCMiddleware
-	Ics20WasmHooks            *qtransfer.WasmHooks
-	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// mm is the module manager
 	mm *module.Manager
@@ -391,6 +352,7 @@ func New(
 	)
 
 	app := &App{
+		AppKeepers:        keepers.AppKeepers{},
 		BaseApp:           bApp,
 		cdc:               cdc,
 		appCodec:          appCodec,
@@ -881,7 +843,7 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedWasmKeeper = scopedWasmKeeper
-	app.scopedQOracleKeeper = scopedQOsmosisKeeper
+	app.ScopedQOracleKeeper = scopedQOsmosisKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 	// app.ScopedIntergammKeeper = scopedIntergammKeeper
