@@ -30,7 +30,7 @@ services:
       context: .
       target: dev
       dockerfile: Dockerfile.quasar-relayer
-    # image: ghcr.io/cosmos/relayer:latest
+    image: relayer:dev
     # ports:
     #    - "1417:1317"
     #    - "26757:26657"
