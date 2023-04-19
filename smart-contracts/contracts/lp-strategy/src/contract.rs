@@ -509,7 +509,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
                         },
                     )?;
 
-                if (msg.recover_unbonds.contains(&single_unbond.id)) {
+                if msg.recover_unbonds.contains(&single_unbond.id) {
                     UNBONDING_CLAIMS.save(
                         deps.storage,
                         // todo: double check vault_address should be owner, also check that id is bond_id
