@@ -284,11 +284,13 @@ docker-build-nonroot:
 		-f Dockerfile .
 
 
-docker-compose-up: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
-	@echo "Launching local env with docker-compose"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
+# This is not available to avoid missbehavior since it seems to be a bug in docker compose: 
+# https://github.com/docker/compose/issues/10068
+# docker-compose-up-attached: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
+# 	@echo "Launching local env with docker-compose"
+# 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up
 
-docker-compose-up-detached: ##@docker Run (and build if needed) env in docker compose and detach console
+docker-compose-up: ##@docker Run (and build if needed) env in docker compose and detach console
 	@echo "Launching local env with docker-compose"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up -d
 
@@ -296,21 +298,29 @@ docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
 	@echo "Recreate local env (will destroy application state)"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate
 
-docker-compose-up-recreate-rebuild: ##@docker DESTROY env containers and respawn them rebuilding image
-	@echo "Rebuild image and recreate local env (will destroy application state)"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml up --force-recreate --build
+docker-compose-build: ##@docker DANGER: (Re)build docker images from scratch
+	@echo "Rebuilding image for local env"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml build
+
+docker-compose-down: ##@docker Stop AND DELETE delete the containers
+	@echo "Stop docker containers and REMOVING THEM"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml down
 
 docker-compose-stop: ##@docker Stop containers running in the background
-	@echo "Stop docker containers and remove them (will destroy application state)"
+	@echo "Stop docker containers without removing them"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.yml stop
 
-docker-attach-quasar: ##@docker Connect to a terminal prompt in quasar node container
+docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node container
 	@echo "Connecting to quasar docker container"
 	docker exec -it quasar-quasar-1 /bin/bash
 
-docker-attach: ##@docker Connect to a terminal prompt in desired node (ARGS="quasar" make docker-attach)
-	@echo "Connecting to quasar docker container"
-	docker exec -it $(ARGS) /bin/sh
+docker-attach-osmosis: ##@docker Connect to a terminal prompt in OSMOSIS node container
+	@echo "Connecting to osmosis docker container"
+	docker exec -it quasar-osmosis-1 /bin/ash
+
+docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node container
+	@echo "Connecting to relayer docker container"
+	docker exec -it quasar-relayer-1 /bin/bash	
 
 
 
