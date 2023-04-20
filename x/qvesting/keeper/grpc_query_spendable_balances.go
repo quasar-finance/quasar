@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"context"
-	"github.com/cosmos/cosmos-sdk/types/query"
-
+	"github.com/cosmos/cosmos-sdk/store/mem"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,24 +24,27 @@ func (k Keeper) SpendableBalances(ctx context.Context, req *types.QuerySpendable
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	balances := sdk.NewCoins()
-	accountStore := k.getAccountStore(sdkCtx, addr)
-	zeroAmt := sdk.ZeroInt()
+	spendable := k.bankKeeper.SpendableCoins(sdkCtx, addr)
 
-	pageRes, err := query.Paginate(accountStore, req.Pagination, func(key, value []byte) error {
-		balances = append(balances, sdk.NewCoin(string(key), zeroAmt))
+	memStore := mem.NewStore()
+	for i, coin := range spendable {
+		memStore.Set(sdk.Uint64ToBigEndian(uint64(i)), k.cdc.MustMarshal(&coin))
+	}
+
+	var paginatedSpendable sdk.Coins
+	pageRes, err := query.Paginate(memStore, req.Pagination, func(key []byte, value []byte) error {
+		var coin sdk.Coin
+		k.cdc.MustUnmarshal(value, &coin)
+		paginatedSpendable = append(paginatedSpendable, coin)
 		return nil
 	})
+
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	result := sdk.NewCoins()
-	spendable := k.bankKeeper.SpendableCoins(sdkCtx, addr)
-
-	for _, c := range balances {
-		result = append(result, sdk.NewCoin(c.Denom, spendable.AmountOf(c.Denom)))
-	}
-
-	return &types.QuerySpendableBalancesResponse{Balances: result, Pagination: pageRes}, nil
+	return &types.QuerySpendableBalancesResponse{
+		Balances:   paginatedSpendable,
+		Pagination: pageRes,
+	}, nil
 }
