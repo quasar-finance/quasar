@@ -46,7 +46,7 @@ RES=$($BINARY tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-ba
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $CODE_ID"
 
-echo "Deploying contract"
+echo "Deploying contract (lp-strategy)"
 # swallow output
 OUT1=$($BINARY tx wasm instantiate $CODE_ID "$INIT1" --from alice --keyring-backend test --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec $NODE --chain-id $CHAIN_ID)
 ADDR1=$($BINARY query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
