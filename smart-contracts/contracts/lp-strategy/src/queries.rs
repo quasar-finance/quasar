@@ -218,7 +218,7 @@ pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{testing::{mock_dependencies, mock_env}, Timestamp};
 
     use super::*;
 
@@ -242,5 +242,55 @@ mod tests {
             .unwrap();
 
         let _res = query(deps.as_ref(), env, q).unwrap();
+    }
+    #[test]
+    fn test_handle_list_unbonding_claims() -> StdResult<()> {
+        let mut deps = mock_dependencies();
+
+        // Create some unbonding claims
+        let user1 = Addr::unchecked("user1");
+        let id1 = "1".to_string();
+        let user2 = Addr::unchecked("user2");
+        let id2 = "2".to_string();
+        let unbonds = vec![
+            (user1.clone(),(id1.clone(), Unbond {lp_shares: Uint128::new(100), unlock_time: Timestamp::from_seconds(101), attempted: false, owner: user1.clone(), id: id1 })),
+            (user2.clone(), (id2.clone(), Unbond {lp_shares: Uint128::new(200), unlock_time: Timestamp::from_seconds(102), attempted: true, owner: user2.clone(), id: id2 })),
+        ];
+        for (addr, (id, unbond)) in unbonds.clone() {
+            let key = (addr, id.clone());
+            UNBONDING_CLAIMS.save(&mut deps.storage, key, &unbond)?;
+        }
+
+        let id3 = "3".to_string();
+        let id4 = "4".to_string();
+        // Create some pending unbonding claims
+        let pending_unbonds = vec![
+            (user1.clone(), (id3.clone(), Unbond {lp_shares:  Uint128::new(50), unlock_time:  Timestamp::from_seconds(103), attempted: false, owner: user1.clone(), id: id3 })),
+            (user2.clone(), (id4.clone(), Unbond {lp_shares:  Uint128::new(150) , unlock_time:  Timestamp::from_seconds(104), attempted: true, owner: user2.clone(), id: id4 })),
+        ];
+        for (addr, (id, unbond)) in pending_unbonds.clone() {
+            let key = (addr, id.clone());
+            let value = unbond.clone();
+            PENDING_UNBONDING_CLAIMS.save(&mut deps.storage, key, &value)?;
+        }
+
+        // Call the function and check the response
+        let res = handle_list_unbonding_claims(deps.as_ref())?;
+
+        // Check the unbonds
+        let mut expected_unbonds = HashMap::new();
+        for (addr, (denom, unbond)) in unbonds {
+            expected_unbonds.insert(addr, (denom, unbond));
+        }
+        assert_eq!(res.unbonds, expected_unbonds);
+
+        // Check the pending unbonds
+        let mut expected_pending_unbonds = HashMap::new();
+        for (addr, (id, unbond)) in pending_unbonds {
+            expected_pending_unbonds.insert(addr, (id, unbond));
+        }
+        assert_eq!(res.pending_unbonds, expected_pending_unbonds);
+
+        Ok(())
     }
 }
