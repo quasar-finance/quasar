@@ -4,7 +4,7 @@ use quasar_types::callback::Callback;
 
 use crate::error::{ContractError, Trap};
 use crate::helpers::{parse_seq, unlock_on_error, ContractCallback, IbcMsgKind};
-use crate::state::{FundPath, CLAIMABLE_FUNDS, NEW_PENDING_ACK, REPLIES, TRAPS};
+use crate::state::{FundPath, CLAIMABLE_FUNDS, PENDING_ACK, REPLIES, TRAPS};
 
 pub fn handle_ibc_reply(
     deps: DepsMut,
@@ -29,7 +29,7 @@ pub fn handle_ibc_reply(
         msg: err.to_string(),
     })?;
 
-    NEW_PENDING_ACK.save(deps.storage, (seq, channel), &pending)?;
+    PENDING_ACK.save(deps.storage, (seq, channel), &pending)?;
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
@@ -50,7 +50,7 @@ pub fn handle_ack_reply(
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
     // the entire state of the ack execution,
     if let Err(error) = msg.result.into_result() {
-        let step = NEW_PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
+        let step = PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
         unlock_on_error(deps.storage, &step)?;
 
         // reassignment needed since add_attribute

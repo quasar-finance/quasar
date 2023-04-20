@@ -186,9 +186,7 @@ export async function expect_chain_balance_increase(
         Number(charlie_balance.amount) > Number(orig_charlie_balance.amount)
       ) {
         // if just alice, run try_icq
-        console.log(
-          'Only one balance increased. We may need to hit try icq dawg',
-        )
+        console.log('Only one balance increased. We may need to hit try icq')
       }
       // if its been longer than 90 seconds, display warning message
       if (new Date().getTime() - start.getTime() > 90000) {

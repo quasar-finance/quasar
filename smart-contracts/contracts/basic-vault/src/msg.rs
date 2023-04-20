@@ -163,6 +163,10 @@ pub enum QueryMsg {
     #[returns(PendingUnbondsResponse)]
     PendingUnbonds { address: String },
 
+    /// Get all unbonding claims for an id
+    #[returns(PendingUnbondsByIdResponse)]
+    PendingUnbondsById { bond_id: String },
+
     /// GetDebug shows us debug string info
     #[returns(GetDebugResponse)]
     GetDebug {},
@@ -214,6 +218,12 @@ pub struct PendingBondsResponse {
 pub struct PendingBondsByIdResponse {
     /// the bonds that are currently in the process of being deposited for a user
     pub pending_bonds: Vec<BondingStub>,
+}
+
+#[cw_serde]
+pub struct PendingUnbondsByIdResponse {
+    /// the unbonds that are currently in the process of being withdrawn by an user
+    pub pending_unbonds: Unbond,
 }
 
 #[cw_serde]

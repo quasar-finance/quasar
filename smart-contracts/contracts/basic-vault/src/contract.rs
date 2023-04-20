@@ -28,7 +28,7 @@ use crate::msg::{
 };
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
-    query_pending_unbonds, query_tvl_info,
+    query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
@@ -318,6 +318,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
         QueryMsg::PendingBondsById { bond_id } => {
             to_binary(&query_pending_bonds_by_id(deps, bond_id)?)
+        }
+        QueryMsg::PendingUnbondsById { bond_id } => {
+            to_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
         }
     }
 }
