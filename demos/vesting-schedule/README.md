@@ -22,6 +22,7 @@ provide better flexibility and support for defining the start time for vesting s
 ## Features
 
 - Ability to define the start time for vesting schedules
+- Ability to query `spendable-balances` via query CLI command with pagination
 - Compatibility with the built-in `x/auth/vesting` module
 - Integration with other modules, such as governance, distribution, and staking
 
@@ -40,6 +41,11 @@ delegate, undelegate, or redelegate tokens to validators, participate in governa
 distribution module.
 
 -----
+
+## Query CLI command with pagination (optionals)
+```bash
+quasarnoded query qvesting spendable-balances <account_address> (--limit 1) (--count-total)
+```
 
 ## Testing with standard account
 
