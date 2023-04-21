@@ -149,7 +149,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '500000',
           denom: OSMO_DENOM,
         },
       ],
@@ -159,7 +159,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '5000',
           denom: OSMO_DENOM,
         },
       ],
@@ -169,7 +169,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500',
+          amount: '250000',
           denom: OSMO_DENOM,
         },
       ],
@@ -185,14 +185,14 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '10', // 40 after this
+      amount: '100000', // 40 after this
     }),
     await bond({
       from: 'bob',
       vaultAddress,
       funds: [
         {
-          amount: '30', //total 80 after this
+          amount: '3000', //total 80 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -200,7 +200,7 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'charlie',
       vaultAddress,
-      amount: '25', //2475 after this
+      amount: '2500', //2475 after this
     }),
   ])
 
@@ -218,7 +218,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '20', // total 60 after this
+          amount: '2000000', // total 60 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -226,14 +226,14 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '30', // total 50 after this
+      amount: '3000', // total 50 after this
     }),
     await bond({
       from: 'charlie',
       vaultAddress,
       funds: [
         {
-          amount: '25', // total 2500 after this
+          amount: '25000', // total 2500 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -254,7 +254,7 @@ export async function extreme_test(vaultAddress: string) {
     start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '60', // total 60 after this
+      amount: '10000',
     }),
     // await claim({ from: 'alice', vaultAddress }),
     // await claim({ from: 'bob', vaultAddress }),
@@ -263,7 +263,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '20', //total 5000 after this
+          amount: '2000',
           denom: OSMO_DENOM,
         },
       ],
@@ -273,7 +273,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500', //total 5000 after this
+          amount: '2500000', //total 5000 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -360,7 +360,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50', //70
+          amount: '20000', //70
           denom: OSMO_DENOM,
         },
       ],
@@ -370,7 +370,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50', //50
+          amount: '500', //50
           denom: OSMO_DENOM,
         },
       ],
@@ -380,7 +380,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500', //2500
+          amount: '25000', //2500
           denom: OSMO_DENOM,
         },
       ],
@@ -398,7 +398,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30', //100
+          amount: '30000', //100
           denom: OSMO_DENOM,
         },
       ],
@@ -408,7 +408,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30', //80
+          amount: '300', //80
           denom: OSMO_DENOM,
         },
       ],
@@ -418,7 +418,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '1000', //3500
+          amount: '10000', //3500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -437,7 +437,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '100', //200
+          amount: '100000', //200
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -445,14 +445,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '30', //50
+      amount: '300', //50
     }),
     bond({
       from: 'charlie',
       vaultAddress,
       funds: [
         {
-          amount: '1000', //4500
+          amount: '10000', //4500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -472,14 +472,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '30', // 170
+      amount: '30000', // 170
     }),
     bond({
       from: 'bob',
       vaultAddress,
       funds: [
         {
-          amount: '220', //270
+          amount: '2200', //270
           denom: OSMO_DENOM,
         },
       ],
@@ -487,7 +487,7 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'charlie',
       vaultAddress,
-      amount: '30', //4470
+      amount: '3000', //4470
     }),
   ])
 
@@ -505,7 +505,7 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '90', //180
+      amount: '900', //180
     }),
     claim({ from: 'charlie', vaultAddress }),
   ])
