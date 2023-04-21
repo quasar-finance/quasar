@@ -653,8 +653,6 @@ fn handle_return_transfer_ack(
     _querier: QuerierWrapper,
     _data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let callback_submsgs: Vec<SubMsg> = vec![];
-
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_unbond())
     })?;
