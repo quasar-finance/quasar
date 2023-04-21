@@ -15,6 +15,7 @@ use crate::{
     ibc_lock,
     start_unbond::StartUnbond,
     state::{Config, LpCache, Unbond},
+    unbond::PendingReturningUnbonds,
 };
 
 #[cw_serde]
@@ -40,15 +41,9 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct RecoverySingleUnbond {
-    pub lp_shares: Uint128,
-    pub id: String,
-}
-
-#[cw_serde]
 pub struct MigrateMsg {
     pub vault_address: Addr,
-    pub recover_unbonds: Vec<RecoverySingleUnbond>,
+    pub recover_unbonds: Vec<String>,
 }
 
 #[cw_serde]
@@ -134,6 +129,7 @@ pub struct ListPendingAcksResponse {
 #[cw_serde]
 pub struct ListUnbondingClaimsResponse {
     pub unbonds: HashMap<Addr, (String, Unbond)>,
+    pub pending_unbonds: HashMap<Addr, (String, Unbond)>,
 }
 
 #[cw_serde]
@@ -242,6 +238,7 @@ pub enum ExecuteMsg {
     // accept a dispatched transfer from osmosis
     AcceptReturningFunds {
         id: u64,
+        pending: PendingReturningUnbonds,
     },
     // try to close a channel where a timout occured
     CloseChannel {
