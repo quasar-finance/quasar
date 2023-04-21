@@ -14,8 +14,8 @@ use crate::{
     helpers::{create_ibc_ack_submsg, IbcMsgKind, IcaMessages},
     ibc_util::calculate_token_out_min_amount,
     state::{
-        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES,
-        NEW_RECOVERY_ACK, TRAPS,
+        FundPath, LpCache, PendingBond, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RECOVERY_ACK,
+        TRAPS,
     },
     unbond::do_exit_swap,
 };
@@ -187,7 +187,7 @@ fn handle_join_swap_recovery(
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
     let channel = ICA_CHANNEL.load(storage)?;
-    let ack_bin = NEW_RECOVERY_ACK.load(storage, (trapped_id, channel.clone()))?;
+    let ack_bin = RECOVERY_ACK.load(storage, (trapped_id, channel.clone()))?;
     // in this case the recovery ack should contain a joinswapexternamountin response
     // we try to deserialize it
     let join_result = de_succcesful_join(ack_bin)?;

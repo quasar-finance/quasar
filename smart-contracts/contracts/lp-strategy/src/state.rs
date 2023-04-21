@@ -50,8 +50,9 @@ pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
 // RECOVERY_ACK contains ibc acknowledgements, these packets might be needed for recovery from errors
-pub(crate) const NEW_RECOVERY_ACK: Map<(u64, String), IbcAcknowledgement> =
+pub(crate) const RECOVERY_ACK: Map<(u64, String), IbcAcknowledgement> =
     Map::new("new_recovery_ack");
+pub(crate) const _OLD_RECOVERY_ACK: Map<u64, IbcAcknowledgement> = Map::new("recovery_ack");
 
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
 pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
@@ -61,9 +62,10 @@ pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
-
+pub(crate) const _OLD_PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
 pub(crate) const PENDING_ACK: Map<(u64, String), IbcMsgKind> = Map::new("new_pending_acks");
 // The map to store trapped errors,
+pub(crate) const _OLD_TRAPS: Map<u64, Trap> = Map::new("traps");
 pub(crate) const TRAPS: Map<(u64, String), Trap> = Map::new("new_traps");
 
 // all vault related state items
