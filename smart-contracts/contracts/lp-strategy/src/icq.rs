@@ -55,19 +55,6 @@ pub fn try_icq(
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
-        // let mut range: Vec<((Addr, String), Unbond)> = vec![];
-        // for pending_unbonding_claim in
-        //     PENDING_UNBONDING_CLAIMS.range(storage, None, None, cosmwasm_std::Order::Ascending)
-        // {
-        //     range.push(pending_unbonding_claim?);
-        // }
-
-        // for pending_unbonding_claim in range.iter() {
-        //     let (keys, unbond) = pending_unbonding_claim;
-
-        //     UNBONDING_CLAIMS.save(storage, keys.clone(), unbond)?;
-        //     PENDING_UNBONDING_CLAIMS.remove(storage, keys.clone());
-        // }
         while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
             let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
             if let Some(unbond) = unbond {

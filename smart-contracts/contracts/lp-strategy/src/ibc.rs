@@ -409,6 +409,7 @@ pub fn handle_icq_ack(
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
+    // todo move this to below into the lock decisions
     let bond = batch_bond(storage, &env, total_balance)?;
 
     let mut msges = Vec::new();
@@ -416,6 +417,7 @@ pub fn handle_icq_ack(
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
 
+    // todo rewrite into flat if/else ifs
     if let Some(msg) = bond {
         msges.push(msg);
         attrs.push(Attribute::new("bond-status", "bonding"));
@@ -652,25 +654,12 @@ fn handle_return_transfer_ack(
     _data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
     let callback_submsgs: Vec<SubMsg> = vec![];
-    // move this to returnTransfer
-    // for unbond in data.unbonds.iter() {
-    //     let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-    //     callback_submsgs.push(create_callback_submsg(
-    //         storage,
-    //         cosmos_msg,
-    //         unbond.owner.clone(),
-    //         unbond.id.clone(),
-    //     )?)
-    // }
 
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_unbond())
     })?;
 
-    Ok(Response::new()
-        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        // .add_submessages(callback_submsgs)
-        .add_attribute("return-transfer", "success"))
+    Ok(Response::new().add_attribute("return-transfer", "success"))
 }
 
 pub fn handle_failing_ack(

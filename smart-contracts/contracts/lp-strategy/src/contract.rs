@@ -278,9 +278,10 @@ pub fn execute_accept_returning_funds(
     }
 
     Ok(Response::new()
-        .add_submessages(callback_submsgs)
+        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
         .add_attribute("returning-transfer", id.to_string())
-        .add_attribute("success", "true"))
+        .add_attribute("success", "true")
+        .add_submessages(callback_submsgs))
 }
 
 pub fn execute_bond(
