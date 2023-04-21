@@ -544,6 +544,7 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Con
 
 #[cfg(test)]
 mod tests {
+    use crate::callback::on_bond;
     use crate::msg::PrimitiveInitMsg;
     use crate::state::Supply;
 
@@ -551,7 +552,7 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{Addr, Coin, CosmosMsg, Uint128};
     use cw20_base::contract::execute_mint;
-    use cw20_base::state::{TokenInfo, MinterData, TOKEN_INFO};
+    use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
     use lp_strategy::msg::InstantiateMsg;
 
     #[test]
@@ -623,17 +624,35 @@ mod tests {
             }),
         };
         TOKEN_INFO.save(deps.as_mut().storage, &token_info).unwrap();
+        BONDING_SEQ_TO_ADDR.save(deps.as_mut().storage, "1".to_string(), &"user".to_string()).unwrap();
 
         // mint shares for the user
         //     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
-        execute_mint(
-            deps.as_mut().branch(),
-            env.clone(),
-            mock_info(env.contract.address.as_str(), &[]),
-            info.clone().sender.to_string(),
-            Uint128::new(500),
-        )
-        .unwrap();
+        // TODO replace execute mint by doing two callbacks
+        // mock an unfilfilled stub
+        // do 2 callbacks to fullfill the stubs
+        BOND_STATE
+            .save(
+                deps.as_mut().storage,
+                "1".to_string(),
+                &vec![
+                    BondingStub {
+                        address: "contract1".to_string(),
+                        bond_response: None,
+                    },
+                    BondingStub {
+                        address: "contract2".to_string(),
+                        bond_response: None,
+                    },
+                ],
+            )
+            .unwrap();
+        // we do 2 callbacks, one with 350 shares and 1 wih 150 shares
+        on_bond(deps.as_mut(), env.clone(), MessageInfo { sender: Addr::unchecked("contract1"), funds: vec![] }, Uint128::new(350), "1".to_string()).unwrap();
+        on_bond(deps.as_mut(), env.clone(), MessageInfo { sender: Addr::unchecked("contract2"), funds: vec![] }, Uint128::new(150), "1".to_string()).unwrap();
+
+        // start trying withdrawals
+        // our succesful withdrawal should show that it is possible for the vault contract to unbond a different amount than 350 and 150 shares
 
         // case 1: amount is zero, skip start unbond
         let amount = None;
@@ -662,13 +681,14 @@ mod tests {
         // check the messages sent to each primitive contract
         let msg1 = &res.messages[0];
         let msg2 = &res.messages[1];
+        // Since our callback was 350-150, we'd expect the same unbonds here
         assert_eq!(
             msg1.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: "contract1".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(450),
+                    share_amount: Uint128::new(350),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -680,7 +700,7 @@ mod tests {
                 contract_addr: "contract2".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(50),
+                    share_amount: Uint128::new(150),
                 })
                 .unwrap(),
                 funds: vec![],

@@ -128,12 +128,12 @@ pub fn on_bond(
         funds: vec![],
     };
 
-    let update_user_rewards_idx_msg =
-        update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
+    // let update_user_rewards_idx_msg =
+    //     update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
     execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
     let res = Response::new()
-        .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
+        // .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
         .add_attribute("action", "on_bond")
         .add_attribute("from", info.sender)
         .add_attribute("minted", shares_to_mint)
