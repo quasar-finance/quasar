@@ -754,9 +754,9 @@ mod tests {
     proptest! {
         #[test]
         fn test_calculate_claim_and_single_unbond(
-            (total_balance, user_balance) in (1..1_000_000_000_000_000_000_000u128).prop_flat_map(|a| (Just(a), 1..a)),
-            total_primitive_shares in 1u128..1_000_000_000_000_000_000_000u128,
-            lp_shares in 1u128..1_000_000_000_000_000_000_000u128,
+            (total_balance, user_balance) in (1..4*10_u128.pow(28)).prop_flat_map(|a| (Just(a), 1..a)),
+            total_primitive_shares in 1u128..4*10_u128.pow(28),
+            lp_shares in 1u128..4*10_u128.pow(28),
         ) {
 
             let mut deps = mock_dependencies();
@@ -793,7 +793,7 @@ mod tests {
             // for our assertion, since we are working with interger math and 6 decimals or more on tokens
             // we're ok with being either 1 off or some micro (10^-10) off
             // TODO for ease of coding, we just accept this ratio
-            let vals = recv_balance.multiply_ratio(999999u128, 1000000u128)..recv_balance.multiply_ratio(1000001u128, 1000000u128);
+            let vals = recv_balance.multiply_ratio(9999999999u128, 10000000000u128)..recv_balance.multiply_ratio(10000000001u128, 1000000000u128);
             prop_assert!(vals.contains(&ub), "recv_balance: {recv_balance}, user_balance: {user_balance}");
         }
     }
