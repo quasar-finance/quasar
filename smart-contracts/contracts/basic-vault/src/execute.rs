@@ -624,7 +624,9 @@ mod tests {
             }),
         };
         TOKEN_INFO.save(deps.as_mut().storage, &token_info).unwrap();
-        BONDING_SEQ_TO_ADDR.save(deps.as_mut().storage, "1".to_string(), &"user".to_string()).unwrap();
+        BONDING_SEQ_TO_ADDR
+            .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
+            .unwrap();
 
         // mint shares for the user
         //     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
@@ -648,8 +650,28 @@ mod tests {
             )
             .unwrap();
         // we do 2 callbacks, one with 350 shares and 1 wih 150 shares
-        on_bond(deps.as_mut(), env.clone(), MessageInfo { sender: Addr::unchecked("contract1"), funds: vec![] }, Uint128::new(350), "1".to_string()).unwrap();
-        on_bond(deps.as_mut(), env.clone(), MessageInfo { sender: Addr::unchecked("contract2"), funds: vec![] }, Uint128::new(150), "1".to_string()).unwrap();
+        on_bond(
+            deps.as_mut(),
+            env.clone(),
+            MessageInfo {
+                sender: Addr::unchecked("contract1"),
+                funds: vec![],
+            },
+            Uint128::new(350),
+            "1".to_string(),
+        )
+        .unwrap();
+        on_bond(
+            deps.as_mut(),
+            env.clone(),
+            MessageInfo {
+                sender: Addr::unchecked("contract2"),
+                funds: vec![],
+            },
+            Uint128::new(150),
+            "1".to_string(),
+        )
+        .unwrap();
 
         // start trying withdrawals
         // our succesful withdrawal should show that it is possible for the vault contract to unbond a different amount than 350 and 150 shares
