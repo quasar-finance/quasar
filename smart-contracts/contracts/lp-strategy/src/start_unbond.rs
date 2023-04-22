@@ -459,7 +459,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -776,7 +775,7 @@ mod tests {
             let unbond = single_unbond(
                 deps.as_mut().storage,
                 &StartUnbond {
-                    primitive_shares: claim.into(),
+                    primitive_shares: claim,
                     id: "1".to_string(),
                     owner: Addr::unchecked("bobberino"),
                 },

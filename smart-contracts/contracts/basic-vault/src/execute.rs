@@ -11,7 +11,7 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
+use crate::helpers::{can_unbond_from_primitive};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -551,7 +551,7 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{Addr, Coin, CosmosMsg, Uint128};
-    use cw20_base::contract::execute_mint;
+    
     use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
     use lp_strategy::msg::InstantiateMsg;
 

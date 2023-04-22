@@ -1,11 +1,10 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::{
-    helpers::update_user_reward_index,
     state::{
         Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
         PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
@@ -82,7 +81,7 @@ pub fn on_bond(
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
     let validated_user_address = deps.api.addr_validate(&user_address)?;
     // lets updated all pending deposit info
-    PENDING_BOND_IDS.update(deps.storage, validated_user_address.clone(), |ids| {
+    PENDING_BOND_IDS.update(deps.storage, validated_user_address, |ids| {
         if let Some(mut bond_ids) = ids {
             let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).ok_or(
                 ContractError::IncorrectCallbackId {
