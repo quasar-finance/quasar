@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramsutils "github.com/cosmos/cosmos-sdk/x/params/client/utils"
-	testconfig "github.com/quasarlabs/quasarnode/tests/e2e/config"
 	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
 	"github.com/strangelove-ventures/interchaintest/v4/chain/cosmos"
 	"go.uber.org/zap"
@@ -80,7 +79,7 @@ func (s *E2ETestSuite) CompleteGovProposal(ctx context.Context, chain *cosmos.Co
 	proposal = s.QueryProposal(ctx, chain, proposalId)
 	s.Require().Equal(govtypes.StatusVotingPeriod, proposal.Status)
 
-	time.Sleep(testconfig.VotingPeriod) // pass proposal
+	time.Sleep(VotingPeriod) // pass proposal
 
 	proposal = s.QueryProposal(ctx, chain, proposalId)
 	s.Require().Equal(govtypes.StatusPassed, proposal.Status)

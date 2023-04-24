@@ -117,7 +117,7 @@ func (s *E2ETestSuite) ExecuteContract(
 	}
 }
 
-func (s *E2ETestSuite) ExecuteQuery(ctx context.Context, chain *cosmos.CosmosChain, contractAddr string, args any) []byte {
+func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.CosmosChain, contractAddr string, args any) []byte {
 	tn := GetFullNode(chain)
 
 	argsbz, err := json.Marshal(args)

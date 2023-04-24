@@ -3,12 +3,12 @@ package e2e
 import (
 	"context"
 	"fmt"
+	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	testconfig "github.com/quasarlabs/quasarnode/tests/e2e/config"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 
@@ -32,7 +32,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	// create channels for all the instantiated contracts address 1
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress1),
 		"icqhost",
 		ibc.Unordered,
@@ -41,7 +41,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress1),
 		"icahost",
 		ibc.Ordered,
@@ -59,7 +59,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	// create channels for all the instantiated contracts address 2
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress2),
 		"icqhost",
 		ibc.Unordered,
@@ -68,7 +68,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress2),
 		"icahost",
 		ibc.Ordered,
@@ -86,7 +86,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	// create channels for all the instantiated contracts address 3
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress3),
 		"icqhost",
 		ibc.Unordered,
@@ -95,7 +95,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 
 	s.CreateChannel(
 		ctx,
-		testconfig.Quasar2OsmosisPath,
+		testsuite.Quasar2OsmosisPath,
 		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress3),
 		"icahost",
 		ibc.Ordered,

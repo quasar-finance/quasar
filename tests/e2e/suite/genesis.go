@@ -13,45 +13,102 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 
-// TODO need to find better place for this whole file (didn't use it from config dir as it was creating import cycles
-
-const (
-	// DefaultNumValidators is the number of validator nodes deployed for each chain
-	DefaultNumValidators = 1
-	// DefaultNumNodes Number of full nodes deployed for each chain
-	DefaultNumNodes = 0
-
-	// VotingPeriod is the duration in which proposals in gov module are open for voting
-	VotingPeriod = time.Second * 10
-
-	// Default relayer path names for quasar <-> cosmos link
-	Quasar2CosmosPath = "quasar-cosmos"
-	// Default relayer path names for cosmos <-> osmosis link
-	Cosmos2OsmosisPath = "cosmos-osmosis"
-	// Default relayer path names for quasar <-> osmosis link
-	Quasar2OsmosisPath = "quasar-osmosis"
-)
-
-const (
-	authorityKeyName = "authority"
-
-	ownerKeyName        = "owner"
-	ownerKeyName1       = "pppppppppppppp"
-	newOwnerKeyName     = "new_owner"
-	masterMinterKeyName = "masterminter"
-	bondTestKeyName     = "bond_test"
-	bondTestKeyName1    = "bond_test_1"
-	bondTestKeyName2    = "bond_test_2"
-	bondTestKeyName3    = "bond_test_3"
-	bondTestKeyName4    = "bond_test_4"
-	bondTestKeyName5    = "bond_test_5"
-	bondTestKeyName6    = "bond_test_6"
-	bondTestKeyName7    = "bond_test_7"
+var (
+	ICQAllowedQueries = []string{
+		"/ibc.applications.transfer.v1.Query/DenomTrace",
+		"/cosmos.auth.v1beta1.Query/Account",
+		"/cosmos.auth.v1beta1.Query/Params",
+		"/cosmos.bank.v1beta1.Query/Balance",
+		"/cosmos.bank.v1beta1.Query/DenomMetadata",
+		"/cosmos.bank.v1beta1.Query/Params",
+		"/cosmos.bank.v1beta1.Query/SupplyOf",
+		"/cosmos.distribution.v1beta1.Query/Params",
+		"/cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
+		"/cosmos.distribution.v1beta1.Query/ValidatorCommission",
+		"/cosmos.gov.v1beta1.Query/Deposit",
+		"/cosmos.gov.v1beta1.Query/Params",
+		"/cosmos.gov.v1beta1.Query/Vote",
+		"/cosmos.slashing.v1beta1.Query/Params",
+		"/cosmos.slashing.v1beta1.Query/SigningInfo",
+		"/cosmos.staking.v1beta1.Query/Delegation",
+		"/cosmos.staking.v1beta1.Query/Params",
+		"/cosmos.staking.v1beta1.Query/Validator",
+		"/osmosis.epochs.v1beta1.Query/EpochInfos",
+		"/osmosis.epochs.v1beta1.Query/CurrentEpoch",
+		"/osmosis.gamm.v1beta1.Query/NumPools",
+		"/osmosis.gamm.v1beta1.Query/TotalLiquidity",
+		"/osmosis.gamm.v1beta1.Query/Pool",
+		"/osmosis.gamm.v1beta1.Query/PoolParams",
+		"/osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
+		"/osmosis.gamm.v1beta1.Query/TotalShares",
+		"/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares",
+		"/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares",
+		"/osmosis.gamm.v1beta1.Query/CalcJoinPoolNoSwapShares",
+		"/osmosis.gamm.v1beta1.Query/PoolType",
+		"/osmosis.gamm.v2.Query/SpotPrice",
+		"/osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
+		"/osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
+		"/osmosis.incentives.Query/ModuleToDistributeCoins",
+		"/osmosis.incentives.Query/LockableDurations",
+		"/osmosis.lockup.Query/ModuleBalance",
+		"/osmosis.lockup.Query/ModuleLockedAmount",
+		"/osmosis.lockup.Query/AccountUnlockableCoins",
+		"/osmosis.lockup.Query/AccountUnlockingCoins",
+		"/osmosis.lockup.Query/LockedDenom",
+		"/osmosis.lockup.Query/LockedByID",
+		"/osmosis.lockup.Query/NextLockID",
+		"/osmosis.mint.v1beta1.Query/EpochProvisions",
+		"/osmosis.mint.v1beta1.Query/Params",
+		"/osmosis.poolincentives.v1beta1.Query/GaugeIds",
+		"/osmosis.superfluid.Query/Params",
+		"/osmosis.superfluid.Query/AssetType",
+		"/osmosis.superfluid.Query/AllAssets",
+		"/osmosis.superfluid.Query/AssetMultiplier",
+		"/osmosis.poolmanager.v1beta1.Query/NumPools",
+		"/osmosis.poolmanager.v1beta1.Query/EstimateSwapExactAmountIn",
+		"/osmosis.poolmanager.v1beta1.Query/EstimateSwapExactAmountOut",
+		"/osmosis.txfees.v1beta1.Query/FeeTokens",
+		"/osmosis.txfees.v1beta1.Query/DenomSpotPrice",
+		"/osmosis.txfees.v1beta1.Query/DenomPoolId",
+		"/osmosis.txfees.v1beta1.Query/BaseDenom",
+		"/osmosis.tokenfactory.v1beta1.Query/Params",
+		"/osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+		"/osmosis.twap.v1beta1.Query/ArithmeticTwap",
+		"/osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
+		"/osmosis.twap.v1beta1.Query/GeometricTwap",
+		"/osmosis.twap.v1beta1.Query/GeometricTwapToNow",
+		"/osmosis.twap.v1beta1.Query/Params",
+		"/osmosis.downtimedetector.v1beta1.Query/RecoveredSinceDowntimeOfLength",
+	}
+	ICAAllowedMessages = []string{
+		"/ibc.applications.transfer.v1.MsgTransfer",
+		"/cosmos.bank.v1beta1.MsgSend",
+		"/cosmos.staking.v1beta1.MsgDelegate",
+		"/cosmos.staking.v1beta1.MsgBeginRedelegate",
+		"/cosmos.staking.v1beta1.MsgCreateValidator",
+		"/cosmos.staking.v1beta1.MsgEditValidator",
+		"/cosmos.staking.v1beta1.MsgUndelegate",
+		"/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward",
+		"/cosmos.distribution.v1beta1.MsgSetWithdrawAddress",
+		"/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission",
+		"/cosmos.distribution.v1beta1.MsgFundCommunityPool",
+		"/cosmos.gov.v1beta1.MsgVote",
+		"/osmosis.gamm.v1beta1.MsgJoinPool",
+		"/osmosis.gamm.v1beta1.MsgExitPool",
+		"/osmosis.gamm.v1beta1.MsgSwapExactAmountIn",
+		"/osmosis.gamm.v1beta1.MsgSwapExactAmountOut",
+		"/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
+		"/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
+		"/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
+		"/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
+		"/osmosis.lockup.MsgBeginUnlocking",
+		"/osmosis.lockup.MsgLockTokens",
+		"/osmosis.superfluid.MsgSuperfluidUnbondLock",
+	}
 )
 
 // genesisModifiers takes genesis as an unmarshaled "any" value and, modifies it and returns the "any" back.
 type genesisModifiers func(gen any) (any, error)
-type preGenesis func(gen any) (any, error)
 
 // modifyGenesis is a helper function that chains multiple genesisModifiers funcs in order to make
 // chain configuration easier and a lot cleaner.

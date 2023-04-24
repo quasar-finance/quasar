@@ -1,4 +1,4 @@
-package config
+package suite
 
 import "time"
 
@@ -17,4 +17,21 @@ const (
 	Cosmos2OsmosisPath = "cosmos-osmosis"
 	// Default relayer path names for quasar <-> osmosis link
 	Quasar2OsmosisPath = "quasar-osmosis"
+)
+
+const (
+	authorityKeyName = "authority"
+
+	ownerKeyName        = "owner"
+	ownerKeyName1       = "pppppppppppppp"
+	newOwnerKeyName     = "new_owner"
+	masterMinterKeyName = "masterminter"
+	bondTestKeyName     = "bond_test"
+	bondTestKeyName1    = "bond_test_1"
+	bondTestKeyName2    = "bond_test_2"
+	bondTestKeyName3    = "bond_test_3"
+	bondTestKeyName4    = "bond_test_4"
+	bondTestKeyName5    = "bond_test_5"
+	bondTestKeyName6    = "bond_test_6"
+	bondTestKeyName7    = "bond_test_7"
 )

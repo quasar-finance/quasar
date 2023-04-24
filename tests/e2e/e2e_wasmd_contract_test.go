@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	testconfig "github.com/quasarlabs/quasarnode/tests/e2e/config"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"github.com/strangelove-ventures/interchaintest/v4/testutil"
@@ -50,7 +50,7 @@ func TestWasmdTestSuite(t *testing.T) {
 
 	b := testsuite.NewE2ETestSuiteBuilder(t)
 	b.UseOsmosis()
-	b.Link(testconfig.Quasar2OsmosisPath)
+	b.Link(testsuite.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
 	s := &WasmdTestSuite{
@@ -96,8 +96,8 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	// Find out connections between each pair of chains
-	s.Quasar2OsmosisConn = s.GetConnectionsByPath(ctx, testconfig.Quasar2OsmosisPath)[0]
-	s.Osmosis2QuasarConn = s.GetConnectionsByPath(ctx, testconfig.Quasar2OsmosisPath)[0]
+	s.Quasar2OsmosisConn = s.GetConnectionsByPath(ctx, testsuite.Quasar2OsmosisPath)[0]
+	s.Osmosis2QuasarConn = s.GetConnectionsByPath(ctx, testsuite.Quasar2OsmosisPath)[0]
 
 	// Find out transfer channel between each pair of chains
 	s.Quasar2OsmosisTransferChan = s.QueryConnectionChannels(ctx, s.Quasar(), s.Quasar2OsmosisConn.Id)[0]
@@ -202,13 +202,24 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			map[string]any{"bond": map[string]any{}},
 			nil,
 		)
+
+		s.ExecuteContract(
+			ctx,
+			s.Quasar(),
+			s.ContractsDeploymentWallet.KeyName,
+			s.BasicVaultContractAddress,
+			sdk.Coins{},
+			map[string]any{"clear_cache": map[string]any{}},
+			nil,
+		)
+
+		time.Sleep(time.Second * 40)
 	}
 
 	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
 	err := testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
-	// TODO fix the balance checking part
 	for _, tc := range bondTestCases {
 		type Balance struct {
 			Balance string `json:"balance"`
@@ -218,7 +229,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 		}
 
 		var data Data
-		balanceBytes := s.ExecuteQuery(
+		balanceBytes := s.ExecuteContractQuery(
 			ctx,
 			s.Quasar(),
 			s.BasicVaultContractAddress,
