@@ -64,7 +64,7 @@ export async function claim({
   from: WalletOwners
   vaultAddress: string
 }) {
-  console.log('Unbonding ' + from + '...')
+  console.log('Claiming ' + from + '...')
 
   let basicVaultClient = await getVault(from, vaultAddress)
   return basicVaultClient.claim(stdFee, 'memo teehee', [])

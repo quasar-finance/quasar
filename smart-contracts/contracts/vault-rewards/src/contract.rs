@@ -6,7 +6,9 @@ use crate::execute::admin::{
 use crate::execute::user::execute_claim;
 use crate::execute::vault::execute_update_user_reward_index;
 use crate::helpers::is_contract_admin;
-use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VaultExecuteMsg};
+use crate::msg::{
+    AdminExecuteMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VaultExecuteMsg,
+};
 use crate::query::{query_config, query_pending_rewards, query_user_rewards_index};
 use crate::state::{Config, CONFIG};
 #[cfg(not(feature = "library"))]
@@ -86,4 +88,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, VaultRewards
         }
     }
     .map_err(|e| e.into())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, VaultRewardsError> {
+    Ok(Response::new().add_attribute("success", "true"))
 }

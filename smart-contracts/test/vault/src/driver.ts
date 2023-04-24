@@ -106,6 +106,7 @@ export async function simple_test(vaultAddress: string) {
   //     'Start unbond result for alice:',
   //     JSON.stringify(start_unbond_result, null, 2),
   //   )
+  await expect_unlock_time_passed(vaultAddress, true, false, false)
 
   let start_unbond_result_2 = await start_unbond({
     from: 'bob',
@@ -117,13 +118,15 @@ export async function simple_test(vaultAddress: string) {
   //     JSON.stringify(start_unbond_result_2, null, 2),
   //   )
 
-  await expect_unlock_time_passed(vaultAddress, true, true, false)
+  await expect_unlock_time_passed(vaultAddress, false, true, false)
 
   console.log('\n=== Start Simple Claim Test ===')
-  //   let claim_result = await claim({ from: 'alice', vaultAddress })
-  //   let claim_result_2 = await claim({ from: 'bob', vaultAddress })
+  await Promise.all([
+    claim({ from: 'alice', vaultAddress }),
+    claim({ from: 'bob', vaultAddress }),
 
-  await expect_chain_balance_increase(true, true, false)
+    expect_chain_balance_increase(true, true, false),
+  ])
 
   console.log('=== Simple Test Complete ===')
 }
@@ -146,7 +149,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '500000',
           denom: OSMO_DENOM,
         },
       ],
@@ -156,7 +159,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50',
+          amount: '5000',
           denom: OSMO_DENOM,
         },
       ],
@@ -166,7 +169,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500',
+          amount: '250000',
           denom: OSMO_DENOM,
         },
       ],
@@ -182,14 +185,14 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '10', // 40 after this
+      amount: '100000', // 40 after this
     }),
     await bond({
       from: 'bob',
       vaultAddress,
       funds: [
         {
-          amount: '30', //total 80 after this
+          amount: '3000', //total 80 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -197,7 +200,7 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'charlie',
       vaultAddress,
-      amount: '25', //2475 after this
+      amount: '2500', //2475 after this
     }),
   ])
 
@@ -215,7 +218,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '20', // total 60 after this
+          amount: '2000000', // total 60 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -223,14 +226,14 @@ export async function extreme_test(vaultAddress: string) {
     await start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '30', // total 50 after this
+      amount: '3000', // total 50 after this
     }),
     await bond({
       from: 'charlie',
       vaultAddress,
       funds: [
         {
-          amount: '25', // total 2500 after this
+          amount: '25000', // total 2500 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -251,7 +254,7 @@ export async function extreme_test(vaultAddress: string) {
     start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '60', // total 60 after this
+      amount: '10000',
     }),
     // await claim({ from: 'alice', vaultAddress }),
     // await claim({ from: 'bob', vaultAddress }),
@@ -260,7 +263,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '20', //total 5000 after this
+          amount: '2000',
           denom: OSMO_DENOM,
         },
       ],
@@ -270,7 +273,7 @@ export async function extreme_test(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500', //total 5000 after this
+          amount: '2500000', //total 5000 after this
           denom: OSMO_DENOM,
         },
       ],
@@ -357,7 +360,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50', //70
+          amount: '20000', //70
           denom: OSMO_DENOM,
         },
       ],
@@ -367,7 +370,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '50', //50
+          amount: '500', //50
           denom: OSMO_DENOM,
         },
       ],
@@ -377,7 +380,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '2500', //2500
+          amount: '25000', //2500
           denom: OSMO_DENOM,
         },
       ],
@@ -395,7 +398,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30', //100
+          amount: '30000', //100
           denom: OSMO_DENOM,
         },
       ],
@@ -405,7 +408,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '30', //80
+          amount: '300', //80
           denom: OSMO_DENOM,
         },
       ],
@@ -415,7 +418,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '1000', //3500
+          amount: '10000', //3500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -434,7 +437,7 @@ export async function mayhem(vaultAddress: string) {
       vaultAddress,
       funds: [
         {
-          amount: '100', //200
+          amount: '100000', //200
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -442,14 +445,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '30', //50
+      amount: '300', //50
     }),
     bond({
       from: 'charlie',
       vaultAddress,
       funds: [
         {
-          amount: '1000', //4500
+          amount: '10000', //4500
           denom: OSMO_DENOM,
         },
       ], //2475 after this
@@ -469,14 +472,14 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'alice',
       vaultAddress,
-      amount: '30', // 170
+      amount: '30000', // 170
     }),
     bond({
       from: 'bob',
       vaultAddress,
       funds: [
         {
-          amount: '220', //270
+          amount: '2200', //270
           denom: OSMO_DENOM,
         },
       ],
@@ -484,7 +487,7 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'charlie',
       vaultAddress,
-      amount: '30', //4470
+      amount: '3000', //4470
     }),
   ])
 
@@ -502,36 +505,88 @@ export async function mayhem(vaultAddress: string) {
     start_unbond({
       from: 'bob',
       vaultAddress,
-      amount: '90', //180
+      amount: '900', //180
     }),
     claim({ from: 'charlie', vaultAddress }),
   ])
   // then one more for good measure
 
   await Promise.all([
-    await expect_unlock_time_passed(vaultAddress, false, true, false),
-    await expect_chain_balance_increase(true, false, true),
+    expect_chain_balance_increase(true, false, true),
+    expect_unlock_time_passed(vaultAddress, false, true, false),
   ])
 
   console.log('## End epoch 5 ###########################')
   console.log('## Start epoch 6 ###########################')
 
+  await Promise.all([
+    start_unbond({
+      from: 'alice',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'alice')).balance,
+    }),
+    claim({ from: 'bob', vaultAddress }),
+    start_unbond({
+      from: 'charlie',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'charlie')).balance,
+    }),
+  ])
+
+  await new Promise((r) => setTimeout(r, 5000))
+  await Promise.all([
+    expect_chain_balance_increase(false, true, false),
+    expect_unlock_time_passed(vaultAddress, true, false, true),
+  ])
+
+  console.log('## End epoch 6 ############################')
+  console.log('## Start epoch 7 ###########################')
+
+  await Promise.all([
+    claim({ from: 'alice', vaultAddress }),
+    start_unbond({
+      from: 'bob',
+      vaultAddress,
+      amount: (await getBalance(vaultAddress, 'bob')).balance,
+    }),
+    claim({ from: 'charlie', vaultAddress }),
+  ])
+
+  await new Promise((r) => setTimeout(r, 5000))
+  await Promise.all([expect_chain_balance_increase(true, false, true)])
+
+  console.log('## End epoch 7 ###########################')
+  console.log('## End epoch 8 ############################')
+
   await Promise.all([claim({ from: 'bob', vaultAddress })])
 
   await new Promise((r) => setTimeout(r, 5000))
-  await expect_chain_balance_increase(false, true, false)
+  await Promise.all([expect_chain_balance_increase(false, true, false)])
 
-  console.log('## End epoch 6 ############################')
+  console.log('## End epoch 8 ###########################')
 
   const alice_end_balance = await getBalance(vaultAddress, 'alice')
   const bob_end_balance = await getBalance(vaultAddress, 'bob')
   const charlie_end_balance = await getBalance(vaultAddress, 'charlie')
 
-  // alice should have 300 -ish
-  // bob should have 380 -ish
-  // charlie should have 5500-ish
   console.log('\n=====================')
-  console.log('Alice balance end:', `${alice_end_balance}`)
-  console.log('Bob balance end:', `${bob_end_balance}`)
-  console.log('Charlie balance end:', `${charlie_end_balance}`)
+  console.log(
+    'Alice end:',
+    `${alice_end_balance}, start: ${alice_start_balance}, diff: ${
+      Number(alice_end_balance) - Number(alice_start_balance)
+    }`,
+  )
+  console.log(
+    'Bob end:',
+    `${bob_end_balance}, start: ${bob_start_balance}, diff: ${
+      Number(bob_end_balance) - Number(bob_start_balance)
+    }`,
+  )
+  console.log(
+    'Charlie end:',
+    `${charlie_end_balance}, start: ${charlie_start_balance}, diff: ${
+      Number(charlie_end_balance) - Number(charlie_start_balance)
+    }`,
+  )
+  console.log('=====================\n')
 }

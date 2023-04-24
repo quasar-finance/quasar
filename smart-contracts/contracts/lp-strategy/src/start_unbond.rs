@@ -20,8 +20,7 @@ use crate::{
     ibc_lock::Lock,
     state::{
         LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
-        LP_SHARES, OSMO_LOCK, PENDING_UNBONDING_CLAIMS, SHARES, START_UNBOND_QUEUE,
-        UNBONDING_CLAIMS,
+        LP_SHARES, OSMO_LOCK, SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -221,7 +220,7 @@ fn start_internal_unbond(
         .plus_seconds(CONFIG.load(storage)?.lock_period);
 
     // add amount of unbonding claims
-    PENDING_UNBONDING_CLAIMS.save(
+    UNBONDING_CLAIMS.save(
         storage,
         (unbond.owner.clone(), unbond.id.clone()),
         &Unbond {

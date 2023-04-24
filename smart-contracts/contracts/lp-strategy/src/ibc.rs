@@ -14,10 +14,10 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
-    ICQ_CHANNEL, LP_SHARES, NEW_RECOVERY_ACK, OSMO_LOCK, PENDING_ACK, SIMULATED_EXIT_RESULT,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
     SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
-use crate::unbond::{batch_unbond, finish_unbond, transfer_batch_unbond, PendingReturningUnbonds};
+use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -243,7 +243,7 @@ pub fn ibc_packet_ack(
 ) -> Result<IbcBasicResponse, ContractError> {
     // We save the ack binary here for error recovery in case of an join pool recovery
     // this should be cleaned up from state in the ack submsg Ok case
-    NEW_RECOVERY_ACK.save(
+    RECOVERY_ACK.save(
         deps.storage,
         (
             msg.original_packet.sequence,
@@ -409,6 +409,7 @@ pub fn handle_icq_ack(
     SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
     SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
 
+    // todo move this to below into the lock decisions
     let bond = batch_bond(storage, &env, total_balance)?;
 
     let mut msges = Vec::new();
@@ -416,6 +417,7 @@ pub fn handle_icq_ack(
     // if queues had items, msges should be some, so we add the ibc submessage, if there were no items in a queue, we don't have a submsg to add
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
 
+    // todo rewrite into flat if/else ifs
     if let Some(msg) = bond {
         msges.push(msg);
         attrs.push(Attribute::new("bond-status", "bonding"));
@@ -648,28 +650,14 @@ fn handle_exit_pool_ack(
 
 fn handle_return_transfer_ack(
     storage: &mut dyn Storage,
-    querier: QuerierWrapper,
-    data: PendingReturningUnbonds,
+    _querier: QuerierWrapper,
+    _data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    let mut callback_submsgs: Vec<SubMsg> = vec![];
-    for unbond in data.unbonds.iter() {
-        let cosmos_msg = finish_unbond(storage, querier, unbond)?;
-        callback_submsgs.push(create_callback_submsg(
-            storage,
-            cosmos_msg,
-            unbond.owner.clone(),
-            unbond.id.clone(),
-        )?)
-    }
-
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_unbond())
     })?;
 
-    Ok(Response::new()
-        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_submessages(callback_submsgs)
-        .add_attribute("return-transfer", "success"))
+    Ok(Response::new().add_attribute("return-transfer", "success"))
 }
 
 pub fn handle_failing_ack(

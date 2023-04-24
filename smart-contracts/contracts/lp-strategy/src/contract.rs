@@ -2,8 +2,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Reply, Response,
-    Timestamp, Uint128,
+    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Timestamp, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -13,7 +13,9 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{is_contract_admin, SubMsgKind};
+use crate::helpers::{
+    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
+};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -23,10 +25,10 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, Unbond, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_UNBONDING_CLAIMS, REPLIES, RETURNING,
-    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING,
+    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
 };
-use crate::unbond::do_unbond;
+use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -106,8 +108,8 @@ pub fn execute(
             execute_start_unbond(deps, env, info, id, share_amount)
         }
         ExecuteMsg::Unbond { id } => execute_unbond(deps, env, info, id),
-        ExecuteMsg::AcceptReturningFunds { id } => {
-            execute_accept_returning_funds(deps, &env, info, id)
+        ExecuteMsg::AcceptReturningFunds { id, pending } => {
+            execute_accept_returning_funds(deps.storage, deps.querier, info, id, pending)
         }
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
@@ -249,23 +251,37 @@ pub fn execute_ack(
 }
 
 pub fn execute_accept_returning_funds(
-    deps: DepsMut,
-    _env: &Env,
+    storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     info: MessageInfo,
     id: u64,
+    pending: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
     let returning_amount = RETURNING
-        .may_load(deps.storage, id)?
+        .may_load(storage, id)?
         .ok_or(ContractError::ReturningTransferNotFound)?;
 
-    let amount = must_pay(&info, CONFIG.load(deps.storage)?.local_denom.as_str())?;
+    let amount = must_pay(&info, CONFIG.load(storage)?.local_denom.as_str())?;
     if amount != returning_amount {
         return Err(ContractError::ReturningTransferIncorrectAmount);
     }
 
+    let mut callback_submsgs = vec![];
+    for unbond in pending.unbonds.iter() {
+        let cosmos_msg = finish_unbond(storage, querier, unbond)?;
+        callback_submsgs.push(create_callback_submsg(
+            storage,
+            cosmos_msg,
+            unbond.owner.clone(),
+            unbond.id.clone(),
+        )?)
+    }
+
     Ok(Response::new()
+        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
         .add_attribute("returning-transfer", id.to_string())
-        .add_attribute("success", "true"))
+        .add_attribute("success", "true")
+        .add_submessages(callback_submsgs))
 }
 
 pub fn execute_bond(
@@ -474,78 +490,51 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
         pub unbond_funds: Vec<Coin>,
     }
 
-    for single_unbond in msg.recover_unbonds.iter() {
-        let vault_pending_unbond: PendingUnbondsByIdResponse = deps.querier.query_wasm_smart(
-            msg.vault_address.clone(),
-            &QueryMsg::PendingUnbondsById {
-                bond_id: single_unbond.id.clone(),
-            },
-        )?;
-
-        PENDING_UNBONDING_CLAIMS.save(
-            deps.storage,
-            // todo: double check vault_address should be owner, also check that id is bond_id
-            (msg.vault_address.clone(), single_unbond.id.to_string()),
-            &Unbond {
-                lp_shares: single_unbond.lp_shares,
-                unlock_time: vault_pending_unbond
-                    .pending_unbonds
-                    .stub
-                    .iter()
-                    .find(|p| p.address == env.contract.address)
-                    .unwrap()
-                    .unlock_time
-                    .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
-                attempted: false,
-                // todo: same as above todo, who is owner?
-                owner: msg.vault_address.clone(),
-                id: single_unbond.id.clone(),
-            },
-        )?;
+    let mut range = vec![];
+    for pending_ack in PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
+        range.push(pending_ack?);
     }
-    // let mut range = vec![];
-    // for pending_ack in PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-    //     range.push(pending_ack?);
-    // }
 
-    // for item in range.iter() {
-    //     let (_key, ibc_msg_kind) = item;
+    for item in range.iter() {
+        let (_key, ibc_msg_kind) = item;
 
-    //     if let IbcMsgKind::Ica(IcaMessages::BeginUnlocking(single_unbonds, _total_amount)) =
-    //         ibc_msg_kind
-    //     {
-    //         for single_unbond in single_unbonds {
-    //             let vault_pending_unbond: PendingUnbondsByIdResponse =
-    //                 deps.querier.query_wasm_smart(
-    //                     msg.vault_address.clone(),
-    //                     &QueryMsg::PendingUnbondsById {
-    //                         bond_id: single_unbond.id.clone(),
-    //                     },
-    //                 )?;
+        if let IbcMsgKind::Ica(IcaMessages::BeginUnlocking(single_unbonds, _total_amount)) =
+            ibc_msg_kind
+        {
+            for single_unbond in single_unbonds {
+                let vault_pending_unbond: PendingUnbondsByIdResponse =
+                    deps.querier.query_wasm_smart(
+                        msg.vault_address.clone(),
+                        &QueryMsg::PendingUnbondsById {
+                            bond_id: single_unbond.id.clone(),
+                        },
+                    )?;
 
-    //             PENDING_UNBONDING_CLAIMS.save(
-    //                 deps.storage,
-    //                 // todo: double check vault_address should be owner, also check that id is bond_id
-    //                 (msg.vault_address.clone(), single_unbond.id.to_string()),
-    //                 &Unbond {
-    //                     lp_shares: single_unbond.lp_shares,
-    //                     unlock_time: vault_pending_unbond
-    //                         .pending_unbonds
-    //                         .stub
-    //                         .iter()
-    //                         .find(|p| p.address == env.contract.address)
-    //                         .unwrap()
-    //                         .unlock_time
-    //                         .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
-    //                     attempted: false,
-    //                     // todo: same as above todo, who is owner?
-    //                     owner: single_unbond.owner.clone(),
-    //                     id: single_unbond.id.clone(),
-    //                 },
-    //             )?;
-    //         }
-    //     }
-    // }
+                if msg.recover_unbonds.contains(&single_unbond.id) {
+                    UNBONDING_CLAIMS.save(
+                        deps.storage,
+                        // todo: double check vault_address should be owner, also check that id is bond_id
+                        (msg.vault_address.clone(), single_unbond.id.to_string()),
+                        &Unbond {
+                            lp_shares: single_unbond.lp_shares,
+                            unlock_time: vault_pending_unbond
+                                .pending_unbonds
+                                .stub
+                                .iter()
+                                .find(|p| p.address == env.contract.address)
+                                .unwrap()
+                                .unlock_time
+                                .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
+                            attempted: false,
+                            // todo: same as above todo, who is owner?
+                            owner: single_unbond.owner.clone(),
+                            id: single_unbond.id.clone(),
+                        },
+                    )?;
+                }
+            }
+        }
+    }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)

@@ -19,9 +19,9 @@ use crate::{
     start_unbond::StartUnbond,
     state::{
         Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN,
-        SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
-        UNBOND_QUEUE,
+        OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, REPLIES, SHARES,
+        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE,
+        TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -85,7 +85,17 @@ pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaims
             Ok((val.0 .0, (val.0 .1, val.1)))
         })
         .collect();
-    Ok(ListUnbondingClaimsResponse { unbonds: unbonds? })
+    let pending_unbonds: StdResult<HashMap<Addr, (String, Unbond)>> = PENDING_UNBONDING_CLAIMS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| {
+            let val = res?;
+            Ok((val.0 .0, (val.0 .1, val.1)))
+        })
+        .collect();
+    Ok(ListUnbondingClaimsResponse {
+        unbonds: unbonds?,
+        pending_unbonds: pending_unbonds?,
+    })
 }
 
 pub fn handle_unbonding_claim_query(
