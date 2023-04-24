@@ -1,5 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cw20::BalanceResponse;
 use std::collections::HashMap;
 
 use cosmwasm_std::{to_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, StdResult, Uint128};
@@ -31,6 +32,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
         QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
         QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
+        QueryMsg::Balance { address } => to_binary(&handle_balance_query(deps, &address)?),
         QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
         QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
         QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
@@ -143,6 +145,12 @@ pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
     Ok(IcaAddressResponse {
         address: get_ica_address(deps.storage, ICA_CHANNEL.load(deps.storage)?)
             .expect("ica address setup correctly"),
+    })
+}
+
+pub fn handle_balance_query(deps: Deps, address: &String) -> StdResult<BalanceResponse> {
+    Ok(BalanceResponse {
+        balance: SHARES.load(deps.storage, deps.api.addr_validate(address)?)?,
     })
 }
 

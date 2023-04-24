@@ -6,6 +6,7 @@ use std::{
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
+use cw20::BalanceResponse;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
@@ -54,6 +55,8 @@ pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
     #[returns(IcaAddressResponse)]
+    Balance { address: String },
+    #[returns(BalanceResponse)]
     IcaAddress {},
     #[returns(LockResponse)]
     Lock {},
