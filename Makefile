@@ -288,30 +288,30 @@ docker-build-nonroot:
 # https://github.com/docker/compose/issues/10068
 # docker-compose-up-attached: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
 # 	@echo "Launching local env with docker-compose"
-# 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml up
+# 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up
 
 docker-compose-up: ##@docker Run local env, build only if no images available
 	@echo "Launching local env, building images if not available"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml up -d
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up -d
 
 docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
 	@echo "Recreate local env (will destroy application state)"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml up -d --force-recreate
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up -d --force-recreate
 
 docker-compose-build: ##@docker Build new image if there are code changes, won't recreate containers.
 	@echo "Rebuilding image for local env"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml build
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml build
 
 docker-compose-rebuild: docker-compose-build docker-compose-up-recreate ##@docker Recreate containers building new code if needed
 	@echo "Rebuilding images and restarting containers"
 
 docker-compose-stop: ##@docker Stop containers without deleting them
 	@echo "Stop docker containers without removing them"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml stop
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml stop
 
 docker-compose-down: ##@docker Stop AND DELETE delete the containers
 	@echo "Stopping docker containers and REMOVING THEM"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f test/docker/docker-compose.yml down
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml down
 
 docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node container
 	@echo "Connecting to quasar docker container"
@@ -327,7 +327,7 @@ docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node contai
 
 docker-test-e2e: docker-compose-up
 	@echo "Running e2e tests"
-	cd ./test/shell/ && ./create_and_execute_contract.sh
+	cd ./tests/shell/ && ./create_and_execute_contract.sh
 
 
 ###############################################################################
