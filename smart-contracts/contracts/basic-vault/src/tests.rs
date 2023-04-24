@@ -164,7 +164,7 @@ impl Querier for QuasarQuerier {
                                 Err(error) => ContractResult::Err(error.to_string()),
                             })
                         }
-                        lp_strategy::msg::QueryMsg::Balance { address } => {
+                        lp_strategy::msg::QueryMsg::Balance { address: _ } => {
                             let response = BalanceResponse {
                                 balance: total_share,
                             };
