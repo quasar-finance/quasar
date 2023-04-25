@@ -164,6 +164,12 @@ impl Querier for QuasarQuerier {
                                 Err(error) => ContractResult::Err(error.to_string()),
                             })
                         }
+                        lp_strategy::msg::QueryMsg::Balance { address: _ } => {
+                            let response = BalanceResponse {
+                                balance: total_share,
+                            };
+                            QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                        }
                         _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                             kind: format!("Unmocked primitive query type: {primitive_query:?}"),
                         }),
@@ -1571,7 +1577,7 @@ fn proper_unbond() {
             from_binary(msg).unwrap()
         {
             assert_eq!(id, "2");
-            assert_eq!(share_amount, Uint128::from(99u128));
+            assert_eq!(share_amount, Uint128::from(100u128));
         } else {
             panic!("expected start unbond")
         }
@@ -1590,7 +1596,7 @@ fn proper_unbond() {
             from_binary(msg).unwrap()
         {
             assert_eq!(id, "2");
-            assert_eq!(share_amount, Uint128::from(99u128));
+            assert_eq!(share_amount, Uint128::from(100u128));
         } else {
             panic!("expected start unbond")
         }
@@ -1609,7 +1615,7 @@ fn proper_unbond() {
             from_binary(msg).unwrap()
         {
             assert_eq!(id, "2");
-            assert_eq!(share_amount, Uint128::from(99u128));
+            assert_eq!(share_amount, Uint128::from(100u128));
         } else {
             panic!("expected start unbond")
         }

@@ -3,6 +3,7 @@ use cosmwasm_std::{
     StdError, Uint128, WasmMsg,
 };
 
+use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
 use cw_utils::{nonpayable, PaymentError};
 
@@ -368,14 +369,23 @@ pub fn do_start_unbond(
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
+    let supply = TOTAL_SUPPLY.load(deps.storage)?;
 
     let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
         .iter()
         .map(|pc| -> Result<WasmMsg, ContractError> {
-            // lets get the amount of tokens to unbond for this primitive
-            let primitive_share_amount = Decimal::from_uint128(unbond_amount)
-                .checked_mul(pc.weight)?
+            // get this vaults primitive share balance
+            let our_balance: BalanceResponse = deps.querier.query_wasm_smart(
+                pc.address.clone(),
+                &lp_strategy::msg::QueryMsg::Balance {
+                    address: env.contract.address.to_string(),
+                },
+            )?;
+
+            // lets get the amount of tokens to unbond for this primitive: p_unbond_amount = (v_unbond_amount / v_total_supply) * our_p_balance
+            let primitive_share_amount = Decimal::from_ratio(unbond_amount, supply.issued)
+                .checked_mul(Decimal::from_uint128(our_balance.balance))?
                 .to_uint_floor();
 
             unbonding_stubs.push(UnbondingStub {
