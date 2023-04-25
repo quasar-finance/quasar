@@ -148,7 +148,7 @@ pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
     })
 }
 
-pub fn handle_balance_query(deps: Deps, address: &String) -> StdResult<BalanceResponse> {
+pub fn handle_balance_query(deps: Deps, address: &str) -> StdResult<BalanceResponse> {
     Ok(BalanceResponse {
         balance: SHARES.load(deps.storage, deps.api.addr_validate(address)?)?,
     })
