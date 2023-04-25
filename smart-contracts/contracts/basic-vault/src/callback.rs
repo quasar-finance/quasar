@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, Timestamp, Uint128,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, Timestamp, Uint128, SubMsg,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -10,7 +10,7 @@ use crate::{
         PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
     types::FromUint128,
-    ContractError,
+    ContractError, helpers::update_user_reward_index,
 };
 
 pub fn on_bond(
@@ -81,7 +81,7 @@ pub fn on_bond(
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
     let validated_user_address = deps.api.addr_validate(&user_address)?;
     // lets updated all pending deposit info
-    PENDING_BOND_IDS.update(deps.storage, validated_user_address, |ids| {
+    PENDING_BOND_IDS.update(deps.storage, validated_user_address.clone(), |ids| {
         if let Some(mut bond_ids) = ids {
             let bond_index = bond_ids.iter().position(|id| id.eq(&bond_id)).ok_or(
                 ContractError::IncorrectCallbackId {
@@ -127,12 +127,12 @@ pub fn on_bond(
         funds: vec![],
     };
 
-    // let update_user_rewards_idx_msg =
-    //     update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
+    let update_user_rewards_idx_msg =
+        update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
     execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
     let res = Response::new()
-        // .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
+        .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
         .add_attribute("action", "on_bond")
         .add_attribute("from", info.sender)
         .add_attribute("minted", shares_to_mint)

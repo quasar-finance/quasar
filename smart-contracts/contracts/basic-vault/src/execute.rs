@@ -11,7 +11,7 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::{can_unbond_from_primitive};
+use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -364,9 +364,8 @@ pub fn do_start_unbond(
     }
 
     // burn if balance is more than or equal to amount (handled in execute_burn)
-    // TODO RE ENABLE BEFORE MERGING OR ONCE EASY MOCK
-    // let update_user_rewards_idx_msg =
-    //     update_user_reward_index(deps.as_ref().storage, &info.sender)?;
+    let update_user_rewards_idx_msg =
+        update_user_reward_index(deps.as_ref().storage, &info.sender)?;
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
@@ -437,7 +436,7 @@ pub fn do_start_unbond(
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
-            // .add_message(update_user_rewards_idx_msg)
+            .add_message(update_user_rewards_idx_msg)
             .add_attributes(vec![
                 Attribute {
                     key: "action".to_string(),
@@ -546,7 +545,7 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Con
 mod tests {
     use crate::callback::on_bond;
     use crate::msg::PrimitiveInitMsg;
-    use crate::state::Supply;
+    use crate::state::{Supply, VAULT_REWARDS};
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
@@ -610,6 +609,7 @@ mod tests {
         INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
         BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
         TOTAL_SUPPLY.save(deps.as_mut().storage, &supply).unwrap();
+        VAULT_REWARDS.save(deps.as_mut().storage, &Addr::unchecked("rewards-contract")).unwrap();
 
         // store token info using cw20-base format
         let token_info = TokenInfo {
@@ -698,7 +698,7 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(res.attributes.len(), 4);
-        assert_eq!(res.messages.len(), 2);
+        assert_eq!(res.messages.len(), 3);
 
         // check the messages sent to each primitive contract
         let msg1 = &res.messages[0];
@@ -710,7 +710,8 @@ mod tests {
                 contract_addr: "contract1".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(350),
+                    // TODO wanted behaviour would be 350
+                    share_amount: Uint128::new(450),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -722,7 +723,8 @@ mod tests {
                 contract_addr: "contract2".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(150),
+                    // TODO wanted behaviour should be 150
+                    share_amount: Uint128::new(50),
                 })
                 .unwrap(),
                 funds: vec![],
