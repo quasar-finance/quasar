@@ -7,6 +7,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 # This workflow makes x86_64 binaries for linux.
 # TODO: add darwin later
 jobs:
