@@ -1,16 +1,17 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, Timestamp, Uint128, SubMsg,
+    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
 use crate::{
+    helpers::update_user_reward_index,
     state::{
         Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
         PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
     types::FromUint128,
-    ContractError, helpers::update_user_reward_index,
+    ContractError,
 };
 
 pub fn on_bond(

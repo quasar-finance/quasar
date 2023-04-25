@@ -549,11 +549,13 @@ mod tests {
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{Addr, Coin, CosmosMsg, Uint128};
-    
+    use cosmwasm_std::{Addr, Coin, CosmosMsg, QuerierResult, SystemResult, Uint128, WasmQuery, ContractResult};
+
     use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
     use lp_strategy::msg::InstantiateMsg;
 
+    // this test tests 2 on_bond callbacks and a start unbond. The amounts returned slightly 'weird'. The main idea is that after the on_bond callbacks,
+    // our user owns 10% of the vault. When we then start to unbond, we expect the user to get 10% of the value in each primitive
     #[test]
     fn test_do_start_unbond() {
         let mut deps = mock_dependencies();
@@ -609,7 +611,9 @@ mod tests {
         INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
         BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
         TOTAL_SUPPLY.save(deps.as_mut().storage, &supply).unwrap();
-        VAULT_REWARDS.save(deps.as_mut().storage, &Addr::unchecked("rewards-contract")).unwrap();
+        VAULT_REWARDS
+            .save(deps.as_mut().storage, &Addr::unchecked("rewards-contract"))
+            .unwrap();
 
         // store token info using cw20-base format
         let token_info = TokenInfo {
@@ -628,11 +632,7 @@ mod tests {
             .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
             .unwrap();
 
-        // mint shares for the user
-        //     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
-        // TODO replace execute mint by doing two callbacks
-        // mock an unfilfilled stub
-        // do 2 callbacks to fullfill the stubs
+        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user
         BOND_STATE
             .save(
                 deps.as_mut().storage,
@@ -692,6 +692,26 @@ mod tests {
             }
         );
 
+        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
+        //  we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
+        // 4000 shares and contract 2 returns 3000 shares, we should return 400 and 300 respectively
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, msg: _msg } => {
+                    if contract_addr == "contract1" {
+                        SystemResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::BalanceResponse{ balance: Uint128::new(4000) }).unwrap()))
+                    } else if contract_addr == "contract2" {
+                        SystemResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::BalanceResponse{ balance: Uint128::new(3000) }).unwrap()))
+                    } else {
+                        SystemResult::Err(cosmwasm_std::SystemError::NoSuchContract {
+                            addr: contract_addr.clone(),
+                        })
+                    }
+                }
+                _ => todo!(),
+            }
+        });
+
         // case 3: amount is valid, execute start unbond on all primitive contracts
         let amount = Some(Uint128::new(500));
         let res = do_start_unbond(deps.as_mut(), &env, &info, amount)
@@ -710,8 +730,7 @@ mod tests {
                 contract_addr: "contract1".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    // TODO wanted behaviour would be 350
-                    share_amount: Uint128::new(450),
+                    share_amount: Uint128::new(400),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -723,8 +742,7 @@ mod tests {
                 contract_addr: "contract2".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    // TODO wanted behaviour should be 150
-                    share_amount: Uint128::new(50),
+                    share_amount: Uint128::new(300),
                 })
                 .unwrap(),
                 funds: vec![],
