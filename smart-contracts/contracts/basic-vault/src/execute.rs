@@ -549,7 +549,9 @@ mod tests {
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{Addr, Coin, CosmosMsg, QuerierResult, SystemResult, Uint128, WasmQuery, ContractResult};
+    use cosmwasm_std::{
+        Addr, Coin, ContractResult, CosmosMsg, QuerierResult, SystemResult, Uint128, WasmQuery,
+    };
 
     use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
     use lp_strategy::msg::InstantiateMsg;
@@ -697,11 +699,24 @@ mod tests {
         // 4000 shares and contract 2 returns 3000 shares, we should return 400 and 300 respectively
         deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
             match q {
-                WasmQuery::Smart { contract_addr, msg: _msg } => {
+                WasmQuery::Smart {
+                    contract_addr,
+                    msg: _msg,
+                } => {
                     if contract_addr == "contract1" {
-                        SystemResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::BalanceResponse{ balance: Uint128::new(4000) }).unwrap()))
+                        SystemResult::Ok(ContractResult::Ok(
+                            to_binary(&lp_strategy::msg::BalanceResponse {
+                                balance: Uint128::new(4000),
+                            })
+                            .unwrap(),
+                        ))
                     } else if contract_addr == "contract2" {
-                        SystemResult::Ok(ContractResult::Ok(to_binary(&lp_strategy::msg::BalanceResponse{ balance: Uint128::new(3000) }).unwrap()))
+                        SystemResult::Ok(ContractResult::Ok(
+                            to_binary(&lp_strategy::msg::BalanceResponse {
+                                balance: Uint128::new(3000),
+                            })
+                            .unwrap(),
+                        ))
                     } else {
                         SystemResult::Err(cosmwasm_std::SystemError::NoSuchContract {
                             addr: contract_addr.clone(),
