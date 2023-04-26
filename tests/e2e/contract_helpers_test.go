@@ -159,7 +159,7 @@ func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Authority.KeyName, poolBz)
 }
 
-func (s *WasmdTestSuite) SendTokensFromQuasarToOsmosis(ctx context.Context) {
+func (s *WasmdTestSuite) SendTokensToRespectiveAccounts(ctx context.Context) {
 	// Send uqsr and uayy to Quasar authority account
 	//s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.Owner, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uayy")
 	//s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.MasterMinter, s.E2EBuilder.QuasarAccounts.Authority, "10000000000000000uqsr")

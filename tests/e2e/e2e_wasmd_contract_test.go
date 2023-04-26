@@ -3,8 +3,8 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	StartingTokenAmount            int64 = 100_000_000
+	StartingTokenAmount            int64 = 100_000_000_000
 	lpStrategyContractPath               = "../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
@@ -111,7 +111,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
 
 	// Send tokens "uayy" and "uqsr" from Quasar to Osmosis account
-	s.SendTokensFromQuasarToOsmosis(ctx)
+	s.SendTokensToRespectiveAccounts(ctx)
 
 	// Send tokens to the respective account and create the required pools
 	s.CreatePools(ctx)
@@ -175,84 +175,201 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 	t := s.T()
 	ctx := context.Background()
 
-	bondTestCases := []struct {
-		Account        ibc.Wallet
-		Amount         sdk.Coins
-		expectedShares string
+	testCases := []struct {
+		Account                  ibc.Wallet // necessary field
+		BondAmount               sdk.Coins  // necessary in case of bonds
+		UnbondAmount             string     // only in case of Action is "unbond"
+		Action                   string     // necessary to provide action, 3 possibilities "bond", "unbond" or "claim"
+		expectedShares           int64      // only needed in case of "bond"
+		expectedDeviation        float64    // only needed in case of "bond"
+		expectedNumberOfUnbonds  int64      // only needed in case of "unbond"
+		expectedBalanceChange    uint64     // only needed in case of "claim"
+		expectedBalanceDeviation float64    // only needed in case of "claim"
 	}{
 		{
-			Account:        s.E2EBuilder.QuasarAccounts.BondTest,
-			Amount:         sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 10000000)),
-			expectedShares: "9999999",
+			Account:           s.E2EBuilder.QuasarAccounts.BondTest,
+			Action:            "bond",
+			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 10000000)),
+			expectedShares:    9999999,
+			expectedDeviation: 0.01,
 		},
 		{
-			Account:        s.E2EBuilder.QuasarAccounts.BondTest1,
-			Amount:         sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000000)),
-			expectedShares: "1039800",
+			Account:           s.E2EBuilder.QuasarAccounts.BondTest1,
+			Action:            "bond",
+			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000000)),
+			expectedShares:    1015176,
+			expectedDeviation: 0.01,
+		},
+		{
+			Account:                 s.E2EBuilder.QuasarAccounts.BondTest,
+			Action:                  "unbond",
+			BondAmount:              sdk.NewCoins(),
+			UnbondAmount:            "1000",
+			expectedNumberOfUnbonds: 1,
+		},
+		{
+			Account:                 s.E2EBuilder.QuasarAccounts.BondTest,
+			Action:                  "unbond",
+			BondAmount:              sdk.NewCoins(),
+			UnbondAmount:            "2000",
+			expectedNumberOfUnbonds: 2,
+		},
+		{
+			Account:                  s.E2EBuilder.QuasarAccounts.BondTest,
+			Action:                   "claim",
+			expectedBalanceChange:    1000,
+			expectedBalanceDeviation: 0.1,
+		},
+		{
+			Account:           s.E2EBuilder.QuasarAccounts.BondTest7,
+			Action:            "bond",
+			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000000)),
+			expectedShares:    1015176,
+			expectedDeviation: 0.01,
 		},
 	}
 
-	for _, tc := range bondTestCases {
-		s.ExecuteContract(
-			ctx,
-			s.Quasar(),
-			tc.Account.KeyName,
-			s.BasicVaultContractAddress,
-			tc.Amount,
-			map[string]any{"bond": map[string]any{}},
-			nil,
-		)
+	for _, tc := range testCases {
+		switch tc.Action {
+		case "bond":
+			// execute bond transaction
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				tc.Account.KeyName,
+				s.BasicVaultContractAddress,
+				tc.BondAmount,
+				map[string]any{"bond": map[string]any{}},
+				nil,
+			)
 
-		s.ExecuteContract(
-			ctx,
-			s.Quasar(),
-			s.ContractsDeploymentWallet.KeyName,
-			s.BasicVaultContractAddress,
-			sdk.Coins{},
-			map[string]any{"clear_cache": map[string]any{}},
-			nil,
-		)
+			t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
+			err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
 
-		time.Sleep(time.Second * 40)
-	}
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				s.ContractsDeploymentWallet.KeyName,
+				s.BasicVaultContractAddress,
+				sdk.Coins{},
+				map[string]any{"clear_cache": map[string]any{}},
+				nil,
+			)
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
-	err := testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
+			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+			err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
 
-	for _, tc := range bondTestCases {
-		type Balance struct {
-			Balance string `json:"balance"`
-		}
-		type Data struct {
-			Data Balance `json:"data"`
-		}
-
-		var data Data
-		balanceBytes := s.ExecuteContractQuery(
-			ctx,
-			s.Quasar(),
-			s.BasicVaultContractAddress,
-			map[string]any{
-				"balance": map[string]any{
-					"address": tc.Account.Address,
+			var data testsuite.ContractBalanceData
+			balanceBytes := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.BasicVaultContractAddress,
+				map[string]any{
+					"balance": map[string]any{
+						"address": tc.Account.Address,
+					},
 				},
-			},
-		)
+			)
 
-		err = json.Unmarshal(balanceBytes, &data)
-		s.Require().NoError(err)
+			err = json.Unmarshal(balanceBytes, &data)
+			s.Require().NoError(err)
 
-		s.Require().Equal(tc.expectedShares, data.Data.Balance)
+			balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
+			s.Require().NoError(err)
+
+			s.Require().True(int64(float64(tc.expectedShares)*(1-tc.expectedDeviation)) <= balance)
+			s.Require().True(balance <= int64(float64(tc.expectedShares)*(1+tc.expectedDeviation)))
+
+		case "unbond":
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				s.E2EBuilder.QuasarAccounts.BondTest.KeyName,
+				s.BasicVaultContractAddress,
+				sdk.NewCoins(),
+				map[string]any{"unbond": map[string]any{"amount": tc.UnbondAmount}},
+				nil,
+			)
+
+			t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
+			err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
+
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				s.ContractsDeploymentWallet.KeyName,
+				s.BasicVaultContractAddress,
+				sdk.Coins{},
+				map[string]any{"clear_cache": map[string]any{}},
+				nil,
+			)
+
+			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+			err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
+
+			var pendingUnbondsData testsuite.PendingUnbondsData
+			pendingUnbondsBytes := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.BasicVaultContractAddress,
+				map[string]any{
+					"pending_unbonds": map[string]any{
+						"address": tc.Account.Address,
+					},
+				},
+			)
+
+			err = json.Unmarshal(pendingUnbondsBytes, &pendingUnbondsData)
+			s.Require().NoError(err)
+
+			// verify if the unbonded amount and expected number of unbonds matches their respective conditions or not
+			s.Require().Equal(tc.expectedNumberOfUnbonds, int64(len(pendingUnbondsData.Data.PendingUnbonds)))
+			s.Require().Equal(tc.UnbondAmount, pendingUnbondsData.Data.PendingUnbonds[tc.expectedNumberOfUnbonds-1].Shares)
+		case "claim":
+			tn := testsuite.GetFullNode(s.Quasar())
+			cmds := []string{"bank", "balances", s.E2EBuilder.QuasarAccounts.BondTest.Address,
+				"--output", "json",
+			}
+
+			res, _, err := tn.ExecQuery(ctx, cmds...)
+			s.Require().NoError(err)
+
+			var balanceBefore testsuite.QueryAllBalancesResponse
+			err = json.Unmarshal(res, &balanceBefore)
+			s.Require().NoError(err)
+
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				s.E2EBuilder.QuasarAccounts.BondTest.KeyName,
+				s.BasicVaultContractAddress,
+				sdk.NewCoins(),
+				map[string]any{"claim": map[string]any{}},
+				nil,
+			)
+
+			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+			err = testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
+
+			tn = testsuite.GetFullNode(s.Quasar())
+			res, _, err = tn.ExecQuery(ctx, cmds...)
+			s.Require().NoError(err)
+
+			var balanceAfter testsuite.QueryAllBalancesResponse
+			err = json.Unmarshal(res, &balanceAfter)
+			s.Require().NoError(err)
+
+			balanceChange := balanceAfter.Balances.AmountOf(s.OsmosisDenomInQuasar).Sub(balanceBefore.Balances.AmountOf(s.OsmosisDenomInQuasar)).Int64()
+			s.Require().True(int64(float64(tc.expectedBalanceChange)*(1-tc.expectedBalanceDeviation)) <= balanceChange)
+			s.Require().True(balanceChange <= int64(float64(tc.expectedBalanceChange)*(1+tc.expectedBalanceDeviation)))
+
+		default:
+			t.Log("This testCase does not contain any transaction type")
+		}
 	}
-
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		s.E2EBuilder.QuasarAccounts.BondTest.KeyName,
-		s.BasicVaultContractAddress,
-		sdk.NewCoins(),
-		map[string]any{"unbond": map[string]any{"amount": 9999}},
-		nil,
-	)
 }

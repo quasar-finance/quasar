@@ -436,22 +436,22 @@ func osmosisPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, er
 		{
 			Address: authority.Address,
 			Denom:   "fakestake",
-			Amount:  10_000_000_000_000_000,
+			Amount:  100_000_000_000_000_000,
 		},
 		{
 			Address: owner.Address,
 			Denom:   "stake1",
-			Amount:  10_000_000_000_000_000,
+			Amount:  100_000_000_000_000_000,
 		},
 		{
 			Address: newOwner.Address,
 			Denom:   "usdc",
-			Amount:  10_000_000_000_000_000,
+			Amount:  100_000_000_000_000_000,
 		},
 		{
 			Address: masterMinter.Address,
 			Denom:   chainCfg.Denom,
-			Amount:  10_000_000_000_000_000,
+			Amount:  100_000_000_000_000_000,
 		},
 	}
 

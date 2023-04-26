@@ -3,7 +3,6 @@ package suite
 import (
 	"context"
 	"encoding/json"
-	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
 	"github.com/strangelove-ventures/interchaintest/v4/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"go.uber.org/zap"
 )
 
