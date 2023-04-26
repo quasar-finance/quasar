@@ -188,10 +188,7 @@ pub fn calculate_claim(
     if total_shares == Uint128::zero() || total_balance == Uint128::zero() {
         Ok(user_balance)
     } else {
-        Ok(user_balance
-            .checked_mul(total_shares)
-            .map_err(|err| ContractError::TracedOverflowError(err, "calculate_claim".to_string()))?
-            .checked_div(total_balance)?)
+        Ok(user_balance.checked_multiply_ratio(total_shares, total_balance)?)
     }
 }
 

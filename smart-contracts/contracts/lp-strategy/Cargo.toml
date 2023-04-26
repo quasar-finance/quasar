@@ -34,3 +34,5 @@ quasar-types = { path = "../../packages/quasar-types" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.0"
+proptest = "1.0.0"
+
