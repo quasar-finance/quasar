@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use cosmwasm_std::{
     to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, Uint128, WasmMsg,
@@ -11,7 +12,7 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
+use crate::helpers::{can_unbond_from_primitive, is_contract_admin, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
@@ -539,6 +540,42 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Con
     nonpayable(&info)?;
 
     Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
+}
+
+pub fn update_cap(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    new_total: Option<Uint128>,
+    new_cap_admin: Option<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let attributes = vec![];
+
+    if let Some(new_total) = new_total {
+        CAP.update(deps.storage, |mut c| Ok(c.update_total_cap(new_total)));
+        attributes.push(Attribute {
+            key: "new_total".to_string(),
+            value: new_total.to_string(),
+        })
+    }
+
+    if let Some(new_cap_admin) = new_cap_admin {
+        let new_cap_admin_validated = deps.api.addr_validate(&new_cap_admin)?;
+        CAP.update(deps.storage, |mut c| {
+            Ok(c.update_cap_admin(new_cap_admin_validated))
+        });
+        attributes.push(Attribute {
+            key: "new_cap_admin".to_string(),
+            value: new_cap_admin,
+        })
+    }
+
+    Ok(Response::new()
+        .add_attribute("action", "update_cap")
+        .add_attributes(attributes)
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]

@@ -49,8 +49,14 @@ impl Cap {
         }
     }
 
-    pub fn update_total_cap(mut self, new_total: Uint128) {
+    pub fn update_cap_admin(mut self, new_cap_admin: Addr) -> Self {
+        self.cap_admin = new_cap_admin;
+        self
+    }
+
+    pub fn update_total_cap(mut self, new_total: Uint128) -> Self {
         self.total = new_total;
+        self
     }
 
     pub fn update_current(mut self, to_add: Uint128) -> Result<Self, ContractError> {

@@ -70,11 +70,24 @@ pub enum ExecuteMsg {
     /// Claim is used to claim your native tokens that you previously "unbonded"
     /// after the chain-defined waiting period (eg. 3 weeks)
     Claim {},
+    /// Clear cache can be triggered by anyone and hits each internal primitive with
+    /// the TryICQ message.
+    ClearCache {},
 
     // Callback(Callback),
     BondResponse(BondResponse),
     StartUnbondResponse(StartUnbondResponse),
     UnbondResponse(UnbondResponse),
+
+    /// Admin Messages
+    /// Set Cap is used to set the total cap of the vault, it can also be used to
+    /// updated admin
+    SetCap {
+        new_total: Option<Uint128>,
+        new_cap_admin: Option<String>,
+    },
+
+    /// CW20 Messges
 
     /// Implements CW20. Transfer is a base message to move tokens to another account without triggering actions
     Transfer {
@@ -128,7 +141,6 @@ pub enum ExecuteMsg {
         owner: String,
         amount: Uint128,
     },
-    ClearCache {},
 }
 
 #[cw_serde]
