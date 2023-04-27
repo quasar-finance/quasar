@@ -1,21 +1,18 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
-    Response, Storage, Timestamp, Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
-use quasar_types::callback::UnbondResponse;
+
 use quasar_types::ibc::IcsAck;
 
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{
-    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
-};
+use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -24,9 +21,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, Unbond, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING,
-    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -455,87 +452,7 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    #[cw_serde]
-    #[derive(QueryResponses)]
-    pub enum QueryMsg {
-        /// Get all unbonding claims for an id
-        #[returns(PendingUnbondsByIdResponse)]
-        PendingUnbondsById { bond_id: String },
-    }
-
-    #[cw_serde]
-    pub struct PendingUnbondsByIdResponse {
-        /// the unbonds that are currently in the process of being withdrawn by an user
-        pub pending_unbonds: VaultUnbond,
-    }
-
-    #[cw_serde]
-    #[derive(Default)]
-    pub struct VaultUnbond {
-        pub stub: Vec<UnbondingStub>,
-        pub shares: Uint128,
-    }
-
-    #[cw_serde]
-    #[derive(Default)]
-    pub struct UnbondingStub {
-        // the contract address of the primitive
-        pub address: String,
-        // the response of the primitive upon successful bond or error
-        pub unlock_time: Option<Timestamp>,
-        // response of the unbond, if this is present then we have finished unbonding
-        pub unbond_response: Option<UnbondResponse>,
-        // funds attached to the unbond_response
-        pub unbond_funds: Vec<Coin>,
-    }
-
-    let mut range = vec![];
-    for pending_ack in PENDING_ACK.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        range.push(pending_ack?);
-    }
-
-    for item in range.iter() {
-        let (_key, ibc_msg_kind) = item;
-
-        if let IbcMsgKind::Ica(IcaMessages::BeginUnlocking(single_unbonds, _total_amount)) =
-            ibc_msg_kind
-        {
-            for single_unbond in single_unbonds {
-                let vault_pending_unbond: PendingUnbondsByIdResponse =
-                    deps.querier.query_wasm_smart(
-                        msg.vault_address.clone(),
-                        &QueryMsg::PendingUnbondsById {
-                            bond_id: single_unbond.id.clone(),
-                        },
-                    )?;
-
-                if msg.recover_unbonds.contains(&single_unbond.id) {
-                    UNBONDING_CLAIMS.save(
-                        deps.storage,
-                        // todo: double check vault_address should be owner, also check that id is bond_id
-                        (msg.vault_address.clone(), single_unbond.id.to_string()),
-                        &Unbond {
-                            lp_shares: single_unbond.lp_shares,
-                            unlock_time: vault_pending_unbond
-                                .pending_unbonds
-                                .stub
-                                .iter()
-                                .find(|p| p.address == env.contract.address)
-                                .unwrap()
-                                .unlock_time
-                                .unwrap(), // this will fail if we have any unbonds (not start unbonds) that were started but never got a response back
-                            attempted: false,
-                            // todo: same as above todo, who is owner?
-                            owner: single_unbond.owner.clone(),
-                            id: single_unbond.id.clone(),
-                        },
-                    )?;
-                }
-            }
-        }
-    }
-
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true"))

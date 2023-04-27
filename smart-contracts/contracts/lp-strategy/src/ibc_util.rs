@@ -20,7 +20,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
         OngoingDeposit, PendingBond, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
-        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+        SIMULATED_JOIN_RESULT,
     },
 };
 
@@ -58,13 +58,10 @@ pub fn do_transfer(
     )?)
 }
 
-pub fn scale_join_pool(
-    storage: &dyn Storage,
-    actual: Uint128,
+pub fn parse_join_pool(
+    _storage: &dyn Storage,
     join: QueryCalcJoinPoolSharesResponse,
-    return_scaled: bool,
 ) -> Result<Uint128, ContractError> {
-    let token_in = SIMULATED_JOIN_AMOUNT_IN.load(storage)?;
     let join = match join.share_out_amount.parse::<u128>() {
         Ok(val) => Ok(val),
         Err(err) => {
@@ -79,12 +76,7 @@ pub fn scale_join_pool(
         }
     }?;
 
-    // TODO: the second condition here is a hack, if we are starting unbond only we don't use this value anyway
-    if !return_scaled || token_in.is_zero() {
-        Ok(Uint128::new(join))
-    } else {
-        Ok(Uint128::new(join).checked_multiply_ratio(actual, token_in)?)
-    }
+    Ok(Uint128::new(join))
 }
 
 pub fn consolidate_exit_pool_amount_into_local_denom(

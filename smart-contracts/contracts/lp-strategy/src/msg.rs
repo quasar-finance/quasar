@@ -42,10 +42,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub vault_address: Addr,
-    pub recover_unbonds: Vec<String>,
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -82,6 +79,8 @@ pub enum QueryMsg {
     ListPendingAcks {},
     #[returns(ListRepliesResponse)]
     ListReplies {},
+    #[returns(ListClaimableFundsResponse)]
+    ListClaimableFunds {},
     #[returns(OsmoLockResponse)]
     OsmoLock {},
     #[returns(SimulatedJoinResponse)]
@@ -117,6 +116,11 @@ pub struct ListBondingClaimsResponse {
 #[cw_serde]
 pub struct ListRepliesResponse {
     pub replies: HashMap<u64, SubMsgKind>,
+}
+
+#[cw_serde]
+pub struct ListClaimableFundsResponse {
+    pub claimable_funds: HashMap<String, Uint128>,
 }
 
 #[cw_serde]

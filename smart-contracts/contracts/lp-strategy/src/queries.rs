@@ -12,17 +12,18 @@ use crate::{
     helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
-        IcaBalanceResponse, IcaChannelResponse, ListBondingClaimsResponse, ListPendingAcksResponse,
-        ListPrimitiveSharesResponse, ListRepliesResponse, ListUnbondingClaimsResponse,
-        LockResponse, LpSharesResponse, OsmoLockResponse, PrimitiveSharesResponse, QueryMsg,
-        SimulatedJoinResponse, TrappedErrorsResponse, UnbondingClaimResponse,
+        IcaBalanceResponse, IcaChannelResponse, ListBondingClaimsResponse,
+        ListClaimableFundsResponse, ListPendingAcksResponse, ListPrimitiveSharesResponse,
+        ListRepliesResponse, ListUnbondingClaimsResponse, LockResponse, LpSharesResponse,
+        OsmoLockResponse, PrimitiveSharesResponse, QueryMsg, SimulatedJoinResponse,
+        TrappedErrorsResponse, UnbondingClaimResponse,
     },
     start_unbond::StartUnbond,
     state::{
-        Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, REPLIES, SHARES,
-        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE,
-        TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        FundPath, Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
+        ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE,
+        PENDING_UNBONDING_CLAIMS, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+        START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -47,6 +48,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
         QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
         QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
+        QueryMsg::ListClaimableFunds {} => to_binary(&handle_list_claimable_funds(deps)?),
         QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
         QueryMsg::SimulatedJoin {} => to_binary(&handle_simulated_join(deps)?),
         QueryMsg::GetQueues {} => to_binary(&handle_get_queues(deps)?),
@@ -224,9 +226,37 @@ pub fn handle_list_replies(deps: Deps) -> StdResult<ListRepliesResponse> {
     Ok(ListRepliesResponse { replies: replies? })
 }
 
+pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsResponse> {
+    let funds = CLAIMABLE_FUNDS.range(deps.storage, None, None, Order::Ascending);
+
+    let mut claimable_funds: HashMap<String, Uint128> = HashMap::new();
+    for fund in funds {
+        let ((addr, fp), amount) = fund?;
+        let path;
+        let seq = match fp {
+            FundPath::Bond { id } => {
+                path = "bond";
+                id
+            }
+            FundPath::Unbond { id } => {
+                path = "unbond";
+                id
+            }
+        };
+        claimable_funds.insert(format!("{addr}-{seq}-{path}"), amount);
+    }
+
+    Ok(ListClaimableFundsResponse { claimable_funds })
+}
+
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{
+        from_binary,
+        testing::{mock_dependencies, mock_env},
+    };
+
+    use crate::state::FundPath;
 
     use super::*;
 
@@ -250,5 +280,36 @@ mod tests {
             .unwrap();
 
         let _res = query(deps.as_ref(), env, q).unwrap();
+    }
+
+    #[test]
+    fn proper_get_claimable_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let q = QueryMsg::ListClaimableFunds {};
+
+        CLAIMABLE_FUNDS
+            .save(
+                deps.as_mut().storage,
+                (
+                    Addr::unchecked("somedepositor"),
+                    FundPath::Bond {
+                        id: "channel-1".to_string(),
+                    },
+                ),
+                &Uint128::new(100),
+            )
+            .unwrap();
+
+        let res = query(deps.as_ref(), env, q).unwrap();
+        let claimable_funds: ListClaimableFundsResponse = from_binary(&res).unwrap();
+
+        println!("{claimable_funds:?}");
+        assert_eq!(claimable_funds.claimable_funds.len(), 1);
+        assert_eq!(
+            claimable_funds.claimable_funds["somedepositor-\u{1}\0channel-1-bond"],
+            Uint128::new(100)
+        );
     }
 }
