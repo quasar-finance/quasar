@@ -2,7 +2,7 @@ use cosmwasm_std::{wasm_execute, Addr, Deps, Env, QuerierWrapper, StdResult, Sto
 use lp_strategy::msg::UnbondingClaimResponse;
 use vault_rewards::msg::{ExecuteMsg as VaultRewardsExecuteMsg, VaultExecuteMsg};
 
-use crate::state::{INVESTMENT, VAULT_REWARDS};
+use crate::state::VAULT_REWARDS;
 use crate::{state::UnbondingStub, ContractError};
 
 pub fn can_unbond_from_primitive(

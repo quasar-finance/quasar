@@ -553,7 +553,7 @@ pub fn update_cap(
     let mut attributes = vec![];
 
     if let Some(new_total) = new_total {
-        CAP.update(deps.storage, |mut c| -> Result<Cap, ContractError> {
+        CAP.update(deps.storage, |c| -> Result<Cap, ContractError> {
             Ok(c.update_total_cap(new_total))
         })?;
         attributes.push(Attribute {
@@ -564,7 +564,7 @@ pub fn update_cap(
 
     if let Some(new_cap_admin) = new_cap_admin {
         let new_cap_admin_validated = deps.api.addr_validate(&new_cap_admin)?;
-        CAP.update(deps.storage, |mut c| -> Result<Cap, ContractError> {
+        CAP.update(deps.storage, |c| -> Result<Cap, ContractError> {
             Ok(c.update_cap_admin(new_cap_admin_validated))
         })?;
         attributes.push(Attribute {
@@ -837,7 +837,7 @@ mod tests {
         assert_eq!(res.messages.len(), 0);
 
         // clear cap
-        let res = update_cap(deps.as_mut(), env.clone(), info.clone(), None, None).unwrap();
+        let res = update_cap(deps.as_mut(), env, info, None, None).unwrap();
         assert_eq!(res.attributes.len(), 2);
         assert_eq!(res.attributes[0], attr("action", "update_cap"));
         assert_eq!(res.messages.len(), 0);
@@ -861,7 +861,7 @@ mod tests {
         .unwrap();
 
         let cap = Uint128::new(1000);
-        let res = update_cap(deps.as_mut(), env.clone(), info.clone(), Some(cap), None);
+        let res = update_cap(deps.as_mut(), env, info, Some(cap), None);
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), ContractError::Unauthorized {});
     }

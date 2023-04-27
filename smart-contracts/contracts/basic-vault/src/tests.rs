@@ -176,7 +176,7 @@ impl Querier for QuasarQuerier {
                         }),
                     }
                 }
-                cosmwasm_std::WasmQuery::ContractInfo { contract_addr } => {
+                cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
                     let mut response = ContractInfoResponse::default();
                     response.admin = Some(TEST_ADMIN.to_string());
                     QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
