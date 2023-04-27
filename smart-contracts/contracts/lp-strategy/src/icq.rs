@@ -98,7 +98,7 @@ pub fn prepare_full_query(
         denom: config.pool_denom.clone(),
     };
     // we simulate the result of a join pool to estimate the slippage we can expect during this deposit
-    // we use the current current balance of local_denom for this query. This is safe because at any point
+    // we use the current balance of local_denom for this query. This is safe because at any point
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
     // since we're going to be moving the entire pending bond queue to the bond queue in this icq, we  can
     // fold the PENDING_BOND_QUEUE
