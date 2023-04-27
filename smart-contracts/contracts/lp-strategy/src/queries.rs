@@ -232,7 +232,7 @@ pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsRe
     let mut claimable_funds: HashMap<String, Uint128> = HashMap::new();
     for fund in funds {
         let ((addr, fp), amount) = fund?;
-        let mut path = "";
+        let path;
         let seq = match fp {
             FundPath::Bond { id } => {
                 path = "bond";

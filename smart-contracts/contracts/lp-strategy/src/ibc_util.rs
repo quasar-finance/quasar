@@ -59,7 +59,7 @@ pub fn do_transfer(
 }
 
 pub fn parse_join_pool(
-    storage: &dyn Storage,
+    _storage: &dyn Storage,
     join: QueryCalcJoinPoolSharesResponse,
 ) -> Result<Uint128, ContractError> {
     let join = match join.share_out_amount.parse::<u128>() {
