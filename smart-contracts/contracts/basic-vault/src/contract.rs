@@ -180,7 +180,7 @@ pub fn execute(
         ExecuteMsg::SetCap {
             new_total,
             new_cap_admin,
-        } => todo!(),
+        } => !(),
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
