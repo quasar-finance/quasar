@@ -20,7 +20,7 @@ use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{bond, claim, unbond};
+use crate::execute::{bond, claim, unbond, update_cap};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
@@ -134,7 +134,28 @@ pub fn execute(
         ExecuteMsg::Unbond { amount } => unbond(deps, env, info, amount),
         ExecuteMsg::Claim {} => claim(deps, env, info),
 
-        // callbacks entrypoint
+        // calls the TryIcq ExecuteMsg in the lp-strategy contract
+        ExecuteMsg::ClearCache {} => {
+            let try_icq_msg = lp_strategy::msg::ExecuteMsg::TryIcq {};
+
+            let mut msgs: Vec<WasmMsg> = vec![];
+
+            let primitives = INVESTMENT.load(deps.storage)?.primitives;
+            primitives.iter().try_for_each(
+                |pc: &PrimitiveConfig| -> Result<(), ContractError> {
+                    let clear_cache_msg = WasmMsg::Execute {
+                        contract_addr: pc.address.to_string(),
+                        funds: vec![],
+                        msg: to_binary(&try_icq_msg)?,
+                    };
+                    msgs.push(clear_cache_msg);
+                    Ok(())
+                },
+            )?;
+            Ok(Response::new().add_messages(msgs))
+        }
+
+        // Callbacks entrypoint
         // you cant do this - DONT TRY IT (unless you know what you're doing)
         // ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
         ExecuteMsg::BondResponse(bond_response) => on_bond(
@@ -154,6 +175,12 @@ pub fn execute(
         ExecuteMsg::UnbondResponse(unbond_response) => {
             on_unbond(deps, env, info, unbond_response.unbond_id)
         }
+
+        // Admin messages
+        ExecuteMsg::SetCap {
+            new_total,
+            new_cap_admin,
+        } => update_cap(deps, env, info, new_total, new_cap_admin),
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
@@ -238,26 +265,6 @@ pub fn execute(
                 execute_send_from(deps, env, info, owner, contract.to_string(), amount, msg)?
                     .add_messages(update_user_reward_indexes),
             )
-        }
-        // calls the TryIcq ExecuteMsg in the lp-strategy contract
-        ExecuteMsg::ClearCache {} => {
-            let try_icq_msg = lp_strategy::msg::ExecuteMsg::TryIcq {};
-
-            let mut msgs: Vec<WasmMsg> = vec![];
-
-            let primitives = INVESTMENT.load(deps.storage)?.primitives;
-            primitives.iter().try_for_each(
-                |pc: &PrimitiveConfig| -> Result<(), ContractError> {
-                    let clear_cache_msg = WasmMsg::Execute {
-                        contract_addr: pc.address.to_string(),
-                        funds: vec![],
-                        msg: to_binary(&try_icq_msg)?,
-                    };
-                    msgs.push(clear_cache_msg);
-                    Ok(())
-                },
-            )?;
-            Ok(Response::new().add_messages(msgs))
         }
     }
 }

@@ -11,10 +11,10 @@ use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
 
 use crate::error::ContractError;
-use crate::helpers::{can_unbond_from_primitive, update_user_reward_index};
+use crate::helpers::{can_unbond_from_primitive, is_contract_admin, update_user_reward_index};
 use crate::msg::PrimitiveConfig;
 use crate::state::{
-    BondingStub, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
+    BondingStub, Cap, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
     BOND_STATE, CAP, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
 };
 use crate::types::FromUint128;
@@ -541,16 +541,56 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Con
     Ok(do_unbond(deps, &env, &info)?.unwrap_or(Response::new()))
 }
 
+pub fn update_cap(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    new_total: Option<Uint128>,
+    new_cap_admin: Option<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut attributes = vec![];
+
+    if let Some(new_total) = new_total {
+        CAP.update(deps.storage, |c| -> Result<Cap, ContractError> {
+            Ok(c.update_total_cap(new_total))
+        })?;
+        attributes.push(Attribute {
+            key: "new_total".to_string(),
+            value: new_total.to_string(),
+        })
+    }
+
+    if let Some(new_cap_admin) = new_cap_admin {
+        let new_cap_admin_validated = deps.api.addr_validate(&new_cap_admin)?;
+        CAP.update(deps.storage, |c| -> Result<Cap, ContractError> {
+            Ok(c.update_cap_admin(new_cap_admin_validated))
+        })?;
+        attributes.push(Attribute {
+            key: "new_cap_admin".to_string(),
+            value: new_cap_admin,
+        })
+    }
+
+    Ok(Response::new()
+        .add_attribute("action", "update_cap")
+        .add_attributes(attributes)
+        .add_attribute("success", "true"))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::callback::on_bond;
     use crate::msg::PrimitiveInitMsg;
     use crate::state::{Supply, VAULT_REWARDS};
+    use crate::tests::{mock_deps_with_primitives, TEST_ADMIN};
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{
-        Addr, Coin, ContractResult, CosmosMsg, QuerierResult, SystemResult, Uint128, WasmQuery,
+        attr, Addr, Coin, ContractResult, CosmosMsg, QuerierResult, SystemResult, Uint128,
+        WasmQuery,
     };
 
     use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
@@ -763,5 +803,66 @@ mod tests {
                 funds: vec![],
             })
         );
+    }
+
+    #[test]
+    fn test_proper_update_cap() {
+        let mut deps = mock_deps_with_primitives(vec![(
+            "abc".to_string(),
+            "123".to_string(),
+            100u128.into(),
+            100u128.into(),
+        )]);
+        let env = mock_env();
+        let info = mock_info(TEST_ADMIN, &[]);
+        CAP.save(
+            &mut deps.storage,
+            &Cap::new(Addr::unchecked(TEST_ADMIN.to_string()), Uint128::new(100)),
+        )
+        .unwrap();
+
+        let cap = Uint128::new(1000);
+        let res = update_cap(deps.as_mut(), env.clone(), info.clone(), Some(cap), None).unwrap();
+        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes[0], attr("action", "update_cap"));
+        assert_eq!(res.attributes[1], attr("new_total", cap.to_string()));
+        assert_eq!(res.messages.len(), 0);
+
+        // update again
+        let cap = Uint128::new(5000);
+        let res = update_cap(deps.as_mut(), env.clone(), info.clone(), Some(cap), None).unwrap();
+        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes[0], attr("action", "update_cap"));
+        assert_eq!(res.attributes[1], attr("new_total", cap.to_string()));
+        assert_eq!(res.messages.len(), 0);
+
+        // clear cap
+        let res = update_cap(deps.as_mut(), env, info, None, None).unwrap();
+        assert_eq!(res.attributes.len(), 2);
+        assert_eq!(res.attributes[0], attr("action", "update_cap"));
+        assert_eq!(res.messages.len(), 0);
+    }
+
+    #[test]
+    fn test_unauthorized_update_cap() {
+        let mut deps = mock_deps_with_primitives(vec![(
+            "abc".to_string(),
+            "123".to_string(),
+            100u128.into(),
+            100u128.into(),
+        )]);
+        let env = mock_env();
+        let info = mock_info("not_admin", &[]);
+
+        CAP.save(
+            &mut deps.storage,
+            &Cap::new(Addr::unchecked(TEST_ADMIN.to_string()), Uint128::new(100)),
+        )
+        .unwrap();
+
+        let cap = Uint128::new(1000);
+        let res = update_cap(deps.as_mut(), env, info, Some(cap), None);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err(), ContractError::Unauthorized {});
     }
 }
