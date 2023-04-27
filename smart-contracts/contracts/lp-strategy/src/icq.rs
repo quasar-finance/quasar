@@ -16,10 +16,7 @@ use quasar_types::icq::{InterchainQueryPacketData, Query};
 
 use crate::{
     error::ContractError,
-    helpers::{
-        check_icq_channel, create_ibc_ack_submsg, get_ica_address, get_usable_bond_balance,
-        IbcMsgKind,
-    },
+    helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
         BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
         PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,

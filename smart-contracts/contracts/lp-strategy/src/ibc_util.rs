@@ -20,7 +20,7 @@ use crate::{
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
     state::{
         OngoingDeposit, PendingBond, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, SIMULATED_EXIT_RESULT,
-        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+        SIMULATED_JOIN_RESULT,
     },
 };
 

@@ -246,9 +246,7 @@ pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsRe
         claimable_funds.insert(format!("{addr}-{seq}-{path}"), amount);
     }
 
-    Ok(ListClaimableFundsResponse {
-        claimable_funds,
-    })
+    Ok(ListClaimableFundsResponse { claimable_funds })
 }
 
 #[cfg(test)]
