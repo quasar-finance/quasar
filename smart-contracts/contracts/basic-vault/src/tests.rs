@@ -4,9 +4,10 @@ use std::{marker::PhantomData, str::FromStr};
 use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockStorage},
-    to_binary, Addr, BankMsg, Binary, Coin, ContractResult, CosmosMsg, Decimal, DepsMut, Empty,
-    Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Reply, Response,
-    StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp, Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult, CosmosMsg,
+    Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, Reply, Response, StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp,
+    Uint128, WasmMsg,
 };
 use cw20::BalanceResponse;
 
@@ -175,7 +176,11 @@ impl Querier for QuasarQuerier {
                         }),
                     }
                 }
-
+                cosmwasm_std::WasmQuery::ContractInfo { contract_addr } => {
+                    let mut response = ContractInfoResponse::default();
+                    response.admin = Some(TEST_ADMIN.to_string());
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                }
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                     kind: format!("Unmocked wasm query type: {wasm_query:?}"),
                 }),
@@ -188,7 +193,7 @@ impl Querier for QuasarQuerier {
     }
 }
 
-fn mock_deps_with_primitives(
+pub fn mock_deps_with_primitives(
     primitive_states: Vec<(String, String, Uint128, Uint128)>,
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
     OwnedDeps {
@@ -199,8 +204,9 @@ fn mock_deps_with_primitives(
     }
 }
 
-const TEST_CREATOR: &str = "creator";
-const TEST_DEPOSITOR: &str = "depositor";
+pub const TEST_ADMIN: &str = "admin";
+pub const TEST_CREATOR: &str = "creator";
+pub const TEST_DEPOSITOR: &str = "depositor";
 
 fn init_msg() -> InstantiateMsg {
     InstantiateMsg {

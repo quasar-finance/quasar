@@ -20,7 +20,7 @@ use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{bond, claim, unbond};
+use crate::execute::{bond, claim, unbond, update_cap};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
@@ -155,7 +155,7 @@ pub fn execute(
             Ok(Response::new().add_messages(msgs))
         }
 
-        /// Callbacks entrypoint
+        // Callbacks entrypoint
         // you cant do this - DONT TRY IT (unless you know what you're doing)
         // ExecuteMsg::Callback(callback_msg) => handle_callback(deps, env, info, callback_msg),
         ExecuteMsg::BondResponse(bond_response) => on_bond(
@@ -176,11 +176,11 @@ pub fn execute(
             on_unbond(deps, env, info, unbond_response.unbond_id)
         }
 
-        /// Admin messages
+        // Admin messages
         ExecuteMsg::SetCap {
             new_total,
             new_cap_admin,
-        } => !(),
+        } => update_cap(deps, env, info, new_total, new_cap_admin),
 
         // these all come from cw20-base to implement the cw20 standard
         ExecuteMsg::Transfer { recipient, amount } => {
