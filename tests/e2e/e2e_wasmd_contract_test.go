@@ -353,7 +353,21 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			)
 
 			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
-			err = testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
+			err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+			s.Require().NoError(err)
+
+			s.ExecuteContract(
+				ctx,
+				s.Quasar(),
+				s.ContractsDeploymentWallet.KeyName,
+				s.BasicVaultContractAddress,
+				sdk.Coins{},
+				map[string]any{"clear_cache": map[string]any{}},
+				nil,
+			)
+
+			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+			err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 			s.Require().NoError(err)
 
 			tn = testsuite.GetFullNode(s.Quasar())

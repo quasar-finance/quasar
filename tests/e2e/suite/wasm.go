@@ -32,7 +32,7 @@ func (s *E2ETestSuite) StoreContractCode(ctx context.Context, chain *cosmos.Cosm
 
 	txhash, err := tn.ExecTx(ctx, keyName,
 		"wasm", "store", filepath.Join(tn.HomeDir(), contractFile),
-		"--gas", "auto",
+		"--gas", "20000000",
 	)
 	s.Require().NoError(err, "failed to store code")
 
@@ -100,7 +100,7 @@ func (s *E2ETestSuite) ExecuteContract(
 	cmds := []string{"wasm", "execute",
 		contractAddr,
 		string(argsbz),
-		"--gas", "auto",
+		"--gas", "20000000",
 	}
 	if !funds.Empty() {
 		cmds = append(cmds, "--amount", funds.String())
