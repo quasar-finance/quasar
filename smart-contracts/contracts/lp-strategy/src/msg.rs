@@ -42,10 +42,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub vault_address: Addr,
-    pub recover_unbonds: Vec<String>,
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
