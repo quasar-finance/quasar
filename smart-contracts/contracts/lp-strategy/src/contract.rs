@@ -1,20 +1,20 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Coin, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
-    Response, Storage, Timestamp, Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
-use quasar_types::callback::UnbondResponse;
+
 use quasar_types::ibc::IcsAck;
 
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::{
-    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
+    create_callback_submsg, is_contract_admin, SubMsgKind,
 };
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
@@ -24,9 +24,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, Unbond, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING,
-    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBONDING_CLAIMS, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
+    IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING,
+    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -455,7 +455,7 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true"))

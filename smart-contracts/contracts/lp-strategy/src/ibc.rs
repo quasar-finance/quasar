@@ -3,12 +3,12 @@ use crate::error::{ContractError, Never, Trap};
 
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
-    get_usable_bond_balance, get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
+    get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
     calculate_share_out_min_amount, consolidate_exit_pool_amount_into_local_denom,
-    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, scale_join_pool,
+    do_ibc_join_pool_swap_extern_amount_in, do_ibc_lock_tokens, parse_join_pool,
 };
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
@@ -393,21 +393,15 @@ pub fn handle_icq_ack(
         spot_price,
     )?;
 
-    let exit_pool_out =
+    let parsed_exit_pool_out =
         consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
 
-    let queued_bond_balance: StdResult<Uint128> = BOND_QUEUE
-        .iter(storage)?
-        .fold(Ok(Uint128::zero()), |acc, val| Ok(acc? + val?.amount));
-
-    let actual = get_usable_bond_balance(storage, queued_bond_balance?)?;
-
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
-    // TODO remove scaled
-    let scaled = scale_join_pool(storage, actual, join_pool, false)?;
 
-    SIMULATED_JOIN_RESULT.save(storage, &scaled)?;
-    SIMULATED_EXIT_RESULT.save(storage, &exit_pool_out)?;
+    let parsed_join_pool_out = parse_join_pool(storage, join_pool)?;
+
+    SIMULATED_JOIN_RESULT.save(storage, &parsed_join_pool_out)?;
+    SIMULATED_EXIT_RESULT.save(storage, &parsed_exit_pool_out)?;
 
     // todo move this to below into the lock decisions
     let bond = batch_bond(storage, &env, total_balance)?;

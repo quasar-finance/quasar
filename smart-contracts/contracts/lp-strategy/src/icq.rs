@@ -102,16 +102,17 @@ pub fn prepare_full_query(
     // a pending deposit will only use the current balance of the vault. QueryCalcJoinPoolSharesRequest
     // since we're going to be moving the entire pending bond queue to the bond queue in this icq, we  can
     // fold the PENDING_BOND_QUEUE
-    let balance = get_usable_bond_balance(storage, bonding_amount)?;
+    // April 27 2023 - we removed get_usable_bond_balance, but we will have to bring it back when we do error
+    // recovery for deposits
 
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
-    SIMULATED_JOIN_AMOUNT_IN.save(storage, &balance)?;
+    SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
     let join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
         tokens_in: vec![OsmoCoin {
             denom: config.base_denom.clone(),
-            amount: balance.to_string(),
+            amount: bonding_amount.to_string(),
         }],
     };
 

@@ -247,7 +247,7 @@ pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsRe
     }
 
     Ok(ListClaimableFundsResponse {
-        claimable_funds: claimable_funds,
+        claimable_funds,
     })
 }
 
@@ -307,7 +307,7 @@ mod tests {
         let res = query(deps.as_ref(), env, q).unwrap();
         let claimable_funds: ListClaimableFundsResponse = from_binary(&res).unwrap();
 
-        println!("{:?}", claimable_funds);
+        println!("{claimable_funds:?}");
         assert_eq!(claimable_funds.claimable_funds.len(), 1);
         assert_eq!(
             claimable_funds.claimable_funds["somedepositor-\u{1}\0channel-1-bond"],
