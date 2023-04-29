@@ -520,7 +520,7 @@ mod tests {
     };
     use cw_utils::PaymentError;
 
-    use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
+    use crate::{bond::Bond, state::{Unbond, ICQ_CHANNEL}, test_helpers::default_setup};
 
     use super::*;
 
@@ -715,5 +715,192 @@ mod tests {
 
         let res = execute(deps.as_mut(), env, info, msg);
         assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_execute_try_icq_locked() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up locked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new().lock_bond()).unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("IBC_LOCK", "locked")],
+            "Unexpected attributes when IBC is locked"
+        );
+    }
+
+    #[test]
+    fn test_execute_try_icq_unlocked_empty_queues() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // Empty bond, start_unbond, and unbond queues, so we insert nothing
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("IBC_LOCK", "unlocked")],
+            "Unexpected attributes when IBC is unlocked and queues are empty"
+        );
+    }
+
+    #[test]
+    fn test_execute_try_icq_unlocked_bond_queue_not_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // Add an item to the bond queue
+        BOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(1000),
+                    owner: Addr::unchecked("bob"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("bond_queue", "locked")],
+            "Unexpected attributes when IBC is unlocked and bond queue is not empty"
+        );
+    }
+
+    #[test]
+    fn test_execute_try_icq_unlocked_bond_start_unbond_queue_not_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // Add an item to the bond queue
+        BOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(1000),
+                    owner: Addr::unchecked("bob"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        START_UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    primitive_shares: Uint128::new(1000),
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("bond_queue", "locked")],
+            "Unexpected attributes when IBC is unlocked and bond queue is not empty"
+        );
+        assert_eq!(IBC_LOCK.load(deps.as_mut().storage).unwrap(), Lock::new().lock_bond())
+    }
+
+    #[test]
+    fn test_execute_try_icq_unlocked_bond_unbond_queue_not_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // Add an item to the bond queue
+        BOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(1000),
+                    owner: Addr::unchecked("bob"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Unbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    lp_shares: Uint128::new(1000),
+                    unlock_time: Timestamp::from_seconds(100),
+                    attempted: false,
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("bond_queue", "locked")],
+            "Unexpected attributes when IBC is unlocked and bond queue is not empty"
+        );
+        assert_eq!(IBC_LOCK.load(deps.as_mut().storage).unwrap(), Lock::new().lock_bond())
+    }
+
+    #[test]
+    fn test_execute_try_icq_unlocked_start_unbond_unbond_queue_not_empty() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        // Add an item to the bond queue
+        START_UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    primitive_shares: Uint128::new(1000),
+                },
+            )
+            .unwrap();
+        UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Unbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    lp_shares: Uint128::new(1000),
+                    unlock_time: Timestamp::from_seconds(100),
+                    attempted: false,
+                },
+            )
+            .unwrap();
+
+        let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("start_unbond_queue", "locked")],
+            "Unexpected attributes when IBC is unlocked and bond queue is not empty"
+        );
+        assert_eq!(IBC_LOCK.load(deps.as_mut().storage).unwrap(), Lock::new().lock_start_unbond())
     }
 }
