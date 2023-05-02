@@ -9,12 +9,19 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
+	"strconv"
 )
 
 func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCreateVestingAccount) (*types.MsgCreateVestingAccountResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	ak := k.accountKeeper
 	bk := k.bankKeeper
+
+	// Validate msg.StartTime against the current block time to be higher
+	blockTime := ctx.BlockTime().Unix()
+	if msg.StartTime <= blockTime {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "start or end time must be higher than the current block time")
+	}
 
 	if err := bk.IsSendEnabledCoins(ctx, msg.Amount...); err != nil {
 		return nil, err
@@ -72,6 +79,8 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+			sdk.NewAttribute(types.AttributeKeyStartTime, strconv.FormatInt(msg.StartTime, 10)),
+			sdk.NewAttribute(types.AttributeKeyEndTime, strconv.FormatInt(msg.EndTime, 10)),
 			sdk.NewAttribute(types.AttributeKeyAccount, msg.ToAddress),
 		),
 	)

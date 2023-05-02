@@ -1,7 +1,9 @@
 package types
 
 const (
-	AttributeKeyAccount = "acc"
+	AttributeKeyAccount   = "acc"
+	AttributeKeyStartTime = "start_time"
+	AttributeKeyEndTime   = "end_time"
 
 	// AttributeValueCategory is an alias for the message event value.
 	AttributeValueCategory = ModuleName
