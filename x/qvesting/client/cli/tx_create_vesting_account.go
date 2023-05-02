@@ -13,8 +13,11 @@ import (
 func CmdCreateVestingAccount() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-vesting-account [to-address] [amount] [start-time] [end-time]",
-		Short: "Broadcast message CreateVestingAccount",
-		Args:  cobra.ExactArgs(4),
+		Short: "Create a new vesting account funded with an allocation of tokens.",
+		Long: `Create a new vesting account funded with an allocation of tokens. 
+The account can be a continuous vesting account. The start_time and end_time must be 
+provided as a UNIX epoch timestamp.`,
+		Args: cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argToAddress, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
