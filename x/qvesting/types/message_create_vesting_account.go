@@ -65,14 +65,6 @@ func (msg *MsgCreateVestingAccount) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
 	}
 
-	if msg.StartTime <= 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid start time")
-	}
-
-	if msg.EndTime <= 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid end time")
-	}
-
 	if msg.StartTime > msg.EndTime {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid start time higher than end time")
 	}
