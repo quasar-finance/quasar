@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+
+ARG RELAYER_VERSION="latest"
+ARG BASE_IMAGE=""
+
+# --------------------------------------------------------
+# Repack relayer with startup script
+# --------------------------------------------------------
+
+
+FROM ghcr.io/informalsystems/hermes:1.4.0 AS hermes-bin
+
+
+FROM ubuntu:22.04 as dev
+
+
+ENV HOME /hermes
+WORKDIR $HOME
+
+ENV PACKAGES libc6-dev libstdc++6 zlib1g-dev jq curl wget
+
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+	apt-get update && \
+	apt-get install -y $PACKAGES
+
+
+COPY --from=hermes-bin /bin/hermes /bin/hermes
+
+COPY bootstrap-scripts/entrypoint.sh /hermes/entrypoint.sh
+COPY bootstrap-scripts/hermes_relayer_localnet.sh /hermes/app_init.sh
+
+COPY bootstrap-scripts/keys/ ./keys/ 
+COPY bootstrap-scripts/hermes-relayer-config/ ./hermes-relayer-config/
+
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
+
+EXPOSE 26656
+EXPOSE 26657
+EXPOSE 1317
+
+CMD ["hermes start"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+
+  quasar:
+    build:
+      context: ../../
+      target: dev
+      dockerfile: Dockerfile
+      tags:
+        - "quasar:dev"
+    image: quasar:dev
+    ports:
+      - "1317:1317"
+      - "26657:26657"
+      - "9090:9090"
+    command: "quasarnoded start >> ./logs/quasar_quasar.log 2>&1"
+
+  osmosis:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile.quasar-osmosis
+      tags:
+        - "osmosis:dev"
+    image: osmosis:dev
+    ports:
+       - "1417:1317"
+       - "26757:26657"
+       - "9190:9090"
+    command: "osmosisd start >>./logs/quasar_osmosis.log 2>&1"
+
+  hermes:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile.quasar-hermes
+      tags:
+        - "hermes:dev"
+    image: hermes:dev
+    depends_on:
+      - quasar
+      - osmosis
+    command: "hermes start"
