@@ -1,14 +1,5 @@
 #!/bin/sh
 
-# Install Rustc
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-# Install Hermes
-mkdir -p $HOME/.hermes/bin
-cd $HOME/.hermes/bin
-wget https://github.com/informalsystems/hermes/releases/download/v1.4.0/hermes-v1.4.0-x86_64-apple-darwin.tar.gz
-tar -C $HOME/.hermes/bin/ -vxzf hermes-v1.4.0-x86_64-apple-darwin.tar.gz
-export PATH="$HOME/.hermes/bin:$PATH"
 
 # Copy config.toml
 cp $HOME/hermes-relayer-config/config.toml $HOME/.hermes/config.toml
