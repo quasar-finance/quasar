@@ -55,7 +55,11 @@ pub fn do_start_unbond(
             Uint128::zero(),
             |acc, val| -> Result<Uint128, ContractError> {
                 let v = val?;
-                Ok(acc + v.primitive_shares)
+                if v.owner == unbond.owner {
+                    Ok(acc + v.primitive_shares)
+                } else {
+                    Ok(Uint128::zero())
+                }
             },
         )?;
 
