@@ -32,7 +32,7 @@ make install
 Run the following commands to start a single node of quasar in local machine with the preset of parameters needed for this demo:
 ```bash
 cd ./demos/qtransfer-demos
-./quasar_localnet.sh
+./startup.sh
 ```
 You can do tail -f quasar.log to see logs in the terminals.
 
@@ -40,7 +40,7 @@ You can do tail -f quasar.log to see logs in the terminals.
 Run the following commands to start a single node of osmosis in local machine with the preset of parameters needed for this demo:
 
 ```bash
-./osmo_localnet.sh
+./startup.sh
 ```
 You can do tail -f osmosis.log to see logs in the terminals.
 

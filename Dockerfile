@@ -96,7 +96,7 @@ ENV HOME /quasar
 WORKDIR $HOME
 
 COPY tests/docker/bootstrap-scripts/entrypoint.sh /quasar/entrypoint.sh
-COPY tests/docker/bootstrap-scripts/quasar_localnet.sh /quasar/app_init.sh
+COPY tests/docker/bootstrap-scripts/chains/quasar/startup.sh /quasar/app_init.sh
 RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
 
 EXPOSE 26656

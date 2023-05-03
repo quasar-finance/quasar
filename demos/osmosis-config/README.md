@@ -23,7 +23,7 @@ Run the following commands to start a single node of quasar in local machine wit
 ```bash
 cd ./demos/osmosis-config
 
-./quasar_localnet.sh
+./startup.sh
 ```
 After this you should see block logs written in the stdout of your terminal.
 
@@ -32,7 +32,7 @@ Run the following commands to start a single node of osmosis in local machine wi
 ```bash
 cd ./demos/osmosis-config
 
-./osmo_localnet.sh
+./startup.sh
 ```
 After this you should see block logs written in the stdout of your terminal.
 

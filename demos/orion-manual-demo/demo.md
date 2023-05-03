@@ -35,14 +35,14 @@ cd quasar-demo
 ## Up the quasar-chain, in the cloned quasar directory
 ```bash
 cd quasar-demo/quasar/demos/orion-manual-demo/
-./quasar_localnet.sh
+./startup.sh
 ```
 You can do `tail -f quasar.log` to monitor quasar logs in a terminal.
 
 ## Up the osmosis chain, in the cloned osmosis (with ica) directory
 ```bash
 cd quasar-demo/quasar/demos/orion-manual-demo/
-./osmo_localnet.sh
+./startup.sh
 ```
 You can do `tail -f osmosis.log` to monitor osmosis logs in a terminal.
 
