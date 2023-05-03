@@ -5,6 +5,8 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "qvesting/params.proto";
+import "google/protobuf/any.proto";
+
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/quasarlabs/quasarnode/x/qvesting/types";
@@ -19,6 +21,10 @@ service Query {
   // account.
   rpc SpendableBalances(QuerySpendableBalancesRequest) returns (QuerySpendableBalancesResponse) {
     option (google.api.http).get = "/cosmos/bank/v1beta1/spendable_balances/{address}";
+  }
+  // VestingAccounts returns all the existing vesting accounts
+  rpc VestingAccounts(QueryVestingAccountsRequest) returns (QueryVestingAccountsResponse) {
+    option (google.api.http).get = "/quasar/qvesting/vesting_accounts";
   }
   // this line is used by starport scaffolding # 2
 }
@@ -51,6 +57,21 @@ message QuerySpendableBalancesResponse {
   // balances is the spendable balances of all the coins.
   repeated cosmos.base.v1beta1.Coin balances = 1
   [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
+message QueryVestingAccountsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+message QueryVestingAccountsResponse {
+  // accounts are the existing vesting accounts
+  repeated google.protobuf.Any accounts = 1 [(cosmos_proto.accepts_interface) = "VestingAccount"];
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
