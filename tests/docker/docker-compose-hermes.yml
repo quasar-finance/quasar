@@ -29,3 +29,15 @@ services:
        - "9190:9090"
     command: "osmosisd start >>./logs/quasar_osmosis.log 2>&1"
 
+  hermes:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile.quasar-hermes
+      tags:
+        - "hermes:dev"
+    image: hermes:dev
+    depends_on:
+      - quasar
+      - osmosis
+    command: "hermes start"

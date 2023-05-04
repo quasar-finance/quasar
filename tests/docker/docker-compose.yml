@@ -42,17 +42,3 @@ services:
       - quasar
       - osmosis
     command: "rly start"
-
-  hermes:
-    build:
-      context: .
-      target: dev
-      dockerfile: Dockerfile.quasar-hermes
-      tags:
-        - "hermes:dev"
-    image: hermes:dev
-    depends_on:
-      - quasar
-      - osmosis
-    condition: "${ENABLE_EXTRA_SERVICES^^} == 'TRUE'"
-    command: "hermes start"

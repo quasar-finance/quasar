@@ -2,7 +2,7 @@
 
 
 # Copy config.toml
-cp $HOME/config/config.toml $HOME/.hermes/config.toml
+cp $HOME/hermes-relayer-config/config.toml $HOME/.hermes/config.toml
 
 # restore the keys from the mnemomic phrases, same phrases as the hermes script
 # COSMOSKEY="$(cat ./keys/gaia.key)"
