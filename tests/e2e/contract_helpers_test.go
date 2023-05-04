@@ -3,12 +3,12 @@ package e2e
 import (
 	"context"
 	"fmt"
-	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 

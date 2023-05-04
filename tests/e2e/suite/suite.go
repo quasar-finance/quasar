@@ -83,7 +83,7 @@ func (s *E2ETestSuite) GetConnectionsByPath(ctx context.Context, pathName string
 }
 
 // GetClientIDsByPath returns array fo client ids for the given pathName (common client ids between two chains)
-func (s E2ETestSuite) GetClientIDsByPath(ctx context.Context, pathName string) []string {
+func (s *E2ETestSuite) GetClientIDsByPath(ctx context.Context, pathName string) []string {
 	path := s.getPath(pathName)
 	clients := s.QueryClients(ctx, path.chain1)
 
