@@ -11,7 +11,7 @@ ARG BASE_IMAGE=""
 FROM ghcr.io/cosmos/relayer:latest AS relayer-bin
 
 
-FROM ubuntu:22.04 as dev
+FROM --platform=linux/amd64 ubuntu:22.04 as dev
 
 
 ENV HOME /relayer
