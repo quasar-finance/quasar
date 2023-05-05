@@ -27,7 +27,6 @@ services:
        - "1417:1317"
        - "26757:26657"
        - "9190:9090"
-
     command: "osmosisd start >>./logs/quasar_osmosis.log 2>&1"
 
   relayer:
@@ -42,3 +41,16 @@ services:
       - quasar
       - osmosis
     command: "rly start"
+
+  hermes:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile.relayer-hermes
+      tags:
+        - "hermes:dev"
+    image: hermes:dev
+    depends_on:
+      - quasar
+      - osmosis
+    command: "hermes start"

@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 COPY --from=hermes-bin /usr/bin/hermes /bin/hermes
 
 COPY bootstrap-scripts/entrypoint.sh /hermes/entrypoint.sh
-COPY bootstrap-scripts/hermes_relayer_localnet.sh /hermes/app_init.sh
+COPY bootstrap-scripts/relayer_hermes_localnet.sh /hermes/app_init.sh
 
 COPY bootstrap-scripts/keys/ ./keys/ 
 COPY bootstrap-scripts/hermes-relayer-config/ ./hermes-relayer-config/

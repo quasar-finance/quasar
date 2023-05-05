@@ -327,7 +327,11 @@ docker-attach-osmosis: ##@docker Connect to a terminal prompt in OSMOSIS node co
 
 docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node container
 	@echo "Connecting to relayer docker container"
-	docker exec -it localenv-relayer-1 /bin/bash	
+	docker exec -it localenv-relayer-1 /bin/bash
+
+docker-attach-hermes: ##@docker Connect to a terminal prompt in Hermes node container
+	@echo "Connecting to relayer docker container"
+	docker exec -it localenv-hermes-1 /bin/bash	
 
 docker-test-e2e: docker-compose-up
 	@echo "Running e2e tests"

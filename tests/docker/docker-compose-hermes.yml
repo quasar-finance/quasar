@@ -33,7 +33,7 @@ services:
     build:
       context: .
       target: dev
-      dockerfile: Dockerfile.quasar-hermes
+      dockerfile: Dockerfile.relayer-hermes
       tags:
         - "hermes:dev"
     image: hermes:dev
