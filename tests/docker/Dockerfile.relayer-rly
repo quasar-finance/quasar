@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 COPY --from=relayer-bin /bin/rly /bin/rly
 
 COPY bootstrap-scripts/entrypoint.sh /relayer/entrypoint.sh
-COPY bootstrap-scripts/relayer_localnet.sh /relayer/app_init.sh
+COPY bootstrap-scripts/relayer_rly_localnet.sh /relayer/app_init.sh
 
 COPY bootstrap-scripts/keys/ ./keys/ 
 COPY bootstrap-scripts/go-relayer-config/ ./go-relayer-config/ 

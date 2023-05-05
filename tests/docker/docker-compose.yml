@@ -34,7 +34,7 @@ services:
     build:
       context: .
       target: dev
-      dockerfile: Dockerfile.quasar-relayer
+      dockerfile: Dockerfile.relayer-rly
       tags:
         - "relayer:dev"
     image: relayer:dev
