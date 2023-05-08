@@ -6,9 +6,11 @@
 ### State breaking
 - Remove old pending acks from the state
 ### Improvements
+- Add bond queue duplicate key check
 - Remove pending ack entry after succesful ack handling
 ### Features
 ### Bugfixes
+- Compare users' shares to their owned amount of queued shares instead of all queued shares 
 
 ## V0.1.1 08-05-2023
 ### Dependencies
