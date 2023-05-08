@@ -302,6 +302,17 @@ mod tests {
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
             .unwrap();
 
+        START_UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    primitive_shares: Uint128::new(1500),
+                },
+            )
+            .unwrap();
+
         let unbond1 = StartUnbond {
             owner: owner.clone(),
             id: id1,
@@ -321,7 +332,10 @@ mod tests {
         do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
         do_start_unbond(deps.as_mut().storage, unbond2.clone()).unwrap();
         do_start_unbond(deps.as_mut().storage, unbond3.clone()).unwrap();
-        assert_eq!(START_UNBOND_QUEUE.len(deps.as_ref().storage).unwrap(), 3);
+        assert_eq!(START_UNBOND_QUEUE.len(deps.as_ref().storage).unwrap(), 4);
+        // pop alice's start_unbond
+        START_UNBOND_QUEUE.pop_front(deps.as_mut().storage).unwrap();
+
         assert_eq!(
             START_UNBOND_QUEUE
                 .pop_front(deps.as_mut().storage)
