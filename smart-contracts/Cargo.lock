@@ -1491,9 +1491,11 @@ name = "quasar-traits"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
  "cw20 0.13.4",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]

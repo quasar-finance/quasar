@@ -18,3 +18,23 @@ pub trait Curve: Debug {
     /// The state of the curve should be updated afterwards by the caller
     fn withdraw(&self, shares: &Uint128) -> Uint128;
 }
+
+use cw_storage_plus::{Item, Map};
+use thiserror::Error;
+
+#[derive(Error, Debug, PartialEq)]
+pub enum Error {
+    #[error("Item has no key")]
+    ItemHasNoKey {},
+}
+///
+trait MyTrait<T> {
+    fn should_load(self) -> Result<T, Error>;
+}
+
+impl MyTrait<T> for Map<'_> {
+    fn should_load(self, key: K) -> Result<T, Error> {
+        self.may_load()?.ok_or(Error::ItemHasNoKey {});
+        todo!()
+    }
+}
