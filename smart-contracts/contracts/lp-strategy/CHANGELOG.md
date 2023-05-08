@@ -1,6 +1,12 @@
 # CHANGELOG
 
 ## Unreleased
+### API breaking
+### State breaking
+### Improvements
+- Add testing to try_icq
+### Features
+### Bugfixes
 
 ## V0.1.1 08-05-2023
 ### Dependencies
