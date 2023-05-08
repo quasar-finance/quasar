@@ -62,7 +62,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
 name = "basic-vault"
-version = "0.14.2"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1194,7 +1194,7 @@ dependencies = [
 
 [[package]]
 name = "lp-strategy"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cosmos-sdk-proto 0.15.0",
  "cosmwasm-schema",
@@ -1214,6 +1214,25 @@ dependencies = [
  "serde-json-wasm 0.4.1",
  "thiserror",
  "uuid",
+]
+
+[[package]]
+name = "multihop-router"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test 0.16.2",
+ "cw-storage-plus 1.0.1",
+ "cw2 1.0.1",
+ "derivative",
+ "proptest",
+ "schemars",
+ "serde",
+ "serde-json-wasm 0.5.0",
+ "thiserror",
 ]
 
 [[package]]

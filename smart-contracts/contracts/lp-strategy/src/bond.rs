@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
+use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, StdResult, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,24 @@ pub fn do_bond(
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
     let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
+
+    // check that our bond-id is not a duplicate from a pending bond
+    let pending: StdResult<Vec<Bond>> = PENDING_BOND_QUEUE.iter(storage)?.collect();
+    if pending?
+        .iter()
+        .any(|bond| bond.owner == info.sender && bond_id == bond.bond_id)
+    {
+        return Err(ContractError::DuplicateKey);
+    }
+
+    // check that our bond-id is not a duplicate in the actual bond queue
+    let pending: StdResult<Vec<Bond>> = BOND_QUEUE.iter(storage)?.collect();
+    if pending?
+        .iter()
+        .any(|bond| bond.owner == info.sender && bond_id == bond.bond_id)
+    {
+        return Err(ContractError::DuplicateKey);
+    }
 
     PENDING_BOND_QUEUE.push_back(
         storage,
@@ -286,7 +304,48 @@ mod tests {
     }
 
     #[test]
-    fn batch_bond_works() {}
+    fn do_bond_duplicate_id_fails() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id";
+
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(100),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        let info = MessageInfo {
+            sender: owner,
+            funds: vec![coin(1000, config.local_denom)],
+        };
+        let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+        let q = QuerierWrapper::new(&qx);
+
+        let res = do_bond(
+            deps.as_mut().storage,
+            q,
+            env.clone(),
+            info.clone(),
+            id.to_string(),
+        )
+        .unwrap();
+        assert!(res.is_some());
+
+        // bond with a duplicate id, we expect this to error
+        let err = do_bond(deps.as_mut().storage, q, env.clone(), info, id.to_string()).unwrap_err();
+        assert_eq!(err, ContractError::DuplicateKey)
+    }
 
     #[test]
     fn create_claim_works() {

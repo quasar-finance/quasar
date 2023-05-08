@@ -204,9 +204,11 @@ $(MOCKSDIR)/:
 ###############################################################################
 
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
-PACKAGES_E2E=$(shell go list ./... | grep '/e2e')
+PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
 PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
 TEST_PACKAGES=./...
+
+include tests/e2e/Makefile
 
 test: test-unit test-build
 
@@ -323,12 +325,32 @@ docker-attach-osmosis: ##@docker Connect to a terminal prompt in OSMOSIS node co
 
 docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node container
 	@echo "Connecting to relayer docker container"
-	docker exec -it localenv-relayer-1 /bin/bash	
+	docker exec -it localenv-relayer-1 /bin/bash
 
 docker-test-e2e: docker-compose-up
 	@echo "Running e2e tests"
 	cd ./tests/shell/ && ./create_and_execute_contract.sh
 
+###############################################################################
+###                      Docker E2E InterchainTest                          ###
+###############################################################################
+
+docker-e2e-build:
+	$(eval CHAINS=$(filter-out $@,$(MAKECMDGOALS)))
+	@for chain in $(CHAINS); do \
+		echo "Building $$chain"; \
+		DOCKER_BUILDKIT=1 docker build \
+			-t $$chain:local \
+			-t $$chain:local-distroless \
+			--build-arg GO_VERSION=$(GO_VERSION) \
+			--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
+			--build-arg GIT_VERSION=$(VERSION) \
+			--build-arg GIT_COMMIT=$(COMMIT) \
+			-f ./tests/e2e/dockerfiles/$$chain.Dockerfile . ;\
+	done
+
+%:
+	@:
 
 ###############################################################################
 ###                                Linting                                  ###
