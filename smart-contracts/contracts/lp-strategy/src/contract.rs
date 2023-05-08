@@ -1,14 +1,12 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
-    Reply, Response, Storage, Uint128, WasmMsg,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 
-use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::ibc::IcsAck;
 
 use crate::admin::check_depositor;
@@ -524,7 +522,7 @@ mod tests {
         }
 
         let msg = MigrateMsg {
-            delete_pending: entries.clone().iter().map(|(key, _)| key.clone()).collect(),
+            delete_pending: entries.iter().map(|(key, _)| key.clone()).collect(),
         };
 
         migrate(deps.as_mut(), env, msg).unwrap();
