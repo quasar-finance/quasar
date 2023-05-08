@@ -59,7 +59,6 @@ pub fn try_icq(
             }
         }
 
-
         Ok(Some(create_ibc_ack_submsg(
             storage,
             IbcMsgKind::Icq,
