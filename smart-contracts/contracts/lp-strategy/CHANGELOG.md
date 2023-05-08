@@ -5,6 +5,7 @@
 ### State breaking
 ### Improvements
 - Add testing to try_icq
+- Remove unnecessary load from try_icq
 ### Features
 ### Bugfixes
 
