@@ -497,7 +497,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         callbacks.push(WasmMsg::Execute {
             contract_addr: addr.to_string(),
             msg: to_binary(&Callback::BondResponse(BondResponse {
-                share_amount: cb.share_amount.clone(),
+                share_amount: cb.share_amount,
                 bond_id: cb.bond_id.clone(),
             }))?,
             funds: vec![],
