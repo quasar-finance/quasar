@@ -7,7 +7,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
 pub use cw20::BalanceResponse;
-use quasar_types::{callback::BondResponse, ibc::ChannelInfo};
+use quasar_types::ibc::ChannelInfo;
 
 use crate::{
     bond::Bond,
@@ -43,8 +43,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub vault_addr: String,
-    pub callbacks: Vec<BondResponse>,
+    pub delete_pending: Vec<(u64, String)>,
 }
 
 #[cw_serde]
