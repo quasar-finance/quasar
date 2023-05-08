@@ -19,22 +19,67 @@ pub trait Curve: Debug {
     fn withdraw(&self, shares: &Uint128) -> Uint128;
 }
 
-use cw_storage_plus::{Item, Map};
+use cosmwasm_std::{StdError, Storage};
+use cw_storage_plus::{Deque, Item, Map, PrimaryKey};
+use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("Item has no key")]
-    ItemHasNoKey {},
-}
-///
-trait MyTrait<T> {
-    fn should_load(self) -> Result<T, Error>;
+    #[error("Key not present in Item")]
+    KeyNotPresentInItem {},
+    #[error("Key not present in Map")]
+    KeyNotPresentInMap {},
+    #[error("Key not present in Deque")]
+    KeyNotPresentInDeque {},
+    #[error(transparent)]
+    StdError(#[from] StdError),
 }
 
-impl MyTrait<T> for Map<'_> {
-    fn should_load(self, key: K) -> Result<T, Error> {
-        self.may_load()?.ok_or(Error::ItemHasNoKey {});
-        todo!()
+// Define trait ItemShouldLoad
+pub trait ItemShouldLoad<T> {
+    fn should_load(&self, storage: &dyn Storage) -> Result<T, Error>;
+}
+
+// Implement trait ItemShouldLoad for Map
+impl<'a, T> ItemShouldLoad<T> for Item<'a, T>
+where
+    T: Serialize + DeserializeOwned,
+{
+    fn should_load(&self, storage: &dyn Storage) -> Result<T, Error> {
+        self.may_load(storage)?.ok_or(Error::KeyNotPresentInItem {})
+    }
+}
+
+// Define trait MapShouldLoad
+trait MapShouldLoad<K, T> {
+    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, Error>;
+}
+
+// Implement trait MapShouldLoad for Map
+impl<'a, K, T> MapShouldLoad<K, T> for Map<'a, K, T>
+where
+    K: PrimaryKey<'a> + Clone,
+    T: Serialize + DeserializeOwned,
+{
+    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, Error> {
+        self.may_load(storage, key)?
+            .ok_or(Error::KeyNotPresentInMap {})
+    }
+}
+
+// Define trait QueueShouldLoad
+trait QueueShouldLoad<K, T> {
+    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, Error>;
+}
+
+// Implement trait QueueShouldLoad for Deque
+impl<'a, T> QueueShouldLoad<u32, T> for Deque<'a, T>
+where
+    T: Serialize + DeserializeOwned,
+{
+    fn should_load(&self, storage: &dyn Storage, key: u32) -> Result<T, Error> {
+        self.get(storage, key)?
+            .ok_or(Error::KeyNotPresentInDeque {})
     }
 }
