@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_binary, to_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
-    Reply, Response, Storage, Uint128, WasmMsg,
+    Reply, Response, Storage, Uint128, WasmMsg, Attribute,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -14,18 +14,18 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
+use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind, lock_try_icq};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
-use crate::ibc_lock::{IbcLock, Lock};
+use crate::ibc_lock::{Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
 use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, TIMED_OUT,
+    TOTAL_VAULT_BALANCE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -204,31 +204,10 @@ pub fn execute_set_depositor(
 
 pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     // if we're unlocked, we can empty the queues and send the submessages
-    let mut lock = IBC_LOCK.load(deps.storage)?;
-    let sub_msg = try_icq(deps.storage, deps.querier, env)?;
-    let mut res = Response::new();
-
-    if let Some(sub_msg) = sub_msg {
-        if !BOND_QUEUE.is_empty(deps.storage)? {
-            lock.bond = IbcLock::Locked;
-            res = res.add_attribute("bond_queue", "locked");
-        } else if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_start_unbond();
-            res = res.add_attribute("start_unbond_queue", "locked");
-        } else if !UNBOND_QUEUE.is_empty(deps.storage)? {
-            lock = lock.lock_unbond();
-            res = res.add_attribute("unbond_queue", "locked");
-        }
-        if lock.is_unlocked() {
-            res = res.add_attribute("IBC_LOCK", "unlocked");
-        }
-        IBC_LOCK.save(deps.storage, &lock)?;
-        res = res.add_submessage(sub_msg);
-    } else {
-        res = res.add_attribute("IBC_LOCK", "locked");
-    }
-    Ok(res)
+    let msg = try_icq(deps.storage, deps.querier, env)?;
+    lock_try_icq(deps, msg)
 }
+
 
 pub fn execute_ack(
     deps: DepsMut,
@@ -293,23 +272,18 @@ pub fn execute_bond(
         return Err(ContractError::Unauthorized);
     }
 
-    let msg = do_bond(deps.storage, deps.querier, env, info.clone(), id)?;
+    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
 
-    // if msg is some, we are dispatching an icq
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_bond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("deposit", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("deposit", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let msg = do_bond(deps.storage, deps.querier, env, amount, info.sender.clone(), id)?;
+
+    let attributes = vec![
+        Attribute::new("action", "bond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("token_amount", amount)
+    ];
+
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
 }
 
 pub fn execute_start_unbond(
@@ -335,21 +309,15 @@ pub fn execute_start_unbond(
     )?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
+    let attributes = vec![
+        Attribute::new("action", "start-unbond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("prim_share_amount", share_amount)
+    ];
 
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_start_unbond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("start-unbond", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("start-unbond", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
+
 }
 
 pub fn execute_unbond(
@@ -364,24 +332,18 @@ pub fn execute_unbond(
         return Err(ContractError::Unauthorized);
     }
 
-    do_unbond(deps.storage, &env, info.sender.clone(), id)?;
+    do_unbond(deps.storage, &env, info.sender.clone(), id.clone())?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
 
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_unbond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("unbond", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("unbond", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let attributes = vec![
+        Attribute::new("action", "unbond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("unbond_id", id)
+    ];
+
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
 }
 
 // transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
@@ -522,7 +484,7 @@ mod tests {
 
     use crate::{
         bond::Bond,
-        state::{Unbond, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, UNBONDING_CLAIMS},
+        state::{Unbond, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, UNBONDING_CLAIMS, SHARES, BOND_QUEUE, START_UNBOND_QUEUE, UNBOND_QUEUE},
         test_helpers::default_setup,
     };
 
@@ -734,7 +696,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("IBC_LOCK", "locked")],
+            vec![("IBC_LOCK", "locked"), ("kind", "queue")],
             "Unexpected attributes when IBC is locked"
         );
     }
@@ -751,7 +713,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("IBC_LOCK", "unlocked")],
+            vec![("IBC_LOCK", "unlocked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and queues are empty"
         );
     }
@@ -785,7 +747,7 @@ mod tests {
             },
         ).unwrap();
 
-        let unbond_res = execute_start_unbond(deps.as_mut(), env.clone(), info.clone(), id.clone(), Uint128::new(1000)).unwrap();
+        let _ = execute_start_unbond(deps.as_mut(), env.clone(), info.clone(), id.clone(), Uint128::new(1000)).unwrap();
         assert_eq!(
             IBC_LOCK.load(deps.as_ref().storage).unwrap(),
             Lock::new().lock_bond()
@@ -861,7 +823,7 @@ mod tests {
         // Verify that the bond operation was queued
         assert_eq!(
             bond_res.attributes,
-            vec![("deposit", "vault-bob"), ("kind", "dispatch")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch"), ("action", "bond"), ("sender", "vault-bob"), ("token_amount", "1000")],
             "Unexpected attributes when executing bond"
         );
         assert_eq!(
@@ -875,7 +837,7 @@ mod tests {
         // Verify that the bond queue was locked
         assert_eq!(
             try_icq_res.attributes,
-            vec![("IBC_LOCK", "locked")],
+            vec![("IBC_LOCK", "locked"), ("kind", "queue")],
             "Unexpected attributes when executing try_icq"
         );
         assert_eq!(try_icq_res.messages.len(), 0)
@@ -950,7 +912,7 @@ mod tests {
         // Verify that the bond queue was locked
         assert_eq!(
             try_icq_res.attributes,
-            vec![("bond_queue", "locked")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when executing try_icq"
         );
         assert_eq!(
@@ -966,7 +928,7 @@ mod tests {
         // Verify that the bond operation was queued
         assert_eq!(
             bond_res.attributes,
-            vec![("deposit", "vault-bob"), ("kind", "queue")],
+            vec![("IBC_LOCK", "locked"), ("kind", "queue"), ("action", "bond"), ("sender", "vault-bob"), ("token_amount", "1000")],
             "Unexpected attributes when executing bond"
         );
     }
@@ -1071,7 +1033,7 @@ mod tests {
         // Verify that the bond queue was locked
         assert_eq!(
             try_icq_res.attributes,
-            vec![("bond_queue", "locked")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when executing try_icq"
         );
         assert_eq!(try_icq_res.messages.len(), 1);
@@ -1083,7 +1045,7 @@ mod tests {
         // Verify that the bond operation was queued
         assert_eq!(
             unbond_res.attributes,
-            vec![("unbond", "vault-bob"), ("kind", "queue")],
+            vec![("IBC_LOCK", "locked"), ("kind", "queue"), ("action", "unbond"), ("sender", "vault-bob"), ("unbond_id", "4")],
             "Unexpected attributes when executing unbond"
         )
     }
@@ -1112,7 +1074,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("bond_queue", "locked")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and bond queue is not empty"
         );
     }
@@ -1141,7 +1103,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("start_unbond_queue", "locked")],
+            vec![("start_unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
     }
@@ -1172,7 +1134,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("unbond_queue", "locked")],
+            vec![("unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
     }
@@ -1203,7 +1165,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("unbond_queue", "locked")],
+            vec![("unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
     }
@@ -1242,7 +1204,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("bond_queue", "locked")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and bond queue is not empty"
         );
         assert_eq!(
@@ -1287,7 +1249,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("bond_queue", "locked")],
+            vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and bond queue is not empty"
         );
         assert_eq!(
@@ -1332,7 +1294,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             res.attributes,
-            vec![("start_unbond_queue", "locked")],
+            vec![("start_unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and bond queue is not empty"
         );
         assert_eq!(
