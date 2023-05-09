@@ -1,10 +1,10 @@
 use cosmwasm_std::{Addr, Storage};
 
 use crate::state::DEPOSITOR;
-use quasar_traits::traits::{Error, ItemShouldLoad};
+use quasar_types::types::{ContractError, ItemShouldLoad};
 
 // check if sender is the admin
-pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, Error> {
+pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, ContractError> {
     let depositor = DEPOSITOR.should_load(storage)?;
     Ok(&depositor == sender)
 }
@@ -33,7 +33,7 @@ mod tests {
 
         assert_eq!(
             check_depositor(deps.as_mut().storage, &sender1).unwrap_err(),
-            Error::KeyNotPresentInItem {}
+            ContractError::KeyNotPresentInItem {}
         );
     }
 }
