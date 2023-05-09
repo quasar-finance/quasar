@@ -757,6 +757,42 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_bond_with_start_unbond_queue() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Set up unlocked IBC state
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+        default_setup(deps.as_mut().storage).unwrap();
+        DEPOSITOR
+            .save(deps.as_mut().storage, &Addr::unchecked("vault-bob"))
+            .unwrap();
+
+        let info = MessageInfo {
+            sender: Addr::unchecked("vault-bob"),
+            funds: vec![],
+        };
+        let id = "4".to_string();
+
+        SHARES.save(deps.as_mut().storage,Addr::unchecked("vault-bob") , &Uint128::new(10000)).unwrap();
+
+        BOND_QUEUE.push_back(
+            deps.as_mut().storage,
+            &Bond {
+                amount: Uint128::new(1000),
+                owner: Addr::unchecked("alice"),
+                bond_id: "2".to_string(),
+            },
+        ).unwrap();
+
+        let unbond_res = execute_start_unbond(deps.as_mut(), env.clone(), info.clone(), id.clone(), Uint128::new(1000)).unwrap();
+        assert_eq!(
+            IBC_LOCK.load(deps.as_ref().storage).unwrap(),
+            Lock::new().lock_bond()
+        )
+    }
+
+    #[test]
     fn test_execute_bond_and_execute_try_icq_filled_queues() {
         let mut deps = mock_dependencies();
         let env = mock_env();
