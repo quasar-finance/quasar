@@ -1,5 +1,6 @@
 use cosmwasm_std::{Addr, Coin, Deps, StdResult};
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
+use quasar_types::types::ItemShouldLoad;
 
 use crate::{
     execute::may_pay_with_ratio,
@@ -14,7 +15,7 @@ use crate::{
 };
 
 pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
-    let primitives = INVESTMENT.load(deps.storage)?.primitives;
+    let primitives = INVESTMENT.should_load(deps.storage)?.primitives;
     let mut prim_infos: Vec<PrimitiveInfo> = Vec::new();
     for prim in primitives {
         let addr = deps.api.addr_validate(prim.address.as_str())?;

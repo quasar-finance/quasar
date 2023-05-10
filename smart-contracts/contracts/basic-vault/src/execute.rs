@@ -8,7 +8,7 @@ use cw20_base::contract::execute_burn;
 use cw_utils::{nonpayable, PaymentError};
 
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
-use quasar_types::types::{CoinRatio, CoinWeight};
+use quasar_types::types::{CoinRatio, CoinWeight, ItemShouldLoad};
 
 use crate::error::ContractError;
 use crate::helpers::{can_unbond_from_primitive, is_contract_admin, update_user_reward_index};
@@ -227,7 +227,7 @@ pub fn bond(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let invest = INVESTMENT.load(deps.storage)?;
+    let invest = INVESTMENT.should_load(deps.storage)?;
 
     if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
         return Err(ContractError::EmptyBalance {
@@ -241,7 +241,7 @@ pub fn bond(
     }
 
     // load vault info & sequence number
-    let bond_seq = BONDING_SEQ.load(deps.storage)?;
+    let bond_seq = BONDING_SEQ.should_load(deps.storage)?;
 
     // find recipient
     let recipient_addr = match recipient {
@@ -353,8 +353,8 @@ pub fn do_start_unbond(
         return Ok(None);
     }
 
-    let invest = INVESTMENT.load(deps.storage)?;
-    let bond_seq = BONDING_SEQ.load(deps.storage)?;
+    let invest = INVESTMENT.should_load(deps.storage)?;
+    let bond_seq = BONDING_SEQ.should_load(deps.storage)?;
 
     // check that user has vault tokens and the amount is > min_withdrawal
     if unbond_amount < invest.min_withdrawal {
@@ -369,7 +369,7 @@ pub fn do_start_unbond(
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
-    let supply = TOTAL_SUPPLY.load(deps.storage)?;
+    let supply = TOTAL_SUPPLY.should_load(deps.storage)?;
 
     let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
@@ -425,7 +425,7 @@ pub fn do_start_unbond(
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
     BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
-    let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
+    let mut supply = TOTAL_SUPPLY.should_load(deps.storage)?;
     supply.issued = supply
         .issued
         .checked_sub(unbond_amount)

@@ -64,19 +64,19 @@ pub enum ContractError {
     ItemIsEmpty { item: String },
     #[error("Key {} is not present in map {}", key, map)]
     KeyNotPresentInMap { key: String, map: String },
-    #[error("Deque entry with key '{0}' not present")]
-    KeyNotPresentInDeque(u32),
+    #[error("Queue {} is empty", queue)]
+    QueueIsEmpty { queue: String },
     #[error(transparent)]
     StdError(#[from] StdError),
 }
 
 // Define trait ItemShouldLoad
-pub trait ItemShouldLoad<T> {
-    fn should_load(&self, storage: &dyn Storage) -> Result<T, ContractError>;
+pub trait ItemShouldLoad<T, E> {
+    fn should_load(&self, storage: &dyn Storage) -> Result<T, E>;
 }
 
 // Implement trait ItemShouldLoad for Item
-impl<'a, T> ItemShouldLoad<T> for Item<'a, T>
+impl<'a, T> ItemShouldLoad<T, ContractError> for Item<'a, T>
 where
     T: Serialize + DeserializeOwned + Debug,
 {
@@ -89,12 +89,12 @@ where
 }
 
 // Define trait MapShouldLoad
-pub trait MapShouldLoad<K, T> {
-    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError>;
+pub trait MapShouldLoad<K, T, E> {
+    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, E>;
 }
 
 // Implement trait MapShouldLoad for Map
-impl<'a, K, T> MapShouldLoad<K, T> for Map<'a, K, T>
+impl<'a, K, T> MapShouldLoad<K, T, ContractError> for Map<'a, K, T>
 where
     K: PrimaryKey<'a> + Clone + Display,
     T: Serialize + DeserializeOwned,
@@ -110,18 +110,20 @@ where
 }
 
 // Define trait QueueShouldLoad
-pub trait QueueShouldLoad<K, T> {
-    fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError>;
+pub trait QueueShouldLoad<T, E> {
+    fn should_pop_front(&self, storage: &mut dyn Storage) -> Result<T, E>;
 }
 
 // Implement trait QueueShouldLoad for Deque
-impl<'a, T> QueueShouldLoad<u32, T> for Deque<'a, T>
+impl<'a, T> QueueShouldLoad<T, ContractError> for Deque<'a, T>
 where
     T: Serialize + DeserializeOwned,
 {
-    fn should_load(&self, storage: &dyn Storage, key: u32) -> Result<T, ContractError> {
-        self.get(storage, key)?
-            .ok_or(ContractError::KeyNotPresentInDeque(key))
+    fn should_pop_front(&self, storage: &mut dyn Storage) -> Result<T, ContractError> {
+        self.pop_front(storage)?.ok_or(ContractError::QueueIsEmpty {
+            // TODO: this is hardcoded as I can't access the namespace of the queue
+            queue: "test".to_string(),
+        })
     }
 }
 

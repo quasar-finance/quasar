@@ -110,6 +110,54 @@ pub enum ContractError {
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
+
+    #[error("Item {} is empty", item)]
+    ItemIsEmpty { item: String },
+
+    #[error("Key {} is not present in map {}", key, map)]
+    KeyNotPresentInMap { key: String, map: String },
+
+    #[error("Queue {} is empty", queue)]
+    QueueIsEmpty { queue: String },
+}
+
+impl From<quasar_types::types::ContractError> for ContractError {
+    fn from(error: quasar_types::types::ContractError) -> Self {
+        match error {
+            quasar_types::types::ContractError::ItemIsEmpty { item } => {
+                ContractError::ItemIsEmpty { item }
+            }
+            quasar_types::types::ContractError::KeyNotPresentInMap { key, map } => {
+                ContractError::KeyNotPresentInMap { key, map }
+            }
+            quasar_types::types::ContractError::QueueIsEmpty { queue } => {
+                ContractError::QueueIsEmpty { queue }
+            }
+            quasar_types::types::ContractError::StdError(e) => ContractError::Std(e),
+        }
+    }
+}
+
+impl From<quasar_types::types::ContractError> for StdError {
+    fn from(error: quasar_types::types::ContractError) -> Self {
+        match error {
+            quasar_types::types::ContractError::ItemIsEmpty { item } => {
+                StdError::GenericErr { msg: item }
+            }
+            quasar_types::types::ContractError::KeyNotPresentInMap { key, map } => {
+                StdError::GenericErr {
+                    msg: format!("{} {}", key, map),
+                }
+            }
+            quasar_types::types::ContractError::QueueIsEmpty { queue } => {
+                StdError::GenericErr { msg: queue }
+            }
+            quasar_types::types::ContractError::Std(e) => e,
+            _ => cosmwasm_std::StdError::GenericErr {
+                msg: format!("{:?}", error),
+            },
+        }
+    }
 }
 
 impl From<CheckedFromRatioError> for ContractError {

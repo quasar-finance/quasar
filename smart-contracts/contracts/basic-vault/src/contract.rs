@@ -16,6 +16,7 @@ use cw20_base::contract::{
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
+use quasar_types::types::ItemShouldLoad;
 use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
@@ -140,7 +141,7 @@ pub fn execute(
 
             let mut msgs: Vec<WasmMsg> = vec![];
 
-            let primitives = INVESTMENT.load(deps.storage)?.primitives;
+            let primitives = INVESTMENT.should_load(deps.storage)?.primitives;
             primitives.iter().try_for_each(
                 |pc: &PrimitiveConfig| -> Result<(), ContractError> {
                     let clear_cache_msg = WasmMsg::Execute {

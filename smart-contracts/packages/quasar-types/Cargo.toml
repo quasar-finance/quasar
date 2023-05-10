@@ -10,13 +10,20 @@ cosmos-sdk-proto = { version = "0.14", default-features = false }
 prost = { version = "0.11", default-features = false }
 thiserror = { version = "1.0.23" }
 serde-json-wasm = { version = "0.4.1", default-features = false }
-derive_more = { version = "0.99.17", default-features = false, features = ["display"]}
+derive_more = { version = "0.99.17", default-features = false, features = [
+    "display",
+] }
 rust_decimal = "1.24.0"
 cw20 = "0.13.4"
-cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"]}
+cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"] }
 cw-storage-plus = "1.0.1"
 schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
+serde = { version = "1.0.103", default-features = false, features = [
+    "derive",
+    "alloc",
+] }
 serde_test = "1.0"
-osmosis-std = {version = "0.13.2"}
+osmosis-std = { version = "0.13.2" }
 osmosis-std-derive = "0.13.2"
+
+# basic-vault = { path = "../../contracts/basic-vault" }
