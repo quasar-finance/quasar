@@ -14,7 +14,6 @@ pub mod reply;
 pub mod start_unbond;
 pub mod state;
 pub mod test_helpers;
-pub mod testing_should_load;
 pub mod unbond;
 
 #[cfg(test)]
