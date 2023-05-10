@@ -55,16 +55,17 @@ impl CoinRatio {
 use cosmwasm_std::{StdError, Storage};
 use cw_storage_plus::{Deque, Item, Map, PrimaryKey};
 use serde::de::DeserializeOwned;
+use std::fmt::{Debug, Display};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("Key not present in Item")]
-    KeyNotPresentInItem {},
-    #[error("Key not present in Map")]
-    KeyNotPresentInMap {},
-    #[error("Key not present in Deque")]
-    KeyNotPresentInDeque {},
+    #[error("Item {} is empty", item)]
+    ItemIsEmpty { item: String },
+    #[error("Key {} is not present in map {}", key, map)]
+    KeyNotPresentInMap { key: String, map: String },
+    #[error("Deque entry with key '{0}' not present")]
+    KeyNotPresentInDeque(u32),
     #[error(transparent)]
     StdError(#[from] StdError),
 }
@@ -74,36 +75,42 @@ pub trait ItemShouldLoad<T> {
     fn should_load(&self, storage: &dyn Storage) -> Result<T, ContractError>;
 }
 
-// Implement trait ItemShouldLoad for Map
+// Implement trait ItemShouldLoad for Item
 impl<'a, T> ItemShouldLoad<T> for Item<'a, T>
 where
-    T: Serialize + DeserializeOwned,
+    T: Serialize + DeserializeOwned + Debug,
 {
     fn should_load(&self, storage: &dyn Storage) -> Result<T, ContractError> {
-        self.may_load(storage)?
-            .ok_or(ContractError::KeyNotPresentInItem {})
+        let namespace_str = String::from_utf8_lossy(self.as_slice()).into();
+        self.may_load(storage)?.ok_or(ContractError::ItemIsEmpty {
+            item: namespace_str,
+        })
     }
 }
 
 // Define trait MapShouldLoad
-trait MapShouldLoad<K, T> {
+pub trait MapShouldLoad<K, T> {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError>;
 }
 
 // Implement trait MapShouldLoad for Map
 impl<'a, K, T> MapShouldLoad<K, T> for Map<'a, K, T>
 where
-    K: PrimaryKey<'a> + Clone,
+    K: PrimaryKey<'a> + Clone + Display,
     T: Serialize + DeserializeOwned,
 {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError> {
-        self.may_load(storage, key)?
-            .ok_or(ContractError::KeyNotPresentInMap {})
+        let namespace_str = String::from_utf8_lossy(self.namespace()).into();
+        self.may_load(storage, key.clone())?
+            .ok_or(ContractError::KeyNotPresentInMap {
+                key: key.to_string(),
+                map: namespace_str,
+            })
     }
 }
 
 // Define trait QueueShouldLoad
-trait QueueShouldLoad<K, T> {
+pub trait QueueShouldLoad<K, T> {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError>;
 }
 
@@ -114,6 +121,76 @@ where
 {
     fn should_load(&self, storage: &dyn Storage, key: u32) -> Result<T, ContractError> {
         self.get(storage, key)?
-            .ok_or(ContractError::KeyNotPresentInDeque {})
+            .ok_or(ContractError::KeyNotPresentInDeque(key))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
+    use cosmwasm_std::{Addr, Storage};
+
+    use super::*;
+    const RETURNING: Map<u64, Uint128> = Map::new("returning");
+    const DEPOSITOR: Item<Addr> = Item::new("depositor");
+
+    // check if sender is the admin
+    pub fn check_depositor(
+        storage: &mut dyn Storage,
+        sender: &Addr,
+    ) -> Result<bool, ContractError> {
+        let depositor = DEPOSITOR.should_load(storage)?;
+        Ok(&depositor == sender)
+    }
+
+    #[test]
+    fn test_item_admin_with_depositor() {
+        let mut deps = mock_dependencies();
+        let sender1 = Addr::unchecked("alice");
+        let sender2 = Addr::unchecked("eve");
+
+        DEPOSITOR.save(deps.as_mut().storage, &sender1).unwrap();
+        assert!(check_depositor(deps.as_mut().storage, &sender1).unwrap());
+        assert_eq!(check_depositor(deps.as_mut().storage, &sender1), Ok(true));
+        assert_eq!(check_depositor(deps.as_mut().storage, &sender2), Ok(false));
+    }
+
+    #[test]
+    fn test_item_admin_without_depositor() {
+        let mut deps = mock_dependencies();
+        let sender1 = Addr::unchecked("alice");
+
+        assert_eq!(
+            check_depositor(deps.as_mut().storage, &sender1).unwrap_err(),
+            ContractError::ItemIsEmpty {
+                item: "depositor".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn test_map_key_exists() {
+        let mut deps = mock_dependencies();
+
+        RETURNING
+            .save(deps.as_mut().storage, 0, &Uint128::one())
+            .unwrap();
+        assert_eq!(
+            RETURNING.should_load(deps.as_mut().storage, 0).unwrap(),
+            Uint128::one()
+        );
+    }
+
+    #[test]
+    fn test_map_key_doesnt_exist() {
+        let mut deps = mock_dependencies();
+        let err = RETURNING.should_load(deps.as_mut().storage, 0).unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::KeyNotPresentInMap {
+                key: 0.to_string(),
+                map: "returning".to_string()
+            }
+        );
     }
 }
