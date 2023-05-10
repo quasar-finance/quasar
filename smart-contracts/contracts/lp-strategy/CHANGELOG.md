@@ -18,6 +18,11 @@
 ### Improvements
 ### Features
 ### Bugfixes
+### Notes
+
+Migrations (branch names) performed with this source:
+migration-004/recover-bonds
+migration-005/recover-bonds-again
 
 ## V0.1.0
 ### Initial version
