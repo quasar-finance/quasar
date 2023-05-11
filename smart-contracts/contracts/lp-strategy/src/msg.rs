@@ -263,6 +263,9 @@ pub enum ExecuteMsg {
     Lock {
         lock_only: LockOnly,
     },
+    AddLockAdmin {
+        to_add: String,
+    },
     ManualTimeout {
         seq: u64,
         channel: String,

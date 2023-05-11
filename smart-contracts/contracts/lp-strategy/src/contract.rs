@@ -9,7 +9,7 @@ use cw_utils::{must_pay, nonpayable};
 
 use quasar_types::ibc::IcsAck;
 
-use crate::admin::check_depositor;
+use crate::admin::{add_lock_admin, check_depositor, is_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
@@ -119,7 +119,26 @@ pub fn execute(
             channel,
             should_unlock,
         } => manual_timeout(deps, env, info, seq, channel, should_unlock),
+        ExecuteMsg::AddLockAdmin { to_add } => todo!(),
     }
+}
+
+pub fn execute_add_lock_admin(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    to_add: String,
+) -> Result<Response, ContractError> {
+    add_lock_admin(
+        deps.storage,
+        &deps.querier,
+        &env,
+        info.sender,
+        deps.api.addr_validate(to_add.as_str())?,
+    )?;
+    Ok(Response::new()
+        .add_attribute("action", "add_lock_admin")
+        .add_attribute("lock_admin", to_add))
 }
 
 pub fn execute_lock(
@@ -128,7 +147,7 @@ pub fn execute_lock(
     info: MessageInfo,
     lock_only: LockOnly,
 ) -> Result<Response, ContractError> {
-    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
     let mut lock = IBC_LOCK.load(deps.storage)?;
 
     match lock_only {
@@ -148,7 +167,7 @@ pub fn execute_unlock(
     info: MessageInfo,
     unlock_only: UnlockOnly,
 ) -> Result<Response, ContractError> {
-    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
     let mut lock = IBC_LOCK.load(deps.storage)?;
 
     match unlock_only {
