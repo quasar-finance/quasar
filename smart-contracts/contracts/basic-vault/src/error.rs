@@ -119,46 +119,52 @@ pub enum ContractError {
 
     #[error("Queue {} is empty", queue)]
     QueueIsEmpty { queue: String },
+
+    // quasarypes or another name
+    #[error("{0}")]
+    QuasarError(#[from] quasar_types::types::ContractError),
 }
 
-impl From<quasar_types::types::ContractError> for ContractError {
-    fn from(error: quasar_types::types::ContractError) -> Self {
-        match error {
-            quasar_types::types::ContractError::ItemIsEmpty { item } => {
-                ContractError::ItemIsEmpty { item }
-            }
-            quasar_types::types::ContractError::KeyNotPresentInMap { key, map } => {
-                ContractError::KeyNotPresentInMap { key, map }
-            }
-            quasar_types::types::ContractError::QueueIsEmpty { queue } => {
-                ContractError::QueueIsEmpty { queue }
-            }
-            quasar_types::types::ContractError::StdError(e) => ContractError::Std(e),
+impl From<ContractError> for StdError {
+    fn from(err: ContractError) -> Self {
+        StdError::GenericErr {
+            msg: err.to_string(),
         }
     }
 }
 
-impl From<quasar_types::types::ContractError> for StdError {
-    fn from(error: quasar_types::types::ContractError) -> Self {
-        match error {
-            quasar_types::types::ContractError::ItemIsEmpty { item } => {
-                StdError::GenericErr { msg: item }
-            }
-            quasar_types::types::ContractError::KeyNotPresentInMap { key, map } => {
-                StdError::GenericErr {
-                    msg: format!("{} {}", key, map),
-                }
-            }
-            quasar_types::types::ContractError::QueueIsEmpty { queue } => {
-                StdError::GenericErr { msg: queue }
-            }
-            quasar_types::types::ContractError::Std(e) => e,
-            _ => cosmwasm_std::StdError::GenericErr {
-                msg: format!("{:?}", error),
-            },
-        }
-    }
-}
+// impl Into<StdError> for ContractError {
+//     fn into(self) -> StdError {
+//         match self {
+//             ContractError::Std(e) => e,
+//             _ => StdError::GenericErr {
+//                 msg: format!("{:?}", self),
+//             },
+//         }
+//     }
+// }
+
+// impl From<quasar_types::types::ContractError> for StdError {
+//     fn from(error: quasar_types::types::ContractError) -> Self {
+//         match error {
+//             quasar_types::types::ContractError::ItemIsEmpty { item } => {
+//                 StdError::GenericErr { msg: item }
+//             }
+//             quasar_types::types::ContractError::KeyNotPresentInMap { key, map } => {
+//                 StdError::GenericErr {
+//                     msg: format!("{} {}", key, map),
+//                 }
+//             }
+//             quasar_types::types::ContractError::QueueIsEmpty { queue } => {
+//                 StdError::GenericErr { msg: queue }
+//             }
+//             quasar_types::types::ContractError::Std(e) => e,
+//             _ => cosmwasm_std::StdError::GenericErr {
+//                 msg: format!("{:?}", error),
+//             },
+//         }
+//     }
+// }
 
 impl From<CheckedFromRatioError> for ContractError {
     fn from(err: CheckedFromRatioError) -> Self {

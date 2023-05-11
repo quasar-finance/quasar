@@ -66,8 +66,16 @@ pub enum ContractError {
     KeyNotPresentInMap { key: String, map: String },
     #[error("Queue {} is empty", queue)]
     QueueIsEmpty { queue: String },
-    #[error(transparent)]
-    StdError(#[from] StdError),
+    #[error("{0}")]
+    Std(#[from] StdError),
+}
+
+impl From<ContractError> for StdError {
+    fn from(err: ContractError) -> Self {
+        StdError::GenericErr {
+            msg: err.to_string(),
+        }
+    }
 }
 
 // Define trait ItemShouldLoad
