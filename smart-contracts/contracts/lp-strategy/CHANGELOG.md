@@ -1,11 +1,13 @@
 # CHANGELOG
 
 ## Unreleased
+### Dependencies
 ### API breaking
 ### State breaking
 ### Improvements
 - Add testing to try_icq
 - Remove unnecessary load from try_icq
+- Changed the locking on the execute calls to lock correctly depending on queue state
 ### Features
 ### Bugfixes
 
