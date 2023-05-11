@@ -266,6 +266,9 @@ pub enum ExecuteMsg {
     AddLockAdmin {
         to_add: String,
     },
+    RemoveLockAdmin {
+        to_remove: String,
+    },
     ManualTimeout {
         seq: u64,
         channel: String,

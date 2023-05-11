@@ -9,7 +9,7 @@ use cw_utils::{must_pay, nonpayable};
 
 use quasar_types::ibc::IcsAck;
 
-use crate::admin::{add_lock_admin, check_depositor, is_lock_admin};
+use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
@@ -120,6 +120,9 @@ pub fn execute(
             should_unlock,
         } => manual_timeout(deps, env, info, seq, channel, should_unlock),
         ExecuteMsg::AddLockAdmin { to_add } => execute_add_lock_admin(deps, env, info, to_add),
+        ExecuteMsg::RemoveLockAdmin { to_remove } => {
+            execute_remove_lock_admin(deps, env, info, to_remove)
+        }
     }
 }
 
@@ -130,6 +133,24 @@ pub fn execute_add_lock_admin(
     to_add: String,
 ) -> Result<Response, ContractError> {
     add_lock_admin(
+        deps.storage,
+        &deps.querier,
+        &env,
+        info.sender,
+        deps.api.addr_validate(to_add.as_str())?,
+    )?;
+    Ok(Response::new()
+        .add_attribute("action", "add_lock_admin")
+        .add_attribute("lock_admin", to_add))
+}
+
+pub fn execute_remove_lock_admin(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    to_add: String,
+) -> Result<Response, ContractError> {
+    remove_lock_admin(
         deps.storage,
         &deps.querier,
         &env,

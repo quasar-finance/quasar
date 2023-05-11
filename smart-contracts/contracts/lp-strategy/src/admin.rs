@@ -24,6 +24,18 @@ pub fn add_lock_admin(
     Ok(())
 }
 
+pub fn remove_lock_admin(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: &Env,
+    sender: Addr,
+    to_remove: Addr,
+) -> Result<(), ContractError> {
+    is_contract_admin(querier, env, &sender)?;
+    LOCK_ADMIN.remove(storage, &to_remove);
+    Ok(())
+}
+
 pub fn is_lock_admin(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
@@ -113,6 +125,23 @@ mod tests {
             &Addr::unchecked(admin2),
         )
         .unwrap();
+
+        remove_lock_admin(
+            deps.as_mut().storage,
+            &querier,
+            &env,
+            Addr::unchecked(admin),
+            Addr::unchecked(admin2),
+        )
+        .unwrap();
+        // check that we fail once removed
+        is_lock_admin(
+            deps.as_mut().storage,
+            &querier,
+            &env,
+            &Addr::unchecked(admin2),
+        )
+        .unwrap_err();
     }
 
     #[test]
