@@ -119,7 +119,7 @@ pub fn execute(
             channel,
             should_unlock,
         } => manual_timeout(deps, env, info, seq, channel, should_unlock),
-        ExecuteMsg::AddLockAdmin { to_add } => todo!(),
+        ExecuteMsg::AddLockAdmin { to_add } => execute_add_lock_admin(deps, env, info, to_add),
     }
 }
 
@@ -487,12 +487,12 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 mod tests {
     use cosmwasm_std::{
         attr, coins,
-        testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Timestamp,
+        testing::{mock_dependencies, mock_env, mock_info, MockQuerier},
+        Addr, Timestamp, ContractInfoResponse, WasmQuery, QuerierResult, to_binary, Empty, ContractResult,
     };
     use cw_utils::PaymentError;
 
-    use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
+    use crate::{bond::Bond, state::{Unbond, LOCK_ADMIN}, test_helpers::default_setup};
 
     use super::*;
 
@@ -739,5 +739,34 @@ mod tests {
 
         let res = execute(deps.as_mut(), env, info, msg);
         assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_execute_add_lock_admin() {
+        let admin = "bob";
+
+        let mut info = ContractInfoResponse::default();
+        info.admin = Some(admin.to_string());
+        let mut q = MockQuerier::default();
+        q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { contract_addr: _ } => {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                }
+                _ => unreachable!(),
+            }
+        });
+
+        let mut deps = mock_dependencies();
+        deps.querier = q;
+
+        let env = mock_env();
+
+        let info = MessageInfo { sender: Addr::unchecked(admin), funds: vec![] };
+
+        let msg = ExecuteMsg::AddLockAdmin { to_add: "alice".to_string() };
+        let res = execute(deps.as_mut(), env, info, msg).unwrap();
+        let _ = LOCK_ADMIN.load(deps.as_mut().storage, &Addr::unchecked("alice")).unwrap();
+        assert_eq!(res.attributes, vec![("action", "add_lock_admin"), ("lock_admin", "alice")])
     }
 }

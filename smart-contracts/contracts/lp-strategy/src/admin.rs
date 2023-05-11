@@ -66,7 +66,6 @@ mod tests {
                 _ => unreachable!(),
             }
         });
-
         let querier: QuerierWrapper<Empty> = QuerierWrapper::new(&q);
 
         // add the extra admin
