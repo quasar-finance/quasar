@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    QuerierWrapper, Reply, Response, Storage, Uint128, WasmMsg,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
+    QuerierWrapper, Reply, Response, Storage, Uint128
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -21,9 +21,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING,
+    TIMED_OUT, TOTAL_VAULT_BALANCE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
