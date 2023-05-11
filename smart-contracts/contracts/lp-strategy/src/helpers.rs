@@ -1,24 +1,27 @@
 use crate::{
     error::ContractError,
     error_recovery::PendingReturningRecovery,
-    ibc_lock::{Lock},
+    ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CONFIG, IBC_LOCK, REPLIES, SHARES,
-        TRAPS, BOND_QUEUE, START_UNBOND_QUEUE, UNBOND_QUEUE,
+        PendingBond, PendingSingleUnbond, RawAmount, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK,
+        REPLIES, SHARES, START_UNBOND_QUEUE, TRAPS, UNBOND_QUEUE,
     },
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
-    QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg, DepsMut, Response,
+    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, IbcMsg,
+    IbcPacketAckMsg, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
 use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub(crate) fn lock_try_icq(deps: DepsMut, sub_msg: Option<cosmwasm_std::SubMsg>) -> Result<Response, ContractError> {
+pub(crate) fn lock_try_icq(
+    deps: DepsMut,
+    sub_msg: Option<cosmwasm_std::SubMsg>,
+) -> Result<Response, ContractError> {
     let mut res = Response::new();
     let mut lock = IBC_LOCK.load(deps.storage)?;
 
@@ -45,7 +48,6 @@ pub(crate) fn lock_try_icq(deps: DepsMut, sub_msg: Option<cosmwasm_std::SubMsg>)
     }
     Ok(res)
 }
-
 
 pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     let mut sum = Uint128::zero();

@@ -32,7 +32,6 @@ pub fn do_bond(
     sender: Addr,
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
-
     PENDING_BOND_QUEUE.push_back(
         storage,
         &Bond {
@@ -258,7 +257,15 @@ mod tests {
         let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
         let q = QuerierWrapper::new(&qx);
 
-        let res = do_bond(deps.as_mut().storage, q, env.clone(), amount, owner, id.to_string()).unwrap();
+        let res = do_bond(
+            deps.as_mut().storage,
+            q,
+            env.clone(),
+            amount,
+            owner,
+            id.to_string(),
+        )
+        .unwrap();
         assert!(res.is_some());
 
         // mocking the pending bonds is real ugly here
