@@ -1042,7 +1042,7 @@ mod tests {
         let unbond_res =
             execute_unbond(deps.as_mut(), env.clone(), info.clone(), id.clone()).unwrap();
 
-        // Verify that the bond operation was queued
+        // Verify that the unbond operation was queued
         assert_eq!(
             unbond_res.attributes,
             vec![("IBC_LOCK", "locked"), ("kind", "queue"), ("action", "unbond"), ("sender", "vault-bob"), ("unbond_id", "4")],
@@ -1077,6 +1077,7 @@ mod tests {
             vec![("bond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and bond queue is not empty"
         );
+        assert_eq!(res.messages.len(), 1)
     }
 
     #[test]
@@ -1106,6 +1107,7 @@ mod tests {
             vec![("start_unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
+        assert_eq!(res.messages.len(), 1)
     }
 
     #[test]
@@ -1117,7 +1119,7 @@ mod tests {
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
         default_setup(deps.as_mut().storage).unwrap();
 
-        // Add an item to the bond queue
+        // Add an item to the pending bond queue
         PENDING_UNBOND_QUEUE
             .push_back(
                 deps.as_mut().storage,
@@ -1137,6 +1139,7 @@ mod tests {
             vec![("unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
+        assert_eq!(res.messages.len(), 1)
     }
 
     #[test]
@@ -1148,7 +1151,7 @@ mod tests {
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
         default_setup(deps.as_mut().storage).unwrap();
 
-        // Add an item to the bond queue
+        // Add an item to the unbond queue
         UNBOND_QUEUE
             .push_back(
                 deps.as_mut().storage,
@@ -1168,6 +1171,7 @@ mod tests {
             vec![("unbond_queue", "locked"), ("kind", "dispatch")],
             "Unexpected attributes when IBC is unlocked and start_unbond queue is not empty"
         );
+        assert_eq!(res.messages.len(), 1)
     }
 
     #[test]
@@ -1222,7 +1226,7 @@ mod tests {
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
         default_setup(deps.as_mut().storage).unwrap();
 
-        // Add an item to the bond queue
+        // Add an item to the bond queue and unbond queue
         BOND_QUEUE
             .push_back(
                 deps.as_mut().storage,
@@ -1267,7 +1271,7 @@ mod tests {
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
         default_setup(deps.as_mut().storage).unwrap();
 
-        // Add an item to the bond queue
+        // Add an item to the start unbond queue and unbond queue
         START_UNBOND_QUEUE
             .push_back(
                 deps.as_mut().storage,
