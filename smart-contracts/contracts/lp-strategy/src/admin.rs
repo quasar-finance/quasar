@@ -56,7 +56,7 @@ mod tests {
     use super::*;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, MockQuerier},
-        to_binary, ContractInfo, ContractInfoResponse, ContractResult, QuerierResult, WasmQuery,
+        to_binary, ContractInfoResponse, ContractResult, QuerierResult, WasmQuery,
     };
 
     #[test]
@@ -64,7 +64,7 @@ mod tests {
         let mut deps = mock_dependencies();
         let admin = "bob";
         let admin1 = "alice";
-        let admin2 = "eve";
+        let admin2: &str = "eve";
         let env = mock_env();
 
         let mut info = ContractInfoResponse::default();

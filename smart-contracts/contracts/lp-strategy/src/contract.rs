@@ -158,7 +158,7 @@ pub fn execute_remove_lock_admin(
         deps.api.addr_validate(to_add.as_str())?,
     )?;
     Ok(Response::new()
-        .add_attribute("action", "add_lock_admin")
+        .add_attribute("action", "remove_lock_admin")
         .add_attribute("lock_admin", to_add))
 }
 
@@ -509,8 +509,7 @@ mod tests {
     use cosmwasm_std::{
         attr, coins,
         testing::{mock_dependencies, mock_env, mock_info, MockQuerier},
-        to_binary, Addr, ContractInfoResponse, ContractResult, Empty, QuerierResult, Timestamp,
-        WasmQuery,
+        to_binary, Addr, ContractInfoResponse, ContractResult, QuerierResult, Timestamp, WasmQuery,
     };
     use cw_utils::PaymentError;
 
@@ -803,6 +802,54 @@ mod tests {
         assert_eq!(
             res.attributes,
             vec![("action", "add_lock_admin"), ("lock_admin", "alice")]
+        )
+    }
+
+    #[test]
+    fn test_execute_remove_lock_admin() {
+        let admin = "bob";
+
+        let mut info = ContractInfoResponse::default();
+        info.admin = Some(admin.to_string());
+        let mut q = MockQuerier::default();
+        q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { contract_addr: _ } => {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                }
+                _ => unreachable!(),
+            }
+        });
+
+        let mut deps = mock_dependencies();
+        deps.querier = q;
+
+        let env = mock_env();
+
+        let info = MessageInfo {
+            sender: Addr::unchecked(admin),
+            funds: vec![],
+        };
+
+        let msg = ExecuteMsg::AddLockAdmin {
+            to_add: "alice".to_string(),
+        };
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+        let _ = LOCK_ADMIN
+            .load(deps.as_mut().storage, &Addr::unchecked("alice"))
+            .unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "add_lock_admin"), ("lock_admin", "alice")]
+        );
+
+        let msg = ExecuteMsg::RemoveLockAdmin {
+            to_remove: "alice".to_string(),
+        };
+        let res = execute(deps.as_mut(), env, info, msg).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "remove_lock_admin"), ("lock_admin", "alice")]
         )
     }
 }
