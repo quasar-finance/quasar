@@ -1,4 +1,3 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -8,7 +7,6 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 
-use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::ibc::IcsAck;
 
 use crate::admin::check_depositor;
@@ -23,8 +21,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, CONFIG, DEPOSITOR, IBC_LOCK, ICA_CHANNEL,
-    LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, TIMED_OUT, TOTAL_VAULT_BALANCE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -423,60 +422,15 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let addr = deps.api.addr_validate(msg.vault_addr.as_str())?;
-
-    // we inline the query to the basic-vault to prevent a cyclic dependency
-
-    #[cw_serde]
-    #[derive(QueryResponses)]
-    pub enum QueryMsg {
-        /// PendingBondsById shows the bonds that are currently in the process of being deposited for a bond id
-        #[returns(PendingBondsByIdResponse)]
-        PendingBondsById { bond_id: String },
-    }
-
-    #[cw_serde]
-    pub struct PendingBondsByIdResponse {
-        /// the bonds that are currently in the process of being deposited for a user
-        pub pending_bonds: Vec<BondingStub>,
-    }
-
-    #[cw_serde]
-    #[derive(Default)]
-    pub struct BondingStub {
-        // the contract address of the primitive
-        pub address: String,
-        // the response of the primitive upon successful bond or error
-        pub bond_response: Option<BondResponse>,
-    }
-
-    let mut callbacks = Vec::new();
-    for cb in msg.callbacks.iter() {
-        // query the callback to see if the bond id is pending
-        let q: PendingBondsByIdResponse = deps.querier.query_wasm_smart(
-            &addr,
-            &QueryMsg::PendingBondsById {
-                bond_id: cb.bond_id.clone(),
-            },
-        )?;
-        // we check that there is not a single empty pending, panic if so
-        // panicking is ok since we are doing a single migration here
-        assert!(!q.pending_bonds.is_empty());
-        callbacks.push(WasmMsg::Execute {
-            contract_addr: addr.to_string(),
-            msg: to_binary(&Callback::BondResponse(BondResponse {
-                share_amount: cb.share_amount,
-                bond_id: cb.bond_id.clone(),
-            }))?,
-            funds: vec![],
-        });
+    // remove old pending acks
+    for key in msg.delete_pending.clone() {
+        PENDING_ACK.remove(deps.storage, key)
     }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
-        .add_attribute("callbacks", callbacks.len().to_string())
-        .add_messages(callbacks))
+        .add_attribute("removed", msg.delete_pending.len().to_string()))
 }
 
 #[cfg(test)]
@@ -498,6 +452,58 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn migrate_msg_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let entries = vec![
+            (
+                (1, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (2, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (1, "channel-3".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (1, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+            (
+                (1, "channel-2".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+            (
+                (1, "channel-4".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+        ];
+
+        for (key, value) in entries.clone() {
+            PENDING_ACK
+                .save(deps.as_mut().storage, key, &value)
+                .unwrap();
+        }
+
+        let msg = MigrateMsg {
+            delete_pending: entries.iter().map(|(key, _)| key.clone()).collect(),
+        };
+
+        migrate(deps.as_mut(), env, msg).unwrap();
+        assert!(PENDING_ACK.is_empty(deps.as_ref().storage))
+    }
 
     #[test]
     fn test_execute_try_icq_ibc_locked() {
