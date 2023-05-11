@@ -488,11 +488,16 @@ mod tests {
     use cosmwasm_std::{
         attr, coins,
         testing::{mock_dependencies, mock_env, mock_info, MockQuerier},
-        Addr, Timestamp, ContractInfoResponse, WasmQuery, QuerierResult, to_binary, Empty, ContractResult,
+        to_binary, Addr, ContractInfoResponse, ContractResult, Empty, QuerierResult, Timestamp,
+        WasmQuery,
     };
     use cw_utils::PaymentError;
 
-    use crate::{bond::Bond, state::{Unbond, LOCK_ADMIN}, test_helpers::default_setup};
+    use crate::{
+        bond::Bond,
+        state::{Unbond, LOCK_ADMIN},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -762,11 +767,21 @@ mod tests {
 
         let env = mock_env();
 
-        let info = MessageInfo { sender: Addr::unchecked(admin), funds: vec![] };
+        let info = MessageInfo {
+            sender: Addr::unchecked(admin),
+            funds: vec![],
+        };
 
-        let msg = ExecuteMsg::AddLockAdmin { to_add: "alice".to_string() };
+        let msg = ExecuteMsg::AddLockAdmin {
+            to_add: "alice".to_string(),
+        };
         let res = execute(deps.as_mut(), env, info, msg).unwrap();
-        let _ = LOCK_ADMIN.load(deps.as_mut().storage, &Addr::unchecked("alice")).unwrap();
-        assert_eq!(res.attributes, vec![("action", "add_lock_admin"), ("lock_admin", "alice")])
+        let _ = LOCK_ADMIN
+            .load(deps.as_mut().storage, &Addr::unchecked("alice"))
+            .unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "add_lock_admin"), ("lock_admin", "alice")]
+        )
     }
 }

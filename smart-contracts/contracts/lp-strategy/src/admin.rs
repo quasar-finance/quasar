@@ -32,10 +32,10 @@ pub fn is_lock_admin(
 ) -> Result<(), ContractError> {
     // if the may load is none, we check the contract admin status, if that errors, then the sender is neither contract
     // admin or a lock admin
-    let lock = LOCK_ADMIN.may_load(storage, &sender)?;
+    let lock = LOCK_ADMIN.may_load(storage, sender)?;
     match lock {
         Some(_) => Ok(()),
-        None => is_contract_admin(querier, env, &sender),
+        None => is_contract_admin(querier, env, sender),
     }
 }
 
