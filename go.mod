@@ -50,7 +50,7 @@ require (
 	github.com/cosmos/cosmos-db v0.0.0-20221226095112-f3c38ecb5e32 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/getsentry/sentry-go v0.17.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
