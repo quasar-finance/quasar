@@ -9,13 +9,14 @@ pkill quasarnoded || true
 
 # Define variables
 CHAIN_ID=quasar
-START_TIME_OK=$(date +%s)
 unamestr=$(uname)
 if [ "$unamestr" = 'Linux' ]; then
+  START_TIME_OK=$(date -d "+5 seconds" +%s)
   END_TIME_OK=$(date -d "+60 seconds" +%s)
   START_TIME_KO=$(date -d "+900 seconds" +%s)
   END_TIME_KO=$(date -d "+1800 seconds" +%s)
 elif [ "$unamestr" = 'Darwin' ]; then
+  START_TIME_OK=$(date -v+5S +%s)
   END_TIME_OK=$(date -v+60S +%s)
   START_TIME_KO=$(date -v+900S +%s)
   END_TIME_KO=$(date -v+1800S +%s)
@@ -35,14 +36,14 @@ echo ">>> Creating OK accounts"
 # Create vesting account executing as my_treasury for vester_continuous_ok
 quasarnoded tx qvesting create-vesting-account $VC_OK_ADDRESS 1000uqsr $START_TIME_OK $END_TIME_OK --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
 
-echo ">>> Sleeping 5/30 seconds to elapse 5/30 before querying accounts to check vesting balances and start times"
+echo ">>> Sleeping 5/35 seconds to elapse 5/35 before querying accounts to check vesting balances and start times"
 sleep 5
 
 echo ">>> Creating KO accounts"
 # Create vesting account executing as my_treasury for vester_continuous_ok
 quasarnoded tx qvesting create-vesting-account $VC_KO_ADDRESS 1000uqsr $START_TIME_KO $END_TIME_KO --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
 
-echo ">>> Sleeping 5/30 seconds to elapse 10/30 before querying accounts to check vesting balances and start times"
+echo ">>> Sleeping 5/35 seconds to elapse 10/35 before querying accounts to check vesting balances and start times"
 sleep 5
 
 # Check that the vesting account has been created successfully
@@ -50,8 +51,8 @@ echo ">>> Query accounts"
 quasarnoded query auth account $VC_OK_ADDRESS
 quasarnoded query auth account $VC_KO_ADDRESS
 
-echo ">>> Sleeping 20/30 seconds to elapse 30/30 seconds"
-sleep 20
+echo ">>> Sleeping 25/35 seconds to elapse 35/35 seconds"
+sleep 25
 
 # Transfer vesting tokens from vester1 to vester2 before the time
 echo ">>> Testing OK accounts to be able to send vesting schedule tokens with amount 500uqsr that is half of vesting total"
