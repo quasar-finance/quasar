@@ -94,6 +94,7 @@ pub(crate) fn setup_default_lp_cache(
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::mock_dependencies;
+    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
     use super::*;
 
@@ -103,7 +104,7 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
 
         assert_eq!(
-            CONFIG.load(deps.as_ref().storage).unwrap(),
+            CONFIG.should_load(deps.as_ref().storage).unwrap(),
             Config {
                 lock_period: 100,
                 pool_id: 1,
@@ -117,10 +118,10 @@ mod tests {
             }
         );
 
-        let ica_chan = ICA_CHANNEL.load(deps.as_ref().storage).unwrap();
+        let ica_chan = ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap();
         assert_eq!(
             CHANNELS
-                .load(deps.as_ref().storage, ica_chan.clone())
+                .should_load(deps.as_ref().storage, ica_chan.clone())
                 .unwrap(),
             ChannelInfo {
                 id: ica_chan.clone(),
@@ -140,10 +141,10 @@ mod tests {
             }
         );
 
-        let icq_chan = ICQ_CHANNEL.load(deps.as_ref().storage).unwrap();
+        let icq_chan = ICQ_CHANNEL.should_load(deps.as_ref().storage).unwrap();
         assert_eq!(
             CHANNELS
-                .load(deps.as_ref().storage, icq_chan.clone())
+                .should_load(deps.as_ref().storage, icq_chan.clone())
                 .unwrap(),
             ChannelInfo {
                 id: icq_chan.to_string(),

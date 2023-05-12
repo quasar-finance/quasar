@@ -11,3 +11,4 @@ cw-storage-plus = "0.14.0"
 schemars = "0.8.1"
 thiserror = { version = "1.0.31" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+quasar-types = { path = "../../packages/quasar-types" }

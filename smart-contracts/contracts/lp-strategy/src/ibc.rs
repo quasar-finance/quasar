@@ -27,6 +27,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 use std::str::FromStr;
 
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
@@ -68,7 +69,7 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     ibc::enforce_order_and_version(&channel, None, &channel.version, channel.order.clone())?;
 
     // check the connection id vs the expected connection id
-    let config = CONFIG.load(deps.storage)?;
+    let config = CONFIG.should_load(deps.storage)?;
     if config.expected_connection != channel.connection_id {
         return Err(ContractError::IncorrectConnection);
     }
@@ -99,7 +100,7 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     enforce_ica_order_and_metadata(&channel, None, &metadata)?;
 
     // compare the expected connection id to the channel connection-id and the ica metadata connection-id
-    let config = CONFIG.load(deps.storage)?;
+    let config = CONFIG.should_load(deps.storage)?;
     if &config.expected_connection
         != metadata
             .controller_connection_id()
@@ -136,7 +137,7 @@ pub fn ibc_channel_connect(
 ) -> Result<IbcBasicResponse, ContractError> {
     // try to fetch the connecting channel, we should error if it does not exist\
     let mut info: ChannelInfo = CHANNELS
-        .load(deps.storage, msg.channel().endpoint.channel_id.clone())
+        .should_load(deps.storage, msg.channel().endpoint.channel_id.clone())
         .map_err(|err| StdError::GenericErr {
             msg: err.to_string(),
         })?;
@@ -183,7 +184,7 @@ pub fn ibc_channel_connect(
             // if that channel is timed out, we overwrite the previous ICA channel for the new one
             let channel = ICA_CHANNEL.may_load(deps.storage)?;
             // to reject the msg here, ica should not be timed out
-            if channel.is_some() && !TIMED_OUT.load(deps.storage)? {
+            if channel.is_some() && !TIMED_OUT.should_load(deps.storage)? {
                 return Err(ContractError::IcaChannelAlreadySet);
             }
 
@@ -290,7 +291,7 @@ pub fn handle_transfer_ack(
 ) -> Result<Response, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
     // we need to save and fetch
-    let config = CONFIG.load(storage)?;
+    let config = CONFIG.should_load(storage)?;
 
     let share_out_min_amount = calculate_share_out_min_amount(storage)?;
 
@@ -364,7 +365,7 @@ pub fn handle_icq_ack(
     } else {
         vec![]
     };
-    let config = CONFIG.load(storage)?;
+    let config = CONFIG.should_load(storage)?;
     let locked_lp_shares = gamms
         .into_iter()
         .find(|val| val.denom == config.pool_denom)
@@ -373,7 +374,7 @@ pub fn handle_icq_ack(
             amount: Uint128::zero().to_string(),
         });
 
-    let old_lp_shares = LP_SHARES.load(storage)?;
+    let old_lp_shares = LP_SHARES.should_load(storage)?;
     // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
         cache.locked_shares = locked_lp_shares.amount.parse()?;
@@ -497,7 +498,7 @@ fn handle_join_pool(
 ) -> Result<Response, ContractError> {
     // TODO move the below locking logic to a separate function
     // get the ica address of the channel id
-    let ica_channel = ICA_CHANNEL.load(storage)?;
+    let ica_channel = ICA_CHANNEL.should_load(storage)?;
     let ica_addr = get_ica_address(storage, ica_channel.clone())?;
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let resp = MsgJoinSwapExternAmountInResponse::unpack(ack)?;
@@ -508,7 +509,7 @@ fn handle_join_pool(
         }
     })?);
 
-    let denom = CONFIG.load(storage)?.pool_denom;
+    let denom = CONFIG.should_load(storage)?.pool_denom;
 
     LP_SHARES.update(
         storage,
@@ -529,7 +530,7 @@ fn handle_join_pool(
         }],
     )?;
 
-    let channel = ICA_CHANNEL.load(storage)?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
 
     let outgoing = ica_send(
         msg,
@@ -827,7 +828,7 @@ mod tests {
         };
         assert_eq!(
             CHANNELS
-                .load(deps.as_ref().storage, channel.endpoint.channel_id)
+                .should_load(deps.as_ref().storage, channel.endpoint.channel_id)
                 .unwrap(),
             expected
         )

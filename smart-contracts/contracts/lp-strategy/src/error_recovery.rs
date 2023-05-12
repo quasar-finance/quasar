@@ -5,6 +5,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInRespons
 use quasar_types::{
     ibc::IcsAck,
     ica::{packet::AckBody, traits::Unpack},
+    types::ItemShouldLoad,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -68,7 +69,7 @@ fn handle_transfer_recovery(
     _amount: Uint128,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let _config = CONFIG.load(storage)?;
+    let _config = CONFIG.should_load(storage)?;
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
         .iter()
@@ -186,7 +187,7 @@ fn handle_join_swap_recovery(
     pending: PendingBond,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let channel = ICA_CHANNEL.load(storage)?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
     let ack_bin = RECOVERY_ACK.load(storage, (trapped_id, channel.clone()))?;
     // in this case the recovery ack should contain a joinswapexternamountin response
     // we try to deserialize it

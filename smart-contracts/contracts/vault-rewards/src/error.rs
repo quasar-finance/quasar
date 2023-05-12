@@ -38,4 +38,8 @@ pub enum VaultRewardsError {
 
     #[error("Cannot edit distribution schedule that has already ended. ID: {id:?}, End: {end:?}")]
     DistributionScheduleExpired { id: u64, end: u64 },
+
+    // quasarypes or another name
+    #[error("{0}")]
+    QuasarError(#[from] quasar_types::types::ContractError),
 }

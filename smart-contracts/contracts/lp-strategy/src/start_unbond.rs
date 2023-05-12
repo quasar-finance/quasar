@@ -7,6 +7,7 @@ use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginU
 use quasar_types::{
     callback::{Callback, StartUnbondResponse},
     ica::packet::ica_send,
+    types::{ItemShouldLoad, MapShouldLoad},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -59,7 +60,9 @@ pub fn do_start_unbond(
             },
         )?;
 
-    if SHARES.load(storage, unbond.owner.clone())? < (unbond.primitive_shares + queued_shares) {
+    if SHARES.should_load(storage, unbond.owner.clone())?
+        < (unbond.primitive_shares + queued_shares)
+    {
         return Err(ContractError::InsufficientFunds);
     }
 
@@ -78,7 +81,7 @@ pub fn batch_start_unbond(
         return Ok(None);
     }
 
-    let total_lp_shares = LP_SHARES.load(storage)?;
+    let total_lp_shares = LP_SHARES.should_load(storage)?;
 
     while !START_UNBOND_QUEUE.is_empty(storage)? {
         let unbond =
@@ -99,7 +102,7 @@ pub fn batch_start_unbond(
 
     let pkt = do_begin_unlocking(storage, env, to_unbond)?;
 
-    let channel = ICA_CHANNEL.load(storage)?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
 
     Ok(Some(create_ibc_ack_submsg(
         storage,
@@ -114,12 +117,12 @@ pub fn do_begin_unlocking(
     env: &Env,
     to_unbond: Uint128,
 ) -> Result<IbcMsg, ContractError> {
-    let config = CONFIG.load(storage)?;
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let config = CONFIG.should_load(storage)?;
+    let ica_address = get_ica_address(storage, ICA_CHANNEL.should_load(storage)?)?;
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,
-        id: OSMO_LOCK.load(storage)?,
+        id: OSMO_LOCK.should_load(storage)?,
         coins: vec![Coin {
             denom: config.pool_denom,
             amount: to_unbond.to_string(),
@@ -128,7 +131,7 @@ pub fn do_begin_unlocking(
 
     let pkt = ica_send::<MsgBeginUnlocking>(
         msg,
-        ICA_CHANNEL.load(storage)?,
+        ICA_CHANNEL.should_load(storage)?,
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
@@ -199,7 +202,7 @@ fn start_internal_unbond(
 
     // remove amount of shares
     let left = SHARES
-        .load(storage, unbond.owner.clone())?
+        .should_load(storage, unbond.owner.clone())?
         .checked_sub(unbond.primitive_shares)
         .map_err(|err| {
             ContractError::TracedOverflowError(err, "lower_shares_to_unbond".to_string())
@@ -215,7 +218,7 @@ fn start_internal_unbond(
     let unlock_time = env
         .block
         .time
-        .plus_seconds(CONFIG.load(storage)?.lock_period);
+        .plus_seconds(CONFIG.should_load(storage)?.lock_period);
 
     // add amount of unbonding claims
     UNBONDING_CLAIMS.save(
@@ -432,14 +435,17 @@ mod tests {
         // check that the packet is as we expect
         let ica = get_ica_address(
             deps.as_ref().storage,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
         )
         .unwrap();
         let msg = MsgBeginUnlocking {
             owner: ica,
-            id: OSMO_LOCK.load(deps.as_mut().storage).unwrap(),
+            id: OSMO_LOCK.should_load(deps.as_mut().storage).unwrap(),
             coins: vec![Coin {
-                denom: CONFIG.load(deps.as_ref().storage).unwrap().pool_denom,
+                denom: CONFIG
+                    .should_load(deps.as_ref().storage)
+                    .unwrap()
+                    .pool_denom,
                 // integer truncation present here again
                 amount: Uint128::new(1000).to_string(),
             }],
@@ -447,7 +453,7 @@ mod tests {
 
         let pkt = ica_send::<MsgBeginUnlocking>(
             msg,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
@@ -564,10 +570,12 @@ mod tests {
                 contract_addr: owner.to_string(),
                 msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
                     unbond_id: id.to_string(),
-                    unlock_time: env
-                        .block
-                        .time
-                        .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period)
+                    unlock_time: env.block.time.plus_seconds(
+                        CONFIG
+                            .should_load(deps.as_ref().storage)
+                            .unwrap()
+                            .lock_period
+                    )
                 }))
                 .unwrap(),
                 funds: vec![]
@@ -610,17 +618,19 @@ mod tests {
                 contract_addr: owner.to_string(),
                 msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
                     unbond_id: id.to_string(),
-                    unlock_time: env
-                        .block
-                        .time
-                        .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period)
+                    unlock_time: env.block.time.plus_seconds(
+                        CONFIG
+                            .should_load(deps.as_ref().storage)
+                            .unwrap()
+                            .lock_period
+                    )
                 }))
                 .unwrap(),
                 funds: vec![]
             }
         );
         assert_eq!(
-            SHARES.load(deps.as_ref().storage, owner).unwrap(),
+            SHARES.should_load(deps.as_ref().storage, owner).unwrap(),
             Uint128::one()
         )
     }
@@ -652,10 +662,12 @@ mod tests {
             owner: owner.clone(),
             id: id.to_string(),
         };
-        let unlock_time = env
-            .block
-            .time
-            .plus_seconds(CONFIG.load(deps.as_ref().storage).unwrap().lock_period);
+        let unlock_time = env.block.time.plus_seconds(
+            CONFIG
+                .should_load(deps.as_ref().storage)
+                .unwrap()
+                .lock_period,
+        );
         UNBONDING_CLAIMS
             .save(
                 &mut deps.storage,

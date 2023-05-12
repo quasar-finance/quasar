@@ -1,10 +1,11 @@
 use cosmwasm_std::{Addr, Storage};
+use quasar_types::types::ItemShouldLoad;
 
 use crate::{error::ContractError, state::DEPOSITOR};
 
 // check if sender is the admin
 pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, ContractError> {
-    let depositor = DEPOSITOR.load(storage)?;
+    let depositor = DEPOSITOR.should_load(storage)?;
     Ok(&depositor == sender)
 }
 

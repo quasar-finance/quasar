@@ -4,7 +4,10 @@ use cw20::BalanceResponse;
 use std::collections::HashMap;
 
 use cosmwasm_std::{to_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, StdResult, Uint128};
-use quasar_types::ibc::ChannelInfo;
+use quasar_types::{
+    ibc::ChannelInfo,
+    types::{ItemShouldLoad, MapShouldLoad},
+};
 
 use crate::{
     bond::Bond,
@@ -77,7 +80,7 @@ pub fn handle_simulated_join(deps: Deps) -> StdResult<SimulatedJoinResponse> {
 
 pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {
     Ok(OsmoLockResponse {
-        lock_id: OSMO_LOCK.load(deps.storage)?,
+        lock_id: OSMO_LOCK.should_load(deps.storage)?,
     })
 }
 
@@ -133,32 +136,32 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
 
 pub fn handle_lp_shares_query(deps: Deps) -> StdResult<LpSharesResponse> {
     Ok(LpSharesResponse {
-        lp_shares: LP_SHARES.load(deps.storage)?,
+        lp_shares: LP_SHARES.should_load(deps.storage)?,
     })
 }
 
 pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
-        config: CONFIG.load(deps.storage)?,
+        config: CONFIG.should_load(deps.storage)?,
     })
 }
 
 pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
     Ok(IcaAddressResponse {
-        address: get_ica_address(deps.storage, ICA_CHANNEL.load(deps.storage)?)
+        address: get_ica_address(deps.storage, ICA_CHANNEL.should_load(deps.storage)?)
             .expect("ica address setup correctly"),
     })
 }
 
 pub fn handle_balance_query(deps: Deps, address: &str) -> StdResult<BalanceResponse> {
     Ok(BalanceResponse {
-        balance: SHARES.load(deps.storage, deps.api.addr_validate(address)?)?,
+        balance: SHARES.should_load(deps.storage, deps.api.addr_validate(address)?)?,
     })
 }
 
 pub fn handle_ica_channel(deps: Deps) -> StdResult<IcaChannelResponse> {
     Ok(IcaChannelResponse {
-        channel: ICA_CHANNEL.load(deps.storage)?,
+        channel: ICA_CHANNEL.should_load(deps.storage)?,
     })
 }
 
@@ -170,11 +173,11 @@ pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse>
 }
 
 pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
-    let amount = TOTAL_VAULT_BALANCE.load(deps.storage)?;
+    let amount = TOTAL_VAULT_BALANCE.should_load(deps.storage)?;
 
     Ok(IcaBalanceResponse {
         amount: Coin {
-            denom: CONFIG.load(deps.storage)?.local_denom,
+            denom: CONFIG.should_load(deps.storage)?.local_denom,
             amount,
         },
     })
@@ -183,7 +186,7 @@ pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
 pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
     Ok(LockResponse {
         lock: IBC_LOCK
-            .load(deps.storage)
+            .should_load(deps.storage)
             .map_err(|err| StdError::GenericErr {
                 msg: err.to_string(),
             })?,

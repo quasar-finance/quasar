@@ -8,6 +8,7 @@ use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
 
 use quasar_types::ibc::IcsAck;
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
 use crate::admin::check_depositor;
 use crate::bond::do_bond;
@@ -84,7 +85,7 @@ pub fn instantiate(
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
     // TODO this needs and error check and error handling
-    let reply = REPLIES.load(deps.storage, msg.id)?;
+    let reply = REPLIES.should_load(deps.storage, msg.id)?;
     match reply {
         SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending, channel),
         SubMsgKind::Ack(seq, channel) => handle_ack_reply(deps, msg, seq, channel),
@@ -129,7 +130,7 @@ pub fn execute_lock(
     lock_only: LockOnly,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut lock = IBC_LOCK.load(deps.storage)?;
+    let mut lock = IBC_LOCK.should_load(deps.storage)?;
 
     match lock_only {
         LockOnly::Bond => lock = lock.lock_bond(),
@@ -149,7 +150,7 @@ pub fn execute_unlock(
     unlock_only: UnlockOnly,
 ) -> Result<Response, ContractError> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut lock = IBC_LOCK.load(deps.storage)?;
+    let mut lock = IBC_LOCK.should_load(deps.storage)?;
 
     match unlock_only {
         UnlockOnly::Bond => lock = lock.unlock_bond(),
@@ -191,7 +192,7 @@ pub fn execute_set_depositor(
     info: MessageInfo,
     depositor: String,
 ) -> Result<Response, ContractError> {
-    if info.sender == ADMIN.load(deps.storage)? {
+    if info.sender == ADMIN.should_load(deps.storage)? {
         let depositor_addr = deps.api.addr_validate(depositor.as_str())?;
         DEPOSITOR.save(deps.storage, &depositor_addr)?;
         Ok(Response::new().add_attribute("set-depositor", depositor))
@@ -202,7 +203,7 @@ pub fn execute_set_depositor(
 
 pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     // if we're unlocked, we can empty the queues and send the submessages
-    let mut lock = IBC_LOCK.load(deps.storage)?;
+    let mut lock = IBC_LOCK.should_load(deps.storage)?;
     let sub_msg = try_icq(deps.storage, deps.querier, env)?;
     let mut res = Response::new();
 
@@ -258,7 +259,7 @@ pub fn execute_accept_returning_funds(
         .may_load(storage, id)?
         .ok_or(ContractError::ReturningTransferNotFound)?;
 
-    let amount = must_pay(&info, CONFIG.load(storage)?.local_denom.as_str())?;
+    let amount = must_pay(&info, CONFIG.should_load(storage)?.local_denom.as_str())?;
     if amount != returning_amount {
         return Err(ContractError::ReturningTransferIncorrectAmount);
     }
@@ -390,7 +391,7 @@ pub fn execute_transfer(
     channel: String,
     to_address: String,
 ) -> Result<Response, ContractError> {
-    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
+    let amount = must_pay(&info, &CONFIG.should_load(deps.storage)?.local_denom)?;
 
     let transfer = do_transfer(
         deps.storage,
@@ -444,7 +445,9 @@ pub fn execute_join_pool(
 }
 
 pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Response, ContractError> {
-    if TIMED_OUT.load(deps.storage)? && channel_id == ICA_CHANNEL.load(deps.storage)? {
+    if TIMED_OUT.should_load(deps.storage)?
+        && channel_id == ICA_CHANNEL.should_load(deps.storage)?
+    {
         Ok(Response::new().add_message(IbcMsg::CloseChannel { channel_id }))
     } else {
         Err(ContractError::IcaChannelAlreadySet)
@@ -481,7 +484,7 @@ mod tests {
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
         assert!(res.messages.is_empty());
-        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.should_load(&deps.storage).unwrap().is_locked());
     }
 
     #[test]
@@ -502,7 +505,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "unlocked"));
-        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_unlocked());
+        assert!(IBC_LOCK.should_load(&deps.storage).unwrap().is_unlocked());
     }
 
     #[test]
@@ -555,7 +558,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
-        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.should_load(&deps.storage).unwrap().is_locked());
         assert!(res.messages.is_empty());
     }
 
@@ -586,7 +589,7 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
-        let lock = IBC_LOCK.load(&deps.storage).unwrap();
+        let lock = IBC_LOCK.should_load(&deps.storage).unwrap();
         assert!(lock.bond.is_locked());
         assert!(lock.start_unbond.is_unlocked());
         assert!(lock.unbond.is_unlocked());
@@ -631,7 +634,7 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
-        let lock = IBC_LOCK.load(&deps.storage).unwrap();
+        let lock = IBC_LOCK.should_load(&deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
         assert!(lock.unbond.is_unlocked());

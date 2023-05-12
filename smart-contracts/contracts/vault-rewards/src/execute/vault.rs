@@ -3,6 +3,7 @@ use crate::state::{DistributionSchedule, UserBalance, CONFIG, USER_REWARD_INDEX}
 use crate::VaultRewardsError;
 use cosmwasm_std::{Addr, DepsMut, Env, Response};
 use cw_asset::AssetInfo;
+use quasar_types::types::ItemShouldLoad;
 
 pub fn execute_update_user_reward_index(
     deps: DepsMut,
@@ -10,7 +11,7 @@ pub fn execute_update_user_reward_index(
     user: Addr,
 ) -> Result<Response, VaultRewardsError> {
     let cur_block_height = env.block.height;
-    let user_vault_token_balance = AssetInfo::cw20(CONFIG.load(deps.storage)?.vault_token)
+    let user_vault_token_balance = AssetInfo::cw20(CONFIG.should_load(deps.storage)?.vault_token)
         .query_balance(&deps.querier, &user)?;
     let mut user_reward_index = get_user_reward_index(deps.storage, &user);
     // if previous balance, then move to history and record new balance

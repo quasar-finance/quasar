@@ -1069,6 +1069,7 @@ dependencies = [
  "cw20 0.14.0",
  "osmosis-std 0.12.0",
  "prost 0.11.8",
+ "quasar-types",
  "schemars",
  "semver",
  "serde",
@@ -1090,6 +1091,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.14.0",
+ "quasar-types",
  "schemars",
  "serde",
  "thiserror",
@@ -2060,6 +2062,7 @@ dependencies = [
  "cw2 1.0.1",
  "cw20 1.0.1",
  "itertools",
+ "quasar-types",
  "schemars",
  "serde",
  "thiserror",

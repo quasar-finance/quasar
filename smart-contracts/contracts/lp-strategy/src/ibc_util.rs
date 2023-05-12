@@ -13,7 +13,7 @@ use osmosis_std::{
     },
 };
 
-use quasar_types::ica::packet::ica_send;
+use quasar_types::{ica::packet::ica_send, types::ItemShouldLoad};
 
 use crate::{
     error::ContractError,
@@ -35,7 +35,7 @@ pub fn do_transfer(
     // todo check denom of funds once we have denom mapping done
 
     let coin = Coin {
-        denom: CONFIG.load(storage)?.local_denom,
+        denom: CONFIG.should_load(storage)?.local_denom,
         amount,
     };
 
@@ -84,7 +84,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
     exit_pool: &Vec<OsmoCoin>,
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
-    let config = CONFIG.load(storage)?;
+    let config = CONFIG.should_load(storage)?;
 
     // if we receive no tokens in the response, we can't exit the pool
     // todo: Should this error?
@@ -125,7 +125,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
 }
 
 pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
-    let last_sim_join_pool_result = SIMULATED_JOIN_RESULT.load(storage)?;
+    let last_sim_join_pool_result = SIMULATED_JOIN_RESULT.should_load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
@@ -138,7 +138,7 @@ pub fn calculate_token_out_min_amount(
     exit_lp_shares: Uint128,
     total_locked_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.load(storage)?;
+    let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.should_load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
@@ -158,7 +158,7 @@ pub fn do_ibc_join_pool_swap_extern_amount_in(
     share_out_min_amount: Uint128,
     deposits: Vec<OngoingDeposit>,
 ) -> Result<SubMsg, ContractError> {
-    let ica_channel = ICA_CHANNEL.load(storage)?;
+    let ica_channel = ICA_CHANNEL.should_load(storage)?;
     let ica_address = get_ica_address(storage, ica_channel.clone())?;
 
     // setup the first IBC message to send, and save the entire sequence so we have acces to it on acks
@@ -193,7 +193,7 @@ pub fn do_ibc_lock_tokens(
     owner: String,
     coins: Vec<Coin>,
 ) -> Result<MsgLockTokens, ContractError> {
-    let lock_period = CONFIG.load(storage)?.lock_period;
+    let lock_period = CONFIG.should_load(storage)?.lock_period;
 
     // TODO move the duration to a package and make it settable
     Ok(MsgLockTokens {
@@ -232,7 +232,7 @@ mod tests {
 
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
-        ica::handshake::IcaMetadata,
+        ica::handshake::IcaMetadata, types::MapShouldLoad,
     };
 
     use crate::{
@@ -285,7 +285,7 @@ mod tests {
         let deps = default_instantiate(&channels);
 
         let _chan = channels
-            .load(deps.as_ref().storage, "channel-0".to_string())
+            .should_load(deps.as_ref().storage, "channel-0".to_string())
             .unwrap();
     }
 

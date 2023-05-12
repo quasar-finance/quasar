@@ -132,4 +132,8 @@ pub enum ContractError {
 
     #[error("The Callback has no amount set")]
     CallbackHasNoAmount,
+
+    // quasarypes or another name
+    #[error("{0}")]
+    QuasarError(#[from] quasar_types::types::ContractError),
 }

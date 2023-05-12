@@ -4,9 +4,10 @@ use crate::state::CONFIG;
 use crate::VaultRewardsError;
 use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
 use cosmwasm_std::{Addr, Deps, Env, Uint128};
+use quasar_types::types::ItemShouldLoad;
 
 pub fn query_config(deps: Deps, env: Env) -> Result<ConfigResponse, VaultRewardsError> {
-    let config = CONFIG.load(deps.storage)?;
+    let config = CONFIG.should_load(deps.storage)?;
     Ok(ConfigResponse {
         reward_token: config.reward_token.clone(),
         contract_balance: config
@@ -29,7 +30,7 @@ pub fn query_pending_rewards(
     env: Env,
     user: Addr,
 ) -> Result<Uint128, VaultRewardsError> {
-    let config = CONFIG.load(deps.storage)?;
+    let config = CONFIG.should_load(deps.storage)?;
     let user_reward_index = get_user_reward_index(deps.storage, &user);
     get_claim_amount(deps, &env, &config, &user_reward_index)
 }

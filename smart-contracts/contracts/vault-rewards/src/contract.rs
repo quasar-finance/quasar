@@ -14,6 +14,7 @@ use crate::state::{Config, CONFIG};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use quasar_types::types::ItemShouldLoad;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -60,7 +61,7 @@ pub fn execute(
             }
         }
         ExecuteMsg::Vault(vault_msg) => {
-            let vault_token = CONFIG.load(deps.storage)?.vault_token;
+            let vault_token = CONFIG.should_load(deps.storage)?.vault_token;
             if info.sender != vault_token {
                 return Err(VaultRewardsError::Unauthorized {});
             }

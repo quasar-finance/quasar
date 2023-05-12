@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
+use quasar_types::types::ItemShouldLoad;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +33,7 @@ pub fn do_bond(
     info: MessageInfo,
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
+    let amount = must_pay(&info, &CONFIG.should_load(storage)?.local_denom)?;
 
     PENDING_BOND_QUEUE.push_back(
         storage,
@@ -53,8 +54,8 @@ pub fn batch_bond(
     env: &Env,
     total_vault_value: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let transfer_chan = CONFIG.load(storage)?.transfer_channel;
-    let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let transfer_chan = CONFIG.should_load(storage)?.transfer_channel;
+    let to_address = get_ica_address(storage, ICA_CHANNEL.should_load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
         Ok(Some(do_transfer(
@@ -199,6 +200,7 @@ mod tests {
         testing::{mock_dependencies, mock_env, MockQuerier},
         to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
+    use quasar_types::types::MapShouldLoad;
 
     use crate::{
         ibc_lock::Lock,
@@ -220,7 +222,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let config = CONFIG.should_load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
 
         let info = MessageInfo {
@@ -245,7 +247,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let config = CONFIG.should_load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
 
@@ -277,7 +279,7 @@ mod tests {
             prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
-            channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
+            channel_id: ICQ_CHANNEL.should_load(deps.as_mut().storage).unwrap(),
             data: to_binary(&packet).unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         });
@@ -338,7 +340,10 @@ mod tests {
 
         // we should have minted exactly 100 shares by now,
         // we should have minted exactly 100 shares by now,
-        assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
+        assert_eq!(
+            SHARES.should_load(deps.as_ref().storage, owner).unwrap(),
+            amount
+        );
     }
 
     #[test]
@@ -363,7 +368,7 @@ mod tests {
         );
         // we should have amount shares by now
         assert_eq!(
-            SHARES.load(deps.as_ref().storage, owner).unwrap(),
+            SHARES.should_load(deps.as_ref().storage, owner).unwrap(),
             smaller_amount
         );
     }

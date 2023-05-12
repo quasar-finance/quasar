@@ -143,7 +143,7 @@ pub fn handle_callback_reply(
 mod tests {
     use super::*;
     use cosmwasm_std::{Addr, Coin, Reply, SubMsgResponse, Uint128};
-    use quasar_types::callback::Callback;
+    use quasar_types::{callback::Callback, types::MapShouldLoad};
 
     use crate::{helpers::ContractCallback, reply::handle_callback_reply, state::REPLIES};
 
@@ -202,7 +202,7 @@ mod tests {
         );
 
         // after cleanup it should be empty
-        assert!(REPLIES.load(&deps.storage, msg.id).is_err());
+        assert!(REPLIES.should_load(&deps.storage, msg.id).is_err());
     }
 
     #[test]
@@ -261,7 +261,7 @@ mod tests {
         );
 
         // after cleanup it should be empty
-        assert!(REPLIES.load(&deps.storage, msg.id).is_err());
+        assert!(REPLIES.should_load(&deps.storage, msg.id).is_err());
     }
 
     #[test]

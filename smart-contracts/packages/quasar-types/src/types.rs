@@ -84,7 +84,7 @@ pub trait ItemShouldLoad<T, E> {
 }
 
 // Implement trait ItemShouldLoad for Item
-impl<'a, T> ItemShouldLoad<T, ContractError> for Item<'a, T>
+impl<'a, T> ItemShouldLoad<T, ContractError> for Item<'_, T>
 where
     T: Serialize + DeserializeOwned + Debug,
 {
@@ -95,6 +95,19 @@ where
         })
     }
 }
+
+// Implement trait ItemShouldLoad for Item (static lifetime)
+// impl<T> ItemShouldLoad<T, ContractError> for Item<'static, T>
+// where
+//     T: Serialize + DeserializeOwned + Debug,
+// {
+//     fn should_load(&self, storage: &dyn Storage) -> Result<T, ContractError> {
+//         let namespace_str = String::from_utf8_lossy(self.as_slice()).into();
+//         self.may_load(storage)?.ok_or(ContractError::ItemIsEmpty {
+//             item: namespace_str,
+//         })
+//     }
+// }
 
 // Define trait MapShouldLoad
 pub trait MapShouldLoad<K, T, E> {

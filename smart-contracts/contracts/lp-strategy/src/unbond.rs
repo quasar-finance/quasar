@@ -9,6 +9,7 @@ use quasar_types::{
     callback::{Callback, UnbondResponse},
     ibc::MsgTransfer,
     ica::packet::ica_send,
+    types::ItemShouldLoad,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -96,7 +97,7 @@ pub(crate) fn exit_swap(
 ) -> Result<SubMsg, ContractError> {
     let pkt = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
 
-    let channel = ICA_CHANNEL.load(storage)?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
@@ -112,8 +113,8 @@ pub(crate) fn do_exit_swap(
     token_out_min_amount: Uint128,
     total_exit: Uint128,
 ) -> Result<cosmwasm_std::IbcMsg, ContractError> {
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-    let config = CONFIG.load(storage)?;
+    let ica_address = get_ica_address(storage, ICA_CHANNEL.should_load(storage)?)?;
+    let config = CONFIG.should_load(storage)?;
 
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
@@ -125,7 +126,7 @@ pub(crate) fn do_exit_swap(
 
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
-        ICA_CHANNEL.load(storage)?,
+        ICA_CHANNEL.should_load(storage)?,
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
     Ok(pkt)
@@ -142,7 +143,7 @@ pub fn transfer_batch_unbond(
 
     // this is an ica channel in transfer batch unbond which is fine because even though
     // we are doing a transfer, its a return transfer which must be triggered by an ICA
-    let channel = ICA_CHANNEL.load(storage)?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
@@ -170,7 +171,7 @@ pub(crate) fn do_transfer_batch_unbond(
     )?;
     let pkt = ica_send::<MsgTransfer>(
         msg,
-        ICA_CHANNEL.load(storage)?,
+        ICA_CHANNEL.should_load(storage)?,
         IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
     Ok(pkt)
@@ -234,7 +235,7 @@ pub fn finish_unbond(
                 unbond_id: unbond.id.clone(),
             }))?,
             funds: vec![Coin {
-                denom: CONFIG.load(storage)?.local_denom,
+                denom: CONFIG.should_load(storage)?.local_denom,
                 amount,
             }],
         })
@@ -242,7 +243,7 @@ pub fn finish_unbond(
         CosmosMsg::Bank(BankMsg::Send {
             to_address: unbond.owner.to_string(),
             amount: vec![Coin {
-                denom: CONFIG.load(storage)?.local_denom,
+                denom: CONFIG.should_load(storage)?.local_denom,
                 amount,
             }],
         })
@@ -257,8 +258,8 @@ fn return_transfer(
     timeout_timestamp: Timestamp,
     pending: PendingReturningUnbonds,
 ) -> Result<MsgTransfer, ContractError> {
-    let config = CONFIG.load(storage)?;
-    let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let config = CONFIG.should_load(storage)?;
+    let ica_address = get_ica_address(storage, ICA_CHANNEL.should_load(storage)?)?;
     let id = get_next_return_id(storage)?;
 
     RETURNING.save(storage, id, &amount)?;
@@ -456,7 +457,7 @@ mod tests {
             .save(deps.as_mut().storage, &Uint128::from(100u128))
             .unwrap();
 
-        let lp_cache = LP_SHARES.load(deps.as_mut().storage).unwrap();
+        let lp_cache = LP_SHARES.should_load(deps.as_mut().storage).unwrap();
         let res = batch_unbond(deps.as_mut().storage, &env, lp_cache).unwrap();
         assert!(res.is_some());
 
@@ -479,10 +480,10 @@ mod tests {
         // check that the packet is as we expect
         let ica_address = get_ica_address(
             deps.as_ref().storage,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
         )
         .unwrap();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let config = CONFIG.should_load(deps.as_ref().storage).unwrap();
         let msg = MsgExitSwapShareAmountIn {
             sender: ica_address,
             pool_id: config.pool_id,
@@ -493,7 +494,7 @@ mod tests {
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
             msg,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
@@ -547,7 +548,7 @@ mod tests {
 
         let pkt = ica_send::<MsgTransfer>(
             msg,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
@@ -645,10 +646,10 @@ mod tests {
 
         let ica_address = get_ica_address(
             deps.as_ref().storage,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
         )
         .unwrap();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let config = CONFIG.should_load(deps.as_ref().storage).unwrap();
 
         let expected = MsgExitSwapShareAmountIn {
             sender: ica_address,
@@ -661,7 +662,7 @@ mod tests {
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
             expected,
-            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            ICA_CHANNEL.should_load(deps.as_ref().storage).unwrap(),
             IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();

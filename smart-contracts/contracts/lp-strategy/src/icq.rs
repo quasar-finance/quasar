@@ -12,7 +12,10 @@ use osmosis_std::types::{
     },
 };
 use prost::Message;
-use quasar_types::icq::{InterchainQueryPacketData, Query};
+use quasar_types::{
+    icq::{InterchainQueryPacketData, Query},
+    types::ItemShouldLoad,
+};
 
 use crate::{
     error::ContractError,
@@ -28,9 +31,9 @@ pub fn try_icq(
     _querier: QuerierWrapper,
     env: Env,
 ) -> Result<Option<SubMsg>, ContractError> {
-    if IBC_LOCK.load(storage)?.is_unlocked() {
+    if IBC_LOCK.should_load(storage)?.is_unlocked() {
         // TODO fetching ICQ channel and confirming vs handshake version can be a single function
-        let icq_channel = ICQ_CHANNEL.load(storage)?;
+        let icq_channel = ICQ_CHANNEL.should_load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
 
         let mut pending_bonds_value = Uint128::zero();
@@ -59,7 +62,7 @@ pub fn try_icq(
             }
         }
 
-        let channel = ICQ_CHANNEL.load(storage)?;
+        let channel = ICQ_CHANNEL.should_load(storage)?;
 
         Ok(Some(create_ibc_ack_submsg(
             storage,
@@ -77,10 +80,10 @@ pub fn prepare_full_query(
     _env: Env,
     bonding_amount: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
-    let ica_channel = ICA_CHANNEL.load(storage)?;
+    let ica_channel = ICA_CHANNEL.should_load(storage)?;
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
     let address = get_ica_address(storage, ica_channel)?;
-    let config = CONFIG.load(storage)?;
+    let config = CONFIG.should_load(storage)?;
     // we query the current balance on our ica address
     let base_balance = QueryBalanceRequest {
         address: address.clone(),
@@ -118,7 +121,7 @@ pub fn prepare_full_query(
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
     let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: LP_SHARES.load(storage)?.locked_shares.to_string(),
+        share_in_amount: LP_SHARES.should_load(storage)?.locked_shares.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
@@ -172,7 +175,7 @@ pub fn calc_total_balance(
     exit_pool: &Vec<OsmoCoin>,
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
-    let config = CONFIG.load(storage)?;
+    let config = CONFIG.should_load(storage)?;
     // if we receive no tokens in the response, the total balance
     if exit_pool.is_empty() {
         return Ok(ica_balance);
@@ -245,7 +248,7 @@ mod tests {
 
         let res = try_icq(deps.as_mut().storage, q, env.clone()).unwrap();
 
-        let icq_channel = ICQ_CHANNEL.load(deps.as_mut().storage).unwrap();
+        let icq_channel = ICQ_CHANNEL.should_load(deps.as_mut().storage).unwrap();
 
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),

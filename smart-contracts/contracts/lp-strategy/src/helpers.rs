@@ -14,7 +14,7 @@ use cosmwasm_std::{
     QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
-use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
+use quasar_types::{callback::Callback, ibc::MsgTransferResponse, types::{MapShouldLoad, ItemShouldLoad}};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, Cont
 }
 
 pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String, ContractError> {
-    let chan = CHANNELS.load(store, channel_id)?;
+    let chan = CHANNELS.should_load(store, channel_id)?;
     match chan.channel_type {
         quasar_types::ibc::ChannelType::Icq { channel_ty: _ } => Err(ContractError::NoIcaChannel),
         quasar_types::ibc::ChannelType::Ica {
@@ -45,7 +45,7 @@ pub fn get_ica_address(store: &dyn Storage, channel_id: String) -> Result<String
 }
 
 pub fn check_icq_channel(storage: &dyn Storage, channel: String) -> Result<(), ContractError> {
-    let chan = CHANNELS.load(storage, channel)?;
+    let chan = CHANNELS.should_load(storage, channel)?;
     match chan.channel_type {
         quasar_types::ibc::ChannelType::Icq { channel_ty: _ } => Ok(()),
         quasar_types::ibc::ChannelType::Ica {
@@ -68,7 +68,7 @@ pub fn create_callback_submsg(
         id = val?.0 + 1;
     }
 
-    let local_denom = CONFIG.load(storage)?.local_denom;
+    let local_denom = CONFIG.should_load(storage)?.local_denom;
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, funds, .. }) => {
             SubMsgKind::Callback(ContractCallback::Callback {
