@@ -3846,7 +3846,7 @@ paths:
             type: boolean
       tags:
         - Query
-  /quasar/qvesting/vesting_accounts:
+  /quasarlabs/quasarnode/qvesting/qvesting/vesting_accounts:
     get:
       summary: VestingAccounts returns all the existing vesting accounts
       operationId: VestingAccounts
@@ -8260,3 +8260,23 @@ components:
           description: params holds all the parameters of this module.
           type: object
       description: QueryParamsResponse is response type for the Query/Params RPC method.
+    quasarlabs.quasarnode.qvesting.QuerySpendableBalancesResponse:
+      type: object
+      properties:
+        balances:
+          type: array
+          description: balances is the spendable balances of all the coins.
+        pagination:
+          description: pagination defines the pagination in the response.
+      description: QuerySpendableBalancesResponse defines the gRPC response structure for querying\nan account's spendable balances.
+
+    quasarlabs.quasarnode.qvesting.QueryVestingAccountsResponse:
+      type: object
+      properties:
+        accounts:
+          type: array
+          title: accounts are the existing vesting accounts
+        pagination:
+          description: pagination defines the pagination in the response.
+      description: QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+
