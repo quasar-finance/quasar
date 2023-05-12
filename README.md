@@ -1,6 +1,7 @@
 # Quasar
 
-This is the official Quasar Labs repository. Quasar is building decentralized vaults for creating custom and sovereign investment vehicles in the Cosmos ecosystem and beyond.
+This is the official Quasar Labs repository.
+Quasar is a decentralized app-chain built for interchain asset management.
 
 Quasar is focused in utilizing the latest and contributing to building IBC features including:
 IBC features that we are developing on:
@@ -8,7 +9,9 @@ IBC features that we are developing on:
 2. Async Interchain Queries (Async - ICQ).
 3. IBC hook middleware for token transfer. 
 
-Quasar is working hard to simplfy and add ease to collaborative investment with digital assets. We are creating a decentralized platform for creating custom, soverign vaults that can be molded into any imaginable investment financial instrument from ETFs, mutual fund, SPAC, or whatever. 
+Quasar is working hard to simplfy and add ease to collaborative investment with digital assets. 
+
+We are creating a decentralized platform for creating custom, soverign vaults that can be molded into any imaginable investment financial instrument from ETFs, mutual fund, SPAC, or whatever. 
 The galaxy is the limit. 
 
 Our flagship product starts with vault that implements optimal LPing into pools on Osmosis DEX.
@@ -25,13 +28,11 @@ The current codebase is experimental and undergoing continuous testing and audit
 make install 
 ```
 
- 
-## Quasar Local Testnet (localnet)
-
-We have  created several demo directories for the different usecases. You can find ./quasar_local.sh in demo/orion_manual_demo dir, and similar scripts in the other directories. 
-
+  
 ## Learn more
-1. 
+1. https://www.quasar.fi/
+2. https://app.quasar.fi/
  
 ## Attributions
-1. x/qtransfer and x/epochs module are utilised from the osmosis x/ibc_hooks and x/epochs module.
+
+x/qtransfer, x/epochs and x/tokenfactory module are utilised from the osmosis x/ibc_hooks, x/epochs and x/tokenfactory module.
