@@ -9,11 +9,12 @@ pkill quasarnoded || true
 
 # Define variables
 CHAIN_ID=quasar
-START_TIME_OK=$(date +%s)
 unamestr=$(uname)
 if [ "$unamestr" = 'Linux' ]; then
+  START_TIME_OK=$(date -d "+10 seconds" +%s)
   END_TIME_OK=$(date -d "+60 seconds" +%s)
 elif [ "$unamestr" = 'Darwin' ]; then
+  START_TIME_OK=$(date -v+10S +%s)
   END_TIME_OK=$(date -v+60S +%s)
 fi
 
@@ -44,7 +45,7 @@ echo "Multisig: $MULTISIG_ADDRESS"
 echo ">>> Fund multisig and signer accounts"
 quasarnoded tx bank send $MY_TREASURY $MULTISIG_ADDRESS 1000uqsr --from $MY_TREASURY --chain-id $CHAIN_ID --keyring-backend test -y
 
-echo ">>> Sleeping 5/30 seconds to elapse 5/30 before querying multisig account"
+echo ">>> Sleeping 5/35 seconds to elapse 5/35 before querying multisig account"
 sleep 5
 
 echo ">>> Create create-vesting-account transaction using multisig as the signer"
@@ -59,8 +60,8 @@ echo ">>> Assemble the signatures and broadcast the transaction"
 quasarnoded tx multisign tx.json multisig_account tx_signed1.json tx_signed2.json tx_signed3.json --chain-id $CHAIN_ID --keyring-backend test > tx_multisig.json
 quasarnoded tx broadcast tx_multisig.json --chain-id $CHAIN_ID -y
 
-echo ">>> Sleeping 25/30 seconds to elapse 30/30 before sending 500uqsr from Vester to MyTreasury"
-sleep 25
+echo ">>> Sleeping 30/35 seconds to elapse 35/35 before sending 500uqsr from Vester to MyTreasury"
+sleep 30
 
 # Transfer vesting tokens from vester1 to vester2 before the time
 echo ">>> Testing OK accounts to be able to send vesting schedule tokens with amount 500uqsr that is half of vesting total"
