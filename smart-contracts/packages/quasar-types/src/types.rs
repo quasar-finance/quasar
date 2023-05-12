@@ -84,7 +84,7 @@ pub trait ItemShouldLoad<T, E> {
 }
 
 // Implement trait ItemShouldLoad for Item
-impl<'a, T> ItemShouldLoad<T, ContractError> for Item<'_, T>
+impl<T> ItemShouldLoad<T, ContractError> for Item<'_, T>
 where
     T: Serialize + DeserializeOwned + Debug,
 {

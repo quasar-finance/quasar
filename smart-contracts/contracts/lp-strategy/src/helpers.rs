@@ -14,7 +14,11 @@ use cosmwasm_std::{
     QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
-use quasar_types::{callback::Callback, ibc::MsgTransferResponse, types::{MapShouldLoad, ItemShouldLoad}};
+use quasar_types::{
+    callback::Callback,
+    ibc::MsgTransferResponse,
+    types::{ItemShouldLoad, MapShouldLoad},
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

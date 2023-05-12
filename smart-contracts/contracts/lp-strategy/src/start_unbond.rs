@@ -257,8 +257,9 @@ mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Binary, ContractInfoResponse, ContractResult, CosmosMsg, OverflowError,
-        OverflowOperation, QuerierResult, StdError, Timestamp, Uint128, WasmMsg,
+        OverflowOperation, QuerierResult, Timestamp, Uint128, WasmMsg,
     };
+    use quasar_types::types::ContractError::KeyNotPresentInMap;
 
     use crate::{
         bond::calculate_claim,
@@ -756,8 +757,9 @@ mod tests {
         let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::Std(StdError::NotFound {
-                kind: "cosmwasm_std::math::uint128::Uint128".to_string()
+            ContractError::QuasarError(KeyNotPresentInMap {
+                key: "bob".to_string(),
+                map: "shares".to_string()
             })
         )
     }

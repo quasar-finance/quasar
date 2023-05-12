@@ -232,7 +232,8 @@ mod tests {
 
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
-        ica::handshake::IcaMetadata, types::MapShouldLoad,
+        ica::handshake::IcaMetadata,
+        types::MapShouldLoad,
     };
 
     use crate::{
