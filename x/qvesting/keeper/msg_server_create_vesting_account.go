@@ -54,7 +54,7 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 	acc := vestingtypes.NewContinuousVestingAccountRaw(baseVestingAccount, msg.StartTime)
 
 	ak.SetAccount(ctx, acc)
-	k.AddVestingAccount(ctx, to)
+	k.AddVestingAccount(ctx, acc.GetAddress())
 
 	defer func() {
 		telemetry.IncrCounter(1, "new", "account")
