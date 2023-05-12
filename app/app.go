@@ -94,8 +94,8 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	"github.com/quasarlabs/quasarnode/app/openapiconsole"
 	"github.com/spf13/cast"
-    "github.com/quasarlabs/quasarnode/app/openapiconsole"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -123,6 +123,11 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+
+	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
+	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
+	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -226,6 +231,7 @@ var (
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 		qtransfer.AppModuleBasic{},
+		tfmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -317,6 +323,8 @@ type App struct {
 	Ics20WasmHooks            *qtransfer.WasmHooks
 	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
+	TfKeeper tfkeeper.Keeper
+
 	// mm is the module manager
 	mm *module.Manager
 
@@ -373,6 +381,7 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
+		tftypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
@@ -563,6 +572,16 @@ func New(
 		),
 	)
 
+	/// Token factory Module
+	app.TfKeeper = tfkeeper.NewKeeper(keys[tftypes.StoreKey],
+		app.GetSubspace(tftypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper)
+	tfModule := tfmodule.NewAppModule(app.TfKeeper,
+		app.AccountKeeper,
+		app.BankKeeper)
+
 	// create the wasm callback plugin
 	// TODO_IMPORTANT - CALL BACK ACCOUNT
 
@@ -577,7 +596,11 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.QOracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	// AUDIT CHECK IS THIS TYPE ASSERTION FOR TYPE CASTING INTERFACE TO STRUCT SAFE?
+	tmpBankBaseKeeper := app.BankKeeper.(bankkeeper.BaseKeeper)
+
+	wasmOpts = append(wasmOpts, owasm.RegisterCustomPlugins(app.QOracleKeeper, &tmpBankBaseKeeper, callback)...)
+	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &app.TfKeeper)...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
@@ -688,6 +711,7 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
+		tfModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
