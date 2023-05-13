@@ -22,7 +22,6 @@ func (k Keeper) VestingAccounts(c context.Context, req *types.QueryVestingAccoun
 	store := ctx.KVStore(k.storeKey)
 	accountsStore := prefix.NewStore(store, types.VestingAccountStoreKeyPrefix)
 
-	//k.IterateVestingAccounts(ctx)
 	var accounts []*codectypes.Any
 	pageRes, err := query.Paginate(accountsStore, req.Pagination, func(key, value []byte) error {
 		addr := sdk.AccAddress(key)

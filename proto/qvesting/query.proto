@@ -17,16 +17,16 @@ option go_package = "github.com/quasarlabs/quasarnode/x/qvesting/types";
 service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/quasar/qvesting/params";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/params";
   }
   // SpendableBalances queries the spenable balance of all coins for a single
   // account.
   rpc SpendableBalances(QuerySpendableBalancesRequest) returns (QuerySpendableBalancesResponse) {
-    option (google.api.http).get = "/cosmos/bank/v1beta1/spendable_balances/{address}";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/spendable_balances/{address}";
   }
   // VestingAccounts returns all the existing vesting accounts
   rpc VestingAccounts(QueryVestingAccountsRequest) returns (QueryVestingAccountsResponse) {
-    option (google.api.http).get = "/quasar/qvesting/vesting_accounts";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_accounts";
   }
   // this line is used by starport scaffolding # 2
 }
