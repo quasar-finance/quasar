@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
-use cw_utils::must_pay;
+use cosmwasm_std::{Addr, Env, QuerierWrapper, Storage, SubMsg, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -29,16 +28,15 @@ pub fn do_bond(
     storage: &mut dyn Storage,
     querier: QuerierWrapper,
     env: Env,
-    info: MessageInfo,
+    amount: Uint128,
+    sender: Addr,
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
-
     PENDING_BOND_QUEUE.push_back(
         storage,
         &Bond {
             amount,
-            owner: info.sender,
+            owner: sender,
             bond_id,
         },
     )?;
@@ -195,7 +193,6 @@ pub fn calculate_claim(
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        coin,
         testing::{mock_dependencies, mock_env, MockQuerier},
         to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
@@ -220,13 +217,8 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
-
-        let info = MessageInfo {
-            sender: owner,
-            funds: vec![coin(1000, config.local_denom)],
-        };
+        let amount = Uint128::new(1000);
 
         IBC_LOCK
             .save(deps.as_mut().storage, &Lock::new().lock_bond())
@@ -236,7 +228,7 @@ mod tests {
         let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
         let q = QuerierWrapper::new(&qx);
 
-        let res = do_bond(deps.as_mut().storage, q, env, info, id.to_string()).unwrap();
+        let res = do_bond(deps.as_mut().storage, q, env, amount, owner, id.to_string()).unwrap();
         assert_eq!(res, None)
     }
 
@@ -245,7 +237,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
 
@@ -262,14 +253,19 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        let info = MessageInfo {
-            sender: owner,
-            funds: vec![coin(1000, config.local_denom)],
-        };
+        let amount = Uint128::new(1000);
         let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
         let q = QuerierWrapper::new(&qx);
 
-        let res = do_bond(deps.as_mut().storage, q, env.clone(), info, id.to_string()).unwrap();
+        let res = do_bond(
+            deps.as_mut().storage,
+            q,
+            env.clone(),
+            amount,
+            owner,
+            id.to_string(),
+        )
+        .unwrap();
         assert!(res.is_some());
 
         // mocking the pending bonds is real ugly here
