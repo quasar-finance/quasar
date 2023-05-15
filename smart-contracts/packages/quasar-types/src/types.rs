@@ -4,6 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
+use cosmwasm_std::{StdError, Storage};
+use cw_storage_plus::{Item, Map, PrimaryKey};
+use serde::de::DeserializeOwned;
+use std::fmt::Debug;
+use thiserror::Error;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct CoinRatio {
     pub ratio: Vec<CoinWeight>,
@@ -52,12 +58,6 @@ impl CoinRatio {
     }
 }
 
-use cosmwasm_std::{StdError, Storage};
-use cw_storage_plus::{Deque, Item, Map, PrimaryKey};
-use serde::de::DeserializeOwned;
-use std::fmt::Debug;
-use thiserror::Error;
-
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("Item {} is empty", item)]
@@ -101,6 +101,26 @@ pub trait MapShouldLoad<K, T, E> {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, E>;
 }
 
+// // Implement trait MapShouldLoad for Map
+// impl<'a, K, T> MapShouldLoad<K, T, ContractError> for Map<'a, K, T>
+// where
+//     K: PrimaryKey<'a> + Clone + Debug,
+//     T: Serialize + DeserializeOwned,
+// {
+//     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError> {
+//         let namespace_str = String::from_utf8_lossy(self.namespace()).into();
+
+//         // this is an ugly way to print key without double quotes
+//         let key_string = format!("{:?}", key);
+
+//         self.may_load(storage, key.clone())?
+//             .ok_or(ContractError::KeyNotPresentInMap {
+//                 key: key_string,
+//                 map: namespace_str,
+//             })
+//     }
+// }
+
 // Implement trait MapShouldLoad for Map
 impl<'a, K, T> MapShouldLoad<K, T, ContractError> for Map<'a, K, T>
 where
@@ -109,40 +129,38 @@ where
 {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError> {
         let namespace_str = String::from_utf8_lossy(self.namespace()).into();
-        self.may_load(storage, key.clone())?
+
+        // this is an ugly way to print keys without double quotes
+        // `KeyNotPresentInMap { key: “\”1\“”, map: “example” }`
+        let mut key_string = format!("{:?}", key);
+        if key_string.starts_with('"') && key_string.ends_with('"') {
+            key_string = key_string[1..key_string.len() - 1].to_owned();
+        }
+        if key_string.starts_with("Addr(\"") && key_string.ends_with("\")") {
+            key_string = key_string[6..key_string.len() - 2].to_owned();
+        }
+
+        self.may_load(storage, key)?
             .ok_or(ContractError::KeyNotPresentInMap {
-                key: format!("{:?}", key),
+                key: key_string,
                 map: namespace_str,
             })
     }
 }
 
-// Define trait QueueShouldLoad
-pub trait QueueShouldLoad<T, E> {
-    fn should_pop_front(&self, storage: &mut dyn Storage) -> Result<T, E>;
-}
-
-// Implement trait QueueShouldLoad for Deque
-impl<'a, T> QueueShouldLoad<T, ContractError> for Deque<'a, T>
-where
-    T: Serialize + DeserializeOwned,
-{
-    fn should_pop_front(&self, storage: &mut dyn Storage) -> Result<T, ContractError> {
-        self.pop_front(storage)?.ok_or(ContractError::QueueIsEmpty {
-            // TODO: this is hardcoded as I can't access the namespace of the queue
-            queue: "test".to_string(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Addr;
+    use cosmwasm_std::Storage;
     use cosmwasm_std::{testing::mock_dependencies, Uint128};
-    use cosmwasm_std::{Addr, Storage};
 
     use super::*;
+
+    // mocking state items
     const RETURNING: Map<u64, Uint128> = Map::new("returning");
     const DEPOSITOR: Item<Addr> = Item::new("depositor");
+    const BONDING_SEQ_TO_ADDR: Map<String, String> = Map::new("bond_seq_to_addr");
+    const BONDING_ADDR_TO_SEQ: Map<Addr, String> = Map::new("bond_addr_to_seq");
 
     // check if sender is the admin
     pub fn check_depositor(
@@ -201,6 +219,23 @@ mod tests {
                 key: 0.to_string(),
                 map: "returning".to_string()
             }
+        );
+    }
+
+    #[test]
+    fn test_format() {
+        let mut deps = mock_dependencies();
+        println!(
+            "{:?}",
+            BONDING_SEQ_TO_ADDR
+                .should_load(deps.as_mut().storage, "0".to_string())
+                .unwrap_err()
+        );
+        println!(
+            "{:?}",
+            BONDING_ADDR_TO_SEQ
+                .should_load(deps.as_mut().storage, Addr::unchecked("alice"))
+                .unwrap_err()
         );
     }
 }
