@@ -4,14 +4,14 @@ use crate::{
     ibc_lock::Lock,
     msg::ExecuteMsg,
     state::{
-        PendingBond, PendingSingleUnbond, RawAmount, CHANNELS, CONFIG, IBC_LOCK, REPLIES, SHARES,
-        TRAPS,
+        PendingBond, PendingSingleUnbond, RawAmount, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK,
+        REPLIES, SHARES, START_UNBOND_QUEUE, TRAPS, UNBOND_QUEUE,
     },
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, Env, IbcMsg, IbcPacketAckMsg, Order,
-    QuerierWrapper, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, IbcMsg,
+    IbcPacketAckMsg, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
 use quasar_types::{
@@ -21,6 +21,37 @@ use quasar_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+pub(crate) fn lock_try_icq(
+    deps: DepsMut,
+    sub_msg: Option<cosmwasm_std::SubMsg>,
+) -> Result<Response, ContractError> {
+    let mut res = Response::new();
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    if let Some(sub_msg) = sub_msg {
+        if !BOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_bond();
+            res = res.add_attribute("bond_queue", "locked");
+        } else if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_start_unbond();
+            res = res.add_attribute("start_unbond_queue", "locked");
+        } else if !UNBOND_QUEUE.is_empty(deps.storage)? {
+            lock = lock.lock_unbond();
+            res = res.add_attribute("unbond_queue", "locked");
+        }
+        if lock.is_unlocked() {
+            res = res.add_attribute("IBC_LOCK", "unlocked");
+        }
+        IBC_LOCK.save(deps.storage, &lock)?;
+        res = res.add_submessage(sub_msg);
+        res = res.add_attribute("kind", "dispatch");
+    } else {
+        res = res.add_attribute("IBC_LOCK", "locked");
+        res = res.add_attribute("kind", "queue");
+    }
+    Ok(res)
+}
 
 pub fn get_total_primitive_shares(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     let mut sum = Uint128::zero();

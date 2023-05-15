@@ -67,6 +67,10 @@ pub fn handle_ack_reply(
             },
         )?;
     }
+    // if we did not error, we can safely remove the ack entry from the contract
+    else {
+        PENDING_ACK.remove(deps.storage, (seq, channel))
+    }
 
     // // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
@@ -143,10 +147,46 @@ pub fn handle_callback_reply(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{Addr, Coin, Reply, SubMsgResponse, Uint128};
+    use cosmwasm_std::{
+        testing::mock_dependencies, Addr, Attribute, Coin, Reply, SubMsgResponse, SubMsgResult,
+        Uint128,
+    };
     use quasar_types::{callback::Callback, types::MapShouldLoad};
 
     use crate::{helpers::ContractCallback, reply::handle_callback_reply, state::REPLIES};
+
+    #[test]
+    fn handle_ack_reply_ok_works() {
+        let mut deps = mock_dependencies();
+        let submsg_id = 1;
+        let reply = Reply {
+            id: submsg_id,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: None,
+            }),
+        };
+
+        let seq = 1;
+        let channel = "icq-channel".to_string();
+        PENDING_ACK
+            .save(
+                deps.as_mut().storage,
+                (seq, channel.clone()),
+                &IbcMsgKind::Icq,
+            )
+            .unwrap();
+
+        let res = handle_ack_reply(deps.as_mut(), reply, seq, channel.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![Attribute {
+                key: "register-ack-seq".to_string(),
+                value: seq.to_string()
+            }]
+        );
+        assert!(!PENDING_ACK.has(deps.as_mut().storage, (seq, channel)))
+    }
 
     #[test]
     fn test_handle_callback_reply_is_unbond_err() {

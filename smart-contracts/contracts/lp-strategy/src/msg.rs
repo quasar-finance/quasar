@@ -42,7 +42,9 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub delete_pending: Vec<(u64, String)>,
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]

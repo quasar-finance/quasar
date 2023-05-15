@@ -1,6 +1,6 @@
 [package]
 name = "lp-strategy"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Laurens Kubat <Laurens@Quasar.fi>"]
 edition = "2021"
 
