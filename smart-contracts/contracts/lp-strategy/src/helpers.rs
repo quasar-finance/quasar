@@ -92,24 +92,6 @@ pub fn create_callback_submsg(
     Ok(SubMsg::reply_always(cosmos_msg, id))
 }
 
-// this function subtracts out the amount that has errored and sits stale somewhere
-// pub fn get_usable_bond_balance(
-//     storage: &dyn Storage,
-//     queued_amount: Uint128,
-// ) -> Result<Uint128, ContractError> {
-//     // fetch current balance of contract for join_pool query
-//     // the contract balance at this point in time contains funds send in the queue
-
-//     let mut total_claimable = Uint128::zero();
-
-//     for val in CLAIMABLE_FUNDS.range(storage, None, None, Order::Ascending) {
-//         total_claimable = total_claimable.checked_add(val?.1)?;
-//     }
-
-//     // subtract out the amount that has errored and sits stale on our chain
-//     Ok(queued_amount.saturating_sub(total_claimable))
-// }
-
 pub fn get_usable_compound_balance(
     storage: &dyn Storage,
     balance: Uint128,
