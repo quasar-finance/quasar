@@ -19,6 +19,7 @@ use crate::state::{
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
+use cosmos_sdk_proto::ibc::core::channel::v1::MsgChannelOpenTry;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
@@ -59,7 +60,7 @@ pub fn ibc_channel_open(
     if msg.channel().version == ICQ_VERSION {
         handle_icq_channel(deps, msg.channel().clone())?;
     } else {
-        handle_ica_channel(deps, msg.channel().clone())?;
+        handle_ica_channel(deps, msg)?;
     }
     Ok(())
 }
@@ -88,7 +89,8 @@ fn handle_icq_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     Ok(())
 }
 
-fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), ContractError> {
+fn handle_ica_channel(deps: DepsMut, msg: IbcChannelOpenMsg) -> Result<(), ContractError> {
+    let channel = msg.channel().clone();
     let metadata: IcaMetadata = serde_json_wasm::from_str(&channel.version).map_err(|error| {
         QError::InvalidIcaMetadata {
             raw_metadata: channel.version.clone(),
@@ -111,20 +113,31 @@ fn handle_ica_channel(deps: DepsMut, channel: IbcChannel) -> Result<(), Contract
     if config.expected_connection != channel.connection_id {
         return Err(ContractError::IncorrectConnection);
     }
-
-    // save the current state of the initializing channel
-    let info = ChannelInfo {
-        id: channel.endpoint.channel_id.clone(),
-        counterparty_endpoint: channel.counterparty_endpoint,
-        connection_id: channel.connection_id,
-        channel_type: ChannelType::Ica {
-            channel_ty: metadata,
-            counter_party_address: None,
-        },
-        handshake_state: HandshakeState::Init,
-    };
-    CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
-    Ok(())
+    // validate that the message is an OpenInit message and not an OpenTry, such that we don't pollute the channel map
+    // if let IbcChannelOpenMsg::OpenInit(s) = msg {
+    //     return Err(ContractError::InvalidOrder);
+    // }
+    match msg {
+        IbcChannelOpenMsg::OpenInit { channel } => {
+            // save the current state of the initializing channel
+            let info = ChannelInfo {
+                id: channel.endpoint.channel_id.clone(),
+                counterparty_endpoint: channel.counterparty_endpoint,
+                connection_id: channel.connection_id,
+                channel_type: ChannelType::Ica {
+                    channel_ty: metadata,
+                    counter_party_address: None,
+                },
+                handshake_state: HandshakeState::Init,
+            };
+            CHANNELS.save(deps.storage, channel.endpoint.channel_id, &info)?;
+            Ok(())
+        }
+        IbcChannelOpenMsg::OpenTry {
+            channel,
+            counterparty_version,
+        } => Err(ContractError::IncorrectChannelOpenType),
+    }
 }
 
 /// record the channel in CHANNEL_INFO, this combines the ChanOpenAck and ChanOpenConfirm steps

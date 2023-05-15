@@ -76,6 +76,9 @@ pub enum ContractError {
     #[error("incorrect connection id")]
     IncorrectConnection,
 
+    #[error("incorrect channel open type, should be OpenInit")]
+    IncorrectChannelOpenType,
+
     #[error("raw ack in recovery could not be handled")]
     IncorrectRecoveryAck,
 
