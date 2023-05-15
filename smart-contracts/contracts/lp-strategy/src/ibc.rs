@@ -19,7 +19,7 @@ use crate::state::{
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
-use cosmos_sdk_proto::ibc::core::channel::v1::MsgChannelOpenTry;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
@@ -134,8 +134,8 @@ fn handle_ica_channel(deps: DepsMut, msg: IbcChannelOpenMsg) -> Result<(), Contr
             Ok(())
         }
         IbcChannelOpenMsg::OpenTry {
-            channel,
-            counterparty_version,
+            channel: _,
+            counterparty_version: _,
         } => Err(ContractError::IncorrectChannelOpenType),
     }
 }
@@ -823,7 +823,11 @@ mod tests {
             "connection-0".to_string(),
         );
 
-        handle_ica_channel(deps.as_mut(), channel.clone()).unwrap();
+        let msg = IbcChannelOpenMsg::OpenInit {
+            channel: channel.clone(),
+        };
+
+        handle_ica_channel(deps.as_mut(), msg.clone()).unwrap();
 
         let expected = ChannelInfo {
             id: channel.endpoint.channel_id.clone(),
