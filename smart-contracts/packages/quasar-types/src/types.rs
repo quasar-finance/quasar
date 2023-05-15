@@ -55,7 +55,7 @@ impl CoinRatio {
 use cosmwasm_std::{StdError, Storage};
 use cw_storage_plus::{Deque, Item, Map, PrimaryKey};
 use serde::de::DeserializeOwned;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
