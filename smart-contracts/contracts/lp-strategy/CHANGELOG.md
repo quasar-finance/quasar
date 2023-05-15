@@ -7,6 +7,9 @@
 - Remove old pending acks from the state
 ### Improvements
 - Add bond queue duplicate key check
+- Add testing to try_icq
+- Remove unnecessary load from try_icq
+- Changed the locking on the execute calls to lock correctly depending on queue state
 - Remove pending ack entry after succesful ack handling
 ### Features
 ### Bugfixes
