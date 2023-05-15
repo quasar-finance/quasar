@@ -9,7 +9,7 @@ use quasar_types::{
     callback::{Callback, UnbondResponse},
     ibc::MsgTransfer,
     ica::packet::ica_send,
-    types::ItemShouldLoad,
+    types::{ItemShouldLoad, MapShouldLoad},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ pub fn do_unbond(
     owner: Addr,
     id: String,
 ) -> Result<(), ContractError> {
-    let mut unbond = UNBONDING_CLAIMS.load(storage, (owner.clone(), id.clone()))?;
+    let mut unbond = UNBONDING_CLAIMS.should_load(storage, (owner.clone(), id.clone()))?;
 
     if unbond.unlock_time.nanos() > env.block.time.nanos() {
         return Err(ContractError::SharesNotYetUnbonded);

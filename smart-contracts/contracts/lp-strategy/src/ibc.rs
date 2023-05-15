@@ -262,7 +262,7 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let kind = PENDING_ACK.load(
+    let kind = PENDING_ACK.should_load(
         deps.storage,
         (
             pkt.original_packet.sequence,
@@ -662,7 +662,7 @@ pub fn handle_failing_ack(
     error: String,
 ) -> Result<Response, ContractError> {
     // TODO we can expand error handling here to fetch the packet by the ack and add easy retries or something
-    let step = PENDING_ACK.load(
+    let step = PENDING_ACK.should_load(
         deps.storage,
         (
             pkt.original_packet.sequence,
@@ -710,7 +710,7 @@ pub(crate) fn on_packet_timeout(
     error: String,
     should_unlock: bool,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let step = PENDING_ACK.load(deps.storage, (sequence, channel.clone()))?;
+    let step = PENDING_ACK.should_load(deps.storage, (sequence, channel.clone()))?;
     if should_unlock {
         unlock_on_error(deps.storage, &step)?;
     }

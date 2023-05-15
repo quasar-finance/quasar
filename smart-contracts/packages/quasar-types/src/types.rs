@@ -62,7 +62,7 @@ use thiserror::Error;
 pub enum ContractError {
     #[error("Item {} is empty", item)]
     ItemIsEmpty { item: String },
-    #[error("Key {} is not present in map {}", key, map)]
+    #[error("Key {:?} is not present in map {}", key, map)]
     KeyNotPresentInMap { key: String, map: String },
     #[error("Queue {} is empty", queue)]
     QueueIsEmpty { queue: String },
@@ -84,7 +84,7 @@ pub trait ItemShouldLoad<T, E> {
 }
 
 // Implement trait ItemShouldLoad for Item
-impl<T> ItemShouldLoad<T, ContractError> for Item<'_, T>
+impl<'a, T> ItemShouldLoad<T, ContractError> for Item<'a, T>
 where
     T: Serialize + DeserializeOwned + Debug,
 {
@@ -96,19 +96,6 @@ where
     }
 }
 
-// Implement trait ItemShouldLoad for Item (static lifetime)
-// impl<T> ItemShouldLoad<T, ContractError> for Item<'static, T>
-// where
-//     T: Serialize + DeserializeOwned + Debug,
-// {
-//     fn should_load(&self, storage: &dyn Storage) -> Result<T, ContractError> {
-//         let namespace_str = String::from_utf8_lossy(self.as_slice()).into();
-//         self.may_load(storage)?.ok_or(ContractError::ItemIsEmpty {
-//             item: namespace_str,
-//         })
-//     }
-// }
-
 // Define trait MapShouldLoad
 pub trait MapShouldLoad<K, T, E> {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, E>;
@@ -117,14 +104,14 @@ pub trait MapShouldLoad<K, T, E> {
 // Implement trait MapShouldLoad for Map
 impl<'a, K, T> MapShouldLoad<K, T, ContractError> for Map<'a, K, T>
 where
-    K: PrimaryKey<'a> + Clone + Display,
+    K: PrimaryKey<'a> + Clone + Debug,
     T: Serialize + DeserializeOwned,
 {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, ContractError> {
         let namespace_str = String::from_utf8_lossy(self.namespace()).into();
         self.may_load(storage, key.clone())?
             .ok_or(ContractError::KeyNotPresentInMap {
-                key: key.to_string(),
+                key: format!("{:?}", key),
                 map: namespace_str,
             })
     }

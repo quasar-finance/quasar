@@ -343,7 +343,7 @@ fn query_cap(deps: Deps) -> Result<GetCapResponse, ContractError> {
 
 pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
     let token_info = TOKEN_INFO.load(deps.storage)?;
-    let additional_info = ADDITIONAL_TOKEN_INFO.load(deps.storage)?;
+    let additional_info = ADDITIONAL_TOKEN_INFO.should_load(deps.storage)?;
     let res = VaultTokenInfoResponse {
         name: token_info.name,
         thesis: additional_info.thesis,

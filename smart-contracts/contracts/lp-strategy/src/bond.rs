@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
-use quasar_types::types::ItemShouldLoad;
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -134,7 +134,7 @@ pub fn create_share(
     bond_id: &str,
     amount: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let claim = BONDING_CLAIMS.load(storage, (owner, bond_id))?;
+    let claim = BONDING_CLAIMS.should_load(storage, (owner, bond_id))?;
 
     match claim.cmp(&amount) {
         Ordering::Less => return Err(ContractError::InsufficientClaims),
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(claim_amount, Uint128::new(10));
         assert_eq!(
             BONDING_CLAIMS
-                .load(deps.as_ref().storage, (&owner, id))
+                .should_load(deps.as_ref().storage, (&owner, id))
                 .unwrap(),
             claim_amount
         );
@@ -391,7 +391,7 @@ mod tests {
         // our bonding claim should still exist
         assert_eq!(
             BONDING_CLAIMS
-                .load(deps.as_ref().storage, (&owner, id))
+                .should_load(deps.as_ref().storage, (&owner, id))
                 .unwrap(),
             amount
         )
