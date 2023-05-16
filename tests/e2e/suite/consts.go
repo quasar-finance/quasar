@@ -11,11 +11,11 @@ const (
 	// VotingPeriod is the duration in which proposals in gov module are open for voting
 	VotingPeriod = time.Second * 10
 
-	// Default relayer path names for quasar <-> cosmos link
+	// Default Relayer path names for quasar <-> cosmos link
 	Quasar2CosmosPath = "quasar-cosmos"
-	// Default relayer path names for cosmos <-> osmosis link
+	// Default Relayer path names for cosmos <-> osmosis link
 	Cosmos2OsmosisPath = "cosmos-osmosis"
-	// Default relayer path names for quasar <-> osmosis link
+	// Default Relayer path names for quasar <-> osmosis link
 	Quasar2OsmosisPath = "quasar-osmosis"
 )
 

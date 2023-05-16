@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// E2ETestSuiteBuilder is a factory to simplify works behind running chains, configuring relayer and logging.
+// E2ETestSuiteBuilder is a factory to simplify works behind running chains, configuring Relayer and logging.
 type E2ETestSuiteBuilder struct {
 	t *testing.T
 
@@ -30,10 +30,10 @@ type E2ETestSuiteBuilder struct {
 	osmosis         *cosmos.CosmosChain
 	OsmosisAccounts Accounts
 
-	relayer        *rly.CosmosRelayer
+	Relayer        *rly.CosmosRelayer
 	paths          map[string]path
-	rep            *testreporter.Reporter
-	erep           *testreporter.RelayerExecReporter
+	Rep            *testreporter.Reporter
+	Erep           *testreporter.RelayerExecReporter
 	automatedRelay bool
 
 	dockerClient *dockerclient.Client
@@ -71,13 +71,13 @@ func NewE2ETestSuiteBuilder(t *testing.T) *E2ETestSuiteBuilder {
 	erep := rep.RelayerExecReporter(t)
 
 	E2EBuilder.t = t
-	E2EBuilder.relayer = relayer
+	E2EBuilder.Relayer = relayer
 	E2EBuilder.paths = map[string]path{}
-	E2EBuilder.rep = rep
-	E2EBuilder.erep = erep
+	E2EBuilder.Rep = rep
+	E2EBuilder.Erep = erep
 	E2EBuilder.dockerClient = dockerClient
 	E2EBuilder.networkID = networkID
-	E2EBuilder.ic = ibctest.NewInterchain().AddChain(E2EBuilder.quasar).AddRelayer(relayer, "relayer").WithLog(logger)
+	E2EBuilder.ic = ibctest.NewInterchain().AddChain(E2EBuilder.quasar).AddRelayer(relayer, "Relayer").WithLog(logger)
 	E2EBuilder.logger = logger
 
 	return E2EBuilder
@@ -146,7 +146,7 @@ func (b *E2ETestSuiteBuilder) Link(pathName string) {
 	b.ic.AddLink(ibctest.InterchainLink{
 		Chain1:            b.Quasar(),
 		Chain2:            b.Osmosis(),
-		Relayer:           b.relayer,
+		Relayer:           b.Relayer,
 		Path:              pathName,
 		CreateChannelOpts: ibc.DefaultChannelOpts(),
 		CreateClientOpts: ibc.CreateClientOptions{
@@ -160,21 +160,21 @@ func (b *E2ETestSuiteBuilder) Link(pathName string) {
 	}
 }
 
-// AutomatedRelay notifies the builder to spawn a relayer to automatically relayer packets.
+// AutomatedRelay notifies the builder to spawn a Relayer to automatically Relayer packets.
 func (b *E2ETestSuiteBuilder) AutomatedRelay() {
 	b.checkBuilt()
 
 	b.automatedRelay = true
 }
 
-// Build starts all chains and configures the relayer, returns the E2ETestSuite and seals the builder
+// Build starts all chains and configures the Relayer, returns the E2ETestSuite and seals the builder
 // so it can not be used or changed after this.
 func (b *E2ETestSuiteBuilder) Build() *E2ETestSuite {
 	b.checkBuilt()
 
 	ctx := context.Background()
 
-	require.NoError(b.t, b.ic.Build(ctx, b.erep, ibctest.InterchainBuildOptions{
+	require.NoError(b.t, b.ic.Build(ctx, b.Erep, ibctest.InterchainBuildOptions{
 		TestName:         b.t.Name(),
 		Client:           b.dockerClient,
 		NetworkID:        b.networkID,
@@ -188,10 +188,10 @@ func (b *E2ETestSuiteBuilder) Build() *E2ETestSuite {
 
 	if b.automatedRelay {
 		pathNames := b.pathNames()
-		require.NoError(b.t, b.relayer.StartRelayer(ctx, b.erep, pathNames...))
+		require.NoError(b.t, b.Relayer.StartRelayer(ctx, b.Erep, pathNames...))
 		b.t.Cleanup(func() {
-			if err := b.relayer.StopRelayer(ctx, b.erep); err != nil {
-				b.t.Logf("an error occurred while stopping the relayer: %s", err)
+			if err := b.Relayer.StopRelayer(ctx, b.Erep); err != nil {
+				b.t.Logf("an error occurred while stopping the Relayer: %s", err)
 			}
 		})
 	}
@@ -202,10 +202,10 @@ func (b *E2ETestSuiteBuilder) Build() *E2ETestSuite {
 		cosmos:       b.cosmos,
 		osmosis:      b.osmosis,
 		grpcClients:  b.prepareGRPCClients(),
-		relayer:      b.relayer,
+		relayer:      b.Relayer,
 		paths:        b.paths,
-		rep:          b.rep,
-		erep:         b.erep,
+		rep:          b.Rep,
+		erep:         b.Erep,
 		dockerClient: b.dockerClient,
 		networkID:    b.networkID,
 		logger:       b.logger,

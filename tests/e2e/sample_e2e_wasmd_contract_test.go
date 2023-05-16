@@ -2,11 +2,13 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"os"
+	"strconv"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
@@ -27,7 +29,7 @@ type E2EVaultTestingSuite struct {
 
 	ContractsDeploymentWallet *ibc.Wallet
 
-	PrimitiveCodeID uint64
+	PrimitiveCodeID, RewardsStoreID, VaultStoreID uint64
 }
 
 func TestE2EVaultTestingSuite(t *testing.T) {
@@ -49,6 +51,8 @@ func TestE2EVaultTestingSuite(t *testing.T) {
 	t.Log("Wait for chains to settle up the ibc connection states")
 	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
+
+	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
 
 	// Find out connections between each pair of chains
 	s.Quasar2OsmosisConn = s.GetConnectionsByPath(ctx, testsuite.Quasar2OsmosisPath)[0]
@@ -94,16 +98,93 @@ func (s *E2EVaultTestingSuite) TestDeployContracts() {
 	s.PrimitiveCodeID = codeID
 
 	// read all the init messages provided in the input file
-	primitives, err := testsuite.ReadInitMessagesFile(primitivesPath)
+	contracts, err := testsuite.ReadInitMessagesFile(contractsPath)
 	s.Require().NoError(err)
+	fmt.Println(contracts)
 
-	fmt.Println(primitives)
+	for _, c := range contracts {
+		c.SetCodeID(s.PrimitiveCodeID)
+		err = c.InstantiateContract(ctx, s.ContractsDeploymentWallet, s.Quasar(), sdk.NewCoins())
+		s.Require().NoError(err)
 
-	for _, p := range primitives {
-		p.Label = "lp_strategy_test"
-		err = p.InstantiateContract(ctx, s.ContractsDeploymentWallet, s.Quasar(), sdk.NewCoins())
+		err = c.CreateICQChannel(ctx, s.E2EBuilder.Relayer, s.E2EBuilder.Erep)
+		s.Require().NoError(err)
+
+		err = c.CreateICAChannel(ctx, s.E2EBuilder.Relayer, s.E2EBuilder.Erep, s.Quasar2OsmosisConn.Id, s.Quasar2OsmosisConn.Counterparty.ConnectionId)
 		s.Require().NoError(err)
 	}
+
+	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), vaultRewardsContractPath, s.ContractsDeploymentWallet, s.E2EBuilder)
+	s.Require().NoError(err)
+	s.RewardsStoreID = codeID
+
+	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), basicVaultStrategyContractPath, s.ContractsDeploymentWallet, s.E2EBuilder)
+	s.Require().NoError(err)
+	s.VaultStoreID = codeID
+
+	VaultContrct := testsuite.NewContract(map[string]any{
+		"total_cap":                     "200000000000",
+		"thesis":                        "e2e",
+		"vault_rewards_code_id":         s.RewardsStoreID,
+		"reward_token":                  map[string]any{"native": "uqsr"},
+		"reward_distribution_schedules": []string{},
+		"decimals":                      6,
+		"symbol":                        "ORN",
+		"min_withdrawal":                "1",
+		"name":                          "ORION",
+		"primitives": []map[string]any{
+			{
+				"address": contracts[0].GetContractAddress(),
+				"weight":  "0.333333333333",
+				"init": map[string]any{
+					"l_p": init1,
+				},
+			},
+			{
+				"address": contracts[1].GetContractAddress(),
+				"weight":  "0.333333333333",
+				"init": map[string]any{
+					"l_p": init2,
+				},
+			},
+			{
+				"address": contracts[2].GetContractAddress(),
+				"weight":  "0.333333333333",
+				"init": map[string]any{
+					"l_p": init3,
+				},
+			},
+		},
+	}, "basic_vault", s.VaultStoreID)
+
+	err = VaultContrct.InstantiateContract(ctx, s.ContractsDeploymentWallet, s.Quasar(), sdk.NewCoins())
+	s.Require().NoError(err)
+
+	_, err = VaultContrct.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		map[string]any{"bond": map[string]any{}},
+		nil,
+		sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 10000000)),
+		&s.E2EBuilder.QuasarAccounts.BondTest,
+	)
+	s.Require().NoError(err)
+
+	res, err := VaultContrct.QueryContract(ctx, s.Quasar(), map[string]any{
+		"balance": map[string]any{
+			"address": s.E2EBuilder.QuasarAccounts.BondTest.Address,
+		},
+	})
+
+	var data testsuite.ContractBalanceData
+	err = json.Unmarshal(res, &data)
+	s.Require().NoError(err)
+
+	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
+	s.Require().NoError(err)
+
+	s.Require().True(balance > 0)
+
 }
 
 func (s *E2EVaultTestingSuite) CreatePools(ctx context.Context) {

@@ -20,7 +20,7 @@ const (
 	lpStrategyContractPath               = "../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	primitivesPath                       = "./scripts/primitives1.json"
+	contractsPath                        = "./scripts/primitives1.json"
 	osmosisPool1Path                     = "scripts/sample_pool1.json"
 	osmosisPool2Path                     = "scripts/sample_pool2.json"
 	osmosisPool3Path                     = "scripts/sample_pool3.json"
