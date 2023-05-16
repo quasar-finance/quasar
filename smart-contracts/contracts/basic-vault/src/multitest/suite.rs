@@ -286,9 +286,9 @@ impl QuasarVaultSuite {
             .execute_contract(sender.clone(), self.vault.clone(), &msg, &funds)
             .map_err(|err| match err.downcast::<VaultContractError>() {
                 Ok(err_unwrapped) => err_unwrapped,
-                Err(e) => VaultContractError::Std(StdError::GenericErr {
+                Err(e) => VaultContractError::QuasarError(quasar_types::error::Error::Std(StdError::GenericErr {
                     msg: e.root_cause().to_string(),
-                }),
+                })),
             })
             .map(|_| ())
     }
