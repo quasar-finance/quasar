@@ -120,7 +120,11 @@ pub fn create_callback_submsg(
             bank_msg: bank_msg.to_owned(),
             unbond_id: callback_id,
         }),
-        _ => return Err(ContractError::Std(StdError::generic_err("Unsupported WasmMsg"))),
+        _ => {
+            return Err(ContractError::Std(StdError::generic_err(
+                "Unsupported WasmMsg",
+            )))
+        }
     };
 
     REPLIES.save(storage, id, &data)?;
