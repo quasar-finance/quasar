@@ -1,10 +1,12 @@
 use std::default;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Binary;
 use cw_storage_plus::Map;
+use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 
-
+#[cw_serde]
 pub struct Hop {
     // the channel to reach the first destination chain
     channel: String,
@@ -22,14 +24,12 @@ impl Hop {
 }
 
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[cw_serde]
 pub struct Memo {
     pub forward: Forward,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[cw_serde]
 pub struct Forward {
     pub receiver: String,
     pub port: String,
@@ -39,18 +39,18 @@ pub struct Forward {
     pub next: Box<Next>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cw_serde]
 pub enum Next {
     Forward(Forward),
     Other(Binary),
-    #[default]
     None
 }
 
 
 const ROUTES: Map<Destination, Hop> = Map::new("routes");
 
-
+// destination uses a special partialEq, so we don't derive it
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Destination(String);
 
 impl PartialEq for Destination {
