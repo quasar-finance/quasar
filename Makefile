@@ -12,6 +12,22 @@ MOCKSDIR = $(CURDIR)/testutil/mock
 
 export GO111MODULE = on
 
+## Helper function to show help with `make` or  `make help`
+
+.DEFAULT_GOAL := help
+
+HELP_FUN = \
+	%help; while(<>){push@{$$help{$$2//'targets'}},[$$1,$$3] \
+	if/^([\w-_]+)\s*:.*\#\#(?:@(\w+))?\s(.*)$$/}; \
+	print"$$_:\n", map"  $$_->[0]".(" "x(40-length($$_->[0])))."$$_->[1]\n",\
+	@{$$help{$$_}},"\n" for keys %help; \
+
+help: ##@misc Show this help
+	@echo "Usage: make [target] ...\n"
+	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
+
+
+
 # process build tags
 
 build_tags = netgo
@@ -188,9 +204,11 @@ $(MOCKSDIR)/:
 ###############################################################################
 
 PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
-PACKAGES_E2E=$(shell go list ./... | grep '/e2e')
+PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
 PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
 TEST_PACKAGES=./...
+
+include tests/e2e/Makefile
 
 test: test-unit test-build
 
@@ -266,6 +284,53 @@ docker-build-nonroot:
 		--build-arg GIT_VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
+
+
+# This is not available to avoid missbehavior since it seems to be a bug in docker compose -p localenv: 
+# https://github.com/docker/compose/issues/10068
+# docker-compose-up-attached: ##@docker Run (and build if needed) env in docker compose. Attach if running in background.
+# 	@echo "Launching local env with docker-compose"
+# 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up
+
+docker-compose-up: ##@docker Run local env, build only if no images available
+	@echo "Launching local env, building images if not available"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up -d
+
+docker-compose-up-recreate: ##@docker DESTROY env containers and respawn them
+	@echo "Recreate local env (will destroy application state)"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml up -d --force-recreate
+
+docker-compose-build: ##@docker Build new image if there are code changes, won't recreate containers.
+	@echo "Rebuilding image for local env"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml build
+
+docker-compose-rebuild: docker-compose-build docker-compose-up-recreate ##@docker Recreate containers building new code if needed
+	@echo "Rebuilding images and restarting containers"
+
+docker-compose-stop: ##@docker Stop containers without deleting them
+	@echo "Stop docker containers without removing them"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml stop
+
+docker-compose-down: ##@docker Stop AND DELETE delete the containers
+	@echo "Stopping docker containers and REMOVING THEM"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -p localenv -f tests/docker/docker-compose.yml down
+
+docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node container
+	@echo "Connecting to quasar docker container"
+	docker exec -it localenv-quasar-1 /bin/bash
+
+docker-attach-osmosis: ##@docker Connect to a terminal prompt in OSMOSIS node container
+	@echo "Connecting to osmosis docker container"
+	docker exec -it localenv-osmosis-1 /bin/ash
+
+docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node container
+	@echo "Connecting to relayer docker container"
+	docker exec -it localenv-relayer-1 /bin/bash	
+
+docker-test-e2e: docker-compose-up
+	@echo "Running e2e tests"
+	cd ./tests/shell/ && ./create_and_execute_contract.sh
+
 
 ###############################################################################
 ###                                Linting                                  ###

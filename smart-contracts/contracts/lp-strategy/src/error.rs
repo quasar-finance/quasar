@@ -3,7 +3,6 @@ use quasar_types::error::Error as QError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::num::ParseIntError;
 
 use crate::helpers::IbcMsgKind;
 use std::str::Utf8Error;
@@ -47,7 +46,7 @@ pub enum ContractError {
     #[error("not enough claims")]
     InsufficientClaims,
 
-    #[error("not enough claims")]
+    #[error("not enough funds")]
     InsufficientFunds,
 
     #[error("base denom not found")]
@@ -105,13 +104,16 @@ pub enum ContractError {
     DecodeError(#[from] prost::DecodeError),
 
     #[error("parse int error: {error} caused by {value}")]
-    ParseIntError { error: ParseIntError, value: String },
+    ParseIntError { error: String, value: String },
 
     #[error("parse int error: {error} caused by {value}")]
     ParseDecError { error: StdError, value: String },
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
+
+    #[error("{0}, location {1}")]
+    TracedOverflowError(OverflowError, String),
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),

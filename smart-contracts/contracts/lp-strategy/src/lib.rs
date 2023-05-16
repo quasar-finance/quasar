@@ -1,3 +1,4 @@
+mod admin;
 pub mod bond;
 pub mod contract;
 pub mod error;
@@ -15,6 +16,9 @@ pub mod state;
 pub mod test_helpers;
 pub mod unbond;
 mod admin;
+
+#[cfg(test)]
+pub mod integration_tests;
 
 #[cfg(test)]
 pub mod integration_tests;

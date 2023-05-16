@@ -1,6 +1,6 @@
 [package]
 name = "lp-strategy"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Laurens Kubat <Laurens@Quasar.fi>"]
 edition = "2021"
 
@@ -34,3 +34,5 @@ quasar-types = { path = "../../packages/quasar-types" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.0"
+proptest = "1.0.0"
+

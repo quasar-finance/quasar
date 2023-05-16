@@ -14,7 +14,7 @@ pub enum Callback {
 #[serde(rename_all = "snake_case")]
 /// BondResponse is the response of a the primitive once the funds are succesfully bonded
 pub struct BondResponse {
-    /// the amount of tokens that were bonded
+    /// the shares gotten by the bond
     pub share_amount: Uint128,
     // the id of this deposit
     pub bond_id: String,

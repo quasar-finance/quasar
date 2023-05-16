@@ -59,7 +59,11 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Runner
 # --------------------------------------------------------
 
-FROM ${RUNNER_IMAGE}
+FROM alpine:3.17.2 as runner
+
+ENV PACKAGES bash
+
+RUN apk add --no-cache $PACKAGES
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 
@@ -70,4 +74,34 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-ENTRYPOINT ["quasarnoded"]
+CMD ["quasarnoded"]
+
+# --------------------------------------------------------
+# Development
+# --------------------------------------------------------
+
+FROM ubuntu:22.04 as dev
+
+ENV PACKAGES jq
+
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+	apt-get update && apt-get install -y $PACKAGES
+
+
+COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
+
+
+ENV HOME /quasar
+WORKDIR $HOME
+
+COPY tests/docker/bootstrap-scripts/entrypoint.sh /quasar/entrypoint.sh
+COPY tests/docker/bootstrap-scripts/quasar_localnet.sh /quasar/app_init.sh
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
+
+EXPOSE 26656
+EXPOSE 26657
+EXPOSE 1317
+
+CMD ["quasarnoded"]
+ENTRYPOINT ["./entrypoint.sh"]

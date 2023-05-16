@@ -7,7 +7,7 @@ use cw_asset::{Asset, AssetInfo};
 pub struct InstantiateMsg {
     pub vault_token: String,
     pub reward_token: AssetInfo,
-    pub distribution_schedule: DistributionSchedule,
+    pub distribution_schedules: Vec<DistributionSchedule>,
 }
 
 #[cw_serde]

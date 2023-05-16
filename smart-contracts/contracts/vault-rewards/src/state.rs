@@ -25,6 +25,18 @@ impl Config {
         Ok(())
     }
 
+    pub fn add_distribution_schedules(
+        &mut self,
+        querier: &QuerierWrapper,
+        env: &Env,
+        schedules: Vec<DistributionSchedule>,
+    ) -> Result<(), VaultRewardsError> {
+        for schedule in schedules {
+            self.add_distribution_schedule(querier, env, schedule)?;
+        }
+        Ok(())
+    }
+
     pub fn update_distribution_schedule(
         &mut self,
         querier: &QuerierWrapper,
@@ -37,7 +49,7 @@ impl Config {
         let mut schedule = self
             .distribution_schedules
             .get(idx)
-            .ok_or_else(|| VaultRewardsError::InvalidDistributionScheduleId {
+            .ok_or(VaultRewardsError::InvalidDistributionScheduleId {
                 max_id: self.distribution_schedules.len() as u64,
             })?
             .clone();
@@ -80,7 +92,7 @@ impl Config {
     ) -> Result<(), VaultRewardsError> {
         let cur_block_height = env.block.height;
         let idx = id.checked_sub(1).unwrap_or_default() as usize;
-        let schedule = self.distribution_schedules.get(idx).ok_or_else(|| {
+        let schedule = self.distribution_schedules.get(idx).ok_or({
             VaultRewardsError::InvalidDistributionScheduleId {
                 max_id: self.distribution_schedules.len() as u64,
             }
@@ -122,7 +134,7 @@ impl Config {
         env: &Env,
         schedule: &DistributionSchedule,
     ) -> Result<(), VaultRewardsError> {
-        if &schedule.start <= &env.block.height {
+        if schedule.start <= env.block.height {
             return Err(VaultRewardsError::InvalidDistributionSchedule {
                 reason: "start must be in the future".to_string(),
             });
@@ -139,9 +151,9 @@ impl Config {
         }
         let reward_token_balance = self
             .reward_token
-            .query_balance(&querier, &env.contract.address)?;
+            .query_balance(querier, &env.contract.address)?;
         let total_distribution_amount = self.get_total_distribution_amount() + schedule.amount;
-        if reward_token_balance < total_distribution_amount {
+        if VALIDATE_FUNDS && reward_token_balance < total_distribution_amount {
             return Err(VaultRewardsError::InsufficientFunds {
                 contract_balance: reward_token_balance,
                 claim_amount: total_distribution_amount,
@@ -208,3 +220,6 @@ pub struct UserBalance {
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const REWARD_INDEX: Map<u64, RewardIndex> = Map::new("reward_index");
 pub const USER_REWARD_INDEX: Map<Addr, UserRewardIndex> = Map::new("user_reward_index");
+
+// to be changed in a future migration
+pub const VALIDATE_FUNDS: bool = false;

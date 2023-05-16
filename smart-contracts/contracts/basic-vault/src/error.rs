@@ -12,6 +12,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Vault is over cap")]
+    OverCap {},
+
     #[error("Validator '{validator}' not in current validator set")]
     NotInValidatorSet { validator: String },
 

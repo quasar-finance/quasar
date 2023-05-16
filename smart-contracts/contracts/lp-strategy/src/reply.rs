@@ -10,6 +10,7 @@ pub fn handle_ibc_reply(
     deps: DepsMut,
     msg: Reply,
     pending: IbcMsgKind,
+    channel: String,
 ) -> Result<Response, ContractError> {
     let data = msg
         .result
@@ -28,7 +29,7 @@ pub fn handle_ibc_reply(
         msg: err.to_string(),
     })?;
 
-    PENDING_ACK.save(deps.storage, seq, &pending)?;
+    PENDING_ACK.save(deps.storage, (seq, channel), &pending)?;
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
@@ -38,13 +39,18 @@ pub fn handle_ibc_reply(
         .add_attribute("step", format!("{pending:?}")))
 }
 
-pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response, ContractError> {
+pub fn handle_ack_reply(
+    deps: DepsMut,
+    msg: Reply,
+    seq: u64,
+    channel: String,
+) -> Result<Response, ContractError> {
     let mut resp = Response::new();
 
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
     // the entire state of the ack execution,
     if let Err(error) = msg.result.into_result() {
-        let step = PENDING_ACK.load(deps.storage, seq)?;
+        let step = PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
         unlock_on_error(deps.storage, &step)?;
 
         // reassignment needed since add_attribute
@@ -52,7 +58,7 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
 
         TRAPS.save(
             deps.storage,
-            seq,
+            (seq, channel),
             &Trap {
                 error,
                 step,
@@ -60,11 +66,14 @@ pub fn handle_ack_reply(deps: DepsMut, msg: Reply, seq: u64) -> Result<Response,
             },
         )?;
     }
+    // if we did not error, we can safely remove the ack entry from the contract
+    else {
+        PENDING_ACK.remove(deps.storage, (seq, channel))
+    }
 
     // // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(resp
-    .add_attribute("register-ack-seq", seq.to_string()))
+    Ok(resp.add_attribute("register-ack-seq", seq.to_string()))
 }
 
 pub fn handle_callback_reply(
@@ -78,15 +87,15 @@ pub fn handle_callback_reply(
     // in Callback contract add callbacl(callback, amount)
     let mut res = Response::new();
 
-    if let Err(error) = msg.result.into_result() {
-        match callback {
+    if let Err(error) = msg.result.clone().into_result() {
+        match callback.clone() {
             // if unbond response callback message, add the amount to the claimable funds map
             ContractCallback::Callback {
                 callback,
                 amount,
                 owner,
-            } => match callback {
-                Callback::UnbondResponse(ur) => {
+            } => {
+                if let Callback::UnbondResponse(ur) = callback {
                     let fund_path = FundPath::Unbond { id: ur.unbond_id };
                     match amount {
                         Some(amount) => {
@@ -99,14 +108,13 @@ pub fn handle_callback_reply(
                         None => Err(ContractError::CallbackHasNoAmount {}),
                     }?;
                 }
-                _ => {}
-            },
+            }
             // if bank callback, add the amount to the claimable funds map
             ContractCallback::Bank {
                 bank_msg,
                 unbond_id,
-            } => match bank_msg {
-                BankMsg::Send { to_address, amount } => {
+            } => {
+                if let BankMsg::Send { to_address, amount } = bank_msg {
                     CLAIMABLE_FUNDS.save(
                         deps.storage,
                         (
@@ -118,8 +126,7 @@ pub fn handle_callback_reply(
                     )?;
                     res = res.add_attribute("bank-callback-error", error.as_str());
                 }
-                _ => {}
-            },
+            }
         }
     }
 
@@ -127,7 +134,11 @@ pub fn handle_callback_reply(
 
     // cleanup the REPLIES state item
     REPLIES.remove(deps.storage, msg.id);
-    Ok(res)
+    Ok(res
+        .add_attribute("reply-msg-id", msg.id.to_string())
+        .add_attribute("reply-result", format!("{:?}", msg.result))
+        .add_attribute("action", "handle-callback-reply")
+        .add_attribute("callback-info", format!("{callback:?}")))
 }
 
 // test handle callback reply
@@ -135,10 +146,46 @@ pub fn handle_callback_reply(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{Addr, Coin, Reply, SubMsgResponse, Uint128};
+    use cosmwasm_std::{
+        testing::mock_dependencies, Addr, Attribute, Coin, Reply, SubMsgResponse, SubMsgResult,
+        Uint128,
+    };
     use quasar_types::callback::Callback;
 
     use crate::{helpers::ContractCallback, reply::handle_callback_reply, state::REPLIES};
+
+    #[test]
+    fn handle_ack_reply_ok_works() {
+        let mut deps = mock_dependencies();
+        let submsg_id = 1;
+        let reply = Reply {
+            id: submsg_id,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: None,
+            }),
+        };
+
+        let seq = 1;
+        let channel = "icq-channel".to_string();
+        PENDING_ACK
+            .save(
+                deps.as_mut().storage,
+                (seq, channel.clone()),
+                &IbcMsgKind::Icq,
+            )
+            .unwrap();
+
+        let res = handle_ack_reply(deps.as_mut(), reply, seq, channel.clone()).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![Attribute {
+                key: "register-ack-seq".to_string(),
+                value: seq.to_string()
+            }]
+        );
+        assert!(!PENDING_ACK.has(deps.as_mut().storage, (seq, channel)))
+    }
 
     #[test]
     fn test_handle_callback_reply_is_unbond_err() {
@@ -175,7 +222,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "unbond-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -238,7 +285,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg.clone(), contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes.len(), 5);
         assert_eq!(res.attributes[0].key, "bank-callback-error");
         assert_eq!(res.attributes[0].value, "error");
 
@@ -270,7 +317,7 @@ mod tests {
                 unbond_id: "unbond_id".to_string(),
             }),
             amount: None,
-            owner: owner,
+            owner,
         };
         let msg = Reply {
             id: 1,
@@ -295,7 +342,7 @@ mod tests {
                 unbond_id: "unbond_id".to_string(),
             }),
             amount: Some(Uint128::new(100)),
-            owner: owner,
+            owner,
         };
         let msg = Reply {
             id: 1,
@@ -315,7 +362,7 @@ mod tests {
             .unwrap();
 
         let res = handle_callback_reply(deps.as_mut(), msg, contract_callback).unwrap();
-        assert_eq!(res.attributes.len(), 0);
+        assert_eq!(res.attributes.len(), 4);
 
         // after cleanup it should be empty
         assert!(REPLIES.is_empty(&deps.storage));

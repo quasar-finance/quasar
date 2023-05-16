@@ -1,16 +1,18 @@
 use std::cmp::Ordering;
 
-use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, Storage, SubMsg, Uint128};
-use cw_utils::must_pay;
+use cosmwasm_std::{Addr, Env, QuerierWrapper, Storage, SubMsg, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::{get_ica_address, get_raw_total_shares},
+    helpers::{get_ica_address, get_total_primitive_shares},
     ibc_util::do_transfer,
     icq::try_icq,
-    state::{OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL, SHARES},
+    state::{
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL,
+        PENDING_BOND_QUEUE, SHARES,
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -26,16 +28,15 @@ pub fn do_bond(
     storage: &mut dyn Storage,
     querier: QuerierWrapper,
     env: Env,
-    info: MessageInfo,
+    amount: Uint128,
+    sender: Addr,
     bond_id: String,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let amount = must_pay(&info, &CONFIG.load(storage)?.local_denom)?;
-
-    BOND_QUEUE.push_back(
+    PENDING_BOND_QUEUE.push_back(
         storage,
         &Bond {
             amount,
-            owner: info.sender,
+            owner: sender,
             bond_id,
         },
     )?;
@@ -48,12 +49,12 @@ pub fn do_bond(
 pub fn batch_bond(
     storage: &mut dyn Storage,
     env: &Env,
-    query_balance: Uint128,
+    total_vault_value: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
     let transfer_chan = CONFIG.load(storage)?.transfer_channel;
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
-    if let Some((amount, deposits)) = fold_bonds(storage, query_balance)? {
+    if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
         Ok(Some(do_transfer(
             storage,
             env,
@@ -93,7 +94,9 @@ pub fn fold_bonds(
             &item.bond_id,
             total_balance,
         )?;
-        total = total.checked_add(item.amount)?;
+        total = total
+            .checked_add(item.amount)
+            .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
         deposits.push(OngoingDeposit {
             claim_amount,
             owner: item.owner,
@@ -113,7 +116,7 @@ fn create_claim(
     bond_id: &str,
     total_balance: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let total_shares = get_raw_total_shares(storage)?;
+    let total_shares = get_total_primitive_shares(storage)?;
 
     // calculate the correct size of the claim
     let claim_amount = calculate_claim(user_balance, total_balance, total_shares)?;
@@ -133,20 +136,32 @@ pub fn create_share(
     match claim.cmp(&amount) {
         Ordering::Less => return Err(ContractError::InsufficientClaims),
         Ordering::Equal => BONDING_CLAIMS.remove(storage, (owner, bond_id)),
-        Ordering::Greater => {
-            BONDING_CLAIMS.save(storage, (owner, bond_id), &claim.checked_sub(amount)?)?
-        }
+        Ordering::Greater => BONDING_CLAIMS.save(
+            storage,
+            (owner, bond_id),
+            &claim.checked_sub(amount).map_err(|err| {
+                ContractError::TracedOverflowError(err, "create_share".to_string())
+            })?,
+        )?,
     }
 
     // TODO do we want to make shares fungible using cw20? if so, call into the minter and mint shares for the according to the claim
-    let shares = SHARES.may_load(storage, owner.clone())?;
-    SHARES.update(storage, owner.clone(), |old| -> Result<Uint128, ContractError> {
-        if let Some(existing) = old {
-            Ok(existing.checked_add(amount)?)
-        } else {
-            Ok(amount)
-        }
-    })?;
+    SHARES.update(
+        storage,
+        owner.clone(),
+        |old| -> Result<Uint128, ContractError> {
+            if let Some(existing) = old {
+                Ok(existing.checked_add(amount).map_err(|err| {
+                    ContractError::TracedOverflowError(
+                        err,
+                        "create_share_update_shares".to_string(),
+                    )
+                })?)
+            } else {
+                Ok(amount)
+            }
+        },
+    )?;
     Ok(claim)
 }
 
@@ -171,23 +186,21 @@ pub fn calculate_claim(
     if total_shares == Uint128::zero() || total_balance == Uint128::zero() {
         Ok(user_balance)
     } else {
-        Ok(user_balance
-            .checked_mul(total_shares)?
-            .checked_div(total_balance)?)
+        Ok(user_balance.checked_multiply_ratio(total_shares, total_balance)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        coin,
         testing::{mock_dependencies, mock_env, MockQuerier},
-        Empty,
+        to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
 
     use crate::{
         ibc_lock::Lock,
-        state::{LpCache, IBC_LOCK, LP_SHARES},
+        icq::prepare_full_query,
+        state::{LpCache, IBC_LOCK, ICQ_CHANNEL, LP_SHARES},
         test_helpers::default_setup,
     };
 
@@ -204,13 +217,8 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
-
-        let info = MessageInfo {
-            sender: owner,
-            funds: vec![coin(1000, config.local_denom)],
-        };
+        let amount = Uint128::new(1000);
 
         IBC_LOCK
             .save(deps.as_mut().storage, &Lock::new().lock_bond())
@@ -220,7 +228,7 @@ mod tests {
         let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
         let q = QuerierWrapper::new(&qx);
 
-        let res = do_bond(deps.as_mut().storage, q, env, info, id.to_string()).unwrap();
+        let res = do_bond(deps.as_mut().storage, q, env, amount, owner, id.to_string()).unwrap();
         assert_eq!(res, None)
     }
 
@@ -229,7 +237,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
 
@@ -246,18 +253,32 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        let info = MessageInfo {
-            sender: owner,
-            funds: vec![coin(1000, config.local_denom)],
-        };
+        let amount = Uint128::new(1000);
         let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
         let q = QuerierWrapper::new(&qx);
 
-        let res = do_bond(deps.as_mut().storage, q, env.clone(), info, id.to_string()).unwrap();
-        assert_eq!(
-            res.unwrap().msg,
-            try_icq(deps.as_mut().storage, q, env).unwrap().unwrap().msg
+        let res = do_bond(
+            deps.as_mut().storage,
+            q,
+            env.clone(),
+            amount,
+            owner,
+            id.to_string(),
         )
+        .unwrap();
+        assert!(res.is_some());
+
+        // mocking the pending bonds is real ugly here
+        let packet =
+            prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
+
+        let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
+            channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
+            data: to_binary(&packet).unwrap(),
+            timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
+        });
+
+        assert_eq!(res.unwrap().msg, icq_msg)
     }
 
     #[test]

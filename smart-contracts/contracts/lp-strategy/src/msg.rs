@@ -1,15 +1,22 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
+pub use cw20::BalanceResponse;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
+    bond::Bond,
     error::Trap,
     helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
+    start_unbond::StartUnbond,
     state::{Config, LpCache, Unbond},
+    unbond::PendingReturningUnbonds,
 };
 
 #[cw_serde]
@@ -36,6 +43,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
+    pub delete_pending: Vec<(u64, String)>,
 }
 
 #[cw_serde]
@@ -46,6 +54,8 @@ pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
     #[returns(IcaAddressResponse)]
+    Balance { address: String },
+    #[returns(BalanceResponse)]
     IcaAddress {},
     #[returns(LockResponse)]
     Lock {},
@@ -71,6 +81,33 @@ pub enum QueryMsg {
     ListPendingAcks {},
     #[returns(ListRepliesResponse)]
     ListReplies {},
+    #[returns(ListClaimableFundsResponse)]
+    ListClaimableFunds {},
+    #[returns(OsmoLockResponse)]
+    OsmoLock {},
+    #[returns(SimulatedJoinResponse)]
+    SimulatedJoin {},
+    #[returns(GetQueuesResponse)]
+    GetQueues {},
+}
+
+#[cw_serde]
+pub struct GetQueuesResponse {
+    pub pending_bond_queue: Vec<Bond>,
+    pub bond_queue: Vec<Bond>,
+    pub start_unbond_queue: Vec<StartUnbond>,
+    pub unbond_queue: Vec<Unbond>,
+}
+
+#[cw_serde]
+pub struct SimulatedJoinResponse {
+    pub amount: Option<Uint128>,
+    pub result: Option<Uint128>,
+}
+
+#[cw_serde]
+pub struct OsmoLockResponse {
+    pub lock_id: u64,
 }
 
 #[cw_serde]
@@ -84,23 +121,29 @@ pub struct ListRepliesResponse {
 }
 
 #[cw_serde]
+pub struct ListClaimableFundsResponse {
+    pub claimable_funds: HashMap<String, Uint128>,
+}
+
+#[cw_serde]
 pub struct ListPrimitiveSharesResponse {
     pub shares: HashMap<Addr, Uint128>,
 }
 
 #[cw_serde]
 pub struct ListPendingAcksResponse {
-    pub pending: HashMap<u64, IbcMsgKind>,
+    pub pending: HashMap<String, IbcMsgKind>,
 }
 
 #[cw_serde]
 pub struct ListUnbondingClaimsResponse {
-    pub unbonds: HashMap<(Addr, String), Unbond>,
+    pub unbonds: HashMap<Addr, (String, Unbond)>,
+    pub pending_unbonds: HashMap<Addr, (String, Unbond)>,
 }
 
 #[cw_serde]
 pub struct UnbondingClaimResponse {
-    pub unbond: Unbond,
+    pub unbond: Option<Unbond>,
 }
 
 #[cw_serde]
@@ -110,7 +153,7 @@ pub struct ChannelsResponse {
 
 #[cw_serde]
 pub struct TrappedErrorsResponse {
-    pub errors: HashMap<u64, Trap>,
+    pub errors: HashMap<String, Trap>,
 }
 
 #[cw_serde]
@@ -149,17 +192,80 @@ pub struct IcaChannelResponse {
 }
 
 #[cw_serde]
+pub enum UnlockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+    Migration,
+}
+
+impl Display for UnlockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnlockOnly::Bond => write!(f, "bond"),
+            UnlockOnly::StartUnbond => write!(f, "start_unbond"),
+            UnlockOnly::Unbond => write!(f, "unbond"),
+            UnlockOnly::Migration => write!(f, "migration"),
+        }
+    }
+}
+
+#[cw_serde]
+pub enum LockOnly {
+    Bond,
+    StartUnbond,
+    Unbond,
+    Migration,
+}
+
+impl Display for LockOnly {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LockOnly::Bond => write!(f, "bond"),
+            LockOnly::StartUnbond => write!(f, "start_unbond"),
+            LockOnly::Unbond => write!(f, "unbond"),
+            LockOnly::Migration => write!(f, "migration"),
+        }
+    }
+}
+
+#[cw_serde]
 pub enum ExecuteMsg {
-    Bond { id: String },
-    StartUnbond { id: String, share_amount: Uint128 },
-    Unbond { id: String },
+    Bond {
+        id: String,
+    },
+    StartUnbond {
+        id: String,
+        share_amount: Uint128,
+    },
+    Unbond {
+        id: String,
+    },
+    SetDepositor {
+        depositor: String,
+    },
     // accept a dispatched transfer from osmosis
-    AcceptReturningFunds { id: u64 },
+    AcceptReturningFunds {
+        id: u64,
+        pending: PendingReturningUnbonds,
+    },
     // try to close a channel where a timout occured
-    CloseChannel { channel_id: String },
-    ReturnTransfer { amount: Uint128 },
-    Ack { ack: IbcPacketAckMsg },
+    CloseChannel {
+        channel_id: String,
+    },
+    Ack {
+        ack: IbcPacketAckMsg,
+    },
     TryIcq {},
-    Unlock {},
-    ManualTimeout {},
+    Unlock {
+        unlock_only: UnlockOnly,
+    },
+    Lock {
+        lock_only: LockOnly,
+    },
+    ManualTimeout {
+        seq: u64,
+        channel: String,
+        should_unlock: bool,
+    },
 }

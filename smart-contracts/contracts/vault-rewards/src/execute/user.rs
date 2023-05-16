@@ -5,6 +5,7 @@ use crate::state::{
 };
 use crate::VaultRewardsError;
 use cosmwasm_std::{Addr, Deps, DepsMut, Env, Order, Response, StdResult, Uint128};
+use cw20::Cw20Contract;
 use cw_asset::{Asset, AssetInfo};
 use cw_storage_plus::Bound;
 
@@ -31,8 +32,20 @@ pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, V
         };
     }
     // update global reward index before calculating user claim amount
-    update_reward_index(deps.storage, &deps.querier, &env)?;
+    update_reward_index(deps.storage, &deps.querier, env)?;
     let claim_amount = get_claim_amount(deps.as_ref(), env, &config, &user_reward_index)?;
+
+    // double check we have enough balance to cover this
+    let contract_reward_token_balance = config
+        .reward_token
+        .query_balance(&deps.querier, &env.contract.address)?;
+    if contract_reward_token_balance < claim_amount {
+        return Err(VaultRewardsError::InsufficientFunds {
+            contract_balance: contract_reward_token_balance,
+            claim_amount,
+        });
+    }
+
     let claim = Asset::new(config.reward_token.clone(), claim_amount).transfer_msg(&user)?;
     user_reward_index.history = vec![];
     USER_REWARD_INDEX.save(deps.storage, user.clone(), &user_reward_index)?;
@@ -40,7 +53,7 @@ pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, V
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new().add_message(claim).add_attributes(vec![
         ("action", "claim"),
-        ("user", &user.to_string()),
+        ("user", user.as_ref()),
         ("amount", &claim_amount.to_string()),
     ]))
 }
@@ -51,21 +64,40 @@ pub fn get_claim_amount(
     config: &Config,
     user_reward_index: &UserRewardIndex,
 ) -> Result<Uint128, VaultRewardsError> {
-    let mut claim_amount = user_reward_index
-        .history
+    let mut user_reward_index_history = user_reward_index.history.clone();
+    // if we don't have the index history until current block height
+    if (user_reward_index_history.is_empty()
+        || user_reward_index_history.last().unwrap().end < env.block.height)
+        && user_reward_index.balance.is_some()
+    {
+        user_reward_index_history.push(DistributionSchedule {
+            start: user_reward_index.balance.clone().unwrap().reward_index + 1,
+            end: env.block.height,
+            amount: user_reward_index.balance.clone().unwrap().balance,
+        });
+    }
+
+    let vault_supply = Cw20Contract(CONFIG.load(deps.storage)?.vault_token)
+        .meta(&deps.querier)?
+        .total_supply;
+
+    let mut claim_amount = user_reward_index_history
         .iter()
         .map(|d| {
             let mut cur_height = d.start;
-            let reward_indexes = REWARD_INDEX
+            let mut reward_indexes = REWARD_INDEX
                 .range(
                     deps.storage,
                     Some(Bound::inclusive(d.start - 1)),
                     Some(Bound::inclusive(d.end)),
                     Order::Ascending,
                 )
-                .into_iter()
                 .collect::<StdResult<Vec<(u64, RewardIndex)>>>()
                 .unwrap();
+
+            if reward_indexes.last().unwrap().0 != env.block.height && d.end == env.block.height {
+                reward_indexes.push((env.block.height, RewardIndex { vault_supply }));
+            }
             // iterate over reward indexes 2 at a time to calculate reward for each period
             reward_indexes
                 .iter()
@@ -91,23 +123,15 @@ pub fn get_claim_amount(
     if claim_amount.is_zero() {
         return Err(VaultRewardsError::NoRewardsToClaim {});
     }
-    let contract_reward_token_balance = config
-        .reward_token
-        .query_balance(&deps.querier, &env.contract.address)?;
-    if contract_reward_token_balance < claim_amount {
-        return Err(VaultRewardsError::InsufficientFunds {
-            contract_balance: contract_reward_token_balance,
-            claim_amount,
-        });
-    }
     Ok(claim_amount)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::execute::mock_querier::{mock_dependencies, WasmMockQuerier};
-    use crate::execute::user::execute_claim;
+    use crate::execute::user::{execute_claim, get_claim_amount};
     use crate::execute::vault::execute_update_user_reward_index;
+    use crate::helpers::get_user_reward_index;
     use crate::state::{Config, DistributionSchedule, CONFIG};
     use crate::VaultRewardsError;
     use cosmwasm_std::testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
@@ -146,7 +170,7 @@ mod tests {
         let user5 = Addr::unchecked("user5");
 
         deps.querier
-            .with_token_balance(&user1.to_string(), &Uint128::new(100));
+            .with_token_balance(user1.as_ref(), &Uint128::new(100));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone()).unwrap();
 
         let res = execute_claim(deps.as_mut(), &env, user1.clone());
@@ -207,7 +231,7 @@ mod tests {
         env.block.height = 251;
 
         deps.querier
-            .with_token_balance(&user2.to_string(), &Uint128::new(100));
+            .with_token_balance(user2.as_ref(), &Uint128::new(100));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone()).unwrap();
 
         env.block.height = 300;
@@ -234,9 +258,9 @@ mod tests {
 
         // transfer balance from user1 to user2
         deps.querier
-            .with_token_balance(&user1.to_string(), &Uint128::zero());
+            .with_token_balance(user1.as_ref(), &Uint128::zero());
         deps.querier
-            .with_token_balance(&user2.to_string(), &Uint128::new(200));
+            .with_token_balance(user2.as_ref(), &Uint128::new(200));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone()).unwrap();
 
@@ -260,11 +284,11 @@ mod tests {
         env.block.height = 1250;
 
         deps.querier
-            .with_token_balance(&user3.to_string(), &Uint128::new(200));
+            .with_token_balance(user3.as_ref(), &Uint128::new(200));
         deps.querier
-            .with_token_balance(&user4.to_string(), &Uint128::new(400));
+            .with_token_balance(user4.as_ref(), &Uint128::new(400));
         deps.querier
-            .with_token_balance(&user5.to_string(), &Uint128::new(800));
+            .with_token_balance(user5.as_ref(), &Uint128::new(800));
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user3.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user4.clone()).unwrap();
         execute_update_user_reward_index(deps.as_mut(), env.clone(), user5.clone()).unwrap();
@@ -329,8 +353,6 @@ mod tests {
             .distribution_schedules
             .iter()
             .fold(Uint128::zero(), |acc, s| acc + s.amount);
-        println!("total_claim_amount: {}", total_claim_amount);
-        println!("expected_claim_amount: {}", expected_claim_amount);
         assert_eq!(total_claim_amount, expected_claim_amount);
     }
 
@@ -344,7 +366,7 @@ mod tests {
     ) {
         let res = execute_claim(deps.as_mut(), env, user.clone());
         if res.is_err() {
-            println!("res: {:?}", res);
+            println!("res: {res:?}");
         }
         assert!(res.is_ok());
         let res = res.unwrap();
@@ -369,9 +391,113 @@ mod tests {
             res.attributes,
             vec![
                 attr("action", "claim"),
-                attr("user", &user.to_string()),
-                attr("amount", &expected_claim_amount.to_string()),
+                attr("user", user.to_string()),
+                attr("amount", expected_claim_amount.to_string()),
             ]
         );
+    }
+
+    #[test]
+    fn execute_get_claim_amount() {
+        let mut deps = mock_dependencies(&[]);
+        let mut env = mock_env();
+        let config = Config {
+            vault_token: Addr::unchecked("vault_token"),
+            reward_token: AssetInfo::native("reward_token"),
+            distribution_schedules: vec![DistributionSchedule {
+                start: 2,
+                end: 14,
+                amount: Uint128::new(900000000),
+            }],
+            total_claimed: Uint128::zero(),
+        };
+        env.block.height = 1;
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        let user1 = Addr::unchecked("user1");
+        let user2 = Addr::unchecked("user2");
+
+        deps.querier
+            .with_token_balance(user1.as_ref(), &Uint128::new(100));
+        deps.querier
+            .with_token_balance(user2.as_ref(), &Uint128::new(200));
+
+        let user_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let res = get_claim_amount(deps.as_ref(), &env, &config, &user_reward_index);
+
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+        assert!(res.is_ok());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+
+        let user1_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let user2_reward_index = get_user_reward_index(&deps.storage, &user2);
+        let res1 = get_claim_amount(deps.as_ref(), &env, &config, &user1_reward_index);
+        let res2 = get_claim_amount(deps.as_ref(), &env, &config, &user2_reward_index);
+
+        assert!(res1.is_ok());
+        assert!(res2.is_ok());
+        assert_eq!(res1.unwrap(), Uint128::new(300000000)); // user1 holds 1/3 of the vaulth
+        assert_eq!(res2.unwrap(), Uint128::new(600000000)); // user2 holds 2/3 of the vaulth
+    }
+
+    #[test]
+    fn execute_get_claim_amount_without_distribution_schedule() {
+        let mut deps = mock_dependencies(&[]);
+        let mut env = mock_env();
+        let config = Config {
+            vault_token: Addr::unchecked("vault_token"),
+            reward_token: AssetInfo::native("reward_token"),
+            distribution_schedules: vec![],
+            total_claimed: Uint128::zero(),
+        };
+        env.block.height = 1;
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        let user1 = Addr::unchecked("user1");
+        let user2 = Addr::unchecked("user2");
+
+        deps.querier
+            .with_token_balance(user1.as_ref(), &Uint128::new(100));
+        deps.querier
+            .with_token_balance(user2.as_ref(), &Uint128::new(200));
+
+        let user_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let res = get_claim_amount(deps.as_ref(), &env, &config, &user_reward_index);
+
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+        let res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+        assert!(res.is_ok());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user1.clone());
+
+        env.block.height += 10;
+
+        let _res = execute_update_user_reward_index(deps.as_mut(), env.clone(), user2.clone());
+
+        let user1_reward_index = get_user_reward_index(&deps.storage, &user1);
+        let user2_reward_index = get_user_reward_index(&deps.storage, &user2);
+        let res1 = get_claim_amount(deps.as_ref(), &env, &config, &user1_reward_index);
+        let res2 = get_claim_amount(deps.as_ref(), &env, &config, &user2_reward_index);
+
+        assert!(res1.is_err());
+        assert_eq!(res1.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
+        assert!(res2.is_err());
+        assert_eq!(res2.err().unwrap(), VaultRewardsError::NoRewardsToClaim {});
     }
 }

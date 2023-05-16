@@ -37,7 +37,7 @@ pub fn is_contract_admin(
         .query_wasm_contract_info(&env.contract.address)?
         .admin;
     if let Some(contract_admin) = contract_admin {
-        if contract_admin != sus_admin.to_string() {
+        if contract_admin != *sus_admin {
             return Err(VaultRewardsError::Unauthorized {});
         }
     } else {

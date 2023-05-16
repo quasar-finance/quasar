@@ -1,8 +1,8 @@
-use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
 use crate::helpers::get_user_reward_index;
 use crate::msg::ConfigResponse;
 use crate::state::CONFIG;
 use crate::VaultRewardsError;
+use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
 use cosmwasm_std::{Addr, Deps, Env, Uint128};
 
 pub fn query_config(deps: Deps, env: Env) -> Result<ConfigResponse, VaultRewardsError> {
