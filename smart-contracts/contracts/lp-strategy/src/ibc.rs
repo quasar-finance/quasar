@@ -167,7 +167,7 @@ pub fn ibc_channel_connect(
             )?;
 
             if counter_party_metadata.is_none() {
-                return Err(ContractError::QError(QError::NoCounterpartyIcaAddress));
+                return Err(ContractError::QuasarError(QError::NoCounterpartyIcaAddress));
             }
             let counter_party = counter_party_metadata.unwrap();
             // at this point, we expect a counterparty address, if it's none, we have to error

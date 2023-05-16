@@ -96,7 +96,7 @@ pub fn create_callback_submsg(
     cosmos_msg: CosmosMsg,
     owner: Addr,
     callback_id: String,
-) -> Result<SubMsg, StdError> {
+) -> Result<SubMsg, ContractError> {
     let last = REPLIES.range(storage, None, None, Order::Descending).next();
     let mut id: u64 = 0;
     if let Some(val) = last {
@@ -120,7 +120,7 @@ pub fn create_callback_submsg(
             bank_msg: bank_msg.to_owned(),
             unbond_id: callback_id,
         }),
-        _ => return Err(StdError::generic_err("Unsupported WasmMsg")),
+        _ => return Err(ContractError::Std(StdError::generic_err("Unsupported WasmMsg"))),
     };
 
     REPLIES.save(storage, id, &data)?;

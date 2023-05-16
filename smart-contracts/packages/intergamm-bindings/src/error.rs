@@ -13,5 +13,5 @@ pub enum ContractError {
 
     // quasarypes or another name
     #[error("{0}")]
-    QuasarError(#[from] quasar_types::types::ContractError),
+    QuasarError(#[from] quasar_types::error::Error),
 }

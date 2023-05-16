@@ -259,7 +259,7 @@ mod tests {
         Addr, Binary, ContractInfoResponse, ContractResult, CosmosMsg, OverflowError,
         OverflowOperation, QuerierResult, Timestamp, Uint128, WasmMsg,
     };
-    use quasar_types::types::ContractError::KeyNotPresentInMap;
+    use quasar_types::error::Error::KeyNotPresentInMap;
 
     use crate::{
         bond::calculate_claim,

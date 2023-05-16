@@ -1,4 +1,4 @@
-use cosmwasm_std::{wasm_execute, Addr, Deps, Env, QuerierWrapper, StdResult, Storage, WasmMsg};
+use cosmwasm_std::{wasm_execute, Addr, Deps, Env, QuerierWrapper, Storage, WasmMsg};
 use lp_strategy::msg::UnbondingClaimResponse;
 use quasar_types::types::ItemShouldLoad;
 use vault_rewards::msg::{ExecuteMsg as VaultRewardsExecuteMsg, VaultExecuteMsg};
@@ -39,12 +39,15 @@ pub fn can_unbond_from_primitive(
     }
 }
 
-pub fn update_user_reward_index(storage: &dyn Storage, user: &Addr) -> StdResult<WasmMsg> {
-    wasm_execute(
+pub fn update_user_reward_index(
+    storage: &dyn Storage,
+    user: &Addr,
+) -> Result<WasmMsg, ContractError> {
+    Ok(wasm_execute(
         VAULT_REWARDS.should_load(storage)?,
         &VaultRewardsExecuteMsg::Vault(VaultExecuteMsg::UpdateUserRewardIndex(user.to_string())),
         vec![],
-    )
+    )?)
 }
 
 pub fn is_contract_admin(

@@ -1,5 +1,4 @@
 use cosmwasm_std::{CheckedMultiplyRatioError, DivideByZeroError, OverflowError, StdError};
-use quasar_types::error::Error as QError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -30,9 +29,6 @@ pub enum ContractError {
 
     #[error("{0}")]
     Base(#[from] cw20_base::ContractError),
-
-    #[error("{0}")]
-    QError(#[from] QError),
 
     #[error("map has duplicate key while no key should be present")]
     DuplicateKey,
@@ -133,7 +129,6 @@ pub enum ContractError {
     #[error("The Callback has no amount set")]
     CallbackHasNoAmount,
 
-    // quasarypes or another name
     #[error("{0}")]
-    QuasarError(#[from] quasar_types::types::ContractError),
+    QuasarError(#[from] quasar_types::error::Error),
 }

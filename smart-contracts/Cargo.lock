@@ -1210,7 +1210,6 @@ dependencies = [
  "osmosis-std 0.13.2",
  "proptest",
  "prost 0.11.8",
- "quasar-traits",
  "quasar-types",
  "schemars",
  "serde",

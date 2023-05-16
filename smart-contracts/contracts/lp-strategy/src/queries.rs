@@ -11,7 +11,7 @@ use quasar_types::{
 
 use crate::{
     bond::Bond,
-    error::Trap,
+    error::{ContractError, Trap},
     helpers::{get_ica_address, get_total_primitive_shares, IbcMsgKind, SubMsgKind},
     msg::{
         ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
@@ -31,30 +31,30 @@ use crate::{
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
-        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::Balance { address } => to_binary(&handle_balance_query(deps, &address)?),
-        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
-        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
-        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
-        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
-        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
-        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
+        QueryMsg::Channels {} => Ok(to_binary(&handle_channels_query(deps)?)?),
+        QueryMsg::Config {} => Ok(to_binary(&handle_config_query(deps)?)?),
+        QueryMsg::IcaAddress {} => Ok(to_binary(&handle_ica_address_query(deps)?)?),
+        QueryMsg::Balance { address } => Ok(to_binary(&handle_balance_query(deps, &address)?)?),
+        QueryMsg::PrimitiveShares {} => Ok(to_binary(&handle_primitive_shares(deps)?)?),
+        QueryMsg::IcaBalance {} => Ok(to_binary(&handle_ica_balance(deps)?)?),
+        QueryMsg::IcaChannel {} => Ok(to_binary(&handle_ica_channel(deps)?)?),
+        QueryMsg::Lock {} => Ok(to_binary(&handle_lock(deps)?)?),
+        QueryMsg::LpShares {} => Ok(to_binary(&handle_lp_shares_query(deps)?)?),
+        QueryMsg::TrappedErrors {} => Ok(to_binary(&handle_trapped_errors_query(deps)?)?),
+        QueryMsg::ListUnbondingClaims {} => Ok(to_binary(&handle_list_unbonding_claims(deps)?)?),
         QueryMsg::UnbondingClaim { addr, id } => {
-            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
+            Ok(to_binary(&handle_unbonding_claim_query(deps, addr, id)?)?)
         }
-        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
-        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
-        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
-        QueryMsg::ListClaimableFunds {} => to_binary(&handle_list_claimable_funds(deps)?),
-        QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
-        QueryMsg::SimulatedJoin {} => to_binary(&handle_simulated_join(deps)?),
-        QueryMsg::GetQueues {} => to_binary(&handle_get_queues(deps)?),
+        QueryMsg::ListBondingClaims {} => Ok(to_binary(&handle_list_bonding_claims(deps)?)?),
+        QueryMsg::ListPrimitiveShares {} => Ok(to_binary(&handle_list_primitive_shares(deps)?)?),
+        QueryMsg::ListPendingAcks {} => Ok(to_binary(&handle_list_pending_acks(deps)?)?),
+        QueryMsg::ListReplies {} => Ok(to_binary(&handle_list_replies(deps)?)?),
+        QueryMsg::ListClaimableFunds {} => Ok(to_binary(&handle_list_claimable_funds(deps)?)?),
+        QueryMsg::OsmoLock {} => Ok(to_binary(&handle_osmo_lock(deps)?)?),
+        QueryMsg::SimulatedJoin {} => Ok(to_binary(&handle_simulated_join(deps)?)?),
+        QueryMsg::GetQueues {} => Ok(to_binary(&handle_get_queues(deps)?)?),
     }
 }
 
@@ -78,7 +78,7 @@ pub fn handle_simulated_join(deps: Deps) -> StdResult<SimulatedJoinResponse> {
     })
 }
 
-pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {
+pub fn handle_osmo_lock(deps: Deps) -> Result<OsmoLockResponse, ContractError> {
     Ok(OsmoLockResponse {
         lock_id: OSMO_LOCK.should_load(deps.storage)?,
     })
@@ -134,45 +134,45 @@ pub fn handle_channels_query(deps: Deps) -> StdResult<ChannelsResponse> {
     Ok(ChannelsResponse { channels })
 }
 
-pub fn handle_lp_shares_query(deps: Deps) -> StdResult<LpSharesResponse> {
+pub fn handle_lp_shares_query(deps: Deps) -> Result<LpSharesResponse, ContractError> {
     Ok(LpSharesResponse {
         lp_shares: LP_SHARES.should_load(deps.storage)?,
     })
 }
 
-pub fn handle_config_query(deps: Deps) -> StdResult<ConfigResponse> {
+pub fn handle_config_query(deps: Deps) -> Result<ConfigResponse, ContractError> {
     Ok(ConfigResponse {
         config: CONFIG.should_load(deps.storage)?,
     })
 }
 
-pub fn handle_ica_address_query(deps: Deps) -> StdResult<IcaAddressResponse> {
+pub fn handle_ica_address_query(deps: Deps) -> Result<IcaAddressResponse, ContractError> {
     Ok(IcaAddressResponse {
         address: get_ica_address(deps.storage, ICA_CHANNEL.should_load(deps.storage)?)
             .expect("ica address setup correctly"),
     })
 }
 
-pub fn handle_balance_query(deps: Deps, address: &str) -> StdResult<BalanceResponse> {
+pub fn handle_balance_query(deps: Deps, address: &str) -> Result<BalanceResponse, ContractError> {
     Ok(BalanceResponse {
         balance: SHARES.should_load(deps.storage, deps.api.addr_validate(address)?)?,
     })
 }
 
-pub fn handle_ica_channel(deps: Deps) -> StdResult<IcaChannelResponse> {
+pub fn handle_ica_channel(deps: Deps) -> Result<IcaChannelResponse, ContractError> {
     Ok(IcaChannelResponse {
         channel: ICA_CHANNEL.should_load(deps.storage)?,
     })
 }
 
-pub fn handle_primitive_shares(deps: Deps) -> StdResult<PrimitiveSharesResponse> {
+pub fn handle_primitive_shares(deps: Deps) -> Result<PrimitiveSharesResponse, ContractError> {
     let total = get_total_primitive_shares(deps.storage).map_err(|err| StdError::GenericErr {
         msg: err.to_string(),
     })?;
     Ok(PrimitiveSharesResponse { total })
 }
 
-pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
+pub fn handle_ica_balance(deps: Deps) -> Result<IcaBalanceResponse, ContractError> {
     let amount = TOTAL_VAULT_BALANCE.should_load(deps.storage)?;
 
     Ok(IcaBalanceResponse {
@@ -183,7 +183,7 @@ pub fn handle_ica_balance(deps: Deps) -> StdResult<IcaBalanceResponse> {
     })
 }
 
-pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
+pub fn handle_lock(deps: Deps) -> Result<LockResponse, ContractError> {
     Ok(LockResponse {
         lock: IBC_LOCK
             .should_load(deps.storage)

@@ -1,3 +1,5 @@
+use std::string::FromUtf8Error;
+
 use cosmwasm_std::{CheckedFromRatioError, DivideByZeroError, IbcOrder, OverflowError, StdError};
 use prost::DecodeError;
 use thiserror::Error;
@@ -56,6 +58,19 @@ pub enum Error {
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
+
     #[error("{0}")]
     CheckedFromRatioError(#[from] CheckedFromRatioError),
+
+    #[error("{0}")]
+    InvalidUTF8(#[from] FromUtf8Error),
+
+    #[error("Item {} is empty", item)]
+    ItemIsEmpty { item: String },
+
+    #[error("Key {:?} is not present in map {}", key, map)]
+    KeyNotPresentInMap { key: String, map: String },
+
+    #[error("Queue {} is empty", queue)]
+    QueueIsEmpty { queue: String },
 }

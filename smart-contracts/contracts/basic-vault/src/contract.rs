@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg,
+    SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -341,7 +341,7 @@ fn query_cap(deps: Deps) -> Result<GetCapResponse, ContractError> {
     })
 }
 
-pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
+pub fn query_vault_token_info(deps: Deps) -> Result<VaultTokenInfoResponse, ContractError> {
     let token_info = TOKEN_INFO.load(deps.storage)?;
     let additional_info = ADDITIONAL_TOKEN_INFO.should_load(deps.storage)?;
     let res = VaultTokenInfoResponse {

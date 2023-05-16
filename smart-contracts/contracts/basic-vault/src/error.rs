@@ -1,7 +1,6 @@
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, OverflowError, StdError, Uint128,
 };
-use quasar_types::error::Error as QError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -100,9 +99,6 @@ pub enum ContractError {
     CoinsWeightVectorIsEmpty {},
 
     #[error("{0}")]
-    QError(#[from] QError),
-
-    #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 
     #[error("{0}")]
@@ -111,9 +107,8 @@ pub enum ContractError {
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
 
-    // quasarypes or another name
     #[error("{0}")]
-    QuasarError(#[from] quasar_types::types::ContractError),
+    QuasarError(#[from] quasar_types::error::Error),
 }
 
 impl From<CheckedFromRatioError> for ContractError {

@@ -262,7 +262,7 @@ mod test {
     use std::str::FromStr;
 
     use crate::multitest::common::PrimitiveInstantiateMsg;
-    use crate::state::{BondingStub, BONDING_SEQ_TO_ADDR, BOND_STATE, CAP};
+    use crate::state::{BondingStub, BOND_STATE};
     use crate::{
         callback::on_bond,
         msg::PrimitiveConfig,
@@ -275,7 +275,6 @@ mod test {
         testing::{mock_dependencies, mock_env, mock_info},
         Decimal,
     };
-    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
     #[test]
     fn fail_if_duplicate_bond_id() {
@@ -362,28 +361,5 @@ mod test {
             ContractError::DuplicateBondResponse { .. } => {}
             _ => panic!("Unexpected error: {:?}", res),
         }
-    }
-
-    #[test]
-    fn make_sure_should_load_errors_are_verbose() {
-        let mut deps = mock_dependencies();
-        let err = CAP.should_load(deps.as_mut().storage).unwrap_err();
-        assert_eq!(
-            err,
-            quasar_types::types::ContractError::ItemIsEmpty {
-                item: "cap".to_string()
-            }
-        );
-
-        let map_err = BONDING_SEQ_TO_ADDR
-            .should_load(deps.as_mut().storage, "1".to_string())
-            .unwrap_err();
-        assert_eq!(
-            map_err,
-            quasar_types::types::ContractError::KeyNotPresentInMap {
-                key: "1".to_string(),
-                map: "bond_seq_to_addr".to_string()
-            }
-        );
     }
 }

@@ -135,7 +135,7 @@ pub fn query_pending_bonds_by_id(
 pub fn query_pending_unbonds_by_id(
     deps: Deps,
     id: String,
-) -> StdResult<PendingUnbondsByIdResponse> {
+) -> Result<PendingUnbondsByIdResponse, ContractError> {
     let unbond_stubs = UNBOND_STATE.should_load(deps.storage, id)?;
 
     Ok(PendingUnbondsByIdResponse {
