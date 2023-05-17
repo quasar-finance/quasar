@@ -1,5 +1,3 @@
-use std::sync::mpsc::Receiver;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Binary;
 use cw_storage_plus::Map;
