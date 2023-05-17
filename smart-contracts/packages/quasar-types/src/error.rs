@@ -70,7 +70,4 @@ pub enum Error {
 
     #[error("Key {:?} is not present in map {}", key, map)]
     KeyNotPresentInMap { key: String, map: String },
-
-    #[error("Queue {} is empty", queue)]
-    QueueIsEmpty { queue: String },
 }

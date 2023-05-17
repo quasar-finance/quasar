@@ -11,6 +11,7 @@
 - Remove unnecessary load from try_icq
 - Changed the locking on the execute calls to lock correctly depending on queue state
 ### Features
+- Change load() for should_load() to get namespaces & keys on errors
 ### Bugfixes
 
 ## V0.1.1 08-05-2023
