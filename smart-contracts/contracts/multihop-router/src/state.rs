@@ -1,5 +1,3 @@
-use std::default;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Binary;
 use cw_storage_plus::Map;
