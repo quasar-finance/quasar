@@ -7,8 +7,8 @@ pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRoute { hop: Hop },
-    MutateRoute { destination: String },
+    AddRoute { destination: String, hops: Hop },
+    MutateRoute { destination: String, hops: Hop },
     RemoveRoute { destination: String },
 }
 
