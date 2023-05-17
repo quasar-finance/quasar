@@ -1,10 +1,12 @@
+use std::fmt::Display;
+
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, StdResult, StdError};
-use cw_storage_plus::{Map, PrimaryKey, Prefixer, KeyDeserialize};
+use cosmwasm_std::{Binary, StdError, StdResult};
+use cw_storage_plus::{KeyDeserialize, Map, PrimaryKey};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const ROUTES: Map<Destination, Hop> = Map::new("routes");
+pub const ROUTES: Map<&Destination, Hop> = Map::new("routes");
 
 #[cw_serde]
 pub struct Hop {
@@ -19,11 +21,11 @@ pub struct Hop {
 impl Hop {
     /// create a packet forwarder memo field from a route of hops
     // TODO to_memo needs to know what to do with receivers of chains it's hopping on
-    pub fn to_memo(self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
+    pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
         Memo::new(self.to_forward(timeout, retries, actual_memo))
     }
 
-    fn to_forward(self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
+    fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
         // TODO what do we do with receiver here
         Forward {
             receiver: todo!(),
@@ -72,6 +74,18 @@ pub enum Next {
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Destination(String);
 
+impl From<String> for Destination {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl Display for Destination {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl PartialEq for Destination {
     // Destinination uses a case insensitive eq
     fn eq(&self, other: &Self) -> bool {
@@ -95,6 +109,30 @@ impl KeyDeserialize for Destination {
 
     #[inline(always)]
     fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
-        Ok(Destination(String::from_utf8(value).map_err(StdError::invalid_utf8)?))
+        Ok(Destination(
+            String::from_utf8(value).map_err(StdError::invalid_utf8)?,
+        ))
+    }
+}
+
+impl<'a> PrimaryKey<'a> for &Destination {
+    type Prefix = ();
+    type SubPrefix = ();
+    type Suffix = Self;
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        self.0.key()
+    }
+}
+
+impl KeyDeserialize for &Destination {
+    type Output = Destination;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        Ok(Destination(
+            String::from_utf8(value).map_err(StdError::invalid_utf8)?,
+        ))
     }
 }
