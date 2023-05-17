@@ -1,6 +1,8 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 
+pub type ContractResult<T> = Result<T, ContractError>;
+
 #[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
@@ -8,6 +10,10 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+
+    #[error("Destination already exists")]
+    DestinationAlreadyExists,
+
+    #[error("Destination does not exist")]
+    DestinationNotExists,
 }
