@@ -1,10 +1,10 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Binary;
-use cw_storage_plus::Map;
+use cosmwasm_std::{Binary, StdResult, StdError};
+use cw_storage_plus::{Map, PrimaryKey, Prefixer, KeyDeserialize};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-const ROUTES: Map<Destination, Hop> = Map::new("routes");
+pub const ROUTES: Map<Destination, Hop> = Map::new("routes");
 
 #[cw_serde]
 pub struct Hop {
@@ -76,5 +76,25 @@ impl PartialEq for Destination {
     // Destinination uses a case insensitive eq
     fn eq(&self, other: &Self) -> bool {
         self.0.to_lowercase() == other.0.to_lowercase()
+    }
+}
+
+impl<'a> PrimaryKey<'a> for Destination {
+    type Prefix = ();
+    type SubPrefix = ();
+    type Suffix = Self;
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        self.0.key()
+    }
+}
+
+impl KeyDeserialize for Destination {
+    type Output = Destination;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        Ok(Destination(String::from_utf8(value).map_err(StdError::invalid_utf8)?))
     }
 }
