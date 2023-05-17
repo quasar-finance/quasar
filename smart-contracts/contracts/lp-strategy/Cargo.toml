@@ -31,6 +31,7 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde-json-wasm = { version = "0.4.1", default-features = false }
 thiserror = { version = "1.0.23" }
 quasar-types = { path = "../../packages/quasar-types" }
+cargo-llvm-cov = "0.1.13"
 
 [dev-dependencies]
 cw-multi-test = "0.16.0"

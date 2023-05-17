@@ -82,13 +82,10 @@ where
     T: Serialize + DeserializeOwned,
 {
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, Error> {
-        let namespace_str = String::from_utf8(self.namespace().to_vec())?;
-        let string_key = String::from_utf8(key.joined_key())?;
-
-        self.may_load(storage, key)?
+        self.may_load(storage, key.clone())?
             .ok_or(Error::KeyNotPresentInMap {
-                key: string_key,
-                map: namespace_str,
+                key: String::from_utf8(key.joined_key())?,
+                map: String::from_utf8(self.namespace().to_vec())?,
             })
     }
 }

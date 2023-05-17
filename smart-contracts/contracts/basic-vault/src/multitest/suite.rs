@@ -7,7 +7,7 @@ use crate::{
 use cosmwasm_schema::{schemars, serde};
 use cosmwasm_std::{
     testing::MockApi, Addr, Binary, IbcChannel, IbcEndpoint, IbcMsg, IbcOrder, IbcQuery,
-    MemoryStorage, StdError,
+    MemoryStorage,
 };
 use cw_multi_test::{
     ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
@@ -286,11 +286,11 @@ impl QuasarVaultSuite {
             .execute_contract(sender.clone(), self.vault.clone(), &msg, &funds)
             .map_err(|err| match err.downcast::<VaultContractError>() {
                 Ok(err_unwrapped) => err_unwrapped,
-                Err(e) => VaultContractError::QuasarError(quasar_types::error::Error::Std(
-                    StdError::GenericErr {
-                        msg: e.root_cause().to_string(),
-                    },
-                )),
+                Err(e) => {
+                    VaultContractError::QuasarError(quasar_types::error::Error::ItemIsEmpty {
+                        item: e.root_cause().to_string(),
+                    })
+                }
             })
             .map(|_| ())
     }

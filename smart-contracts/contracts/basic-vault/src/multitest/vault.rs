@@ -1,7 +1,6 @@
-use cosmwasm_std::StdError;
-
 use crate::multitest::common::*;
 use crate::multitest::suite::*;
+use quasar_types::error::Error::ItemIsEmpty;
 
 #[test]
 fn try_bond() {
@@ -18,8 +17,8 @@ fn try_bond() {
     // this error happens because our ibc channel is not open yet
     assert_eq!(
         err,
-        VaultContractError::QuasarError(quasar_types::error::Error::Std(StdError::GenericErr {
-            msg: "Item icq_channel is empty".to_string()
-        }))
+        VaultContractError::QuasarError(ItemIsEmpty {
+            item: "Item icq_channel is empty".to_string()
+        })
     );
 }
