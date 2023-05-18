@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// StoreContractCode writes the contract into the docker container of chain node, executes the wasm store command
+// StoreContractCode writes the Contract into the docker container of chain node, executes the wasm store command
 // and returns the code id at the end.
 func (s *E2ETestSuite) StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, keyName string, contract []byte) uint64 {
 	tn := GetFullNode(chain)
@@ -25,10 +25,10 @@ func (s *E2ETestSuite) StoreContractCode(ctx context.Context, chain *cosmos.Cosm
 		zap.String("test", tn.TestName),
 	)
 
-	contractFile := "contract.wasm"
+	contractFile := "Contract.wasm"
 	fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
 	err := fw.WriteFile(ctx, tn.VolumeName, contractFile, contract)
-	s.Require().NoError(err, "failed to write contract file")
+	s.Require().NoError(err, "failed to write Contract file")
 
 	txhash, err := tn.ExecTx(ctx, keyName,
 		"wasm", "store", filepath.Join(tn.HomeDir(), contractFile),
@@ -42,7 +42,7 @@ func (s *E2ETestSuite) StoreContractCode(ctx context.Context, chain *cosmos.Cosm
 	return resp.CodeID
 }
 
-// InstantiateContract instantiates the contract with given codeID on chain. Note that label, admin and funds are optional.
+// InstantiateContract instantiates the Contract with given codeID on chain. Note that label, admin and funds are optional.
 func (s *E2ETestSuite) InstantiateContract(
 	ctx context.Context,
 	chain *cosmos.CosmosChain,
@@ -75,7 +75,7 @@ func (s *E2ETestSuite) InstantiateContract(
 	}
 
 	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
-	s.Require().NoError(err, "failed to instantiate contract")
+	s.Require().NoError(err, "failed to instantiate Contract")
 
 	var resp wasmtypes.MsgInstantiateContractResponse
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, &resp)
@@ -83,7 +83,7 @@ func (s *E2ETestSuite) InstantiateContract(
 	return resp
 }
 
-// ExecuteContract executes the contract with given contract address on chain. Note that funds are optional.
+// ExecuteContract executes the Contract with given Contract address on chain. Note that funds are optional.
 func (s *E2ETestSuite) ExecuteContract(
 	ctx context.Context,
 	chain *cosmos.CosmosChain,
@@ -107,7 +107,7 @@ func (s *E2ETestSuite) ExecuteContract(
 	}
 
 	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
-	s.Require().NoError(err, "failed to execute contract")
+	s.Require().NoError(err, "failed to execute Contract")
 
 	var resp wasmtypes.MsgExecuteContractResponse
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, &resp)
@@ -123,7 +123,7 @@ func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.C
 	argsbz, err := json.Marshal(args)
 	s.Require().NoError(err)
 
-	cmds := []string{"wasm", "contract-state", "smart",
+	cmds := []string{"wasm", "Contract-state", "smart",
 		contractAddr,
 		string(argsbz),
 		"--output", "json",

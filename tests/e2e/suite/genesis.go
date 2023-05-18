@@ -468,3 +468,8 @@ func osmosisPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, er
 		MasterMinter: masterMinter,
 	}, nil
 }
+
+func addPreGenesis(ctx context.Context, val *cosmos.ChainNode, accounts AccountsNew) (AccountsNew, error) {
+	// todo implement a general pre genesis function
+	return AccountsNew{}, nil
+}

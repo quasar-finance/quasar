@@ -23,6 +23,7 @@ import (
 )
 
 type Contract struct {
+	contractType    string
 	contractAddress string
 	codeID          uint64
 	label           string
@@ -38,7 +39,7 @@ type ContractDetail struct {
 	Label       string `json:"label"`
 }
 
-// NewContract returns contract struct with init message assigned to it if codeID is zero
+// NewContract returns Contract struct with init message assigned to it if codeID is zero
 func NewContract(initMsg any, label string, codeID uint64) *Contract {
 	if codeID == 0 {
 		return &Contract{
@@ -99,7 +100,7 @@ func (p *Contract) InstantiateContract(ctx context.Context, acc *ibc.Wallet, cha
 
 	txhash, err := tn.ExecTx(ctx, acc.KeyName, cmds...)
 	if err != nil {
-		return fmt.Errorf(err.Error(), "failed to instantiate contract")
+		return fmt.Errorf(err.Error(), "failed to instantiate Contract")
 	}
 
 	var resp wasmtypes.MsgInstantiateContractResponse
@@ -129,6 +130,9 @@ func (p *Contract) InstantiateContract(ctx context.Context, acc *ibc.Wallet, cha
 }
 
 func (p *Contract) CreateICQChannel(ctx context.Context, relayer *rly.CosmosRelayer, erep *testreporter.RelayerExecReporter) error {
+	if p.label == "" || p.codeID <= 0 || p.contractAddress == "" {
+		return fmt.Errorf("label, code ID or Contract address is not correctly instantiated")
+	}
 	return relayer.CreateChannel(
 		ctx, erep, Quasar2OsmosisPath, ibc.CreateChannelOptions{
 			SourcePortName: fmt.Sprintf("wasm.%s", p.contractAddress),
@@ -140,8 +144,8 @@ func (p *Contract) CreateICQChannel(ctx context.Context, relayer *rly.CosmosRela
 }
 
 func (p *Contract) CreateICAChannel(ctx context.Context, relayer *rly.CosmosRelayer, erep *testreporter.RelayerExecReporter, connectionID, counterPartyConnectionID string) error {
-	if p.contractAddress == "" {
-		return fmt.Errorf("primitive not initialised")
+	if p.label == "" || p.codeID <= 0 || p.contractAddress == "" {
+		return fmt.Errorf("label, code ID or Contract address is not correctly instantiated")
 	}
 	return relayer.CreateChannel(
 		ctx, erep, Quasar2OsmosisPath, ibc.CreateChannelOptions{
@@ -158,6 +162,10 @@ func (p *Contract) CreateICAChannel(ctx context.Context, relayer *rly.CosmosRela
 }
 
 func (p *Contract) QueryContract(ctx context.Context, chain *cosmos.CosmosChain, args any) ([]byte, error) {
+	if p.contractAddress == "" {
+		return nil, fmt.Errorf("primitive not initialised")
+	}
+
 	tn := GetFullNode(chain)
 
 	argsbz, err := json.Marshal(args)
@@ -165,7 +173,7 @@ func (p *Contract) QueryContract(ctx context.Context, chain *cosmos.CosmosChain,
 		return nil, err
 	}
 
-	cmds := []string{"wasm", "contract-state", "smart",
+	cmds := []string{"wasm", "Contract-state", "smart",
 		p.contractAddress,
 		string(argsbz),
 		"--output", "json",
@@ -180,6 +188,10 @@ func (p *Contract) QueryContract(ctx context.Context, chain *cosmos.CosmosChain,
 }
 
 func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, acc *ibc.Wallet) (any, error) {
+	if p.contractAddress == "" {
+		return nil, fmt.Errorf("primitive not initialised")
+	}
+
 	tn := GetFullNode(chain)
 
 	argsbz, err := json.Marshal(args)
@@ -198,7 +210,7 @@ func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChai
 
 	txhash, err := tn.ExecTx(ctx, acc.KeyName, cmds...)
 	if err != nil {
-		return nil, fmt.Errorf(err.Error(), "failed to execute contract")
+		return nil, fmt.Errorf(err.Error(), "failed to execute Contract")
 	}
 
 	var resp wasmtypes.MsgExecuteContractResponse
@@ -265,7 +277,7 @@ func ReadInitMessagesFile(path string) ([]*Contract, error) {
 }
 
 func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, acc *ibc.Wallet, s *E2ETestSuiteBuilder) (uint64, error) {
-	// Read the contract from os file
+	// Read the Contract from os file
 	contract, err := os.ReadFile(filePath)
 	if err != nil {
 		return 0, err
@@ -278,11 +290,11 @@ func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath 
 		zap.String("test", tn.TestName),
 	)
 
-	contractFile := "contract.wasm"
+	contractFile := "Contract.wasm"
 	fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
 	err = fw.WriteFile(ctx, tn.VolumeName, contractFile, contract)
 	if err != nil {
-		return 0, fmt.Errorf(err.Error(), "failed to write contract file")
+		return 0, fmt.Errorf(err.Error(), "failed to write Contract file")
 	}
 
 	txhash, err := tn.ExecTx(ctx, acc.KeyName,

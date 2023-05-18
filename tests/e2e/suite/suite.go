@@ -42,11 +42,6 @@ type E2ETestSuite struct {
 	logger *zap.Logger
 }
 
-type path struct {
-	chain1 ibc.Chain
-	chain2 ibc.Chain
-}
-
 // Quasar returns the quasar chain instance. It fails the test if suite haven't been built with quasar chain.
 func (s *E2ETestSuite) Quasar() *cosmos.CosmosChain {
 	s.Require().NotNil(s.quasar)
