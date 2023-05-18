@@ -174,13 +174,15 @@ mod tests {
         let hop1 = Hop::new(
             "channel-1",
             "transfer",
-            Some(Hop::new("channel-2", "transfer", None)),
+            "cosmosBob",
+            Some(Hop::new("channel-2", "transfer", "quasarBob",None)),
         );
 
         let hop2 = Hop::new(
             "channel-866",
             "transfer",
-            Some(Hop::new("channel-644", "transfer", None)),
+            "osmoBob",
+            Some(Hop::new("channel-644", "transfer", "quasarBob",None)),
         );
 
         ROUTES

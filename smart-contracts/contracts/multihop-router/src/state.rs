@@ -14,15 +14,20 @@ pub struct Hop {
     channel: String,
     // port will most likely be "transfer"
     port: String,
+    // receiver is the receiver of the hop. If the chain has packet forward middelware properly integrated
+    // the receiver is never relevant. If PFM is not properly integrated, the receiver will have the funds.
+    // The users of the multihop router should ensure that the receiver works as intended
+    receiver: String,
     // the next hop to take to reach the actual destination chain
     next: Option<Box<Hop>>,
 }
 
 impl Hop {
-    pub fn new(channel: impl Into<String>, port: impl Into<String>, hop: Option<Hop>) -> Hop {
+    pub fn new(channel: impl Into<String>, port: impl Into<String>, receiver: impl Into<String>, hop: Option<Hop>) -> Hop {
         Hop {
             channel: channel.into(),
             port: port.into(),
+            receiver: receiver.into(),
             next: hop.map(Box::new),
         }
     }
