@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Binary;
 
 use crate::state::{Destination, Hop, Memo};
 
@@ -15,8 +16,14 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    // TODO change timeout to either a Timestamp or a Duration, also find a datastructure that is always a json
     #[returns(GetMemoResponse)]
-    GetMemo { destination: String },
+    GetMemo {
+        destination: String,
+        timeout: String,
+        retries: i64,
+        actual_memo: Option<Binary>,
+    },
     #[returns(GetRouteResponse)]
     GetRoute { destination: String },
     #[returns(ListRoutesResponse)]
@@ -25,15 +32,15 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct GetMemoResponse {
-    memo: Memo,
+    pub memo: Memo,
 }
 
 #[cw_serde]
 pub struct GetRouteResponse {
-    hops: Hop,
+    pub hops: Hop,
 }
 
 #[cw_serde]
 pub struct ListRoutesResponse {
-    memos: Vec<(Destination, Hop)>,
+    pub routes: Vec<(Destination, Hop)>,
 }

@@ -1,11 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Order, to_binary};
 // use cw2::set_contract_version;
 
 use crate::error::{ContractError, ContractResult};
 use crate::helpers::is_contract_admin;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{
+    ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse, QueryMsg,
+};
 use crate::state::{Destination, Hop, ROUTES};
 
 // version info for migration info
@@ -100,9 +102,60 @@ pub fn execute_remove_route(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    unimplemented!()
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+    match msg {
+        QueryMsg::GetMemo {
+            destination,
+            timeout,
+            retries,
+            actual_memo,
+        } => Ok(to_binary(&handle_get_memo(deps, destination.into(), timeout, retries, actual_memo)?)?),
+        QueryMsg::GetRoute { destination } => Ok(to_binary(&handle_get_route(deps, destination.into())?)?),
+        QueryMsg::ListRoutes {} => Ok(to_binary(&handle_list_routes(deps)?)?),
+    }
+}
+
+fn handle_get_memo(
+    deps: Deps,
+    dst: Destination,
+    timeout: String,
+    retries: i64,
+    actual_memo: Option<Binary>,
+) -> ContractResult<GetMemoResponse> {
+    let memo = ROUTES
+        .may_load(deps.storage, &dst)?
+        .ok_or(ContractError::DestinationNotExists)?
+        .to_memo(timeout, retries, actual_memo);
+    Ok(GetMemoResponse { memo })
+}
+
+fn handle_get_route(deps: Deps, dst: Destination) -> ContractResult<GetRouteResponse> {
+    let hops = ROUTES
+        .may_load(deps.storage, &dst)?
+        .ok_or(ContractError::DestinationNotExists)?;
+    Ok(GetRouteResponse { hops })
+}
+
+fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
+    let routes: StdResult<Vec<(Destination, Hop)>> =
+        ROUTES.range(deps.storage, None, None, Order::Ascending).collect();
+    Ok(ListRoutesResponse {
+        routes: routes?.iter().map(|(dst, val)| (dst.clone(), val.clone())).collect(),
+    })
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+
+    use super::query;
+
+
+    #[test]
+    fn query_list_routes_works() {
+        let deps = mock_dependencies();
+        let env = mock_env();
+
+        let result = query(deps.as_ref(), env, crate::msg::QueryMsg::ListRoutes {}).unwrap();
+    }
+}
