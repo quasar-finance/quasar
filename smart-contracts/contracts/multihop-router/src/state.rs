@@ -19,6 +19,14 @@ pub struct Hop {
 }
 
 impl Hop {
+    pub fn new(channel: impl Into<String>, port: impl Into<String>, hop: Option<Hop>) -> Hop {
+        Hop {
+            channel: channel.into(),
+            port: port.into(),
+            next: hop.map(Box::new),
+        }
+    }
+
     /// create a packet forwarder memo field from a route of hops
     // TODO to_memo needs to know what to do with receivers of chains it's hopping on
     pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
@@ -72,7 +80,7 @@ pub enum Next {
 
 // destination uses a special partialEq, so we don't derive it
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-pub struct Destination(String);
+pub struct Destination(pub String);
 
 impl From<String> for Destination {
     fn from(value: String) -> Self {

@@ -1,6 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Order, to_binary};
+use cosmwasm_std::{
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+};
 // use cw2::set_contract_version;
 
 use crate::error::{ContractError, ContractResult};
@@ -109,8 +111,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             timeout,
             retries,
             actual_memo,
-        } => Ok(to_binary(&handle_get_memo(deps, destination.into(), timeout, retries, actual_memo)?)?),
-        QueryMsg::GetRoute { destination } => Ok(to_binary(&handle_get_route(deps, destination.into())?)?),
+        } => Ok(to_binary(&handle_get_memo(
+            deps,
+            destination.into(),
+            timeout,
+            retries,
+            actual_memo,
+        )?)?),
+        QueryMsg::GetRoute { destination } => {
+            Ok(to_binary(&handle_get_route(deps, destination.into())?)?)
+        }
         QueryMsg::ListRoutes {} => Ok(to_binary(&handle_list_routes(deps)?)?),
     }
 }
@@ -137,25 +147,60 @@ fn handle_get_route(deps: Deps, dst: Destination) -> ContractResult<GetRouteResp
 }
 
 fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
-    let routes: StdResult<Vec<(Destination, Hop)>> =
-        ROUTES.range(deps.storage, None, None, Order::Ascending).collect();
+    let routes: StdResult<Vec<(Destination, Hop)>> = ROUTES
+        .range(deps.storage, None, None, Order::Descending)
+        .collect();
     Ok(ListRoutesResponse {
-        routes: routes?.iter().map(|(dst, val)| (dst.clone(), val.clone())).collect(),
+        routes: routes?
+            .iter()
+            .map(|(dst, val)| (dst.clone(), val.clone()))
+            .collect(),
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{testing::{mock_dependencies, mock_env}, from_binary};
+
+    use crate::{state::{Destination, Hop, ROUTES}, msg::ListRoutesResponse};
 
     use super::query;
 
-
     #[test]
     fn query_list_routes_works() {
-        let deps = mock_dependencies();
+        let mut deps = mock_dependencies();
         let env = mock_env();
 
+        let hop1 = Hop::new(
+            "channel-1",
+            "transfer",
+            Some(Hop::new("channel-2", "transfer", None)),
+        );
+
+        let hop2 = Hop::new(
+            "channel-866",
+            "transfer",
+            Some(Hop::new("channel-644", "transfer", None)),
+        );
+
+        ROUTES
+            .save(
+                deps.as_mut().storage,
+                &Destination("osmosis".to_string()),
+                &hop1,
+            )
+            .unwrap();
+
+        ROUTES
+            .save(
+                deps.as_mut().storage,
+                &Destination("gaia".to_string()),
+                &hop2,
+            )
+            .unwrap();
+
         let result = query(deps.as_ref(), env, crate::msg::QueryMsg::ListRoutes {}).unwrap();
+        let response: ListRoutesResponse = from_binary(&result).unwrap();
+        assert_eq!(response, ListRoutesResponse { routes: vec![("osmosis".to_string().into(), hop1), ("gaia".to_string().into(), hop2)] })
     }
 }
