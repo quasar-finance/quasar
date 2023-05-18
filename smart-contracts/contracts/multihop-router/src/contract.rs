@@ -23,7 +23,10 @@ pub fn instantiate(
     _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    unimplemented!()
+    Ok(Response::new()
+        .add_attribute("action", "instantiate")
+        .add_attribute("contract", CONTRACT_NAME)
+        .add_attribute("version", CONTRACT_VERSION))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -160,9 +163,15 @@ fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::{mock_dependencies, mock_env}, from_binary};
+    use cosmwasm_std::{
+        from_binary,
+        testing::{mock_dependencies, mock_env},
+    };
 
-    use crate::{state::{Destination, Hop, ROUTES}, msg::ListRoutesResponse};
+    use crate::{
+        msg::ListRoutesResponse,
+        state::{Destination, Hop, ROUTES},
+    };
 
     use super::query;
 
@@ -175,14 +184,14 @@ mod tests {
             "channel-1",
             "transfer",
             "cosmosBob",
-            Some(Hop::new("channel-2", "transfer", "quasarBob",None)),
+            Some(Hop::new("channel-2", "transfer", "quasarBob", None)),
         );
 
         let hop2 = Hop::new(
             "channel-866",
             "transfer",
             "osmoBob",
-            Some(Hop::new("channel-644", "transfer", "quasarBob",None)),
+            Some(Hop::new("channel-644", "transfer", "quasarBob", None)),
         );
 
         ROUTES
@@ -203,6 +212,14 @@ mod tests {
 
         let result = query(deps.as_ref(), env, crate::msg::QueryMsg::ListRoutes {}).unwrap();
         let response: ListRoutesResponse = from_binary(&result).unwrap();
-        assert_eq!(response, ListRoutesResponse { routes: vec![("osmosis".to_string().into(), hop1), ("gaia".to_string().into(), hop2)] })
+        assert_eq!(
+            response,
+            ListRoutesResponse {
+                routes: vec![
+                    ("osmosis".to_string().into(), hop1),
+                    ("gaia".to_string().into(), hop2)
+                ]
+            }
+        )
     }
 }

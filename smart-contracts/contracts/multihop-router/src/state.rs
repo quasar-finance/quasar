@@ -23,7 +23,12 @@ pub struct Hop {
 }
 
 impl Hop {
-    pub fn new(channel: impl Into<String>, port: impl Into<String>, receiver: impl Into<String>, hop: Option<Hop>) -> Hop {
+    pub fn new(
+        channel: impl Into<String>,
+        port: impl Into<String>,
+        receiver: impl Into<String>,
+        hop: Option<Hop>,
+    ) -> Hop {
         Hop {
             channel: channel.into(),
             port: port.into(),
