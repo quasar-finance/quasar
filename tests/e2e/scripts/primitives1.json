@@ -12,7 +12,8 @@
         "transfer_channel": "channel-0",
         "expected_connection": "connection-0"
       },
-      "label": "lp_strategy_test"
+      "label": "lp_strategy_test",
+      "contract_type": "primitive-1"
     },
     {
       "init_message": {
@@ -26,7 +27,8 @@
         "transfer_channel": "channel-0",
         "expected_connection": "connection-0"
       },
-      "label": "lp_strategy_test"
+      "label": "lp_strategy_test",
+      "contract_type": "primitive-2"
     },
     {
       "init_message": {
@@ -40,7 +42,8 @@
         "transfer_channel": "channel-0",
         "expected_connection": "connection-0"
       },
-      "label": "lp_strategy_test"
+      "label": "lp_strategy_test",
+      "contract_type": "primitive-3"
     }
   ]
 }

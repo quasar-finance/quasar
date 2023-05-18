@@ -34,12 +34,15 @@ func TestE2eTestBuilder(t *testing.T) {
 			testSuite.NewContract("test", "test", 2),
 		}
 
-		c.SetContracts(newConrtacts)
+		err := c.SetContracts(newConrtacts)
+		b.Require().NoError(err)
 	}
 
 	d, found := b.Chains.GetChain("quasar")
 	if found {
-		for _, ct := range d.GetContracts() {
+		contracts, err := d.GetContracts()
+		b.Require().NoError(err)
+		for _, ct := range contracts {
 			fmt.Println(ct.GetCodeID())
 		}
 	}

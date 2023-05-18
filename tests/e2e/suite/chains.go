@@ -113,31 +113,41 @@ func (c Chains) GetChain(chainName string) (*Chain, bool) {
 	return &Chain{}, false
 }
 
-func (p *Chain) SetContracts(contracts []*Contract) {
+func (p *Chain) SetContracts(contracts []*Contract) error {
+	if !p.IsWasmEnabled {
+		return fmt.Errorf("chain is not wasm enabled, chain name : %s", p.Chain.Config().Name)
+	}
 	p.contracts = append(p.contracts, contracts...)
+	return nil
 }
 
-func (p *Chain) FindContractByType(contractType string) *Contract {
+func (p *Chain) FindContractByType(contractType string) (*Contract, error) {
+	if !p.IsWasmEnabled {
+		return nil, fmt.Errorf("chain is not wasm enabled, chain name : %s", p.Chain.Config().Name)
+	}
+
 	for _, ct := range p.contracts {
 		if ct.contractType == contractType {
-			return ct
+			return ct, nil
 		}
 	}
-	return nil
+
+	return nil, fmt.Errorf("contract type does not exist in chain : %s", p.Chain.Config().Name)
 }
 
-func (c *Chain) GetContracts() []*Contract {
-	if c.IsWasmEnabled {
-		return c.contracts
+func (p *Chain) GetContracts() ([]*Contract, error) {
+	if p.IsWasmEnabled {
+		return p.contracts, nil
+	} else {
+		return nil, fmt.Errorf("chain is not wasm enabled, chain name : %s", p.Chain.Config().Name)
 	}
-	return nil
 }
 
-func (c *Chain) CreateUserAndFund(suite *suite.Suite, ctx context.Context, amount int64) (*ibc.Wallet, error) {
-	user := ibctest.GetAndFundTestUsers(suite.T(), ctx, strings.ReplaceAll(suite.T().Name(), " ", "-"), amount, c.Chain)[0]
+func (p *Chain) CreateUserAndFund(suite *suite.Suite, ctx context.Context, amount int64) (*ibc.Wallet, error) {
+	user := ibctest.GetAndFundTestUsers(suite.T(), ctx, strings.ReplaceAll(suite.T().Name(), " ", "-"), amount, p.Chain)[0]
 
 	// Wait a few blocks
-	err := testutil.WaitForBlocks(ctx, 5, c.Chain)
+	err := testutil.WaitForBlocks(ctx, 5, p.Chain)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +155,8 @@ func (c *Chain) CreateUserAndFund(suite *suite.Suite, ctx context.Context, amoun
 	return user, nil
 }
 
-func (c *Chain) ExecQuery(ctx context.Context, resp any, cmd ...string) error {
-	tn := GetFullNode(c.Chain)
+func (p *Chain) ExecQuery(ctx context.Context, resp any, cmd ...string) error {
+	tn := GetFullNode(p.Chain)
 	stdout, stderr, err := tn.ExecQuery(ctx, cmd...)
 	if err != nil {
 		return err
@@ -163,8 +173,8 @@ func (c *Chain) ExecQuery(ctx context.Context, resp any, cmd ...string) error {
 	return nil
 }
 
-func (c *Chain) ExecTx(ctx context.Context, keyName string, cmd ...string) (string, error) {
-	tn := GetFullNode(c.Chain)
+func (p *Chain) ExecTx(ctx context.Context, keyName string, cmd ...string) (string, error) {
+	tn := GetFullNode(p.Chain)
 	txhash, err := tn.ExecTx(ctx, keyName, cmd...)
 	if err != nil {
 		return "", err
@@ -173,8 +183,8 @@ func (c *Chain) ExecTx(ctx context.Context, keyName string, cmd ...string) (stri
 	return txhash, nil
 }
 
-func (c *Chain) AssertSuccessfulResultTx(ctx context.Context, txhash string, resp proto.Message) error {
-	tn := GetFullNode(c.Chain)
+func (p *Chain) AssertSuccessfulResultTx(ctx context.Context, txhash string, resp proto.Message) error {
+	tn := GetFullNode(p.Chain)
 
 	txhashBytes, err := hex.DecodeString(txhash)
 	if err != nil {

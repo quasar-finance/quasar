@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"github.com/strangelove-ventures/interchaintest/v4/relayer/rly"
 	"github.com/strangelove-ventures/interchaintest/v4/testreporter"
+	"go.uber.org/zap"
 
 	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
 )
@@ -35,8 +35,9 @@ type ContractDetails struct {
 }
 
 type ContractDetail struct {
-	InitMessage any    `json:"init_message"`
-	Label       string `json:"label"`
+	InitMessage  any    `json:"init_message"`
+	Label        string `json:"label"`
+	ContractType string `json:"contract_type"`
 }
 
 // NewContract returns Contract struct with init message assigned to it if codeID is zero
@@ -276,7 +277,7 @@ func ReadInitMessagesFile(path string) ([]*Contract, error) {
 	return primitives, nil
 }
 
-func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, acc *ibc.Wallet, s *E2ETestSuiteBuilder) (uint64, error) {
+func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, acc *ibc.Wallet, l *zap.Logger) (uint64, error) {
 	// Read the Contract from os file
 	contract, err := os.ReadFile(filePath)
 	if err != nil {
@@ -285,7 +286,7 @@ func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath 
 
 	tn := GetFullNode(chain)
 
-	logger := s.logger.With(
+	logger := l.With(
 		zap.String("chain_id", tn.Chain.Config().ChainID),
 		zap.String("test", tn.TestName),
 	)

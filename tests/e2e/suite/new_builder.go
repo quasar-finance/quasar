@@ -74,7 +74,7 @@ func (e *E2eTestBuilder) AddChain(chainConfig ibc.ChainConfig, accounts Accounts
 		}
 		val := chain.Chain.Validators[0]
 		chain.ChainAccount, err = addPreGenesis(ctx, val, accounts)
-		e.setChain(cc.Name, *chain)
+		e.setChain(cc.Name, chain)
 		return err
 	}
 
@@ -100,15 +100,12 @@ func (e *E2eTestBuilder) AddChain(chainConfig ibc.ChainConfig, accounts Accounts
 	e.IC.AddChain(chain)
 }
 
-func (e *E2eTestBuilder) setChain(chainName string, chain Chain) {
+func (e *E2eTestBuilder) setChain(chainName string, chain *Chain) {
 	for i, c := range e.Chains {
 		if c.Chain.Config().Name == chainName {
-			e.Chains[i] = &chain
-			return
+			e.Chains[i] = chain
 		}
 	}
-
-	e.Chains = append(e.Chains, &chain)
 }
 
 func (e *E2eTestBuilder) AddRelayer(chain1, chain2 ibc.Chain, relayer ibc.Relayer, pathName string, createChannelOpts ibc.CreateChannelOptions, createClientOptions ibc.CreateClientOptions) {
