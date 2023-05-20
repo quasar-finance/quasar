@@ -245,7 +245,8 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:            nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
-		wasm.ModuleName: {authtypes.Burner},
+		wasm.ModuleName:    {authtypes.Burner},
+		tftypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	}
 
 	Upgrades = []upgrades.Upgrade{}
@@ -743,6 +744,7 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
+		tftypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -768,6 +770,7 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
+		tftypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -803,6 +806,7 @@ func New(
 		// wasm after ibc transfer
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
+		tftypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -1080,6 +1084,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
+	paramsKeeper.Subspace(tftypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
