@@ -65,9 +65,8 @@ where
     T: Serialize + DeserializeOwned + Debug,
 {
     fn should_load(&self, storage: &dyn Storage) -> Result<T, Error> {
-        let namespace_str = String::from_utf8_lossy(self.as_slice()).into();
         self.may_load(storage)?.ok_or(Error::ItemIsEmpty {
-            item: namespace_str,
+            item: String::from_utf8(self.as_slice().to_vec())?,
         })
     }
 }
@@ -92,9 +91,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::mock_dependencies, Uint128};
-
     use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
 
     #[test]
     fn test_item_should_load_err() {

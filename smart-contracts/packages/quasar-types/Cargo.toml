@@ -25,5 +25,3 @@ serde = { version = "1.0.103", default-features = false, features = [
 serde_test = "1.0"
 osmosis-std = { version = "0.13.2" }
 osmosis-std-derive = "0.13.2"
-# quasar-types = { path = "../../contracts/basic-vault" }
-
