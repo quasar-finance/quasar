@@ -42,3 +42,4 @@ anyhow = "1"
 cw-multi-test = {workspace = true}
 derivative = "2"
 prost = "0.9"
+proptest = "1.0.0"

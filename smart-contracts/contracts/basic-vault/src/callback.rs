@@ -2,7 +2,10 @@ use cosmwasm_std::{
     Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
-use quasar_types::callback::{BondResponse, UnbondResponse};
+use quasar_types::{
+    callback::{BondResponse, UnbondResponse},
+    types::{ItemShouldLoad, MapShouldLoad},
+};
 
 use crate::{
     helpers::update_user_reward_index,
@@ -27,8 +30,8 @@ pub fn on_bond(
     )?;
 
     // load investment info
-    let invest = INVESTMENT.load(deps.storage)?;
-    let mut bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
+    let invest = INVESTMENT.should_load(deps.storage)?;
+    let mut bond_stubs = BOND_STATE.should_load(deps.storage, bond_id.clone())?;
 
     // lets find the primitive for this response
     let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
@@ -79,7 +82,7 @@ pub fn on_bond(
     }
     // at this point we know that the deposit has succeeded fully, and we can mint shares
 
-    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
+    let user_address = BONDING_SEQ_TO_ADDR.should_load(deps.storage, bond_id.clone())?;
     let validated_user_address = deps.api.addr_validate(&user_address)?;
     // lets updated all pending deposit info
     PENDING_BOND_IDS.update(deps.storage, validated_user_address.clone(), |ids| {
@@ -117,7 +120,7 @@ pub fn on_bond(
     )?;
 
     // update total supply
-    let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
+    let mut supply = TOTAL_SUPPLY.should_load(deps.storage)?;
 
     supply.issued += shares_to_mint;
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
@@ -148,7 +151,7 @@ pub fn on_start_unbond(
     unbond_id: String,
     unlock_time: Timestamp,
 ) -> Result<Response, ContractError> {
-    let invest = INVESTMENT.load(deps.storage)?;
+    let invest = INVESTMENT.should_load(deps.storage)?;
     let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
 
     // if we don't find a primitive, this is an unauthorized call
@@ -188,7 +191,7 @@ pub fn on_unbond(
     info: MessageInfo,
     unbond_id: String,
 ) -> Result<Response, ContractError> {
-    let invest = INVESTMENT.load(deps.storage)?;
+    let invest = INVESTMENT.should_load(deps.storage)?;
     let primitive_config = invest.primitives.iter().find(|p| p.address == info.sender);
 
     // if we don't find a primitive, this is an unauthorized call
@@ -196,7 +199,7 @@ pub fn on_unbond(
         return Err(ContractError::Unauthorized {});
     }
 
-    let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
+    let mut unbond_stubs = UNBOND_STATE.should_load(deps.storage, unbond_id.clone())?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
     let mut unbonding_stub = unbond_stubs
@@ -223,7 +226,7 @@ pub fn on_unbond(
         return Ok(Response::new());
     }
 
-    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
+    let user_address = BONDING_SEQ_TO_ADDR.should_load(deps.storage, unbond_id.clone())?;
     // Construct message to return these funds to the user
     let return_msgs: Vec<BankMsg> = unbond_stubs
         .stub

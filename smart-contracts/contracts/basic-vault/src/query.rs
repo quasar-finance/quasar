@@ -1,5 +1,6 @@
 use cosmwasm_std::{Addr, Coin, Deps, StdResult};
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
 use crate::{
     execute::may_pay_with_ratio,
@@ -11,10 +12,11 @@ use crate::{
         InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
         UNBOND_STATE,
     },
+    ContractError,
 };
 
-pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
-    let primitives = INVESTMENT.load(deps.storage)?.primitives;
+pub fn query_tvl_info(deps: Deps) -> Result<TvlInfoResponse, ContractError> {
+    let primitives = INVESTMENT.should_load(deps.storage)?.primitives;
     let mut prim_infos: Vec<PrimitiveInfo> = Vec::new();
     for prim in primitives {
         let addr = deps.api.addr_validate(prim.address.as_str())?;
@@ -42,8 +44,8 @@ pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
     })
 }
 
-pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
-    let invest = INVESTMENT.load(deps.storage)?;
+pub fn query_investment(deps: Deps) -> Result<InvestmentResponse, ContractError> {
+    let invest = INVESTMENT.should_load(deps.storage)?;
 
     let res = InvestmentResponse {
         info: InvestmentInfo {
@@ -55,8 +57,11 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     Ok(res)
 }
 
-pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
-    let invest = INVESTMENT.load(deps.storage)?;
+pub fn query_deposit_ratio(
+    deps: Deps,
+    funds: Vec<Coin>,
+) -> Result<DepositRatioResponse, ContractError> {
+    let invest = INVESTMENT.should_load(deps.storage)?;
 
     let (primitive_funding_amounts, remainder) = may_pay_with_ratio(&deps, &funds, invest).unwrap();
 
@@ -67,12 +72,17 @@ pub fn query_deposit_ratio(deps: Deps, funds: Vec<Coin>) -> StdResult<DepositRat
     Ok(res)
 }
 
-pub fn query_pending_bonds(deps: Deps, address: String) -> StdResult<PendingBondsResponse> {
+pub fn query_pending_bonds(
+    deps: Deps,
+    address: String,
+) -> Result<PendingBondsResponse, ContractError> {
     let pending_bond_ids = PENDING_BOND_IDS.may_load(deps.storage, Addr::unchecked(address))?;
     let mut pending_bonds = vec![];
 
     pending_bond_ids.clone().unwrap().iter().for_each(|id| {
-        let mut deposit_stubs = BOND_STATE.load(deps.storage, id.to_string()).unwrap();
+        let mut deposit_stubs = BOND_STATE
+            .should_load(deps.storage, id.to_string())
+            .unwrap();
 
         pending_bonds.append(deposit_stubs.as_mut());
     });
@@ -99,7 +109,9 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
         .unwrap()
         .iter()
         .for_each(|id: &String| {
-            let unbond_stubs: Unbond = UNBOND_STATE.load(deps.storage, id.to_string()).unwrap();
+            let unbond_stubs: Unbond = UNBOND_STATE
+                .should_load(deps.storage, id.to_string())
+                .unwrap();
             pending_unbonds.push(unbond_stubs);
         });
 
@@ -109,8 +121,11 @@ pub fn query_pending_unbonds(deps: Deps, address: String) -> StdResult<PendingUn
     })
 }
 
-pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBondsByIdResponse> {
-    let deposit_stubs = BOND_STATE.load(deps.storage, id).unwrap();
+pub fn query_pending_bonds_by_id(
+    deps: Deps,
+    id: String,
+) -> Result<PendingBondsByIdResponse, ContractError> {
+    let deposit_stubs = BOND_STATE.should_load(deps.storage, id)?;
 
     Ok(PendingBondsByIdResponse {
         pending_bonds: deposit_stubs,
@@ -120,8 +135,8 @@ pub fn query_pending_bonds_by_id(deps: Deps, id: String) -> StdResult<PendingBon
 pub fn query_pending_unbonds_by_id(
     deps: Deps,
     id: String,
-) -> StdResult<PendingUnbondsByIdResponse> {
-    let unbond_stubs = UNBOND_STATE.load(deps.storage, id).unwrap();
+) -> Result<PendingUnbondsByIdResponse, ContractError> {
+    let unbond_stubs = UNBOND_STATE.should_load(deps.storage, id)?;
 
     Ok(PendingUnbondsByIdResponse {
         pending_unbonds: unbond_stubs,

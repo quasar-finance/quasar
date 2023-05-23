@@ -2,6 +2,7 @@ use crate::state::{RewardIndex, UserRewardIndex, CONFIG, REWARD_INDEX, USER_REWA
 use crate::VaultRewardsError;
 use cosmwasm_std::{Addr, Env, QuerierWrapper, Storage};
 use cw20::Cw20Contract;
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
 pub fn update_reward_index(
     storage: &mut dyn Storage,
@@ -10,9 +11,9 @@ pub fn update_reward_index(
 ) -> Result<RewardIndex, VaultRewardsError> {
     let cur_block_height = env.block.height;
     let mut reward_index = REWARD_INDEX
-        .load(storage, cur_block_height)
+        .should_load(storage, cur_block_height)
         .unwrap_or_default();
-    reward_index.vault_supply = Cw20Contract(CONFIG.load(storage)?.vault_token)
+    reward_index.vault_supply = Cw20Contract(CONFIG.should_load(storage)?.vault_token)
         .meta(querier)?
         .total_supply;
     REWARD_INDEX.save(storage, cur_block_height, &reward_index)?;
@@ -21,7 +22,7 @@ pub fn update_reward_index(
 
 pub fn get_user_reward_index(storage: &dyn Storage, user: &Addr) -> UserRewardIndex {
     USER_REWARD_INDEX
-        .load(storage, user.clone())
+        .should_load(storage, user.clone())
         .unwrap_or_else(|_| UserRewardIndex {
             balance: None,
             history: vec![],

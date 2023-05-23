@@ -8,9 +8,10 @@ use cosmwasm_std::{Addr, Deps, DepsMut, Env, Order, Response, StdResult, Uint128
 use cw20::Cw20Contract;
 use cw_asset::{Asset, AssetInfo};
 use cw_storage_plus::Bound;
+use quasar_types::types::ItemShouldLoad;
 
 pub fn execute_claim(deps: DepsMut, env: &Env, user: Addr) -> Result<Response, VaultRewardsError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    let mut config = CONFIG.should_load(deps.storage)?;
     let cur_block_height = env.block.height;
     let mut user_reward_index = get_user_reward_index(deps.storage, &user);
     let user_vault_token_balance =
@@ -77,7 +78,7 @@ pub fn get_claim_amount(
         });
     }
 
-    let vault_supply = Cw20Contract(CONFIG.load(deps.storage)?.vault_token)
+    let vault_supply = Cw20Contract(CONFIG.should_load(deps.storage)?.vault_token)
         .meta(&deps.querier)?
         .total_supply;
 

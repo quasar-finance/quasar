@@ -5,6 +5,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInRespons
 use quasar_types::{
     ibc::IcsAck,
     ica::{packet::AckBody, traits::Unpack},
+    types::{ItemShouldLoad, MapShouldLoad},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -27,7 +28,7 @@ pub fn _start_recovery(
     error_sequence: u64,
     channel: String,
 ) -> Result<Response, ContractError> {
-    let error = TRAPS.load(deps.storage, (error_sequence, channel.clone()))?;
+    let error = TRAPS.should_load(deps.storage, (error_sequence, channel.clone()))?;
     match error.last_succesful {
         true => {
             match error.step {
@@ -68,7 +69,7 @@ fn handle_transfer_recovery(
     _amount: Uint128,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let _config = CONFIG.load(storage)?;
+    let _config = CONFIG.should_load(storage)?;
     let returning: Result<Vec<ReturningRecovery>, ContractError> = bonds
         .bonds
         .iter()
@@ -186,8 +187,8 @@ fn handle_join_swap_recovery(
     pending: PendingBond,
     trapped_id: u64,
 ) -> Result<SubMsg, ContractError> {
-    let channel = ICA_CHANNEL.load(storage)?;
-    let ack_bin = RECOVERY_ACK.load(storage, (trapped_id, channel.clone()))?;
+    let channel = ICA_CHANNEL.should_load(storage)?;
+    let ack_bin = RECOVERY_ACK.should_load(storage, (trapped_id, channel.clone()))?;
     // in this case the recovery ack should contain a joinswapexternamountin response
     // we try to deserialize it
     let join_result = de_succcesful_join(ack_bin)?;

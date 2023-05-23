@@ -1,6 +1,7 @@
 use cosmwasm_std::{Addr, BankMsg, StdError};
 use cosmwasm_std::{DepsMut, Reply, Response};
 use quasar_types::callback::Callback;
+use quasar_types::types::MapShouldLoad;
 
 use crate::error::{ContractError, Trap};
 use crate::helpers::{parse_seq, unlock_on_error, ContractCallback, IbcMsgKind};
@@ -50,7 +51,7 @@ pub fn handle_ack_reply(
     // if we have an error in our Ack execution, the submsg saves the error in TRAPS and (should) rollback
     // the entire state of the ack execution,
     if let Err(error) = msg.result.into_result() {
-        let step = PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
+        let step = PENDING_ACK.should_load(deps.storage, (seq, channel.clone()))?;
         unlock_on_error(deps.storage, &step)?;
 
         // reassignment needed since add_attribute
@@ -150,7 +151,7 @@ mod tests {
         testing::mock_dependencies, Addr, Attribute, Coin, Reply, SubMsgResponse, SubMsgResult,
         Uint128,
     };
-    use quasar_types::callback::Callback;
+    use quasar_types::{callback::Callback, types::MapShouldLoad};
 
     use crate::{helpers::ContractCallback, reply::handle_callback_reply, state::REPLIES};
 
@@ -228,7 +229,7 @@ mod tests {
 
         assert_eq!(
             CLAIMABLE_FUNDS
-                .load(
+                .should_load(
                     &deps.storage,
                     (
                         owner,
@@ -242,7 +243,7 @@ mod tests {
         );
 
         // after cleanup it should be empty
-        assert!(REPLIES.load(&deps.storage, msg.id).is_err());
+        assert!(REPLIES.should_load(&deps.storage, msg.id).is_err());
     }
 
     #[test]
@@ -295,13 +296,13 @@ mod tests {
 
         assert_eq!(
             CLAIMABLE_FUNDS
-                .load(&deps.storage, (owner, fund_path),)
+                .should_load(&deps.storage, (owner, fund_path),)
                 .unwrap(),
             Uint128::new(69)
         );
 
         // after cleanup it should be empty
-        assert!(REPLIES.load(&deps.storage, msg.id).is_err());
+        assert!(REPLIES.should_load(&deps.storage, msg.id).is_err());
     }
 
     #[test]

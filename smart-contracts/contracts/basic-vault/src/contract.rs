@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg,
+    SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -16,6 +16,7 @@ use cw20_base::contract::{
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
+use quasar_types::types::ItemShouldLoad;
 use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
@@ -140,7 +141,7 @@ pub fn execute(
 
             let mut msgs: Vec<WasmMsg> = vec![];
 
-            let primitives = INVESTMENT.load(deps.storage)?.primitives;
+            let primitives = INVESTMENT.should_load(deps.storage)?.primitives;
             primitives.iter().try_for_each(
                 |pc: &PrimitiveConfig| -> Result<(), ContractError> {
                     let clear_cache_msg = WasmMsg::Execute {
@@ -305,42 +306,44 @@ fn update_rewards_contract(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Claims { address } => {
-            to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
-        }
-        QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
-        QueryMsg::AdditionalTokenInfo {} => to_binary(&query_vault_token_info(deps)?),
-        QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
+        QueryMsg::Claims { address } => Ok(to_binary(
+            &CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?,
+        )?),
+        QueryMsg::Investment {} => Ok(to_binary(&query_investment(deps)?)?),
+        QueryMsg::TokenInfo {} => Ok(to_binary(&query_token_info(deps)?)?),
+        QueryMsg::AdditionalTokenInfo {} => Ok(to_binary(&query_vault_token_info(deps)?)?),
+        QueryMsg::Balance { address } => Ok(to_binary(&query_balance(deps, address)?)?),
         QueryMsg::Allowance { owner, spender } => {
-            to_binary(&query_allowance(deps, owner, spender)?)
+            Ok(to_binary(&query_allowance(deps, owner, spender)?)?)
         }
-        QueryMsg::DepositRatio { funds } => to_binary(&query_deposit_ratio(deps, funds)?),
-        QueryMsg::PendingBonds { address } => to_binary(&query_pending_bonds(deps, address)?),
-        QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
-        QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
-        QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
-        QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
+        QueryMsg::DepositRatio { funds } => Ok(to_binary(&query_deposit_ratio(deps, funds)?)?),
+        QueryMsg::PendingBonds { address } => Ok(to_binary(&query_pending_bonds(deps, address)?)?),
+        QueryMsg::GetDebug {} => Ok(to_binary(&query_debug_string(deps)?)?),
+        QueryMsg::GetTvlInfo {} => Ok(to_binary(&query_tvl_info(deps)?)?),
+        QueryMsg::PendingUnbonds { address } => {
+            Ok(to_binary(&query_pending_unbonds(deps, address)?)?)
+        }
+        QueryMsg::GetCap {} => Ok(to_binary(&query_cap(deps)?)?),
         QueryMsg::PendingBondsById { bond_id } => {
-            to_binary(&query_pending_bonds_by_id(deps, bond_id)?)
+            Ok(to_binary(&query_pending_bonds_by_id(deps, bond_id)?)?)
         }
         QueryMsg::PendingUnbondsById { bond_id } => {
-            to_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
+            Ok(to_binary(&query_pending_unbonds_by_id(deps, bond_id)?)?)
         }
     }
 }
 
-fn query_cap(deps: Deps) -> StdResult<GetCapResponse> {
+fn query_cap(deps: Deps) -> Result<GetCapResponse, ContractError> {
     Ok(GetCapResponse {
-        cap: CAP.load(deps.storage)?,
+        cap: CAP.should_load(deps.storage)?,
     })
 }
 
-pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
+pub fn query_vault_token_info(deps: Deps) -> Result<VaultTokenInfoResponse, ContractError> {
     let token_info = TOKEN_INFO.load(deps.storage)?;
-    let additional_info = ADDITIONAL_TOKEN_INFO.load(deps.storage)?;
+    let additional_info = ADDITIONAL_TOKEN_INFO.should_load(deps.storage)?;
     let res = VaultTokenInfoResponse {
         name: token_info.name,
         thesis: additional_info.thesis,
@@ -352,8 +355,8 @@ pub fn query_vault_token_info(deps: Deps) -> StdResult<VaultTokenInfoResponse> {
     Ok(res)
 }
 
-pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
-    let debug_string = DEBUG_TOOL.load(deps.storage)?;
+pub fn query_debug_string(deps: Deps) -> Result<GetDebugResponse, ContractError> {
+    let debug_string = DEBUG_TOOL.should_load(deps.storage)?;
 
     Ok(GetDebugResponse {
         debug: debug_string,

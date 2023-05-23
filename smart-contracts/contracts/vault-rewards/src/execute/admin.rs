@@ -3,6 +3,7 @@ use crate::state::{DistributionSchedule, CONFIG};
 use crate::VaultRewardsError;
 use cosmwasm_std::{attr, Addr, DepsMut, Env, Response, Uint128};
 use cw_asset::Asset;
+use quasar_types::types::ItemShouldLoad;
 
 pub fn execute_withdraw_funds(
     deps: DepsMut,
@@ -10,7 +11,7 @@ pub fn execute_withdraw_funds(
     admin: Addr,
     mut asset: Asset,
 ) -> Result<Response, VaultRewardsError> {
-    let config = CONFIG.load(deps.storage)?;
+    let config = CONFIG.should_load(deps.storage)?;
     let reward_token = config.reward_token.clone();
 
     if asset.info == reward_token {
@@ -55,7 +56,7 @@ pub fn execute_add_distribution_schedule(
     env: Env,
     schedule: DistributionSchedule,
 ) -> Result<Response, VaultRewardsError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    let mut config = CONFIG.should_load(deps.storage)?;
     config.add_distribution_schedule(&deps.querier, &env, schedule.clone())?;
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::default().add_attributes(vec![
@@ -72,7 +73,7 @@ pub fn execute_update_distribution_schedule(
     id: u64,
     update: DistributionScheduleOptions,
 ) -> Result<Response, VaultRewardsError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    let mut config = CONFIG.should_load(deps.storage)?;
     config.update_distribution_schedule(&deps.querier, &env, id, &update)?;
     CONFIG.save(deps.storage, &config)?;
     let mut attrs = vec![
@@ -96,7 +97,7 @@ pub fn execute_remove_distribution_schedule(
     env: Env,
     id: u64,
 ) -> Result<Response, VaultRewardsError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    let mut config = CONFIG.should_load(deps.storage)?;
     config.remove_distribution_schedule(deps.storage, &env, id)?;
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::default().add_attributes(vec![

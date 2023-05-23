@@ -12,6 +12,7 @@
 - Changed the locking on the execute calls to lock correctly depending on queue state
 - Remove pending ack entry after succesful ack handling
 ### Features
+- Change load() for should_load() to get namespaces & keys on errors
 ### Bugfixes
 - Compare users' shares to their owned amount of queued shares instead of all queued shares 
 

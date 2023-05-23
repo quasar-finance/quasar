@@ -260,8 +260,31 @@ pub enum RawAmount {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
+    use proptest::prelude::*;
+    use proptest::{
+        prelude::Arbitrary,
+        strategy::{BoxedStrategy, Just, Strategy},
+    };
+    use quasar_types::error::Error::{ItemIsEmpty, KeyNotPresentInMap};
+    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
+
+    impl Arbitrary for FundPath {
+        type Parameters = String;
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(id: Self::Parameters) -> Self::Strategy {
+            fund_path_strategy(id).boxed()
+        }
+    }
+
+    fn fund_path_strategy(id: String) -> impl Strategy<Value = FundPath> {
+        prop_oneof![
+            Just(FundPath::Bond { id: id.clone() }),
+            Just(FundPath::Unbond { id }),
+        ]
+    }
 
     #[test]
     fn keys_work() {
@@ -301,6 +324,7 @@ mod tests {
                 },
             ],
         };
+
         pending.update_raw_amount_to_lp(Uint128::new(300)).unwrap();
         assert_eq!(
             pending.bonds[0].raw_amount,
@@ -315,5 +339,100 @@ mod tests {
             pending.bonds[2].raw_amount,
             RawAmount::LpShares(Uint128::new(100))
         )
+    }
+
+    proptest! {
+        #[test]
+        fn test_string_namespaces_for_item(namespace in any::<String>()) {
+            let mut deps = mock_dependencies();
+            // using let instead of const as we can't use a non-constant value in a constant
+            let item: Item<String> = Item::new(&namespace);
+            let err = item.should_load(deps.as_mut().storage).unwrap_err();
+            prop_assert_eq!(
+                err,
+                ItemIsEmpty { item: namespace }
+            );
+        }
+
+        #[test]
+        fn test_string_namespaces_and_string_keys_for_map(namespace in any::<String>(), k in any::<String>()) {
+            let mut deps = mock_dependencies();
+            // using let instead of const as we can't use a non-constant value in a constant
+            let map: Map<String, Uint128> = Map::new(&namespace);
+            let err = map.should_load(deps.as_mut().storage, k.clone()).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.into(), map: namespace }
+            );
+        }
+
+        #[test]
+        fn test_addr_keys_for_shares(k in any::<String>()) {
+            let mut deps = mock_dependencies();
+            let err = SHARES.should_load(deps.as_mut().storage, Addr::unchecked(&k)).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.into_bytes(), map: "shares".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_borrowed_addr_key_for_lock_admin(k in any::<String>()) {
+            let mut deps = mock_dependencies();
+            let err = LOCK_ADMIN.should_load(deps.as_mut().storage, &Addr::unchecked(k.clone())).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.into_bytes(), map: "lock_admin".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_u64_key_for_replies(k in any::<u64>()) {
+            let mut deps = mock_dependencies();
+            let err = REPLIES.should_load(deps.as_mut().storage, k.clone()).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap {key: k.to_be_bytes().to_vec(), map: "replies".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_u64_string_key_for_recovery_ack(k1 in any::<u64>(), k2 in any::<String>()) {
+            let mut deps = mock_dependencies();
+            let err = RECOVERY_ACK.should_load(deps.as_mut().storage, (k1.clone(), k2.clone())).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k1.to_be_bytes().to_vec().joined_extra_key(&k2.joined_key()), map: "new_recovery_ack".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_addr_string_key_for_pending_unbonding_claims(k1 in any::<String>(), k2 in any::<String>()) {
+            let mut deps = mock_dependencies();
+            let err = PENDING_UNBONDING_CLAIMS.should_load(deps.as_mut().storage, (Addr::unchecked(&k1), k2.clone())).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap {
+                    key: Addr::unchecked(k1)
+                    .joined_extra_key(&k2.joined_key()),
+                    map: "pending_unbonding_claims".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_addr_fund_path_arbitrary_key_for_claimable_funds(s in any::<String>(), (_id, fund_path) in any::<String>().prop_flat_map(|id| {
+            (Just(id.clone()), any_with::<FundPath>(id))
+        })) {
+            let mut deps = mock_dependencies();
+            let err = CLAIMABLE_FUNDS.should_load(deps.as_mut().storage, (Addr::unchecked(&s), fund_path.clone())).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap {
+                    key: Addr::unchecked(&s)
+                    .joined_extra_key(&fund_path.joined_key()),
+                    map: "claimable_funds".to_string()
+                }
+            );
+        }
     }
 }

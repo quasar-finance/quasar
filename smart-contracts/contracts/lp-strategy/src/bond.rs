@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 use cosmwasm_std::{Addr, Env, MessageInfo, QuerierWrapper, StdResult, Storage, SubMsg, Uint128};
 use cw_utils::must_pay;
+use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -71,8 +72,8 @@ pub fn batch_bond(
     env: &Env,
     total_vault_value: Uint128,
 ) -> Result<Option<SubMsg>, ContractError> {
-    let transfer_chan = CONFIG.load(storage)?.transfer_channel;
-    let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
+    let transfer_chan = CONFIG.should_load(storage)?.transfer_channel;
+    let to_address = get_ica_address(storage, ICA_CHANNEL.should_load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
         Ok(Some(do_transfer(
@@ -151,7 +152,7 @@ pub fn create_share(
     bond_id: &str,
     amount: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let claim = BONDING_CLAIMS.load(storage, (owner, bond_id))?;
+    let claim = BONDING_CLAIMS.should_load(storage, (owner, bond_id))?;
 
     match claim.cmp(&amount) {
         Ordering::Less => return Err(ContractError::InsufficientClaims),
@@ -217,6 +218,7 @@ mod tests {
         testing::{mock_dependencies, mock_env, MockQuerier},
         to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
+    use quasar_types::types::MapShouldLoad;
 
     use crate::{
         ibc_lock::Lock,
@@ -295,7 +297,7 @@ mod tests {
             prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
-            channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
+            channel_id: ICQ_CHANNEL.should_load(deps.as_mut().storage).unwrap(),
             data: to_binary(&packet).unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         });
@@ -369,7 +371,7 @@ mod tests {
         assert_eq!(claim_amount, Uint128::new(10));
         assert_eq!(
             BONDING_CLAIMS
-                .load(deps.as_ref().storage, (&owner, id))
+                .should_load(deps.as_ref().storage, (&owner, id))
                 .unwrap(),
             claim_amount
         );
@@ -397,7 +399,10 @@ mod tests {
 
         // we should have minted exactly 100 shares by now,
         // we should have minted exactly 100 shares by now,
-        assert_eq!(SHARES.load(deps.as_ref().storage, owner).unwrap(), amount);
+        assert_eq!(
+            SHARES.should_load(deps.as_ref().storage, owner).unwrap(),
+            amount
+        );
     }
 
     #[test]
@@ -422,7 +427,7 @@ mod tests {
         );
         // we should have amount shares by now
         assert_eq!(
-            SHARES.load(deps.as_ref().storage, owner).unwrap(),
+            SHARES.should_load(deps.as_ref().storage, owner).unwrap(),
             smaller_amount
         );
     }
@@ -445,7 +450,7 @@ mod tests {
         // our bonding claim should still exist
         assert_eq!(
             BONDING_CLAIMS
-                .load(deps.as_ref().storage, (&owner, id))
+                .should_load(deps.as_ref().storage, (&owner, id))
                 .unwrap(),
             amount
         )
