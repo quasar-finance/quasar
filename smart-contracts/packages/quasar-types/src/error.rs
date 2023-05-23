@@ -69,5 +69,5 @@ pub enum Error {
     ItemIsEmpty { item: String },
 
     #[error("Key {:?} is not present in map {}", key, map)]
-    KeyNotPresentInMap { key: String, map: String },
+    KeyNotPresentInMap { key: Vec<u8>, map: String },
 }

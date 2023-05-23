@@ -62,7 +62,7 @@ pub trait ItemShouldLoad<T, E> {
 
 impl<'a, T> ItemShouldLoad<T, Error> for Item<'a, T>
 where
-    T: Serialize + DeserializeOwned + Debug,
+    T: Serialize + DeserializeOwned,
 {
     fn should_load(&self, storage: &dyn Storage) -> Result<T, Error> {
         self.may_load(storage)?.ok_or(Error::ItemIsEmpty {
@@ -83,7 +83,7 @@ where
     fn should_load(&self, storage: &dyn Storage, key: K) -> Result<T, Error> {
         self.may_load(storage, key.clone())?
             .ok_or(Error::KeyNotPresentInMap {
-                key: String::from_utf8(key.joined_key())?,
+                key: key.joined_key(),
                 map: String::from_utf8(self.namespace().to_vec())?,
             })
     }
@@ -143,11 +143,28 @@ mod tests {
         let deps = mock_dependencies();
         const MAP: Map<&str, Uint128> = Map::new("map");
 
-        let res = MAP.should_load(deps.as_ref().storage, "0").unwrap_err();
+        let res = MAP
+            .should_load(deps.as_ref().storage, "testing")
+            .unwrap_err();
         assert_eq!(
             res,
             Error::KeyNotPresentInMap {
-                key: "0".to_string(),
+                key: "testing".into(),
+                map: "map".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_map_should_load_err_with_0u64() {
+        let deps = mock_dependencies();
+        const MAP: Map<u64, Uint128> = Map::new("map");
+
+        let res = MAP.should_load(deps.as_ref().storage, 10).unwrap_err();
+        assert_eq!(
+            res,
+            Error::KeyNotPresentInMap {
+                key: 10u64.to_be_bytes().to_vec(),
                 map: "map".to_string()
             }
         );
