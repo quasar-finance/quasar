@@ -2377,6 +2377,7 @@ dependencies = [
  "cw2 1.0.1",
  "cw20 1.0.1",
  "itertools",
+ "proptest",
  "quasar-types",
  "schemars",
  "serde",

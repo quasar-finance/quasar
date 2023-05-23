@@ -150,8 +150,11 @@ impl InvestmentInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::msg::{PrimitiveConfig, PrimitiveInitMsg};
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
+    use proptest::prelude::*;
+    use quasar_types::error::Error::{ItemIsEmpty, KeyNotPresentInMap};
+    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
     #[test]
     fn test_investment_info() {
@@ -180,11 +183,6 @@ mod tests {
         invest.normalize_primitive_weights();
         assert_eq!(invest.primitives[0].weight, Decimal::percent(25));
     }
-
-    use cosmwasm_std::{testing::mock_dependencies, Uint128};
-    use proptest::prelude::*;
-    use quasar_types::error::Error::{ItemIsEmpty, KeyNotPresentInMap};
-    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
 
     proptest! {
         #[test]

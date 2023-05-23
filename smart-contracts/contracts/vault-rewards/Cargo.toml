@@ -56,3 +56,6 @@ schemars = "0.8"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 quasar-types = {path = "../../packages/quasar-types"}
+
+[dev-dependencies]
+proptest = "1.0.0"

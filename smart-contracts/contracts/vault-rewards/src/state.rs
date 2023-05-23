@@ -223,3 +223,58 @@ pub const USER_REWARD_INDEX: Map<Addr, UserRewardIndex> = Map::new("user_reward_
 
 // to be changed in a future migration
 pub const VALIDATE_FUNDS: bool = false;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
+    use proptest::prelude::*;
+    use quasar_types::error::Error::{ItemIsEmpty, KeyNotPresentInMap};
+    use quasar_types::types::{ItemShouldLoad, MapShouldLoad};
+
+    proptest! {
+        #[test]
+        fn test_string_namespaces_for_item(namespace in any::<String>()) {
+            let mut deps = mock_dependencies();
+            // using let instead of const as we can't use a non-constant value in a constant
+            let item: Item<String> = Item::new(&namespace);
+            let err = item.should_load(deps.as_mut().storage).unwrap_err();
+            prop_assert_eq!(
+                err,
+                ItemIsEmpty { item: namespace }
+            );
+        }
+
+        #[test]
+        fn test_string_namespaces_and_string_key_for_map(namespace in any::<String>(), k in any::<String>()) {
+            let mut deps = mock_dependencies();
+            // using let instead of const as we can't use a non-constant value in a constant
+            let map: Map<String, Uint128> = Map::new(&namespace);
+            let err = map.should_load(deps.as_mut().storage, k.clone()).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.into(), map: namespace }
+            );
+        }
+
+        #[test]
+        fn test_string_string_key(k in any::<u64>()) {
+            let mut deps = mock_dependencies();
+            let err = REWARD_INDEX.should_load(deps.as_mut().storage, k.clone()).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.to_be_bytes().to_vec(), map: "reward_index".to_string() }
+            );
+        }
+
+        #[test]
+        fn test_addr_key(k in any::<String>()) {
+            let mut deps = mock_dependencies();
+            let err = USER_REWARD_INDEX.should_load(deps.as_mut().storage, Addr::unchecked(k.clone())).unwrap_err();
+            prop_assert_eq!(
+                err,
+                KeyNotPresentInMap { key: k.into(), map: "user_reward_index".to_string() }
+            );
+        }
+    }
+}
