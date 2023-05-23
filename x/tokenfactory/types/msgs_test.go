@@ -1,15 +1,14 @@
 package types_test
 
-/*
 import (
 	fmt "fmt"
 	"testing"
 
+	// "github.com/CosmosTokenFactory/token-factory/app/apptesting"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/app/apptesting"
+	"github.com/quasarlabs/quasarnode/x/tokenfactory/testhelpers"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/stretchr/testify/require"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -17,14 +16,10 @@ import (
 
 // // Test authz serialize and de-serializes for tokenfactory msg.
 func TestAuthzMsg(t *testing.T) {
+	t.Skip("TODO: figure out how to register authz interfaces for tests")
 	pk1 := ed25519.GenPrivKey().PubKey()
 	addr1 := sdk.AccAddress(pk1.Address()).String()
 	coin := sdk.NewCoin("denom", sdk.NewInt(1))
-
-	const (
-		mockGranter string = "cosmos1abc"
-		mockGrantee string = "cosmos1xyz"
-	)
 
 	testCases := []struct {
 		name string
@@ -62,7 +57,7 @@ func TestAuthzMsg(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			apptesting.TestMessageAuthzSerialization(t, tc.msg)
+			testhelpers.TestMessageAuthzSerialization(t, tc.msg)
 		})
 	}
 }
@@ -454,4 +449,3 @@ func TestMsgSetDenomMetadata(t *testing.T) {
 		}
 	}
 }
-*/

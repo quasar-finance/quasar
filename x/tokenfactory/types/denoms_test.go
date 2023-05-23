@@ -1,18 +1,16 @@
 package types_test
 
-/*
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	appparams "github.com/quasarlabs/quasarnode/app/params"
+	cmd "github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 func TestDeconstructDenom(t *testing.T) {
-	appparams.SetAddressPrefixes()
-
+	cmd.InitTestConfig()
 	for _, tc := range []struct {
 		desc             string
 		denom            string
@@ -26,37 +24,37 @@ func TestDeconstructDenom(t *testing.T) {
 		},
 		{
 			desc:             "normal",
-			denom:            "factory/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/bitcoin",
+			denom:            "factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/bitcoin",
 			expectedSubdenom: "bitcoin",
 		},
 		{
 			desc:             "multiple slashes in subdenom",
-			denom:            "factory/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/bitcoin/1",
+			denom:            "factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/bitcoin/1",
 			expectedSubdenom: "bitcoin/1",
 		},
 		{
 			desc:             "no subdenom",
-			denom:            "factory/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/",
+			denom:            "factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/",
 			expectedSubdenom: "",
 		},
 		{
 			desc:  "incorrect prefix",
-			denom: "ibc/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/bitcoin",
+			denom: "ibc/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/bitcoin",
 			err:   types.ErrInvalidDenom,
 		},
 		{
 			desc:             "subdenom of only slashes",
-			denom:            "factory/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/////",
+			denom:            "factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/////",
 			expectedSubdenom: "////",
 		},
 		{
 			desc:  "too long name",
-			denom: "factory/osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44/adsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsf",
+			denom: "factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/adsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsf",
 			err:   types.ErrInvalidDenom,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			expectedCreator := "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44"
+			expectedCreator := "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
 			creator, subdenom, err := types.DeconstructDenom(tc.denom)
 			if tc.err != nil {
 				require.ErrorContains(t, err, tc.err.Error())
@@ -70,7 +68,7 @@ func TestDeconstructDenom(t *testing.T) {
 }
 
 func TestGetTokenDenom(t *testing.T) {
-	appparams.SetAddressPrefixes()
+	cmd.InitTestConfig()
 	for _, tc := range []struct {
 		desc     string
 		creator  string
@@ -79,43 +77,43 @@ func TestGetTokenDenom(t *testing.T) {
 	}{
 		{
 			desc:     "normal",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "bitcoin",
 			valid:    true,
 		},
 		{
 			desc:     "multiple slashes in subdenom",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "bitcoin/1",
 			valid:    true,
 		},
 		{
 			desc:     "no subdenom",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "",
 			valid:    true,
 		},
 		{
 			desc:     "subdenom of only slashes",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "/////",
 			valid:    true,
 		},
 		{
 			desc:     "too long name",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "adsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsfadsf",
 			valid:    false,
 		},
 		{
 			desc:     "subdenom is exactly max length",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec",
 			subdenom: "bitcoinfsadfsdfeadfsafwefsefsefsdfsdafasefsf",
 			valid:    true,
 		},
 		{
 			desc:     "creator is exactly max length",
-			creator:  "osmo1t7egva48prqmzl59x5ngv4zx0dtrwewc9m7z44jhgjhgkhjklhkjhkjhgjhgjgjghelugt",
+			creator:  "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwecjhgjhgkhjklhkjhkjhgjhgjgjghelu",
 			subdenom: "bitcoin",
 			valid:    true,
 		},
@@ -130,4 +128,3 @@ func TestGetTokenDenom(t *testing.T) {
 		})
 	}
 }
-*/

@@ -1,17 +1,20 @@
 package cli_test
 
 /*
+// TODO  - Juno and confio has also skipped this test for now.
+
 import (
+	"github.com/osmosis-labs/osmosis/osmoutils/osmocli"
 	"testing"
 
-	"github.com/osmosis-labs/osmosis/osmoutils/osmocli"
+	// "github.com/osmosis-labs/osmosis/osmoutils/osmocli"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/client/cli"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 func TestGetCmdDenomAuthorityMetadata(t *testing.T) {
 	desc, _ := cli.GetCmdDenomAuthorityMetadata()
-	tcs := map[string]osmocli.QueryCliTestCase[*types.QueryDenomAuthorityMetadataRequest]{
+	tcs := map[string]cli.QueryCliTestCase[*types.QueryDenomAuthorityMetadataRequest]{
 		"basic test": {
 			Cmd: "uatom",
 			ExpectedQuery: &types.QueryDenomAuthorityMetadataRequest{

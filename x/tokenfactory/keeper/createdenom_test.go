@@ -1,4 +1,5 @@
 package keeper_test
+
 /*
 import (
 	"fmt"
@@ -121,7 +122,7 @@ func (suite *KeeperTestSuite) TestCreateDenom() {
 		{
 			desc:             "subdenom having invalid characters",
 			denomCreationFee: defaultDenomCreationFee,
-			subdenom:         "bit/***///&&&/coin",
+			subdenom:         "bit/&&&///&&&/coin",
 			valid:            false,
 		},
 	} {

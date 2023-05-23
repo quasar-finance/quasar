@@ -203,7 +203,7 @@ $(MOCKSDIR)/:
 ###                           Tests & Simulation                            ###
 ###############################################################################
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... ./x/tokenfactory/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
 PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
 TEST_PACKAGES=./...

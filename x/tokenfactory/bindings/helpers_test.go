@@ -1,5 +1,6 @@
 package bindings_test
 
+/*
 import (
 	"os"
 	"testing"
@@ -90,3 +91,4 @@ func SetupCustomApp(t *testing.T, addr sdk.AccAddress) (*app.TokenApp, sdk.Conte
 
 	return tokenz, ctx
 }
+*/

@@ -1,5 +1,6 @@
 package cli_test
 
+//// TODO  - Juno and confio has also skipped this test for now.
 /*
 import (
 	gocontext "context"
