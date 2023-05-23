@@ -758,7 +758,7 @@ mod tests {
         assert_eq!(
             res,
             ContractError::QuasarError(KeyNotPresentInMap {
-                key: "bob".to_string(),
+                key: "bob".into(),
                 map: "shares".to_string()
             })
         )
