@@ -6,7 +6,30 @@ use cw_storage_plus::{KeyDeserialize, Map, PrimaryKey};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const ROUTES: Map<&Destination, Hop> = Map::new("routes");
+pub const ROUTES: Map<&RouteName, Route> = Map::new("routes");
+
+#[cw_serde]
+pub struct Route {
+    pub channel: String,
+    pub port: String,
+    pub hop: Option<Hop>
+}
+
+impl Display for Route {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.hop.is_some() {
+            write!(f, "channel: {}, port: {}, (hop: {})", self.channel, self.port, self.hop.as_ref().unwrap())
+        } else {
+            write!(f, "channel: {}, port: {}", self.channel, self.port)
+        }
+    }
+}
+
+impl Route {
+    pub fn new(channel: impl Into<String>, port: impl Into<String>, hop: Option<Hop>) -> Route {
+        Route { channel: channel.into(), port: port.into(), hop }
+    }
+}
 
 #[cw_serde]
 pub struct Hop {
@@ -38,24 +61,35 @@ impl Hop {
     }
 
     /// create a packet forwarder memo field from a route of hops
-    // TODO to_memo needs to know what to do with receivers of chains it's hopping on
+    /// receivers of the tokens on the intermediate chains
     pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
         Memo::new(self.to_forward(timeout, retries, actual_memo))
     }
 
+
+    // wtf are these clones even
     fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
-        // TODO what do we do with receiver here
         Forward {
-            receiver: todo!(),
-            port: self.port,
-            channel: self.channel,
-            timeout,
+            receiver: self.receiver.clone(),
+            port: self.port.clone(),
+            channel: self.channel.clone(),
+            timeout: timeout.clone(),
             retries,
-            next: self
+            next: self.clone()
                 .next
-                .map_or(Box::new(Next::Actual(actual_memo)), |val| {
+                .map_or(Box::new(Next::Actual(actual_memo.clone())), |val| {
                     Box::new(Next::Forward(val.to_forward(timeout, retries, actual_memo)))
                 }),
+        }
+    }
+}
+
+impl Display for Hop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.next.is_some() {
+            write!(f, "channel: {}, port: {}, receiver: {}, (next: {})", self.channel, self.port, self.receiver, self.next.as_ref().unwrap())
+        } else {
+            write!(f, "channel: {}, port: {}, receiver: {}", self.channel, self.port, self.receiver)
         }
     }
 }
@@ -90,28 +124,28 @@ pub enum Next {
 
 // destination uses a special partialEq, so we don't derive it
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-pub struct Destination(pub String);
+pub struct RouteName(pub String);
 
-impl From<String> for Destination {
+impl From<String> for RouteName {
     fn from(value: String) -> Self {
         Self(value)
     }
 }
 
-impl Display for Destination {
+impl Display for RouteName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl PartialEq for Destination {
+impl PartialEq for RouteName {
     // Destinination uses a case insensitive eq
     fn eq(&self, other: &Self) -> bool {
         self.0.to_lowercase() == other.0.to_lowercase()
     }
 }
 
-impl<'a> PrimaryKey<'a> for Destination {
+impl<'a> PrimaryKey<'a> for RouteName {
     type Prefix = ();
     type SubPrefix = ();
     type Suffix = Self;
@@ -122,18 +156,18 @@ impl<'a> PrimaryKey<'a> for Destination {
     }
 }
 
-impl KeyDeserialize for Destination {
-    type Output = Destination;
+impl KeyDeserialize for RouteName {
+    type Output = RouteName;
 
     #[inline(always)]
     fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
-        Ok(Destination(
+        Ok(RouteName(
             String::from_utf8(value).map_err(StdError::invalid_utf8)?,
         ))
     }
 }
 
-impl<'a> PrimaryKey<'a> for &Destination {
+impl<'a> PrimaryKey<'a> for &RouteName {
     type Prefix = ();
     type SubPrefix = ();
     type Suffix = Self;
@@ -144,12 +178,12 @@ impl<'a> PrimaryKey<'a> for &Destination {
     }
 }
 
-impl KeyDeserialize for &Destination {
-    type Output = Destination;
+impl KeyDeserialize for &RouteName {
+    type Output = RouteName;
 
     #[inline(always)]
     fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
-        Ok(Destination(
+        Ok(RouteName(
             String::from_utf8(value).map_err(StdError::invalid_utf8)?,
         ))
     }

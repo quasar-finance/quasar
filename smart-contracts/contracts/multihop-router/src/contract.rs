@@ -8,9 +8,9 @@ use cosmwasm_std::{
 use crate::error::{ContractError, ContractResult};
 use crate::helpers::is_contract_admin;
 use crate::msg::{
-    ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse, QueryMsg,
+    ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse, QueryMsg, MemoResponse,
 };
-use crate::state::{Destination, Hop, ROUTES};
+use crate::state::{Route, ROUTES, RouteName};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:multihop-router";
@@ -37,14 +37,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddRoute { destination, hops } => {
-            execute_add_route(deps, env, info, &destination.into(), hops)
+        ExecuteMsg::AddRoute { destination_name, destination } => {
+            execute_add_route(deps, env, info, &destination_name.into(), destination)
         }
-        ExecuteMsg::MutateRoute { destination, hops } => {
-            execute_mutate_route(deps, env, info, &destination.into(), hops)
+        ExecuteMsg::MutateRoute { destination_name, destination } => {
+            execute_mutate_route(deps, env, info, &destination_name.into(), destination)
         }
-        ExecuteMsg::RemoveRoute { destination } => {
-            execute_remove_route(deps, env, info, &destination.into())
+        ExecuteMsg::RemoveRoute { destination_name } => {
+            execute_remove_route(deps, env, info, &destination_name.into())
         }
     }
 }
@@ -53,45 +53,46 @@ pub fn execute_add_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    destination: &Destination,
-    hop: Hop,
+    dst_name: &RouteName,
+    dst: Route,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    if ROUTES.has(deps.storage, destination) {
+    if ROUTES.has(deps.storage, dst_name) {
         return Err(ContractError::DestinationAlreadyExists);
     }
 
-    ROUTES.save(deps.storage, destination, &hop)?;
+    ROUTES.save(deps.storage, dst_name, &dst)?;
 
     Ok(Response::new()
         .add_attribute("action", "add_route")
-        .add_attribute("destination", format!("{}", destination))
-        .add_attribute("hops", format!("{:?}", hop)))
+        .add_attribute("destination", dst_name.to_string())
+        .add_attribute("destination-value", dst.to_string()))
 }
 
 pub fn execute_mutate_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    destination: &Destination,
-    hop: Hop,
+    dst_name: &RouteName,
+    dst: Route,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    ROUTES.save(deps.storage, destination, &hop)?;
+    ROUTES.save(deps.storage, dst_name, &dst)?;
 
     Ok(Response::new()
         .add_attribute("action", "mutate_route")
-        .add_attribute("destination", format!("{}", destination))
-        .add_attribute("hops", format!("{:?}", hop)))
+        .add_attribute("destination", dst_name.to_string())
+        .add_attribute("destination-value", dst.to_string())
+    )
 }
 
 pub fn execute_remove_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    destination: &Destination,
+    destination: &RouteName,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
@@ -130,27 +131,29 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
 
 fn handle_get_memo(
     deps: Deps,
-    dst: Destination,
+    dst: RouteName,
     timeout: String,
     retries: i64,
     actual_memo: Option<Binary>,
 ) -> ContractResult<GetMemoResponse> {
-    let memo = ROUTES
-        .may_load(deps.storage, &dst)?
-        .ok_or(ContractError::DestinationNotExists)?
-        .to_memo(timeout, retries, actual_memo);
-    Ok(GetMemoResponse { memo })
-}
-
-fn handle_get_route(deps: Deps, dst: Destination) -> ContractResult<GetRouteResponse> {
-    let hops = ROUTES
+    let route = ROUTES
         .may_load(deps.storage, &dst)?
         .ok_or(ContractError::DestinationNotExists)?;
-    Ok(GetRouteResponse { hops })
+    match route.hop {
+        Some(hop) => Ok(GetMemoResponse { channel: route.channel, port: route.port, memo: MemoResponse::Forward(hop.to_memo(timeout, retries, actual_memo)) }),
+        None => Ok(GetMemoResponse { channel: route.channel, port: route.port, memo: MemoResponse::Actual(actual_memo) })
+    }
+}
+
+fn handle_get_route(deps: Deps, dst: RouteName) -> ContractResult<GetRouteResponse> {
+    let destination = ROUTES
+        .may_load(deps.storage, &dst)?
+        .ok_or(ContractError::DestinationNotExists)?;
+    Ok(GetRouteResponse { destination })
 }
 
 fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
-    let routes: StdResult<Vec<(Destination, Hop)>> = ROUTES
+    let routes: StdResult<Vec<(RouteName, Route)>> = ROUTES
         .range(deps.storage, None, None, Order::Descending)
         .collect();
     Ok(ListRoutesResponse {
@@ -168,12 +171,9 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::{
-        msg::ListRoutesResponse,
-        state::{Destination, Hop, ROUTES},
-    };
+    use crate::state::Hop;
 
-    use super::query;
+    use super::*;
 
     #[test]
     fn query_list_routes_works() {
@@ -187,6 +187,8 @@ mod tests {
             Some(Hop::new("channel-2", "transfer", "quasarBob", None)),
         );
 
+        let route1 = Route::new("channel-2", "transfer", Some(hop1));
+
         let hop2 = Hop::new(
             "channel-866",
             "transfer",
@@ -194,19 +196,21 @@ mod tests {
             Some(Hop::new("channel-644", "transfer", "quasarBob", None)),
         );
 
+        let route2 = Route::new("channel-3", "transfer", Some(hop2));
+
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &Destination("osmosis".to_string()),
-                &hop1,
+                &RouteName("osmosis".to_string()),
+                &route1,
             )
             .unwrap();
 
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &Destination("gaia".to_string()),
-                &hop2,
+                &RouteName("gaia".to_string()),
+                &route2,
             )
             .unwrap();
 
@@ -216,8 +220,8 @@ mod tests {
             response,
             ListRoutesResponse {
                 routes: vec![
-                    ("osmosis".to_string().into(), hop1),
-                    ("gaia".to_string().into(), hop2)
+                    ("osmosis".to_string().into(), route1),
+                    ("gaia".to_string().into(), route2)
                 ]
             }
         )

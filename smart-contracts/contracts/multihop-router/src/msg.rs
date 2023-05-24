@@ -1,16 +1,16 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
 
-use crate::state::{Destination, Hop, Memo};
+use crate::state::{Route, Memo, RouteName};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRoute { destination: String, hops: Hop },
-    MutateRoute { destination: String, hops: Hop },
-    RemoveRoute { destination: String },
+    AddRoute { destination_name: String, destination: Route },
+    MutateRoute { destination_name: String, destination: Route },
+    RemoveRoute { destination_name: String },
 }
 
 #[cw_serde]
@@ -32,15 +32,24 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct GetMemoResponse {
-    pub memo: Memo,
+    pub channel: String,
+    pub port: String,
+    pub memo: MemoResponse,
+}
+
+#[cw_serde]
+#[serde(untagged)]
+pub enum MemoResponse {
+    Forward(Memo),
+    Actual(Option<Binary>)
 }
 
 #[cw_serde]
 pub struct GetRouteResponse {
-    pub hops: Hop,
+    pub destination: Route,
 }
 
 #[cw_serde]
 pub struct ListRoutesResponse {
-    pub routes: Vec<(Destination, Hop)>,
+    pub routes: Vec<(RouteName, Route)>,
 }
