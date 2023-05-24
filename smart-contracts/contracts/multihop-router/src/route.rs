@@ -176,7 +176,6 @@ impl<'a> PrimaryKey<'a> for RouteId {
 impl KeyDeserialize for RouteId {
     type Output = RouteId;
 
-    // TODO test that this implementation is the inverse of key
     fn from_vec(mut value: Vec<u8>) -> StdResult<Self::Output> {
         let mut tu = value.split_off(2);
         let t_len = parse_length(&value)?;
