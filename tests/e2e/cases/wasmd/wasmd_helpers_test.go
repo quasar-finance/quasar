@@ -1,4 +1,4 @@
-package e2e
+package wasmd
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 
@@ -203,17 +201,4 @@ func (s *WasmdTestSuite) SendTokensToRespectiveAccounts(ctx context.Context) {
 	transfer, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Authority.KeyName, walletAmount, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
-}
-
-// ibcDenomFromChannel returns ibc denom according to the given channel port, id and denom
-// this function generates the ibc denom for the main direction as an example if there is a channel from
-// chain1 <-> chain2 knowing that chain1 has a denom named denom1 this function will return the ibc denom of denom1 in chain2.
-func ibcDenomFromChannel(ch *channeltypes.IdentifiedChannel, baseDenom string) string {
-	return transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom(ch.PortId, ch.ChannelId, baseDenom)).IBCDenom()
-}
-
-// ibcDenomFromChannelCounterparty does same as ibcDenomFromChannel but in reverse so it generates
-// the ibc denom of denom2 from chain2 (counterparty chain) in chain1
-func ibcDenomFromChannelCounterparty(ch *channeltypes.IdentifiedChannel, baseDenom string) string {
-	return transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom(ch.Counterparty.PortId, ch.Counterparty.ChannelId, baseDenom)).IBCDenom()
 }
