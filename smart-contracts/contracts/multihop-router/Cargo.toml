@@ -51,3 +51,5 @@ thiserror = { version = "1.0.31" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.2"
+proptest = "1.0.0"
+

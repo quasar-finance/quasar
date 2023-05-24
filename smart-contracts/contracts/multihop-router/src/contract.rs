@@ -177,7 +177,7 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::route::Hop;
+    use crate::route::{Hop, Destination};
 
     use super::*;
 

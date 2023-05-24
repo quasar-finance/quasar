@@ -157,6 +157,38 @@ impl Display for RouteId {
     }
 }
 
+impl<'a> PrimaryKey<'a> for RouteId {
+    type Prefix = Destination;
+
+    type SubPrefix = ();
+
+    type Suffix = String;
+
+    type SuperSuffix = (Destination, String);
+
+    fn key(&self) -> Vec<Key> {
+        let mut keys = self.destination.key();
+        keys.extend(self.asset.key());
+        keys
+    }
+}
+
+impl KeyDeserialize for RouteId {
+    type Output = RouteId;
+
+    // TODO test that this implementation is the inverse of key
+    fn from_vec(mut value: Vec<u8>) -> StdResult<Self::Output> {
+        let mut tu = value.split_off(2);
+        let t_len = parse_length(&value)?;
+        let u = tu.split_off(t_len);
+
+        Ok(RouteId {
+            destination: Destination::from_vec(tu)?,
+            asset: String::from_vec(u)?,
+        })
+    }
+}
+
 impl<'a> PrimaryKey<'a> for &RouteId {
     type Prefix = Destination;
 
@@ -224,7 +256,6 @@ impl PartialEq for Destination {
 impl<'a> Prefixer<'a> for Destination {
     fn prefix(&self) -> Vec<Key> {
         self.0.prefix()
-        // vec![Key::Ref(self.0.as_bytes())]
     }
 }
 
@@ -269,5 +300,38 @@ impl KeyDeserialize for &Destination {
         Ok(Destination(
             String::from_utf8(value).map_err(StdError::invalid_utf8)?,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+    use cw_storage_plus::PrimaryKey;
+
+    use super::*;
+
+    prop_compose! {
+        fn route_id()(dst in any::<String>(), asset in any::<String>()) -> RouteId {
+            RouteId { destination: Destination(dst), asset }
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn route_id_key_ser_de(id in route_id()) {
+            let keys = id.joined_key();
+            let route_id = RouteId::from_vec(keys).unwrap();
+            prop_assert_eq!(id, route_id)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn route_id_borrow_key_ser_de(id in route_id()) {
+            let b_id = &id;
+            let keys = b_id.joined_key();
+            let route_id = &RouteId::from_vec(keys).unwrap();
+            prop_assert_eq!(b_id, route_id)
+        }
     }
 }
