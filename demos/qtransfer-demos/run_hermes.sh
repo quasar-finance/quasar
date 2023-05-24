@@ -1,8 +1,7 @@
 #!/bin/bash
 
-rm -rf ~/.hermes
-mkdir ~/.hermes
-
+rm -rf ~/.hermes/keys
+rm ~/.hermes/config.toml
 cp ./hermes_config.toml ~/.hermes/config.toml
 
 hermes keys add --chain quasar --mnemonic-file quasar_key.txt
