@@ -1,24 +1,16 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
 
-use crate::route::{Destination, Memo, Route, RouteId};
+use crate::route::{Memo, Route, RouteId};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRoute {
-        route_id: RouteId,
-        route: Route,
-    },
-    MutateRoute {
-        route_id: RouteId,
-        new_route: Route,
-    },
-    RemoveRoute {
-        route_id: RouteId,
-    },
+    AddRoute { route_id: RouteId, route: Route },
+    MutateRoute { route_id: RouteId, new_route: Route },
+    RemoveRoute { route_id: RouteId },
 }
 
 #[cw_serde]

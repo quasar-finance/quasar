@@ -11,7 +11,7 @@ use crate::msg::{
     ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse,
     MemoResponse, QueryMsg,
 };
-use crate::route::{Destination, Route, RouteId};
+use crate::route::{Route, RouteId};
 use crate::state::ROUTES;
 
 // version info for migration info
@@ -39,17 +39,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddRoute {
-            route_id,
-            route,
-        } => execute_add_route(deps, env, info, &route_id, route),
+        ExecuteMsg::AddRoute { route_id, route } => {
+            execute_add_route(deps, env, info, &route_id, route)
+        }
         ExecuteMsg::MutateRoute {
             route_id,
             new_route,
         } => execute_mutate_route(deps, env, info, &route_id, new_route),
-        ExecuteMsg::RemoveRoute { route_id } => {
-            execute_remove_route(deps, env, info, &route_id)
-        }
+        ExecuteMsg::RemoveRoute { route_id } => execute_remove_route(deps, env, info, &route_id),
     }
 }
 
@@ -125,9 +122,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             retries,
             actual_memo,
         )?)?),
-        QueryMsg::GetRoute { route_id } => {
-            Ok(to_binary(&handle_get_route(deps, route_id)?)?)
-        }
+        QueryMsg::GetRoute { route_id } => Ok(to_binary(&handle_get_route(deps, route_id)?)?),
         QueryMsg::ListRoutes {} => Ok(to_binary(&handle_list_routes(deps)?)?),
     }
 }
@@ -212,7 +207,10 @@ mod tests {
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &RouteId{destination: Destination("osmosis".to_string()), asset: "ibc/123".to_string()},
+                &RouteId {
+                    destination: Destination("osmosis".to_string()),
+                    asset: "ibc/123".to_string(),
+                },
                 &route1,
             )
             .unwrap();
@@ -220,7 +218,10 @@ mod tests {
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &RouteId{destination:  Destination("gaia".to_string()), asset: "osmo".to_string()},
+                &RouteId {
+                    destination: Destination("gaia".to_string()),
+                    asset: "osmo".to_string(),
+                },
                 &route2,
             )
             .unwrap();
@@ -231,8 +232,20 @@ mod tests {
             response,
             ListRoutesResponse {
                 routes: vec![
-                    (RouteId{destination: Destination("osmosis".to_string()), asset: "ibc/123".to_string()}, route1),
-                    (RouteId{destination: Destination("gaia".to_string()), asset: "osmo".to_string()}, route2)
+                    (
+                        RouteId {
+                            destination: Destination("osmosis".to_string()),
+                            asset: "ibc/123".to_string()
+                        },
+                        route1
+                    ),
+                    (
+                        RouteId {
+                            destination: Destination("gaia".to_string()),
+                            asset: "osmo".to_string()
+                        },
+                        route2
+                    )
                 ]
             }
         )

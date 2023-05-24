@@ -1,23 +1,28 @@
 use std::fmt::Display;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, StdResult, StdError};
-use cw_storage_plus::{KeyDeserialize, PrimaryKey, Prefix, Prefixer, Key};
+use cosmwasm_std::{Binary, StdError, StdResult};
+use cw_storage_plus::{Key, KeyDeserialize, Prefixer, PrimaryKey};
 use schemars::JsonSchema;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 pub struct Route {
     pub channel: String,
     pub port: String,
-    pub hop: Option<Hop>
+    pub hop: Option<Hop>,
 }
 
 impl Display for Route {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.hop.is_some() {
-            write!(f, "channel: {}, port: {}, (hop: {})", self.channel, self.port, self.hop.as_ref().unwrap())
+            write!(
+                f,
+                "channel: {}, port: {}, (hop: {})",
+                self.channel,
+                self.port,
+                self.hop.as_ref().unwrap()
+            )
         } else {
             write!(f, "channel: {}, port: {}", self.channel, self.port)
         }
@@ -26,7 +31,11 @@ impl Display for Route {
 
 impl Route {
     pub fn new(channel: impl Into<String>, port: impl Into<String>, hop: Option<Hop>) -> Route {
-        Route { channel: channel.into(), port: port.into(), hop }
+        Route {
+            channel: channel.into(),
+            port: port.into(),
+            hop,
+        }
     }
 }
 
@@ -65,7 +74,6 @@ impl Hop {
         Memo::new(self.to_forward(timeout, retries, actual_memo))
     }
 
-
     // wtf are these clones even
     fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
         Forward {
@@ -74,7 +82,8 @@ impl Hop {
             channel: self.channel.clone(),
             timeout: timeout.clone(),
             retries,
-            next: self.clone()
+            next: self
+                .clone()
                 .next
                 .map_or(Box::new(Next::Actual(actual_memo.clone())), |val| {
                     Box::new(Next::Forward(val.to_forward(timeout, retries, actual_memo)))
@@ -86,9 +95,20 @@ impl Hop {
 impl Display for Hop {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.next.is_some() {
-            write!(f, "channel: {}, port: {}, receiver: {}, (next: {})", self.channel, self.port, self.receiver, self.next.as_ref().unwrap())
+            write!(
+                f,
+                "channel: {}, port: {}, receiver: {}, (next: {})",
+                self.channel,
+                self.port,
+                self.receiver,
+                self.next.as_ref().unwrap()
+            )
         } else {
-            write!(f, "channel: {}, port: {}, receiver: {}", self.channel, self.port, self.receiver)
+            write!(
+                f,
+                "channel: {}, port: {}, receiver: {}",
+                self.channel, self.port, self.receiver
+            )
         }
     }
 }
@@ -124,12 +144,16 @@ pub enum Next {
 #[cw_serde]
 pub struct RouteId {
     pub destination: Destination,
-    pub asset: String
+    pub asset: String,
 }
 
 impl Display for RouteId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "destination: {}, asset: {}", self.destination, self.asset)
+        write!(
+            f,
+            "destination: {}, asset: {}",
+            self.destination, self.asset
+        )
     }
 }
 
@@ -158,7 +182,10 @@ impl KeyDeserialize for &RouteId {
         let t_len = parse_length(&value)?;
         let u = tu.split_off(t_len);
 
-        Ok(RouteId{ destination: Destination::from_vec(tu)?, asset: String::from_vec(u)? })
+        Ok(RouteId {
+            destination: Destination::from_vec(tu)?,
+            asset: String::from_vec(u)?,
+        })
     }
 }
 
