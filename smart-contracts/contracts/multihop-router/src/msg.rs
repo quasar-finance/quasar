@@ -1,16 +1,24 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
 
-use crate::state::{Route, Memo, RouteName};
+use crate::route::{Destination, Memo, Route, RouteId};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRoute { destination_name: String, destination: Route },
-    MutateRoute { destination_name: String, destination: Route },
-    RemoveRoute { destination_name: String },
+    AddRoute {
+        route_id: RouteId,
+        route: Route,
+    },
+    MutateRoute {
+        route_id: RouteId,
+        new_route: Route,
+    },
+    RemoveRoute {
+        route_id: RouteId,
+    },
 }
 
 #[cw_serde]
@@ -19,13 +27,13 @@ pub enum QueryMsg {
     // TODO change timeout to either a Timestamp or a Duration, also find a datastructure that is always a json
     #[returns(GetMemoResponse)]
     GetMemo {
-        destination: String,
+        route_id: RouteId,
         timeout: String,
         retries: i64,
         actual_memo: Option<Binary>,
     },
     #[returns(GetRouteResponse)]
-    GetRoute { destination: String },
+    GetRoute { route_id: RouteId },
     #[returns(ListRoutesResponse)]
     ListRoutes {},
 }
@@ -41,7 +49,7 @@ pub struct GetMemoResponse {
 #[serde(untagged)]
 pub enum MemoResponse {
     Forward(Memo),
-    Actual(Option<Binary>)
+    Actual(Option<Binary>),
 }
 
 #[cw_serde]
@@ -51,5 +59,5 @@ pub struct GetRouteResponse {
 
 #[cw_serde]
 pub struct ListRoutesResponse {
-    pub routes: Vec<(RouteName, Route)>,
+    pub routes: Vec<(RouteId, Route)>,
 }

@@ -8,9 +8,11 @@ use cosmwasm_std::{
 use crate::error::{ContractError, ContractResult};
 use crate::helpers::is_contract_admin;
 use crate::msg::{
-    ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse, QueryMsg, MemoResponse,
+    ExecuteMsg, GetMemoResponse, GetRouteResponse, InstantiateMsg, ListRoutesResponse,
+    MemoResponse, QueryMsg,
 };
-use crate::state::{Route, ROUTES, RouteName};
+use crate::route::{Destination, Route, RouteId};
+use crate::state::ROUTES;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:multihop-router";
@@ -37,14 +39,16 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddRoute { destination_name, destination } => {
-            execute_add_route(deps, env, info, &destination_name.into(), destination)
-        }
-        ExecuteMsg::MutateRoute { destination_name, destination } => {
-            execute_mutate_route(deps, env, info, &destination_name.into(), destination)
-        }
-        ExecuteMsg::RemoveRoute { destination_name } => {
-            execute_remove_route(deps, env, info, &destination_name.into())
+        ExecuteMsg::AddRoute {
+            route_id,
+            route,
+        } => execute_add_route(deps, env, info, &route_id, route),
+        ExecuteMsg::MutateRoute {
+            route_id,
+            new_route,
+        } => execute_mutate_route(deps, env, info, &route_id, new_route),
+        ExecuteMsg::RemoveRoute { route_id } => {
+            execute_remove_route(deps, env, info, &route_id)
         }
     }
 }
@@ -53,77 +57,76 @@ pub fn execute_add_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    dst_name: &RouteName,
-    dst: Route,
+    route_id: &RouteId,
+    route: Route,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    if ROUTES.has(deps.storage, dst_name) {
+    if ROUTES.has(deps.storage, route_id) {
         return Err(ContractError::DestinationAlreadyExists);
     }
 
-    ROUTES.save(deps.storage, dst_name, &dst)?;
+    ROUTES.save(deps.storage, route_id, &route)?;
 
     Ok(Response::new()
         .add_attribute("action", "add_route")
-        .add_attribute("destination", dst_name.to_string())
-        .add_attribute("destination-value", dst.to_string()))
+        .add_attribute("destination", route_id.to_string())
+        .add_attribute("destination-value", route.to_string()))
 }
 
 pub fn execute_mutate_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    dst_name: &RouteName,
-    dst: Route,
+    route_id: &RouteId,
+    route: Route,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    ROUTES.save(deps.storage, dst_name, &dst)?;
+    ROUTES.save(deps.storage, route_id, &route)?;
 
     Ok(Response::new()
         .add_attribute("action", "mutate_route")
-        .add_attribute("destination", dst_name.to_string())
-        .add_attribute("destination-value", dst.to_string())
-    )
+        .add_attribute("destination", route_id.to_string())
+        .add_attribute("destination-value", route.to_string()))
 }
 
 pub fn execute_remove_route(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    destination: &RouteName,
+    route_id: &RouteId,
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    if !ROUTES.has(deps.storage, destination) {
+    if !ROUTES.has(deps.storage, route_id) {
         return Err(ContractError::DestinationNotExists);
     }
 
-    ROUTES.remove(deps.storage, destination);
+    ROUTES.remove(deps.storage, route_id);
 
     Ok(Response::new()
         .add_attribute("action", "remove_route")
-        .add_attribute("destination", format!("{}", destination)))
+        .add_attribute("destination", format!("{}", route_id)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         QueryMsg::GetMemo {
-            destination,
+            route_id,
             timeout,
             retries,
             actual_memo,
         } => Ok(to_binary(&handle_get_memo(
             deps,
-            destination.into(),
+            route_id,
             timeout,
             retries,
             actual_memo,
         )?)?),
-        QueryMsg::GetRoute { destination } => {
-            Ok(to_binary(&handle_get_route(deps, destination.into())?)?)
+        QueryMsg::GetRoute { route_id } => {
+            Ok(to_binary(&handle_get_route(deps, route_id)?)?)
         }
         QueryMsg::ListRoutes {} => Ok(to_binary(&handle_list_routes(deps)?)?),
     }
@@ -131,29 +134,37 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
 
 fn handle_get_memo(
     deps: Deps,
-    dst: RouteName,
+    route_id: RouteId,
     timeout: String,
     retries: i64,
     actual_memo: Option<Binary>,
 ) -> ContractResult<GetMemoResponse> {
     let route = ROUTES
-        .may_load(deps.storage, &dst)?
+        .may_load(deps.storage, &route_id)?
         .ok_or(ContractError::DestinationNotExists)?;
     match route.hop {
-        Some(hop) => Ok(GetMemoResponse { channel: route.channel, port: route.port, memo: MemoResponse::Forward(hop.to_memo(timeout, retries, actual_memo)) }),
-        None => Ok(GetMemoResponse { channel: route.channel, port: route.port, memo: MemoResponse::Actual(actual_memo) })
+        Some(hop) => Ok(GetMemoResponse {
+            channel: route.channel,
+            port: route.port,
+            memo: MemoResponse::Forward(hop.to_memo(timeout, retries, actual_memo)),
+        }),
+        None => Ok(GetMemoResponse {
+            channel: route.channel,
+            port: route.port,
+            memo: MemoResponse::Actual(actual_memo),
+        }),
     }
 }
 
-fn handle_get_route(deps: Deps, dst: RouteName) -> ContractResult<GetRouteResponse> {
+fn handle_get_route(deps: Deps, route_id: RouteId) -> ContractResult<GetRouteResponse> {
     let destination = ROUTES
-        .may_load(deps.storage, &dst)?
+        .may_load(deps.storage, &route_id)?
         .ok_or(ContractError::DestinationNotExists)?;
     Ok(GetRouteResponse { destination })
 }
 
 fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
-    let routes: StdResult<Vec<(RouteName, Route)>> = ROUTES
+    let routes: StdResult<Vec<(RouteId, Route)>> = ROUTES
         .range(deps.storage, None, None, Order::Descending)
         .collect();
     Ok(ListRoutesResponse {
@@ -171,7 +182,7 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::state::Hop;
+    use crate::route::Hop;
 
     use super::*;
 
@@ -201,7 +212,7 @@ mod tests {
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &RouteName("osmosis".to_string()),
+                &RouteId{destination: Destination("osmosis".to_string()), asset: "ibc/123".to_string()},
                 &route1,
             )
             .unwrap();
@@ -209,7 +220,7 @@ mod tests {
         ROUTES
             .save(
                 deps.as_mut().storage,
-                &RouteName("gaia".to_string()),
+                &RouteId{destination:  Destination("gaia".to_string()), asset: "osmo".to_string()},
                 &route2,
             )
             .unwrap();
@@ -220,8 +231,8 @@ mod tests {
             response,
             ListRoutesResponse {
                 routes: vec![
-                    ("osmosis".to_string().into(), route1),
-                    ("gaia".to_string().into(), route2)
+                    (RouteId{destination: Destination("osmosis".to_string()), asset: "ibc/123".to_string()}, route1),
+                    (RouteId{destination: Destination("gaia".to_string()), asset: "osmo".to_string()}, route2)
                 ]
             }
         )

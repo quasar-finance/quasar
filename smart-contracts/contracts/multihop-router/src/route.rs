@@ -1,0 +1,246 @@
+use std::fmt::Display;
+
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Binary, StdResult, StdError};
+use cw_storage_plus::{KeyDeserialize, PrimaryKey, Prefix, Prefixer, Key};
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
+
+
+#[cw_serde]
+pub struct Route {
+    pub channel: String,
+    pub port: String,
+    pub hop: Option<Hop>
+}
+
+impl Display for Route {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.hop.is_some() {
+            write!(f, "channel: {}, port: {}, (hop: {})", self.channel, self.port, self.hop.as_ref().unwrap())
+        } else {
+            write!(f, "channel: {}, port: {}", self.channel, self.port)
+        }
+    }
+}
+
+impl Route {
+    pub fn new(channel: impl Into<String>, port: impl Into<String>, hop: Option<Hop>) -> Route {
+        Route { channel: channel.into(), port: port.into(), hop }
+    }
+}
+
+#[cw_serde]
+pub struct Hop {
+    // the channel to reach the first destination chain
+    channel: String,
+    // port will most likely be "transfer"
+    port: String,
+    // receiver is the receiver of the hop. If the chain has packet forward middelware properly integrated
+    // the receiver is never relevant. If PFM is not properly integrated, the receiver will have the funds.
+    // The users of the multihop router should ensure that the receiver works as intended
+    receiver: String,
+    // the next hop to take to reach the actual destination chain
+    next: Option<Box<Hop>>,
+}
+
+impl Hop {
+    pub fn new(
+        channel: impl Into<String>,
+        port: impl Into<String>,
+        receiver: impl Into<String>,
+        hop: Option<Hop>,
+    ) -> Hop {
+        Hop {
+            channel: channel.into(),
+            port: port.into(),
+            receiver: receiver.into(),
+            next: hop.map(Box::new),
+        }
+    }
+
+    /// create a packet forwarder memo field from a route of hops
+    /// receivers of the tokens on the intermediate chains
+    pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
+        Memo::new(self.to_forward(timeout, retries, actual_memo))
+    }
+
+
+    // wtf are these clones even
+    fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
+        Forward {
+            receiver: self.receiver.clone(),
+            port: self.port.clone(),
+            channel: self.channel.clone(),
+            timeout: timeout.clone(),
+            retries,
+            next: self.clone()
+                .next
+                .map_or(Box::new(Next::Actual(actual_memo.clone())), |val| {
+                    Box::new(Next::Forward(val.to_forward(timeout, retries, actual_memo)))
+                }),
+        }
+    }
+}
+
+impl Display for Hop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.next.is_some() {
+            write!(f, "channel: {}, port: {}, receiver: {}, (next: {})", self.channel, self.port, self.receiver, self.next.as_ref().unwrap())
+        } else {
+            write!(f, "channel: {}, port: {}, receiver: {}", self.channel, self.port, self.receiver)
+        }
+    }
+}
+
+// in the case of our multihop router, a memo is a set forwarding steps with an actual memo field attached for the host chan
+#[cw_serde]
+pub struct Memo {
+    pub forward: Forward,
+}
+
+impl Memo {
+    pub fn new(forward: Forward) -> Memo {
+        Memo { forward }
+    }
+}
+
+#[cw_serde]
+pub struct Forward {
+    pub receiver: String,
+    pub port: String,
+    pub channel: String,
+    pub timeout: String,
+    pub retries: i64,
+    pub next: Box<Next>,
+}
+
+#[cw_serde]
+pub enum Next {
+    Forward(Forward),
+    Actual(Option<Binary>),
+}
+
+#[cw_serde]
+pub struct RouteId {
+    pub destination: Destination,
+    pub asset: String
+}
+
+impl Display for RouteId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "destination: {}, asset: {}", self.destination, self.asset)
+    }
+}
+
+impl<'a> PrimaryKey<'a> for &RouteId {
+    type Prefix = Destination;
+
+    type SubPrefix = ();
+
+    type Suffix = String;
+
+    type SuperSuffix = (Destination, String);
+
+    fn key(&self) -> Vec<Key> {
+        let mut keys = self.destination.key();
+        keys.extend(self.asset.key());
+        keys
+    }
+}
+
+impl KeyDeserialize for &RouteId {
+    type Output = RouteId;
+
+    // TODO test that this implementation is the inverse of key
+    fn from_vec(mut value: Vec<u8>) -> StdResult<Self::Output> {
+        let mut tu = value.split_off(2);
+        let t_len = parse_length(&value)?;
+        let u = tu.split_off(t_len);
+
+        Ok(RouteId{ destination: Destination::from_vec(tu)?, asset: String::from_vec(u)? })
+    }
+}
+
+fn parse_length(value: &[u8]) -> StdResult<usize> {
+    Ok(u16::from_be_bytes(
+        value
+            .try_into()
+            .map_err(|_| StdError::generic_err("Could not read 2 byte length"))?,
+    )
+    .into())
+}
+
+// destination uses a special partialEq, so we don't derive it
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+pub struct Destination(pub String);
+
+impl From<String> for Destination {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl Display for Destination {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl PartialEq for Destination {
+    // Destinination uses a case insensitive eq
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_lowercase() == other.0.to_lowercase()
+    }
+}
+
+impl<'a> Prefixer<'a> for Destination {
+    fn prefix(&self) -> Vec<Key> {
+        self.0.prefix()
+        // vec![Key::Ref(self.0.as_bytes())]
+    }
+}
+
+impl<'a> PrimaryKey<'a> for Destination {
+    type Prefix = ();
+    type SubPrefix = ();
+    type Suffix = Self;
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        self.0.key()
+    }
+}
+
+impl KeyDeserialize for Destination {
+    type Output = Destination;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        Ok(Destination(
+            String::from_utf8(value).map_err(StdError::invalid_utf8)?,
+        ))
+    }
+}
+
+impl<'a> PrimaryKey<'a> for &Destination {
+    type Prefix = ();
+    type SubPrefix = ();
+    type Suffix = Self;
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        self.0.key()
+    }
+}
+
+impl KeyDeserialize for &Destination {
+    type Output = Destination;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        Ok(Destination(
+            String::from_utf8(value).map_err(StdError::invalid_utf8)?,
+        ))
+    }
+}
