@@ -1,34 +1,67 @@
-# E2E Tests
+# End-to-End (E2E) Tests
 
-## Structure
+## Overview
 
-### `e2e` Package
+This section details the E2E testing functionality available in the `e2e` package. These tests are specifically designed
+to facilitate end-to-end testing of vault contracts, using the Quasar and Osmosis chains. The structure of the package
+allows for efficient setup and deployment of necessary contracts on the Quasar chain and pools on the Osmosis chain, as
+per the specific test cases.
 
-This `e2e` package defines an integration test suite used for full end-to-end testing functionality. It initializes chains 
-based on the test triggered. The current design allows you to test the vault contracts end-to-end. It sets up and deploys the
-necessary contracts on the Quasar chain and the pools on Osmosis side with the desired denoms.
+Our E2E testing implementation is built upon the robust core of the Strangelove interchaintest framework. This framework
+provides the necessary backbone to test inter-blockchain communication effectively and efficiently, enhancing the
+overall reliability and performance of our system. It aids in setting up different chains, deploying contracts, and
+initiating transactions across chains, which is integral to our end-to-end testing. For more information on the
+interchaintest framework, please refer to the
+official [Strangelove Ventures GitHub repository](https://github.com/strangelove-ventures/interchaintest).
 
-The file e2e_wasmd_contract_test.go defines the testing suite and contains the core bootstrapping logic that creates a testing
-environment via docker containers (a setup of 2 chains with 1 validator each and an IBC relayer).
+## Package Structure
 
-## How It Works
+The `e2e` package comprises the following components:
 
-- Build Quasar Docker Image :
-   - An E2ETestSuiteBuilder is initialised with Quasar chain and 1 IBC relayer configuration. The quasar chain can either be from the current branch or any other specific branch to be tested.
-   - If current, we run the DockerFile setup which is a little different from the regular Docker build in make file. As the build needs to have `bash` installed in order to perform certain actions of creating new accounts during genesis with any denom.
-   - Use the specific Docker files present in the DockerFiles directory in order to build the required Quasar Docker image.
-   - Replace the Dockerfile content in the Root directory with the ones in `tests/e2e/dockerfiles/quasar.Dockerfile` and run `make docker-build` in the root directory to build the desired image for running the e2e locally. 
+- `/cases`: This directory contains the end-to-end test cases.
+    - `/_helpers`: This subdirectory houses test helpers and generalized functions.
+    - `/_utils`: This subdirectory contains files, payloads, and other resources helpful for mocking entities during
+      testing.
+- `/dockerfiles`: This directory contains Dockerfiles for any chain that needs to be tested.
+- `/dockerutil`: This directory holds utility resources for Docker.
+- `/suite`: This directory includes the core package files for end-to-end testing.
 
+## Docker Setup
 
-- Build Osmosis Docker Image :
-   - Clone the Osmosis repo, and checkout the desired version (any tag v15.0.0 or after) and replace the contents of the Dockerfile of Osmosis repo with the ones in `tests/e2e/dockerfiles/osmosis.Dockerfile`.
-   - Once the contents are replaced, build the Osmosis Docker image using `make docker-build` in the root directory of Osmosis.
-   
+Our testing framework relies on Docker to instantiate local chains. Prior to executing tests, ensure that you build the
+chain Docker images. Currently, the framework supports two chains: Quasar and Osmosis. You can find the respective
+Dockerfiles in the `tests/e2e/dockerfiles` directory.
 
-- Build Smart Contracts : 
-   - In the quasar repo, change the directory to `smart-contracts`
-   - Within that directory, run the following commands to build the artifacts for testing out the contracts code.
-   - For MacM1 users : `docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11`
-   - For other users : `docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11`
+To build a Docker image, use the following command from the repository
+root: `make docker-e2e-build [chain1 chain2 ...]`. Here, `chain1` refers to the name of the Dockerfile, excluding the
+file extension.
 
+Example: `make docker-e2e-build quasar`
+Example: `make docker-e2e-build quasar osmosis`
 
+## Smart Contracts
+
+To create end-to-end tests that involve Wasm contracts, first compile the contracts using the following steps:
+
+1. Navigate to the `smart-contracts` directory.
+2. Execute the appropriate command below to build the artifacts needed for testing the contracts code:
+
+For Mac Silicon users:
+
+ ```bash
+ docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
+ ```
+
+For other users:
+
+ ```bash
+ docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
+ ```
+
+## Technical References
+
+Refer to the following resources for further technical insights:
+
+- [Learn IBC Test](https://github.com/strangelove-ventures/interchaintest/blob/v4/examples/ibc/learn_ibc_test.go)
+- [Cosmos Chain Expedited Proposal Test](https://github.com/strangelove-ventures/interchaintest/blob/v4/examples/osmosis/cosmos_chain_expedited_proposal_test.go)
+- [Write Custom Tests](https://github.com/strangelove-ventures/interchaintest/blob/main/docs/writeCustomTests.md)
