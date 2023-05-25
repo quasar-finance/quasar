@@ -1,10 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Timestamp, Uint128};
+
 use cw_controllers::Claims;
 use cw_storage_plus::{Item, Map};
 use quasar_types::callback::{BondResponse, UnbondResponse};
 
-use crate::msg::PrimitiveConfig;
+use crate::{msg::PrimitiveConfig, ContractError};
 
 // constants
 pub const FALLBACK_RATIO: Decimal = Decimal::one();
@@ -30,6 +31,45 @@ pub struct InvestmentInfo {
     pub primitives: Vec<PrimitiveConfig>,
 }
 
+pub const CAP: Item<Cap> = Item::new("cap");
+
+#[cw_serde]
+pub struct Cap {
+    cap_admin: Addr,
+    total: Uint128,
+    current: Uint128,
+}
+
+impl Cap {
+    pub fn new(admin: Addr, total: Uint128) -> Self {
+        Self {
+            cap_admin: admin,
+            total,
+            current: Uint128::zero(),
+        }
+    }
+
+    pub fn update_cap_admin(mut self, new_cap_admin: Addr) -> Self {
+        self.cap_admin = new_cap_admin;
+        self
+    }
+
+    pub fn update_total_cap(mut self, new_total: Uint128) -> Self {
+        self.total = new_total;
+        self
+    }
+
+    pub fn update_current(mut self, to_add: Uint128) -> Result<Self, ContractError> {
+        let new_total = self.current.checked_add(to_add)?;
+        // if we go over cap, reject
+        if new_total > self.total {
+            return Err(ContractError::OverCap {});
+        };
+        self.current = new_total;
+        Ok(self)
+    }
+}
+
 /// Supply is dynamic and tracks the current supply of staked and ERC20 tokens.
 #[cw_serde]
 #[derive(Default)]
@@ -38,6 +78,13 @@ pub struct Supply {
     pub issued: Uint128,
 }
 
+#[cw_serde]
+pub struct AdditionalTokenInfo {
+    pub thesis: String,
+    pub creation_time: Timestamp,
+}
+
+pub const ADDITIONAL_TOKEN_INFO: Item<AdditionalTokenInfo> = Item::new("additional_token_info");
 pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
 pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
@@ -84,6 +131,9 @@ pub const BOND_STATE: Map<String, Vec<BondingStub>> = Map::new("bond_state");
 pub const UNBOND_STATE: Map<String, Unbond> = Map::new("unbond_state");
 
 pub const DEBUG_TOOL: Item<String> = Item::new("debug_tool");
+
+// vault rewards contract
+pub const VAULT_REWARDS: Item<Addr> = Item::new("vault_rewards");
 
 impl InvestmentInfo {
     pub fn normalize_primitive_weights(&mut self) {

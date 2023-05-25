@@ -1,6 +1,8 @@
+mod admin;
 pub mod bond;
 pub mod contract;
 pub mod error;
+mod error_recovery;
 pub mod helpers;
 pub mod ibc;
 pub mod ibc_lock;
@@ -13,6 +15,9 @@ pub mod start_unbond;
 pub mod state;
 pub mod test_helpers;
 pub mod unbond;
+
+#[cfg(test)]
+pub mod integration_tests;
 
 #[cfg(test)]
 mod tests {

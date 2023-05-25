@@ -1,35 +1,31 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo,
-    Reply, Response, StdResult, Uint128,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
+
 use quasar_types::ibc::IcsAck;
 
+use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::helpers::SubMsgKind;
-use crate::ibc::{handle_failing_ack, handle_succesful_ack};
+use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
+use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
 use crate::icq::try_icq;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::queries::{
-    handle_channels_query, handle_config_query, handle_ica_address_query, handle_ica_balance,
-    handle_ica_channel, handle_list_bonding_claims, handle_list_pending_acks,
-    handle_list_primitive_shares, handle_list_replies, handle_list_unbonding_claims, handle_lock,
-    handle_lp_shares_query, handle_primitive_shares, handle_trapped_errors_query,
-    handle_unbonding_claim_query,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, BOND_QUEUE, CONFIG, IBC_LOCK, ICA_BALANCE,
-    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
-use crate::unbond::{do_unbond, transfer_batch_unbond, PendingReturningUnbonds, ReturningUnbond};
+use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:lp-strategy";
@@ -39,12 +35,16 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // check valid token info
     msg.validate()?;
+
+    // ADMIN here is only used to decide who can deposit
+    ADMIN.save(deps.storage, &info.sender)?;
+
     CONFIG.save(
         deps.storage,
         &Config {
@@ -62,6 +62,8 @@ pub fn instantiate(
 
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
+    OSMO_LOCK.save(deps.storage, &u64::MAX)?;
+
     LP_SHARES.save(
         deps.storage,
         &LpCache {
@@ -71,8 +73,7 @@ pub fn instantiate(
         },
     )?;
 
-    // this is a workaround so that the contract query does not fail for balance before deposits have been made successfully
-    ICA_BALANCE.save(deps.storage, &Uint128::one())?;
+    TOTAL_VAULT_BALANCE.save(deps.storage, &Uint128::zero())?;
 
     TIMED_OUT.save(deps.storage, &false)?;
 
@@ -85,8 +86,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     // TODO this needs and error check and error handling
     let reply = REPLIES.load(deps.storage, msg.id)?;
     match reply {
-        SubMsgKind::Ibc(pending) => handle_ibc_reply(deps, msg, pending),
-        SubMsgKind::Ack(seq) => handle_ack_reply(deps, msg, seq),
+        SubMsgKind::Ibc(pending, channel) => handle_ibc_reply(deps, msg, pending, channel),
+        SubMsgKind::Ack(seq, channel) => handle_ack_reply(deps, msg, seq, channel),
         SubMsgKind::Callback(_callback) => handle_callback_reply(deps, msg, _callback),
     }
 }
@@ -104,32 +105,155 @@ pub fn execute(
             execute_start_unbond(deps, env, info, id, share_amount)
         }
         ExecuteMsg::Unbond { id } => execute_unbond(deps, env, info, id),
-        ExecuteMsg::AcceptReturningFunds { id } => {
-            execute_accept_returning_funds(deps, &env, info, id)
+        ExecuteMsg::AcceptReturningFunds { id, pending } => {
+            execute_accept_returning_funds(deps.storage, deps.querier, info, id, pending)
         }
-        ExecuteMsg::ReturnTransfer { amount } => execute_return_funds(deps, env, info, amount),
         ExecuteMsg::CloseChannel { channel_id } => execute_close_channel(deps, channel_id),
         ExecuteMsg::Ack { ack } => execute_ack(deps, env, info, ack),
         ExecuteMsg::TryIcq {} => execute_try_icq(deps, env),
+        ExecuteMsg::SetDepositor { depositor } => execute_set_depositor(deps, info, depositor),
+        ExecuteMsg::Unlock { unlock_only } => execute_unlock(deps, env, info, unlock_only),
+        ExecuteMsg::Lock { lock_only } => execute_lock(deps, env, info, lock_only),
+        ExecuteMsg::ManualTimeout {
+            seq,
+            channel,
+            should_unlock,
+        } => manual_timeout(deps, env, info, seq, channel, should_unlock),
+        ExecuteMsg::AddLockAdmin { to_add } => execute_add_lock_admin(deps, env, info, to_add),
+        ExecuteMsg::RemoveLockAdmin { to_remove } => {
+            execute_remove_lock_admin(deps, env, info, to_remove)
+        }
+    }
+}
+
+pub fn execute_add_lock_admin(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    to_add: String,
+) -> Result<Response, ContractError> {
+    add_lock_admin(
+        deps.storage,
+        &deps.querier,
+        &env,
+        info.sender,
+        deps.api.addr_validate(to_add.as_str())?,
+    )?;
+    Ok(Response::new()
+        .add_attribute("action", "add_lock_admin")
+        .add_attribute("lock_admin", to_add))
+}
+
+pub fn execute_remove_lock_admin(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    to_add: String,
+) -> Result<Response, ContractError> {
+    remove_lock_admin(
+        deps.storage,
+        &deps.querier,
+        &env,
+        info.sender,
+        deps.api.addr_validate(to_add.as_str())?,
+    )?;
+    Ok(Response::new()
+        .add_attribute("action", "remove_lock_admin")
+        .add_attribute("lock_admin", to_add))
+}
+
+pub fn execute_lock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    lock_only: LockOnly,
+) -> Result<Response, ContractError> {
+    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match lock_only {
+        LockOnly::Bond => lock = lock.lock_bond(),
+        LockOnly::StartUnbond => lock = lock.lock_start_unbond(),
+        LockOnly::Unbond => lock = lock.lock_unbond(),
+        LockOnly::Migration => lock = lock.lock_migration(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("lock_only", lock_only.to_string()))
+}
+
+pub fn execute_unlock(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    unlock_only: UnlockOnly,
+) -> Result<Response, ContractError> {
+    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
+    let mut lock = IBC_LOCK.load(deps.storage)?;
+
+    match unlock_only {
+        UnlockOnly::Bond => lock = lock.unlock_bond(),
+        UnlockOnly::StartUnbond => lock = lock.unlock_start_unbond(),
+        UnlockOnly::Unbond => lock = lock.unlock_unbond(),
+        UnlockOnly::Migration => lock = lock.unlock_migration(),
+    };
+    IBC_LOCK.save(deps.storage, &lock)?;
+
+    Ok(Response::new().add_attribute("unlock_only", unlock_only.to_string()))
+}
+
+pub fn manual_timeout(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sequence: u64,
+    channel: String,
+    should_unlock: bool,
+) -> Result<Response, ContractError> {
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+
+    let response = on_packet_timeout(
+        deps,
+        sequence,
+        channel,
+        "timeout".to_string(),
+        should_unlock,
+    )?;
+
+    Ok(Response::new()
+        .add_attributes(response.attributes)
+        .add_events(response.events)
+        .add_submessages(response.messages))
+}
+
+pub fn execute_set_depositor(
+    deps: DepsMut,
+    info: MessageInfo,
+    depositor: String,
+) -> Result<Response, ContractError> {
+    if info.sender == ADMIN.load(deps.storage)? {
+        let depositor_addr = deps.api.addr_validate(depositor.as_str())?;
+        DEPOSITOR.save(deps.storage, &depositor_addr)?;
+        Ok(Response::new().add_attribute("set-depositor", depositor))
+    } else {
+        Err(ContractError::Unauthorized)
     }
 }
 
 pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     // if we're unlocked, we can empty the queues and send the submessages
     let mut lock = IBC_LOCK.load(deps.storage)?;
-    let sub_msg = try_icq(deps.storage, env)?;
+    let sub_msg = try_icq(deps.storage, deps.querier, env)?;
     let mut res = Response::new();
 
     if let Some(sub_msg) = sub_msg {
         if !BOND_QUEUE.is_empty(deps.storage)? {
             lock.bond = IbcLock::Locked;
             res = res.add_attribute("bond_queue", "locked");
-        }
-        if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
+        } else if !START_UNBOND_QUEUE.is_empty(deps.storage)? {
             lock = lock.lock_start_unbond();
             res = res.add_attribute("start_unbond_queue", "locked");
-        }
-        if !UNBOND_QUEUE.is_empty(deps.storage)? {
+        } else if !UNBOND_QUEUE.is_empty(deps.storage)? {
             lock = lock.lock_unbond();
             res = res.add_attribute("unbond_queue", "locked");
         }
@@ -163,46 +287,38 @@ pub fn execute_ack(
     }
 }
 
-pub fn execute_return_funds(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    amount: Uint128,
-) -> Result<Response, ContractError> {
-    let msg = transfer_batch_unbond(
-        deps.storage,
-        &env,
-        PendingReturningUnbonds {
-            unbonds: vec![ReturningUnbond {
-                amount: RawAmount::LpShares(Uint128::new(100)),
-                owner: info.sender,
-                id: String::from("1"),
-            }],
-        },
-        amount,
-    )?;
-
-    Ok(Response::new().add_submessage(msg))
-}
-
 pub fn execute_accept_returning_funds(
-    deps: DepsMut,
-    _env: &Env,
+    storage: &mut dyn Storage,
+    querier: QuerierWrapper,
     info: MessageInfo,
     id: u64,
+    pending: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
     let returning_amount = RETURNING
-        .may_load(deps.storage, id)?
+        .may_load(storage, id)?
         .ok_or(ContractError::ReturningTransferNotFound)?;
 
-    let amount = must_pay(&info, CONFIG.load(deps.storage)?.local_denom.as_str())?;
+    let amount = must_pay(&info, CONFIG.load(storage)?.local_denom.as_str())?;
     if amount != returning_amount {
         return Err(ContractError::ReturningTransferIncorrectAmount);
     }
 
+    let mut callback_submsgs = vec![];
+    for unbond in pending.unbonds.iter() {
+        let cosmos_msg = finish_unbond(storage, querier, unbond)?;
+        callback_submsgs.push(create_callback_submsg(
+            storage,
+            cosmos_msg,
+            unbond.owner.clone(),
+            unbond.id.clone(),
+        )?)
+    }
+
     Ok(Response::new()
+        .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
         .add_attribute("returning-transfer", id.to_string())
-        .add_attribute("success", "true"))
+        .add_attribute("success", "true")
+        .add_submessages(callback_submsgs))
 }
 
 pub fn execute_bond(
@@ -211,7 +327,11 @@ pub fn execute_bond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
-    let msg = do_bond(deps.storage, env, info.clone(), id)?;
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
+    let msg = do_bond(deps.storage, deps.querier, env, info.clone(), id)?;
 
     // if msg is some, we are dispatching an icq
     match msg {
@@ -237,6 +357,12 @@ pub fn execute_start_unbond(
     id: String,
     share_amount: Uint128,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     do_start_unbond(
         deps.storage,
         StartUnbond {
@@ -246,7 +372,7 @@ pub fn execute_start_unbond(
         },
     )?;
 
-    let msg = try_icq(deps.storage, env)?;
+    let msg = try_icq(deps.storage, deps.querier, env)?;
 
     match msg {
         Some(submsg) => {
@@ -270,9 +396,15 @@ pub fn execute_unbond(
     info: MessageInfo,
     id: String,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
+    if !check_depositor(deps.storage, &info.sender)? {
+        return Err(ContractError::Unauthorized);
+    }
+
     do_unbond(deps.storage, &env, info.sender.clone(), id)?;
 
-    let msg = try_icq(deps.storage, env)?;
+    let msg = try_icq(deps.storage, deps.querier, env)?;
 
     match msg {
         Some(submsg) => {
@@ -361,50 +493,85 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // update the config
-    CONFIG.save(deps.storage, &msg.config)?;
-
-    IBC_LOCK.save(deps.storage, &Lock::new())?;
+    // remove old pending acks
+    for key in msg.delete_pending.clone() {
+        PENDING_ACK.remove(deps.storage, key)
+    }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("succes", "true"))
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
-        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
-        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
-        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
-        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
-        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
-        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
-        QueryMsg::UnbondingClaim { addr, id } => {
-            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
-        }
-        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
-        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
-        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
-    }
+        .add_attribute("success", "true")
+        .add_attribute("removed", msg.delete_pending.len().to_string()))
 }
 
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        attr,
-        testing::{mock_dependencies, mock_env},
-        Addr, Timestamp,
+        attr, coins,
+        testing::{mock_dependencies, mock_env, mock_info, MockQuerier},
+        to_binary, Addr, ContractInfoResponse, ContractResult, QuerierResult, Timestamp, WasmQuery,
+    };
+    use cw_utils::PaymentError;
+
+    use crate::{
+        bond::Bond,
+        state::{Unbond, LOCK_ADMIN},
+        test_helpers::default_setup,
     };
 
-    use crate::{bond::Bond, state::Unbond, test_helpers::default_setup};
-
     use super::*;
+
+    #[test]
+    fn migrate_msg_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let entries = vec![
+            (
+                (1, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (2, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (1, "channel-3".to_string()),
+                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
+                    PendingReturningUnbonds { unbonds: vec![] },
+                )),
+            ),
+            (
+                (1, "channel-1".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+            (
+                (1, "channel-2".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+            (
+                (1, "channel-4".to_string()),
+                crate::helpers::IbcMsgKind::Icq,
+            ),
+        ];
+
+        for (key, value) in entries.clone() {
+            PENDING_ACK
+                .save(deps.as_mut().storage, key, &value)
+                .unwrap();
+        }
+
+        let msg = MigrateMsg {
+            delete_pending: entries.iter().map(|(key, _)| key.clone()).collect(),
+        };
+
+        migrate(deps.as_mut(), env, msg).unwrap();
+        assert!(PENDING_ACK.is_empty(deps.as_ref().storage))
+    }
 
     #[test]
     fn test_execute_try_icq_ibc_locked() {
@@ -416,7 +583,7 @@ mod tests {
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
         assert!(res.messages.is_empty());
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
     }
 
     #[test]
@@ -437,7 +604,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "unlocked"));
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_unlocked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_unlocked());
     }
 
     #[test]
@@ -490,7 +657,7 @@ mod tests {
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
 
         assert_eq!(res.attributes[0], attr("IBC_LOCK", "locked"));
-        assert!(IBC_LOCK.load(&mut deps.storage).unwrap().is_locked());
+        assert!(IBC_LOCK.load(&deps.storage).unwrap().is_locked());
         assert!(res.messages.is_empty());
     }
 
@@ -521,7 +688,7 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
-        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
         assert!(lock.bond.is_locked());
         assert!(lock.start_unbond.is_unlocked());
         assert!(lock.unbond.is_unlocked());
@@ -566,10 +733,123 @@ mod tests {
 
         let res = execute_try_icq(deps.as_mut(), env).unwrap();
         assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
-        assert_eq!(res.attributes[1], attr("unbond_queue", "locked"));
-        let lock = IBC_LOCK.load(&mut deps.storage).unwrap();
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
-        assert!(lock.unbond.is_locked());
+        assert!(lock.unbond.is_unlocked());
+    }
+
+    #[test]
+    fn test_start_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("pepe", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::StartUnbond {
+            id: "bond_id_1".to_string(),
+            share_amount: Uint128::new(69),
+        };
+
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_unbond_with_funds() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("addr0000", &coins(420, "uqsr"));
+        let msg = ExecuteMsg::Unbond {
+            id: "unbond_id".to_string(),
+        };
+
+        let res = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+    }
+
+    #[test]
+    fn test_execute_add_lock_admin() {
+        let admin = "bob";
+
+        let mut info = ContractInfoResponse::default();
+        info.admin = Some(admin.to_string());
+        let mut q = MockQuerier::default();
+        q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { contract_addr: _ } => {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                }
+                _ => unreachable!(),
+            }
+        });
+
+        let mut deps = mock_dependencies();
+        deps.querier = q;
+
+        let env = mock_env();
+
+        let info = MessageInfo {
+            sender: Addr::unchecked(admin),
+            funds: vec![],
+        };
+
+        let msg = ExecuteMsg::AddLockAdmin {
+            to_add: "alice".to_string(),
+        };
+        let res = execute(deps.as_mut(), env, info, msg).unwrap();
+        let _ = LOCK_ADMIN
+            .load(deps.as_mut().storage, &Addr::unchecked("alice"))
+            .unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "add_lock_admin"), ("lock_admin", "alice")]
+        )
+    }
+
+    #[test]
+    fn test_execute_remove_lock_admin() {
+        let admin = "bob";
+
+        let mut info = ContractInfoResponse::default();
+        info.admin = Some(admin.to_string());
+        let mut q = MockQuerier::default();
+        q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { contract_addr: _ } => {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                }
+                _ => unreachable!(),
+            }
+        });
+
+        let mut deps = mock_dependencies();
+        deps.querier = q;
+
+        let env = mock_env();
+
+        let info = MessageInfo {
+            sender: Addr::unchecked(admin),
+            funds: vec![],
+        };
+
+        let msg = ExecuteMsg::AddLockAdmin {
+            to_add: "alice".to_string(),
+        };
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+        let _ = LOCK_ADMIN
+            .load(deps.as_mut().storage, &Addr::unchecked("alice"))
+            .unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "add_lock_admin"), ("lock_admin", "alice")]
+        );
+
+        let msg = ExecuteMsg::RemoveLockAdmin {
+            to_remove: "alice".to_string(),
+        };
+        let res = execute(deps.as_mut(), env, info, msg).unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![("action", "remove_lock_admin"), ("lock_admin", "alice")]
+        )
     }
 }

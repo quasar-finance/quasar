@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+ARG OSMOSIS_VERSION="15.0.0-alpine"
+ARG BASE_IMAGE="osmolabs/osmosis"
+
+# --------------------------------------------------------
+# Builder
+# --------------------------------------------------------
+
+FROM ${BASE_IMAGE}:${OSMOSIS_VERSION} as dev
+
+ENV HOME /osmosis
+WORKDIR $HOME
+
+RUN apk add --no-cache \
+    jq
+
+COPY bootstrap-scripts/entrypoint.sh /osmosis/entrypoint.sh
+COPY bootstrap-scripts/osmo_localnet.sh /osmosis/app_init.sh
+RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
+
+
+EXPOSE 26656
+EXPOSE 26657
+EXPOSE 1317
+
+
+CMD ["osmosisd"]
+ENTRYPOINT ["./entrypoint.sh"]

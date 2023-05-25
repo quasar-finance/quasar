@@ -4,12 +4,13 @@ use quasar_types::{
     ica::handshake::IcaMetadata,
 };
 
-use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL};
+use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES};
 
 pub fn default_setup(storage: &mut dyn Storage) -> Result<(), cosmwasm_std::StdError> {
     setup_default_icq(storage)?;
     setup_default_ica(storage)?;
-    setup_default_config(storage)
+    setup_default_config(storage)?;
+    setup_default_lp_cache(storage)
 }
 
 pub(crate) fn setup_default_icq(storage: &mut dyn Storage) -> Result<(), cosmwasm_std::StdError> {
@@ -73,6 +74,19 @@ pub(crate) fn setup_default_config(
             transfer_channel: "channel-0".to_string(),
             return_source_channel: "channel-0".to_string(),
             expected_connection: "connection-0".to_string(),
+        },
+    )
+}
+
+pub(crate) fn setup_default_lp_cache(
+    storage: &mut dyn Storage,
+) -> Result<(), cosmwasm_std::StdError> {
+    LP_SHARES.save(
+        storage,
+        &crate::state::LpCache {
+            locked_shares: 100u128.into(),
+            w_unlocked_shares: 100u128.into(),
+            d_unlocked_shares: 100u128.into(),
         },
     )
 }

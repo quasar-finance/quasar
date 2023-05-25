@@ -16,10 +16,11 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
+    ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
-        LpCache, RawAmount, CONFIG, ICA_CHANNEL, LP_SHARES, RETURNING, RETURN_SOURCE_PORT,
-        UNBONDING_CLAIMS, UNBOND_QUEUE,
+        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, PENDING_UNBOND_QUEUE, RETURNING,
+        RETURN_SOURCE_PORT, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -39,10 +40,14 @@ pub fn do_unbond(
     unbond.attempted = true;
     UNBONDING_CLAIMS.save(storage, (owner, id), &unbond)?;
 
-    Ok(UNBOND_QUEUE.push_back(storage, &unbond)?)
+    Ok(PENDING_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
-pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMsg>, ContractError> {
+pub fn batch_unbond(
+    storage: &mut dyn Storage,
+    env: &Env,
+    old_lp_shares: LpCache,
+) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
@@ -57,7 +62,9 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
             .ok_or(ContractError::QueueItemNotFound {
                 queue: "unbond".to_string(),
             })?;
-        total_exit = total_exit.checked_add(unbond.lp_shares)?;
+        total_exit = total_exit
+            .checked_add(unbond.lp_shares)
+            .map_err(|err| ContractError::TracedOverflowError(err, "cal_total_exit".to_string()))?;
         // add the unbond to the pending unbonds
         pending.push(ReturningUnbond {
             amount: RawAmount::LpShares(unbond.lp_shares),
@@ -66,39 +73,62 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
         });
     }
 
+    // important to use lp_shares before it gets updated
+    let token_out_min_amount =
+        calculate_token_out_min_amount(storage, total_exit, old_lp_shares.locked_shares)?;
+
+    let msg = exit_swap(
+        storage,
+        env,
+        total_exit,
+        token_out_min_amount,
+        PendingReturningUnbonds { unbonds: pending },
+    )?;
+    Ok(Some(msg))
+}
+
+pub(crate) fn exit_swap(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_exit: Uint128,
+    token_out_min_amount: Uint128,
+    pending: PendingReturningUnbonds,
+) -> Result<SubMsg, ContractError> {
+    let pkt = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
+
+    let channel = ICA_CHANNEL.load(storage)?;
+
+    Ok(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
+        pkt,
+        channel,
+    )?)
+}
+
+pub(crate) fn do_exit_swap(
+    storage: &mut dyn Storage,
+    env: &Env,
+    token_out_min_amount: Uint128,
+    total_exit: Uint128,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
     let config = CONFIG.load(storage)?;
-
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        // we remove the amount of shares we are are going to unlock from the locked amount
-        old.locked_shares = old.locked_shares.checked_sub(total_exit)?;
-        // we add the amount of shares we are going to unlock to the total unlocked
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(total_exit)?;
-        Ok(old)
-    })?;
 
     let msg = MsgExitSwapShareAmountIn {
         sender: ica_address,
         pool_id: config.pool_id,
         token_out_denom: config.base_denom,
         share_in_amount: total_exit.to_string(),
-        // TODO add a more robust estimation
-        token_out_min_amount: Uint128::one().to_string(),
+        token_out_min_amount: token_out_min_amount.to_string(),
     };
 
     let pkt = ica_send::<MsgExitSwapShareAmountIn>(
         msg,
         ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
-
-    Ok(Some(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Ica(IcaMessages::ExitPool(PendingReturningUnbonds {
-            unbonds: pending,
-        })),
-        pkt,
-    )?))
+    Ok(pkt)
 }
 
 // TODO the total tokens parameter and pending is maybe a little weird, check whether we want to fold pending to get total_tokens (with gas costs etc)
@@ -108,28 +138,42 @@ pub fn transfer_batch_unbond(
     pending: PendingReturningUnbonds,
     total_tokens: Uint128,
 ) -> Result<SubMsg, ContractError> {
-    // the return transfer times out 400 seconds after we dispatch the ica msg towards osmosis
-    let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+    let pkt = do_transfer_batch_unbond(storage, env, total_tokens, pending.clone())?;
 
-    // we can unwrap here since we have just instantiated with a timestamp
-    let msg = return_transfer(
-        storage,
-        env,
-        total_tokens,
-        timeout_timestamp.timestamp().unwrap(),
-    )?;
-
-    let pkt = ica_send::<MsgTransfer>(
-        msg,
-        ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
-    )?;
+    // this is an ica channel in transfer batch unbond which is fine because even though
+    // we are doing a transfer, its a return transfer which must be triggered by an ICA
+    let channel = ICA_CHANNEL.load(storage)?;
 
     Ok(create_ibc_ack_submsg(
         storage,
         IbcMsgKind::Ica(IcaMessages::ReturnTransfer(pending)),
         pkt,
+        channel,
     )?)
+}
+
+pub(crate) fn do_transfer_batch_unbond(
+    storage: &mut dyn Storage,
+    env: &Env,
+    total_tokens: Uint128,
+    pending: PendingReturningUnbonds,
+) -> Result<cosmwasm_std::IbcMsg, ContractError> {
+    // TODO, assert that raw amounts equal amount
+    let timeout_timestamp =
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
+    let msg = return_transfer(
+        storage,
+        env,
+        total_tokens,
+        timeout_timestamp.timestamp().unwrap(),
+        pending,
+    )?;
+    let pkt = ica_send::<MsgTransfer>(
+        msg,
+        ICA_CHANNEL.load(storage)?,
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
+    )?;
+    Ok(pkt)
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
@@ -211,6 +255,7 @@ fn return_transfer(
     env: &Env,
     amount: Uint128,
     timeout_timestamp: Timestamp,
+    pending: PendingReturningUnbonds,
 ) -> Result<MsgTransfer, ContractError> {
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
@@ -236,7 +281,7 @@ fn return_transfer(
         memo: serde_json_wasm::to_string(&IbcHook {
             wasm: Wasm {
                 contract: env.contract.address.clone(),
-                msg: ExecuteMsg::AcceptReturningFunds { id },
+                msg: ExecuteMsg::AcceptReturningFunds { id, pending },
             },
         })
         .map_err(|_| ContractError::SerdeJsonSer)?,
@@ -275,7 +320,10 @@ mod tests {
         CosmosMsg,
     };
 
-    use crate::{state::Unbond, test_helpers::default_setup};
+    use crate::{
+        state::{Unbond, LP_SHARES, SIMULATED_EXIT_RESULT},
+        test_helpers::default_setup,
+    };
 
     use super::*;
 
@@ -302,7 +350,7 @@ mod tests {
         env.block.time = time;
         do_unbond(deps.as_mut().storage, &env, owner, id).unwrap();
         assert_eq!(
-            UNBOND_QUEUE
+            PENDING_UNBOND_QUEUE
                 .pop_front(deps.as_mut().storage)
                 .unwrap()
                 .unwrap(),
@@ -342,7 +390,13 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
 
-        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        let cache = crate::state::LpCache {
+            locked_shares: Uint128::new(500),
+            w_unlocked_shares: Uint128::zero(),
+            d_unlocked_shares: Uint128::zero(),
+        };
+
+        let res = batch_unbond(deps.as_mut().storage, &env, cache).unwrap();
         assert!(res.is_none())
     }
 
@@ -353,6 +407,8 @@ mod tests {
         let env = mock_env();
         let owner = Addr::unchecked("bob");
         let id = "my-id".to_string();
+
+        let total_locked_shares = Uint128::new(500);
 
         // test specific setup
         LP_SHARES
@@ -396,8 +452,29 @@ mod tests {
                 .unwrap();
         }
 
-        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::from(100u128))
+            .unwrap();
+
+        let lp_cache = LP_SHARES.load(deps.as_mut().storage).unwrap();
+        let res = batch_unbond(deps.as_mut().storage, &env, lp_cache).unwrap();
         assert!(res.is_some());
+
+        // checking above we have total exit amount = 100 + 101 + 102
+        // while total shares in lp cache is defined at 500, this is important for calculating token_min_out_amount
+        // these asserts are just a quality of life improvement since the failure in this test sucks
+        let expected_exit_amount = Uint128::from(100u128 + 101u128 + 102u128);
+        let actual_exit_amount = unbonds
+            .iter()
+            .fold(Uint128::zero(), |acc, u| acc + u.lp_shares);
+        assert_eq!(expected_exit_amount, actual_exit_amount);
+
+        let token_out_min_amount = calculate_token_out_min_amount(
+            deps.as_mut().storage,
+            expected_exit_amount,
+            total_locked_shares,
+        )
+        .unwrap();
 
         // check that the packet is as we expect
         let ica_address = get_ica_address(
@@ -411,14 +488,13 @@ mod tests {
             pool_id: config.pool_id,
             token_out_denom: config.base_denom,
             share_in_amount: Uint128::new(303).to_string(),
-            // TODO add a more robust estimation
-            token_out_min_amount: Uint128::one().to_string(),
+            token_out_min_amount: token_out_min_amount.to_string(),
         };
 
         let pkt = ica_send::<MsgExitSwapShareAmountIn>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
 
@@ -454,23 +530,25 @@ mod tests {
         };
 
         let total_tokens = Uint128::new(306);
-        let timeout_timestamp = IbcTimeout::with_timestamp(env.block.time.plus_seconds(400));
+        let timeout_timestamp =
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME));
 
-        let res =
-            transfer_batch_unbond(deps.as_mut().storage, &env, pending, total_tokens).unwrap();
+        let res = transfer_batch_unbond(deps.as_mut().storage, &env, pending.clone(), total_tokens)
+            .unwrap();
 
         let msg = return_transfer(
             deps.as_mut().storage,
             &env,
             total_tokens,
             timeout_timestamp.timestamp().unwrap(),
+            pending,
         )
         .unwrap();
 
         let pkt = ica_send::<MsgTransfer>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
         assert_eq!(res.msg, CosmosMsg::Ibc(pkt));
@@ -510,5 +588,84 @@ mod tests {
             pending.unbonds[2].amount,
             RawAmount::LocalDenom(Uint128::new(1500))
         )
+    }
+
+    #[test]
+    fn exit_swap_works() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let env = mock_env();
+
+        let pending = PendingReturningUnbonds {
+            unbonds: vec![
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(100)),
+                },
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(50)),
+                },
+                ReturningUnbond {
+                    owner: Addr::unchecked("address"),
+                    id: "bla".to_string(),
+                    amount: RawAmount::LpShares(Uint128::new(150)),
+                },
+            ],
+        };
+
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &Uint128::new(3000))
+            .unwrap();
+
+        let total_exit = pending
+            .unbonds
+            .iter()
+            .fold(Uint128::zero(), |acc, u| match u.amount {
+                RawAmount::LocalDenom(_) => unimplemented!(),
+                RawAmount::LpShares(val) => acc + val,
+            });
+
+        let locked_shares = Uint128::from(100u128);
+
+        let token_out_min_amount =
+            calculate_token_out_min_amount(deps.as_mut().storage, total_exit, locked_shares)
+                .unwrap();
+
+        let msg = exit_swap(
+            deps.as_mut().storage,
+            &env,
+            total_exit,
+            token_out_min_amount,
+            pending,
+        )
+        .unwrap();
+
+        let ica_address = get_ica_address(
+            deps.as_ref().storage,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+        )
+        .unwrap();
+        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+
+        let expected = MsgExitSwapShareAmountIn {
+            sender: ica_address,
+            pool_id: config.pool_id,
+            token_out_denom: config.base_denom,
+            share_in_amount: total_exit.to_string(),
+            // TODO add a more robust estimation
+            token_out_min_amount: token_out_min_amount.to_string(),
+        };
+
+        let pkt = ica_send::<MsgExitSwapShareAmountIn>(
+            expected,
+            ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
+        )
+        .unwrap();
+
+        assert_eq!(msg.msg, CosmosMsg::Ibc(pkt))
     }
 }

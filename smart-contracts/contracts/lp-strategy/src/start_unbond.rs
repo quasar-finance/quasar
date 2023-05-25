@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Env, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
+    to_binary, Addr, CosmosMsg, Env, IbcMsg, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
     Uint128, WasmMsg,
 };
 
@@ -13,14 +13,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
-    helpers::get_total_shares,
+    helpers::get_total_primitive_shares,
     helpers::{
         create_callback_submsg, create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages,
     },
     ibc_lock::Lock,
     state::{
-        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK,
-        SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
+        LpCache, PendingSingleUnbond, Unbond, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
+        LP_SHARES, OSMO_LOCK, SHARES, START_UNBOND_QUEUE, UNBONDING_CLAIMS,
     },
 };
 
@@ -40,7 +40,30 @@ pub fn do_start_unbond(
         return Err(ContractError::DuplicateKey);
     }
 
-    if SHARES.load(storage, unbond.owner.clone())? < unbond.primitive_shares {
+    //verify here against the amount in the queue aswell
+    let queued_shares = START_UNBOND_QUEUE
+        .iter(storage)?
+        .map(|val| {
+            let v = val?;
+            if v.id == unbond.id {
+                Err(ContractError::DuplicateKey)
+            } else {
+                Ok(v)
+            }
+        })
+        .try_fold(
+            Uint128::zero(),
+            |acc, val| -> Result<Uint128, ContractError> {
+                let v = val?;
+                if v.owner == unbond.owner {
+                    Ok(acc + v.primitive_shares)
+                } else {
+                    Ok(Uint128::zero())
+                }
+            },
+        )?;
+
+    if SHARES.load(storage, unbond.owner.clone())? < (unbond.primitive_shares + queued_shares) {
         return Err(ContractError::InsufficientFunds);
     }
 
@@ -68,7 +91,7 @@ pub fn batch_start_unbond(
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "start_unbond".to_string(),
                 })?;
-        let lp_shares = single_unbond(storage, env, &unbond, total_lp_shares.locked_shares)?;
+        let lp_shares = single_unbond(storage, &unbond, total_lp_shares.locked_shares)?;
         to_unbond = to_unbond.checked_add(lp_shares)?;
         unbonds.push(PendingSingleUnbond {
             lp_shares,
@@ -78,14 +101,25 @@ pub fn batch_start_unbond(
         })
     }
 
+    let pkt = do_begin_unlocking(storage, env, to_unbond)?;
+
+    let channel = ICA_CHANNEL.load(storage)?;
+
+    Ok(Some(create_ibc_ack_submsg(
+        storage,
+        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds, to_unbond)),
+        pkt,
+        channel,
+    )?))
+}
+
+pub fn do_begin_unlocking(
+    storage: &mut dyn Storage,
+    env: &Env,
+    to_unbond: Uint128,
+) -> Result<IbcMsg, ContractError> {
     let config = CONFIG.load(storage)?;
     let ica_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
-
-    LP_SHARES.update(storage, |mut old| -> Result<LpCache, ContractError> {
-        old.locked_shares = old.locked_shares.checked_sub(to_unbond)?;
-        old.w_unlocked_shares = old.w_unlocked_shares.checked_add(to_unbond)?;
-        Ok(old)
-    })?;
 
     let msg = MsgBeginUnlocking {
         owner: ica_address,
@@ -99,14 +133,10 @@ pub fn batch_start_unbond(
     let pkt = ica_send::<MsgBeginUnlocking>(
         msg,
         ICA_CHANNEL.load(storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
     )?;
 
-    Ok(Some(create_ibc_ack_submsg(
-        storage,
-        IbcMsgKind::Ica(IcaMessages::BeginUnlocking(unbonds)),
-        pkt,
-    )?))
+    Ok(pkt)
 }
 
 pub fn handle_start_unbond_ack(
@@ -114,13 +144,18 @@ pub fn handle_start_unbond_ack(
     querier: QuerierWrapper,
     env: &Env,
     unbonds: Vec<PendingSingleUnbond>,
+    total_start_unbonding: Uint128,
 ) -> Result<Response, ContractError> {
     let mut callback_submsgs: Vec<SubMsg> = vec![];
     for unbond in unbonds {
-        if let Some(wasm_msg) = start_internal_unbond(storage, querier, env, unbond)? {
+        if let Some(msg) = start_internal_unbond(storage, querier, env, unbond.clone())? {
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
-            let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
-            callback_submsgs.push(create_callback_submsg(storage, cosmos_msg)?);
+            callback_submsgs.push(create_callback_submsg(
+                storage,
+                CosmosMsg::Wasm(msg),
+                unbond.owner,
+                unbond.id,
+            )?);
         }
     }
 
@@ -128,24 +163,30 @@ pub fn handle_start_unbond_ack(
         Ok(lock.unlock_start_unbond())
     })?;
 
+    // TODO, update the actual amount of locked lp shares in the lp cache here aswell
+    LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
+        cache.w_unlocked_shares = cache.w_unlocked_shares.checked_add(total_start_unbonding)?;
+        cache.locked_shares = cache.locked_shares.checked_sub(total_start_unbonding)?;
+        Ok(cache)
+    })?;
+
     Ok(Response::new()
         .add_attribute("start-unbond", "succes")
         .add_attribute("callback-submsgs", callback_submsgs.len().to_string())
-        .add_submessages(callback_submsgs))
+        .add_messages(callback_submsgs.iter().map(|m| m.msg.clone())))
 }
 
 // in single_unbond, we change from using internal primitive to an actual amount of lp-shares that we can unbond
 fn single_unbond(
     storage: &mut dyn Storage,
-    _env: &Env,
     unbond: &StartUnbond,
     total_lp_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let total_shares = get_total_shares(storage)?;
+    let total_primitive_shares = get_total_primitive_shares(storage)?;
+
     Ok(unbond
         .primitive_shares
-        .checked_mul(total_lp_shares)?
-        .checked_div(total_shares)?)
+        .checked_multiply_ratio(total_lp_shares, total_primitive_shares)?)
 }
 
 // unbond starts unbonding an amount of lp shares
@@ -163,7 +204,10 @@ fn start_internal_unbond(
     // remove amount of shares
     let left = SHARES
         .load(storage, unbond.owner.clone())?
-        .checked_sub(unbond.primitive_shares)?;
+        .checked_sub(unbond.primitive_shares)
+        .map_err(|err| {
+            ContractError::TracedOverflowError(err, "lower_shares_to_unbond".to_string())
+        })?;
     // subtracting below zero here should trigger an error in check_sub
     if left.is_zero() {
         SHARES.remove(storage, unbond.owner.clone());
@@ -218,11 +262,13 @@ mod tests {
     };
 
     use crate::{
+        bond::calculate_claim,
         state::{LpCache, PendingSingleUnbond, SHARES},
         test_helpers::default_setup,
     };
 
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn do_start_unbond_exact_works() {
@@ -248,32 +294,48 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let id = "my-id".to_string();
+        let id1 = "my-id-1".to_string();
+        let id2 = "my-id-2".to_string();
+        let id3 = "my-id-3".to_string();
 
         SHARES
             .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
             .unwrap();
 
+        START_UNBOND_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("alice"),
+                    id: "2".to_string(),
+                    primitive_shares: Uint128::new(1500),
+                },
+            )
+            .unwrap();
+
         let unbond1 = StartUnbond {
             owner: owner.clone(),
-            id: id.to_string(),
+            id: id1,
             primitive_shares: Uint128::new(500),
         };
         let unbond2 = StartUnbond {
             owner: owner.clone(),
-            id: id.to_string(),
+            id: id2,
             primitive_shares: Uint128::new(300),
         };
         let unbond3 = StartUnbond {
             owner,
-            id,
+            id: id3,
             primitive_shares: Uint128::new(200),
         };
 
         do_start_unbond(deps.as_mut().storage, unbond1.clone()).unwrap();
         do_start_unbond(deps.as_mut().storage, unbond2.clone()).unwrap();
         do_start_unbond(deps.as_mut().storage, unbond3.clone()).unwrap();
-        assert_eq!(START_UNBOND_QUEUE.len(deps.as_ref().storage).unwrap(), 3);
+        assert_eq!(START_UNBOND_QUEUE.len(deps.as_ref().storage).unwrap(), 4);
+        // pop alice's start_unbond
+        START_UNBOND_QUEUE.pop_front(deps.as_mut().storage).unwrap();
+
         assert_eq!(
             START_UNBOND_QUEUE
                 .pop_front(deps.as_mut().storage)
@@ -397,17 +459,64 @@ mod tests {
             coins: vec![Coin {
                 denom: CONFIG.load(deps.as_ref().storage).unwrap().pool_denom,
                 // integer truncation present here again
-                amount: Uint128::new(999).to_string(),
+                amount: Uint128::new(1000).to_string(),
             }],
         };
 
         let pkt = ica_send::<MsgBeginUnlocking>(
             msg,
             ICA_CHANNEL.load(deps.as_ref().storage).unwrap(),
-            IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
+            IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
         )
         .unwrap();
         assert_eq!(res.unwrap().msg, CosmosMsg::Ibc(pkt));
+    }
+
+    #[test]
+    fn single_unbond_big_math() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+        let owner = Addr::unchecked("bob");
+        let id = "my-id".to_string();
+
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(100))
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("other_user"),
+                &Uint128::new(900),
+            )
+            .unwrap();
+
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(10_000_000_000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+
+        let res = single_unbond(
+            deps.as_mut().storage,
+            &StartUnbond {
+                owner,
+                id,
+                primitive_shares: Uint128::new(100),
+            },
+            Uint128::new(10_000_000_000),
+        )
+        .unwrap();
+
+        assert_eq!(
+            get_total_primitive_shares(deps.as_mut().storage).unwrap(),
+            Uint128::new(1000)
+        );
+        assert_eq!(res, Uint128::new(1000000000))
     }
 
     // this is an excellent first test to write a proptest for
@@ -416,7 +525,6 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let owner = Addr::unchecked("bob");
-        let env = mock_env();
         let id = "my-id".to_string();
 
         SHARES
@@ -425,7 +533,6 @@ mod tests {
 
         let res = single_unbond(
             deps.as_mut().storage,
-            &env,
             &StartUnbond {
                 owner,
                 id,
@@ -435,7 +542,7 @@ mod tests {
         )
         .unwrap();
         // we have a share loss here due to truncation, is this avoidable?
-        assert_eq!(res, Uint128::new(99))
+        assert_eq!(res, Uint128::new(100))
     }
 
     #[test]
@@ -616,11 +723,14 @@ mod tests {
         let res = start_internal_unbond(&mut deps.storage, w, &env, unbond).unwrap_err();
         assert_eq!(
             res,
-            ContractError::OverflowError(OverflowError {
-                operation: OverflowOperation::Sub,
-                operand1: "99".to_string(),
-                operand2: "100".to_string()
-            })
+            ContractError::TracedOverflowError(
+                OverflowError {
+                    operation: OverflowOperation::Sub,
+                    operand1: "99".to_string(),
+                    operand2: "100".to_string()
+                },
+                "lower_shares_to_unbond".to_string()
+            )
         )
     }
 
@@ -656,5 +766,52 @@ mod tests {
                 kind: "cosmwasm_std::math::uint128::Uint128".to_string()
             })
         )
+    }
+
+    proptest! {
+        #[test]
+        fn test_calculate_claim_and_single_unbond(
+            (total_balance, user_balance) in (1..4*10_u128.pow(28)).prop_flat_map(|a| (Just(a), 1..a)),
+            total_primitive_shares in 1u128..4*10_u128.pow(28),
+            lp_shares in 1u128..4*10_u128.pow(28),
+        ) {
+
+            let mut deps = mock_dependencies();
+
+            SHARES.save(deps.as_mut().storage, Addr::unchecked("other-shares"), &Uint128::new(total_primitive_shares)).unwrap();
+
+            // Calculate the claim using the calculate_claim function
+            // here bob gets a claim to a certain amount of
+            let claim = calculate_claim(
+                Uint128::new(user_balance),
+                Uint128::new(total_balance),
+                Uint128::new(total_primitive_shares),
+            )
+            .unwrap();
+
+            // Calculate the unbond amount using the single_unbond function
+            let unbond = single_unbond(
+                deps.as_mut().storage,
+                &StartUnbond {
+                    primitive_shares: claim,
+                    id: "1".to_string(),
+                    owner: Addr::unchecked("bobberino"),
+                },
+                lp_shares.into(),
+            )
+            .unwrap();
+
+            // how do we now assert, basically we get an expected amount of returning lp shares that
+            // we need to simulate a liquidation for. How do we do that?
+            // in the test setup, we assume that depositing total_balance has let to lp_shares,
+            // so the price of a single lp shares is total_balance/lp_shares
+            let ub = Uint128::new(user_balance);
+            let recv_balance = unbond.multiply_ratio(total_balance, lp_shares);
+            // for our assertion, since we are working with interger math and 6 decimals or more on tokens
+            // we're ok with being either 1 off or some micro (10^-10) off
+            // TODO for ease of coding, we just accept this ratio
+            let vals = recv_balance.multiply_ratio(9999999999u128, 10000000000u128)..recv_balance.multiply_ratio(10000000001u128, 1000000000u128);
+            prop_assert!(vals.contains(&ub), "recv_balance: {recv_balance}, user_balance: {user_balance}");
+        }
     }
 }

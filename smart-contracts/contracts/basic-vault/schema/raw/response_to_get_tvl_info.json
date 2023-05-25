@@ -15,6 +15,25 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "LpCache": {
+      "type": "object",
+      "required": [
+        "d_unlocked_shares",
+        "locked_shares",
+        "w_unlocked_shares"
+      ],
+      "properties": {
+        "d_unlocked_shares": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "locked_shares": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "w_unlocked_shares": {
+          "$ref": "#/definitions/Uint128"
+        }
+      }
+    },
     "PrimitiveInfo": {
       "type": "object",
       "required": [
@@ -35,7 +54,7 @@
           "type": "string"
         },
         "lp_shares": {
-          "$ref": "#/definitions/Uint128"
+          "$ref": "#/definitions/LpCache"
         },
         "quote_denom": {
           "type": "string"

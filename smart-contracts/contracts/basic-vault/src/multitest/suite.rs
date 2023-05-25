@@ -13,21 +13,24 @@ use cw_multi_test::{
     ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
     StakeKeeper, WasmKeeper,
 };
+use vault_rewards::state::DistributionSchedule;
+
+pub type QuasarVaultApp = App<
+    BankKeeper,
+    MockApi,
+    MemoryStorage,
+    FailingModule<Empty, Empty, Empty>,
+    WasmKeeper<Empty, Empty>,
+    StakeKeeper,
+    DistributionKeeper,
+    AcceptingModule,
+>;
 
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct QuasarVaultSuite {
     #[derivative(Debug = "ignore")]
-    pub app: App<
-        BankKeeper,
-        MockApi,
-        MemoryStorage,
-        FailingModule<Empty, Empty, Empty>,
-        WasmKeeper<Empty, Empty>,
-        StakeKeeper,
-        DistributionKeeper,
-        AcceptingModule,
-    >,
+    pub app: QuasarVaultApp,
     // The account that deploys everything
     pub deployer: Addr,
     // executor address
@@ -196,15 +199,19 @@ impl QuasarVaultSuite {
         // res.unwrap();
         // IbcChannelConnectMsg::OpenConfirm { channel: () }
 
+        let vault_rewards_id = app.store_code(contract_vault_rewards());
+
         let vault = app
             .instantiate_contract(
                 vault_id,
                 deployer.clone(),
                 &init_msg.unwrap_or(VaultInstantiateMsg {
                     name: "orion".to_string(),
+                    thesis: "to generate yield, I guess".to_string(),
                     symbol: "ORN".to_string(),
                     decimals: 6,
                     min_withdrawal: 1u128.into(),
+                    total_cap: 100000000u128.into(),
                     primitives: vec![PrimitiveConfig {
                         weight: Decimal::from_str("0.33333333333")?,
                         address: primitive.to_string(),
@@ -220,11 +227,27 @@ impl QuasarVaultSuite {
                             expected_connection: "connection-0".to_string(),
                         }),
                     }],
+                    vault_rewards_code_id: vault_rewards_id,
+                    reward_token: cw_asset::AssetInfoBase::Native("uqsr".to_string()),
+                    reward_distribution_schedules: vec![
+                        vault_rewards::state::DistributionSchedule {
+                            start: app.block_info().height + 1,
+                            end: app.block_info().height + 501,
+                            amount: Uint128::from(1000u128),
+                        },
+                    ],
                 }),
                 &funds.unwrap_or(vec![]),
                 "vault_contract",
                 Some(deployer.to_string()), // admin: Option<String>, will need this for upgrading
             )
+            .unwrap();
+
+        // set depositor on primitive as the vault address
+        let msg = PrimitiveExecuteMsg::SetDepositor {
+            depositor: vault.to_string(),
+        };
+        app.execute_contract(deployer.clone(), primitive.clone(), &msg, &[])
             .unwrap();
 
         Ok(QuasarVaultSuite {
@@ -273,6 +296,15 @@ impl QuasarVaultSuite {
     pub fn query_deposit_ratio(&self, funds: Vec<Coin>) -> StdResult<DepositRatioResponse> {
         let msg = VaultQueryMsg::DepositRatio { funds };
         self.app.wrap().query_wasm_smart(self.vault.clone(), &msg)
+    }
+
+    pub fn add_distribution_schedule(&mut self, schedule: DistributionSchedule) {
+        let msg = VaultRewardsExecuteMsg::Admin(
+            vault_rewards::msg::AdminExecuteMsg::AddDistributionSchedule(schedule),
+        );
+        self.app
+            .execute_contract(self.deployer.clone(), self.vault.clone(), &msg, &[])
+            .unwrap();
     }
 
     pub fn fast_forward_block_time(&mut self, forward_time_sec: u64) {

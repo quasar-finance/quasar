@@ -1,10 +1,10 @@
 use quasar_types::ibc::ChannelInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
-use cosmwasm_std::{Addr, Timestamp, Uint128};
-use cw_storage_plus::{Deque, Item, Map};
+use cosmwasm_std::{Addr, Empty, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
+use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
 use crate::{
     bond::Bond,
@@ -15,6 +15,7 @@ use crate::{
 };
 
 pub const RETURN_SOURCE_PORT: &str = "transfer";
+pub const IBC_TIMEOUT_TIME: u64 = 7200;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
@@ -38,10 +39,22 @@ pub struct Config {
     pub expected_connection: String,
 }
 
-pub(crate) const CONFIG: Item<Config> = Item::new("config");
+// TODO remove the need for ADMIN
 
+// the ADMIN in this case is the person allowed to deposit into the contract
+// this is set to the first depositor
+pub(crate) const ADMIN: Item<Addr> = Item::new("admin");
+pub(crate) const LOCK_ADMIN: Map<&Addr, Empty> = Map::new("lock_admin");
+pub(crate) const DEPOSITOR: Item<Addr> = Item::new("depositor");
+
+pub(crate) const CONFIG: Item<Config> = Item::new("config");
 // IBC related state items
 pub(crate) const REPLIES: Map<u64, SubMsgKind> = Map::new("replies");
+// RECOVERY_ACK contains ibc acknowledgements, these packets might be needed for recovery from errors
+pub(crate) const RECOVERY_ACK: Map<(u64, String), IbcAcknowledgement> =
+    Map::new("new_recovery_ack");
+pub(crate) const _OLD_RECOVERY_ACK: Map<u64, IbcAcknowledgement> = Map::new("recovery_ack");
+
 // true when a packet has timed out and the ica channel needs to be closed and a new channel needs to be opened
 pub(crate) const TIMED_OUT: Item<bool> = Item::new("timed_out");
 // Currently we only support one ICA channel to a single destination
@@ -50,26 +63,31 @@ pub(crate) const ICA_CHANNEL: Item<String> = Item::new("ica_channel");
 pub(crate) const ICQ_CHANNEL: Item<String> = Item::new("icq_channel");
 
 pub(crate) const CHANNELS: Map<String, ChannelInfo> = Map::new("channels");
-pub(crate) const PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
+pub(crate) const _OLD_PENDING_ACK: Map<u64, IbcMsgKind> = Map::new("pending_acks");
+pub(crate) const PENDING_ACK: Map<(u64, String), IbcMsgKind> = Map::new("new_pending_acks");
 // The map to store trapped errors,
-pub(crate) const TRAPS: Map<u64, Trap> = Map::new("traps");
+pub(crate) const _OLD_TRAPS: Map<u64, Trap> = Map::new("traps");
+pub(crate) const TRAPS: Map<(u64, String), Trap> = Map::new("new_traps");
 
 // all vault related state items
 pub(crate) const IBC_LOCK: Item<Lock> = Item::new("lock");
+pub(crate) const PENDING_BOND_QUEUE: Deque<Bond> = Deque::new("pending_bond_queue");
 pub(crate) const BOND_QUEUE: Deque<Bond> = Deque::new("bond_queue");
 pub(crate) const START_UNBOND_QUEUE: Deque<StartUnbond> = Deque::new("start_unbond_queue");
+pub(crate) const PENDING_UNBOND_QUEUE: Deque<Unbond> = Deque::new("pending_unbond_queue");
 pub(crate) const UNBOND_QUEUE: Deque<Unbond> = Deque::new("unbond_queue");
-
 // the amount of LP shares that the contract has entered into the pool
 pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
 // the latest known ica balance
-pub(crate) const ICA_BALANCE: Item<Uint128> = Item::new("ica_balance");
+pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_balance");
 
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
-// TODO UNBONDING_CLAIMS should probably be a multi index map
+// our c
+pub(crate) const PENDING_UNBONDING_CLAIMS: Map<(Addr, String), Unbond> =
+    Map::new("pending_unbonding_claims");
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");
 // TODO make key borrowed
 pub(crate) const SHARES: Map<Addr, Uint128> = Map::new("shares");
@@ -78,6 +96,85 @@ pub(crate) const OSMO_LOCK: Item<u64> = Item::new("osmo_lock");
 // the returning transfer we can expect and their exact amount
 pub(crate) const RETURNING: Map<u64, Uint128> = Map::new("returning");
 // TODO, do we remove this state item? is it needed?
+// whatever the above todo item is, does not apply to the following
+// we save the queried simulate join swap during ICQ so we can read it right before bond join
+pub(crate) const SIMULATED_JOIN_RESULT: Item<Uint128> = Item::new("simulated_join_result");
+// we save the amount that went into the QueryCalcJoinPool, so we can scale up the slippage amount if more deposits come
+pub(crate) const SIMULATED_JOIN_AMOUNT_IN: Item<Uint128> = Item::new("simulated_join_amount");
+// we also save the queried simulate exit swap during ICQ so we can read it right before unbond exit
+pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
+// CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
+pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
+
+impl PrimaryKey<'_> for FundPath {
+    type Prefix = Addr;
+
+    type SubPrefix = ();
+
+    type Suffix = u8;
+
+    type SuperSuffix = Self;
+
+    fn key(&self) -> Vec<Key> {
+        // this is a bit yikes but fuck it
+        match self {
+            FundPath::Bond { id } => vec![Key::Val8([0]), Key::Ref(id.as_bytes())],
+            FundPath::Unbond { id } => vec![Key::Val8([1]), Key::Ref(id.as_bytes())],
+        }
+    }
+}
+
+impl KeyDeserialize for FundPath {
+    type Output = FundPath;
+
+    #[inline(always)]
+    fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
+        if value[0] == 0 {
+            Ok(FundPath::Bond {
+                id: String::from_utf8(value[1..].to_vec()).map_err(|err| {
+                    StdError::InvalidUtf8 {
+                        msg: err.to_string(),
+                    }
+                })?,
+            })
+        } else if value[0] == 1 {
+            Ok(FundPath::Unbond {
+                id: String::from_utf8(value[1..].to_vec()).map_err(|err| {
+                    StdError::InvalidUtf8 {
+                        msg: err.to_string(),
+                    }
+                })?,
+            })
+        } else {
+            Err(StdError::SerializeErr {
+                source_type: "key-de".to_string(),
+                msg: "enum variant not found".to_string(),
+            })
+        }
+    }
+}
+
+impl Prefixer<'_> for FundPath {
+    fn prefix(&self) -> Vec<Key> {
+        match self {
+            FundPath::Bond { id } => vec![Key::Ref(id.as_bytes())],
+            FundPath::Unbond { id } => vec![Key::Ref(id.as_bytes())],
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FundPath {
+    Bond { id: String },
+    Unbond { id: String },
+}
+
+impl Display for FundPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -165,6 +262,20 @@ pub enum RawAmount {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn keys_work() {
+        let bond = FundPath::Bond {
+            id: "our-id-here".to_string(),
+        };
+        let keys: Vec<u8> = bond
+            .key()
+            .iter()
+            .flat_map(|k| k.as_ref().iter().copied())
+            .collect();
+        let value = FundPath::from_vec(keys).unwrap();
+        assert_eq!(bond, value)
+    }
 
     #[test]
     fn test_update_raw_amount_to_lp() {
