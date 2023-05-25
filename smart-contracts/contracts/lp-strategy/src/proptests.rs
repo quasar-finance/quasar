@@ -3,7 +3,7 @@ mod tests {
     use cosmwasm_std::{
         from_binary,
         testing::{mock_dependencies, mock_env},
-        Addr, IbcEndpoint, Uint128,
+        Addr, Coin, IbcEndpoint, Timestamp, Uint128,
     };
     use cw20::BalanceResponse;
     use proptest::prelude::*;
@@ -13,11 +13,19 @@ mod tests {
     };
 
     use crate::{
+        error::Trap,
+        helpers::IbcMsgKind,
+        ibc_lock::{IbcLock, Lock},
         msg::{
-            ChannelsResponse, ConfigResponse, IcaAddressResponse, PrimitiveSharesResponse, QueryMsg,
+            ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
+            IcaChannelResponse, LockResponse, LpSharesResponse, PrimitiveSharesResponse, QueryMsg,
+            TrappedErrorsResponse, UnbondingClaimResponse,
         },
         queries::query,
-        state::{Config, CONFIG, SHARES},
+        state::{
+            Config, LpCache, Unbond, CONFIG, IBC_LOCK, LP_SHARES, SHARES, TOTAL_VAULT_BALANCE,
+            TRAPS, UNBONDING_CLAIMS,
+        },
         test_helpers::{setup_default_ica, setup_default_icq},
     };
 
@@ -74,6 +82,38 @@ mod tests {
             .prop_map(move |chars| format!("{}1{}", prefix, chars.join("")))
     }
 
+    impl Arbitrary for IbcLock {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            prop_oneof![Just(IbcLock::Locked), Just(IbcLock::Unlocked),].boxed()
+        }
+    }
+
+    impl Arbitrary for Lock {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            (
+                any::<IbcLock>(),
+                any::<IbcLock>(),
+                any::<IbcLock>(),
+                any::<IbcLock>(),
+                any::<IbcLock>(),
+            )
+                .prop_map(|(bond, start_unbond, unbond, recovery, migration)| Self {
+                    bond,
+                    start_unbond,
+                    unbond,
+                    recovery,
+                    migration,
+                })
+                .boxed()
+        }
+    }
+
     #[test]
     fn get_channels_works() {
         let mut deps = mock_dependencies();
@@ -127,9 +167,19 @@ mod tests {
         let env = mock_env();
         setup_default_ica(deps.as_mut().storage).unwrap();
         let q = QueryMsg::IcaAddress {};
-        let res = query(deps.as_ref(), env, q).unwrap();
-        let ica_address_response: IcaAddressResponse = from_binary(&res).unwrap();
-        assert_eq!(ica_address_response.address, "osmo-address");
+        let res: IcaAddressResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+        assert_eq!(res.address, "osmo-address");
+    }
+
+    #[test]
+    fn get_ica_channel_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        setup_default_ica(deps.as_mut().storage).unwrap();
+
+        let q = QueryMsg::IcaChannel {};
+        let res: IcaChannelResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+        assert_eq!(res.channel, "channel-2");
     }
 
     proptest! {
@@ -190,6 +240,107 @@ mod tests {
             prop_assert_eq!(res.total, balance);
         }
 
+        #[test]
+        fn get_ica_balance_works(
+            config in any::<Config>(),
+            bal in any::<u128>()
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            let balance = Uint128::from(bal);
+            CONFIG.save(deps.as_mut().storage, &config).unwrap();
+            TOTAL_VAULT_BALANCE.save(deps.as_mut().storage, &balance).unwrap();
+
+            let q = QueryMsg::IcaBalance {};
+            let res: IcaBalanceResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            assert_eq!(res.amount, Coin {
+                denom: config.local_denom,
+                amount: balance,
+            });
+
+        }
+
+        #[test]
+        fn get_lock_works(
+            lock in any::<Lock>()
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            IBC_LOCK.save(deps.as_mut().storage, &lock).unwrap();
+
+            let q = QueryMsg::Lock {};
+            let res: LockResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            assert_eq!(res.lock, lock);
+        }
+
+        #[test]
+        fn get_lp_shares_works(
+            locked_shares in any::<u128>(),
+            w_unlocked_shares in any::<u128>(),
+            d_unlocked_shares in any::<u128>(),
+            ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            let shares = LpCache {
+                locked_shares: Uint128::from(locked_shares),
+                w_unlocked_shares: Uint128::from(w_unlocked_shares),
+                d_unlocked_shares: Uint128::from(d_unlocked_shares),
+            };
+            LP_SHARES.save(deps.as_mut().storage, &shares).unwrap();
+
+            let q = QueryMsg::LpShares {};
+            let res: LpSharesResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            assert_eq!(res.lp_shares, shares);
+        }
+
+        #[test]
+        fn get_trapped_errors_works(
+            seq in any::<u64>(),
+            chan in any::<String>(),
+            error in any::<String>(),
+            last_succesful in any::<bool>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            let trap = Trap {
+                error:error,
+                // hardcoded for simplicity
+                step: IbcMsgKind::Icq,
+                last_succesful: last_succesful,
+            };
+            TRAPS.save(deps.as_mut().storage, (seq.clone(), chan.clone()), &trap).unwrap();
+
+            let q = QueryMsg::TrappedErrors {};
+            let res: TrappedErrorsResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            let key = format!("{}-{}", seq, chan);
+            assert_eq!(res.errors.get(&key).unwrap(), &trap);
+        }
+
+        #[test]
+        fn get_unbonding_claims(
+            addr in address_strategy("quasar"),
+            id in any::<String>(),
+            lp_shares in any::<u128>(),
+            unlock_time in any::<u64>(),
+            attempted in any::<bool>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+
+            let unbond = Unbond {
+                lp_shares: Uint128::from(lp_shares),
+                unlock_time: Timestamp::from_nanos(unlock_time),
+                attempted: attempted,
+                owner: Addr::unchecked(addr.clone()),
+                id: id.clone(),
+            };
+            UNBONDING_CLAIMS.save(deps.as_mut().storage, (Addr::unchecked(&addr), id.clone()), &unbond).unwrap();
+
+            let q = QueryMsg::UnbondingClaim { addr: Addr::unchecked(&addr), id};
+            let res: UnbondingClaimResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+
+            assert_eq!(res.unbond, Some(unbond));
+        }
 
     }
 }
