@@ -2,6 +2,7 @@ package qtransfer
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"testing"
@@ -14,12 +15,11 @@ import (
 )
 
 const (
-	UserFundAmount    int64  = 1_002_000
-	IBCTransferAmount int64  = 1_000_000
-	IBCTransferMemo   string = "\"{ \"wasm\": { \"contract\": \"osmo1contractAddr\", \"msg\": { \"execute_IBC_receive\": \"raw_message_data\"}}}"
+	QTUserFundAmount    int64 = 1_002_000
+	QTIBCTransferAmount int64 = 1_000_000
 )
 
-func TestQtransferTestSuite(t *testing.T) {
+func TestQtransferTimeoutTestSuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -29,14 +29,14 @@ func TestQtransferTestSuite(t *testing.T) {
 	b.Link(testsuite.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
-	s := &QtransferTestSuite{
+	s := &QtransferTimeoutTestSuite{
 		E2EBuilder:   b,
 		E2ETestSuite: b.Build(),
 	}
 	suite.Run(t, s)
 }
 
-type QtransferTestSuite struct {
+type QtransferTimeoutTestSuite struct {
 	E2EBuilder *testsuite.E2ETestSuiteBuilder
 
 	*testsuite.E2ETestSuite
@@ -51,7 +51,7 @@ type QtransferTestSuite struct {
 	QuasarDenomInOsmosis string
 }
 
-func (s *QtransferTestSuite) SetupSuite() {
+func (s *QtransferTimeoutTestSuite) SetupSuite() {
 	t := s.T()
 	ctx := context.Background()
 
@@ -74,27 +74,38 @@ func (s *QtransferTestSuite) SetupSuite() {
 }
 
 // TestQtransfer_Timeout
-func (s *QtransferTestSuite) TestQtransfer_Timeout() {
+func (s *QtransferTimeoutTestSuite) TestQtransfer_Timeout() {
 	t := s.T()
 	ctx := context.Background()
 
 	t.Log("Create an user with fund on Quasar chain")
-	user := s.CreateUserAndFund(ctx, s.Quasar(), UserFundAmount)
+	user := s.CreateUserAndFund(ctx, s.Quasar(), QTUserFundAmount)
 
 	t.Log("Check user balance before executing IBC transfer expecting to be the funded amount")
 	userBalanceBefore, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.Quasar().Config().Denom)
 	s.Require().NoError(err)
-	s.Require().Equal(UserFundAmount, userBalanceBefore)
+	s.Require().Equal(QTUserFundAmount, userBalanceBefore)
 
 	t.Log("Execute IBC Transfer from previously created user")
+	// Build memo field
+	msgMap := map[string]interface{}{
+		"bond": map[string]interface{}{},
+	}
+	memoMap := map[string]interface{}{
+		"wasm": map[string]interface{}{
+			"contract": "quasar1someContract",
+			"msg":      msgMap,
+		},
+	}
+	memoBytes, err := json.Marshal(memoMap)
+	s.Require().NoError(err)
 	amount := ibc.WalletAmount{
 		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix),
 		Denom:   s.Quasar().Config().Denom,
-		Amount:  IBCTransferAmount,
+		Amount:  QTIBCTransferAmount,
 	}
-	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 0, Height: 0} // TODO check if this 0-0 is right
-	//options := ibc.TransferOptions{Timeout: &ibcTimeout, Memo: IBCTransferMemo}
-	options := ibc.TransferOptions{Timeout: &ibcTimeout, Memo: "somethingHereAsPlainMessage"}
+	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 0, Height: 0} // TODO check if this 0-0 is right in order to timeout, maybe 1 and 1 as with 0 the testsuite replaces with other values
+	options := ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)}
 	tx, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, user.KeyName, amount, options)
 	s.Require().NoError(err)
 	s.Require().NoError(tx.Validate())
@@ -111,5 +122,5 @@ func (s *QtransferTestSuite) TestQtransfer_Timeout() {
 	t.Log("Check user balance after packet timeout expecting to be the original funded amount")
 	userBalanceAfterTimeout, err := s.Quasar().GetBalance(ctx, user.Address, s.Quasar().Config().Denom)
 	s.Require().NoError(err)
-	s.Require().Equal(IBCTransferAmount, userBalanceAfterTimeout)
+	s.Require().Equal(QTIBCTransferAmount, userBalanceAfterTimeout)
 }
