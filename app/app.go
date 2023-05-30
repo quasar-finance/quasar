@@ -125,10 +125,17 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+ 
+
+	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
+	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
+	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+ 
 	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
 	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
-	// this line is used by starport scaffolding # stargate/app/moduleImport
+ 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
 const (
@@ -231,8 +238,10 @@ var (
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 		qtransfer.AppModuleBasic{},
+ 		tfmodule.AppModuleBasic{},
+ 
 		qvestingmodule.AppModuleBasic{},
-	)
+ 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
@@ -245,7 +254,8 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:            nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
-		wasm.ModuleName: {authtypes.Burner},
+		wasm.ModuleName:    {authtypes.Burner},
+		tftypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	}
 
 	Upgrades = []upgrades.Upgrade{v0.Upgrade}
@@ -283,6 +293,7 @@ type App struct {
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
 
+ 
 	// mm is the module manager
 	mm *module.Manager
 
@@ -339,8 +350,10 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
+ 		tftypes.StoreKey,
+ 
 		qvestingmoduletypes.StoreKey, // TODO delete this if unused
-		// this line is used by starport scaffolding # stargate/app/storeKey
+ 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
 		paramstypes.TStoreKey,
@@ -542,6 +555,16 @@ func New(
 		),
 	)
 
+	/// Token factory Module
+	app.TfKeeper = tfkeeper.NewKeeper(keys[tftypes.StoreKey],
+		app.GetSubspace(tftypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper)
+	tfModule := tfmodule.NewAppModule(app.TfKeeper,
+		app.AccountKeeper,
+		app.BankKeeper)
+
 	// create the wasm callback plugin
 	// TODO_IMPORTANT - CALL BACK ACCOUNT
 
@@ -556,7 +579,11 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.QOracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	// AUDIT CHECK IS THIS TYPE ASSERTION FOR TYPE CASTING INTERFACE TO STRUCT SAFE?
+	tmpBankBaseKeeper := app.BankKeeper.(bankkeeper.BaseKeeper)
+
+	wasmOpts = append(wasmOpts, owasm.RegisterCustomPlugins(app.QOracleKeeper, &tmpBankBaseKeeper, callback)...)
+	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &app.TfKeeper)...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
@@ -667,7 +694,11 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
+ 
+		tfModule,
+ 
 		qvestingModule,
+ 
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -699,7 +730,11 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
+ 
+		tftypes.ModuleName,
+ 
 		qvestingmoduletypes.ModuleName,
+ 
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -725,8 +760,11 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
+ 
+		tftypes.ModuleName,
+ 
 		qvestingmoduletypes.ModuleName,
-	)
+ 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -761,8 +799,10 @@ func New(
 		// wasm after ibc transfer
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
+ 		tftypes.ModuleName,
+ 
 		qvestingmoduletypes.ModuleName,
-	)
+ 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -1040,8 +1080,10 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
+ 	paramsKeeper.Subspace(tftypes.ModuleName)
+ 
 	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
-	// this line is used by starport scaffolding # stargate/app/paramSubspace
+ 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
 }
