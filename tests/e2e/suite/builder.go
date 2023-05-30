@@ -40,7 +40,7 @@ type E2ETestSuiteBuilder struct {
 	networkID    string
 
 	ic     *ibctest.Interchain
-	logger *zap.Logger
+	Logger *zap.Logger
 	built  bool
 }
 
@@ -78,7 +78,7 @@ func NewE2ETestSuiteBuilder(t *testing.T) *E2ETestSuiteBuilder {
 	E2EBuilder.dockerClient = dockerClient
 	E2EBuilder.networkID = networkID
 	E2EBuilder.ic = ibctest.NewInterchain().AddChain(E2EBuilder.quasar).AddRelayer(relayer, "Relayer").WithLog(logger)
-	E2EBuilder.logger = logger
+	E2EBuilder.Logger = logger
 
 	return E2EBuilder
 }
@@ -98,7 +98,7 @@ func (b *E2ETestSuiteBuilder) UseCosmos() {
 		CosmosChain,
 		DefaultNumValidators,
 		DefaultNumNodes,
-		b.logger)
+		b.Logger)
 
 	b.ic.AddChain(b.cosmos)
 }
@@ -127,7 +127,7 @@ func (b *E2ETestSuiteBuilder) UseOsmosis() {
 		osmosisConfig,
 		DefaultNumValidators,
 		DefaultNumNodes,
-		b.logger,
+		b.Logger,
 	)
 
 	b.ic.AddChain(b.osmosis)
@@ -208,7 +208,7 @@ func (b *E2ETestSuiteBuilder) Build() *E2ETestSuite {
 		erep:         b.Erep,
 		dockerClient: b.dockerClient,
 		networkID:    b.networkID,
-		logger:       b.logger,
+		logger:       b.Logger,
 	}
 }
 

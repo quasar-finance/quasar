@@ -2,8 +2,13 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/strangelove-ventures/interchaintest/v4/testutil"
 	"os"
+	"strconv"
+	"sync"
+	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
@@ -216,4 +221,90 @@ func ibcDenomFromChannel(ch *channeltypes.IdentifiedChannel, baseDenom string) s
 // the ibc denom of denom2 from chain2 (counterparty chain) in chain1
 func ibcDenomFromChannelCounterparty(ch *channeltypes.IdentifiedChannel, baseDenom string) string {
 	return transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom(ch.Counterparty.PortId, ch.Counterparty.ChannelId, baseDenom)).IBCDenom()
+}
+
+func printWorker(cs <-chan error, done chan<- bool, cc chan<- bool) {
+	for i := range cs {
+		fmt.Println("printing from output in all test cases:", i)
+	}
+
+	done <- true
+	cc <- true
+}
+
+func (s *WasmdTestSuite) monitorWorker(wg *sync.WaitGroup, cs chan error) {
+	wg.Wait()
+	close(cs)
+}
+
+func (s *WasmdTestSuite) VerifyBond(ctx context.Context, address string, expectedShares int64, expectedDeviation float64, oc chan error, wg *sync.WaitGroup, t *testing.T, testIndex int) {
+	defer wg.Done()
+	for i := 0; i < 10; i++ {
+		var data testsuite.ContractBalanceData
+		balanceBytes := s.ExecuteContractQuery(
+			ctx,
+			s.Quasar(),
+			s.BasicVaultContractAddress,
+			map[string]any{
+				"balance": map[string]any{
+					"address": address,
+				},
+			},
+		)
+
+		err := json.Unmarshal(balanceBytes, &data)
+		if err != nil && i == 9 {
+			oc <- fmt.Errorf(err.Error(), "got it in test case index %d", testIndex)
+		}
+
+		balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
+		if err != nil && i == 9 {
+			oc <- fmt.Errorf(err.Error(), "got it in test case index %d", testIndex)
+		}
+
+		if int64(float64(expectedShares)*(1-expectedDeviation)) <= balance && balance <= int64(float64(expectedShares)*(1+expectedDeviation)) {
+			oc <- nil
+			break
+		}
+
+		t.Log("Wait for quasar to clear cache and then check bond success")
+		err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+		if err != nil && i == 9 {
+			oc <- fmt.Errorf(err.Error(), "got it in test case index %d", testIndex)
+		}
+	}
+}
+
+func (s *WasmdTestSuite) VerifyUnbond(ctx context.Context, address string, expectedNumberOfUnbonds int64, UnbondAmount string, oc chan error, wg *sync.WaitGroup, t *testing.T, testIndex int) {
+	defer wg.Done()
+	for i := 1; i < 10; i++ {
+		var pendingUnbondsData testsuite.PendingUnbondsData
+		pendingUnbondsBytes := s.ExecuteContractQuery(
+			ctx,
+			s.Quasar(),
+			s.BasicVaultContractAddress,
+			map[string]any{
+				"pending_unbonds": map[string]any{
+					"address": address,
+				},
+			},
+		)
+
+		err := json.Unmarshal(pendingUnbondsBytes, &pendingUnbondsData)
+		if err != nil && i == 9 {
+			oc <- fmt.Errorf(err.Error(), "got it in test case index %d", testIndex)
+		}
+
+		// verify if the unbonded amount and expected number of unbonds matches their respective conditions or not
+		if expectedNumberOfUnbonds == int64(len(pendingUnbondsData.Data.PendingUnbonds)) && UnbondAmount == pendingUnbondsData.Data.PendingUnbonds[expectedNumberOfUnbonds-1].Shares {
+			oc <- nil
+			break
+		}
+
+		t.Log("Wait for quasar to clear cache and then check unbond success")
+		err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+		if err != nil && i == 9 {
+			oc <- fmt.Errorf(err.Error(), "got it in test case index %d", testIndex)
+		}
+	}
 }

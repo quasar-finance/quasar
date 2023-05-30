@@ -123,7 +123,7 @@ func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.C
 	argsbz, err := json.Marshal(args)
 	s.Require().NoError(err)
 
-	cmds := []string{"wasm", "Contract-state", "smart",
+	cmds := []string{"wasm", "contract-state", "smart",
 		contractAddr,
 		string(argsbz),
 		"--output", "json",

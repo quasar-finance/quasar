@@ -93,7 +93,7 @@ func (s *E2EVaultTestingSuite) TestDeployContracts() {
 	// Send tokens to the respective account and create the required pools
 	s.CreatePools(ctx)
 
-	codeID, err := testsuite.StoreContractCode(ctx, s.Quasar(), lpStrategyContractPath, s.ContractsDeploymentWallet, s.E2EBuilder)
+	codeID, err := testsuite.StoreContractCode(ctx, s.Quasar(), lpStrategyContractPath, s.ContractsDeploymentWallet, s.E2EBuilder.Logger)
 	s.Require().NoError(err)
 	s.PrimitiveCodeID = codeID
 
@@ -114,11 +114,11 @@ func (s *E2EVaultTestingSuite) TestDeployContracts() {
 		s.Require().NoError(err)
 	}
 
-	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), vaultRewardsContractPath, s.ContractsDeploymentWallet, s.E2EBuilder)
+	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), vaultRewardsContractPath, s.ContractsDeploymentWallet, s.E2EBuilder.Logger)
 	s.Require().NoError(err)
 	s.RewardsStoreID = codeID
 
-	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), basicVaultStrategyContractPath, s.ContractsDeploymentWallet, s.E2EBuilder)
+	codeID, err = testsuite.StoreContractCode(ctx, s.Quasar(), basicVaultStrategyContractPath, s.ContractsDeploymentWallet, s.E2EBuilder.Logger)
 	s.Require().NoError(err)
 	s.VaultStoreID = codeID
 
