@@ -28,6 +28,8 @@ const (
 	QTTransferAmount int64 = 1_000_000
 
 	QSLDstartingTokenAmount int64 = 100_000_000_000
+	QSLDbondAmount          int64 = 10_000_000
+	QSLDexpectedShares      int64 = 9_999_999
 )
 
 var (
@@ -48,7 +50,7 @@ var (
 	}
 )
 
-func TestQtransferStrategyLpDeposit(t *testing.T) {
+func TestQtransfer(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -240,8 +242,8 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	ctx := context.Background()
 
 	// Variables
-	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, 10000000)
-	expectedShares := 9999999
+	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, QSLDbondAmount)
+	expectedShares := QSLDexpectedShares
 	expectedDeviation := 0.01
 
 	t.Log("Create an user with fund on Osmosis chain")
@@ -251,7 +253,12 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	s.Require().NoError(err)
 	s.Require().Equal(QSLDstartingTokenAmount, userBalanceOsmo)
 
-	t.Log("Execute IBC transfer to Quasar with Memo to deposit on LP-Strategy vault")
+	t.Log("Execute IBC transfer to Quasar with Memo to deposit on LP-Strategy vault for user: ", user.Bech32Address(s.Quasar().Config().Bech32Prefix))
+	amountOsmo := ibc.WalletAmount{
+		Address: s.BasicVaultContractAddress, // recipient in quasar chain (`wasm["contract"] should be the same as the receiver of the packet`)
+		Denom:   s.Osmosis().Config().Denom,
+		Amount:  bondAmount.Amount.Int64(),
+	}
 	// Build memo field
 	msgMap := map[string]interface{}{
 		"bond": map[string]interface{}{},
@@ -264,13 +271,7 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	}
 	memoBytes, err := json.Marshal(memoMap)
 	s.Require().NoError(err)
-	amountOsmo := ibc.WalletAmount{
-		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix), // recipient in quasar chain, TODO the basic vault or the user??? try -> s.BasicVaultContractAddress
-		Denom:   s.Osmosis().Config().Denom,
-		Amount:  bondAmount.Amount.Int64(),
-	}
-	optionsOsmo := ibc.TransferOptions{Memo: string(memoBytes)}
-	txOsmo, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, user.KeyName, amountOsmo, optionsOsmo)
+	txOsmo, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, user.KeyName, amountOsmo, ibc.TransferOptions{Memo: string(memoBytes)})
 	s.Require().NoError(err)
 	s.Require().NoError(txOsmo.Validate())
 
@@ -279,6 +280,10 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	userBalanceAfterOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
 	s.Require().Equal(QSLDstartingTokenAmount-bondAmount.Amount.Int64()-3500, userBalanceAfterOsmo) // funded amount, less bond amount, less fee
+
+	t.Log("Wait for quasar and osmosis to execute IBC Hook") // TODO is this needed?
+	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+	s.Require().NoError(err)
 
 	s.ExecuteContract(
 		ctx,
@@ -294,6 +299,7 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
+	t.Log("Checking $OPRO balance for user: ", user.Bech32Address(s.Quasar().Config().Bech32Prefix))
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
@@ -318,6 +324,6 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 
 func (s *Qtransfer) TestQtransferStrategyLpDepositKO() {
 	// TODO just duplicate the above test
-	// but pass an amount that should cause an insufficient balance error
-	// and validate with s.Require().Error(err) instead of NoError(err)
+	// but pass an amount that should cause an insufficient balance error or something else that do not allow to bond
+	// then validate
 }
