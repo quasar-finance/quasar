@@ -1,0 +1,12 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qvesting;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qvesting/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}
