@@ -17,13 +17,17 @@ import (
 )
 
 const (
-	QSLDstartingTokenAmount        int64 = 100_000_000_000
-	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
-	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
-	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	osmosisPool1Path                     = "../_utils/sample_pool1.json"
-	osmosisPool2Path                     = "../_utils/sample_pool2.json"
-	osmosisPool3Path                     = "../_utils/sample_pool3.json"
+	lpStrategyContractPath         = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
+	basicVaultStrategyContractPath = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
+	vaultRewardsContractPath       = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
+	osmosisPool1Path               = "../_utils/sample_pool1.json"
+	osmosisPool2Path               = "../_utils/sample_pool2.json"
+	osmosisPool3Path               = "../_utils/sample_pool3.json"
+
+	QTUserFundAmount int64 = 1_003_500
+	QTTransferAmount int64 = 1_000_000
+
+	QSLDstartingTokenAmount int64 = 100_000_000_000
 )
 
 var (
@@ -54,14 +58,14 @@ func TestQtransferStrategyLpDeposit(t *testing.T) {
 	b.Link(testsuite.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
-	s := &QtransferStrategyLpDeposit{
+	s := &Qtransfer{
 		E2EBuilder:   b,
 		E2ETestSuite: b.Build(),
 	}
 	suite.Run(t, s)
 }
 
-type QtransferStrategyLpDeposit struct {
+type Qtransfer struct {
 	E2EBuilder *testsuite.E2ETestSuiteBuilder
 
 	*testsuite.E2ETestSuite
@@ -87,7 +91,7 @@ type QtransferStrategyLpDeposit struct {
 	BasicVaultContractAddress string
 }
 
-func (s *QtransferStrategyLpDeposit) SetupSuite() {
+func (s *Qtransfer) SetupSuite() {
 	t := s.T()
 	ctx := context.Background()
 
@@ -170,50 +174,18 @@ func (s *QtransferStrategyLpDeposit) SetupSuite() {
 	)
 }
 
-// TestQtransferStrategyLpDepositOK tests the lp strategy contract creating an ICA channel between the contract and osmosis
-// and depositing 1000uqsr tokens to the contract which it must ibc transfer to its ICA account at osmosis.
-func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositOK() {
+// TestQtransfer_Timeout
+func (s *Qtransfer) TestQtransfer_Timeout() {
 	t := s.T()
 	ctx := context.Background()
 
-	// Variables
-	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, 10000000)
-	expectedShares := 9999999
-	expectedDeviation := 0.01
-
 	t.Log("Create an user with fund on Quasar chain")
-	user := s.CreateUserAndFund(ctx, s.Quasar(), QSLDstartingTokenAmount)
-	//err := s.Quasar().SendFunds(ctx, "faucet", ibc.WalletAmount{
-	//	Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix),
-	//	Amount:  QSLDstartingTokenAmount,
-	//	Denom:   s.OsmosisDenomInQuasar,
-	//})
-	//s.Require().NoError(err)
-	faucet := s.CreateUserAndFund(ctx, s.Osmosis(), QSLDstartingTokenAmount)
-	amountOsmo := ibc.WalletAmount{
-		Address: faucet.Bech32Address(s.Osmosis().Config().Bech32Prefix),
-		Denom:   s.Osmosis().Config().Denom,
-		Amount:  bondAmount.Amount.Int64(),
-	}
-	ibcTimeoutOsmo := ibc.IBCTimeout{NanoSeconds: 0, Height: 0}
-	optionsOsmo := ibc.TransferOptions{Timeout: &ibcTimeoutOsmo, Memo: ""}
-	txOsmo, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, faucet.KeyName, amountOsmo, optionsOsmo)
-	s.Require().NoError(err)
-	s.Require().NoError(txOsmo.Validate())
-
-	t.Log("Wait for uosmo ibc transfer from faucet is relayed")
-	err = testutil.WaitForBlocks(ctx, 20, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
+	user := s.CreateUserAndFund(ctx, s.Osmosis(), QTUserFundAmount)
 
 	t.Log("Check user balance before executing IBC transfer expecting to be the funded amount")
-	// check uqsr balance
-	userBalanceBeforeQsr, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.Quasar().Config().Denom)
+	userBalanceBefore, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
-	s.Require().Equal(QSLDstartingTokenAmount, userBalanceBeforeQsr)
-	// check uosmo balance
-	userBalanceBeforeOsmo, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
-	s.Require().NoError(err)
-	s.Require().Equal(QSLDstartingTokenAmount, userBalanceBeforeOsmo)
+	s.Require().Equal(QTUserFundAmount, userBalanceBefore)
 
 	t.Log("Execute IBC Transfer from previously created user")
 	// Build memo field
@@ -228,22 +200,85 @@ func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositOK() {
 	}
 	memoBytes, err := json.Marshal(memoMap)
 	s.Require().NoError(err)
-
-	//  Build ICS20 with Memo transaction to trigger contract execution
+	// build tx to transfer uosmo to quasar chain to related quasar1 account of userKey previously generated
 	amount := ibc.WalletAmount{
 		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix),
-		Denom:   s.OsmosisDenomInQuasar,
-		Amount:  bondAmount.Amount.Int64(),
+		Denom:   s.Osmosis().Config().Denom,
+		Amount:  QTTransferAmount,
 	}
-	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 0, Height: 0}
-	options := ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)}
-	tx, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, user.KeyName, amount, options)
+	// set timeout
+	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 1, Height: 1} // setting lowest timeoutTimestamp and height
+	// execute ibc transfer tx
+	tx, err := s.Osmosis().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, user.KeyName, amount, ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)})
 	s.Require().NoError(err)
 	s.Require().NoError(tx.Validate())
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
-	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+	t.Log("Check user balance after executing IBC transfer expecting to be 0")
+	userBalanceAfterTransfer, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
+	s.Require().Equal(QTUserFundAmount-QTTransferAmount-3500, userBalanceAfterTransfer)
+
+	t.Log("Wait for transfer packet to timeout")
+	err = testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
+	s.Require().NoError(err)
+
+	t.Log("Check user balance after packet timeout expecting to be 0 on Quasar side") // TODO check if this pass due to timeout or wrong Memo
+	userBalanceOsmoAfterTimeout, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), userBalanceOsmoAfterTimeout)
+
+	t.Log("Check user balance after packet timeout expecting to be the transfer amount")
+	userBalanceAfterTimeout, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
+	s.Require().NoError(err)
+	s.Require().Equal(QTTransferAmount, userBalanceAfterTimeout)
+}
+
+// TestQtransferStrategyLpDepositOK tests the lp strategy contract creating an ICA channel between the contract and osmosis
+// and depositing 1000uqsr tokens to the contract which it must ibc transfer to its ICA account at osmosis.
+func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
+	t := s.T()
+	ctx := context.Background()
+
+	// Variables
+	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, 10000000)
+	expectedShares := 9999999
+	expectedDeviation := 0.01
+
+	t.Log("Create an user with fund on Osmosis chain")
+	user := s.CreateUserAndFund(ctx, s.Osmosis(), QSLDstartingTokenAmount)
+	t.Log("Check user balance before executing IBC transfer expecting to be the funded amount")
+	userBalanceOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
+	s.Require().NoError(err)
+	s.Require().Equal(QSLDstartingTokenAmount, userBalanceOsmo)
+
+	t.Log("Execute IBC transfer to Quasar with Memo to deposit on LP-Strategy vault")
+	// Build memo field
+	msgMap := map[string]interface{}{
+		"bond": map[string]interface{}{},
+	}
+	memoMap := map[string]interface{}{
+		"wasm": map[string]interface{}{
+			"contract": s.BasicVaultContractAddress,
+			"msg":      msgMap,
+		},
+	}
+	memoBytes, err := json.Marshal(memoMap)
+	s.Require().NoError(err)
+	amountOsmo := ibc.WalletAmount{
+		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix), // recipient in quasar chain, TODO the basic vault or the user??? try -> s.BasicVaultContractAddress
+		Denom:   s.Osmosis().Config().Denom,
+		Amount:  bondAmount.Amount.Int64(),
+	}
+	optionsOsmo := ibc.TransferOptions{Memo: string(memoBytes)}
+	txOsmo, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, user.KeyName, amountOsmo, optionsOsmo)
+	s.Require().NoError(err)
+	s.Require().NoError(txOsmo.Validate())
+
+	t.Log("Check user balance before executing IBC transfer expecting to be less than the funded amount")
+	// check uosmo balance
+	userBalanceAfterOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
+	s.Require().NoError(err)
+	s.Require().Equal(QSLDstartingTokenAmount-bondAmount.Amount.Int64()-3500, userBalanceAfterOsmo) // funded amount, less bond amount, less fee
 
 	s.ExecuteContract(
 		ctx,
@@ -255,7 +290,7 @@ func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositOK() {
 		nil,
 	)
 
-	t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+	t.Log("Wait for quasar and osmosis to clear cache and settle up ICA packet transfer and the ibc transfer")
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
@@ -266,7 +301,7 @@ func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositOK() {
 		s.BasicVaultContractAddress,
 		map[string]any{
 			"balance": map[string]any{
-				"address": user.Address,
+				"address": user.Bech32Address(s.Quasar().Config().Bech32Prefix),
 			},
 		},
 	)
@@ -281,7 +316,7 @@ func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositOK() {
 	s.Require().True(balance <= int64(float64(expectedShares)*(1+expectedDeviation)))
 }
 
-func (s *QtransferStrategyLpDeposit) TestQtransferStrategyLpDepositKO() {
+func (s *Qtransfer) TestQtransferStrategyLpDepositKO() {
 	// TODO just duplicate the above test
 	// but pass an amount that should cause an insufficient balance error
 	// and validate with s.Require().Error(err) instead of NoError(err)

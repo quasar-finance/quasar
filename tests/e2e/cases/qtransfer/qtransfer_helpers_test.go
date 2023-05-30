@@ -11,7 +11,7 @@ import (
 )
 
 // deployPrimitives stores the contract, initiates it and returns the contract address.
-func (s *QtransferStrategyLpDeposit) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) {
+func (s *Qtransfer) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -106,7 +106,7 @@ func (s *QtransferStrategyLpDeposit) deployPrimitives(ctx context.Context, acc *
 }
 
 // deployRewardsContract stores the contract
-func (s *QtransferStrategyLpDeposit) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
+func (s *Qtransfer) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
 	// Read the contract from os file
 	contract, err := os.ReadFile(filePath)
 	s.Require().NoError(err)
@@ -117,7 +117,7 @@ func (s *QtransferStrategyLpDeposit) deployRewardsContract(ctx context.Context, 
 }
 
 // deployVault stores the contract, initiates it and returns the contract address.
-func (s *QtransferStrategyLpDeposit) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
+func (s *Qtransfer) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -134,13 +134,13 @@ func (s *QtransferStrategyLpDeposit) deployVault(ctx context.Context, acc *ibc.W
 	return res.Address
 }
 
-func (s *QtransferStrategyLpDeposit) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any) {
+func (s *Qtransfer) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any) {
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress1, acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress2, acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress3, acc.KeyName, initArgs)
 }
 
-func (s *QtransferStrategyLpDeposit) CreatePools(ctx context.Context) {
+func (s *Qtransfer) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
@@ -157,7 +157,7 @@ func (s *QtransferStrategyLpDeposit) CreatePools(ctx context.Context) {
 	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Authority.KeyName, poolBz)
 }
 
-func (s *QtransferStrategyLpDeposit) SendTokensToRespectiveAccounts(ctx context.Context) {
+func (s *Qtransfer) SendTokensToRespectiveAccounts(ctx context.Context) {
 	// Send uqsr to all the bond test accounts
 	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.Authority, s.E2EBuilder.QuasarAccounts.BondTest, "10000000uqsr")
 	s.SendTokensToOneAddress(ctx, s.Quasar(), s.E2EBuilder.QuasarAccounts.Authority, s.E2EBuilder.QuasarAccounts.BondTest1, "10000000uqsr")
