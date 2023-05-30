@@ -13,18 +13,22 @@ mod tests {
     };
 
     use crate::{
+        bond::Bond,
         error::Trap,
         helpers::IbcMsgKind,
         ibc_lock::{IbcLock, Lock},
         msg::{
-            ChannelsResponse, ConfigResponse, IcaAddressResponse, IcaBalanceResponse,
-            IcaChannelResponse, LockResponse, LpSharesResponse, PrimitiveSharesResponse, QueryMsg,
+            ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
+            IcaBalanceResponse, IcaChannelResponse, LockResponse, LpSharesResponse,
+            OsmoLockResponse, PrimitiveSharesResponse, QueryMsg, SimulatedJoinResponse,
             TrappedErrorsResponse, UnbondingClaimResponse,
         },
         queries::query,
+        start_unbond::StartUnbond,
         state::{
-            Config, LpCache, Unbond, CONFIG, IBC_LOCK, LP_SHARES, SHARES, TOTAL_VAULT_BALANCE,
-            TRAPS, UNBONDING_CLAIMS,
+            Config, LpCache, Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, LP_SHARES, OSMO_LOCK,
+            PENDING_BOND_QUEUE, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
+            START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
         },
         test_helpers::{setup_default_ica, setup_default_icq},
     };
@@ -342,5 +346,117 @@ mod tests {
             assert_eq!(res.unbond, Some(unbond));
         }
 
+        // TODO: all list tests are failing, not sure why
+        //
+        // #[test]
+        // fn get_bonding_claims_works(
+        //     addr in address_strategy("quasar"),
+        //     name in any::<String>(),
+        //     amount in any::<u128>(),
+        // ) {
+        //     let mut deps = mock_dependencies();
+        //     let env = mock_env();
+        //     BONDING_CLAIMS.save(deps.as_mut().storage, (&Addr::unchecked(addr.clone()), &name.clone()), &Uint128::new(amount)).unwrap();
+
+        //     let q = QueryMsg::ListBondingClaims {};
+        //     let res: ListBondingClaimsResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+        //     let key = Addr::unchecked(addr);
+        //     assert_eq!(res.bonds.get(&key).unwrap(), &(name.clone(), Uint128::new(amount)));
+        // }
+
+        #[test]
+        fn get_osmo_lock_works(
+            id in any::<u64>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            OSMO_LOCK.save(deps.as_mut().storage, &id).unwrap();
+            let q = QueryMsg::OsmoLock {};
+            let res: OsmoLockResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            prop_assert_eq!(res.lock_id, id)
+        }
+
+        #[test]
+        fn get_simulated_join_works(
+            amount in any::<u128>(),
+            result in any::<u128>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            SIMULATED_JOIN_AMOUNT_IN.save(deps.as_mut().storage, &Uint128::from(amount)).unwrap();
+            SIMULATED_JOIN_RESULT.save(deps.as_mut().storage, &Uint128::from(result)).unwrap();
+            let q = QueryMsg::SimulatedJoin { };
+            let res: SimulatedJoinResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            prop_assert_eq!(res.amount.unwrap(), Uint128::from(amount));
+            prop_assert_eq!(res.result.unwrap(), Uint128::from(result));
+        }
+
+        #[test]
+        fn get_queues_works(
+            b_amounts in proptest::collection::vec(any::<u128>(), 25),
+            b_owners in proptest::collection::vec(address_strategy("quasar"), 25),
+            b_bond_ids in proptest::collection::vec(any::<u64>(), 25),
+            su_owner in proptest::collection::vec(address_strategy("quasar"), 25),
+            su_id in proptest::collection::vec(any::<u64>(), 25),
+            su_shares in proptest::collection::vec(any::<u128>(), 25),
+            u_lp_shares in proptest::collection::vec(any::<u128>(), 25),
+            u_unlock_time in proptest::collection::vec(any::<u64>(), 25),
+            u_attempted in proptest::collection::vec(any::<bool>(), 25),
+            u_owner in proptest::collection::vec(address_strategy("quasar"), 25),
+            mut u_id in proptest::collection::vec(any::<u64>(), 25),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+
+            let mut expected_bonds = Vec::new();
+            let mut expected_pending_bonds = Vec::new();
+            for ((amount, owner), bond_id) in b_amounts.into_iter().zip(b_owners).zip(b_bond_ids) {
+                let bond = Bond {
+                    amount: Uint128::from(amount),
+                    owner: Addr::unchecked(&owner),
+                    bond_id: bond_id.to_string(),
+                };
+                if amount % 2 == 0 {
+                    BOND_QUEUE.push_back(deps.as_mut().storage, &bond).unwrap();
+                    expected_bonds.push(bond.clone());
+
+                } else {
+                    PENDING_BOND_QUEUE.push_back(deps.as_mut().storage, &bond).unwrap();
+                    expected_pending_bonds.push(bond);
+                }
+            }
+
+            let mut expected_start_unbond = Vec::new();
+            for ((shares, owner), id) in su_shares.into_iter().zip(su_owner).zip(su_id) {
+                let start_unbond = StartUnbond {
+                    primitive_shares: Uint128::from(shares),
+                    owner: Addr::unchecked(&owner),
+                    id: id.to_string(),
+                };
+                START_UNBOND_QUEUE.push_back(deps.as_mut().storage, &start_unbond).unwrap();
+                expected_start_unbond.push(start_unbond);
+            }
+
+            let mut expected_unbonds = Vec::new();
+            for (((lp_shares, unlock_time), attempted), owner) in u_lp_shares.into_iter().zip(u_unlock_time).zip(u_attempted).zip(u_owner) {
+                let unbond = Unbond {
+                    lp_shares: Uint128::from(lp_shares),
+                    unlock_time: Timestamp::from_nanos(unlock_time),
+                    attempted: attempted,
+                    owner: Addr::unchecked(&owner),
+                    id: u_id.pop().unwrap().to_string(),
+                };
+                UNBOND_QUEUE.push_back(deps.as_mut().storage, &unbond).unwrap();
+                expected_unbonds.push(unbond);
+            }
+
+            let q = QueryMsg::GetQueues { };
+            let res: GetQueuesResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+
+            prop_assert_eq!(res.bond_queue, expected_bonds.clone());
+            prop_assert_eq!(res.pending_bond_queue, expected_pending_bonds.clone());
+            prop_assert_eq!(res.start_unbond_queue, expected_start_unbond.clone());
+            prop_assert_eq!(res.unbond_queue, expected_unbonds.clone());
+        }
     }
 }

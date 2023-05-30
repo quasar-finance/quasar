@@ -9,13 +9,13 @@ pub mod ibc_lock;
 mod ibc_util;
 pub mod icq;
 pub mod msg;
+pub mod proptests;
 pub mod queries;
 pub mod reply;
 pub mod start_unbond;
 pub mod state;
 pub mod test_helpers;
 pub mod unbond;
-pub mod proptests;
 
 #[cfg(test)]
 pub mod integration_tests;
