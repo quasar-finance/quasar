@@ -190,9 +190,19 @@ func (s *Qtransfer) TestQtransfer_Timeout() {
 	s.Require().Equal(QTUserFundAmount, userBalanceBefore)
 
 	t.Log("Execute IBC Transfer from previously created user")
+	// build tx to transfer uosmo to quasar chain to related quasar1 account of userKey previously generated
+	amount := ibc.WalletAmount{
+		Address: s.BasicVaultContractAddress, // recipient in quasar chain (`wasm["contract"] should be the same as the receiver of the packet`)
+		Denom:   s.Osmosis().Config().Denom,
+		Amount:  QTTransferAmount,
+	}
+	// set timeout
+	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 1, Height: 1} // setting lowest timeoutTimestamp and height
 	// Build memo field
 	msgMap := map[string]interface{}{
-		"bond": map[string]interface{}{},
+		"bond": map[string]interface{}{
+			"recipient": user.Bech32Address(s.Quasar().Config().Bech32Prefix),
+		},
 	}
 	memoMap := map[string]interface{}{
 		"wasm": map[string]interface{}{
@@ -202,16 +212,8 @@ func (s *Qtransfer) TestQtransfer_Timeout() {
 	}
 	memoBytes, err := json.Marshal(memoMap)
 	s.Require().NoError(err)
-	// build tx to transfer uosmo to quasar chain to related quasar1 account of userKey previously generated
-	amount := ibc.WalletAmount{
-		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix),
-		Denom:   s.Osmosis().Config().Denom,
-		Amount:  QTTransferAmount,
-	}
-	// set timeout
-	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 1, Height: 1} // setting lowest timeoutTimestamp and height
 	// execute ibc transfer tx
-	tx, err := s.Osmosis().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, user.KeyName, amount, ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)})
+	tx, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, user.KeyName, amount, ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)})
 	s.Require().NoError(err)
 	s.Require().NoError(tx.Validate())
 
@@ -224,7 +226,7 @@ func (s *Qtransfer) TestQtransfer_Timeout() {
 	err = testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
-	t.Log("Check user balance after packet timeout expecting to be 0 on Quasar side") // TODO check if this pass due to timeout or wrong Memo
+	t.Log("Check user balance after packet timeout expecting to be 0 on Quasar side")
 	userBalanceOsmoAfterTimeout, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
 	s.Require().Equal(int64(0), userBalanceOsmoAfterTimeout)
@@ -248,6 +250,7 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 
 	t.Log("Create an user with fund on Osmosis chain")
 	user := s.CreateUserAndFund(ctx, s.Osmosis(), QSLDstartingTokenAmount)
+
 	t.Log("Check user balance before executing IBC transfer expecting to be the funded amount")
 	userBalanceOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
