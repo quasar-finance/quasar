@@ -261,7 +261,9 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	}
 	// Build memo field
 	msgMap := map[string]interface{}{
-		"bond": map[string]interface{}{},
+		"bond": map[string]interface{}{
+			"recipient": user.Bech32Address(s.Quasar().Config().Bech32Prefix),
+		},
 	}
 	memoMap := map[string]interface{}{
 		"wasm": map[string]interface{}{
@@ -280,10 +282,6 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	userBalanceAfterOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
 	s.Require().Equal(QSLDstartingTokenAmount-bondAmount.Amount.Int64()-3500, userBalanceAfterOsmo) // funded amount, less bond amount, less fee
-
-	t.Log("Wait for quasar and osmosis to execute IBC Hook") // TODO is this needed?
-	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
 
 	s.ExecuteContract(
 		ctx,
