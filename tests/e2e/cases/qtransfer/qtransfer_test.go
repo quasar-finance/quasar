@@ -322,9 +322,3 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	s.Require().True(int64(float64(expectedShares)*(1-expectedDeviation)) <= balance)
 	s.Require().True(balance <= int64(float64(expectedShares)*(1+expectedDeviation)))
 }
-
-func (s *Qtransfer) TestQtransferStrategyLpDepositKO() {
-	// TODO just duplicate the above test
-	// but pass an amount that should cause an insufficient balance error or something else that do not allow to bond
-	// then validate
-}
