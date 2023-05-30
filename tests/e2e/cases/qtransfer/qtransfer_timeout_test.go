@@ -99,12 +99,15 @@ func (s *QtransferTimeoutTestSuite) TestQtransfer_Timeout() {
 	}
 	memoBytes, err := json.Marshal(memoMap)
 	s.Require().NoError(err)
+	// build tx to transfer uqsr to osmosis chain to related osmo1 account of userKey
 	amount := ibc.WalletAmount{
-		Address: user.Bech32Address(s.Quasar().Config().Bech32Prefix),
+		Address: user.Bech32Address(s.Osmosis().Config().Bech32Prefix),
 		Denom:   s.Quasar().Config().Denom,
 		Amount:  QTIBCTransferAmount,
 	}
-	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 0, Height: 0} // TODO check if this 0-0 is right in order to timeout, maybe 1 and 1 as with 0 the testsuite replaces with other values
+	height, err := s.Quasar().Height(ctx)
+	s.Require().NoError(err)
+	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 0, Height: height + 1} // increasing current block height +1 to timeout the packet before relaying
 	options := ibc.TransferOptions{Timeout: &ibcTimeout, Memo: string(memoBytes)}
 	tx, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, user.KeyName, amount, options)
 	s.Require().NoError(err)
@@ -113,14 +116,14 @@ func (s *QtransferTimeoutTestSuite) TestQtransfer_Timeout() {
 	t.Log("Check user balance after executing IBC transfer expecting to be 0")
 	userBalanceAfterTransfer, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.Quasar().Config().Denom)
 	s.Require().NoError(err)
-	s.Require().Equal(0, userBalanceAfterTransfer)
+	s.Require().Equal(QTUserFundAmount-QTIBCTransferAmount-2000, userBalanceAfterTransfer)
 
 	t.Log("Wait for transfer packet to timeout")
-	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+	err = testutil.WaitForBlocks(ctx, 30, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
 	t.Log("Check user balance after packet timeout expecting to be the original funded amount")
-	userBalanceAfterTimeout, err := s.Quasar().GetBalance(ctx, user.Address, s.Quasar().Config().Denom)
+	userBalanceAfterTimeout, err := s.Quasar().GetBalance(ctx, user.Bech32Address(s.Quasar().Config().Bech32Prefix), s.Quasar().Config().Denom)
 	s.Require().NoError(err)
 	s.Require().Equal(QTIBCTransferAmount, userBalanceAfterTimeout)
 }
