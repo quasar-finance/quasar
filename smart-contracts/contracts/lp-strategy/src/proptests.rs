@@ -19,16 +19,18 @@ mod tests {
         ibc_lock::{IbcLock, Lock},
         msg::{
             ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
-            IcaBalanceResponse, IcaChannelResponse, LockResponse, LpSharesResponse,
-            OsmoLockResponse, PrimitiveSharesResponse, QueryMsg, SimulatedJoinResponse,
-            TrappedErrorsResponse, UnbondingClaimResponse, ListBondingClaimsResponse, ListUnbondingClaimsResponse,
+            IcaBalanceResponse, IcaChannelResponse, ListBondingClaimsResponse,
+            ListUnbondingClaimsResponse, LockResponse, LpSharesResponse, OsmoLockResponse,
+            PrimitiveSharesResponse, QueryMsg, SimulatedJoinResponse, TrappedErrorsResponse,
+            UnbondingClaimResponse,
         },
         queries::query,
         start_unbond::StartUnbond,
         state::{
-            Config, LpCache, Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, LP_SHARES, OSMO_LOCK,
-            PENDING_BOND_QUEUE, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
-            START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE, BONDING_CLAIMS, PENDING_UNBONDING_CLAIMS,
+            Config, LpCache, Unbond, BONDING_CLAIMS, BOND_QUEUE, CONFIG, IBC_LOCK, LP_SHARES,
+            OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, SHARES,
+            SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE,
+            TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
         },
         test_helpers::{setup_default_ica, setup_default_icq},
     };
@@ -261,7 +263,6 @@ mod tests {
                 denom: config.local_denom,
                 amount: balance,
             });
-
         }
 
         #[test]
@@ -345,7 +346,7 @@ mod tests {
 
             assert_eq!(res.unbond, Some(unbond));
         }
-        
+
         #[test]
         fn query_list_bonding_claims_works(
             addr in address_strategy("quasar"),
