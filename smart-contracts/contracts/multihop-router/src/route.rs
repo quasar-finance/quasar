@@ -6,10 +6,17 @@ use cw_storage_plus::{Key, KeyDeserialize, Prefixer, PrimaryKey};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+/// A Route represents the route to take to a certain chain. Each route might be unique for a certain asset.
+/// A complete usable case of a route includes the asset to send to the destination, since a different asset
+/// might need to take a different route
+/// A complete Route is then the kv-pair of the Map Routes, namely <RouteId, Route>
 #[cw_serde]
 pub struct Route {
+    // the channel to use in an ibc transfer from the current chain  
     pub channel: String,
+    // the port to use, this is most likely always "transfer"
     pub port: String,
+    // any potential hops needed to get to the current chain. These hops are dependend on the associated assets
     pub hop: Option<Hop>,
 }
 
@@ -207,7 +214,6 @@ impl<'a> PrimaryKey<'a> for &RouteId {
 impl KeyDeserialize for &RouteId {
     type Output = RouteId;
 
-    // TODO test that this implementation is the inverse of key
     fn from_vec(mut value: Vec<u8>) -> StdResult<Self::Output> {
         let mut tu = value.split_off(2);
         let t_len = parse_length(&value)?;
