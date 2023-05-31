@@ -393,30 +393,37 @@ mod tests {
 
         #[test]
         fn get_queues_works(
-            b_amounts in proptest::collection::vec(any::<u128>(), 25),
-            b_owners in proptest::collection::vec(address_strategy("quasar"), 25),
-            b_bond_ids in proptest::collection::vec(any::<u64>(), 25),
-            su_owner in proptest::collection::vec(address_strategy("quasar"), 25),
-            su_id in proptest::collection::vec(any::<u64>(), 25),
-            su_shares in proptest::collection::vec(any::<u128>(), 25),
-            u_lp_shares in proptest::collection::vec(any::<u128>(), 25),
-            u_unlock_time in proptest::collection::vec(any::<u64>(), 25),
-            u_attempted in proptest::collection::vec(any::<bool>(), 25),
-            u_owner in proptest::collection::vec(address_strategy("quasar"), 25),
-            mut u_id in proptest::collection::vec(any::<u64>(), 25),
+            (b_amounts, b_owners, b_bond_ids, su_owner, su_id, su_shares, u_lp_shares, u_unlock_time, u_attempted, u_owner, u_id) in (5..25usize).prop_flat_map(|size| {
+                (
+                    proptest::collection::vec(any::<u128>(), size),
+                    proptest::collection::vec(address_strategy("quasar"), size),
+                    proptest::collection::vec(any::<u64>(), size),
+                    proptest::collection::vec(address_strategy("quasar"), size),
+                    proptest::collection::vec(any::<u64>(),size),
+                    proptest::collection::vec(any::<u128>(), size),
+                    proptest::collection::vec(any::<u128>(), size),
+                    proptest::collection::vec(any::<u64>(), size),
+                    proptest::collection::vec(any::<bool>(), size),
+                    proptest::collection::vec(address_strategy("quasar"), size),
+                    proptest::collection::vec(any::<u64>(), size),
+                )
+            })
         ) {
             let mut deps = mock_dependencies();
             let env = mock_env();
 
             let mut expected_bonds = Vec::new();
             let mut expected_pending_bonds = Vec::new();
-            for ((amount, owner), bond_id) in b_amounts.into_iter().zip(b_owners).zip(b_bond_ids) {
+            let mut expected_start_unbond = Vec::new();
+            let mut expected_unbonds = Vec::new();
+
+            for i in 0..b_amounts.len() {
                 let bond = Bond {
-                    amount: Uint128::from(amount),
-                    owner: Addr::unchecked(&owner),
-                    bond_id: bond_id.to_string(),
+                    amount: Uint128::from(b_amounts[i]),
+                    owner: Addr::unchecked(&b_owners[i]),
+                    bond_id: b_bond_ids[i].to_string(),
                 };
-                if amount % 2 == 0 {
+                if b_amounts[i] % 2 == 0 {
                     BOND_QUEUE.push_back(deps.as_mut().storage, &bond).unwrap();
                     expected_bonds.push(bond.clone());
 
@@ -424,27 +431,21 @@ mod tests {
                     PENDING_BOND_QUEUE.push_back(deps.as_mut().storage, &bond).unwrap();
                     expected_pending_bonds.push(bond);
                 }
-            }
 
-            let mut expected_start_unbond = Vec::new();
-            for ((shares, owner), id) in su_shares.into_iter().zip(su_owner).zip(su_id) {
                 let start_unbond = StartUnbond {
-                    primitive_shares: Uint128::from(shares),
-                    owner: Addr::unchecked(&owner),
-                    id: id.to_string(),
+                    primitive_shares: Uint128::from(su_shares[i]),
+                    owner: Addr::unchecked(&su_owner[i]),
+                    id: su_id[i].to_string(),
                 };
                 START_UNBOND_QUEUE.push_back(deps.as_mut().storage, &start_unbond).unwrap();
                 expected_start_unbond.push(start_unbond);
-            }
 
-            let mut expected_unbonds = Vec::new();
-            for (((lp_shares, unlock_time), attempted), owner) in u_lp_shares.into_iter().zip(u_unlock_time).zip(u_attempted).zip(u_owner) {
                 let unbond = Unbond {
-                    lp_shares: Uint128::from(lp_shares),
-                    unlock_time: Timestamp::from_nanos(unlock_time),
-                    attempted: attempted,
-                    owner: Addr::unchecked(&owner),
-                    id: u_id.pop().unwrap().to_string(),
+                    lp_shares: Uint128::from(u_lp_shares[i]),
+                    unlock_time: Timestamp::from_nanos(u_unlock_time[i]),
+                    attempted: u_attempted[i],
+                    owner: Addr::unchecked(&u_owner[i]),
+                    id: u_id[i].to_string(),
                 };
                 UNBOND_QUEUE.push_back(deps.as_mut().storage, &unbond).unwrap();
                 expected_unbonds.push(unbond);
