@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 /// A complete Route is then the kv-pair of the Map Routes, namely <RouteId, Route>
 #[cw_serde]
 pub struct Route {
-    // the channel to use in an ibc transfer from the current chain  
+    // the channel to use in an ibc transfer from the current chain
     pub channel: String,
     // the port to use, this is most likely always "transfer"
     pub port: String,
@@ -154,6 +154,12 @@ pub struct RouteId {
     pub asset: String,
 }
 
+impl RouteId {
+    pub fn new(destination: Destination, asset: String) -> RouteId {
+        RouteId { destination, asset }
+    }
+}
+
 impl Display for RouteId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -239,6 +245,12 @@ fn parse_length(value: &[u8]) -> StdResult<usize> {
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Destination(pub String);
 
+impl Destination {
+    pub fn new(destination: impl Into<String>) -> Destination {
+        Destination(destination.into())
+    }
+}
+
 impl From<String> for Destination {
     fn from(value: String) -> Self {
         Self(value)
@@ -310,8 +322,8 @@ impl KeyDeserialize for &Destination {
 
 #[cfg(test)]
 mod tests {
-    use proptest::prelude::*;
     use cw_storage_plus::PrimaryKey;
+    use proptest::prelude::*;
 
     use super::*;
 

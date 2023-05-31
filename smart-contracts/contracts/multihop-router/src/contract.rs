@@ -67,8 +67,8 @@ pub fn execute_add_route(
 
     Ok(Response::new()
         .add_attribute("action", "add_route")
-        .add_attribute("destination", route_id.to_string())
-        .add_attribute("destination-value", route.to_string()))
+        .add_attribute("route_id", route_id.to_string())
+        .add_attribute("route", route.to_string()))
 }
 
 pub fn execute_mutate_route(
@@ -84,8 +84,8 @@ pub fn execute_mutate_route(
 
     Ok(Response::new()
         .add_attribute("action", "mutate_route")
-        .add_attribute("destination", route_id.to_string())
-        .add_attribute("destination-value", route.to_string()))
+        .add_attribute("route_id", route_id.to_string())
+        .add_attribute("route", route.to_string()))
 }
 
 pub fn execute_remove_route(
@@ -104,7 +104,7 @@ pub fn execute_remove_route(
 
     Ok(Response::new()
         .add_attribute("action", "remove_route")
-        .add_attribute("destination", format!("{}", route_id)))
+        .add_attribute("route_id", format!("{}", route_id)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -177,7 +177,7 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
 
-    use crate::route::{Hop, Destination};
+    use crate::route::{Destination, Hop};
 
     use super::*;
 
