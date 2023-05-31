@@ -21,14 +21,14 @@ mod tests {
             ChannelsResponse, ConfigResponse, GetQueuesResponse, IcaAddressResponse,
             IcaBalanceResponse, IcaChannelResponse, LockResponse, LpSharesResponse,
             OsmoLockResponse, PrimitiveSharesResponse, QueryMsg, SimulatedJoinResponse,
-            TrappedErrorsResponse, UnbondingClaimResponse,
+            TrappedErrorsResponse, UnbondingClaimResponse, ListBondingClaimsResponse, ListUnbondingClaimsResponse,
         },
         queries::query,
         start_unbond::StartUnbond,
         state::{
             Config, LpCache, Unbond, BOND_QUEUE, CONFIG, IBC_LOCK, LP_SHARES, OSMO_LOCK,
             PENDING_BOND_QUEUE, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
-            START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
+            START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE, BONDING_CLAIMS, PENDING_UNBONDING_CLAIMS,
         },
         test_helpers::{setup_default_ica, setup_default_icq},
     };
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn get_channels_works() {
+    fn query_channels_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         setup_default_ica(deps.as_mut().storage).unwrap();
@@ -166,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn get_ica_address_works() {
+    fn query_ica_address_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         setup_default_ica(deps.as_mut().storage).unwrap();
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn get_ica_channel_works() {
+    fn query_ica_channel_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         setup_default_ica(deps.as_mut().storage).unwrap();
@@ -188,7 +188,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn get_config_works(
+        fn query_config_works(
             config in any::<Config>()
         ) {
             let mut deps = mock_dependencies();
@@ -201,7 +201,7 @@ mod tests {
         }
 
         #[test]
-        fn get_balance_works(
+        fn query_balance_works(
             addr in address_strategy("quasar"),
             bal in any::<u128>()
         ) {
@@ -219,7 +219,7 @@ mod tests {
         }
 
         #[test]
-        fn get_primitive_shares_works(
+        fn query_primitive_shares_works(
             (addr, bal) in (0..10usize).prop_flat_map(|size| {
                 (
                     proptest::collection::vec(address_strategy("quasar"), size),
@@ -245,7 +245,7 @@ mod tests {
         }
 
         #[test]
-        fn get_ica_balance_works(
+        fn query_ica_balance_works(
             config in any::<Config>(),
             bal in any::<u128>()
         ) {
@@ -265,7 +265,7 @@ mod tests {
         }
 
         #[test]
-        fn get_lock_works(
+        fn query_lock_works(
             lock in any::<Lock>()
         ) {
             let mut deps = mock_dependencies();
@@ -278,7 +278,7 @@ mod tests {
         }
 
         #[test]
-        fn get_lp_shares_works(
+        fn query_lp_shares_works(
             locked_shares in any::<u128>(),
             w_unlocked_shares in any::<u128>(),
             d_unlocked_shares in any::<u128>(),
@@ -298,7 +298,7 @@ mod tests {
         }
 
         #[test]
-        fn get_trapped_errors_works(
+        fn query_trapped_errors_works(
             seq in any::<u64>(),
             chan in any::<String>(),
             error in any::<String>(),
@@ -321,7 +321,7 @@ mod tests {
         }
 
         #[test]
-        fn get_unbonding_claims(
+        fn query_unbonding_claims(
             addr in address_strategy("quasar"),
             id in any::<String>(),
             lp_shares in any::<u128>(),
@@ -345,27 +345,50 @@ mod tests {
 
             assert_eq!(res.unbond, Some(unbond));
         }
+        
+        #[test]
+        fn query_list_bonding_claims_works(
+            addr in address_strategy("quasar"),
+            id in any::<u128>(),
+            amount in any::<u128>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            BONDING_CLAIMS.save(deps.as_mut().storage, (&Addr::unchecked(addr.clone()), &id.to_string()), &Uint128::new(amount)).unwrap();
 
-        // TODO: all list tests are failing, not sure why
-        //
-        // #[test]
-        // fn get_bonding_claims_works(
-        //     addr in address_strategy("quasar"),
-        //     name in any::<String>(),
-        //     amount in any::<u128>(),
-        // ) {
-        //     let mut deps = mock_dependencies();
-        //     let env = mock_env();
-        //     BONDING_CLAIMS.save(deps.as_mut().storage, (&Addr::unchecked(addr.clone()), &name.clone()), &Uint128::new(amount)).unwrap();
-
-        //     let q = QueryMsg::ListBondingClaims {};
-        //     let res: ListBondingClaimsResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
-        //     let key = Addr::unchecked(addr);
-        //     assert_eq!(res.bonds.get(&key).unwrap(), &(name.clone(), Uint128::new(amount)));
-        // }
+            let q = QueryMsg::ListBondingClaims {};
+            let res: ListBondingClaimsResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            prop_assert_eq!(res.bonds.get(&addr).unwrap(), &(id.to_string(), Uint128::new(amount)));
+        }
 
         #[test]
-        fn get_osmo_lock_works(
+        fn query_list_unbonding_claims_works(
+            addr in address_strategy("quasar"),
+            id in any::<u128>(),
+            lp_shares in any::<u128>(),
+            unlock_time in any::<u64>(),
+            attempted in any::<bool>(),
+        ) {
+            let mut deps = mock_dependencies();
+            let env = mock_env();
+            let unbond = Unbond {
+                lp_shares: Uint128::from(lp_shares),
+                unlock_time: Timestamp::from_nanos(unlock_time),
+                attempted,
+                owner: Addr::unchecked(addr.clone()),
+                id: id.to_string(),
+            };
+            UNBONDING_CLAIMS.save(deps.as_mut().storage, (Addr::unchecked(addr.clone()), id.to_string()), &unbond).unwrap();
+            PENDING_UNBONDING_CLAIMS.save(deps.as_mut().storage, (Addr::unchecked(addr.clone()), id.to_string()), &unbond).unwrap();
+
+            let q = QueryMsg::ListUnbondingClaims {};
+            let res: ListUnbondingClaimsResponse = from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            prop_assert_eq!(res.unbonds.get(&addr).unwrap(), &(id.to_string(), unbond.clone()));
+            prop_assert_eq!(res.pending_unbonds.get(&addr).unwrap(), &(id.to_string(), unbond));
+        }
+
+        #[test]
+        fn query_osmo_lock_works(
             id in any::<u64>(),
         ) {
             let mut deps = mock_dependencies();
@@ -377,7 +400,7 @@ mod tests {
         }
 
         #[test]
-        fn get_simulated_join_works(
+        fn query_simulated_join_works(
             amount in any::<u128>(),
             result in any::<u128>(),
         ) {
@@ -392,7 +415,7 @@ mod tests {
         }
 
         #[test]
-        fn get_queues_works(
+        fn query_queues_works(
             (b_amounts, b_owners, b_bond_ids, su_owner, su_id, su_shares, u_lp_shares, u_unlock_time, u_attempted, u_owner, u_id) in (5..25usize).prop_flat_map(|size| {
                 (
                     proptest::collection::vec(any::<u128>(), size),
@@ -459,5 +482,8 @@ mod tests {
             prop_assert_eq!(res.start_unbond_queue, expected_start_unbond.clone());
             prop_assert_eq!(res.unbond_queue, expected_unbonds.clone());
         }
+
+
+
     }
 }

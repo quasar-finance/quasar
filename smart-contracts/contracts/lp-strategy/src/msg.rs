@@ -112,7 +112,7 @@ pub struct OsmoLockResponse {
 
 #[cw_serde]
 pub struct ListBondingClaimsResponse {
-    pub bonds: HashMap<Addr, (String, Uint128)>,
+    pub bonds: HashMap<String, (String, Uint128)>,
 }
 
 #[cw_serde]
@@ -137,8 +137,8 @@ pub struct ListPendingAcksResponse {
 
 #[cw_serde]
 pub struct ListUnbondingClaimsResponse {
-    pub unbonds: HashMap<Addr, (String, Unbond)>,
-    pub pending_unbonds: HashMap<Addr, (String, Unbond)>,
+    pub unbonds: HashMap<String, (String, Unbond)>,
+    pub pending_unbonds: HashMap<String, (String, Unbond)>,
 }
 
 #[cw_serde]

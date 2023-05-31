@@ -82,18 +82,18 @@ pub fn handle_osmo_lock(deps: Deps) -> StdResult<OsmoLockResponse> {
 }
 
 pub fn handle_list_unbonding_claims(deps: Deps) -> StdResult<ListUnbondingClaimsResponse> {
-    let unbonds: StdResult<HashMap<Addr, (String, Unbond)>> = UNBONDING_CLAIMS
+    let unbonds: StdResult<HashMap<String, (String, Unbond)>> = UNBONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let val = res?;
-            Ok((val.0 .0, (val.0 .1, val.1)))
+            Ok((val.0 .0.to_string(), (val.0 .1, val.1)))
         })
         .collect();
-    let pending_unbonds: StdResult<HashMap<Addr, (String, Unbond)>> = PENDING_UNBONDING_CLAIMS
+    let pending_unbonds: StdResult<HashMap<String, (String, Unbond)>> = PENDING_UNBONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let val = res?;
-            Ok((val.0 .0, (val.0 .1, val.1)))
+            Ok((val.0 .0.to_string(), (val.0 .1, val.1)))
         })
         .collect();
     Ok(ListUnbondingClaimsResponse {
@@ -191,11 +191,11 @@ pub fn handle_lock(deps: Deps) -> StdResult<LockResponse> {
 }
 
 pub fn handle_list_bonding_claims(deps: Deps) -> StdResult<ListBondingClaimsResponse> {
-    let bonds: StdResult<HashMap<Addr, (String, Uint128)>> = BONDING_CLAIMS
+    let bonds: StdResult<HashMap<String, (String, Uint128)>> = BONDING_CLAIMS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|res| {
             let val = res?;
-            Ok((val.0 .0, (val.0 .1, val.1)))
+            Ok((val.0 .0.to_string(), (val.0 .1, val.1)))
         })
         .collect();
     Ok(ListBondingClaimsResponse { bonds: bonds? })
