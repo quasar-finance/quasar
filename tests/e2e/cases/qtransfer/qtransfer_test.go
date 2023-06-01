@@ -197,7 +197,7 @@ func (s *Qtransfer) TestQtransfer_Timeout() {
 		Amount:  QTTransferAmount,
 	}
 	// set timeout
-	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 1, Height: 1} // setting lowest timeoutTimestamp and height
+	ibcTimeout := ibc.IBCTimeout{NanoSeconds: 1} // setting lowest timeoutTimestamp
 	// Build memo field
 	msgMap := map[string]interface{}{
 		"bond": map[string]interface{}{
