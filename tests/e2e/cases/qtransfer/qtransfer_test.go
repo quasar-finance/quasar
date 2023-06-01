@@ -324,10 +324,20 @@ func (s *Qtransfer) TestQtransferStrategyLpDeposit() {
 	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
 	s.Require().NoError(err)
 
+	// Here's how the smart contract calculates the share amount that needs to be minted.
+	// It starts by going through each bond stub and the associated primitives of the investment,
+	// kicking things off with a zero Uint128. For every pair of bond stub and primitive,
+	// it grabs the share amount from the bond response. If the bond response ain't empty,
+	// it switches the share amount into a decimal from its Uint128 form.
+	// This decimal then gets converted back to Uint128, using the floor rounding method.
+	// This share amount is then added to the running total (which starts from zero).
+	// If anything goes awry during this process, the contract chucks an error and everything grinds to a halt.
+	// All this adding up eventually gives us the total shares that needs to be minted.
+	// Related contract logic: smart-contracts/contracts/basic-vault/src/callback.rs::103
+
+	deviationFromExpectedShares := float64(balance)/float64(expectedShares) - 1
 	// Verifying the final user balance is within expected range
 	// The balance should be approximately equal to the expected shares,
 	// accounting for a small deviation to handle unpredictable events like slippage.
-	// Minted share_amount calculation is made as in the contract logic: smart-contracts/contracts/basic-vault/src/callback.rs::103
-	deviationFromExpectedShares := float64(balance)/float64(expectedShares) - 1
 	s.Require().InDelta(0, deviationFromExpectedShares, expectedDeviation, "User balance deviates from expected shares by more than the expected deviation.")
 }
