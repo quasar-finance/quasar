@@ -58,6 +58,36 @@ For other users:
  docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
  ```
 
+## Testing
+
+This folder's `Makefile` contains a command that enables the execution of end-to-end (E2E) tests. This provides the
+flexibility to either run the complete test suite or execute specific test cases as needed.
+
+### Running the Full Test Suite
+
+To execute all test cases, simply run the following command:
+
+```bash
+make test-e2e
+```
+
+This command will iterate over all test folders found within `./tests/e2e/cases`, excluding those beginning with an
+underscore. For each of these folders, it will execute the `go test ./...` command.
+
+### Running Specific Test Cases
+
+If you want to run specific test cases instead of the entire suite, you can do so by using an environment variable named
+`CASES` to specify the test case folders. For example, to run the test cases `case1`, `case2`, and `case3`, you would
+use the following command:
+
+```bash
+CASES="case1 case2 case3" make test-e2e
+```
+
+This command will only execute the `go test ./...` command in the directories `case1`, `case2`, and `case3`.
+
+---
+
 ## Technical References
 
 Refer to the following resources for further technical insights:
