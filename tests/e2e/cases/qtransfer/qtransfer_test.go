@@ -237,16 +237,17 @@ func (s *Qtransfer) TestQtransfer_Timeout() {
 	s.Require().Equal(QTTransferAmount, userBalanceAfterTimeout)
 }
 
-// TestQtransferStrategyLpDepositOK tests the lp strategy contract creating an ICA channel between the contract and osmosis
-// and depositing 1000uqsr tokens to the contract which it must ibc transfer to its ICA account at osmosis.
-func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
+// TestQtransferStrategyLpDepositOK tests the LP strategy contract by creating an Interchain Account (ICA) channel between Osmosis and Quasar.
+// It involves depositing 10 OSMO (represented as 10000000uosmo) into the user's account on Osmosis, and then initiating an IBC transfer to Quasar.
+// This transfer triggers the QTransfer module's IBC hooks on the Quasar side, leading to an interaction with the contract.
+func (s *Qtransfer) TestQtransferStrategyLpDeposit() {
 	t := s.T()
 	ctx := context.Background()
 
 	// Variables
-	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, QSLDbondAmount)
-	expectedShares := QSLDexpectedShares
-	expectedDeviation := 0.01
+	bondAmount := sdk.NewInt64Coin(s.OsmosisDenomInQuasar, QSLDbondAmount) // this is the bonding amount for the vault deposit
+	expectedShares := QSLDexpectedShares                                   // this is the expected amount of shares in $OPRO balance
+	expectedDeviation := 0.01                                              // this is the maximum allowed deviation as we cant predict esde cases as slippage or others thing that are gAMM module related
 
 	t.Log("Create an user with fund on Osmosis chain")
 	user := s.CreateUserAndFund(ctx, s.Osmosis(), QSLDstartingTokenAmount)
@@ -262,7 +263,9 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 		Denom:   s.Osmosis().Config().Denom,
 		Amount:  bondAmount.Amount.Int64(),
 	}
-	// Build memo field
+	// Build memo field -
+	// This memo field triggers an ibc-hooks execution.
+	// It will execute the bond action for the given recipient and the amountOsmo denom on the Basic Vault LP strategy
 	msgMap := map[string]interface{}{
 		"bond": map[string]interface{}{
 			"recipient": user.Bech32Address(s.Quasar().Config().Bech32Prefix),
@@ -276,16 +279,17 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	}
 	memoBytes, err := json.Marshal(memoMap)
 	s.Require().NoError(err)
+	// executing the ibc transfer
 	txOsmo, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, user.KeyName, amountOsmo, ibc.TransferOptions{Memo: string(memoBytes)})
 	s.Require().NoError(err)
 	s.Require().NoError(txOsmo.Validate())
 
 	t.Log("Check user balance before executing IBC transfer expecting to be less than the funded amount")
-	// check uosmo balance
 	userBalanceAfterOsmo, err := s.Osmosis().GetBalance(ctx, user.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
 	s.Require().NoError(err)
 	s.Require().Equal(QSLDstartingTokenAmount-bondAmount.Amount.Int64()-3500, userBalanceAfterOsmo) // funded amount, less bond amount, less fee
 
+	// executing clear_cache function inside the basic vault contract to ensure forced processing of bond user action
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
@@ -302,6 +306,7 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 
 	t.Log("Checking $OPRO balance for user: ", user.Bech32Address(s.Quasar().Config().Bech32Prefix))
 	var data testsuite.ContractBalanceData
+	// querying the user address $OPRO balance after bonding
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
 		s.Quasar(),
@@ -319,6 +324,9 @@ func (s *Qtransfer) TestQtransferStrategyLpDepositOK() {
 	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
 	s.Require().NoError(err)
 
-	s.Require().True(int64(float64(expectedShares)*(1-expectedDeviation)) <= balance)
-	s.Require().True(balance <= int64(float64(expectedShares)*(1+expectedDeviation)))
+	// Verifying the final user balance is within expected range
+	// The balance should be approximately equal to the expected shares,
+	// accounting for a small deviation to handle unpredictable events like slippage.
+	deviationFromExpectedShares := float64(balance)/float64(expectedShares) - 1
+	s.Require().InDelta(0, deviationFromExpectedShares, expectedDeviation, "User balance deviates from expected shares by more than the expected deviation.")
 }
