@@ -1,6 +1,5 @@
 use cosmwasm_std::attr;
 use cosmwasm_std::Addr;
-use cosmwasm_std::Attribute;
 use cosmwasm_std::Event;
 
 use crate::msg::InstantiateMsg;
@@ -12,7 +11,7 @@ use crate::route::Route;
 use crate::route::RouteId;
 
 #[test]
-fn create_route() {
+fn route_lifecycle_works() {
     // initialize the suite
     let mut suite = QuasarVaultSuite::init(InstantiateMsg {}, vec![]).unwrap();
 
@@ -46,7 +45,7 @@ fn create_route() {
         .execute(
             Addr::unchecked(DEPLOYER),
             ExecuteMsg::MutateRoute {
-                route_id: osmo_route.0,
+                route_id: osmo_route.0.clone(),
                 new_route: Route::new(
                     "channel-13",
                     "transfer",
@@ -56,4 +55,29 @@ fn create_route() {
             vec![],
         )
         .unwrap();
+
+    let e = Event::new("wasm").add_attributes(vec![
+        attr("action", "mutate_route"),
+        attr("route_id", "destination: osmosis, asset: uosmo"),
+        attr(
+            "route",
+            "channel: channel-13, port: transfer, hop: (channel: channel-11, port: transfer, receiver: cosmos123)",
+        ),
+    ]);
+    res.assert_event(&e);
+
+    let res = suite
+        .execute(
+            Addr::unchecked(DEPLOYER),
+            ExecuteMsg::RemoveRoute {
+                route_id: osmo_route.0,
+            },
+            vec![],
+        )
+        .unwrap();
+    let e = Event::new("wasm").add_attributes(vec![
+        attr("action", "remove_route"),
+        attr("route_id", "destination: osmosis, asset: uosmo"),
+    ]);
+    res.assert_event(&e);
 }

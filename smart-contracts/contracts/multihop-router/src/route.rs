@@ -25,7 +25,7 @@ impl Display for Route {
         if self.hop.is_some() {
             write!(
                 f,
-                "channel: {}, port: {}, (hop: {})",
+                "channel: {}, port: {}, hop: ({})",
                 self.channel,
                 self.port,
                 self.hop.as_ref().unwrap()
@@ -104,7 +104,7 @@ impl Display for Hop {
         if self.next.is_some() {
             write!(
                 f,
-                "channel: {}, port: {}, receiver: {}, (next: {})",
+                "channel: {}, port: {}, receiver: {}, next: ({})",
                 self.channel,
                 self.port,
                 self.receiver,
