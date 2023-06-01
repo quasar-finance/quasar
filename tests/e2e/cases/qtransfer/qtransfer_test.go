@@ -327,6 +327,7 @@ func (s *Qtransfer) TestQtransferStrategyLpDeposit() {
 	// Verifying the final user balance is within expected range
 	// The balance should be approximately equal to the expected shares,
 	// accounting for a small deviation to handle unpredictable events like slippage.
+	// Minted share_amount calculation is made as in the contract logic: smart-contracts/contracts/basic-vault/src/callback.rs::103
 	deviationFromExpectedShares := float64(balance)/float64(expectedShares) - 1
 	s.Require().InDelta(0, deviationFromExpectedShares, expectedDeviation, "User balance deviates from expected shares by more than the expected deviation.")
 }
