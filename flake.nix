@@ -16,7 +16,7 @@
           buildInputs = [
             pkgs.cargo
             pkgs.rustc
-            pkgs.go_1_18
+            pkgs.go_1_20
             pkgs.gotools
             pkgs.golangci-lint
             pkgs.gopls
