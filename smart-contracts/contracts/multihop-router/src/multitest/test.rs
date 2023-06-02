@@ -16,41 +16,48 @@ fn route_lifecycle_works() {
     let mut suite = QuasarVaultSuite::init(InstantiateMsg {}, vec![]).unwrap();
 
     // create some mock routes
-    let osmo_route = (
+    let mut osmo_routes = vec![(
         RouteId::new(Destination::new("osmosis"), "uosmo".to_string()),
         Route::new("channel-12", "transfer", None),
-    );
+    )];
 
-    // add a route as admin
-    let res = suite
-        .execute(
-            Addr::unchecked(DEPLOYER),
-            ExecuteMsg::AddRoute {
-                route_id: osmo_route.0.clone(),
-                route: osmo_route.1,
-            },
-            vec![],
-        )
-        .unwrap();
+    // add the routes as admin
+    for route in osmo_routes.iter() {
+        let res = suite
+            .execute(
+                Addr::unchecked(DEPLOYER),
+                ExecuteMsg::AddRoute {
+                    route_id: route.0.clone(),
+                    route: route.1.clone(),
+                },
+                vec![],
+            )
+            .unwrap();
 
-    let e = Event::new("wasm").add_attributes(vec![
-        attr("action", "add_route"),
-        attr("route_id", "destination: osmosis, asset: uosmo"),
-        attr("route", "channel: channel-12, port: transfer"),
-    ]);
-    res.assert_event(&e);
+        let e = Event::new("wasm").add_attributes(vec![
+            attr("action", "add_route"),
+            attr("route_id", "destination: osmosis, asset: uosmo"),
+            attr("route", "channel: channel-12, port: transfer"),
+        ]);
+        res.assert_event(&e);
+    }
 
-    // mutate a route as admin
+    suite.assert_queries(&osmo_routes);
+    // mutate the first route in our vec
+    let osmo_routes: Vec<(RouteId, Route)> = osmo_routes.iter_mut().map(|val| {
+        (val.0.clone(), Route::new(
+            "channel-13",
+            "transfer",
+            Some(Hop::new("channel-11", "transfer", "cosmos123", None))))
+    }).collect();
+
+    // mutate the route in our contract
     let res = suite
         .execute(
             Addr::unchecked(DEPLOYER),
             ExecuteMsg::MutateRoute {
-                route_id: osmo_route.0.clone(),
-                new_route: Route::new(
-                    "channel-13",
-                    "transfer",
-                    Some(Hop::new("channel-11", "transfer", "cosmos123", None)),
-                ),
+                route_id: osmo_routes[0].0.clone(),
+                new_route: osmo_routes[0].1.clone(),
             },
             vec![],
         )
@@ -66,11 +73,12 @@ fn route_lifecycle_works() {
     ]);
     res.assert_event(&e);
 
+    suite.assert_queries(&osmo_routes);
     let res = suite
         .execute(
             Addr::unchecked(DEPLOYER),
             ExecuteMsg::RemoveRoute {
-                route_id: osmo_route.0,
+                route_id: osmo_routes[0].0.clone(),
             },
             vec![],
         )
@@ -80,4 +88,5 @@ fn route_lifecycle_works() {
         attr("route_id", "destination: osmosis, asset: uosmo"),
     ]);
     res.assert_event(&e);
+    suite.assert_queries(&vec![]);
 }

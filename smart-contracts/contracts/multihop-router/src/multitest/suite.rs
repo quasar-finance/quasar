@@ -122,78 +122,124 @@ impl QuasarVaultSuite {
     }
 
     pub fn assert_get_memo(&self, expected: &[(RouteId, Route)]) -> () {
-        self.verify_get_memo(expected, |actual, expected| {
-            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
-        }, ()).unwrap()
+        self.verify_get_memo(
+            expected,
+            |actual, expected| {
+                panic!(
+                    "a different memo was produced than expected, memo: {:?} expected {:?}",
+                    actual, expected
+                )
+            },
+            (),
+        )
+        .unwrap()
     }
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_get_memo(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_memo(expected, |actual, expected| {
-            false
-        }, true)
+        self.verify_get_memo(expected, |actual, expected| false, true)
     }
 
-    pub fn verify_get_memo<T>(&self, expected: &[(RouteId, Route)], on_fail: fn(GetMemoResponse, &[(RouteId, Route)]) -> T, on_succes: T) -> AnyResult<T> {
+    pub fn verify_get_memo<T>(
+        &self,
+        expected: &[(RouteId, Route)],
+        on_fail: fn(GetMemoResponse, &[(RouteId, Route)]) -> T,
+        on_succes: T,
+    ) -> AnyResult<T> {
+        let timeout = "1000";
+        let retries = 3;
+        let actual_memo = Some(Binary(vec![1, 2, 3, 4, 5, 6, 7, 8]));
         for (id, route) in expected.iter() {
             let res = self.query::<GetMemoResponse>(QueryMsg::GetMemo {
                 route_id: id.clone(),
-                timeout: "1000".to_string(),
-                retries: 3,
-                actual_memo: Some(Binary(vec![1, 2, 3, 4, 5, 6, 7, 8])),
+                timeout: timeout.to_string(),
+                retries,
+                actual_memo: actual_memo.clone(),
             })?;
             if res.channel != route.channel {
                 return Ok(on_fail(res, expected));
             }
-            if res.port == route.port {
+            if res.port != route.port {
                 return Ok(on_fail(res, expected));
+            }
+            if let Some(hop) = route.hop.clone() {
+                if MemoResponse::Forward(hop.to_memo(timeout.to_string(), retries, actual_memo.clone())) != res.memo {
+                    return Ok(on_fail(res, expected));
+                }
+            } else {
+                if MemoResponse::Actual(actual_memo.clone()) != res.memo {
+                    return Ok(on_fail(res, expected));
+                }
             }
         }
         // TODO check the memo field
-        todo!()
+        // todo!()
+        Ok(on_succes)
     }
 
     pub fn assert_get_route(&self, expected: &[(RouteId, Route)]) -> () {
-        self.verify_get_route(expected, |actual, expected| {
-            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
-        }, ()).unwrap()
+        self.verify_get_route(
+            expected,
+            |actual, expected| {
+                panic!(
+                    "a different memo was produced than expected, memo: {:?} expected {:?}",
+                    actual, expected
+                )
+            },
+            (),
+        )
+        .unwrap()
     }
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_get_route(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_route(expected, |actual, expected| {
-            false
-        }, true)
+        self.verify_get_route(expected, |actual, expected| false, true)
     }
 
-    pub fn verify_get_route<T>(&self, expected: &[(RouteId, Route)], on_fail: fn((&RouteId, &Route), (&RouteId, &Route)) -> T, on_succes: T) -> AnyResult<T> {
+    pub fn verify_get_route<T>(
+        &self,
+        expected: &[(RouteId, Route)],
+        on_fail: fn((&RouteId, &Route), (&RouteId, &Route)) -> T,
+        on_succes: T,
+    ) -> AnyResult<T> {
         for (id, route) in expected.iter() {
             let res = self.query::<GetRouteResponse>(QueryMsg::GetRoute {
                 route_id: id.clone(),
             })?;
             if &res.route != route {
-                return Ok(on_fail((id, &res.route), (id, route) ));
+                return Ok(on_fail((id, &res.route), (id, route)));
             }
         }
         Ok(on_succes)
     }
 
     pub fn assert_list_route(&self, expected: &[(RouteId, Route)]) -> () {
-        self.verify_get_memo(expected, |actual, expected| {
-            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
-        }, ()).unwrap()
+        self.verify_get_memo(
+            expected,
+            |actual, expected| {
+                panic!(
+                    "a different memo was produced than expected, memo: {:?} expected {:?}",
+                    actual, expected
+                )
+            },
+            (),
+        )
+        .unwrap()
     }
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_list_routes(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_memo(expected, |actual, expected| {
-            false
-        }, true)
+        self.verify_get_memo(expected, |actual, expected| false, true)
     }
 
-    pub fn verify_list_routes<T>(&self, expected: &[(RouteId, Route)], on_fail: fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T, on_succes: T) -> AnyResult<T> {
+    pub fn verify_list_routes<T>(
+        &self,
+        expected: &[(RouteId, Route)],
+        on_fail: fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T,
+        on_succes: T,
+    ) -> AnyResult<T> {
         let res = self.query::<ListRoutesResponse>(QueryMsg::ListRoutes {})?;
-        if res.routes.iter().all(|actual| expected.contains(actual)){
+        if res.routes.iter().all(|actual| expected.contains(actual)) {
             return Ok(on_succes);
         } else {
             Ok(on_fail(res.routes.as_ref(), expected))
