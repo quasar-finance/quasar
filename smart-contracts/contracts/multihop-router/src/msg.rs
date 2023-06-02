@@ -46,7 +46,7 @@ pub enum MemoResponse {
 
 #[cw_serde]
 pub struct GetRouteResponse {
-    pub destination: Route,
+    pub route: Route,
 }
 
 #[cw_serde]

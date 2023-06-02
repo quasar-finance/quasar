@@ -2,9 +2,9 @@ use anyhow::{Ok, Result as AnyResult};
 use serde::de::DeserializeOwned;
 
 use crate::{
-    msg::{GetMemoResponse, MemoResponse},
+    msg::{GetMemoResponse, GetRouteResponse, ListRoutesResponse, MemoResponse},
     multitest::common::*,
-    route::{Route, RouteId, Memo},
+    route::{Memo, Route, RouteId},
 };
 use cosmwasm_std::{testing::MockApi, to_binary, Addr, Binary, CosmosMsg, MemoryStorage, WasmMsg};
 use cw_multi_test::{
@@ -107,8 +107,34 @@ impl QuasarVaultSuite {
         Ok(res)
     }
 
+    /// the same as check_queries but panics if any query gives a different result than expected from the expected routes
+    pub fn assert_queries(&self, expected: &[(RouteId, Route)]) {
+        self.assert_get_memo(expected);
+        self.assert_get_route(expected);
+        self.assert_list_route(expected);
+    }
+
+    /// check whether all queries return values expected from the expected routes
+    pub fn check_queries(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
+        Ok(self.check_get_memo(expected)?
+            && self.check_get_route(expected)?
+            && self.check_list_routes(expected)?)
+    }
+
+    pub fn assert_get_memo(&self, expected: &[(RouteId, Route)]) -> () {
+        self.verify_get_memo(expected, |actual, expected| {
+            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
+        }, ()).unwrap()
+    }
+
     // do all contract queries and check that the values are the same as any of the routes in expected
-    fn check_get_memo(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
+    pub fn check_get_memo(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
+        self.verify_get_memo(expected, |actual, expected| {
+            false
+        }, true)
+    }
+
+    pub fn verify_get_memo<T>(&self, expected: &[(RouteId, Route)], on_fail: fn(GetMemoResponse, &[(RouteId, Route)]) -> T, on_succes: T) -> AnyResult<T> {
         for (id, route) in expected.iter() {
             let res = self.query::<GetMemoResponse>(QueryMsg::GetMemo {
                 route_id: id.clone(),
@@ -117,22 +143,60 @@ impl QuasarVaultSuite {
                 actual_memo: Some(Binary(vec![1, 2, 3, 4, 5, 6, 7, 8])),
             })?;
             if res.channel != route.channel {
-                return Ok(false);
+                return Ok(on_fail(res, expected));
             }
             if res.port == route.port {
-                return Ok(false);
+                return Ok(on_fail(res, expected));
             }
         }
+        // TODO check the memo field
         todo!()
     }
 
-    fn check_get_route(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        // QueryMsg::GetRoute { route_id: () }
-        todo!()
+    pub fn assert_get_route(&self, expected: &[(RouteId, Route)]) -> () {
+        self.verify_get_route(expected, |actual, expected| {
+            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
+        }, ()).unwrap()
     }
 
-    fn check_list_routes() -> AnyResult<bool> {
-        // QueryMsg::ListRoutes {  }
-        todo!()
+    // do all contract queries and check that the values are the same as any of the routes in expected
+    pub fn check_get_route(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
+        self.verify_get_route(expected, |actual, expected| {
+            false
+        }, true)
+    }
+
+    pub fn verify_get_route<T>(&self, expected: &[(RouteId, Route)], on_fail: fn((&RouteId, &Route), (&RouteId, &Route)) -> T, on_succes: T) -> AnyResult<T> {
+        for (id, route) in expected.iter() {
+            let res = self.query::<GetRouteResponse>(QueryMsg::GetRoute {
+                route_id: id.clone(),
+            })?;
+            if &res.route != route {
+                return Ok(on_fail((id, &res.route), (id, route) ));
+            }
+        }
+        Ok(on_succes)
+    }
+
+    pub fn assert_list_route(&self, expected: &[(RouteId, Route)]) -> () {
+        self.verify_get_memo(expected, |actual, expected| {
+            panic!("a different memo was produced than expected, memo: {:?} expected {:?}", actual, expected)
+        }, ()).unwrap()
+    }
+
+    // do all contract queries and check that the values are the same as any of the routes in expected
+    pub fn check_list_routes(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
+        self.verify_get_memo(expected, |actual, expected| {
+            false
+        }, true)
+    }
+
+    pub fn verify_list_routes<T>(&self, expected: &[(RouteId, Route)], on_fail: fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T, on_succes: T) -> AnyResult<T> {
+        let res = self.query::<ListRoutesResponse>(QueryMsg::ListRoutes {})?;
+        if res.routes.iter().all(|actual| expected.contains(actual)){
+            return Ok(on_succes);
+        } else {
+            Ok(on_fail(res.routes.as_ref(), expected))
+        }
     }
 }

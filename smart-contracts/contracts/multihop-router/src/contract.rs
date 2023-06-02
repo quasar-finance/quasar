@@ -152,10 +152,10 @@ fn handle_get_memo(
 }
 
 fn handle_get_route(deps: Deps, route_id: RouteId) -> ContractResult<GetRouteResponse> {
-    let destination = ROUTES
+    let route = ROUTES
         .may_load(deps.storage, &route_id)?
         .ok_or(ContractError::DestinationNotExists)?;
-    Ok(GetRouteResponse { destination })
+    Ok(GetRouteResponse { route })
 }
 
 fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
