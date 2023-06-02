@@ -1,8 +1,8 @@
-use cosmwasm_std::{wasm_execute, Addr, Deps, Env, StdResult, Storage, WasmMsg};
+use cosmwasm_std::{wasm_execute, Addr, Deps, Env, QuerierWrapper, StdResult, Storage, WasmMsg};
 use lp_strategy::msg::UnbondingClaimResponse;
 use vault_rewards::msg::{ExecuteMsg as VaultRewardsExecuteMsg, VaultExecuteMsg};
 
-use crate::state::{INVESTMENT, VAULT_REWARDS};
+use crate::state::VAULT_REWARDS;
 use crate::{state::UnbondingStub, ContractError};
 
 pub fn can_unbond_from_primitive(
@@ -46,9 +46,19 @@ pub fn update_user_reward_index(storage: &dyn Storage, user: &Addr) -> StdResult
     )
 }
 
-pub fn _is_contract_owner(deps: &Deps, sus_owner: &Addr) -> Result<(), ContractError> {
-    let info = INVESTMENT.load(deps.storage)?;
-    if info.owner.as_str() != sus_owner.as_str() {
+pub fn is_contract_admin(
+    querier: &QuerierWrapper,
+    env: &Env,
+    sus_admin: &Addr,
+) -> Result<(), ContractError> {
+    let contract_admin = querier
+        .query_wasm_contract_info(&env.contract.address)?
+        .admin;
+    if let Some(contract_admin) = contract_admin {
+        if contract_admin != *sus_admin {
+            return Err(ContractError::Unauthorized {});
+        }
+    } else {
         return Err(ContractError::Unauthorized {});
     }
     Ok(())

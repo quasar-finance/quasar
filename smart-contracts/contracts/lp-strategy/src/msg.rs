@@ -6,7 +6,7 @@ use std::{
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
 
-use cw20::BalanceResponse;
+pub use cw20::BalanceResponse;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
@@ -43,8 +43,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub vault_address: Addr,
-    pub recover_unbonds: Vec<String>,
+    pub delete_pending: Vec<(u64, String)>,
 }
 
 #[cw_serde]
@@ -82,6 +81,8 @@ pub enum QueryMsg {
     ListPendingAcks {},
     #[returns(ListRepliesResponse)]
     ListReplies {},
+    #[returns(ListClaimableFundsResponse)]
+    ListClaimableFunds {},
     #[returns(OsmoLockResponse)]
     OsmoLock {},
     #[returns(SimulatedJoinResponse)]
@@ -117,6 +118,11 @@ pub struct ListBondingClaimsResponse {
 #[cw_serde]
 pub struct ListRepliesResponse {
     pub replies: HashMap<u64, SubMsgKind>,
+}
+
+#[cw_serde]
+pub struct ListClaimableFundsResponse {
+    pub claimable_funds: HashMap<String, Uint128>,
 }
 
 #[cw_serde]
@@ -256,6 +262,12 @@ pub enum ExecuteMsg {
     },
     Lock {
         lock_only: LockOnly,
+    },
+    AddLockAdmin {
+        to_add: String,
+    },
+    RemoveLockAdmin {
+        to_remove: String,
     },
     ManualTimeout {
         seq: u64,
