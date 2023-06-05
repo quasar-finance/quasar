@@ -123,7 +123,16 @@ pub fn execute(
         ExecuteMsg::RemoveLockAdmin { to_remove } => {
             execute_remove_lock_admin(deps, env, info, to_remove)
         }
+        ExecuteMsg::Retry {} => execute_retry(deps, env, info),
     }
+}
+
+pub fn execute_retry(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+) -> Result<Response, ContractError> {
+    Ok(Response::new())
 }
 
 pub fn execute_add_lock_admin(
