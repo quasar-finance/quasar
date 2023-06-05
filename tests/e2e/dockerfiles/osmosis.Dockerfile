@@ -15,11 +15,21 @@ ARG GIT_COMMIT
 RUN apk add --no-cache \
     ca-certificates \
     build-base \
-    linux-headers
+    linux-headers \
+    git \
+    git-lfs
+RUN git lfs install
+
+# Clone the osmosis repository
+RUN git clone https://github.com/osmosis-labs/osmosis.git
+
+# Checkout specific version
+RUN cd osmosis && git checkout v15.0.0
+
+# Set Work Directory to osmosis
+WORKDIR osmosis
 
 # Download go dependencies
-WORKDIR /osmosis
-COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
     go mod download
@@ -31,9 +41,6 @@ RUN WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | cut -d ' ' -f 2) &&
     # verify checksum
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
     sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep $(uname -m) | cut -d ' ' -f 1)
-
-# Copy the remaining files
-COPY . .
 
 # Build osmosisd binary
 RUN --mount=type=cache,target=/root/.cache/go-build \
@@ -50,7 +57,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
             -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
         -trimpath \
         -o /osmosis/build/osmosisd \
-        /osmosis/cmd/osmosisd/main.go
+        cmd/osmosisd/main.go
 
 # --------------------------------------------------------
 # Runner
@@ -70,4 +77,3 @@ WORKDIR $HOME
 EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
-
