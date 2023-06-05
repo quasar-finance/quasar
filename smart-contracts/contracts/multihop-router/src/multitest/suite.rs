@@ -163,7 +163,12 @@ impl QuasarVaultSuite {
                 return Ok(on_fail(res, expected));
             }
             if let Some(hop) = route.hop.clone() {
-                if MemoResponse::Forward(hop.to_memo(timeout.to_string(), retries, actual_memo.clone())) != res.memo {
+                if MemoResponse::Forward(hop.to_memo(
+                    timeout.to_string(),
+                    retries,
+                    actual_memo.clone(),
+                )) != res.memo
+                {
                     return Ok(on_fail(res, expected));
                 }
             } else {

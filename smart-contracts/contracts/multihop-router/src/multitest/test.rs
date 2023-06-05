@@ -44,12 +44,19 @@ fn route_lifecycle_works() {
 
     suite.assert_queries(&osmo_routes);
     // mutate the first route in our vec
-    let osmo_routes: Vec<(RouteId, Route)> = osmo_routes.iter_mut().map(|val| {
-        (val.0.clone(), Route::new(
-            "channel-13",
-            "transfer",
-            Some(Hop::new("channel-11", "transfer", "cosmos123", None))))
-    }).collect();
+    let osmo_routes: Vec<(RouteId, Route)> = osmo_routes
+        .iter_mut()
+        .map(|val| {
+            (
+                val.0.clone(),
+                Route::new(
+                    "channel-13",
+                    "transfer",
+                    Some(Hop::new("channel-11", "transfer", "cosmos123", None)),
+                ),
+            )
+        })
+        .collect();
 
     // mutate the route in our contract
     let res = suite
