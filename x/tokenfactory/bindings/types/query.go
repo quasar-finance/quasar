@@ -5,8 +5,11 @@ type TokenFactoryQuery struct {
 }
 
 // See https://github.com/CosmWasm/token-bindings/blob/main/packages/bindings/src/query.rs
+// TokenQuery struct declare a query type field for each type of query. Each fiels is a pointer type
+// And only one field can be initialized at a time. Because they will be used in a sequence of switch
+// statements. Not the best design though.
 type TokenQuery struct {
-	/// Given a subdenom minted by a contract via `OsmosisMsg::MintTokens`,
+	/// Given a subdenom minted by a contract via `QuasarMsg::MintTokens`,
 	/// returns the full denom as used by `BankMsg::Send`.
 	FullDenom       *FullDenom       `json:"full_denom,omitempty"`
 	Admin           *DenomAdmin      `json:"admin,omitempty"`
@@ -16,7 +19,6 @@ type TokenQuery struct {
 }
 
 // query types
-
 type FullDenom struct {
 	CreatorAddr string `json:"creator_addr"`
 	Subdenom    string `json:"subdenom"`

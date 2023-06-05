@@ -34,7 +34,10 @@ type CustomMessenger struct {
 
 var _ wasmkeeper.Messenger = (*CustomMessenger)(nil)
 
-// DispatchMsg executes on the contractMsg.
+// DispatchMsg executes on the contractMsg. This is used to call tx related operations on the token factory module. Here it will be direct keeper call
+// through the CustomMessages struct which is made to implement the  wasmkeeper.Messenger. This struct has token factory keeper so has all the capabilities of
+// the token factory. It also has wasm keeper so after doing its job on token factory, it can call back the wasm keeper function for providing the token factory
+// function responses.
 func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, error) {
 	if msg.Custom != nil {
 		// only handle the happy path where this is really creating / minting / swapping ...

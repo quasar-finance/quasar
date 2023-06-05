@@ -26,6 +26,7 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qtransfer"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
+	tfmodulekeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 )
 
 type AppKeepers struct {
@@ -62,6 +63,7 @@ type AppKeepers struct {
 	QOsmosisKeeper      qosmokeeper.Keeper
 	QOracleKeeper       qoraclemodulekeeper.Keeper
 	QVestingKeeper      qvestingmodulekeeper.Keeper
+	TfKeeper            tfmodulekeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 

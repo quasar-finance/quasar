@@ -4,6 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -28,8 +29,8 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
+	qvestingkeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
@@ -136,6 +137,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
 	qoracleKeeper.Seal()
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
+	qvestingKeeper := factory.QVestingKeeper(paramsKeeper, accountKeeper, bankKeeper)
 	tfKeeper := factory.TfKeeper(paramsKeeper, accountKeeper, bankKeeper, distrKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
@@ -169,6 +171,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			QoracleKeeper:    qoracleKeeper,
 			QosmosisKeeper:   qosmosisKeeper,
 			QTransfer:        qtransferkeeper,
+			QVestingKeeper:   qvestingKeeper,
 			TfKeeper:         tfKeeper,
 		},
 		TestAccs: testAccts,
@@ -199,5 +202,6 @@ type testKeepers struct {
 	QoracleKeeper     qoraclekeeper.Keeper
 	QosmosisKeeper    qosmokeeper.Keeper
 	QTransfer         qtransferkeeper.Keeper
+	QVestingKeeper    qvestingkeeper.Keeper
 	TfKeeper          tfkeeper.Keeper
 }

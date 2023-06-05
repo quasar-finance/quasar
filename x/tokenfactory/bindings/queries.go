@@ -10,12 +10,14 @@ import (
 	tokenfactorykeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 )
 
+// QueryPlugin represents a plugin that provides query functionalities related
+// to banking and token factory modules.
 type QueryPlugin struct {
 	bankKeeper         *bankkeeper.BaseKeeper
 	tokenFactoryKeeper *tokenfactorykeeper.Keeper
 }
 
-// NewQueryPlugin returns a reference to a new QueryPlugin.
+// NewQueryPlugin returns a reference to a new QueryPlugin object.
 func NewQueryPlugin(b *bankkeeper.BaseKeeper, tfk *tokenfactorykeeper.Keeper) *QueryPlugin {
 	return &QueryPlugin{
 		bankKeeper:         b,
@@ -32,12 +34,14 @@ func (qp QueryPlugin) GetDenomAdmin(ctx sdk.Context, denom string) (*bindingstyp
 	return &bindingstypes.AdminResponse{Admin: metadata.Admin}, nil
 }
 
+// GetDenomsByCreator is a query to get list of denom strings created by a creator.
 func (qp QueryPlugin) GetDenomsByCreator(ctx sdk.Context, creator string) (*bindingstypes.DenomsByCreatorResponse, error) {
 	// TODO: validate creator address
 	denoms := qp.tokenFactoryKeeper.GetDenomsFromCreator(ctx, creator)
 	return &bindingstypes.DenomsByCreatorResponse{Denoms: denoms}, nil
 }
 
+// GetMetadata is q query to get the stored metadata of a denom
 func (qp QueryPlugin) GetMetadata(ctx sdk.Context, denom string) (*bindingstypes.MetadataResponse, error) {
 	metadata, found := qp.bankKeeper.GetDenomMetaData(ctx, denom)
 	var parsed *bindingstypes.Metadata

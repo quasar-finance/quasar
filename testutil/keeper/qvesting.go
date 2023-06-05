@@ -1,6 +1,9 @@
 package keeper
 
 import (
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -51,4 +54,45 @@ func QVestingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	k.SetParams(ctx, types.DefaultParams())
 
 	return k, ctx
+}
+
+func (kf KeeperFactory) QVestingKeeper(paramsKeeper paramskeeper.Keeper, accountKeeper authkeeper.AccountKeeper,
+	bankKeeper bankkeeper.Keeper) keeper.Keeper {
+
+	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+
+	//storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+
+	//db := tmdb.NewMemDB()
+	//stateStore := store.NewCommitMultiStore(db)
+	//stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
+	//stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	//require.NoError(t, stateStore.LoadLatestVersion())
+
+	registry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(registry)
+
+	//paramsSubspace := typesparams.NewSubspace(cdc,
+	//	types.Amino,
+	//	storeKey,
+	//	memStoreKey,
+	//	"QVestingParams",
+	//)
+	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
+
+	k := keeper.NewKeeper(
+		cdc,
+		storeKey,
+		memStoreKey,
+		paramsSubspace,
+		accountKeeper,
+		bankKeeper,
+	)
+
+	// Initialize params
+	// k.SetParams(ctx, types.DefaultParams())
+
+	return *k
 }
