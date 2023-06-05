@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use cosmwasm_std::{
     coins, to_binary, wasm_execute, BankMsg, Decimal, Env, Fraction, MessageInfo, Uint128,
 };
@@ -88,7 +90,7 @@ pub fn unwrap_or_swap_and_forward(
 }
 
 pub fn unwrap_or_swap_and_forward_batch(
-    ctx: (DepsMut, Env, MessageInfo),
+    mut ctx: (DepsMut, Env, MessageInfo),
     output_denoms: Vec<String>,
     output_weights: Vec<Decimal>,
     slippage: swaprouter::Slippage,
@@ -96,7 +98,7 @@ pub fn unwrap_or_swap_and_forward_batch(
     next_memo: Option<SerializableJson>,
     failed_delivery_action: FailedDeliveryAction,
 ) -> Result<Response, ContractError> {
-    let (deps, env, info) = ctx;
+    let (mut deps, env, info) = ctx;
     let swap_coin = cw_utils::one_coin(&info)?;
 
     deps.api
@@ -163,76 +165,15 @@ pub fn unwrap_or_swap_and_forward_batch(
                 return Ok(SubMsg::new(ibc_transfer));
             }
 
-            // If the denom is either native or only one hop, we swap it directly
-            deps.api.debug(&format!("executing swap and forward"));
-            let config = CONFIG.load(deps.storage)?;
-
-            // Check that the received is valid and retrieve its channel
-            let (valid_chain, valid_receiver) = validate_receiver(deps.as_ref(), receiver)?;
-            // If there is a memo, check that it is valid (i.e. a valud json object that
-            // doesn't contain the key that we will insert later)
-            let memo = if let Some(memo) = &next_memo {
-                // Ensure the json is an object ({...}) and that it does not contain the CALLBACK_KEY
-                deps.api.debug(&format!("checking memo: {memo:?}"));
-                ensure_key_missing(memo.as_value(), CALLBACK_KEY)?;
-                serde_json_wasm::to_string(&memo)?
-            } else {
-                String::new()
-            };
-
-            // Validate that the swapped token can be unwrapped. If it can't, abort
-            // early to avoid swapping unnecessarily
-            let registry = Registry::default(deps.as_ref());
-            registry.unwrap_coin_into(
-                Coin::new(1, output_denom.clone()),
-                valid_receiver.to_string(),
-                Some(&valid_chain),
-                env.contract.address.to_string(),
-                env.block.time,
-                memo,
-                None,
-            )?;
-
-            // Message to swap tokens in the underlying swaprouter contract
-            let swap_msg = SwapRouterExecute::Swap {
-                input_coin: this_swap_coin.clone(),
-                output_denom: output_denom.to_string(),
-                slippage: slippage.clone(),
-            };
-            let msg = wasm_execute(
-                config.swap_contract,
-                &swap_msg,
-                vec![this_swap_coin.clone()],
-            )?;
-
-            // Check that there isn't anything stored in SWAP_REPLY_STATES. If there is,
-            // it means that the contract is already waiting for a reply and should not
-            // override the stored state. This should only happen if a contract we call
-            // calls back to this one. This is likely a malicious attempt modify the
-            // contract's state before it has replied.
-            if SWAP_REPLY_STATE.may_load(deps.storage)?.is_some() {
-                return Err(ContractError::ContractLocked {
-                    msg: "Already waiting for a reply".to_string(),
-                });
-            }
-
-            // Store information about the original message to be used in the reply
-            SWAP_REPLY_STATE.save(
-                deps.storage,
-                &SwapMsgReplyState {
-                    swap_msg,
-                    block_time: env.block.time,
-                    contract_addr: env.contract.address.clone(),
-                    forward_to: ForwardTo {
-                        chain: valid_chain,
-                        receiver: valid_receiver,
-                        next_memo: next_memo.clone(),
-                        on_failed_delivery: failed_delivery_action.clone(),
-                    },
-                },
-            )?;
-
-            Ok(SubMsg::reply_on_success(msg, MsgReplyID::Swap.repr()))
+            swap_and_forward(
+                (deps.branch(), env.clone(), info.clone()),
+                this_swap_coin,
+                output_denom.to_string(),
+                slippage.clone(),
+                receiver,
+                next_memo.clone(),
+                failed_delivery_action.clone(),
+            )
         })
         .collect::<Result<Vec<SubMsg>, ContractError>>()?;
 

@@ -69,7 +69,6 @@ pub fn execute(
         ExecuteMsg::BatchOsmosisSwap {
             output_denoms,
             output_weights,
-
             receiver,
             slippage,
             next_memo,
