@@ -11,8 +11,10 @@ use quasar_types::ibc::IcsAck;
 
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
-use crate::error::ContractError;
-use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
+use crate::error::{ContractError};
+use crate::helpers::{
+    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
+};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -22,8 +24,9 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_UNBONDING_CLAIMS, PENDING_UNBOND_QUEUE,
+    REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    UNBONDING_CLAIMS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -123,15 +126,72 @@ pub fn execute(
         ExecuteMsg::RemoveLockAdmin { to_remove } => {
             execute_remove_lock_admin(deps, env, info, to_remove)
         }
-        ExecuteMsg::Retry {} => execute_retry(deps, env, info),
+        ExecuteMsg::Retry { seq, channel } => execute_retry(deps, env, info, seq, channel),
     }
 }
 
+/// The retry entry point will be used to retry any failed ICA message given the sequence number and the channel.
+/// Depending on the type of ICA message, the contract will handle the retry differently.
+/// Funds cannot be sent and, for now, only the lock admin can call retry.
 pub fn execute_retry(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    seq: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    // for now, only the lock admin can retry
+    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
+
+    // TODO: should we check if lock is in certain state?
+
+    let traps = TRAPS.load(deps.storage, (seq, channel))?;
+
+    match traps.step {
+        IbcMsgKind::Ica(ica_kind) => match ica_kind {
+            IcaMessages::ExitPool(pending) => handle_retry_exit_pool(deps, env, pending),
+            _ => Ok(Response::new()),
+        },
+        _ => Ok(Response::new()),
+    }?;
+
+    Ok(Response::new())
+}
+
+fn handle_retry_exit_pool(
+    deps: DepsMut,
+    env: Env,
+    pending: PendingReturningUnbonds,
+) -> Result<Response, ContractError> {
+    for pu in pending.unbonds.iter() {
+        // TODO: not sure if we need to check both unbonding claims and pending unbonding claims
+        let unbond = UNBONDING_CLAIMS
+            .load(deps.storage, (pu.owner.clone(), pu.id.clone()))
+            .unwrap_or(
+                PENDING_UNBONDING_CLAIMS.load(deps.storage, (pu.owner.clone(), pu.id.clone()))?,
+            );
+        PENDING_UNBOND_QUEUE.push_front(deps.storage, &unbond)?;
+
+        // TODO: check attempted?? we're not yet moving it back on err but we can
+
+        do_unbond(deps.storage, &env, pu.owner.clone(), pu.id.clone())?;
+
+        // TODO: should we add an attribute to tell this was a retry? .add_attribute("action", "retry")
+        if let Some(submsg) = try_icq(deps.storage, deps.querier, env.clone())? {
+            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
+                Ok(lock.lock_unbond())
+            })?;            return Ok(Response::new()
+                .add_submessage(submsg)
+                .add_attribute("unbond", &pu.owner)
+                .add_attribute("kind", "dispatch"));
+        }
+
+        return Ok(Response::new()
+            .add_attribute("unbond", &pu.owner)
+            .add_attribute("kind", "queue"));
+    }
+    // TODO: this cold be an error if we don't find any pending unbonds
     Ok(Response::new())
 }
 
