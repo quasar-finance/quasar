@@ -5,6 +5,7 @@ members = [
   "contracts/lp-strategy",
   "contracts/ibc-transfer",
   "contracts/basic-vault",
+  "contracts/token-collector",
   "contracts/vault-rewards",
   "contracts/intergamm-bindings-test",
   "contracts/qoracle-bindings-test",
