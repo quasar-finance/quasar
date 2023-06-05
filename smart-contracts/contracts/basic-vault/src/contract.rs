@@ -234,7 +234,7 @@ pub fn execute(
         } => {
             let recipient = deps.api.addr_validate(&recipient)?;
             let update_user_reward_indexes = vec![
-                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &deps.api.addr_validate(&owner)?)?,
                 update_user_reward_index(deps.storage, &recipient)?,
             ];
             Ok(
@@ -258,7 +258,7 @@ pub fn execute(
         } => {
             let contract = deps.api.addr_validate(&contract)?;
             let update_user_reward_indexes = vec![
-                update_user_reward_index(deps.storage, &info.sender)?,
+                update_user_reward_index(deps.storage, &deps.api.addr_validate(&owner)?)?,
                 update_user_reward_index(deps.storage, &contract)?,
             ];
             Ok(
