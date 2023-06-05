@@ -658,7 +658,14 @@ func (s *WasmdTestSuite) TestVerifierTestCases() {
 		},
 	}
 
+	// execute at the test cases array level
+	// can also be executed at individual level
 	ctx := context.Background()
 	err = tc.ExecuteCases(s.Quasar(), ctx)
+	s.Require().NoError(err)
+
+	// one verify runs within the executed cases
+	// another example can be of step by step verification as mentioned below
+	err = tc[0].VerifyCase(s.Quasar(), ctx)
 	s.Require().NoError(err)
 }
