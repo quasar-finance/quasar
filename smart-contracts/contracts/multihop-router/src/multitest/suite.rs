@@ -177,8 +177,6 @@ impl QuasarVaultSuite {
                 }
             }
         }
-        // TODO check the memo field
-        // todo!()
         Ok(on_succes)
     }
 
