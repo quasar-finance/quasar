@@ -609,3 +609,56 @@ func (s *WasmdTestSuite) TestLpStrategyContract_WithGoRoutines() {
 	go printWorker(outputChannel, done, clearCacheChannel)
 	<-done
 }
+
+func (s *WasmdTestSuite) TestVerifierTestCases() {
+	txArgs := map[string]any{"bond": map[string]any{}}
+	txArgsBz, err := json.Marshal(txArgs)
+	s.Require().NoError(err)
+
+	queryArgs := map[string]any{
+		"balance": map[string]any{
+			"address": s.E2EBuilder.QuasarAccounts.BondTest.Address,
+		},
+	}
+	queryArgsBz, err := json.Marshal(queryArgs)
+	s.Require().NoError(err)
+
+	var Result testsuite.ContractBalanceData
+
+	tc := testsuite.TestCases{
+		&testsuite.TestCase{
+			Input: testsuite.Input{
+				Account: s.E2EBuilder.QuasarAccounts.BondTest,
+				Amount:  sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 10000000)),
+				Command: []string{
+					"wasm", "execute",
+					s.BasicVaultContractAddress,
+					string(txArgsBz),
+					"--gas", "20000000",
+				},
+			},
+			Output: testsuite.Output{
+				Result: &Result,
+				QueryCommand: []string{"wasm", "contract-state", "smart",
+					s.BasicVaultContractAddress,
+					string(queryArgsBz),
+					"--output", "json",
+				},
+				OperationOnResult: func() bool {
+					balance, err := strconv.ParseInt(Result.Data.Balance, 10, 64)
+					s.Require().NoError(err)
+
+					if balance == 9999999 {
+						return true
+					} else {
+						return false
+					}
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	err = tc.ExecuteCases(s.Quasar(), ctx)
+	s.Require().NoError(err)
+}

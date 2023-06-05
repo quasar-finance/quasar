@@ -102,6 +102,7 @@ type Chain struct {
 	IsWasmEnabled bool
 	contracts     []*Contract
 	ChainAccount  AccountsNew
+	TestCases     TestCases
 }
 
 func (c Chains) GetChain(chainName string) (*Chain, bool) {
@@ -111,6 +112,10 @@ func (c Chains) GetChain(chainName string) (*Chain, bool) {
 		}
 	}
 	return &Chain{}, false
+}
+
+func (p *Chain) ExecuteTests(ctx context.Context) {
+	p.TestCases.ExecuteCases(p.Chain, ctx)
 }
 
 func (p *Chain) SetContracts(contracts []*Contract) error {
