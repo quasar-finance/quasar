@@ -1,5 +1,12 @@
-e2e-test:
-	cd tests/e2e && go test ./...
+TEST_FOLDERS=$(shell find ./cases -mindepth 1 -maxdepth 1 -type d \( -name "[!_]*" \))
 
-e2e-tidy:
-	cd tests/e2e && go mod tidy
+test-e2e:
+ifdef CASES
+	@for folder in $(filter $(CASES), $(TEST_FOLDERS)); do \
+		(echo "\nRunning tests in directory: $$folder"; cd $$folder && go test ./... -v); \
+	done
+else
+	@for folder in $(TEST_FOLDERS); do \
+		(echo "\nRunning tests in directory: $$folder"; cd $$folder && go test ./... -v); \
+	done
+endif

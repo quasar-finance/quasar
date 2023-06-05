@@ -1,4 +1,4 @@
-package e2e
+package wasmd
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"github.com/strangelove-ventures/interchaintest/v4/testutil"
@@ -19,13 +20,12 @@ import (
 
 const (
 	StartingTokenAmount            int64 = 100_000_000_000
-	lpStrategyContractPath               = "../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
-	basicVaultStrategyContractPath       = "../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
-	vaultRewardsContractPath             = "../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	contractsPath                        = "./scripts/primitives1.json"
-	osmosisPool1Path                     = "scripts/sample_pool1.json"
-	osmosisPool2Path                     = "scripts/sample_pool2.json"
-	osmosisPool3Path                     = "scripts/sample_pool3.json"
+	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
+	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
+	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
+	osmosisPool1Path                     = "../_utils/sample_pool1.json"
+	osmosisPool2Path                     = "../_utils/sample_pool2.json"
+	osmosisPool3Path                     = "../_utils/sample_pool3.json"
 )
 
 var (
@@ -107,8 +107,8 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.Osmosis2QuasarTransferChan = s.QueryConnectionChannels(ctx, s.Osmosis(), s.Osmosis2QuasarConn.Id)[0]
 
 	// Generate the ibc denom of native tokens in other chains
-	s.OsmosisDenomInQuasar = ibcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
-	s.QuasarDenomInOsmosis = ibcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
+	s.OsmosisDenomInQuasar = helpers.IbcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
+	s.QuasarDenomInOsmosis = helpers.IbcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
 
 	// Setup an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
