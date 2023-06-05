@@ -15,7 +15,7 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
     LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE, Unbond, RawAmount,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -45,7 +45,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg, Timestamp,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -677,11 +677,50 @@ pub fn handle_failing_ack(
         ),
         &Trap {
             error: format!("packet failure: {error}"),
-            step,
+            step: step.clone(),
             last_succesful: false,
         },
     )?;
+
+    // match the ICA message type that errored and handle them accordingly.
+    // TODO: fill the rest of the match arms
+    match step {
+        IbcMsgKind::Ica(ica_kind) => match ica_kind {
+            IcaMessages::ExitPool(pending) => handle_exit_pool_error(deps, pending),
+            _ => Ok(()),
+        },
+        _ => Ok(()),
+    }?;
+
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
+}
+
+fn handle_exit_pool_error(
+    deps: DepsMut,
+    pending: PendingReturningUnbonds,
+) -> Result<(), ContractError> {
+    // if we have an error, we need to unlock the unbond lock
+    IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
+        Ok(lock.unlock_unbond())
+    })?;
+
+    for unbond in pending.unbonds {
+        let lp_shares = match unbond.amount {
+            RawAmount::LpShares(val) => val,
+            _ => return Err(ContractError::IncorrectRawAmount),
+        };
+        let unbond = Unbond {
+            lp_shares,
+            unlock_time: Timestamp::from_seconds(100),
+            attempted: false,
+            id: unbond.id,
+            owner: unbond.owner,
+        };
+
+        UNBOND_QUEUE.push_back(deps.storage, &unbond)?;
+    }
+
+    Ok(())
 }
 
 // if an ICA packet is timed out, we need to reject any further packets (only to the ICA channel or in total -> easiest in total until a new ICA channel is created)
