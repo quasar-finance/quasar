@@ -80,6 +80,10 @@ pub fn execute_mutate_route(
 ) -> ContractResult<Response> {
     is_contract_admin(&deps.querier, &env, &info.sender)?;
 
+    if !ROUTES.has(deps.storage, route_id) {
+        return Err(ContractError::DestinationNotExists);
+    }
+
     ROUTES.save(deps.storage, route_id, &route)?;
 
     Ok(Response::new()
