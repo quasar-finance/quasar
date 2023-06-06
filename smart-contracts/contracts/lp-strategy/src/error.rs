@@ -132,4 +132,7 @@ pub enum ContractError {
 
     #[error("The Callback has no amount set")]
     CallbackHasNoAmount,
+
+    #[error("No pending unbonds found")]
+    NoPendingUnbonds,
 }

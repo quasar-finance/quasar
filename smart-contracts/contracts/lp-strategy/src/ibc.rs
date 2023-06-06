@@ -14,8 +14,8 @@ use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_UNBOND_QUEUE, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
-    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -681,30 +681,7 @@ pub fn handle_failing_ack(
             last_succesful: false,
         },
     )?;
-
-    // match the ICA message type that errored and handle it accordingly.
-    // TODO: fill the rest of the match arms
-    match step {
-        IbcMsgKind::Ica(ica_kind) => match ica_kind {
-            IcaMessages::ExitPool(pending) => handle_exit_pool_error(deps, pending),
-            _ => Ok(()),
-        },
-        _ => Ok(()),
-    }?;
-
     Ok(Response::new().add_attribute("ibc-error", error.as_str()))
-}
-
-pub fn handle_exit_pool_error(
-    deps: DepsMut,
-    pending: PendingReturningUnbonds,
-) -> Result<(), ContractError> {
-    for pu in pending.unbonds.iter() {
-        let unbond = UNBONDING_CLAIMS.load(deps.storage, (pu.owner.clone(), pu.id.clone()))?;
-        PENDING_UNBOND_QUEUE.push_front(deps.storage, &unbond)?;
-    }
-
-    Ok(())
 }
 
 // if an ICA packet is timed out, we need to reject any further packets (only to the ICA channel or in total -> easiest in total until a new ICA channel is created)
