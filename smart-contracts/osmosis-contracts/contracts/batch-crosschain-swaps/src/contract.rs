@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use crate::consts::MsgReplyID;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, IBCLifecycleComplete, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
-use crate::state::{Config, CONFIG, RECOVERY_STATES};
+use crate::state::{Config, CONFIG, RECOVERY_STATES, SWAP_REPLY_STATE};
 use crate::{execute, ibc_lifecycle};
 
 // version info for migration info
@@ -101,6 +101,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .may_load(deps.storage, &addr)?
                 .or(Some(vec![])),
         ),
+        QueryMsg::SwapReplyState {} => {
+            to_binary(&SWAP_REPLY_STATE.may_load(deps.storage)?.or(None))
+        }
     }
 }
 

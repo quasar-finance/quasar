@@ -1,0 +1,31 @@
+accounts:
+  - name: alice
+    mnemonic: blur service enlist into false certain replace arrow until fatal glory mule design into dilemma palm helmet upper behave gallery into afford candy exercise
+    coins: ["20000000uatom", "2000000000stake"]
+  - name: bob
+    mnemonic: lucky surface version conduct ketchup cash unfair rival shoulder example demand upset deny tilt very clinic tribe rather renew skirt naive sweet box chicken
+    coins: ["10000000uatom", "1000000000stake"]
+  - name: relayer_acc
+    mnemonic: ready hundred phrase theme bar breeze zone system bitter double flush deposit sugar swap burger outside primary nature attend caught wire ticket depth cycle
+    # corresponding address is cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc
+    coins: ["10000stake", "10000000uatom"]
+validator:
+  name: alice
+  staked: "100000000stake"
+faucet:
+  host: ":4502"
+  name: bob
+  coins: ["1000000uatom", "100000000stake"]
+host:
+  rpc: ":26669"
+  p2p: ":26663"
+  prof: ":6063"
+  grpc: ":9097"
+  grpc-web: ":8093"
+  api: ":1313"
+  frontend: ":8083"
+  dev-ui: ":12353"
+genesis:
+  chain_id: "cosmos"
+#init:
+#  home: "${home_dir}"
