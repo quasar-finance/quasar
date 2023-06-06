@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Empty, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
+    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
     Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
@@ -12,8 +12,9 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
+use crate::execute::execute_retry;
 use crate::helpers::{
-    create_callback_submsg, is_contract_admin, IbcMsgKind, IcaMessages, SubMsgKind,
+    create_callback_submsg, is_contract_admin, SubMsgKind,
 };
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
@@ -25,7 +26,7 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
     ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -127,56 +128,6 @@ pub fn execute(
         }
         ExecuteMsg::Retry { seq, channel } => execute_retry(deps, env, info, seq, channel),
     }
-}
-
-/// The retry entry point will be used to retry any failed ICA message given the sequence number and the channel.
-/// Depending on the type of ICA message, the contract will handle the retry differently.
-/// Funds cannot be sent and, for now, only the lock admin can call retry.
-pub fn execute_retry(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    seq: u64,
-    channel: String,
-) -> Result<Response, ContractError> {
-    nonpayable(&info)?;
-    // for now, only the lock admin can retry
-    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
-
-    let traps = TRAPS.load(deps.storage, (seq, channel))?;
-    match traps.step {
-        IbcMsgKind::Ica(ica_kind) => match ica_kind {
-            IcaMessages::ExitPool(pending) => handle_retry_exit_pool(deps, env, pending),
-            _ => todo!(),
-        },
-        _ => todo!(),
-    }?;
-    todo!()
-}
-
-/// The handle retry exit pool checks that pending unbonds is not empty and then iterates over the pending unbonds vector.
-/// For each unbond, it will check that unbond time has expired and push it to the front of the pending unbond queue.
-/// A manual TryIcq will be needed to dispatch the IBC message.
-fn handle_retry_exit_pool(
-    deps: DepsMut,
-    env: Env,
-    pending: PendingReturningUnbonds,
-) -> Result<Response, ContractError> {
-    if pending.unbonds.is_empty() {
-        return Err(ContractError::NoPendingUnbonds);
-    }
-
-    let mut resp: Response<Empty> = Response::new();
-
-    for pu in pending.unbonds {
-        do_unbond(deps.storage, &env, pu.owner.clone(), pu.id.clone())?;
-        resp = resp
-            .add_attribute("unbond", pu.owner.clone())
-            .add_attribute("unbond_id", pu.id);
-    }
-
-    resp = resp.add_attribute("action", "retry");
-    Ok(resp)
 }
 
 pub fn execute_add_lock_admin(
