@@ -325,4 +325,77 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_handle_retry_exit_pool_as_not_admin_fails() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        LOCK_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            .unwrap();
+
+        let res = execute_retry(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: Addr::unchecked("not_admin"),
+                funds: vec![],
+            },
+            3539,
+            "channel-35".to_string(),
+        );
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_handle_retry_exit_pool_with_wrong_seq_channel_fails() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let pending = PendingReturningUnbonds {
+            unbonds: vec![
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(101)),
+                    owner: Addr::unchecked("owner1"),
+                    id: "1".to_string(),
+                },
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(102)),
+                    owner: Addr::unchecked("owner2"),
+                    id: "2".to_string(),
+                },
+            ],
+        };
+
+        TRAPS
+            .save(
+                deps.as_mut().storage,
+                (3539, "channel-35".to_string()),
+                &Trap {
+                    error: "exit pool failed on osmosis".to_string(),
+                    step: IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
+                    last_succesful: true,
+                },
+            )
+            .unwrap();
+
+        LOCK_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            .unwrap();
+
+        let res = execute_retry(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: Addr::unchecked("admin"),
+                funds: vec![],
+            },
+            0,
+            "random_channel".to_string(),
+        );
+
+        assert!(res.is_err());
+    }
 }
