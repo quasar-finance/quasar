@@ -104,7 +104,7 @@ pub fn execute_remove_route(
 
     Ok(Response::new()
         .add_attribute("action", "remove_route")
-        .add_attribute("route_id", format!("{}", route_id)))
+        .add_attribute("route_id", route_id.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
