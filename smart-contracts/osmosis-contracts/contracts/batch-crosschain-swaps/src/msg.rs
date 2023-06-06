@@ -3,6 +3,8 @@ use cosmwasm_std::{Addr, Decimal, Uint128};
 use registry::msg::SerializableJson;
 use swaprouter::msg::Slippage;
 
+use crate::state::SwapMsgReplyState;
+
 /// Message type for `instantiate` entry_point
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -91,6 +93,8 @@ pub enum QueryMsg {
     /// Returns the list of transfers that are recoverable for an Addr
     #[returns(Vec<crate::state::ibc::IBCTransfer>)]
     Recoverable { addr: Addr },
+    #[returns(SwapMsgReplyState)]
+    SwapReplyState {},
 }
 
 // tmp structure for crosschain response

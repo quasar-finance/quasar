@@ -90,7 +90,7 @@ pub fn unwrap_or_swap_and_forward(
 }
 
 pub fn unwrap_or_swap_and_forward_batch(
-    mut ctx: (DepsMut, Env, MessageInfo),
+    ctx: (DepsMut, Env, MessageInfo),
     output_denoms: Vec<String>,
     output_weights: Vec<Decimal>,
     slippage: swaprouter::Slippage,
@@ -177,7 +177,7 @@ pub fn unwrap_or_swap_and_forward_batch(
         })
         .collect::<Result<Vec<SubMsg>, ContractError>>()?;
 
-    Ok(Response::new().add_submessages(submsgs))
+    Ok(Response::new().add_messages(submsgs.iter().map(|s| s.msg.clone()).collect::<Vec<_>>()))
 }
 
 /// This function takes token "known to the chain", swaps it, and then forwards
