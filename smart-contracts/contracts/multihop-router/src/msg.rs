@@ -8,9 +8,19 @@ pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRoute { route_id: RouteId, route: Route },
-    MutateRoute { route_id: RouteId, new_route: Route },
-    RemoveRoute { route_id: RouteId },
+    AddRoute {
+        route_id: RouteId,
+        route: Route,
+    },
+    #[cfg(feature = "mutable")]
+    MutateRoute {
+        route_id: RouteId,
+        new_route: Route,
+    },
+    #[cfg(feature = "mutable")]
+    RemoveRoute {
+        route_id: RouteId,
+    },
 }
 
 #[cw_serde]

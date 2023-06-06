@@ -42,10 +42,12 @@ pub fn execute(
         ExecuteMsg::AddRoute { route_id, route } => {
             execute_add_route(deps, env, info, &route_id, route)
         }
+        #[cfg(feature = "mutable")]
         ExecuteMsg::MutateRoute {
             route_id,
             new_route,
         } => execute_mutate_route(deps, env, info, &route_id, new_route),
+        #[cfg(feature = "mutable")]
         ExecuteMsg::RemoveRoute { route_id } => execute_remove_route(deps, env, info, &route_id),
     }
 }
@@ -71,6 +73,7 @@ pub fn execute_add_route(
         .add_attribute("route", route.to_string()))
 }
 
+#[cfg(feature = "mutable")]
 pub fn execute_mutate_route(
     deps: DepsMut,
     env: Env,
@@ -92,6 +95,7 @@ pub fn execute_mutate_route(
         .add_attribute("route", route.to_string()))
 }
 
+#[cfg(feature = "mutable")]
 pub fn execute_remove_route(
     deps: DepsMut,
     env: Env,
