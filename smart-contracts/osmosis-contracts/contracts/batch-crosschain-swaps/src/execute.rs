@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 
 use cosmwasm_std::{
-    coins, to_binary, wasm_execute, BankMsg, Decimal, Env, Fraction, MessageInfo, Uint128,
+    coin, coins, to_binary, wasm_execute, BankMsg, Decimal, Env, Fraction, MessageInfo, Uint128,
 };
 use cosmwasm_std::{Addr, Coin, DepsMut, Response, SubMsg, SubMsgResponse, SubMsgResult};
 use registry::msg::{Callback, SerializableJson};
@@ -177,7 +177,7 @@ pub fn unwrap_or_swap_and_forward_batch(
         })
         .collect::<Result<Vec<SubMsg>, ContractError>>()?;
 
-    Ok(Response::new().add_messages(submsgs.iter().map(|s| s.msg.clone()).collect::<Vec<_>>()))
+    Ok(Response::new().add_submessages(submsgs))
 }
 
 /// This function takes token "known to the chain", swaps it, and then forwards
@@ -243,7 +243,7 @@ pub fn swap_and_forward(
         });
     }
 
-    // Store information about the original message to be used in the reply
+    // // Store information about the original message to be used in the reply
     SWAP_REPLY_STATE.save(
         deps.storage,
         &SwapMsgReplyState {
