@@ -12,6 +12,7 @@
 - Changed the locking on the execute calls to lock correctly depending on queue state
 ### Features
 ### Bugfixes
+- do not allow opentry messages to clog up our state
 
 ## V0.1.1 08-05-2023
 ### Dependencies

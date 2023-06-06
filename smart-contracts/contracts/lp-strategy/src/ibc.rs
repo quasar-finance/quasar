@@ -849,4 +849,36 @@ mod tests {
             expected
         )
     }
+
+    #[test]
+    fn handle_ica_channel_open_try_errors() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let endpoint = IbcEndpoint {
+            port_id: "wasm.my_addr".to_string(),
+            channel_id: "channel-1".to_string(),
+        };
+        let counterparty_endpoint = IbcEndpoint {
+            port_id: "icahost".to_string(),
+            channel_id: "channel-2".to_string(),
+        };
+
+        let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
+        let channel = IbcChannel::new(
+            endpoint,
+            counterparty_endpoint.clone(),
+            IbcOrder::Ordered,
+            version,
+            "connection-0".to_string(),
+        );
+
+        let msg = IbcChannelOpenMsg::OpenTry {
+            channel: channel.clone(),
+            counterparty_version: "1".to_string(),
+        };
+
+        let err = handle_ica_channel(deps.as_mut(), msg.clone()).unwrap_err();
+        assert_eq!(err, ContractError::IncorrectChannelOpenType);
+    }
 }
