@@ -4,9 +4,9 @@ use serde::de::DeserializeOwned;
 use crate::{
     msg::{GetMemoResponse, GetRouteResponse, ListRoutesResponse, MemoResponse},
     multitest::common::*,
-    route::{Memo, Route, RouteId},
+    route::{Route, RouteId},
 };
-use cosmwasm_std::{testing::MockApi, to_binary, Addr, Binary, CosmosMsg, MemoryStorage, WasmMsg};
+use cosmwasm_std::{testing::MockApi, to_binary, Addr, CosmosMsg, MemoryStorage, WasmMsg};
 use cw_multi_test::{
     App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, StakeKeeper, WasmKeeper,
 };
@@ -137,7 +137,7 @@ impl QuasarVaultSuite {
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_get_memo(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_memo(expected, |actual, expected| false, true)
+        self.verify_get_memo(expected, |_, _: &[(RouteId, Route)]| false, true)
     }
 
     pub fn verify_get_memo<T>(
@@ -196,7 +196,7 @@ impl QuasarVaultSuite {
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_get_route(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_route(expected, |actual, expected| false, true)
+        self.verify_get_route(expected, |_, _| false, true)
     }
 
     pub fn verify_get_route<T>(
@@ -232,7 +232,7 @@ impl QuasarVaultSuite {
 
     // do all contract queries and check that the values are the same as any of the routes in expected
     pub fn check_list_routes(&self, expected: &[(RouteId, Route)]) -> AnyResult<bool> {
-        self.verify_get_memo(expected, |actual, expected| false, true)
+        self.verify_get_memo(expected, |_, _| false, true)
     }
 
     pub fn verify_list_routes<T>(
