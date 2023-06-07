@@ -47,7 +47,7 @@ pub fn try_icq(
         let packet = prepare_full_query(storage, env.clone(), pending_bonds_value)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
-            channel_id: icq_channel.clone(),
+            channel_id: icq_channel,
             data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
@@ -59,11 +59,13 @@ pub fn try_icq(
             }
         }
 
+        let channel = ICQ_CHANNEL.load(storage)?;
+
         Ok(Some(create_ibc_ack_submsg(
             storage,
             IbcMsgKind::Icq,
             send_packet_msg,
-            icq_channel,
+            channel,
         )?))
     } else {
         Ok(None)
