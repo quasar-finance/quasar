@@ -24,7 +24,7 @@ use crate::{
     },
 };
 
-// if unbond time has expired, we unbond the shares and transfer back the funds
+/// If unbond time has expired, we unbond the shares and transfer back the funds
 pub fn do_unbond(
     storage: &mut dyn Storage,
     env: &Env,

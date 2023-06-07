@@ -274,4 +274,8 @@ pub enum ExecuteMsg {
         channel: String,
         should_unlock: bool,
     },
+    Retry {
+        seq: u64,
+        channel: String,
+    },
 }
