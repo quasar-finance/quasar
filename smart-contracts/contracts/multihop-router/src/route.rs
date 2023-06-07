@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, StdError, StdResult};
+use cosmwasm_std::{StdError, StdResult};
 use cw_storage_plus::{Key, KeyDeserialize, Prefixer, PrimaryKey};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -77,12 +77,12 @@ impl Hop {
 
     /// create a packet forwarder memo field from a route of hops
     /// receivers of the tokens on the intermediate chains
-    pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Memo {
+    pub fn to_memo(&self, timeout: String, retries: i64, actual_memo: Option<String>) -> Memo {
         Memo::new(self.to_forward(timeout, retries, actual_memo))
     }
 
     // wtf are these clones even
-    fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<Binary>) -> Forward {
+    fn to_forward(&self, timeout: String, retries: i64, actual_memo: Option<String>) -> Forward {
         Forward {
             receiver: self.receiver.clone(),
             port: self.port.clone(),
@@ -93,7 +93,11 @@ impl Hop {
                 .clone()
                 .next
                 .map_or(Box::new(Next::Actual(actual_memo.clone())), |val| {
-                    Box::new(Next::Forward(val.to_forward(timeout, retries, actual_memo)))
+                    Box::new(Next::NextForward(val.to_forward(
+                        timeout,
+                        retries,
+                        actual_memo,
+                    )))
                 }),
         }
     }
@@ -142,10 +146,31 @@ pub struct Forward {
     pub next: Box<Next>,
 }
 
+impl Forward {
+    pub fn new(
+        receiver: impl Into<String>,
+        port: impl Into<String>,
+        channel: impl Into<String>,
+        timeout: impl Into<String>,
+        retries: i64,
+        next: Box<Next>,
+    ) -> Forward {
+        Forward {
+            receiver: receiver.into(),
+            port: port.into(),
+            channel: channel.into(),
+            timeout: timeout.into(),
+            retries,
+            next,
+        }
+    }
+}
+
 #[cw_serde]
+#[serde(untagged)]
 pub enum Next {
-    Forward(Forward),
-    Actual(Option<Binary>),
+    NextForward(Forward),
+    Actual(Option<String>),
 }
 
 #[cw_serde]
@@ -326,6 +351,33 @@ mod tests {
     use proptest::prelude::*;
 
     use super::*;
+
+    #[test]
+    fn se_json_works() {
+        // example json from packet forward middleware without any formatting characters so we match for it
+        let json_str = r#"{"forward":{"receiver":"chain-c-bech32-address","port":"transfer","channel":"channel-123","timeout":"10m","retries":2,"next":{"receiver":"chain-d-bech32-address","port":"transfer","channel":"channel-234","timeout":"10m","retries":2,"next":"{\"my-json\":\"myval\"}"}}}"#;
+
+        let actual: Memo = serde_json_wasm::from_str(json_str).unwrap();
+        let expected = Memo::new(Forward::new(
+            "chain-c-bech32-address",
+            "transfer",
+            "channel-123",
+            "10m",
+            2,
+            Box::new(Next::NextForward(Forward::new(
+                "chain-d-bech32-address",
+                "transfer",
+                "channel-234",
+                "10m",
+                2,
+                Box::new(Next::Actual(Some("{\"my-json\":\"myval\"}".to_string()))),
+            ))),
+        ));
+
+        assert_eq!(actual, expected);
+        assert_eq!(serde_json_wasm::to_string(&actual).unwrap(), json_str);
+        assert_eq!(serde_json_wasm::to_string(&expected).unwrap(), json_str)
+    }
 
     prop_compose! {
         fn route_id()(dst in any::<String>(), asset in any::<String>()) -> RouteId {

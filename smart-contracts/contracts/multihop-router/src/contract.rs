@@ -140,7 +140,7 @@ fn handle_get_memo(
     route_id: RouteId,
     timeout: String,
     retries: i64,
-    actual_memo: Option<Binary>,
+    actual_memo: Option<String>,
 ) -> ContractResult<GetMemoResponse> {
     let route = ROUTES
         .may_load(deps.storage, &route_id)?

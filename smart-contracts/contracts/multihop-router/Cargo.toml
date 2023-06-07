@@ -52,6 +52,7 @@ serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
 
 [dev-dependencies]
+serde-json-wasm = "0.5"
 anyhow = "1"
 cw-multi-test = "0.16.2"
 proptest = "1.0.0"

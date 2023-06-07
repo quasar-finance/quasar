@@ -1,5 +1,4 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Binary;
 
 use crate::route::{Memo, Route, RouteId};
 
@@ -7,6 +6,7 @@ use crate::route::{Memo, Route, RouteId};
 pub struct InstantiateMsg {}
 
 #[cw_serde]
+#[non_exhaustive]
 pub enum ExecuteMsg {
     AddRoute {
         route_id: RouteId,
@@ -32,7 +32,7 @@ pub enum QueryMsg {
         route_id: RouteId,
         timeout: String,
         retries: i64,
-        actual_memo: Option<Binary>,
+        actual_memo: Option<String>,
     },
     #[returns(GetRouteResponse)]
     GetRoute { route_id: RouteId },
@@ -51,7 +51,7 @@ pub struct GetMemoResponse {
 #[serde(untagged)]
 pub enum MemoResponse {
     Forward(Memo),
-    Actual(Option<Binary>),
+    Actual(Option<String>),
 }
 
 #[cw_serde]

@@ -148,7 +148,7 @@ impl QuasarVaultSuite {
     ) -> AnyResult<T> {
         let timeout = "1000";
         let retries = 3;
-        let actual_memo = Some(Binary(vec![1, 2, 3, 4, 5, 6, 7, 8]));
+        let actual_memo = Some("{\"my-json\": \"myval\"}".to_string());
         for (id, route) in expected.iter() {
             let res = self.query::<GetMemoResponse>(QueryMsg::GetMemo {
                 route_id: id.clone(),
