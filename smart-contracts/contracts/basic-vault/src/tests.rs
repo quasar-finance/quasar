@@ -2,7 +2,7 @@ use core::panic;
 use std::{marker::PhantomData, str::FromStr};
 
 use cosmwasm_std::{
-    coins, from_binary,
+    attr, coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockStorage},
     to_binary, Addr, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult, CosmosMsg,
     Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult,
@@ -1258,7 +1258,8 @@ fn proper_bond() {
     };
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
+    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes[4].value, "1");
 
     if let CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr,
@@ -1486,7 +1487,8 @@ fn proper_unbond() {
     };
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
+    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes[4].value, "1");
 
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
     let primitive_1_info = mock_info("quasar123", &[]);
@@ -2032,4 +2034,36 @@ fn test_claim_with_funds() {
     let msg = ExecuteMsg::Claim {};
     let res = execute(deps.as_mut(), env, info, msg);
     assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+}
+
+#[test]
+fn test_bond_events() {
+    let mut deps = mock_deps_with_primitives(even_primitives());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details());
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let res = init(deps.as_mut(), &init_msg, &env, &info);
+    assert_eq!(1, res.messages.len());
+
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_msg = ExecuteMsg::Bond {
+        recipient: Option::None,
+    };
+    let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+    assert_eq!(res.messages.len(), 4);
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "bond"),
+            attr("vault_address", &env.contract.address.to_string()),
+            attr(
+                "primitive_addresses",
+                "['quasar123','quasar124','quasar125']"
+            ),
+            attr("sender", TEST_DEPOSITOR),
+            attr("bond_id", "1"),
+            attr("amount", "['100ibc/uosmo','100ibc/uatom','100ibc/ustars']"),
+            attr("data", ""),
+        ]
+    );
 }

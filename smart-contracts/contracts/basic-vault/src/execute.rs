@@ -223,7 +223,7 @@ pub fn may_pay_with_ratio(
 
 pub fn bond(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -246,7 +246,7 @@ pub fn bond(
     // find recipient
     let recipient_addr = match recipient {
         Some(r) => deps.api.addr_validate(&r)?,
-        None => info.sender,
+        None => info.sender.clone(),
     };
 
     let mut deposit_stubs = vec![];
@@ -315,7 +315,36 @@ pub fn bond(
     };
 
     Ok(Response::new()
-        .add_attribute("bond_id", bond_seq.to_string())
+        .add_attributes(vec![
+            ("action", "bond"),
+            ("vault_address", &env.contract.address.to_string()),
+            (
+                "primitive_addresses",
+                &format!(
+                    "['{}']",
+                    invest
+                        .primitives
+                        .iter()
+                        .map(|primitive| primitive.address.clone())
+                        .collect::<Vec<String>>()
+                        .join("','"),
+                ),
+            ),
+            ("sender", &info.sender.to_string()),
+            ("bond_id", &bond_seq.to_string()),
+            (
+                "amount",
+                &format!(
+                    "[{}]",
+                    info.funds
+                        .iter()
+                        .map(|coin| format!("'{}{}'", coin.amount, coin.denom))
+                        .collect::<Vec<String>>()
+                        .join(",")
+                ),
+            ),
+            ("data", &"".to_string()),
+        ])
         .add_messages(bond_msgs?)
         .add_message(remainder_msg))
 }
