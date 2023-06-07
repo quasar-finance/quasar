@@ -11,7 +11,7 @@ pub fn execute_withdraw_funds(
     mut asset: Asset,
 ) -> Result<Response, VaultRewardsError> {
     let config = CONFIG.load(deps.storage)?;
-    let reward_token = config.reward_token.clone();
+    let reward_token = config.reward_token;
 
     if asset.info == reward_token {
         // check if reward balance is sufficient after withdrawal
