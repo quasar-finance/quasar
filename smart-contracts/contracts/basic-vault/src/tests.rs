@@ -24,6 +24,7 @@ use quasar_types::{
 };
 
 use crate::{
+    callback::on_bond,
     contract::execute,
     contract::instantiate,
     contract::query,
@@ -33,6 +34,7 @@ use crate::{
         get_token_amount_weights, may_pay_with_ratio,
     },
     msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
+    ContractError,
 };
 
 #[derive(Clone, PartialEq, prost::Message)]
@@ -1419,7 +1421,7 @@ fn proper_bond_response_callback() {
     assert_eq!(res.messages.len(), 4);
     assert_eq!(res.attributes[4].value, "1");
     assert_eq!(res.attributes.first().unwrap().value, "bond");
-    
+
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
     let primitive_1_info = mock_info("quasar123", &[]);
     let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
@@ -2111,4 +2113,104 @@ fn test_bond_events_single_primitive_many_amounts() {
             attr("data", ""),
         ]
     );
+}
+
+#[test]
+fn test_on_bond_callback() {
+    let mut deps = mock_deps_with_primitives(even_primitives());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details());
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let res = init(deps.as_mut(), &init_msg, &env, &info);
+    assert_eq!(1, res.messages.len());
+
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_msg = ExecuteMsg::Bond {
+        recipient: Option::None,
+    };
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info.clone(),
+        deposit_msg,
+    )
+    .unwrap();
+    assert_eq!(res.messages.len(), 4);
+
+    // prim1 callback call from random address
+    let res = on_bond(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info.clone(),
+        Uint128::new(99),
+        "1".to_string(),
+    )
+    .unwrap_err();
+
+    assert_eq!(res, ContractError::Unauthorized {}.into());
+
+    // prim1 callback
+    let res = on_bond(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("quasar123", &[]),
+        Uint128::new(1000),
+        "1".to_string(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "on_bond"),
+            attr("vault_address", "cosmos2contract"),
+            attr("primitive_address", "quasar123"),
+            attr("bond_id", "1"),
+            attr("state", "2 pending bonds")
+        ]
+    );
+
+    // prim2 callback
+    let res = on_bond(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("quasar124", &[]),
+        Uint128::new(200),
+        "1".to_string(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "on_bond"),
+            attr("vault_address", "cosmos2contract"),
+            attr("primitive_address", "quasar124"),
+            attr("bond_id", "1"),
+            attr("state", "1 pending bonds")
+        ]
+    );
+
+    // prim3 callback works but we need to comment update_user_reward_index() function in callback.rs
+    //
+    // let res = on_bond(
+    //     deps.as_mut(),
+    //     env.clone(),
+    //     mock_info("quasar125", &[]),
+    //     Uint128::new(500),
+    //     "1".to_string(),
+    // )
+    // .unwrap();
+
+    // assert_eq!(
+    //     res.attributes,
+    //     vec![
+    //         attr("action", "bond_confirmation"),
+    //         attr("vault_address", "cosmos2contract"),
+    //         attr("primitive_address", "quasar125"),
+    //         attr("bond_id", "1"),
+    //         attr("shares_minted", (1000 + 200 + 500).to_string()),
+    //         attr("new_total_supply", (1000 + 200 + 500).to_string()),
+    //     ]
+    // );
 }

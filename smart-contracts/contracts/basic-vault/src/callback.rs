@@ -62,6 +62,9 @@ pub fn on_bond(
     if bond_stubs.iter().any(|s| s.bond_response.is_none()) {
         return Ok(Response::new()
             .add_attribute("action", "on_bond")
+            .add_attribute("vault_address", env.contract.address)
+            .add_attribute("primitive_address", info.sender)
+            .add_attribute("bond_id", bond_id)
             .add_attribute(
                 "state",
                 bond_stubs
@@ -74,13 +77,14 @@ pub fn on_bond(
                         }
                     })
                     .to_string()
-                    + "pending bonds",
+                    + " pending bonds",
             ));
     }
     // at this point we know that the deposit has succeeded fully, and we can mint shares
 
     let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
     let validated_user_address = deps.api.addr_validate(&user_address)?;
+
     // lets updated all pending deposit info
     PENDING_BOND_IDS.update(deps.storage, validated_user_address.clone(), |ids| {
         if let Some(mut bond_ids) = ids {
