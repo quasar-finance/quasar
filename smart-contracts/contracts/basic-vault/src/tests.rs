@@ -371,7 +371,8 @@ fn proper_bond_with_one_primitive() {
 
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 2);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
+    assert_eq!(res.attributes[4].value, "1");
+    assert_eq!(res.attributes.first().unwrap().value, "bond");
 
     if let CosmosMsg::Wasm(wasm_msg) = &res.messages.first().unwrap().msg {
         if let WasmMsg::Execute {
@@ -1353,7 +1354,8 @@ fn proper_bond_with_zero_primitive_balance() {
     };
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 2);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
+    assert_eq!(res.attributes[4].value, "1");
+    assert_eq!(res.attributes.first().unwrap().value, "bond");
 }
 
 #[test]
@@ -1415,8 +1417,9 @@ fn proper_bond_response_callback() {
     };
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
-
+    assert_eq!(res.attributes[4].value, "1");
+    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
     let primitive_1_info = mock_info("quasar123", &[]);
     let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
@@ -2036,8 +2039,10 @@ fn test_claim_with_funds() {
     assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
 }
 
+// amounts shows what was sent to the primitives, not what was sent to the vault with the bond message.
+// need to discuss what's better here when troubleshooting
 #[test]
-fn test_bond_events() {
+fn test_bond_events_multiple_primitives_and_amounts() {
     let mut deps = mock_deps_with_primitives(even_primitives());
     let init_msg = init_msg_with_primitive_details(even_primitive_details());
     let info = mock_info(TEST_CREATOR, &[]);
@@ -2062,7 +2067,47 @@ fn test_bond_events() {
             ),
             attr("sender", TEST_DEPOSITOR),
             attr("bond_id", "1"),
-            attr("amount", "['100ibc/uosmo','100ibc/uatom','100ibc/ustars']"),
+            attr("amounts", "['99ibc/uosmo','99ibc/uatom','99ibc/ustars']"),
+            attr("data", ""),
+        ]
+    );
+}
+
+// even if the user sends more than one token, the event should only show the one(s) matching the primitive(s)
+#[test]
+fn test_bond_events_single_primitive_many_amounts() {
+    let mut deps = mock_deps_with_primitives(vec![(
+        "quasar123".to_string(),
+        "ibc/uosmo".to_string(),
+        Uint128::from(100u128),
+        Uint128::from(100u128),
+    )]);
+    let init_msg = init_msg_with_primitive_details(vec![(
+        "quasar123".to_string(),
+        "ibc/uosmo".to_string(),
+        Decimal::one(),
+    )]);
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let res = init(deps.as_mut(), &init_msg, &env, &info);
+    assert_eq!(1, res.messages.len());
+
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_msg = ExecuteMsg::Bond {
+        recipient: Option::None,
+    };
+    let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+
+    assert_eq!(res.messages.len(), 2);
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "bond"),
+            attr("vault_address", &env.contract.address.to_string()),
+            attr("primitive_addresses", "['quasar123']"),
+            attr("sender", TEST_DEPOSITOR),
+            attr("bond_id", "1"),
+            attr("amounts", "['100ibc/uosmo']"),
             attr("data", ""),
         ]
     );

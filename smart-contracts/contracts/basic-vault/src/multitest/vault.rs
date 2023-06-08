@@ -17,7 +17,7 @@ fn try_bond() {
     assert_eq!(
         err,
         VaultContractError::Std(cosmwasm_std::StdError::GenericErr {
-            msg: "alloc::string::String not found".to_string()
+            msg: "Empty attribute value. Key: data".to_string()
         })
     );
 }

@@ -268,7 +268,7 @@ pub fn bond(
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
         .primitives
         .iter()
-        .zip(primitive_funding_amounts)
+        .zip(primitive_funding_amounts.clone())
         .map(|(pc, funds)| {
             let deposit_stub = BondingStub {
                 address: pc.address.clone(),
@@ -314,35 +314,34 @@ pub fn bond(
             .collect(),
     };
 
+    let primitive_addresses = format!(
+        "['{}']",
+        invest
+            .primitives
+            .iter()
+            .map(|primitive| primitive.address.clone())
+            .collect::<Vec<String>>()
+            .join("','"),
+    );
+
+    let amounts = format!(
+        "[{}]",
+        primitive_funding_amounts
+            .iter()
+            .map(|coin| format!("'{}{}'", coin.amount, coin.denom))
+            .collect::<Vec<String>>()
+            .join(",")
+    );
+
     Ok(Response::new()
         .add_attributes(vec![
             ("action", "bond"),
             ("vault_address", &env.contract.address.to_string()),
-            (
-                "primitive_addresses",
-                &format!(
-                    "['{}']",
-                    invest
-                        .primitives
-                        .iter()
-                        .map(|primitive| primitive.address.clone())
-                        .collect::<Vec<String>>()
-                        .join("','"),
-                ),
-            ),
+            ("primitive_addresses", &primitive_addresses),
+            // consider using recipient instead of sender? or both?
             ("sender", &info.sender.to_string()),
             ("bond_id", &bond_seq.to_string()),
-            (
-                "amount",
-                &format!(
-                    "[{}]",
-                    info.funds
-                        .iter()
-                        .map(|coin| format!("'{}{}'", coin.amount, coin.denom))
-                        .collect::<Vec<String>>()
-                        .join(",")
-                ),
-            ),
+            ("amounts", &amounts),
             ("data", &"".to_string()),
         ])
         .add_messages(bond_msgs?)

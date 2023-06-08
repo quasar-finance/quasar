@@ -49,7 +49,7 @@ pub fn on_bond(
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
         if s.address == info.sender {
-            s.bond_response = Option::Some(BondResponse {
+            s.bond_response = Some(BondResponse {
                 share_amount,
                 bond_id: bond_id.clone(),
             });
@@ -97,7 +97,7 @@ pub fn on_bond(
         }
     })?;
 
-    BOND_STATE.save(deps.storage, bond_id, &bond_stubs)?;
+    BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs)?;
 
     // calculate shares to mint
     let shares_to_mint = bond_stubs.iter().zip(invest.primitives.iter()).try_fold(
@@ -130,13 +130,15 @@ pub fn on_bond(
 
     let update_user_rewards_idx_msg =
         update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
-    execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
+    execute_mint(deps, env.clone(), sub_info, user_address, shares_to_mint)?;
 
     let res = Response::new()
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
-        .add_attribute("action", "on_bond")
-        .add_attribute("from", info.sender)
-        .add_attribute("minted", shares_to_mint)
+        .add_attribute("action", "bond_confirmation")
+        .add_attribute("vault_address", env.contract.address)
+        .add_attribute("primitive_address", info.sender)
+        .add_attribute("bond_id", bond_id)
+        .add_attribute("shares_minted", shares_to_mint)
         .add_attribute("new_total_supply", supply.issued.to_string());
     Ok(res)
 }
