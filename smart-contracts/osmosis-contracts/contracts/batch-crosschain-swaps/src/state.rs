@@ -21,11 +21,26 @@ pub struct ForwardTo {
 }
 
 #[cw_serde]
+pub enum DenomSwapStatus {
+    /// The swap is in progress
+    Pending,
+    /// The swap is completed
+    Swapped,
+}
+
+#[cw_serde]
+pub struct DenomSwapState {
+    pub denom: String,
+    pub status: DenomSwapStatus,
+}
+
+#[cw_serde]
 pub struct SwapMsgReplyState {
-    pub swap_msg: SwapRouterExecute,
+    pub swap_msgs: Vec<SwapRouterExecute>,
     pub contract_addr: Addr,
     pub block_time: Timestamp,
     pub forward_to: ForwardTo,
+    pub denom_states: Vec<DenomSwapState>,
 }
 
 #[cw_serde]

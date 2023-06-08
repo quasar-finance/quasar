@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::format;
 
 use cosmwasm_std::{
     coin, coins, to_binary, wasm_execute, BankMsg, Decimal, Env, Fraction, MessageInfo, Uint128,
@@ -14,8 +15,8 @@ use crate::msg::{CrosschainSwapResponse, FailedDeliveryAction};
 use registry::proto::MsgTransferResponse;
 
 use crate::state::{
-    Config, ForwardMsgReplyState, ForwardTo, SwapMsgReplyState, CONFIG, FORWARD_REPLY_STATE,
-    INFLIGHT_PACKETS, RECOVERY_STATES, SWAP_REPLY_STATE,
+    Config, DenomSwapState, DenomSwapStatus, ForwardMsgReplyState, ForwardTo, SwapMsgReplyState,
+    CONFIG, FORWARD_REPLY_STATE, INFLIGHT_PACKETS, RECOVERY_STATES, SWAP_REPLY_STATE,
 };
 use crate::utils::{build_memo, parse_swaprouter_reply};
 use crate::ContractError;
@@ -78,10 +79,11 @@ pub fn unwrap_or_swap_and_forward(
     }
 
     // If the denom is either native or only one hop, we swap it directly
-    Ok(Response::new().add_submessage(swap_and_forward(
+    Ok(Response::new().add_submessages(swap_and_forward(
         ctx,
         swap_coin,
-        output_denom,
+        vec![output_denom],
+        vec![Decimal::one()],
         slippage,
         receiver,
         next_memo,
@@ -98,12 +100,11 @@ pub fn unwrap_or_swap_and_forward_batch(
     next_memo: Option<SerializableJson>,
     failed_delivery_action: FailedDeliveryAction,
 ) -> Result<Response, ContractError> {
-    let (mut deps, env, info) = ctx;
+    let (ref deps, ref _env, ref info) = ctx;
     let swap_coin = cw_utils::one_coin(&info)?;
 
     deps.api
         .debug(&format!("executing unwrap or swap and forward"));
-    let registry = Registry::default(deps.as_ref());
 
     // check that output denoms and output weights are the same length
     if output_denoms.len() != output_weights.len() {
@@ -111,6 +112,38 @@ pub fn unwrap_or_swap_and_forward_batch(
             msg: "output denoms and output weights must be the same length".to_string(),
         });
     }
+
+    let submsgs = swap_and_forward(
+        ctx,
+        swap_coin,
+        output_denoms,
+        output_weights,
+        slippage,
+        receiver,
+        next_memo,
+        failed_delivery_action,
+    )?;
+
+    Ok(Response::new().add_submessages(submsgs))
+}
+
+/// This function takes token "known to the chain", swaps it, and then forwards
+/// the result to the receiver.
+///
+///
+pub fn swap_and_forward(
+    ctx: (DepsMut, Env, MessageInfo),
+    swap_coin: Coin,
+    output_denoms: Vec<String>,
+    output_weights: Vec<Decimal>,
+    slippage: swaprouter::Slippage,
+    receiver: &str,
+    next_memo: Option<SerializableJson>,
+    failed_delivery_action: FailedDeliveryAction,
+) -> Result<Vec<SubMsg>, ContractError> {
+    let (mut deps, env, info) = ctx;
+    let registry = Registry::default(deps.as_ref());
+    let config = CONFIG.load(deps.storage)?;
 
     // Check the path that the coin took to get to the current chain.
     // Each element in the path is an IBC hop.
@@ -123,11 +156,14 @@ pub fn unwrap_or_swap_and_forward_batch(
         .into());
     }
 
+    let (valid_chain, valid_receiver) = validate_receiver(deps.as_ref(), receiver)?;
+
     let total_weight = output_weights
         .iter()
         .fold(Decimal::zero(), |acc, x| acc + x);
 
-    let submsgs = output_denoms
+    let mut swap_msgs = vec![];
+    let sub_msgs = output_denoms
         .iter()
         .zip(output_weights.iter())
         .map(|(output_denom, weight)| {
@@ -165,41 +201,84 @@ pub fn unwrap_or_swap_and_forward_batch(
                 return Ok(SubMsg::new(ibc_transfer));
             }
 
-            swap_and_forward(
+            let swap_msg = _swap_and_forward_internal(
                 (deps.branch(), env.clone(), info.clone()),
-                this_swap_coin,
+                this_swap_coin.clone(),
                 output_denom.to_string(),
                 slippage.clone(),
-                receiver,
+                (valid_chain.clone(), valid_receiver.clone()),
                 next_memo.clone(),
                 failed_delivery_action.clone(),
-            )
+            )?;
+
+            swap_msgs.push(swap_msg.clone());
+            let msg = wasm_execute(
+                config.swap_contract.clone(),
+                &swap_msg,
+                vec![this_swap_coin],
+            )?;
+
+            Ok(SubMsg::reply_on_success(msg, MsgReplyID::Swap.repr()))
         })
         .collect::<Result<Vec<SubMsg>, ContractError>>()?;
 
-    Ok(Response::new().add_submessages(submsgs))
+    // Check that there isn't anything stored in SWAP_REPLY_STATES. If there is,
+    // it means that the contract is already waiting for a reply and should not
+    // override the stored state. This should only happen if a contract we call
+    // calls back to this one. This is likely a malicious attempt modify the
+    // contract's state before it has replied.
+    if SWAP_REPLY_STATE.may_load(deps.storage)?.is_some() {
+        return Err(ContractError::ContractLocked {
+            msg: "Already waiting for a reply".to_string(),
+        });
+    }
+
+    // // Store information about the original message to be used in the reply
+    SWAP_REPLY_STATE.save(
+        deps.storage,
+        &SwapMsgReplyState {
+            swap_msgs: swap_msgs,
+            denom_states: output_denoms
+                .iter()
+                .map(|d| DenomSwapState {
+                    denom: d.to_string(),
+                    status: DenomSwapStatus::Pending,
+                })
+                .collect(),
+            block_time: env.block.time,
+            contract_addr: env.contract.address,
+            forward_to: ForwardTo {
+                chain: valid_chain,
+                receiver: valid_receiver,
+                next_memo,
+                on_failed_delivery: failed_delivery_action,
+            },
+        },
+    )?;
+
+    Ok(sub_msgs)
 }
 
 /// This function takes token "known to the chain", swaps it, and then forwards
 /// the result to the receiver.
 ///
 ///
-pub fn swap_and_forward(
+fn _swap_and_forward_internal(
     ctx: (DepsMut, Env, MessageInfo),
     swap_coin: Coin,
     output_denom: String,
     slippage: swaprouter::Slippage,
-    receiver: &str,
+    receivers: (String, Addr),
     next_memo: Option<SerializableJson>,
     failed_delivery_action: FailedDeliveryAction,
-) -> Result<SubMsg, ContractError> {
+) -> Result<swaprouter::msg::ExecuteMsg, ContractError> {
     let (deps, env, _) = ctx;
 
     deps.api.debug(&format!("executing swap and forward"));
     let config = CONFIG.load(deps.storage)?;
 
     // Check that the received is valid and retrieve its channel
-    let (valid_chain, valid_receiver) = validate_receiver(deps.as_ref(), receiver)?;
+    let (valid_chain, valid_receiver) = receivers;
     // If there is a memo, check that it is valid (i.e. a valud json object that
     // doesn't contain the key that we will insert later)
     let memo = if let Some(memo) = &next_memo {
@@ -230,36 +309,8 @@ pub fn swap_and_forward(
         output_denom,
         slippage,
     };
-    let msg = wasm_execute(config.swap_contract, &swap_msg, vec![swap_coin])?;
 
-    // Check that there isn't anything stored in SWAP_REPLY_STATES. If there is,
-    // it means that the contract is already waiting for a reply and should not
-    // override the stored state. This should only happen if a contract we call
-    // calls back to this one. This is likely a malicious attempt modify the
-    // contract's state before it has replied.
-    if SWAP_REPLY_STATE.may_load(deps.storage)?.is_some() {
-        return Err(ContractError::ContractLocked {
-            msg: "Already waiting for a reply".to_string(),
-        });
-    }
-
-    // // Store information about the original message to be used in the reply
-    SWAP_REPLY_STATE.save(
-        deps.storage,
-        &SwapMsgReplyState {
-            swap_msg,
-            block_time: env.block.time,
-            contract_addr: env.contract.address,
-            forward_to: ForwardTo {
-                chain: valid_chain,
-                receiver: valid_receiver,
-                next_memo,
-                on_failed_delivery: failed_delivery_action,
-            },
-        },
-    )?;
-
-    Ok(SubMsg::reply_on_success(msg, MsgReplyID::Swap.repr()))
+    Ok(swap_msg)
 }
 
 // The swap has succeeded and we need to generate the forward IBC transfer
@@ -269,11 +320,63 @@ pub fn handle_swap_reply(
     msg: cosmwasm_std::Reply,
 ) -> Result<Response, ContractError> {
     deps.api.debug(&format!("handle_swap_reply"));
-    let swap_msg_state = SWAP_REPLY_STATE.load(deps.storage)?;
-    SWAP_REPLY_STATE.remove(deps.storage);
 
     // Extract the relevant response from the swaprouter reply
     let swap_response = parse_swaprouter_reply(msg)?;
+
+    // update our swap reply state map with the new swapped denom
+    SWAP_REPLY_STATE.update(
+        deps.storage,
+        |mut swap_msg_state| -> Result<_, ContractError> {
+            // find the denom state that matches the denom that was swapped
+            let denom_state = swap_msg_state
+                .denom_states
+                .iter_mut()
+                .find(|ds| ds.denom == swap_response.token_out_denom)
+                .ok_or_else(|| ContractError::CustomError {
+                    msg: format!(
+                        "denom state not found for denom {:}",
+                        swap_response.token_out_denom
+                    ),
+                })?;
+
+            // update the denom state to swapped
+            denom_state.status = DenomSwapStatus::Swapped;
+
+            Ok(swap_msg_state)
+        },
+    )?;
+
+    // grab our up-to-date swap reply state
+    let swap_msg_state = SWAP_REPLY_STATE.load(deps.storage)?;
+
+    if !swap_msg_state
+        .denom_states
+        .iter()
+        .all(|ds| ds.status == DenomSwapStatus::Swapped)
+    {
+        // do nothing
+        let denoms_already_swapped = swap_msg_state
+            .denom_states
+            .iter()
+            .filter(|ds| ds.status == DenomSwapStatus::Swapped)
+            .collect::<Vec<_>>()
+            .len();
+
+        return Ok(Response::new()
+            .add_attribute("action", "pending_swaps")
+            .add_attribute(
+                "progress",
+                format!(
+                    "{:}/{:}",
+                    denoms_already_swapped,
+                    swap_msg_state.denom_states.len()
+                ),
+            ));
+    }
+
+    // if we get here, its safe to reset swap state
+    SWAP_REPLY_STATE.remove(deps.storage);
 
     // Build an IBC packet to forward the swap.
     let contract_addr = &swap_msg_state.contract_addr;
