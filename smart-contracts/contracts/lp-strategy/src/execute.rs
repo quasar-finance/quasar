@@ -177,6 +177,8 @@ mod tests {
         )
         .unwrap();
 
+        assert!(!TRAPS.has(&deps.storage, (3539, "channel-35".to_string())));
+
         assert_eq!(
             res.attributes,
             vec![
@@ -500,6 +502,8 @@ mod tests {
             "channel-35".to_string(),
         )
         .unwrap();
+
+        assert!(!TRAPS.has(&deps.storage, (3539, "channel-35".to_string())));
 
         assert_eq!(
             res.attributes,
