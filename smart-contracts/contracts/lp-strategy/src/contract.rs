@@ -13,9 +13,7 @@ use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_a
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::execute::execute_retry;
-use crate::helpers::{
-    create_callback_submsg, is_contract_admin, SubMsgKind,
-};
+use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
