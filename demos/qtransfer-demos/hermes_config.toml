@@ -100,7 +100,7 @@ key_name = 'osmosiskey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'uosmo' }
+gas_price = { price = 0.01, denom = 'uosmo' }
 gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152
@@ -121,7 +121,7 @@ key_name = 'quasarkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'uqsr' }
+gas_price = { price = 0.01, denom = 'uqsr' }
 gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152
