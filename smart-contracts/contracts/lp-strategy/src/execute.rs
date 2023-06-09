@@ -23,15 +23,16 @@ pub fn execute_retry(
     // for now, only the lock admin can retry
     is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
 
-    let traps = TRAPS.load(deps.storage, (seq, channel))?;
+    let traps = TRAPS.load(deps.storage, (seq, channel.clone()))?;
     match traps.step {
         IbcMsgKind::Ica(ica_kind) => match ica_kind {
-            IcaMessages::ExitPool(pending) => handle_retry_exit_pool(deps, env, pending),
+            IcaMessages::ExitPool(pending) => {
+                handle_retry_exit_pool(deps, env, pending, seq, channel)
+            }
             _ => todo!(),
         },
         _ => todo!(),
     }
-    // Ok(Response::new()) // todo!()
 }
 
 /// The handle retry exit pool checks that pending unbonds is not empty and then iterates over the pending unbonds vector.
@@ -41,6 +42,8 @@ pub fn handle_retry_exit_pool(
     deps: DepsMut,
     env: Env,
     pending: PendingReturningUnbonds,
+    seq: u64,
+    channel: String,
 ) -> Result<Response, ContractError> {
     if pending.unbonds.is_empty() {
         return Err(ContractError::NoPendingUnbonds);
@@ -56,6 +59,10 @@ pub fn handle_retry_exit_pool(
     }
 
     resp = resp.add_attribute("action", "retry");
+
+    // remove the entry from traps so retrying a single failed tx cannot be triggered twice
+    TRAPS.remove(deps.storage, (seq, channel));
+
     Ok(resp)
 }
 

@@ -23,16 +23,17 @@ use crate::{
     },
 };
 
-/// If IBC_LOCK is unlocked, dumps pending bonds into the active bond queue and calculates the total pending bonds amount.
-/// Then prepares some queries:
-/// 1-3. IcaBalance in quote_denom, base_denom, and pool denom (lp shares)
-/// 4. SimulateJoinPool with the total pending bonds amount to estimate slippage. Saves total pending bonds amount in state
-/// 5. SimulateExitPool with the entire ICA locked amount to get the total value in lp tokens
-/// 6. SpotPrice of base_denom and quote_denom to convert quote_denom from exitpool to the base_denom
-/// 7. LockedByID to get the current lock state
-/// Also dumps pending unbonds into the active unbond queue.
-/// Then creates an IBC packet with the queries and returns it as a submessage.
-/// If IBC_LOCK is locked, returns None
+/// try_icq only does something if the IBC_LOCK is unlocked. When it is unlocked,
+/// try_icq moves all pending bonds into the active bond queue and calculates the total pending bonds amount.
+///
+/// Then it prepares the following queries:
+///     1-3. IcaBalance in quote_denom, base_denom, and pool denom (lp shares)
+///     4. SimulateJoinPool with the total pending bonds amount to estimate slippage and saves the total pending bonds amount in state.
+///     5. SimulateExitPool with the entire ICA locked amount to get the total value in lp tokens.
+///     6. SpotPrice of base_denom and quote_denom to convert quote_denom from exitpool to the base_denom.
+///     7. LockedByID to get the current lock state.
+///
+/// It also moves all pending unbonds into the active unbond queue and returns an IBC send packet with the queries as a submessage.
 pub fn try_icq(
     storage: &mut dyn Storage,
     _querier: QuerierWrapper,

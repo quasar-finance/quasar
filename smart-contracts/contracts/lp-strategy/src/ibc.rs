@@ -690,7 +690,7 @@ pub fn handle_failing_ack(
         ),
         &Trap {
             error: format!("packet failure: {error}"),
-            step: step.clone(),
+            step,
             last_succesful: false,
         },
     )?;
