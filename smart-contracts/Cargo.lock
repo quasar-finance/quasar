@@ -1217,6 +1217,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "multihop-router"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test 0.16.2",
+ "cw-storage-plus 1.0.1",
+ "cw2 1.0.1",
+ "derivative",
+ "proptest",
+ "schemars",
+ "serde",
+ "serde-json-wasm 0.5.0",
+ "thiserror",
+]
+
+[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
