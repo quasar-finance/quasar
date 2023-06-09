@@ -405,4 +405,139 @@ mod tests {
 
         assert!(res.is_err());
     }
+
+    #[test]
+    fn test_handle_retry_exit_pool_twice_fails() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let pending = PendingReturningUnbonds {
+            unbonds: vec![
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(101)),
+                    owner: Addr::unchecked("owner1"),
+                    id: "1".to_string(),
+                },
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(102)),
+                    owner: Addr::unchecked("owner2"),
+                    id: "2".to_string(),
+                },
+                ReturningUnbond {
+                    amount: RawAmount::LocalDenom(Uint128::new(103)),
+                    owner: Addr::unchecked("owner3"),
+                    id: "3".to_string(),
+                },
+            ],
+        };
+
+        TRAPS
+            .save(
+                deps.as_mut().storage,
+                (3539, "channel-35".to_string()),
+                &Trap {
+                    error: "exit pool failed on osmosis".to_string(),
+                    step: IbcMsgKind::Ica(IcaMessages::ExitPool(pending)),
+                    last_succesful: true,
+                },
+            )
+            .unwrap();
+
+        LOCK_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            .unwrap();
+
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (Addr::unchecked("owner1"), "1".to_string()),
+                &Unbond {
+                    lp_shares: Uint128::new(101),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                    owner: Addr::unchecked("owner1"),
+                    id: "1".to_string(),
+                },
+            )
+            .unwrap();
+
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (Addr::unchecked("owner2"), "2".to_string()),
+                &Unbond {
+                    lp_shares: Uint128::new(101),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                    owner: Addr::unchecked("owner2"),
+                    id: "2".to_string(),
+                },
+            )
+            .unwrap();
+
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (Addr::unchecked("owner3"), "3".to_string()),
+                &Unbond {
+                    lp_shares: Uint128::new(103),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                    owner: Addr::unchecked("owner3"),
+                    id: "3".to_string(),
+                },
+            )
+            .unwrap();
+
+        let res = execute_retry(
+            deps.as_mut(),
+            env.clone(),
+            MessageInfo {
+                sender: Addr::unchecked("admin"),
+                funds: vec![],
+            },
+            3539,
+            "channel-35".to_string(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            res.attributes,
+            vec![
+                attr("unbond", "owner1"),
+                attr("unbond_id", "1"),
+                attr("unbond", "owner2"),
+                attr("unbond_id", "2"),
+                attr("unbond", "owner3"),
+                attr("unbond_id", "3"),
+                attr("action", "retry"),
+            ]
+        );
+
+        assert_eq!(PENDING_UNBOND_QUEUE.len(&deps.storage).unwrap(), 3);
+        assert_eq!(
+            PENDING_UNBOND_QUEUE.back(&deps.storage).unwrap().unwrap(),
+            Unbond {
+                lp_shares: Uint128::new(103),
+                unlock_time: Timestamp::from_seconds(1000),
+                attempted: true,
+                owner: Addr::unchecked("owner3"),
+                id: "3".to_string(),
+            }
+        );
+
+        // execute retry for same seq & channel should fail
+        let res = execute_retry(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: Addr::unchecked("admin"),
+                funds: vec![],
+            },
+            3539,
+            "channel-35".to_string(),
+        );
+
+        assert!(res.is_err());
+    }
 }
