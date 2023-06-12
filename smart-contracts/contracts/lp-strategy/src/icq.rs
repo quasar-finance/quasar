@@ -23,6 +23,19 @@ use crate::{
     },
 };
 
+/// try_icq only does something if the IBC_LOCK is unlocked. When it is unlocked,
+/// all pending bonds are moved into the active bond queue.
+///
+/// It then prepares the following queries:
+///     - ICA balance in base denom.
+///     - ICA balance in quote denom.
+///     - ICA balance in LP shares.
+///     - SimulateJoinPool with the total pending bonds amount to estimate slippage and saves the total pending bonds amount in state.
+///     - SimulateExitPool with the entire ICA locked amount to get the total value in lp tokens.
+///     - SpotPrice of base denom and quote denom to convert quote denom from exitpool to the base denom.
+///     - LockedByID to get the current lock state.
+///
+/// It also moves all pending unbonds into the active unbond queue and returns an IBC send packet with the queries as a submessage.
 pub fn try_icq(
     storage: &mut dyn Storage,
     _querier: QuerierWrapper,

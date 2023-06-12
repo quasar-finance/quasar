@@ -85,7 +85,7 @@ pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_bal
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
-// our c
+// TODO: this is not being used, remove it
 pub(crate) const PENDING_UNBONDING_CLAIMS: Map<(Addr, String), Unbond> =
     Map::new("pending_unbonding_claims");
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");

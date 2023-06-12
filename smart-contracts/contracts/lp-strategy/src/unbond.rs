@@ -24,7 +24,18 @@ use crate::{
     },
 };
 
-// if unbond time has expired, we unbond the shares and transfer back the funds
+/// do_unbond is used to check whether an unbonding claim can be processed, keeps record of unbonding attempts,
+/// and manages the workflow of unbonding operations.
+///
+/// It first retrieves the corresponding unbonding claim from storage and checks if the unlock time
+/// of the unbonding claim has already passed by comparing it to the current block time. If the unlock time
+/// has not yet passed, the function returns an error indicating that the shares are not yet available for unbonding.
+///
+/// If the unlock time has already passed, the `attempted` field of the unbonding claim is set to `true`.
+/// This operation marks that an unbonding attempt has been made for these shares and prevents the execution of
+/// multiple unbonding attempts for the same shares.
+///
+/// Finally, the unbonding claim is moved into the PENDING_UNBOND_QUEUE for later processing.
 pub fn do_unbond(
     storage: &mut dyn Storage,
     env: &Env,
