@@ -496,8 +496,8 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     // remove old pending acks
-    for key in msg.delete_pending.clone() {
-        PENDING_ACK.remove(deps.storage, key)
+    for delete_pending_item in msg.delete_pending.clone() {
+        PENDING_ACK.remove(deps.storage, &(delete_pending_item.bond_id, delete_pending_item.addr))
     }
 
     Ok(Response::new()
