@@ -42,8 +42,14 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
+pub struct DeletePending {
+    bond_id: u64,
+    addr: String,
+}
+
+#[cw_serde]
 pub struct MigrateMsg {
-    pub delete_pending: Vec<(u64, String)>,
+    pub delete_pending: Vec<DeletePending>,
 }
 
 #[cw_serde]
