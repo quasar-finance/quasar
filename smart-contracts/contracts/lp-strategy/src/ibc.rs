@@ -1,4 +1,4 @@
-use crate::bond::{batch_bond, create_share};
+use crate::bond::{batch_bond, create_share, Bond};
 use crate::error::{ContractError, Never, Trap};
 
 use crate::helpers::{
@@ -13,9 +13,9 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    LpCache, PendingBond, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL,
+    ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -28,6 +28,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::{
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
 use std::str::FromStr;
+use std::vec;
 
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
@@ -42,10 +43,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    attr, from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -261,13 +262,10 @@ pub fn handle_succesful_ack(
     pkt: IbcPacketAckMsg,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    let kind = PENDING_ACK.load(
-        deps.storage,
-        (
-            pkt.original_packet.sequence,
-            pkt.original_packet.src.channel_id.clone(),
-        ),
-    )?;
+    let seq = pkt.original_packet.sequence;
+    let channel = pkt.original_packet.src.channel_id.clone();
+
+    let kind = PENDING_ACK.load(deps.storage, (seq, channel.clone()))?;
     match kind {
         // a transfer ack means we have sent funds to the ica address, return transfers are handled by the ICA ack
         IbcMsgKind::Transfer { pending, amount } => {
@@ -276,7 +274,7 @@ pub fn handle_succesful_ack(
         IbcMsgKind::Ica(ica_kind) => {
             handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind)
         }
-        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin),
+        IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin, &seq, &channel),
     }
 }
 
@@ -320,6 +318,8 @@ pub fn handle_icq_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
+    seq: &u64,
+    channel: &String,
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
@@ -403,6 +403,14 @@ pub fn handle_icq_ack(
     SIMULATED_JOIN_RESULT.save(storage, &parsed_join_pool_out)?;
     SIMULATED_EXIT_RESULT.save(storage, &parsed_exit_pool_out)?;
 
+    // get bond information before batching bonds
+    let mut bonds: Vec<Bond> = vec![];
+    if !BOND_QUEUE.is_empty(storage)? {
+        bonds = BOND_QUEUE
+            .iter(storage)?
+            .collect::<StdResult<Vec<Bond>>>()?;
+    }
+
     // todo move this to below into the lock decisions
     let bond = batch_bond(storage, &env, total_balance)?;
 
@@ -412,9 +420,48 @@ pub fn handle_icq_ack(
     // if we have a bond, start_unbond or unbond msg, we lock the repsective lock
 
     // todo rewrite into flat if/else ifs
+
     if let Some(msg) = bond {
         msges.push(msg);
-        attrs.push(Attribute::new("bond-status", "bonding"));
+
+        let owners = format!(
+            "['{}']",
+            bonds
+                .iter()
+                .map(|bond| bond.owner.to_string())
+                .collect::<Vec<String>>()
+                .join("','"),
+        );
+
+        let bond_ids = format!(
+            "['{}']",
+            bonds
+                .iter()
+                .map(|bond| bond.bond_id.to_string())
+                .collect::<Vec<String>>()
+                .join("','"),
+        );
+
+        // TODO: what denom should we use here?
+        let amounts = format!(
+            "['{}']",
+            bonds
+                .iter()
+                .map(|bond| bond.amount.to_string() + &config.base_denom)
+                .collect::<Vec<String>>()
+                .join("','"),
+        );
+
+        attrs = vec![
+            attr("action", "bond_packet"),
+            attr("primitive_address", env.contract.address.to_string()),
+            attr("owners", owners),
+            attr("bond_ids", bond_ids),
+            attr("amounts", amounts),
+            attr("packet_sequence", seq.to_string()),
+            attr("channel_id", channel.clone()),
+        ];
+
         IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
             Ok(lock.lock_bond())
         })?;
@@ -733,7 +780,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        IbcEndpoint, IbcOrder,
+        Addr, IbcEndpoint, IbcOrder,
     };
 
     use crate::{
@@ -784,7 +831,14 @@ mod tests {
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
         let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
-        handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
+        handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            ack_bin,
+            &1,
+            &"channel-25".to_string(),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -831,5 +885,93 @@ mod tests {
                 .unwrap(),
             expected
         )
+    }
+
+    #[test]
+    fn handle_icq_ack_events_bond_queue() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        CONFIG
+            .save(
+                deps.as_mut().storage,
+                &Config {
+                    lock_period: 100,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom:
+                        "ibc/D176154B0C63D1F9C6DCFB4F70349EBF2E2B5A87A05902F57A6AE92B863E9AEC"
+                            .to_string(),
+                    local_denom: "ibc/local_osmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                },
+            )
+            .unwrap();
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::zero(),
+                },
+            )
+            .unwrap();
+        SIMULATED_JOIN_AMOUNT_IN
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
+
+        // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::one(),
+                    owner: Addr::unchecked("vault_1".to_string()),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::new(2),
+                    owner: Addr::unchecked("vault_1".to_string()),
+                    bond_id: "2".to_string(),
+                },
+            )
+            .unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        let res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            ack_bin,
+            &100,
+            &"channel-25".to_string(),
+        )
+        .unwrap();
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(
+            res.attributes,
+            vec![
+                attr("action", "bond_packet"),
+                attr("primitive_address", "cosmos2contract"),
+                attr("owners", "['vault_1','vault_1']"),
+                attr("bond_ids", "['1','2']"),
+                attr("amounts", "['1uosmo','2uosmo']"),
+                attr("packet_sequence", 100.to_string()),
+                attr("channel_id", "channel-25"),
+            ]
+        );
     }
 }

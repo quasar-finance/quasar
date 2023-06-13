@@ -69,6 +69,7 @@ pub fn try_icq(
             }
         }
 
+        // TODO: this channel is the same as icq_channel, so we can remove it.
         let channel = ICQ_CHANNEL.load(storage)?;
 
         Ok(Some(create_ibc_ack_submsg(

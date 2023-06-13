@@ -338,8 +338,7 @@ pub fn bond(
             ("action", "bond"),
             ("vault_address", &env.contract.address.to_string()),
             ("primitive_addresses", &primitive_addresses),
-            // consider using recipient instead of sender? or both?
-            ("sender", &info.sender.to_string()),
+            ("sender", recipient_addr.as_str()),
             ("bond_id", &bond_seq.to_string()),
             ("amounts", &amounts),
             ("data", &"".to_string()),
