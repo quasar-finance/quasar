@@ -4,7 +4,7 @@ use batch_crosschain_swaps::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {
-        name: "crosschain-swaps",
+        name: "batch-crosschain-swaps",
         instantiate: InstantiateMsg,
         query: QueryMsg,
         execute: ExecuteMsg,

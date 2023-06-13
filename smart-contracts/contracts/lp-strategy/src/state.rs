@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
-use cosmwasm_std::{Addr, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Empty, IbcAcknowledgement, StdError, StdResult, Timestamp, Uint128};
 use cw_storage_plus::{Deque, Item, Key, KeyDeserialize, Map, Prefixer, PrimaryKey};
 
 use crate::{
@@ -44,6 +44,7 @@ pub struct Config {
 // the ADMIN in this case is the person allowed to deposit into the contract
 // this is set to the first depositor
 pub(crate) const ADMIN: Item<Addr> = Item::new("admin");
+pub(crate) const LOCK_ADMIN: Map<&Addr, Empty> = Map::new("lock_admin");
 pub(crate) const DEPOSITOR: Item<Addr> = Item::new("depositor");
 
 pub(crate) const CONFIG: Item<Config> = Item::new("config");
@@ -84,7 +85,7 @@ pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_bal
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");
 
-// our c
+// TODO: this is not being used, remove it
 pub(crate) const PENDING_UNBONDING_CLAIMS: Map<(Addr, String), Unbond> =
     Map::new("pending_unbonding_claims");
 pub(crate) const UNBONDING_CLAIMS: Map<(Addr, String), Unbond> = Map::new("unbonding_claims");

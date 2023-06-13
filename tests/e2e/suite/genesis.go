@@ -258,150 +258,30 @@ func quasarPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, err
 
 	kr := keyring.NewInMemory()
 
-	authority := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
-	masterMinter := interchaintest.BuildWallet(kr, masterMinterKeyName, chainCfg)
-	owner := interchaintest.BuildWallet(kr, ownerKeyName, chainCfg)
-	newOwner := interchaintest.BuildWallet(kr, newOwnerKeyName, chainCfg)
-	bondTest := interchaintest.BuildWallet(kr, bondTestKeyName, chainCfg)
-	bondTest1 := interchaintest.BuildWallet(kr, bondTestKeyName1, chainCfg)
-	bondTest2 := interchaintest.BuildWallet(kr, bondTestKeyName2, chainCfg)
-	bondTest3 := interchaintest.BuildWallet(kr, bondTestKeyName3, chainCfg)
-	bondTest4 := interchaintest.BuildWallet(kr, bondTestKeyName4, chainCfg)
-	bondTest5 := interchaintest.BuildWallet(kr, bondTestKeyName5, chainCfg)
-	bondTest6 := interchaintest.BuildWallet(kr, bondTestKeyName6, chainCfg)
-	bondTest7 := interchaintest.BuildWallet(kr, bondTestKeyName7, chainCfg)
-
-	err := val.RecoverKey(ctx, authorityKeyName, authority.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, ownerKeyName, owner.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, newOwnerKeyName, newOwner.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, masterMinterKeyName, masterMinter.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName, bondTest.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName1, bondTest1.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName2, bondTest2.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName3, bondTest3.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName4, bondTest4.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName5, bondTest5.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName6, bondTest6.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, bondTestKeyName7, bondTest7.Mnemonic)
+	accTreasury := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
+	err := val.RecoverKey(ctx, authorityKeyName, accTreasury.Mnemonic)
 	if err != nil {
 		return Accounts{}, err
 	}
 
-	genesisWallets := []ibc.WalletAmount{
+	genesisCoins := []types.Coin{
 		{
-			Address: authority.Address,
-			Denom:   chainCfg.Denom,
-			Amount:  10_000_000_000_000_000,
+			Denom:  chainCfg.Denom,
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 		{
-			Address: owner.Address,
-			Denom:   "uayy",
-			Amount:  10_000_000_000_000_000,
-		},
-		{
-			Address: newOwner.Address,
-			Denom:   chainCfg.Denom,
-			Amount:  10_000_000_000_000_000,
-		},
-		{
-			Address: masterMinter.Address,
-			Denom:   chainCfg.Denom,
-			Amount:  10_000_000_000_000_000,
-		},
-		{
-			Address: bondTest.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest1.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest2.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest3.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest4.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest5.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest6.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
-		},
-		{
-			Address: bondTest7.Address,
-			Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
-			Amount:  100_000_000_000,
+			Denom:  "uayy",
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 	}
 
-	for _, wallet := range genesisWallets {
-		err = val.AddGenesisAccount(ctx, wallet.Address, []types.Coin{types.NewCoin(wallet.Denom, types.NewIntFromUint64(uint64(wallet.Amount)))})
-		if err != nil {
-			return Accounts{}, err
-		}
+	err = val.AddGenesisAccount(ctx, accTreasury.Address, genesisCoins)
+	if err != nil {
+		return Accounts{}, err
 	}
+
 	return Accounts{
-		Authority:    authority,
-		Owner:        owner,
-		NewOwner:     newOwner,
-		MasterMinter: masterMinter,
-		BondTest:     bondTest,
-		BondTest1:    bondTest1,
-		BondTest2:    bondTest2,
-		BondTest3:    bondTest3,
-		BondTest4:    bondTest4,
-		BondTest5:    bondTest5,
-		BondTest6:    bondTest6,
-		BondTest7:    bondTest7,
+		Treasury: accTreasury,
 	}, nil
 }
 
@@ -410,61 +290,37 @@ func osmosisPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, er
 
 	kr := keyring.NewInMemory()
 
-	authority := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
+	accTreasury := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
+	err := val.RecoverKey(ctx, authorityKeyName, accTreasury.Mnemonic)
+	if err != nil {
+		return Accounts{}, err
+	}
 
-	masterMinter := interchaintest.BuildWallet(kr, masterMinterKeyName, chainCfg)
-	owner := interchaintest.BuildWallet(kr, ownerKeyName1, chainCfg)
-	newOwner := interchaintest.BuildWallet(kr, newOwnerKeyName, chainCfg)
-
-	err := val.RecoverKey(ctx, authorityKeyName, authority.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, ownerKeyName1, owner.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, newOwnerKeyName, newOwner.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	err = val.RecoverKey(ctx, masterMinterKeyName, masterMinter.Mnemonic)
-	if err != nil {
-		return Accounts{}, err
-	}
-	genesisWallets := []ibc.WalletAmount{
+	genesisCoins := []types.Coin{
 		{
-			Address: authority.Address,
-			Denom:   "fakestake",
-			Amount:  100_000_000_000_000_000,
+			Denom:  "fakestake",
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 		{
-			Address: owner.Address,
-			Denom:   "stake1",
-			Amount:  100_000_000_000_000_000,
+			Denom:  "stake1",
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 		{
-			Address: newOwner.Address,
-			Denom:   "usdc",
-			Amount:  100_000_000_000_000_000,
+			Denom:  "usdc",
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 		{
-			Address: masterMinter.Address,
-			Denom:   chainCfg.Denom,
-			Amount:  100_000_000_000_000_000,
+			Denom:  chainCfg.Denom,
+			Amount: types.NewIntFromUint64(100_000_000_000_000_000),
 		},
 	}
 
-	for _, wallet := range genesisWallets {
-		err = val.AddGenesisAccount(ctx, wallet.Address, []types.Coin{types.NewCoin(wallet.Denom, types.NewIntFromUint64(uint64(wallet.Amount)))})
-		if err != nil {
-			return Accounts{}, err
-		}
+	err = val.AddGenesisAccount(ctx, accTreasury.Address, genesisCoins)
+	if err != nil {
+		return Accounts{}, err
 	}
+
 	return Accounts{
-		Authority:    authority,
-		Owner:        owner,
-		NewOwner:     newOwner,
-		MasterMinter: masterMinter,
+		Treasury: accTreasury,
 	}, nil
 }

@@ -263,9 +263,19 @@ pub enum ExecuteMsg {
     Lock {
         lock_only: LockOnly,
     },
+    AddLockAdmin {
+        to_add: String,
+    },
+    RemoveLockAdmin {
+        to_remove: String,
+    },
     ManualTimeout {
         seq: u64,
         channel: String,
         should_unlock: bool,
+    },
+    Retry {
+        seq: u64,
+        channel: String,
     },
 }
