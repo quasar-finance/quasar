@@ -3,7 +3,7 @@ use crate::error::{ContractError, Never, Trap};
 
 use crate::helpers::{
     ack_submsg, create_callback_submsg, create_ibc_ack_submsg, get_ica_address,
-    get_usable_compound_balance, unlock_on_error, IbcMsgKind, IcaMessages,
+    get_usable_compound_balance, unlock_on_error, vec_to_string, IbcMsgKind, IcaMessages,
 };
 use crate::ibc_lock::Lock;
 use crate::ibc_util::{
@@ -271,9 +271,16 @@ pub fn handle_succesful_ack(
         IbcMsgKind::Transfer { pending, amount } => {
             handle_transfer_ack(deps.storage, env, ack_bin, &pkt, pending, amount)
         }
-        IbcMsgKind::Ica(ica_kind) => {
-            handle_ica_ack(deps.storage, deps.querier, env, ack_bin, &pkt, ica_kind)
-        }
+        IbcMsgKind::Ica(ica_kind) => handle_ica_ack(
+            deps.storage,
+            deps.querier,
+            env,
+            ack_bin,
+            &pkt,
+            ica_kind,
+            &seq,
+            &channel,
+        ),
         IbcMsgKind::Icq => handle_icq_ack(deps.storage, env, ack_bin, &seq, &channel),
     }
 }
@@ -424,40 +431,20 @@ pub fn handle_icq_ack(
     if let Some(msg) = bond {
         msges.push(msg);
 
-        let owners = format!(
-            "['{}']",
-            bonds
-                .iter()
-                .map(|bond| bond.owner.to_string())
-                .collect::<Vec<String>>()
-                .join("','"),
-        );
-
-        let bond_ids = format!(
-            "['{}']",
-            bonds
-                .iter()
-                .map(|bond| bond.bond_id.to_string())
-                .collect::<Vec<String>>()
-                .join("','"),
-        );
-
-        // TODO: what denom should we use here?
-        let amounts = format!(
-            "['{}']",
-            bonds
-                .iter()
-                .map(|bond| bond.amount.to_string() + &config.base_denom)
-                .collect::<Vec<String>>()
-                .join("','"),
-        );
+        let owners = bonds.iter().map(|b| b.owner.to_string()).collect();
+        let bond_ids = bonds.iter().map(|b| b.bond_id.clone()).collect();
+        let amounts = bonds
+            .iter()
+            // TODO: is base denom the correct denom here?
+            .map(|b| b.amount.to_string() + &config.base_denom)
+            .collect();
 
         attrs = vec![
             attr("action", "bond_packet"),
             attr("primitive_address", env.contract.address.to_string()),
-            attr("owners", owners),
-            attr("bond_ids", bond_ids),
-            attr("amounts", amounts),
+            attr("owners", vec_to_string(owners)),
+            attr("bond_ids", vec_to_string(bond_ids)),
+            attr("amounts", vec_to_string(amounts)),
             attr("packet_sequence", seq.to_string()),
             attr("channel_id", channel.clone()),
         ];
@@ -497,14 +484,16 @@ pub fn handle_ica_ack(
     ack_bin: Binary,
     _pkt: &IbcPacketAckMsg,
     ica_kind: IcaMessages,
+    seq: &u64,
+    channel: &String,
 ) -> Result<Response, ContractError> {
     match ica_kind {
         IcaMessages::JoinSwapExternAmountIn(mut data) => {
             handle_join_pool(storage, &env, ack_bin, &mut data)
         }
-        IcaMessages::LockTokens(data, lp_shares) => {
-            handle_lock_tokens_ack(storage, &env, data, lp_shares, ack_bin, querier)
-        }
+        IcaMessages::LockTokens(data, lp_shares) => handle_lock_tokens_ack(
+            storage, &env, data, lp_shares, ack_bin, querier, seq, channel,
+        ),
         IcaMessages::BeginUnlocking(data, total) => {
             handle_start_unbond_ack(storage, querier, &env, data, total)
         }
@@ -595,11 +584,13 @@ fn handle_join_pool(
 
 fn handle_lock_tokens_ack(
     storage: &mut dyn Storage,
-    _env: &Env,
+    env: &Env,
     data: PendingBond,
     total_lp_shares: Uint128,
     ack_bin: Binary,
     querier: QuerierWrapper,
+    seq: &u64,
+    channel: &String,
 ) -> Result<Response, ContractError> {
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let resp = MsgLockTokensResponse::unpack(ack)?;
@@ -627,8 +618,14 @@ fn handle_lock_tokens_ack(
     })?;
 
     let mut callback_submsgs: Vec<SubMsg> = vec![];
+    let mut owners = vec![];
+    let mut bond_ids = vec![];
+
     for claim in data.bonds {
         let share_amount = create_share(storage, &claim.owner, &claim.bond_id, claim.claim_amount)?;
+
+        println!("###DEBUG: {}", claim.owner.as_str());
+
         if querier
             .query_wasm_contract_info(claim.owner.as_str())
             .is_ok()
@@ -641,15 +638,19 @@ fn handle_lock_tokens_ack(
                 }))?,
                 funds: vec![],
             };
+
             // convert wasm_msg into cosmos_msg to be handled in create_callback_submsg
             let cosmos_msg = CosmosMsg::Wasm(wasm_msg);
             callback_submsgs.push(create_callback_submsg(
                 storage,
                 cosmos_msg,
-                claim.owner,
-                claim.bond_id,
+                claim.owner.clone(),
+                claim.bond_id.clone(),
             )?);
         }
+
+        owners.push(claim.owner.to_string());
+        bond_ids.push(claim.bond_id);
     }
 
     // set the bond lock state to unlocked
@@ -660,8 +661,15 @@ fn handle_lock_tokens_ack(
     // TODO, do we want to also check queue state? and see if we can already start a new execution?
     Ok(Response::new()
         .add_submessages(callback_submsgs)
-        .add_attribute("locked_tokens", ack_bin.to_base64())
-        .add_attribute("lock_id", resp.id.to_string()))
+        .add_attributes(vec![
+            ("action", "bond_acknowledgment"),
+            ("primitive_address", &env.contract.address.to_string()),
+            ("owners", &vec_to_string(owners)),
+            ("bond_ids", &vec_to_string(bond_ids)),
+            ("packet_sequence", &seq.to_string()),
+            ("channel_id", channel),
+            ("data", ""),
+        ]))
 }
 
 fn handle_exit_pool_ack(
@@ -779,12 +787,13 @@ pub(crate) fn on_packet_timeout(
 mod tests {
 
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
-        Addr, IbcEndpoint, IbcOrder,
+        testing::{mock_dependencies, mock_env, MockQuerier},
+        Addr, ContractInfoResponse, ContractResult, IbcEndpoint, IbcOrder, QuerierResult,
+        WasmQuery,
     };
 
     use crate::{
-        state::{Config, SIMULATED_JOIN_AMOUNT_IN},
+        state::{Config, OngoingDeposit, RawAmount, BONDING_CLAIMS, SIMULATED_JOIN_AMOUNT_IN},
         test_helpers::default_setup,
     };
 
@@ -911,21 +920,11 @@ mod tests {
                 },
             )
             .unwrap();
-        LP_SHARES
-            .save(
-                deps.as_mut().storage,
-                &LpCache {
-                    locked_shares: Uint128::new(1000),
-                    w_unlocked_shares: Uint128::zero(),
-                    d_unlocked_shares: Uint128::zero(),
-                },
-            )
-            .unwrap();
+
         SIMULATED_JOIN_AMOUNT_IN
             .save(deps.as_mut().storage, &Uint128::zero())
             .unwrap();
 
-        // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
         let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
 
         BOND_QUEUE
@@ -960,6 +959,157 @@ mod tests {
             &"channel-25".to_string(),
         )
         .unwrap();
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(
+            res.attributes,
+            vec![
+                attr("action", "bond_packet"),
+                attr("primitive_address", "cosmos2contract"),
+                attr("owners", "['vault_1','vault_1']"),
+                attr("bond_ids", "['1','2']"),
+                attr("amounts", "['1uosmo','2uosmo']"),
+                attr("packet_sequence", 100.to_string()),
+                attr("channel_id", "channel-25"),
+            ]
+        );
+    }
+
+    #[test]
+    fn handle_lock_tokens_ack_events_bond_queue() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        CONFIG
+            .save(
+                deps.as_mut().storage,
+                &Config {
+                    lock_period: 100,
+                    pool_id: 1,
+                    pool_denom: "gamm/pool/1".to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom:
+                        "ibc/D176154B0C63D1F9C6DCFB4F70349EBF2E2B5A87A05902F57A6AE92B863E9AEC"
+                            .to_string(),
+                    local_denom: "ibc/local_osmo".to_string(),
+                    transfer_channel: "channel-0".to_string(),
+                    return_source_channel: "channel-0".to_string(),
+                    expected_connection: "connection-0".to_string(),
+                },
+            )
+            .unwrap();
+
+        LP_SHARES
+            .save(
+                deps.as_mut().storage,
+                &LpCache {
+                    locked_shares: Uint128::new(1000),
+                    w_unlocked_shares: Uint128::zero(),
+                    d_unlocked_shares: Uint128::new(3),
+                },
+            )
+            .unwrap();
+
+        SIMULATED_JOIN_AMOUNT_IN
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::one(),
+                    owner: Addr::unchecked("vault_1".to_string()),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::new(2),
+                    owner: Addr::unchecked("vault_1".to_string()),
+                    bond_id: "2".to_string(),
+                },
+            )
+            .unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        let pending = PendingBond {
+            bonds: vec![
+                OngoingDeposit {
+                    claim_amount: Uint128::new(1),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                    owner: Addr::unchecked("vault_1"),
+                    bond_id: "1".to_string(),
+                },
+                OngoingDeposit {
+                    claim_amount: Uint128::new(2),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(999)),
+                    owner: Addr::unchecked("vault_1"),
+                    bond_id: "2".to_string(),
+                },
+                // OngoingDeposit {
+                //     claim_amount: Uint128::new(101),   z
+                //     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                //     owner: Addr::unchecked("address"),
+                //     bond_id: "fake".to_string(),
+                // },
+            ],
+        };
+
+        BONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked("vault_1".to_string()), "1"),
+                &Uint128::new(1),
+            )
+            .unwrap();
+
+        BONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked("vault_1".to_string()), "2"),
+                &Uint128::new(2),
+            )
+            .unwrap();
+
+        let ack_bin =
+            Binary::from_base64("CiUKHS9vc21vc2lzLmxvY2t1cC5Nc2dMb2NrVG9rZW5zEgQI/Lti").unwrap();
+
+        let mut info = ContractInfoResponse::default();
+        info.admin = Some("vault_1".to_string());
+
+        let mut q = MockQuerier::default();
+        q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { contract_addr: _ } => {
+                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info.admin).unwrap()))
+                }
+                _ => unreachable!(),
+            }
+        });
+        let w: QuerierWrapper = QuerierWrapper::new(&deps.querier);
+
+        let test = w.query_wasm_contract_info(pending.bonds[0].owner.as_str());
+
+        println!("###DEBUG: {:?}", test);
+
+        let res = handle_lock_tokens_ack(
+            &mut deps.storage,
+            &env,
+            pending,
+            Uint128::new(3),
+            ack_bin.clone(),
+            w,
+            &100,
+            &"channel-25".to_string(),
+        )
+        .unwrap();
+
         assert_eq!(res.messages.len(), 1);
         assert_eq!(
             res.attributes,

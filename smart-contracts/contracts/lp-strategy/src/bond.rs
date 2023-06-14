@@ -129,7 +129,7 @@ pub fn fold_bonds(
 }
 
 // create_claim
-fn create_claim(
+pub fn create_claim(
     storage: &mut dyn Storage,
     user_balance: Uint128,
     address: &Addr,

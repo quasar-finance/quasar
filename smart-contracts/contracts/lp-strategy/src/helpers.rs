@@ -300,6 +300,10 @@ pub(crate) fn unlock_on_error(
     }
 }
 
+pub fn vec_to_string(v: Vec<String>) -> String {
+    format!("['{}']", v.join("','"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -310,5 +314,12 @@ mod tests {
         let resp = Binary::from(MsgTransferResponse { seq }.encode_to_vec());
         let parsed_seq = parse_seq(resp).unwrap();
         assert_eq!(seq, parsed_seq)
+    }
+
+    #[test]
+    fn test_vec_to_string() {
+        let v = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let s = vec_to_string(v);
+        assert_eq!(s, "['a','b','c']")
     }
 }
