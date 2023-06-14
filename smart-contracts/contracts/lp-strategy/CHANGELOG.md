@@ -17,8 +17,12 @@
 - Remove unnecessary load from try_icq
 - Changed the locking on the execute calls to lock correctly depending on queue state
 - Remove pending ack entry after succesful ack handling
+- Added some doc comments
+- created execute.rs file and created retry exit pool fn there
 
 ### Features
+
+- added retry entry point to handle exit pool errors
 
 ### Bugfixes
 

@@ -32,6 +32,8 @@ pub struct StartUnbond {
     pub primitive_shares: Uint128,
 }
 
+/// Checks that the unbond_id is not already in the queue or in unbonding process.
+/// If the user has sufficient shares to unbond, adds the StartUnbond to the queue.
 pub fn do_start_unbond(
     storage: &mut dyn Storage,
     unbond: StartUnbond,
