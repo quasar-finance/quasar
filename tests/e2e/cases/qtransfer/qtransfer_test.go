@@ -117,9 +117,6 @@ func (s *Qtransfer) SetupSuite() {
 	// Setup an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), QSLDstartingTokenAmount)
 
-	// Send tokens "uayy" and "uqsr" from Quasar to Osmosis account
-	s.SendTokensToRespectiveAccounts(ctx)
-
 	// Send tokens to the respective account and create the required pools
 	s.CreatePools(ctx)
 

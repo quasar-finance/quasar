@@ -5,7 +5,7 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 
-type AccountsNew map[string][]ibc.Wallet
+type AccountsNew map[string]*ibc.Wallet
 
 type path struct {
 	chain1 ibc.Chain
@@ -13,11 +13,7 @@ type path struct {
 }
 
 type Accounts struct {
-	Authority                                                                             ibc.Wallet
-	Owner                                                                                 ibc.Wallet
-	NewOwner                                                                              ibc.Wallet
-	MasterMinter                                                                          ibc.Wallet
-	BondTest, BondTest1, BondTest2, BondTest3, BondTest4, BondTest5, BondTest6, BondTest7 ibc.Wallet
+	Treasury ibc.Wallet
 }
 
 type Balance struct {

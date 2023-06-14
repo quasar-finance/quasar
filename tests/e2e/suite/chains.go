@@ -5,6 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
+	"go.uber.org/zap"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -114,8 +118,13 @@ func (c Chains) GetChain(chainName string) (*Chain, bool) {
 	return &Chain{}, false
 }
 
-func (p *Chain) ExecuteTests(ctx context.Context) {
-	p.TestCases.ExecuteCases(p.Chain, ctx)
+func (p *Chain) ExecuteTests(ctx context.Context) error {
+	err := p.TestCases.ExecuteCases(p.Chain, ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Chain) SetContracts(contracts []*Contract) error {
@@ -126,13 +135,13 @@ func (p *Chain) SetContracts(contracts []*Contract) error {
 	return nil
 }
 
-func (p *Chain) FindContractByType(contractType string) (*Contract, error) {
+func (p *Chain) FindContractByLabel(contractLabel string) (*Contract, error) {
 	if !p.IsWasmEnabled {
 		return nil, fmt.Errorf("chain is not wasm enabled, chain name : %s", p.Chain.Config().Name)
 	}
 
 	for _, ct := range p.contracts {
-		if ct.contractType == contractType {
+		if ct.label == contractLabel {
 			return ct, nil
 		}
 	}
@@ -178,11 +187,26 @@ func (p *Chain) ExecQuery(ctx context.Context, resp any, cmd ...string) error {
 	return nil
 }
 
-func (p *Chain) ExecTx(ctx context.Context, keyName string, cmd ...string) (string, error) {
+func (p *Chain) ExecTx(ctx context.Context, cmd []string, keyName, fileName, fileFlag string, fileBytes []byte, amount sdk.Coins, logger *zap.Logger) (string, error) {
 	tn := GetFullNode(p.Chain)
+
+	if !amount.Empty() {
+		cmd = append(cmd, "--amount", amount.String())
+	}
+
+	if fileName != "" && fileBytes != nil {
+		fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
+		err := fw.WriteFile(ctx, tn.VolumeName, fileName, fileBytes)
+		if err != nil {
+			return "", fmt.Errorf(err.Error(), "failed to write pool file")
+		}
+
+		cmd = append(cmd, fileFlag, filepath.Join(tn.HomeDir(), fileName))
+	}
+
 	txhash, err := tn.ExecTx(ctx, keyName, cmd...)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf(err.Error(), "failed to execute command :", strings.Join(cmd, " "))
 	}
 
 	return txhash, nil

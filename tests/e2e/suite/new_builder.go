@@ -3,6 +3,7 @@ package suite
 import (
 	"context"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"testing"
 
 	dockerclient "github.com/docker/docker/client"
@@ -47,7 +48,7 @@ func NewE2eTestBuilder(t *testing.T) *E2eTestBuilder {
 
 	return &E2eTestBuilder{
 		t:              t,
-		IC:             ibctest.NewInterchain(),
+		IC:             ibctest.NewInterchain().AddRelayer(relayer, "Relayer").WithLog(logger),
 		Logger:         logger,
 		Relayer:        relayer,
 		Paths:          map[string]path{},
@@ -60,7 +61,7 @@ func NewE2eTestBuilder(t *testing.T) *E2eTestBuilder {
 	}
 }
 
-func (e *E2eTestBuilder) AddChain(chainConfig ibc.ChainConfig, accounts AccountsNew, numberOfValidators, numberOfNodes int, IsWasmEnabled bool) {
+func (e *E2eTestBuilder) AddChain(chainConfig ibc.ChainConfig, genesisCoins sdk.Coins, numberOfValidators, numberOfNodes int, IsWasmEnabled bool) {
 	e.checkBuilt()
 
 	ctx := context.Background()
@@ -73,7 +74,7 @@ func (e *E2eTestBuilder) AddChain(chainConfig ibc.ChainConfig, accounts Accounts
 			return fmt.Errorf("unbale to find chain %s", cc.Name)
 		}
 		val := chain.Chain.Validators[0]
-		chain.ChainAccount, err = addPreGenesis(ctx, val, accounts)
+		chain.ChainAccount, err = addPreGenesis(ctx, val, genesisCoins)
 		e.setChain(cc.Name, chain)
 		return err
 	}
@@ -104,8 +105,18 @@ func (e *E2eTestBuilder) setChain(chainName string, chain *Chain) {
 	for i, c := range e.Chains {
 		if c.Chain.Config().Name == chainName {
 			e.Chains[i] = chain
+			return
 		}
 	}
+}
+
+func (e *E2eTestBuilder) GetChain(chainName string) (*Chain, bool) {
+	for _, ch := range e.Chains {
+		if ch.Chain.Config().Name == chainName {
+			return ch, true
+		}
+	}
+	return &Chain{}, false
 }
 
 func (e *E2eTestBuilder) AddRelayer(chain1, chain2 ibc.Chain, relayer ibc.Relayer, pathName string, createChannelOpts ibc.CreateChannelOptions, createClientOptions ibc.CreateClientOptions) {
@@ -132,9 +143,9 @@ func (e *E2eTestBuilder) AutomatedRelay() {
 	e.automatedRelay = true
 }
 
-func (b *E2eTestBuilder) pathNames() []string {
+func (e *E2eTestBuilder) pathNames() []string {
 	var pathNames []string
-	for k := range b.Paths {
+	for k := range e.Paths {
 		pathNames = append(pathNames, k)
 	}
 	return pathNames

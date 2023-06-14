@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,21 +22,10 @@ import (
 )
 
 type Contract struct {
-	contractType    string
 	contractAddress string
 	codeID          uint64
 	label           string
 	initMessage     any
-}
-
-type ContractDetails struct {
-	ContractDetails []ContractDetail `json:"contract_details"`
-}
-
-type ContractDetail struct {
-	InitMessage  any    `json:"init_message"`
-	Label        string `json:"label"`
-	ContractType string `json:"contract_type"`
 }
 
 // NewContract returns Contract struct with init message assigned to it if codeID is zero
@@ -246,38 +234,7 @@ func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChai
 	return result, nil
 }
 
-func ReadInitMessagesFile(path string) ([]*Contract, error) {
-	jsonFile, err := os.Open(path)
-	// if we os.Open returns an error then handle it
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Successfully Opened %s \n", path)
-
-	byteValue, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// we initialize our Users array
-	var contractDetails ContractDetails
-
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into '' which we defined above
-	err = json.Unmarshal(byteValue, &contractDetails)
-	if err != nil {
-		return nil, err
-	}
-
-	var primitives []*Contract
-	for _, im := range contractDetails.ContractDetails {
-		primitives = append(primitives, NewContract(im.InitMessage, im.Label, 0))
-	}
-
-	return primitives, nil
-}
-
-func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, acc *ibc.Wallet, l *zap.Logger) (uint64, error) {
+func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, keyName string, l *zap.Logger) (uint64, error) {
 	// Read the Contract from os file
 	contract, err := os.ReadFile(filePath)
 	if err != nil {
@@ -298,7 +255,7 @@ func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath 
 		return 0, fmt.Errorf(err.Error(), "failed to write Contract file")
 	}
 
-	txhash, err := tn.ExecTx(ctx, acc.KeyName,
+	txhash, err := tn.ExecTx(ctx, keyName,
 		"wasm", "store", filepath.Join(tn.HomeDir(), contractFile),
 		"--gas", "20000000",
 	)

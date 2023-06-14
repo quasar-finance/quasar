@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	authorityKeyName = "authority"
+	AuthorityKeyName = "authority"
 
 	ownerKeyName        = "owner"
 	ownerKeyName1       = "pppppppppppppp"

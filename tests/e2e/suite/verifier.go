@@ -22,18 +22,22 @@ type TestCase struct {
 }
 
 type Input struct {
-	Account ibc.Wallet
-	Amount  sdk.Coins
-	Command []string
-	Resp    proto.Message
+	Account             ibc.Wallet
+	Amount              sdk.Coins
+	PreTxnInputCommand  []string
+	TxnInput            []byte
+	PostTxnInputCommand []string
+	Resp                proto.Message // needs to be set by user if needed
 }
 
 type Output struct {
 	RetryCount        int
 	RetryInterval     time.Duration
-	Result            any
-	QueryCommand      []string
-	OperationOnResult func() bool
+	Result            any // needs to be set by user if needed
+	PreQueryCommand   []string
+	QueryCommand      []byte
+	PostQueryCommand  []string
+	OperationOnResult func() bool // needs to be set by user if needed
 }
 
 func NewTestCases(testCases []*TestCase) TestCases {
@@ -46,11 +50,13 @@ func (tcs *TestCases) ExecuteCases(chain *cosmos.CosmosChain, ctx context.Contex
 
 	tn := GetFullNode(chain)
 	for _, t := range *tcs {
+		finalTxnInput := append(t.Input.PreTxnInputCommand, string(t.Input.TxnInput))
+		finalTxnInput = append(finalTxnInput, t.Input.PostTxnInputCommand...)
 		if !t.Input.Amount.Empty() {
-			t.Input.Command = append(t.Input.Command, "--amount", t.Input.Amount.String())
+			finalTxnInput = append(finalTxnInput, "--amount", t.Input.Amount.String())
 		}
 
-		txhash, err := tn.ExecTx(ctx, t.Input.Account.KeyName, t.Input.Command...)
+		txhash, err := tn.ExecTx(ctx, t.Input.Account.KeyName, finalTxnInput...)
 
 		txhashBytes, err := hex.DecodeString(txhash)
 		if err != nil {
@@ -95,10 +101,19 @@ func (tc *TestCase) GoVerify(chain *cosmos.CosmosChain, ctx context.Context, oc 
 		tc.Output.RetryCount = 10
 	}
 
+	// append all the whole command together
+	finalQueryInput := append(tc.Output.PreQueryCommand, string(tc.Output.QueryCommand))
+	finalQueryInput = append(finalQueryInput, tc.Output.PostQueryCommand...)
+
+	// if not supplied then give default as 5
+	if tc.Output.RetryInterval == time.Duration(0) {
+		tc.Output.RetryInterval = time.Second * 5
+	}
+
 	for i := 1; i <= tc.Output.RetryCount; i++ {
 		tn := GetFullNode(chain)
 
-		res, _, err := tn.ExecQuery(ctx, tc.Output.QueryCommand...)
+		res, _, err := tn.ExecQuery(ctx, finalQueryInput...)
 		if i == tc.Output.RetryCount && err != nil {
 			oc <- err
 			break
@@ -117,21 +132,25 @@ func (tc *TestCase) GoVerify(chain *cosmos.CosmosChain, ctx context.Context, oc 
 			}
 		}
 
-		// if not supplied then give default as 5
-		if tc.Output.RetryInterval == time.Duration(0) {
-			tc.Output.RetryInterval = time.Second * 5
+		if i == tc.Output.RetryCount && err == nil {
+			oc <- fmt.Errorf("could not verify the test case till end, with command `%s`, account key name `%s` and amount `%s`", string(tc.Input.TxnInput), tc.Input.Account.KeyName, tc.Input.Amount.String())
+			break
 		}
+
 		time.Sleep(tc.Output.RetryInterval)
 	}
 }
 
 func (tc *TestCase) ExecuteCase(chain *cosmos.CosmosChain, ctx context.Context) error {
+	finalTxnInput := append(tc.Input.PreTxnInputCommand, string(tc.Input.TxnInput))
+	finalTxnInput = append(finalTxnInput, tc.Input.PostTxnInputCommand...)
+
 	if !tc.Input.Amount.Empty() {
-		tc.Input.Command = append(tc.Input.Command, "--amount", tc.Input.Amount.String())
+		finalTxnInput = append(finalTxnInput, "--amount", tc.Input.Amount.String())
 	}
 
 	tn := GetFullNode(chain)
-	txhash, err := tn.ExecTx(ctx, tc.Input.Account.KeyName, tc.Input.Command...)
+	txhash, err := tn.ExecTx(ctx, tc.Input.Account.KeyName, finalTxnInput...)
 
 	txhashBytes, err := hex.DecodeString(txhash)
 	if err != nil {
@@ -164,10 +183,13 @@ func (tc *TestCase) VerifyCase(chain *cosmos.CosmosChain, ctx context.Context) e
 		tc.Output.RetryCount = 10
 	}
 
+	finalQueryInput := append(tc.Output.PreQueryCommand, string(tc.Output.QueryCommand))
+	finalQueryInput = append(finalQueryInput, tc.Output.PostQueryCommand...)
+
 	for i := 1; i <= tc.Output.RetryCount; i++ {
 		tn := GetFullNode(chain)
 
-		res, _, err := tn.ExecQuery(ctx, tc.Output.QueryCommand...)
+		res, _, err := tn.ExecQuery(ctx, finalQueryInput...)
 		if i == tc.Output.RetryCount && err != nil {
 			return err
 		}
