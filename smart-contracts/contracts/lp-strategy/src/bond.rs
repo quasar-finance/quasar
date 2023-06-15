@@ -147,7 +147,7 @@ pub fn fold_bonds(
             owner: item.owner,
             raw_amount: RawAmount::LocalDenom(item.amount),
             bond_id: item.bond_id,
-        });
+        })?;
     }
 
     Ok(Some((total, deposits)))

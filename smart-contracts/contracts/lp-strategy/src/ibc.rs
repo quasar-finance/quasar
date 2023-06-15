@@ -13,7 +13,7 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, IBC_TIMEOUT_TIME,
+    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK,
     SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, REJOIN_QUEUE, OngoingDeposit,
 };

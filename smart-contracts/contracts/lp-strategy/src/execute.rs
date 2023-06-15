@@ -41,7 +41,7 @@ pub fn execute_retry(
 
 pub fn handle_retry_join_pool(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     pending: PendingBond,
     seq: u64,
     channel: String,
@@ -233,6 +233,7 @@ mod tests {
                 attr("unbond", "owner3"),
                 attr("unbond_id", "3"),
                 attr("action", "retry"),
+                attr("kind", "exit_pool"),
             ]
         );
 
@@ -559,6 +560,7 @@ mod tests {
                 attr("unbond", "owner3"),
                 attr("unbond_id", "3"),
                 attr("action", "retry"),
+                attr("kind", "exit_pool"),
             ]
         );
 
