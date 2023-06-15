@@ -3,9 +3,10 @@ use cw_utils::nonpayable;
 
 use crate::{
     admin::is_lock_admin,
+    bond::Bond,
     error::ContractError,
     helpers::{IbcMsgKind, IcaMessages},
-    state::TRAPS,
+    state::{PendingBond, RawAmount, FAILED_JOIN_QUEUE, TRAPS},
     unbond::{do_unbond, PendingReturningUnbonds},
 };
 
@@ -29,10 +30,51 @@ pub fn execute_retry(
             IcaMessages::ExitPool(pending) => {
                 handle_retry_exit_pool(deps, env, pending, seq, channel)
             }
+            IcaMessages::JoinSwapExternAmountIn(pending) => {
+                handle_retry_join_pool(deps, env, pending, seq, channel)
+            }
             _ => todo!(),
         },
         _ => todo!(),
     }
+}
+
+pub fn handle_retry_join_pool(
+    deps: DepsMut,
+    env: Env,
+    pending: PendingBond,
+    seq: u64,
+    channel: String,
+) -> Result<Response, ContractError> {
+    let mut resp = Response::new();
+
+    for ongoing_deposit in pending.bonds {
+        match ongoing_deposit.raw_amount {
+            RawAmount::LocalDenom(amount) => {
+                FAILED_JOIN_QUEUE.push_back(
+                    deps.storage,
+                    &Bond {
+                        amount,
+                        owner: ongoing_deposit.owner,
+                        bond_id: ongoing_deposit.bond_id.clone(),
+                    },
+                )?;
+                resp = resp
+                    .add_attribute("bond_id", ongoing_deposit.bond_id)
+                    .add_attribute("amount", amount);
+            }
+            // We should never have LP shares here
+            RawAmount::LpShares(_) => return Err(ContractError::IncorrectRawAmount),
+        }
+    }
+
+    resp = resp
+        .add_attribute("action", "retry")
+        .add_attribute("kind", "join_pool");
+
+    TRAPS.remove(deps.storage, (seq, channel));
+
+    Ok(resp)
 }
 
 /// The handle retry exit pool checks that pending unbonds is not empty and then iterates over the pending unbonds vector.
@@ -58,7 +100,9 @@ pub fn handle_retry_exit_pool(
             .add_attribute("unbond_id", pu.id);
     }
 
-    resp = resp.add_attribute("action", "retry");
+    resp = resp
+        .add_attribute("action", "retry")
+        .add_attribute("kind", "exit_pool");
 
     // remove the entry from traps so retrying a single failed tx cannot be triggered twice
     TRAPS.remove(deps.storage, (seq, channel));
