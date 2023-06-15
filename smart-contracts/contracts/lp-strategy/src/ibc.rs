@@ -999,43 +999,6 @@ mod tests {
             )
             .unwrap();
 
-        LP_SHARES
-            .save(
-                deps.as_mut().storage,
-                &LpCache {
-                    locked_shares: Uint128::new(1000),
-                    w_unlocked_shares: Uint128::zero(),
-                    d_unlocked_shares: Uint128::new(3),
-                },
-            )
-            .unwrap();
-
-        SIMULATED_JOIN_AMOUNT_IN
-            .save(deps.as_mut().storage, &Uint128::zero())
-            .unwrap();
-
-        BOND_QUEUE
-            .push_back(
-                &mut deps.storage,
-                &Bond {
-                    amount: Uint128::one(),
-                    owner: Addr::unchecked("vault_1".to_string()),
-                    bond_id: "1".to_string(),
-                },
-            )
-            .unwrap();
-
-        BOND_QUEUE
-            .push_back(
-                &mut deps.storage,
-                &Bond {
-                    amount: Uint128::new(2),
-                    owner: Addr::unchecked("vault_1".to_string()),
-                    bond_id: "2".to_string(),
-                },
-            )
-            .unwrap();
-
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
         let pending = PendingBond {
@@ -1052,12 +1015,6 @@ mod tests {
                     owner: Addr::unchecked("vault_1"),
                     bond_id: "2".to_string(),
                 },
-                // OngoingDeposit {
-                //     claim_amount: Uint128::new(101),   z
-                //     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
-                //     owner: Addr::unchecked("address"),
-                //     bond_id: "fake".to_string(),
-                // },
             ],
         };
 
@@ -1094,7 +1051,7 @@ mod tests {
         });
         let w: QuerierWrapper = QuerierWrapper::new(&deps.querier);
 
-        let test = w.query_wasm_contract_info(pending.bonds[0].owner.as_str());
+        let test = w.query_wasm_contract_info(&env.contract.address); //pending.bonds[0].owner.as_str());
 
         println!("###DEBUG: {:?}", test);
 
