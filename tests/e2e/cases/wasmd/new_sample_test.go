@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testCasesHelper "github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
@@ -46,7 +47,7 @@ func TestE2eTestBuilder(t *testing.T) {
 	osmosis, found := b.GetChain("osmosis")
 	require.True(t, found)
 
-	b.AddRelayer(quasar.Chain, osmosis.Chain, b.Relayer, "quasar_osmosis", ibc.CreateChannelOptions{}, ibc.CreateClientOptions{})
+	b.AddRelayer(quasar.Chain, osmosis.Chain, b.Relayer, testSuite.Quasar2OsmosisPath, ibc.CreateChannelOptions{}, ibc.CreateClientOptions{})
 	b.AutomatedRelay()
 
 	s := &TestE2eTestBuilderSuite{
@@ -162,7 +163,19 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 
 	// instantiate all the contracts
 	for _, c := range newConrtacts {
+		// instantiate primitives
 		err = c.InstantiateContract(ctx, quasar.ChainAccount[testSuite.AuthorityKeyName], quasar.Chain, sdk.Coins{})
+		s.Require().NoError(err)
+
+		// create ICQ channel for primitives
+		err = c.CreateICQChannel(ctx, s.Relayer, s.Erep)
+		s.Require().NoError(err)
+
+		// create ICA channel for primitives
+		quasarConnections, err := s.Relayer.GetConnections(ctx, s.Erep, quasar.Chain.Config().ChainID)
+		s.Require().NoError(err)
+
+		err = c.CreateICAChannel(ctx, s.Relayer, s.Erep, quasarConnections[0].ID, quasarConnections[0].Counterparty.ConnectionId)
 		s.Require().NoError(err)
 	}
 
@@ -224,6 +237,22 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		s.Require().NoError(err)
 	}
 
+	// get vault contract by label
+	vaultContract, err := quasar.FindContractByLabel("vault")
+	s.Require().NoError(err)
+
+	// set depositors for all primitives before executing test cases
+	for _, c := range newConrtacts {
+		_, err = c.ExecuteContract(ctx,
+			quasar.Chain,
+			map[string]any{"set_depositor": map[string]any{"depositor": vaultContract.GetContractAddress()}},
+			nil,
+			sdk.Coins{},
+			quasar.ChainAccount[testSuite.AuthorityKeyName],
+		)
+		s.Require().NoError(err)
+	}
+
 	// transfer osmo to treasury account on quasar chain
 	ibcTransferAmount := ibc.WalletAmount{
 		Address: quasar.ChainAccount[testSuite.AuthorityKeyName].Address,
@@ -268,11 +297,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	s.Require().NoError(err)
 
 	// generate test cases
-	testCases, err := testCasesHelper.GenerateTestCases(100120, 4, 1, 250000000)
-	s.Require().NoError(err)
-
-	// get vault contract by label
-	vaultContract, err := quasar.FindContractByLabel("vault")
+	testCases, err := testCasesHelper.GenerateTestCases(100120, 5, 1, 200000000)
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {
@@ -318,6 +343,16 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		}
 	}
 
-	err = testCases.ExecuteCases(quasar.Chain, ctx)
+	firstCase := testCases[0:1]
+	otherCases := testCases[1 : len(testCases)-1]
+
+	err = firstCase.ExecuteCases(quasar.Chain, ctx)
+	s.Require().NoError(err)
+
+	// wait for sometime before doing a second bond
+	// todo : remove this and add a function that periodically runs any actions in parallel (like clear cache or clear packets)
+	time.Sleep(time.Second * 20)
+
+	err = otherCases.ExecuteCases(quasar.Chain, ctx)
 	s.Require().NoError(err)
 }
