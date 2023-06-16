@@ -351,14 +351,14 @@ pub fn handle_icq_ack(
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
     let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
-    
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
-    println!("###DEBUG");
+
     // we have only dispatched on query and a single kind at this point
     let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     let base_balance =
         Uint128::new(
             raw_balance
@@ -382,9 +382,12 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     let join_pool = QueryCalcJoinPoolSharesResponse::decode(resp.responses[3].value.as_ref())?;
+
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
+
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
     let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
     // parse the locked lp shares on Osmosis, a bit messy

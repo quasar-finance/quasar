@@ -113,13 +113,11 @@ mod tests {
     // use cosmos_sdk_proto::tendermint::abci::ResponseQuery;
     use cosmos_sdk_proto::tendermint::abci::ResponseQuery;
 
+    use cosmwasm_std::Binary;
     use osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceResponse;
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{
-            gamm::{v1beta1::QueryCalcExitPoolCoinsFromSharesRequest, v2::QuerySpotPriceResponse},
-            lockup::LockedResponse,
-        },
+        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
     };
 
     use cosmwasm_std::{
@@ -127,7 +125,9 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         to_binary, Addr, Empty, StdError, Timestamp, Uint128,
     };
-    use osmosis_std::types::osmosis::gamm::v1beta1::QueryCalcJoinPoolSharesResponse;
+    use osmosis_std::types::osmosis::gamm::v1beta1::{
+        QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+    };
     use prost::{bytes::Bytes, Message};
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
 
@@ -692,35 +692,31 @@ mod tests {
         let failed_join_queue: Result<Vec<Bond>, StdError> =
             FAILED_JOIN_QUEUE.iter(&deps.storage).unwrap().collect();
 
-        assert_eq!(
-            failed_join_queue.as_ref().unwrap(),
-            &vec![
-                Bond {
-                    amount: Uint128::new(1000),
-                    owner: Addr::unchecked("address"),
-                    bond_id: "1".to_string(),
-                },
-                Bond {
-                    amount: Uint128::new(999),
-                    owner: Addr::unchecked("address"),
-                    bond_id: "2".to_string(),
-                },
-                Bond {
-                    amount: Uint128::new(1000),
-                    owner: Addr::unchecked("address"),
-                    bond_id: "3".to_string(),
-                },
-            ]
-        );
+        let failed_bonds = vec![
+            Bond {
+                amount: Uint128::new(1000),
+                owner: Addr::unchecked("address"),
+                bond_id: "1".to_string(),
+            },
+            Bond {
+                amount: Uint128::new(999),
+                owner: Addr::unchecked("address"),
+                bond_id: "2".to_string(),
+            },
+            Bond {
+                amount: Uint128::new(1000),
+                owner: Addr::unchecked("address"),
+                bond_id: "3".to_string(),
+            },
+        ];
+
+        assert_eq!(failed_join_queue.as_ref().unwrap(), &failed_bonds);
 
         // manually trigger try_icq
         let res = execute_try_icq(deps.as_mut(), env.clone());
         assert_eq!(res.unwrap().messages.len(), 1);
 
         // mocking the ICQ ACK
-
-        // we only take the value from ResponseQuery, using arb data elsewhere
-        // i.e. QueryBalanceResponse::decode(resp.responses[X].valueas_ref())?
         fn create_query_response(response: Vec<u8>) -> ResponseQuery {
             ResponseQuery {
                 code: 1,
@@ -777,9 +773,19 @@ mod tests {
         );
 
         let exit_pool = create_query_response(
-            QueryCalcExitPoolCoinsFromSharesRequest {
-                pool_id: 1,
-                share_in_amount: "123".to_string(),
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    OsmoCoin {
+                        // base denom
+                        denom: "uosmo".to_string(),
+                        amount: "123".to_string(),
+                    },
+                    OsmoCoin {
+                        // quote denom
+                        denom: "uqsr".to_string(),
+                        amount: "123".to_string(),
+                    },
+                ],
             }
             .encode_to_vec(),
         );
@@ -794,7 +800,7 @@ mod tests {
         let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
         let ibc_ack = InterchainQueryPacketAck {
-            data: to_binary(
+            data: Binary::from(
                 &CosmosResponse {
                     responses: vec![
                         raw_balance,
@@ -806,12 +812,18 @@ mod tests {
                         lock,
                     ],
                 }
-                .encode_to_vec(),
-            )
-            .unwrap(),
+                .encode_to_vec()[..],
+            ),
         };
 
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap());
         println!("{:?}", res);
-        }
+
+        // check that the failed join queue is emptied
+        assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+
+        // we should now be locked
+        let lock = IBC_LOCK.load(deps.as_mut().storage).unwrap();
+        assert!(lock.is_locked());
+    }
 }

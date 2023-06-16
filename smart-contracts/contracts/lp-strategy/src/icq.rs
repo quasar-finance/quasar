@@ -47,7 +47,7 @@ pub fn try_icq(
         // TODO fetching ICQ channel and confirming vs handshake version can be a single function
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
-        
+
         let mut pending_bonds_value = Uint128::zero();
         // we dump pending bonds into the active bond queue
         while !PENDING_BOND_QUEUE.is_empty(storage)? {
@@ -57,13 +57,13 @@ pub fn try_icq(
                 pending_bonds_value = pending_bonds_value.checked_add(bond.amount)?;
             }
         }
-        
+
         let failed_bonds_amount = FAILED_JOIN_QUEUE
-        .iter(storage)?
-        .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
-            Ok(acc + val?.amount)
-        })?;
-        
+            .iter(storage)?
+            .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
+                Ok(acc + val?.amount)
+            })?;
+
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
         let bonding_amount = pending_bonds_value + failed_bonds_amount;
@@ -206,6 +206,7 @@ pub fn calc_total_balance(
         .iter()
         .find(|coin| coin.denom == config.base_denom)
         .ok_or(ContractError::BaseDenomNotFound)?;
+
     let quote = exit_pool
         .iter()
         .find(|coin| coin.denom == config.quote_denom)
