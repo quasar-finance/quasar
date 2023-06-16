@@ -47,7 +47,7 @@ pub fn try_icq(
         // TODO fetching ICQ channel and confirming vs handshake version can be a single function
         let icq_channel = ICQ_CHANNEL.load(storage)?;
         check_icq_channel(storage, icq_channel.clone())?;
-
+        
         let mut pending_bonds_value = Uint128::zero();
         // we dump pending bonds into the active bond queue
         while !PENDING_BOND_QUEUE.is_empty(storage)? {
@@ -57,13 +57,13 @@ pub fn try_icq(
                 pending_bonds_value = pending_bonds_value.checked_add(bond.amount)?;
             }
         }
-
+        
         let failed_bonds_amount = FAILED_JOIN_QUEUE
-            .iter(storage)?
-            .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
-                Ok(acc + val?.amount)
-            })?;
-
+        .iter(storage)?
+        .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
+            Ok(acc + val?.amount)
+        })?;
+        
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
         let bonding_amount = pending_bonds_value + failed_bonds_amount;
@@ -158,31 +158,31 @@ pub fn prepare_full_query(
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
     let q = Query::new()
         .add_request(
-            base_balance.encode_to_vec(),
-            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
+            base_balance.encode_to_vec().into(),
+            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
         )
         .add_request(
-            quote_balance.encode_to_vec(),
-            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
+            quote_balance.encode_to_vec().into(),
+            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
         )
         .add_request(
-            lp_balance.encode_to_vec(),
-            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
+            lp_balance.encode_to_vec().into(),
+            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
         )
         .add_request(
-            join_pool.encode_to_vec(),
-            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
+            join_pool.encode_to_vec().into(),
+            "/osmosis.gamm.v1beta1.Que.into()/CalcJoinPoolShares".to_string(),
         )
         .add_request(
-            exit_pool.encode_to_vec(),
-            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
+            exit_pool.encode_to_vec().into(),
+            "/osmosis.gamm.v1beta1.Que.into()/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
-            spot_price.encode_to_vec(),
-            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
+            spot_price.encode_to_vec().into(),
+            "/osmosis.gamm.v2.Query/Sp.into()Price".to_string(),
         )
         .add_request(
-            lock_by_id.encode_to_vec(),
+            lock_by_id.encode_to_vec().into(),
             "/osmosis.lockup.Query/LockedByID".to_string(),
         );
     Ok(q.encode_pkt())

@@ -52,9 +52,9 @@ impl Query {
         }
     }
 
-    pub fn add_request(mut self, data: Vec<u8>, path: String) -> Self {
+    pub fn add_request(mut self, data: prost::bytes::Bytes, path: String) -> Self {
         self.requests.push(RequestQuery {
-            data,
+            data: data,
             path,
             height: 0,
             prove: false,
@@ -89,7 +89,7 @@ mod test {
     #[test]
     pub fn single_query_works() {
         let req = RequestQuery {
-            data: vec![1, 0, 1, 0],
+            data: vec![1, 0, 1, 0].into(),
             path: "/cosmos.bank.v1beta1.Query/AllBalances".into(),
             height: 0,
             prove: false,
@@ -115,13 +115,13 @@ mod test {
     #[test]
     pub fn multiple_query_works() {
         let req1 = RequestQuery {
-            data: vec![1, 0, 1, 0],
+            data: vec![1, 0, 1, 0].into(),
             path: "/cosmos.bank.v1beta1.Query/AllBalances".into(),
             height: 0,
             prove: false,
         };
         let req2 = RequestQuery {
-            data: vec![1, 0, 0, 0],
+            data: vec![1, 0, 0, 0].into(),
             path: "/cosmos.bank.v1beta1.Query/Balance".into(),
             height: 0,
             prove: false,
