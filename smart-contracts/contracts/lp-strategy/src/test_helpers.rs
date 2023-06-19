@@ -1,10 +1,17 @@
+use cosmos_sdk_proto::tendermint::abci::ResponseQuery;
 use cosmwasm_std::{IbcEndpoint, Storage};
+use prost::bytes::Bytes;
 use quasar_types::{
     ibc::{ChannelInfo, ChannelType},
     ica::handshake::IcaMetadata,
 };
 
-use crate::state::{Config, CHANNELS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES};
+use crate::{
+    bond::Bond,
+    state::{
+        Config, PendingBond, RawAmount, CHANNELS, CONFIG, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
+    },
+};
 
 pub fn default_setup(storage: &mut dyn Storage) -> Result<(), cosmwasm_std::StdError> {
     setup_default_icq(storage)?;
@@ -91,9 +98,40 @@ pub(crate) fn setup_default_lp_cache(
     )
 }
 
+pub fn pending_bond_to_bond(pending: &PendingBond) -> Vec<Bond> {
+    pending
+        .bonds
+        .iter()
+        .map(|bond| Bond {
+            amount: match &bond.raw_amount {
+                RawAmount::LocalDenom(amount) => amount.clone(),
+                RawAmount::LpShares(_) => panic!("unexpected lp shares"),
+            },
+            owner: bond.owner.clone(),
+            bond_id: bond.bond_id.clone(),
+        })
+        .collect()
+}
+
+pub fn create_query_response(response: Vec<u8>) -> ResponseQuery {
+    ResponseQuery {
+        code: 1,
+        log: "".to_string(),
+        info: "".to_string(),
+        index: 1,
+        key: Bytes::from("0"),
+        value: response.into(),
+        proof_ops: None,
+        height: 0,
+        codespace: "".to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{testing::mock_dependencies, Addr, Uint128};
+
+    use crate::state::OngoingDeposit;
 
     use super::*;
 
@@ -158,5 +196,42 @@ mod tests {
                 handshake_state: quasar_types::ibc::HandshakeState::Open,
             }
         )
+    }
+
+    #[test]
+    fn test_pending_bond_to_bond_works() {
+        let pb = PendingBond {
+            bonds: vec![
+                OngoingDeposit {
+                    claim_amount: Uint128::new(100),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "1".to_string(),
+                },
+                OngoingDeposit {
+                    claim_amount: Uint128::new(99),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(999)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "2".to_string(),
+                },
+                OngoingDeposit {
+                    claim_amount: Uint128::new(101),
+                    raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
+                    owner: Addr::unchecked("address"),
+                    bond_id: "3".to_string(),
+                },
+            ],
+        };
+
+        let bonds = pending_bond_to_bond(&pb);
+        assert_eq!(bonds[0].amount, Uint128::new(1000));
+        assert_eq!(bonds[1].amount, Uint128::new(999));
+        assert_eq!(bonds[2].amount, Uint128::new(1000));
+        assert_eq!(bonds[0].owner, Addr::unchecked("address"));
+        assert_eq!(bonds[1].owner, Addr::unchecked("address"));
+        assert_eq!(bonds[2].owner, Addr::unchecked("address"));
+        assert_eq!(bonds[0].bond_id, "1");
+        assert_eq!(bonds[1].bond_id, "2");
+        assert_eq!(bonds[2].bond_id, "3");
     }
 }
