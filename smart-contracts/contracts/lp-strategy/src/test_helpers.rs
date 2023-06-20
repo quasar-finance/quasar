@@ -104,7 +104,7 @@ pub fn pending_bond_to_bond(pending: &PendingBond) -> Vec<Bond> {
         .iter()
         .map(|bond| Bond {
             amount: match &bond.raw_amount {
-                RawAmount::LocalDenom(amount) => amount.clone(),
+                RawAmount::LocalDenom(amount) => *amount,
                 RawAmount::LpShares(_) => panic!("unexpected lp shares"),
             },
             owner: bond.owner.clone(),

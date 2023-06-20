@@ -914,7 +914,7 @@ mod tests {
 
         assert!(!TRAPS.has(&deps.storage, (3539, "channel-35".to_string())));
 
-        // failed bonds amount should not be included in the response as funds are already 
+        // failed bonds amount should not be included in the response as funds are already
         // in Osmosis
         assert_eq!(
             res.attributes,
@@ -932,7 +932,7 @@ mod tests {
 
         // check that the failed join queue has the same mocked bonds
         let failed_join_queue: Result<Vec<Bond>, StdError> =
-            FAILED_JOIN_QUEUE.iter(&deps.storage).unwrap().collect();        
+            FAILED_JOIN_QUEUE.iter(&deps.storage).unwrap().collect();
         assert_eq!(failed_join_queue.unwrap(), pending_bond_to_bond(&failed));
 
         // manually trigger try_icq
@@ -1037,9 +1037,9 @@ mod tests {
         });
 
         // get the pending bonds total amount
-        let pending_total_amount = pedning_bonds.iter().fold(Uint128::zero(), |acc, bond| {
-            acc + bond.amount
-        });
+        let pending_total_amount = pedning_bonds
+            .iter()
+            .fold(Uint128::zero(), |acc, bond| acc + bond.amount);
 
         // check that the res amount matches the amount in both queues
         match &res.messages[0].msg {

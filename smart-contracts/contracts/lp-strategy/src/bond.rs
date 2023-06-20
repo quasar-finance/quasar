@@ -11,8 +11,8 @@ use crate::{
     ibc_util::do_transfer,
     icq::try_icq,
     state::{
-        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL,
-        PENDING_BOND_QUEUE, SHARES, FAILED_JOIN_QUEUE, REJOIN_QUEUE,
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE,
+        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES,
     },
 };
 
@@ -127,7 +127,7 @@ pub fn fold_bonds(
 
     while !FAILED_JOIN_QUEUE.is_empty(storage)? {
         let item: Bond =
-        FAILED_JOIN_QUEUE
+            FAILED_JOIN_QUEUE
                 .pop_front(storage)?
                 .ok_or(ContractError::QueueItemNotFound {
                     queue: "bond".to_string(),
@@ -142,12 +142,15 @@ pub fn fold_bonds(
         total = total
             .checked_add(item.amount)
             .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
-        REJOIN_QUEUE.push_back(storage, &OngoingDeposit {
-            claim_amount,
-            owner: item.owner,
-            raw_amount: RawAmount::LocalDenom(item.amount),
-            bond_id: item.bond_id,
-        })?;
+        REJOIN_QUEUE.push_back(
+            storage,
+            &OngoingDeposit {
+                claim_amount,
+                owner: item.owner,
+                raw_amount: RawAmount::LocalDenom(item.amount),
+                bond_id: item.bond_id,
+            },
+        )?;
     }
 
     Ok(Some((total, deposits)))

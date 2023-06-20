@@ -54,7 +54,7 @@ impl Query {
 
     pub fn add_request(mut self, data: prost::bytes::Bytes, path: String) -> Self {
         self.requests.push(RequestQuery {
-            data: data,
+            data,
             path,
             height: 0,
             prove: false,
