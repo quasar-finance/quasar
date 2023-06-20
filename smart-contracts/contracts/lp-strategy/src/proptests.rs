@@ -39,15 +39,26 @@ mod tests {
 
         #[test]
         fn test_handle_retry_join_pool_with_pending_deposits_works(
-            (claim_amount, raw_amount, owner, bond_id) in (0usize..3).prop_flat_map(|size|
+            // values to mock failed join pool
+            (claim_amount, raw_amount, owner, bond_id) in (0usize..100).prop_flat_map(|size|
                 (
-                    // to avoid overflows, we limit the amounts to u32. also force amounts to be different than 0
+                    // to avoid overflows, we limit the amounts to u32. also force amounts & bond_ids to be >= 1
                     vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
                     vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
-                    vec("[a-z]+", size..=size),  // adjust the regex pattern based on your requirements
+                    vec("[a-z]+", size..=size),
                     vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
                 )
             ),
+            // values to mock pending deposits
+            (amount_pd, owner_pd, bond_id_pd) in (0usize..100).prop_flat_map(|size|
+                (
+                    // to avoid overflows, we limit the amounts to u32. also force amounts & bond_ids to be >= 1
+                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    vec("[a-z]+", size..=size),
+                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                )
+            ),
+            // values to mock ICQ ACK
             raw_balalance_rq in any::<u32>(),
             quote_balance_rq in any::<u32>(),
             lp_balance_rq in any::<u32>(),
@@ -55,9 +66,7 @@ mod tests {
             exit_pool_base_rq in any::<u32>(),
             exit_pool_quote_rq in any::<u32>(),
             spot_price_rq in any::<u32>(),
-            _lock_rq in any::<u32>(),
         ) {
-            // println!("claim_amount: {:?}, raw_amount: {:?}, owner: {:?}, bond_id: {:?}", claim_amount, raw_amount, owner, bond_id);
             let mut deps = mock_dependencies();
             let env = mock_env();
             default_setup(deps.as_mut().storage).unwrap();
@@ -93,18 +102,13 @@ mod tests {
                 .unwrap();
 
             // mock pending deposits and add them to the pending queue
-            let pedning_bonds = vec![
+            let pedning_bonds: Vec<Bond> = amount_pd.iter().zip(&owner_pd).zip(&bond_id_pd).map(|((amount, owner), id)| {
                 Bond {
-                    amount: Uint128::new(5_000),
-                    owner: Addr::unchecked("address"),
-                    bond_id: "1".to_string(),
-                },
-                Bond {
-                    amount: Uint128::new(10_000),
-                    owner: Addr::unchecked("address"),
-                    bond_id: "2".to_string(),
-                },
-            ];
+                    amount: Uint128::new(*amount),
+                    owner: Addr::unchecked(owner),
+                    bond_id: id.to_string(),
+                }
+            }).collect();
 
             for bond in pedning_bonds.iter() {
                 PENDING_BOND_QUEUE
@@ -125,8 +129,6 @@ mod tests {
             )
             .unwrap();
 
-
-
         prop_assert!(!TRAPS.has(&deps.storage, (3539, "channel-35".to_string())));
 
         let mut attributes = vec![
@@ -145,7 +147,6 @@ mod tests {
                 res.attributes,
                 attributes
             );
-
 
             // check that the failed join queue has the same mocked bonds
             let failed_join_queue: Result<Vec<Bond>, StdError> =
@@ -181,8 +182,8 @@ mod tests {
             let lp_balance = create_query_response(
                 QueryBalanceResponse {
                     balance: Some(OsmoCoin {
-                        denom: lp_balance_rq.to_string(),
-                        amount: "1000".to_string(),
+                        denom: "uosmo".to_string(),
+                        amount: lp_balance_rq.to_string(),
                     }),
                 }
                 .encode_to_vec(),
@@ -224,6 +225,7 @@ mod tests {
                 .encode_to_vec(),
             );
 
+            // LockResponse is fixed to None in this test for simplicity
             let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
             let ibc_ack = InterchainQueryPacketAck {
@@ -243,6 +245,7 @@ mod tests {
                 ),
             };
 
+            // simulate that we received the ICQ ACK
             let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
             // get the failed pending bonds total amount
