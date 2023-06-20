@@ -9,6 +9,7 @@
 ### State breaking
 
 - Remove old pending acks from the state
+- Remove failed traps from the state
 
 ### Improvements
 
@@ -18,15 +19,17 @@
 - Changed the locking on the execute calls to lock correctly depending on queue state
 - Remove pending ack entry after succesful ack handling
 - Added some doc comments
-- created execute.rs file and created retry exit pool fn there
+- Created execute.rs file and created retry exit pool fn there
+- Added proptests for retry join pool
 
 ### Features
 
-- added retry entry point to handle exit pool errors
+- Added retry entry point to handle exit pool errors
+- Added retry entry point to handle join pool errors
 
 ### Bugfixes
 
-- do not allow opentry messages to clog up our state
+- Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
 
 ## V0.1.1 08-05-2023
