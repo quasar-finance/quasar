@@ -159,27 +159,27 @@ pub fn prepare_full_query(
     let q = Query::new()
         .add_request(
             base_balance.encode_to_vec().into(),
-            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             quote_balance.encode_to_vec().into(),
-            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             lp_balance.encode_to_vec().into(),
-            "/cosmos.bank.v1beta1.Quer.into()Balance".to_string(),
+            "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
             join_pool.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Que.into()/CalcJoinPoolShares".to_string(),
+            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
         )
         .add_request(
             exit_pool.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Que.into()/CalcExitPoolCoinsFromShares".to_string(),
+            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
             spot_price.encode_to_vec().into(),
-            "/osmosis.gamm.v2.Query/Sp.into()Price".to_string(),
+            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         )
         .add_request(
             lock_by_id.encode_to_vec().into(),
