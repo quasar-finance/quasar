@@ -23,8 +23,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE, PENDING_ACK,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -510,8 +510,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
         .add_attribute("deleted_traps", msg.delete_traps.len().to_string())
-        .add_attribute("deleted_pending_acks", msg.delete_pending_acks.len().to_string()),
-    )
+        .add_attribute(
+            "deleted_pending_acks",
+            msg.delete_pending_acks.len().to_string(),
+        ))
 }
 
 #[cfg(test)]
@@ -584,7 +586,10 @@ mod tests {
         let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
         assert!(PENDING_ACK.is_empty(deps.as_ref().storage));
         assert_eq!(res.attributes[2].value, "0".to_string());
-        assert_eq!(res.attributes[3].value, msg.delete_pending_acks.len().to_string());
+        assert_eq!(
+            res.attributes[3].value,
+            msg.delete_pending_acks.len().to_string()
+        );
     }
 
     #[test]
@@ -755,13 +760,19 @@ mod tests {
 
         let msg = MigrateMsg {
             delete_traps: trap_entries.iter().map(|(key, _)| key.clone()).collect(),
-            delete_pending_acks: pending_acks_entries.iter().map(|(key, _)| key.clone()).collect(),
+            delete_pending_acks: pending_acks_entries
+                .iter()
+                .map(|(key, _)| key.clone())
+                .collect(),
         };
 
         let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
         assert!(TRAPS.is_empty(deps.as_ref().storage));
         assert_eq!(res.attributes[2].value, msg.delete_traps.len().to_string());
-        assert_eq!(res.attributes[3].value, msg.delete_pending_acks.len().to_string());
+        assert_eq!(
+            res.attributes[3].value,
+            msg.delete_pending_acks.len().to_string()
+        );
     }
 
     #[test]
