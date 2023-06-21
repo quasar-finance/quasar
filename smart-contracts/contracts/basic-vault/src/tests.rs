@@ -1572,10 +1572,10 @@ fn proper_unbond() {
     };
     let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
     assert_eq!(unbond_res.messages.len(), 4);
-    assert_eq!(unbond_res.attributes[2].key, "burnt");
-    assert_eq!(unbond_res.attributes[2].value, "300");
-    assert_eq!(unbond_res.attributes[3].key, "bond_id");
-    assert_eq!(unbond_res.attributes[3].value, "2");
+    assert_eq!(unbond_res.attributes[5].key, "shares_burnt");
+    assert_eq!(unbond_res.attributes[5].value, "300");
+    assert_eq!(unbond_res.attributes[4].key, "bond_id");
+    assert_eq!(unbond_res.attributes[4].value, "2");
 
     // todo replace with a macro
     if let CosmosMsg::Wasm(WasmMsg::Execute {

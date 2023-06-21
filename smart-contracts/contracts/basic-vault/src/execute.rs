@@ -460,27 +460,29 @@ pub fn do_start_unbond(
 
     TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
+    let primitive_addresses = format!(
+        "['{}']",
+        invest
+            .primitives
+            .iter()
+            .map(|primitive| primitive.address.clone())
+            .collect::<Vec<String>>()
+            .join("','"),
+    );
+
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
             .add_message(update_user_rewards_idx_msg)
             .add_attributes(vec![
-                Attribute {
-                    key: "action".to_string(),
-                    value: "start_unbond".to_string(),
-                },
-                Attribute {
-                    key: "from".to_string(),
-                    value: info.sender.to_string(),
-                },
-                Attribute {
-                    key: "burnt".to_string(),
-                    value: unbond_amount.to_string(),
-                },
-                Attribute {
-                    key: "bond_id".to_string(),
-                    value: bond_seq.to_string(),
-                },
+                ("action", "unbond_start"),
+                ("vault_address", &env.contract.address.to_string()),
+                ("primitive_addresses", &primitive_addresses),
+                ("recipient", &info.sender.to_string()),
+                ("bond_id", &bond_seq.to_string()),
+                ("shares_burnt", &unbond_amount.to_string()),
+                ("new_total_suply", &supply.issued.to_string()),
+                ("data", &"".to_string()),
             ]),
     ))
 }
@@ -799,7 +801,7 @@ mod tests {
         let res = do_start_unbond(deps.as_mut(), &env, &info, amount)
             .unwrap()
             .unwrap();
-        assert_eq!(res.attributes.len(), 4);
+        assert_eq!(res.attributes.len(), 8);
         assert_eq!(res.messages.len(), 3);
 
         // check the messages sent to each primitive contract
