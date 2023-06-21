@@ -23,8 +23,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
+    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -495,15 +495,15 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // remove old pending acks
-    for key in msg.delete_pending.clone() {
-        PENDING_ACK.remove(deps.storage, key)
+    // remove old traps
+    for key in msg.delete_traps.clone() {
+        TRAPS.remove(deps.storage, key)
     }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
-        .add_attribute("removed", msg.delete_pending.len().to_string()))
+        .add_attribute("removed", msg.delete_traps.len().to_string()))
 }
 
 #[cfg(test)]
@@ -517,7 +517,8 @@ mod tests {
 
     use crate::{
         bond::Bond,
-        state::{Unbond, LOCK_ADMIN},
+        error::Trap,
+        state::{PendingBond, Unbond, LOCK_ADMIN},
         test_helpers::default_setup,
     };
 
@@ -531,48 +532,57 @@ mod tests {
         let entries = vec![
             (
                 (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
+                Trap {
+                    error: "some_error".to_string(),
+                    step: crate::helpers::IbcMsgKind::Ica(
+                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                            bonds: vec![],
+                        }),
+                    ),
+                    last_succesful: true,
+                },
             ),
             (
-                (2, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
+                (2, "channel-10".to_string()),
+                Trap {
+                    error: "some_error".to_string(),
+                    step: crate::helpers::IbcMsgKind::Ica(
+                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                            bonds: vec![OngoingDeposit {
+                                claim_amount: Uint128::new(100),
+                                owner: Addr::unchecked("juan".to_string()),
+                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
+                                bond_id: "bond_id_1".to_string(),
+                            }],
+                        }),
+                    ),
+                    last_succesful: true,
+                },
             ),
             (
-                (1, "channel-3".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-2".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-4".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
+                (3, "channel-100".to_string()),
+                Trap {
+                    error: "some_error".to_string(),
+                    step: crate::helpers::IbcMsgKind::Ica(
+                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                            bonds: vec![],
+                        }),
+                    ),
+                    last_succesful: false,
+                },
             ),
         ];
 
         for (key, value) in entries.clone() {
-            PENDING_ACK
-                .save(deps.as_mut().storage, key, &value)
-                .unwrap();
+            TRAPS.save(deps.as_mut().storage, key, &value).unwrap();
         }
 
         let msg = MigrateMsg {
-            delete_pending: entries.iter().map(|(key, _)| key.clone()).collect(),
+            delete_traps: entries.iter().map(|(key, _)| key.clone()).collect(),
         };
 
         migrate(deps.as_mut(), env, msg).unwrap();
-        assert!(PENDING_ACK.is_empty(deps.as_ref().storage))
+        assert!(TRAPS.is_empty(deps.as_ref().storage))
     }
 
     #[test]

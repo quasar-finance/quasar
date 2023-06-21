@@ -43,7 +43,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub delete_pending: Vec<(u64, String)>,
+    pub delete_traps: Vec<(u64, String)>,
 }
 
 #[cw_serde]

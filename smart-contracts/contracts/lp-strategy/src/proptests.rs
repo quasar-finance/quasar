@@ -42,30 +42,30 @@ mod tests {
             // values to mock failed join pool
             (claim_amount, raw_amount, owner, bond_id) in (0usize..100).prop_flat_map(|size|
                 (
-                    // to avoid overflows, we limit the amounts to u32. also force amounts & bond_ids to be >= 1
-                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
-                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    // to avoid overflows, we limit the amounts to u64. also force amounts & bond_ids to be >= 1
+                    vec(any::<u64>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    vec(any::<u64>().prop_map(|x| (x as u128).max(1)), size..=size),
                     vec("[a-z]+", size..=size),
-                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    vec(any::<u64>().prop_map(|x| (x as u128).max(1)), size..=size),
                 )
             ),
             // values to mock pending deposits
             (amount_pd, owner_pd, bond_id_pd) in (0usize..100).prop_flat_map(|size|
                 (
-                    // to avoid overflows, we limit the amounts to u32. also force amounts & bond_ids to be >= 1
-                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    // to avoid overflows, we limit the amounts to u64. also force amounts & bond_ids to be >= 1
+                    vec(any::<u64>().prop_map(|x| (x as u128).max(1)), size..=size),
                     vec("[a-z]+", size..=size),
-                    vec(any::<u32>().prop_map(|x| (x as u128).max(1)), size..=size),
+                    vec(any::<u64>().prop_map(|x| (x as u128).max(1)), size..=size),
                 )
             ),
             // values to mock ICQ ACK
-            raw_balalance_rq in any::<u32>(),
-            quote_balance_rq in any::<u32>(),
-            lp_balance_rq in any::<u32>(),
-            join_pool_rq in any::<u32>(),
-            exit_pool_base_rq in any::<u32>(),
-            exit_pool_quote_rq in any::<u32>(),
-            spot_price_rq in any::<u32>(),
+            raw_balalance_rq in any::<u64>(),
+            quote_balance_rq in any::<u64>(),
+            lp_balance_rq in any::<u64>(),
+            join_pool_rq in any::<u64>(),
+            exit_pool_base_rq in any::<u64>(),
+            exit_pool_quote_rq in any::<u64>(),
+            spot_price_rq in any::<u64>(),
         ) {
             let mut deps = mock_dependencies();
             let env = mock_env();
@@ -102,7 +102,7 @@ mod tests {
                 .unwrap();
 
             // mock pending deposits and add them to the pending queue
-            let pedning_bonds: Vec<Bond> = amount_pd.iter().zip(&owner_pd).zip(&bond_id_pd).map(|((amount, owner), id)| {
+            let pending_bonds: Vec<Bond> = amount_pd.iter().zip(&owner_pd).zip(&bond_id_pd).map(|((amount, owner), id)| {
                 Bond {
                     amount: Uint128::new(*amount),
                     owner: Addr::unchecked(owner),
@@ -110,7 +110,7 @@ mod tests {
                 }
             }).collect();
 
-            for bond in pedning_bonds.iter() {
+            for bond in pending_bonds.iter() {
                 PENDING_BOND_QUEUE
                     .push_back(deps.as_mut().storage, bond)
                     .unwrap();
@@ -258,7 +258,7 @@ mod tests {
             });
 
             // get the pending bonds total amount
-            let pending_total_amount = pedning_bonds.iter().fold(Uint128::zero(), |acc, bond| {
+            let pending_total_amount = pending_bonds.iter().fold(Uint128::zero(), |acc, bond| {
                 acc + bond.amount
             });
 
