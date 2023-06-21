@@ -156,7 +156,7 @@ mod tests {
 
             // manually trigger try_icq
             let res = execute_try_icq(deps.as_mut(), env.clone());
-            assert_eq!(res.unwrap().messages.len(), 1);
+            prop_assert_eq!(res.unwrap().messages.len(), 1);
 
             // mocking the ICQ ACK
             let raw_balance = create_query_response(
@@ -277,8 +277,8 @@ mod tests {
             }
 
             // check that the failed join & pending queues are emptied
-            assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
-            assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
+            prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+            prop_assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
         }
     }
 }

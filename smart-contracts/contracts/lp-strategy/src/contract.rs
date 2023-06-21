@@ -23,8 +23,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, OSMO_LOCK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -565,7 +565,12 @@ mod tests {
                     error: "some_error".to_string(),
                     step: crate::helpers::IbcMsgKind::Ica(
                         crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![],
+                            bonds: vec![OngoingDeposit {
+                                claim_amount: Uint128::new(100),
+                                owner: Addr::unchecked("juan".to_string()),
+                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
+                                bond_id: "bond_id_1".to_string(),
+                            }],
                         }),
                     ),
                     last_succesful: false,
@@ -581,8 +586,9 @@ mod tests {
             delete_traps: entries.iter().map(|(key, _)| key.clone()).collect(),
         };
 
-        migrate(deps.as_mut(), env, msg).unwrap();
-        assert!(TRAPS.is_empty(deps.as_ref().storage))
+        let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
+        assert!(TRAPS.is_empty(deps.as_ref().storage));
+        assert_eq!(res.attributes[2].value, msg.delete_traps.len().to_string());
     }
 
     #[test]
