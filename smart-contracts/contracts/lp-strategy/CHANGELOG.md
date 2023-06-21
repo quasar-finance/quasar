@@ -8,8 +8,8 @@
 
 ### State breaking
 
-- Remove old pending acks from the state
-- Remove failed traps from the state
+- Delete old pending acks from the state
+- Delete failed traps from the state
 
 ### Improvements
 
@@ -17,7 +17,7 @@
 - Add testing to try_icq
 - Remove unnecessary load from try_icq
 - Changed the locking on the execute calls to lock correctly depending on queue state
-- Remove pending ack entry after succesful ack handling
+- Delete pending ack entry after succesful ack handling
 - Added some doc comments
 - Created execute.rs file and created retry exit pool fn there
 - Added proptests for retry join pool
