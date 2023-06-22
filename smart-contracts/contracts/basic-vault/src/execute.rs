@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use cosmwasm_std::{
-    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128, WasmMsg,
+    from_binary, to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
@@ -481,7 +483,7 @@ pub fn do_start_unbond(
                 ("primitive_addresses", &primitive_addresses),
                 ("recipient", &info.sender.to_string()),
                 ("bond_id", &bond_seq.to_string()),
-                ("shares_burnt", &unbond_amount.to_string()),
+                ("shares_burned", &unbond_amount.to_string()),
                 ("new_total_suply", &supply.issued.to_string()),
                 ("data", &"".to_string()),
             ]),
@@ -500,6 +502,8 @@ pub fn do_unbond(
     match pending_unbond_ids_opt {
         Some(pending_unbond_ids) => {
             let mut unbond_msgs: Vec<WasmMsg> = vec![];
+            let mut shares_to_claim = Uint128::zero();
+
             for unbond_id in pending_unbond_ids.iter() {
                 let unbond_stubs_opt = UNBOND_STATE.may_load(deps.storage, unbond_id.clone())?;
                 if let Some(unbond_stubs) = unbond_stubs_opt {
@@ -514,22 +518,42 @@ pub fn do_unbond(
                 }
             }
 
+            let id_addr: Vec<(String, String)> = unbond_msgs
+                .iter()
+                .filter_map(|msg| {
+                    if let WasmMsg::Execute {
+                        contract_addr, msg, ..
+                    } = msg
+                    {
+                        let unbond_msg: Result<lp_strategy::msg::ExecuteMsg, _> = from_binary(&msg);
+                        if let Ok(lp_strategy::msg::ExecuteMsg::Unbond { id }) = unbond_msg {
+                            return Some((id, contract_addr.clone()));
+                        }
+                    }
+                    None
+                })
+                .collect();
+
+            let unique_unbond_ids: HashSet<String> =
+                id_addr.iter().map(|(id, _addr)| id.clone()).collect();
+
+            // calculate total amount of shares to claim; UNBOND_STATE is guaranteed to load
+            for id in unique_unbond_ids {
+                let unbond = UNBOND_STATE.load(deps.storage, id.clone())?;
+                shares_to_claim += unbond.shares;
+            }
+
             Ok(Some(
                 Response::new()
                     .add_messages(unbond_msgs.clone())
+                    // E1: ClaimStart
                     .add_attributes(vec![
-                        Attribute {
-                            key: "action".to_string(),
-                            value: "unbond".to_string(),
-                        },
-                        Attribute {
-                            key: "from".to_string(),
-                            value: info.sender.to_string(),
-                        },
-                        Attribute {
-                            key: "num_unbondable_ids".to_string(),
-                            value: unbond_msgs.len().to_string(),
-                        },
+                        ("action", "claim_start"),
+                        ("vault_address", &env.contract.address.to_string()),
+                        ("recipient", &info.sender.to_string()),
+                        ("unbond_ids_and_addresses", &format!("{:?}", id_addr)),
+                        ("total_shares_amount", &shares_to_claim.to_string()),
+                        ("data", &"".to_string()),
                     ]),
             ))
         }
@@ -557,10 +581,9 @@ pub fn find_and_return_unbondable_msgs(
                     id: unbond_id.to_string(),
                 })?,
                 funds: vec![],
-            })
+            });
         }
     }
-
     Ok(unbond_msgs)
 }
 

@@ -1572,7 +1572,7 @@ fn proper_unbond() {
     };
     let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
     assert_eq!(unbond_res.messages.len(), 4);
-    assert_eq!(unbond_res.attributes[5].key, "shares_burnt");
+    assert_eq!(unbond_res.attributes[5].key, "shares_burned");
     assert_eq!(unbond_res.attributes[5].value, "300");
     assert_eq!(unbond_res.attributes[4].key, "bond_id");
     assert_eq!(unbond_res.attributes[4].value, "2");
@@ -1744,8 +1744,7 @@ fn proper_unbond() {
     .unwrap();
 
     assert_eq!(claim_res.messages.len(), 2);
-    assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
-    assert_eq!(claim_res.attributes[2].value, "2");
+    assert_eq!(claim_res.attributes[4].value, (100 + 100 + 100).to_string());
 
     if let CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr,
@@ -1807,8 +1806,7 @@ fn proper_unbond() {
 
     // todo: This assertion will change because we should ideally only expect one here, pending arch discussion
     assert_eq!(claim_res.messages.len(), 1);
-    assert_eq!(claim_res.attributes[2].key, "num_unbondable_ids");
-    assert_eq!(claim_res.attributes[2].value, "1");
+    assert_eq!(claim_res.attributes[4].value, (100 + 100 + 100).to_string());
 
     if let CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr,
