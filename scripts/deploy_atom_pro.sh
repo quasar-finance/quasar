@@ -1,14 +1,5 @@
 #!/bin/sh
 
-set -e
-
-CHAIN_ID="qsr-questnet-04"
-TESTNET_NAME="quasar"
-FEE_DENOM="uqsr"
-RPC="http://node3.tst4.qsr.network:26657/"
-NODE="--node $RPC"
-TXFLAG="$NODE --chain-id $CHAIN_ID --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3"
-
 #lock period = 14 * 24 * 60 * 60
 
 # osmo denoms:
