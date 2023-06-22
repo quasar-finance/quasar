@@ -374,7 +374,7 @@ fn proper_bond_with_one_primitive() {
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 2);
     assert_eq!(res.attributes[4].value, "1");
-    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes.first().unwrap().value, "bond_start");
 
     if let CosmosMsg::Wasm(wasm_msg) = &res.messages.first().unwrap().msg {
         if let WasmMsg::Execute {
@@ -1261,7 +1261,7 @@ fn proper_bond() {
     };
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes.first().unwrap().value, "bond_start");
     assert_eq!(res.attributes[4].value, "1");
 
     if let CosmosMsg::Wasm(WasmMsg::Execute {
@@ -1357,7 +1357,7 @@ fn proper_bond_with_zero_primitive_balance() {
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 2);
     assert_eq!(res.attributes[4].value, "1");
-    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes.first().unwrap().value, "bond_start");
 }
 
 #[test]
@@ -1420,7 +1420,7 @@ fn proper_bond_response_callback() {
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
     assert_eq!(res.attributes[4].value, "1");
-    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes.first().unwrap().value, "bond_start");
 
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
     let primitive_1_info = mock_info("quasar123", &[]);
@@ -1492,7 +1492,7 @@ fn proper_unbond() {
     };
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
     assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "bond");
+    assert_eq!(res.attributes.first().unwrap().value, "bond_start");
     assert_eq!(res.attributes[4].value, "1");
 
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
@@ -2061,13 +2061,13 @@ fn test_bond_events_multiple_primitives_and_amounts() {
     assert_eq!(
         res.attributes,
         vec![
-            attr("action", "bond"),
+            attr("action", "bond_start"),
             attr("vault_address", &env.contract.address.to_string()),
             attr(
                 "primitive_addresses",
                 "['quasar123','quasar124','quasar125']"
             ),
-            attr("sender", TEST_DEPOSITOR),
+            attr("recipient", TEST_DEPOSITOR),
             attr("bond_id", "1"),
             attr("amounts", "['99ibc/uosmo','99ibc/uatom','99ibc/ustars']"),
             attr("data", ""),
@@ -2104,10 +2104,10 @@ fn test_bond_events_single_primitive_many_amounts() {
     assert_eq!(
         res.attributes,
         vec![
-            attr("action", "bond"),
+            attr("action", "bond_start"),
             attr("vault_address", &env.contract.address.to_string()),
             attr("primitive_addresses", "['quasar123']"),
-            attr("sender", TEST_DEPOSITOR),
+            attr("recipient", TEST_DEPOSITOR),
             attr("bond_id", "1"),
             attr("amounts", "['100ibc/uosmo']"),
             attr("data", ""),
@@ -2162,7 +2162,7 @@ fn test_on_bond_callback() {
     assert_eq!(
         res.attributes,
         vec![
-            attr("action", "on_bond"),
+            attr("action", "bond_end_pending"),
             attr("vault_address", "cosmos2contract"),
             attr("primitive_address", "quasar123"),
             attr("bond_id", "1"),
@@ -2183,7 +2183,7 @@ fn test_on_bond_callback() {
     assert_eq!(
         res.attributes,
         vec![
-            attr("action", "on_bond"),
+            attr("action", "bond_end_pending"),
             attr("vault_address", "cosmos2contract"),
             attr("primitive_address", "quasar124"),
             attr("bond_id", "1"),

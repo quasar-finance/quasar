@@ -334,14 +334,15 @@ pub fn bond(
     );
 
     Ok(Response::new()
+        // E1: BondStart
         .add_attributes(vec![
-            ("action", "bond"),
+            ("action", "bond_start"),
             ("vault_address", &env.contract.address.to_string()),
             ("primitive_addresses", &primitive_addresses),
-            ("sender", recipient_addr.as_str()),
+            ("recipient", recipient_addr.as_str()),
             ("bond_id", &bond_seq.to_string()),
             ("amounts", &amounts),
-            ("data", &"".to_string()),
+            ("data", ""),
         ])
         .add_messages(bond_msgs?)
         .add_message(remainder_msg))

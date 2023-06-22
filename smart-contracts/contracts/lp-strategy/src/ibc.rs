@@ -43,10 +43,10 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
-    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
+    attr, from_binary, to_binary, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env, IbcBasicResponse,
+    IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout, QuerierWrapper,
+    Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -439,6 +439,7 @@ pub fn handle_icq_ack(
             .map(|b| b.amount.to_string() + &config.base_denom)
             .collect();
 
+        // E2: BondPacket
         attrs = vec![
             attr("action", "bond_packet"),
             attr("primitive_address", env.contract.address.to_string()),
@@ -447,29 +448,30 @@ pub fn handle_icq_ack(
             attr("amounts", vec_to_string(amounts)),
             attr("packet_sequence", seq.to_string()),
             attr("channel_id", channel.clone()),
+            attr("data", ""),
         ];
 
         IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
             Ok(lock.lock_bond())
         })?;
     } else {
-        attrs.push(Attribute::new("bond-status", "empty"));
+        attrs.push(attr("bond-status", "empty"));
         if let Some(msg) = batch_start_unbond(storage, &env)? {
             msges.push(msg);
-            attrs.push(Attribute::new("start-unbond-status", "starting-unbond"));
+            attrs.push(attr("start-unbond-status", "starting-unbond"));
             IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
                 Ok(lock.lock_start_unbond())
             })?;
         } else {
-            attrs.push(Attribute::new("start-unbond-status", "empty"));
+            attrs.push(attr("start-unbond-status", "empty"));
             if let Some(msg) = batch_unbond(storage, &env, old_lp_shares)? {
                 msges.push(msg);
-                attrs.push(Attribute::new("unbond-status", "unbonding"));
+                attrs.push(attr("unbond-status", "unbonding"));
                 IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
                     Ok(lock.lock_unbond())
                 })?;
             } else {
-                attrs.push(Attribute::new("unbond-status", "empty"));
+                attrs.push(attr("unbond-status", "empty"));
             }
         }
     }
@@ -661,6 +663,7 @@ fn handle_lock_tokens_ack(
     // TODO, do we want to also check queue state? and see if we can already start a new execution?
     Ok(Response::new()
         .add_submessages(callback_submsgs)
+        // E3: BondAcknowledgement
         .add_attributes(vec![
             ("action", "bond_acknowledgment"),
             ("primitive_address", &env.contract.address.to_string()),
@@ -970,6 +973,7 @@ mod tests {
                 attr("amounts", "['1uosmo','2uosmo']"),
                 attr("packet_sequence", 100.to_string()),
                 attr("channel_id", "channel-25"),
+                attr("data", ""),
             ]
         );
     }

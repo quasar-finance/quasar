@@ -61,7 +61,7 @@ pub fn on_bond(
     // if still waiting on successful bonds, then return
     if bond_stubs.iter().any(|s| s.bond_response.is_none()) {
         return Ok(Response::new()
-            .add_attribute("action", "on_bond")
+            .add_attribute("action", "bond_end_pending")
             .add_attribute("vault_address", env.contract.address)
             .add_attribute("primitive_address", info.sender)
             .add_attribute("bond_id", bond_id)
@@ -136,14 +136,19 @@ pub fn on_bond(
         update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
     execute_mint(deps, env.clone(), sub_info, user_address, shares_to_mint)?;
 
+    // E4: BondEnd
     let res = Response::new()
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
-        .add_attribute("action", "bond_confirmation")
-        .add_attribute("vault_address", env.contract.address)
-        .add_attribute("primitive_address", info.sender)
-        .add_attribute("bond_id", bond_id)
-        .add_attribute("shares_minted", shares_to_mint)
-        .add_attribute("new_total_supply", supply.issued.to_string());
+        .add_attributes(vec![
+            ("action", "bond_end"),
+            ("vault_address", &env.contract.address.to_string()),
+            ("primitive_address", &info.sender.to_string()),
+            ("bond_id", &bond_id),
+            ("shares_minted", &shares_to_mint.to_string()),
+            ("new_total_supply", &supply.issued.to_string()),
+            ("data", ""),
+        ]);
+
     Ok(res)
 }
 
