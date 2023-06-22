@@ -49,10 +49,13 @@ pub fn on_bond(
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
         if s.address == info.sender {
-            s.bond_response = Option::Some(BondResponse {
+            // we should probably return the primitive value in the bond response
+            let primitive_value: lp_strategy::msg::IcaBalanceResponse = deps.querier.query_wasm_smart(info.sender.clone(),&lp_strategy::msg::QueryMsg::IcaBalance {}).unwrap();
+            s.bond_response = Some(BondResponse {
                 share_amount,
                 bond_id: bond_id.clone(),
             });
+            s.primitive_value = Some(primitive_value.amount.amount);
         }
     });
 
@@ -99,22 +102,24 @@ pub fn on_bond(
 
     BOND_STATE.save(deps.storage, bond_id, &bond_stubs)?;
 
-    // calculate shares to mint
-    let shares_to_mint = bond_stubs.iter().zip(invest.primitives.iter()).try_fold(
-        Uint128::zero(),
-        |acc, (s, _pc)| -> Result<Uint128, ContractError> {
-            Ok(acc.checked_add(
-                // omfg pls dont look at this code, i will make it cleaner -> cleaner but still ugly :D
-                Decimal::from_uint128(
-                    s.bond_response
-                        .as_ref()
-                        .ok_or(ContractError::BondResponseIsEmpty {})?
-                        .share_amount,
-                )
-                .to_uint_floor(),
-            )?)
-        },
-    )?;
+    // calculate the shares to mint by value
+    // at the time of bonding, we want to figure out what percentage of value in the vault the user has
+
+    // User value per primitive = BondResponse Primitive Shares / Total Primitive Shares  * ICA_BALANCE or funds send in the bond
+    // Total Vault Value = Total Vault shares in Primitive / Total Primitive shares * ICA_BALANCE
+    let total_vault_value = bond_stubs.iter().try_fold(Uint128::zero(), |acc, stub| -> Result<Uint128, ContractError> {
+        Ok(acc + stub.primitive_value.ok_or(ContractError::BondResponseIsEmpty {})?)
+    })?;
+    // User Vault Shares =  Sum(user value per primitive) / Total Vault value * Total Vault Shares
+    let total_user_value = bond_stubs.iter().fold(Uint128::zero(), |acc, stub| {
+        acc + stub.amount
+    });
+
+    let token_info = cw20_base::contract::query_token_info(deps.as_ref())?;
+    // equal to the cw20 base total supply
+    let total_vault_shares: Uint128 = token_info.total_supply;
+
+    let shares_to_mint = total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?;
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -267,7 +272,7 @@ mod test {
         state::{InvestmentInfo, INVESTMENT},
         ContractError,
     };
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint128};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
         Decimal,
@@ -276,6 +281,8 @@ mod test {
     #[test]
     fn fail_if_duplicate_bond_id() {
         let mut deps = mock_dependencies();
+        // mock the queries soe the primitives exist
+        
         let env = mock_env();
         let info = mock_info("addr00001", &[]);
 
@@ -329,14 +336,8 @@ mod test {
                 &mut deps.storage,
                 bond_id.clone(),
                 &vec![
-                    BondingStub {
-                        address: "addr00001".to_string(),
-                        bond_response: None,
-                    },
-                    BondingStub {
-                        address: "addr00002".to_string(),
-                        bond_response: None,
-                    },
+                    BondingStub {address:"addr00001".to_string(),bond_response:None, primitive_value: None, amount: Uint128::one() },
+                    BondingStub {address:"addr00002".to_string(),bond_response:None, primitive_value: None, amount: Uint128::one() },
                 ],
             )
             .unwrap();

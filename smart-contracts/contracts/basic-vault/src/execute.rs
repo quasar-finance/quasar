@@ -272,7 +272,9 @@ pub fn bond(
         .map(|(pc, funds)| {
             let deposit_stub = BondingStub {
                 address: pc.address.clone(),
-                bond_response: Option::None,
+                bond_response: None,
+                primitive_value: None,
+                amount: funds.amount,
             };
             deposit_stubs.push(deposit_stub);
 
@@ -683,10 +685,14 @@ mod tests {
                     BondingStub {
                         address: "contract1".to_string(),
                         bond_response: None,
+                        amount: Uint128::new(350),
+                        primitive_value: None,
                     },
                     BondingStub {
                         address: "contract2".to_string(),
                         bond_response: None,
+                        amount: Uint128::new(150),
+                        primitive_value: None,
                     },
                 ],
             )

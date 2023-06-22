@@ -95,6 +95,10 @@ pub struct BondingStub {
     pub address: String,
     // the response of the primitive upon successful bond or error
     pub bond_response: Option<BondResponse>,
+    // primitive value at the time of receiving the bond_response
+    pub primitive_value: Option<Uint128>,
+    // the amount sent with the Bond
+    pub amount: Uint128,
 }
 
 #[cw_serde]
