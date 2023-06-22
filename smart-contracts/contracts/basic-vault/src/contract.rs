@@ -91,6 +91,7 @@ pub fn instantiate(
         owner: info.sender.clone(),
         min_withdrawal: msg.min_withdrawal,
         primitives: msg.primitives,
+        deposit_denom: msg.deposit_denom,
     };
     invest.normalize_primitive_weights();
     INVESTMENT.save(deps.storage, &invest)?;
@@ -419,7 +420,7 @@ mod test {
                         lock_period: 300,
                         pool_id: 1,
                         pool_denom: "gamm/pool/2".to_string(),
-                        local_denom: "ibc/OTHER_DENOM".to_string(),
+                        local_denom: "ibc/SOME_DENOM".to_string(),
                         base_denom: "uqsr".to_string(),
                         quote_denom: "uosmo".to_string(),
                         transfer_channel: "channel-0".to_string(),
@@ -434,7 +435,7 @@ mod test {
                         lock_period: 300,
                         pool_id: 1,
                         pool_denom: "gamm/pool/3".to_string(),
-                        local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
+                        local_denom: "ibc/SOME_DENOM".to_string(),
                         base_denom: "uatom".to_string(),
                         quote_denom: "uqsr".to_string(),
                         transfer_channel: "channel-0".to_string(),
@@ -451,6 +452,7 @@ mod test {
                 amount: Uint128::from(1000u128),
             }],
             total_cap: Uint128::new(10_000_000_000_000),
+            deposit_denom: "ibc/SOME_DENOM".to_string(),
         };
 
         // prepare 3 mock configs for prim1, prim2 and prim3
@@ -483,7 +485,7 @@ mod test {
                                 lock_period: 300,
                                 pool_id: 1,
                                 pool_denom: "gamm/pool/2".to_string(),
-                                local_denom: "ibc/OTHER_DENOM".to_string(),
+                                local_denom: "ibc/SOME_DENOM".to_string(),
                                 base_denom: "uqsr".to_string(),
                                 quote_denom: "uosmo".to_string(),
                                 transfer_channel: "channel-0".to_string(),
@@ -500,7 +502,7 @@ mod test {
                                 lock_period: 300,
                                 pool_id: 1,
                                 pool_denom: "gamm/pool/3".to_string(),
-                                local_denom: "ibc/OTHER_OTHER_DENOM".to_string(),
+                                local_denom: "ibc/SOME_DENOM".to_string(),
                                 base_denom: "uatom".to_string(),
                                 quote_denom: "uqsr".to_string(),
                                 transfer_channel: "channel-0".to_string(),
@@ -558,7 +560,7 @@ mod test {
                     lock_period: 300,
                     pool_id: 1,
                     pool_denom: "gamm/pool/2".to_string(),
-                    local_denom: "ibc/OTHER_DENOM".to_string(),
+                    local_denom: "ibc/SOME_DENOM".to_string(),
                     base_denom: "uqsr".to_string(),
                     quote_denom: "uosmo".to_string(),
                     transfer_channel: "channel-0".to_string(),
@@ -572,6 +574,7 @@ mod test {
             owner: Addr::unchecked("lulu"),
             min_withdrawal: Uint128::from(100u128),
             primitives: primitive_configs,
+            deposit_denom: "ibc/SOME_DENOM".to_string(),
         };
 
         INVESTMENT

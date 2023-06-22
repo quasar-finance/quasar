@@ -27,6 +27,8 @@ pub struct InvestmentInfo {
     /// This is the minimum amount we will pull out to reinvest, as well as a minimum
     /// that can be unbonded (to avoid needless staking tx)
     pub min_withdrawal: Uint128,
+    /// the denom accepted by the vault
+    pub deposit_denom: String,
     /// this is the array of primitives that this vault will subscribe to
     pub primitives: Vec<PrimitiveConfig>,
 }
@@ -95,6 +97,10 @@ pub struct BondingStub {
     pub address: String,
     // the response of the primitive upon successful bond or error
     pub bond_response: Option<BondResponse>,
+    // primitive value at the time of receiving the bond_response
+    pub primitive_value: Option<Uint128>,
+    // the amount sent with the Bond
+    pub amount: Uint128,
 }
 
 #[cw_serde]
@@ -176,6 +182,7 @@ mod tests {
                 };
                 4
             ],
+            deposit_denom: "ibc/osmo".to_string(),
         };
         invest.normalize_primitive_weights();
         assert_eq!(invest.primitives[0].weight, Decimal::percent(25));

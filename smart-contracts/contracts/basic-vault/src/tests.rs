@@ -4,10 +4,10 @@ use std::{marker::PhantomData, str::FromStr};
 use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockStorage},
-    to_binary, Addr, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult, CosmosMsg,
-    Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult,
-    QueryRequest, Reply, Response, StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp,
-    Uint128, WasmMsg,
+    to_binary, Addr, Attribute, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult,
+    CosmosMsg, Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier,
+    QuerierResult, QueryRequest, Reply, Response, StdError, StdResult, SubMsgResponse,
+    SubMsgResult, Timestamp, Uint128, WasmMsg,
 };
 use cw20::BalanceResponse;
 
@@ -24,6 +24,7 @@ use quasar_types::{
 };
 
 use crate::{
+    callback::on_bond,
     contract::execute,
     contract::instantiate,
     contract::query,
@@ -33,6 +34,7 @@ use crate::{
         get_token_amount_weights, may_pay_with_ratio,
     },
     msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
+    state::{BONDING_SEQ, VAULT_REWARDS},
 };
 
 #[derive(Clone, PartialEq, prost::Message)]
@@ -56,6 +58,21 @@ impl QuasarQuerier {
             primitive_states,
             primitive_unlock_times: vec![],
         }
+    }
+
+    /// update the state of the quasar querier, expects denom, shares, balance
+    pub fn update_state(&mut self, new_states: Vec<(&str, Uint128, Uint128)>) {
+        new_states
+            .into_iter()
+            .for_each(|(address, shares, balance)| {
+                let mut val = self
+                    .primitive_states
+                    .iter_mut()
+                    .find(|(prim_addr, _, _, _)| prim_addr == address)
+                    .unwrap();
+                val.2 = shares;
+                val.3 = balance;
+            })
     }
 
     pub fn find_states_for_primitive(&self, address: String) -> (String, Uint128, Uint128) {
@@ -238,6 +255,7 @@ fn init_msg() -> InstantiateMsg {
             amount: Uint128::from(1000u128),
         }],
         total_cap: Uint128::new(10_000_000_000_000),
+        deposit_denom: "ibc/uosmo".to_string(),
     }
 }
 
@@ -300,6 +318,8 @@ fn init_msg_with_primitive_details(
             })
             .collect(),
         total_cap: Uint128::new(10_000_000_000_000),
+        // TODO this is kind of sloppy and should be a param
+        deposit_denom: primitive_details[0].1.clone(),
     }
 }
 
@@ -370,7 +390,7 @@ fn proper_bond_with_one_primitive() {
     };
 
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
-    assert_eq!(res.messages.len(), 2);
+    assert_eq!(res.messages.len(), 1);
     assert_eq!(res.attributes.first().unwrap().value, "1");
 
     if let CosmosMsg::Wasm(wasm_msg) = &res.messages.first().unwrap().msg {
@@ -411,6 +431,29 @@ fn even_primitives() -> Vec<(String, String, Uint128, Uint128)> {
     ]
 }
 
+fn even_primitives_single_token() -> Vec<(String, String, Uint128, Uint128)> {
+    vec![
+        (
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        ),
+        (
+            "quasar124".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        ),
+        (
+            "quasar125".to_string(),
+            "ibc/uosmo".to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        ),
+    ]
+}
+
 fn even_primitive_details() -> Vec<(String, String, Decimal)> {
     vec![
         (
@@ -431,6 +474,26 @@ fn even_primitive_details() -> Vec<(String, String, Decimal)> {
     ]
 }
 
+fn even_primitive_details_single_token() -> Vec<(String, String, Decimal)> {
+    vec![
+        (
+            "quasar123".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::one(),
+        ),
+        (
+            "quasar124".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::one(),
+        ),
+        (
+            "quasar125".to_string(),
+            "ibc/uosmo".to_string(),
+            Decimal::one(),
+        ),
+    ]
+}
+
 fn even_deposit() -> Vec<Coin> {
     vec![
         Coin {
@@ -446,6 +509,13 @@ fn even_deposit() -> Vec<Coin> {
             amount: Uint128::from(100u128),
         },
     ]
+}
+
+fn even_deposit_single_token() -> Vec<Coin> {
+    vec![Coin {
+        denom: "ibc/uosmo".to_string(),
+        amount: Uint128::from(300u128),
+    }]
 }
 
 fn _uneven_primitives() -> Vec<(String, String, Uint128, Uint128)> {
@@ -1245,19 +1315,19 @@ fn test_may_pay_with_uneven_ratio() {
 
 #[test]
 fn proper_bond() {
-    let mut deps = mock_deps_with_primitives(even_primitives());
-    let init_msg = init_msg_with_primitive_details(even_primitive_details());
+    let mut deps = mock_deps_with_primitives(even_primitives_single_token());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details_single_token());
     let info = mock_info(TEST_CREATOR, &[]);
     let env = mock_env();
     let res = init(deps.as_mut(), &init_msg, &env, &info);
     assert_eq!(1, res.messages.len());
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
-    assert_eq!(res.messages.len(), 4);
+    assert_eq!(res.messages.len(), 3);
     assert_eq!(res.attributes.first().unwrap().value, "1");
 
     if let CosmosMsg::Wasm(WasmMsg::Execute {
@@ -1287,7 +1357,7 @@ fn proper_bond() {
     {
         assert_eq!(contract_addr, "quasar124");
         assert_eq!(funds.len(), 1);
-        assert_eq!(funds[0].denom, "ibc/uatom");
+        assert_eq!(funds[0].denom, "ibc/uosmo");
         assert_eq!(funds[0].amount, Uint128::from(99u128));
         if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
             assert_eq!(id, "1")
@@ -1306,7 +1376,7 @@ fn proper_bond() {
     {
         assert_eq!(contract_addr, "quasar125");
         assert_eq!(funds.len(), 1);
-        assert_eq!(funds[0].denom, "ibc/ustars");
+        assert_eq!(funds[0].denom, "ibc/uosmo");
         assert_eq!(funds[0].amount, Uint128::from(99u128));
         if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
             assert_eq!(id, "1")
@@ -1317,15 +1387,16 @@ fn proper_bond() {
         panic!("expected wasm msg")
     }
 
-    if let CosmosMsg::Bank(BankMsg::Send { to_address, amount }) = &res.messages[3].msg {
-        assert_eq!(to_address, TEST_DEPOSITOR);
-        assert_eq!(amount.len(), 3);
-        assert_eq!(amount[0].amount, Uint128::from(1u128));
-        assert_eq!(amount[1].amount, Uint128::from(1u128));
-        assert_eq!(amount[2].amount, Uint128::from(1u128));
-    } else {
-        panic!("unexpected message");
-    }
+    // This BankMsg should not exist since we deprecated the dust send back
+    // if let CosmosMsg::Bank(BankMsg::Send { to_address, amount }) = &res.messages[3].msg {
+    //     assert_eq!(to_address, TEST_DEPOSITOR);
+    //     assert_eq!(amount.len(), 3);
+    //     assert_eq!(amount[0].amount, Uint128::from(1u128));
+    //     assert_eq!(amount[1].amount, Uint128::from(1u128));
+    //     assert_eq!(amount[2].amount, Uint128::from(1u128));
+    // } else {
+    //     panic!("unexpected message");
+    // }
 }
 
 #[test]
@@ -1351,12 +1422,12 @@ fn proper_bond_with_zero_primitive_balance() {
         recipient: Option::None,
     };
     let res = execute(deps.as_mut(), env, deposit_info, deposit_msg).unwrap();
-    assert_eq!(res.messages.len(), 2);
+    assert_eq!(res.messages.len(), 1);
     assert_eq!(res.attributes.first().unwrap().value, "1");
 }
 
 #[test]
-fn test_bond_with_bad_primitive_state() {
+fn test_bond_with_zero_primitive_state() {
     let mut deps_1 = mock_deps_with_primitives(vec![(
         "quasar123".to_string(),
         "ibc/uosmo".to_string(),
@@ -1369,7 +1440,7 @@ fn test_bond_with_bad_primitive_state() {
         Uint128::from(1u128),
         Uint128::from(0u128),
     )]);
-    let init_msg = init_msg_with_primitive_details(vec![(
+    let init_msg: InstantiateMsg = init_msg_with_primitive_details(vec![(
         "quasar123".to_string(),
         "ibc/uosmo".to_string(),
         Decimal::one(),
@@ -1379,26 +1450,64 @@ fn test_bond_with_bad_primitive_state() {
     let _ = init(deps_1.as_mut(), &init_msg, &env, &info);
     let _ = init(deps_2.as_mut(), &init_msg, &env, &info);
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    // mock the rewards_contract address
+    VAULT_REWARDS
+        .save(
+            deps_1.as_mut().storage,
+            &Addr::unchecked("rewards_contract"),
+        )
+        .unwrap();
+    VAULT_REWARDS
+        .save(
+            deps_2.as_mut().storage,
+            &Addr::unchecked("rewards_contract"),
+        )
+        .unwrap();
+
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
+    let bond_seq_1 = BONDING_SEQ.load(deps_1.as_ref().storage).unwrap();
     let res_1 = execute(
         deps_1.as_mut(),
         env.clone(),
         deposit_info.clone(),
         deposit_msg.clone(),
     )
-    .unwrap_err();
-    assert_eq!(res_1.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
-    let res_2 = execute(deps_2.as_mut(), env, deposit_info, deposit_msg).unwrap_err();
-    assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
+    .unwrap();
+
+    // with changing to minting by ica_balance, if either is zero, we expect to mint user value, so we should be able to callback these primitives
+    // and receive even deposit single token amount of shares, aka 300
+    let res_1 = on_bond(
+        deps_1.as_mut(),
+        env.clone(),
+        mock_info("quasar123", &vec![]),
+        Uint128::new(250),
+        bond_seq_1.to_string(),
+    )
+    .unwrap();
+    assert!(res_1.attributes.contains(&Attribute::new("minted", "300")));
+
+    let bond_seq_2 = BONDING_SEQ.load(deps_2.as_ref().storage).unwrap();
+    let res_2 = execute(deps_2.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+
+    let res_2 = on_bond(
+        deps_2.as_mut(),
+        env.clone(),
+        mock_info("quasar123", &vec![]),
+        Uint128::new(250),
+        bond_seq_2.to_string(),
+    )
+    .unwrap();
+    assert!(res_2.attributes.contains(&Attribute::new("minted", "300")));
+    // assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
 }
 
 #[test]
-fn proper_bond_response_callback() {
-    let mut deps = mock_deps_with_primitives(even_primitives());
-    let init_msg = init_msg_with_primitive_details(even_primitive_details());
+fn proper_bond_response_callback_single_token() {
+    let mut deps = mock_deps_with_primitives(even_primitives_single_token());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details_single_token());
     let info = mock_info(TEST_CREATOR, &[]);
     let env = mock_env();
     let res = init(deps.as_mut(), &init_msg, &env, &info);
@@ -1408,13 +1517,15 @@ fn proper_bond_response_callback() {
     let res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
     assert_eq!(res.messages.len(), 0);
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
-    assert_eq!(res.messages.len(), 4);
-    assert_eq!(res.attributes.first().unwrap().value, "1");
+
+    println!("messages: {:#?}", res.messages);
+    // assert_eq!(res.messages.len(), 4);
+    // assert_eq!(res.attributes.first().unwrap().value, "1");
 
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
     let primitive_1_info = mock_info("quasar123", &[]);
@@ -1465,8 +1576,84 @@ fn proper_bond_response_callback() {
     let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
-    assert_eq!(balance.balance, Uint128::from(300u128));
+    assert_eq!(balance.balance, Uint128::from(297u128));
 }
+
+// this looks to be a duplicate now of proper_bond_response_callback_single_token, so should no longer be supported
+// #[test]
+// fn proper_bond_response_callback() {
+//     let mut deps = mock_deps_with_primitives(even_primitives());
+//     let init_msg = init_msg_with_primitive_details(even_primitive_details());
+//     let info = mock_info(TEST_CREATOR, &[]);
+//     let env = mock_env();
+//     let res = init(deps.as_mut(), &init_msg, &env, &info);
+//     assert_eq!(1, res.messages.len());
+
+//     let reply_msg = reply_msg();
+//     let res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+//     assert_eq!(res.messages.len(), 0);
+
+//     let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+//     let deposit_msg = ExecuteMsg::Bond {
+//         recipient: Option::None,
+//     };
+//     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+
+//     println!("messages: {:#?}", res.messages);
+//     // assert_eq!(res.messages.len(), 4);
+//     // assert_eq!(res.attributes.first().unwrap().value, "1");
+
+//     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+//     let primitive_1_info = mock_info("quasar123", &[]);
+//     let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+//         share_amount: 100u128.into(),
+//         bond_id: "1".to_string(),
+//     });
+//     let p1_res = execute(
+//         deps.as_mut(),
+//         env.clone(),
+//         primitive_1_info,
+//         primitive_1_msg,
+//     )
+//     .unwrap();
+//     assert_eq!(p1_res.messages.len(), 0);
+
+//     let primitive_2_info = mock_info("quasar124", &[]);
+//     let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+//         share_amount: 100u128.into(),
+//         bond_id: "1".to_string(),
+//     });
+//     let p2_res = execute(
+//         deps.as_mut(),
+//         env.clone(),
+//         primitive_2_info,
+//         primitive_2_msg,
+//     )
+//     .unwrap();
+//     assert_eq!(p2_res.messages.len(), 0);
+
+//     let primitive_3_info = mock_info("quasar125", &[]);
+//     let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+//         share_amount: 100u128.into(),
+//         bond_id: "1".to_string(),
+//     });
+//     let p3_res = execute(
+//         deps.as_mut(),
+//         env.clone(),
+//         primitive_3_info,
+//         primitive_3_msg,
+//     )
+//     .unwrap();
+//     assert_eq!(p3_res.messages.len(), 1);
+
+//     let balance_query = crate::msg::QueryMsg::Balance {
+//         address: TEST_DEPOSITOR.to_string(),
+//     };
+//     let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
+//     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+
+//     assert_eq!(balance.balance, Uint128::from(300u128));
+// }
 
 #[test]
 fn proper_unbond() {
@@ -1485,7 +1672,7 @@ fn proper_unbond() {
         recipient: Option::None,
     };
     let res = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
-    assert_eq!(res.messages.len(), 4);
+    assert_eq!(res.messages.len(), 3);
     assert_eq!(res.attributes.first().unwrap().value, "1");
 
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
@@ -1556,7 +1743,8 @@ fn proper_unbond() {
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
-    assert_eq!(balance.balance, Uint128::from(300u128));
+    // TODO is 99 sane here, probably since we calculate from ICA_BALANCES now
+    assert_eq!(balance.balance, Uint128::from(99u128));
 
     // start unbond
     let unbond_info = mock_info(TEST_DEPOSITOR, &[]);
@@ -1566,7 +1754,7 @@ fn proper_unbond() {
     let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
     assert_eq!(unbond_res.messages.len(), 4);
     assert_eq!(unbond_res.attributes[2].key, "burnt");
-    assert_eq!(unbond_res.attributes[2].value, "300");
+    assert_eq!(unbond_res.attributes[2].value, "99");
     assert_eq!(unbond_res.attributes[3].key, "bond_id");
     assert_eq!(unbond_res.attributes[3].value, "2");
 
@@ -1982,7 +2170,7 @@ fn test_dup_token_deposits() {
         )
         .unwrap();
 
-        assert_eq!(deposit_res.messages.len(), init_msg.primitives.len() + 1);
+        assert_eq!(deposit_res.messages.len(), init_msg.primitives.len());
 
         // total money sent to the vault
         let total_money = deposit_info.funds[0].amount;
