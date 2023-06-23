@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
+    Addr, BankMsg, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -256,16 +256,16 @@ pub fn on_unbond(
             ));
     }
 
-    let mut funds_sent = Uint128::zero();
-    // Construct message to return these funds to the user
+    let mut funds_sent: Vec<Coin> = vec![];
+    // Construct messages to return these funds to the user
     let return_msgs: Vec<BankMsg> = unbond_stubs
         .stub
-        .iter()
+        .into_iter()
         .map(|s| {
-            funds_sent += s.unbond_funds[0].amount;
+            funds_sent.extend(s.unbond_funds.clone());
             BankMsg::Send {
                 to_address: user_address.to_string(),
-                amount: s.unbond_funds.clone(),
+                amount: s.unbond_funds,
             }
         })
         .collect();
@@ -293,7 +293,8 @@ pub fn on_unbond(
             ("primitive_address", &info.sender.to_string()),
             ("unbond_id", &unbond_id),
             ("recipient", &user_address),
-            ("funds_sent", &funds_sent.to_string()),
+            ("funds_sent", &format!("{:?}", funds_sent)),
+            ("data", ""),
             ("data", ""),
         ]))
 }
