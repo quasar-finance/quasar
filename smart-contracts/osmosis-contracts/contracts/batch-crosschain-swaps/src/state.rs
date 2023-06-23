@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Timestamp};
+use cosmwasm_std::{Addr, Coin, Timestamp};
 use cw_storage_plus::{Item, Map};
 use registry::msg::SerializableJson;
-use swaprouter::msg::ExecuteMsg as SwapRouterExecute;
+use swaprouter::msg::{ExecuteMsg as SwapRouterExecute, SwapResponse};
 
 use crate::msg::FailedDeliveryAction;
 
@@ -21,17 +21,9 @@ pub struct ForwardTo {
 }
 
 #[cw_serde]
-pub enum DenomSwapStatus {
-    /// The swap is in progress
-    Pending,
-    /// The swap is completed
-    Swapped,
-}
-
-#[cw_serde]
 pub struct DenomSwapState {
     pub denom: String,
-    pub status: DenomSwapStatus,
+    pub swap_response: Option<SwapResponse>,
 }
 
 #[cw_serde]
@@ -40,15 +32,14 @@ pub struct SwapMsgReplyState {
     pub contract_addr: Addr,
     pub block_time: Timestamp,
     pub forward_to: ForwardTo,
-    pub denom_states: Vec<DenomSwapState>,
+    pub swap_states: Vec<DenomSwapState>,
 }
 
 #[cw_serde]
 pub struct ForwardMsgReplyState {
     pub channel_id: String,
     pub to_address: String,
-    pub amount: u128,
-    pub denom: String,
+    pub coins: Vec<Coin>,
     pub on_failed_delivery: FailedDeliveryAction,
 }
 

@@ -11,7 +11,7 @@ use swaprouter::msg::ExecuteMsg as SwapRouterExecute;
 
 use crate::checks::{check_is_contract_governor, ensure_key_missing, validate_receiver};
 use crate::consts::{MsgReplyID, CALLBACK_KEY};
-use crate::msg::{CrosschainSwapResponse, FailedDeliveryAction};
+use crate::msg::{BatchCrosschainSwapResponse, FailedDeliveryAction};
 use registry::proto::MsgTransferResponse;
 
 use crate::state::{
@@ -238,11 +238,11 @@ pub fn swap_and_forward(
         deps.storage,
         &SwapMsgReplyState {
             swap_msgs: swap_msgs,
-            denom_states: output_denoms
+            swap_states: output_denoms
                 .iter()
                 .map(|d| DenomSwapState {
                     denom: d.to_string(),
-                    status: DenomSwapStatus::Pending,
+                    swap_response: None,
                 })
                 .collect(),
             block_time: env.block.time,
@@ -330,7 +330,7 @@ pub fn handle_swap_reply(
         |mut swap_msg_state| -> Result<_, ContractError> {
             // find the denom state that matches the denom that was swapped
             let denom_state = swap_msg_state
-                .denom_states
+                .swap_states
                 .iter_mut()
                 .find(|ds| ds.denom == swap_response.token_out_denom)
                 .ok_or_else(|| ContractError::CustomError {
@@ -341,7 +341,7 @@ pub fn handle_swap_reply(
                 })?;
 
             // update the denom state to swapped
-            denom_state.status = DenomSwapStatus::Swapped;
+            denom_state.swap_response = Some(swap_response);
 
             Ok(swap_msg_state)
         },
@@ -350,16 +350,17 @@ pub fn handle_swap_reply(
     // grab our up-to-date swap reply state
     let swap_msg_state = SWAP_REPLY_STATE.load(deps.storage)?;
 
+    // if not all swap message states have a swap response
     if !swap_msg_state
-        .denom_states
+        .swap_states
         .iter()
-        .all(|ds| ds.status == DenomSwapStatus::Swapped)
+        .all(|ds| ds.swap_response.is_some())
     {
         // do nothing
         let denoms_already_swapped = swap_msg_state
-            .denom_states
+            .swap_states
             .iter()
-            .filter(|ds| ds.status == DenomSwapStatus::Swapped)
+            .filter(|ds| ds.swap_response.is_some())
             .collect::<Vec<_>>()
             .len();
 
@@ -370,7 +371,7 @@ pub fn handle_swap_reply(
                 format!(
                     "{:}/{:}",
                     denoms_already_swapped,
-                    swap_msg_state.denom_states.len()
+                    swap_msg_state.swap_states.len()
                 ),
             ));
     }
@@ -386,25 +387,43 @@ pub fn handle_swap_reply(
     // callback so this contract can track the IBC send
     let memo = build_memo(swap_msg_state.forward_to.next_memo, contract_addr.as_str())?;
 
+    let coins = swap_msg_state
+        .swap_states
+        .iter()
+        .map(|s| {
+            if let Some(swap_response) = &s.swap_response {
+                Coin::new(
+                    swap_response.amount.into(),
+                    swap_response.token_out_denom.clone(),
+                )
+            } else {
+                unreachable!()
+            }
+        })
+        .collect::<Vec<_>>();
+
     let registry = Registry::default(deps.as_ref());
-    let ibc_transfer = registry.unwrap_coin_into(
-        Coin::new(
-            swap_response.amount.into(),
-            swap_response.token_out_denom.clone(),
-        ),
-        swap_msg_state.forward_to.receiver.clone().to_string(),
-        Some(&swap_msg_state.forward_to.chain),
-        env.contract.address.to_string(),
-        env.block.time,
-        memo,
-        None,
-    )?;
-    deps.api.debug(&format!("IBC transfer: {ibc_transfer:?}"));
+
+    let ibc_transfers = coins
+        .iter()
+        .map(|c| {
+            registry.unwrap_coin_into(
+                c.clone(),
+                swap_msg_state.forward_to.receiver.clone().to_string(),
+                Some(&swap_msg_state.forward_to.chain),
+                env.contract.address.to_string(),
+                env.block.time,
+                memo.clone(),
+                None,
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    deps.api.debug(&format!("IBC transfer: {ibc_transfers:?}"));
 
     // Base response
     let response = Response::new()
         .add_attribute("status", "ibc_message_created")
-        .add_attribute("ibc_message", format!("{ibc_transfer:?}"));
+        .add_attribute("ibc_messages", format!("{ibc_transfers:?}"));
 
     // Check that there isn't anything stored in FORWARD_REPLY_STATES. If there
     // is, it means that the contract is already waiting for a reply and should
@@ -423,16 +442,29 @@ pub fn handle_swap_reply(
         &ForwardMsgReplyState {
             channel_id: ibc_transfer.source_channel.clone(),
             to_address: swap_msg_state.forward_to.receiver.into(),
-            amount: swap_response.amount.into(),
-            denom: swap_response.token_out_denom,
+            coins: swap_msg_state
+                .swap_states
+                .iter()
+                .map(|s| {
+                    if let Some(swap_response) = &s.swap_response {
+                        Coin::new(
+                            swap_response.amount.into(),
+                            swap_response.token_out_denom.clone(),
+                        )
+                    } else {
+                        unreachable!()
+                    }
+                })
+                .collect(),
             on_failed_delivery: swap_msg_state.forward_to.on_failed_delivery,
         },
     )?;
 
-    Ok(response.add_submessage(SubMsg::reply_on_success(
-        ibc_transfer,
-        MsgReplyID::Forward.repr(),
-    )))
+    Ok(
+        response.add_submessages(ibc_transfers.iter().map(|ibc_transfer| {
+            SubMsg::reply_on_success(ibc_transfer.clone(), MsgReplyID::Forward.repr())
+        })),
+    )
 }
 
 // Included here so it's closer to the trait that needs it.
@@ -461,8 +493,7 @@ pub fn handle_forward_reply(
     let ForwardMsgReplyState {
         channel_id,
         to_address,
-        amount,
-        denom,
+        coins,
         on_failed_delivery: failed_delivery_action,
     } = FORWARD_REPLY_STATE.load(deps.storage)?;
     FORWARD_REPLY_STATE.remove(deps.storage);
@@ -487,8 +518,13 @@ pub fn handle_forward_reply(
     }
 
     // The response data
-    let response_data =
-        CrosschainSwapResponse::new(amount, &denom, &channel_id, &to_address, response.sequence);
+    let response_data = BatchCrosschainSwapResponse::new(
+        amount,
+        &denom,
+        &channel_id,
+        &to_address,
+        response.sequence,
+    );
 
     Ok(Response::new()
         .set_data(to_binary(&response_data)?)

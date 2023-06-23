@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use registry::msg::SerializableJson;
 use swaprouter::msg::Slippage;
 
@@ -118,6 +118,31 @@ impl CrosschainSwapResponse {
         CrosschainSwapResponse {
             sent_amount: amount.into(),
             denom: denom.to_string(),
+            channel_id: channel_id.to_string(),
+            receiver: receiver.to_string(),
+            packet_sequence,
+        }
+    }
+}
+
+// structure for batch crosschain response
+#[cw_serde]
+pub struct BatchCrosschainSwapResponse {
+    pub sent_coins: Vec<Coin>,
+    pub channel_id: String,
+    pub receiver: String,
+    pub packet_sequence: u64,
+}
+
+impl BatchCrosschainSwapResponse {
+    pub fn new(
+        sent_coins: Vec<Coin>,
+        channel_id: &str,
+        receiver: &str,
+        packet_sequence: u64,
+    ) -> Self {
+        BatchCrosschainSwapResponse {
+            sent_coins: sent_coins,
             channel_id: channel_id.to_string(),
             receiver: receiver.to_string(),
             packet_sequence,
