@@ -57,32 +57,29 @@ pub fn on_bond(
     });
 
     BOND_STATE.save(deps.storage, bond_id.clone(), &bond_stubs)?;
+    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
 
     // if still waiting on successful bonds, then return
     if bond_stubs.iter().any(|s| s.bond_response.is_none()) {
         return Ok(Response::new()
+            // E3.5: BondEndPending
             .add_attribute("action", "bond_end_pending")
             .add_attribute("vault_address", env.contract.address)
             .add_attribute("primitive_address", info.sender)
             .add_attribute("bond_id", bond_id)
+            .add_attribute("recipient", &user_address)
             .add_attribute(
                 "state",
                 bond_stubs
                     .iter()
                     .fold(0u32, |acc, stub| {
-                        if stub.bond_response.is_none() {
-                            acc + 1
-                        } else {
-                            acc
-                        }
+                        stub.bond_response.as_ref().map_or(acc + 1, |_| acc)
                     })
                     .to_string()
                     + " pending bonds",
             ));
     }
     // at this point we know that the deposit has succeeded fully, and we can mint shares
-
-    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id.clone())?;
     let validated_user_address = deps.api.addr_validate(&user_address)?;
 
     // lets updated all pending deposit info
@@ -134,16 +131,23 @@ pub fn on_bond(
 
     let update_user_rewards_idx_msg =
         update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
-    execute_mint(deps, env.clone(), sub_info, user_address, shares_to_mint)?;
+    execute_mint(
+        deps,
+        env.clone(),
+        sub_info,
+        user_address.clone(),
+        shares_to_mint,
+    )?;
 
-    // E4: BondEnd
     let res = Response::new()
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
+        // E4: BondEnd
         .add_attributes(vec![
             ("action", "bond_end"),
             ("vault_address", &env.contract.address.to_string()),
             ("primitive_address", &info.sender.to_string()),
             ("bond_id", &bond_id),
+            ("recipient", &user_address),
             ("shares_minted", &shares_to_mint.to_string()),
             ("new_total_supply", &supply.issued.to_string()),
             ("data", ""),
@@ -195,7 +199,7 @@ pub fn on_start_unbond(
 
 pub fn on_unbond(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     unbond_id: String,
 ) -> Result<Response, ContractError> {
@@ -223,6 +227,7 @@ pub fn on_unbond(
     unbonding_stub.unbond_funds = info.funds;
 
     UNBOND_STATE.save(deps.storage, unbond_id.clone(), &unbond_stubs)?;
+    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
 
     // if still waiting on successful unbonds, then return
     // todo: should we eagerly send back funds?
@@ -231,17 +236,37 @@ pub fn on_unbond(
         .iter()
         .any(|s| s.unbond_response.is_none())
     {
-        return Ok(Response::new());
+        return Ok(Response::new()
+            // E3.5: UnbondEndPending
+            .add_attribute("action", "claim_end_pending")
+            .add_attribute("vault_address", env.contract.address)
+            .add_attribute("primitive_address", info.sender)
+            .add_attribute("unbond_id", unbond_id)
+            .add_attribute("recipient", &user_address)
+            .add_attribute(
+                "state",
+                unbond_stubs
+                    .stub
+                    .iter()
+                    .fold(0u32, |acc, stub| {
+                        stub.unbond_response.as_ref().map_or(acc + 1, |_| acc)
+                    })
+                    .to_string()
+                    + " pending unbonds",
+            ));
     }
 
-    let user_address = BONDING_SEQ_TO_ADDR.load(deps.storage, unbond_id.clone())?;
+    let mut funds_sent = Uint128::zero();
     // Construct message to return these funds to the user
     let return_msgs: Vec<BankMsg> = unbond_stubs
         .stub
         .iter()
-        .map(|s| BankMsg::Send {
-            to_address: user_address.to_string(),
-            amount: s.unbond_funds.clone(),
+        .map(|s| {
+            funds_sent += s.unbond_funds[0].amount;
+            BankMsg::Send {
+                to_address: user_address.to_string(),
+                amount: s.unbond_funds.clone(),
+            }
         })
         .collect();
 
@@ -249,7 +274,7 @@ pub fn on_unbond(
     UNBOND_STATE.remove(deps.storage, unbond_id.clone());
     PENDING_UNBOND_IDS.update(
         deps.storage,
-        Addr::unchecked(user_address),
+        Addr::unchecked(&user_address),
         |ids| -> Result<Vec<String>, ContractError> {
             Ok(ids
                 .ok_or(ContractError::NoPendingUnbonds {})?
@@ -261,8 +286,16 @@ pub fn on_unbond(
 
     Ok(Response::new()
         .add_messages(return_msgs)
-        .add_attribute("action", "on_unbond")
-        .add_attribute("unbond_id", unbond_id))
+        // E4: ClaimEnd
+        .add_attributes(vec![
+            ("action", "claim_end"),
+            ("vault_address", &info.sender.to_string()),
+            ("primitive_address", &info.sender.to_string()),
+            ("unbond_id", &unbond_id),
+            ("recipient", &user_address),
+            ("funds_sent", &funds_sent.to_string()),
+            ("data", ""),
+        ]))
 }
 
 #[cfg(test)]
@@ -270,7 +303,7 @@ mod test {
     use std::str::FromStr;
 
     use crate::multitest::common::PrimitiveInstantiateMsg;
-    use crate::state::{BondingStub, BOND_STATE};
+    use crate::state::{BondingStub, BONDING_SEQ_TO_ADDR, BOND_STATE};
     use crate::{
         callback::on_bond,
         msg::PrimitiveConfig,
@@ -350,6 +383,11 @@ mod test {
                     },
                 ],
             )
+            .unwrap();
+
+        // need to save the bond id to addr mapping
+        BONDING_SEQ_TO_ADDR
+            .save(&mut deps.storage, bond_id.clone(), &"addr00001".to_string())
             .unwrap();
 
         // first bond should work

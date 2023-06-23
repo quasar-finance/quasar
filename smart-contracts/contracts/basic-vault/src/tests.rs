@@ -2164,6 +2164,7 @@ fn test_on_bond_callback() {
             attr("vault_address", "cosmos2contract"),
             attr("primitive_address", "quasar123"),
             attr("bond_id", "1"),
+            attr("recipient", TEST_DEPOSITOR),
             attr("state", "2 pending bonds")
         ]
     );
@@ -2185,6 +2186,7 @@ fn test_on_bond_callback() {
             attr("vault_address", "cosmos2contract"),
             attr("primitive_address", "quasar124"),
             attr("bond_id", "1"),
+            attr("recipient", TEST_DEPOSITOR),
             attr("state", "1 pending bonds")
         ]
     );
