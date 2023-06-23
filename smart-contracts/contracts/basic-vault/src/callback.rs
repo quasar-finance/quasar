@@ -265,6 +265,7 @@ mod test {
 
     use crate::multitest::common::PrimitiveInstantiateMsg;
     use crate::state::{BondingStub, BOND_STATE};
+    use crate::tests::{QuasarQuerier, mock_deps_with_primitives};
     use crate::{
         callback::on_bond,
         msg::PrimitiveConfig,
@@ -274,15 +275,28 @@ mod test {
     };
     use cosmwasm_std::{Addr, Uint128};
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
+        testing::{mock_env, mock_info},
         Decimal,
     };
 
     #[test]
     fn fail_if_duplicate_bond_id() {
-        let mut deps = mock_dependencies();
-        // mock the queries soe the primitives exist
-        
+        let primitive_states = vec![
+        (
+            "addr00001".to_string(),
+            LOCAL_DENOM.to_string(),
+            Uint128::from(100u128),
+            Uint128::from(100u128),
+        ),
+        (
+            "addr00002".to_string(),
+            LOCAL_DENOM.to_string(),
+            Uint128::from(200u128),
+            Uint128::from(400u128),
+        ),
+    ];
+        // mock the queries so the primitives exist
+        let mut deps = mock_deps_with_primitives(primitive_states);
         let env = mock_env();
         let info = mock_info("addr00001", &[]);
 

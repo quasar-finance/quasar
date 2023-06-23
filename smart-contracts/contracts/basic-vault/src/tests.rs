@@ -58,6 +58,15 @@ impl QuasarQuerier {
         }
     }
 
+    /// update the state of the quasar querier, expects denom, shares, balance
+    pub fn update_state(&mut self, new_states: Vec<(&str, Uint128, Uint128)>) {
+        new_states.into_iter().for_each(|(address, shares, balance)| {
+            let mut val = self.primitive_states.iter_mut().find(|(prim_addr, _, _, _)| prim_addr == address).unwrap();
+            val.2 = shares;
+            val.3 = balance;
+        })
+    }
+
     pub fn find_states_for_primitive(&self, address: String) -> (String, Uint128, Uint128) {
         let mut total_share = Uint128::zero();
         let mut total_balance = Uint128::zero();
