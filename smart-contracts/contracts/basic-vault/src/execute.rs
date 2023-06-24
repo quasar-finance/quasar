@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128, WasmMsg, Addr, coin,
+    coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
@@ -157,10 +157,30 @@ pub fn get_deposit_and_remainder_for_ratio(
     Ok((coins?, remainder))
 }
 
-pub fn divide_by_ratio(funds: Coin, invest: InvestmentInfo) -> Result<Vec<(Coin, String)>, ContractError> {
-    let coins: Result<Vec<(Coin, String)>, cosmwasm_std::OverflowError> = invest.primitives.iter().map(|config| -> Result<(Coin, String), cosmwasm_std::OverflowError> {
-        config.weight.checked_mul(Decimal::new(funds.amount)).and_then(|dec| Ok((coin(dec.to_uint_floor().u128(), funds.denom.as_str()),config.address.clone())))
-    }).collect();
+pub fn divide_by_ratio(
+    funds: Coin,
+    invest: InvestmentInfo,
+) -> Result<Vec<(Coin, String)>, ContractError> {
+    println!("funds: {:?}", funds);
+    let coins: Result<Vec<(Coin, String)>, cosmwasm_std::OverflowError> = invest
+        .primitives
+        .iter()
+        .map(
+            |config| -> Result<(Coin, String), cosmwasm_std::OverflowError> {
+                println!("weight: {:?}", config.weight);
+                config
+                    .weight
+                    .checked_mul(Decimal::from_uint128(funds.amount))
+                    .and_then(|dec| {
+                        println!("dec: {:?}", dec);
+                        Ok((
+                            coin(dec.to_uint_floor().u128(), funds.denom.as_str()),
+                            config.address.clone(),
+                        ))
+                    })
+            },
+        )
+        .collect();
     Ok(coins?)
 }
 
@@ -258,25 +278,30 @@ pub fn bond(
     };
 
     let mut deposit_stubs = vec![];
-    let divided =  divide_by_ratio(info.funds[0].clone(), invest)?;
+    let divided = divide_by_ratio(info.funds[0].clone(), invest)?;
 
-    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided.into_iter().map(|(coin, prim_addr)| {
-        let deposit_stub = BondingStub {
-            address: prim_addr.clone(),
-            bond_response: None,
-            primitive_value: None,
-            amount: coin.amount,
-        };
-        deposit_stubs.push(deposit_stub);
+    println!("divided: {:?}", divided);
 
-        Ok(WasmMsg::Execute {
-            contract_addr: prim_addr,
-            msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
-                id: bond_seq.to_string(),
-            })?,
-            funds: vec![coin],
+    let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided
+        .into_iter()
+        .map(|(coin, prim_addr)| {
+            let deposit_stub = BondingStub {
+                address: prim_addr.clone(),
+                bond_response: None,
+                primitive_value: None,
+                amount: coin.amount,
+            };
+            deposit_stubs.push(deposit_stub);
+
+            Ok(WasmMsg::Execute {
+                contract_addr: prim_addr,
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                    id: bond_seq.to_string(),
+                })?,
+                funds: vec![coin],
+            })
         })
-    }).collect();
+        .collect();
 
     // let (primitive_funding_amounts, remainder) =
     //     may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
@@ -347,7 +372,7 @@ pub fn bond(
     Ok(Response::new()
         .add_attribute("bond_id", bond_seq.to_string())
         .add_messages(bond_msgs?))
-        // .add_message(remainder_msg))
+    // .add_message(remainder_msg))
 }
 
 pub fn unbond(
@@ -631,20 +656,20 @@ mod tests {
     #[test]
     fn test_do_start_unbond() {
         let primitive_states = vec![
-        (
-            "contract1".to_string(),
-            "ibc/ED07".to_string(),
-            // we init state with 1 primitve share being 10 tokens
-            Uint128::from(400u128),
-            Uint128::from(4000u128),
-        ),
-        (
-            "contract2".to_string(),
-            "ibc/ED07".to_string(),
-            Uint128::from(200u128),
-            Uint128::from(400u128),
-        ),
-    ];
+            (
+                "contract1".to_string(),
+                "ibc/ED07".to_string(),
+                // we init state with 1 primitve share being 10 tokens
+                Uint128::from(400u128),
+                Uint128::from(4000u128),
+            ),
+            (
+                "contract2".to_string(),
+                "ibc/ED07".to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
         // mock the queries so the primitives exist
         let mut deps = mock_deps_with_primitives(primitive_states);
         let env = mock_env();
@@ -768,8 +793,6 @@ mod tests {
         // start trying withdrawals
         // our succesful withdrawal should show that it is possible for the vault contract to unbond a different amount than 350 and 150 shares
 
-       
-
         // case 1: amount is zero, skip start unbond
         let amount = None;
         let res = do_start_unbond(deps.as_mut(), &env, &info, amount).unwrap();
@@ -789,14 +812,19 @@ mod tests {
         // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
         // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
         // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
-        deps.querier.update_state(vec![("contract1", Uint128::new(4000), Uint128::new(40000)), ("contract2", Uint128::new(3000), Uint128::new(30000))]);
+        deps.querier.update_state(vec![
+            ("contract1", Uint128::new(4000), Uint128::new(40000)),
+            ("contract2", Uint128::new(3000), Uint128::new(30000)),
+        ]);
 
         // case 3: amount is valid, execute start unbond on all primitive contracts
-        let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string()).unwrap().balance;
+        let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
+            .unwrap()
+            .balance;
         let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
         println!("{}", amount);
         println!("{}", total_supply.total_supply);
-        
+
         let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
             .unwrap()
             .unwrap();

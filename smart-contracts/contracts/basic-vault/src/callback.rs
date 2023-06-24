@@ -50,7 +50,13 @@ pub fn on_bond(
     bond_stubs.iter_mut().for_each(|s| {
         if s.address == info.sender {
             // we should probably return the primitive value in the bond response
-            let primitive_value: lp_strategy::msg::IcaBalanceResponse = deps.querier.query_wasm_smart(info.sender.clone(),&lp_strategy::msg::QueryMsg::IcaBalance {}).unwrap();
+            let primitive_value: lp_strategy::msg::IcaBalanceResponse = deps
+                .querier
+                .query_wasm_smart(
+                    info.sender.clone(),
+                    &lp_strategy::msg::QueryMsg::IcaBalance {},
+                )
+                .unwrap();
             s.bond_response = Some(BondResponse {
                 share_amount,
                 bond_id: bond_id.clone(),
@@ -107,19 +113,39 @@ pub fn on_bond(
 
     // User value per primitive = BondResponse Primitive Shares / Total Primitive Shares  * ICA_BALANCE or funds send in the bond
     // Total Vault Value = Total Vault shares in Primitive / Total Primitive shares * ICA_BALANCE
-    let total_vault_value = bond_stubs.iter().try_fold(Uint128::zero(), |acc, stub| -> Result<Uint128, ContractError> {
-        Ok(acc + stub.primitive_value.ok_or(ContractError::BondResponseIsEmpty {})?)
-    })?;
+    let total_vault_value = bond_stubs.iter().try_fold(
+        Uint128::zero(),
+        |acc, stub| -> Result<Uint128, ContractError> {
+            Ok(acc
+                + stub
+                    .primitive_value
+                    .ok_or(ContractError::BondResponseIsEmpty {})?)
+        },
+    )?;
+    println!("total_vault_value: {}", total_vault_value);
+    println!("bond_stubs: {:?}", bond_stubs);
     // User Vault Shares =  Sum(user value per primitive) / Total Vault value * Total Vault Shares
-    let total_user_value = bond_stubs.iter().fold(Uint128::zero(), |acc, stub| {
-        acc + stub.amount
-    });
+    let total_user_value = bond_stubs
+        .iter()
+        .fold(Uint128::zero(), |acc, stub| acc + stub.amount);
+    println!("total_user_value: {}", total_user_value);
 
     let token_info = cw20_base::contract::query_token_info(deps.as_ref())?;
     // equal to the cw20 base total supply
     let total_vault_shares: Uint128 = token_info.total_supply;
+    println!("total_vault_shares: {}", total_vault_shares);
 
-    let shares_to_mint = total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?;
+    //if either is zero, then we just mint the user value
+    let tmp = total_vault_shares.checked_mul(total_vault_value).unwrap();
+    let mut shares_to_mint = Uint128::zero();
+    if tmp.is_zero() {
+        shares_to_mint = total_user_value;
+    } else {
+        shares_to_mint =
+            total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?;
+    };
+
+    println!("shares_to_mint: {}", shares_to_mint);
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -265,7 +291,7 @@ mod test {
 
     use crate::multitest::common::PrimitiveInstantiateMsg;
     use crate::state::{BondingStub, BOND_STATE};
-    use crate::tests::{QuasarQuerier, mock_deps_with_primitives};
+    use crate::tests::{mock_deps_with_primitives, QuasarQuerier};
     use crate::{
         callback::on_bond,
         msg::PrimitiveConfig,
@@ -273,28 +299,28 @@ mod test {
         state::{InvestmentInfo, INVESTMENT},
         ContractError,
     };
-    use cosmwasm_std::{Addr, Uint128};
     use cosmwasm_std::{
         testing::{mock_env, mock_info},
         Decimal,
     };
+    use cosmwasm_std::{Addr, Uint128};
 
     #[test]
     fn fail_if_duplicate_bond_id() {
         let primitive_states = vec![
-        (
-            "addr00001".to_string(),
-            LOCAL_DENOM.to_string(),
-            Uint128::from(100u128),
-            Uint128::from(100u128),
-        ),
-        (
-            "addr00002".to_string(),
-            LOCAL_DENOM.to_string(),
-            Uint128::from(200u128),
-            Uint128::from(400u128),
-        ),
-    ];
+            (
+                "addr00001".to_string(),
+                LOCAL_DENOM.to_string(),
+                Uint128::from(100u128),
+                Uint128::from(100u128),
+            ),
+            (
+                "addr00002".to_string(),
+                LOCAL_DENOM.to_string(),
+                Uint128::from(200u128),
+                Uint128::from(400u128),
+            ),
+        ];
         // mock the queries so the primitives exist
         let mut deps = mock_deps_with_primitives(primitive_states);
         let env = mock_env();
@@ -350,8 +376,18 @@ mod test {
                 &mut deps.storage,
                 bond_id.clone(),
                 &vec![
-                    BondingStub {address:"addr00001".to_string(),bond_response:None, primitive_value: None, amount: Uint128::one() },
-                    BondingStub {address:"addr00002".to_string(),bond_response:None, primitive_value: None, amount: Uint128::one() },
+                    BondingStub {
+                        address: "addr00001".to_string(),
+                        bond_response: None,
+                        primitive_value: None,
+                        amount: Uint128::one(),
+                    },
+                    BondingStub {
+                        address: "addr00002".to_string(),
+                        bond_response: None,
+                        primitive_value: None,
+                        amount: Uint128::one(),
+                    },
                 ],
             )
             .unwrap();
