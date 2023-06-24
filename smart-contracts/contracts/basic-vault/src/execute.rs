@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
-use cw_utils::{nonpayable, PaymentError};
+use cw_utils::{nonpayable, PaymentError, may_pay, one_coin, must_pay};
 
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -720,7 +720,8 @@ mod tests {
             .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
             .unwrap();
 
-        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user
+        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user a bit less than 10% primitive shares
+        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2 
         BOND_STATE
             .save(
                 deps.as_mut().storage,
@@ -741,7 +742,7 @@ mod tests {
                 ],
             )
             .unwrap();
-        // we do 2 callbacks, one with 350 shares and 1 wih 150 shares
+        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the 
         on_bond(
             deps.as_mut(),
             env.clone(),
@@ -796,7 +797,7 @@ mod tests {
         let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
         println!("{}", amount);
         println!("{}", total_supply.total_supply);
-        
+
         let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
             .unwrap()
             .unwrap();
