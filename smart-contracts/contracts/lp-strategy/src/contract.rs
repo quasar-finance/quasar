@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper, Reply,
-    Response, Storage, Uint128,
+    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
+    Reply, Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -13,7 +13,7 @@ use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_a
 use crate::bond::do_bond;
 use crate::error::ContractError;
 use crate::execute::execute_retry;
-use crate::helpers::{create_callback_submsg, is_contract_admin, SubMsgKind};
+use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -333,23 +333,26 @@ pub fn execute_bond(
         return Err(ContractError::Unauthorized);
     }
 
-    let msg = do_bond(deps.storage, deps.querier, env, info.clone(), id)?;
+    let amount = must_pay(&info, &CONFIG.load(deps.storage)?.local_denom)?;
+
+    let msg = do_bond(
+        deps.storage,
+        deps.querier,
+        env,
+        amount,
+        info.sender.clone(),
+        id,
+    )?;
 
     // if msg is some, we are dispatching an icq
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_bond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("deposit", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("deposit", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let attributes = vec![
+        Attribute::new("action", "bond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("token_amount", amount),
+    ];
+
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
 }
 
 pub fn execute_start_unbond(
@@ -369,27 +372,22 @@ pub fn execute_start_unbond(
         deps.storage,
         StartUnbond {
             owner: info.sender.clone(),
-            id,
+            id: id.clone(),
             primitive_shares: share_amount,
         },
     )?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
 
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_start_unbond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("start-unbond", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("start-unbond", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let attributes = vec![
+        Attribute::new("action", "start-unbond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("prim_share_amount", share_amount),
+        Attribute::new("unbond_id", id),
+    ];
+
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
 }
 
 pub fn execute_unbond(
@@ -404,24 +402,18 @@ pub fn execute_unbond(
         return Err(ContractError::Unauthorized);
     }
 
-    do_unbond(deps.storage, &env, info.sender.clone(), id)?;
+    do_unbond(deps.storage, &env, info.sender.clone(), id.clone())?;
 
     let msg = try_icq(deps.storage, deps.querier, env)?;
 
-    match msg {
-        Some(submsg) => {
-            IBC_LOCK.update(deps.storage, |lock| -> Result<Lock, ContractError> {
-                Ok(lock.lock_unbond())
-            })?;
-            Ok(Response::new()
-                .add_submessage(submsg)
-                .add_attribute("unbond", info.sender)
-                .add_attribute("kind", "dispatch"))
-        }
-        None => Ok(Response::new()
-            .add_attribute("unbond", info.sender)
-            .add_attribute("kind", "queue")),
-    }
+    let attributes = vec![
+        Attribute::new("action", "unbond"),
+        Attribute::new("sender", info.sender),
+        Attribute::new("unbond_id", id),
+    ];
+
+    let res = lock_try_icq(deps, msg)?;
+    Ok(res.add_attributes(attributes))
 }
 
 // transfer funds sent to the contract to an address on osmosis, this call ignores the lock system
@@ -528,7 +520,7 @@ mod tests {
     use crate::{
         bond::Bond,
         error::Trap,
-        state::{PendingBond, Unbond, LOCK_ADMIN},
+        state::{PendingBond, Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
         test_helpers::default_setup,
     };
 
@@ -938,6 +930,201 @@ mod tests {
         let lock = IBC_LOCK.load(&deps.storage).unwrap();
         assert!(lock.bond.is_unlocked());
         assert!(lock.start_unbond.is_locked());
+        assert!(lock.unbond.is_unlocked());
+    }
+
+    #[test]
+    fn test_execute_unbond_filled_queues() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::new(1000),
+                    owner: Addr::unchecked("alice"),
+                    bond_id: "3".to_string(),
+                },
+            )
+            .unwrap();
+        START_UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("pepe".to_string()),
+                    id: "bond_id_10".to_string(),
+                    primitive_shares: Uint128::new(10),
+                },
+            )
+            .unwrap();
+
+        let id = "2".to_string();
+        let owner = Addr::unchecked("bob");
+        DEPOSITOR.save(deps.as_mut().storage, &owner).unwrap();
+
+        // unbond number are abitrary for this test
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (owner.clone(), id.clone()),
+                &Unbond {
+                    lp_shares: Uint128::new(100),
+                    unlock_time: env.block.time,
+                    attempted: true,
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+            )
+            .unwrap();
+
+        let res = execute_unbond(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: owner,
+                funds: vec![],
+            },
+            id,
+        )
+        .unwrap();
+        assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
+        assert!(lock.bond.is_locked());
+        assert!(lock.start_unbond.is_unlocked());
+        assert!(lock.unbond.is_unlocked());
+    }
+
+    #[test]
+    fn test_execute_unbond_filled_start_unbond_queue() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        START_UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &StartUnbond {
+                    owner: Addr::unchecked("pepe".to_string()),
+                    id: "bond_id_10".to_string(),
+                    primitive_shares: Uint128::new(10),
+                },
+            )
+            .unwrap();
+
+        let id = "2".to_string();
+        let owner = Addr::unchecked("bob");
+        DEPOSITOR.save(deps.as_mut().storage, &owner).unwrap();
+
+        // unbond number are abitrary for this test
+        UNBONDING_CLAIMS
+            .save(
+                deps.as_mut().storage,
+                (owner.clone(), id.clone()),
+                &Unbond {
+                    lp_shares: Uint128::new(100),
+                    unlock_time: env.block.time,
+                    attempted: true,
+                    owner: owner.clone(),
+                    id: id.clone(),
+                },
+            )
+            .unwrap();
+
+        let res = execute_unbond(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: owner,
+                funds: vec![],
+            },
+            id,
+        )
+        .unwrap();
+        assert_eq!(res.attributes[0], attr("start_unbond_queue", "locked"));
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
+        assert!(lock.bond.is_unlocked());
+        assert!(lock.start_unbond.is_locked());
+        assert!(lock.unbond.is_unlocked());
+    }
+
+    #[test]
+    fn test_execute_start_unbond_filled_queues() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let mock_lock = Lock::new();
+        default_setup(deps.as_mut().storage).unwrap();
+        let lp_cache = LpCache {
+            locked_shares: Uint128::new(10),
+            w_unlocked_shares: Uint128::new(10),
+            d_unlocked_shares: Uint128::new(10),
+        };
+        LP_SHARES.save(deps.as_mut().storage, &lp_cache).unwrap();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        BOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Bond {
+                    amount: Uint128::new(1000),
+                    owner: Addr::unchecked("alice"),
+                    bond_id: "3".to_string(),
+                },
+            )
+            .unwrap();
+        UNBOND_QUEUE
+            .push_back(
+                &mut deps.storage,
+                &Unbond {
+                    owner: Addr::unchecked("pedro".to_string()),
+                    id: "bond_id_100".to_string(),
+                    lp_shares: Uint128::new(1000),
+                    unlock_time: Timestamp::from_seconds(1000),
+                    attempted: true,
+                },
+            )
+            .unwrap();
+
+        let id = "2".to_string();
+        let owner = Addr::unchecked("bob");
+        DEPOSITOR.save(deps.as_mut().storage, &owner).unwrap();
+        SHARES
+            .save(deps.as_mut().storage, owner.clone(), &Uint128::new(1000))
+            .unwrap();
+
+        let res = execute_start_unbond(
+            deps.as_mut(),
+            env,
+            MessageInfo {
+                sender: owner,
+                funds: vec![],
+            },
+            id,
+            Uint128::new(100),
+        )
+        .unwrap();
+
+        assert_eq!(res.attributes[0], attr("bond_queue", "locked"));
+        let lock = IBC_LOCK.load(&deps.storage).unwrap();
+        assert!(lock.bond.is_locked());
+        assert!(lock.start_unbond.is_unlocked());
         assert!(lock.unbond.is_unlocked());
     }
 
