@@ -21,6 +21,7 @@
 - Added some doc comments
 - Created execute.rs file and created retry exit pool fn there
 - Added proptests for retry join pool
+- readd proper lock behaviour
 
 ### Features
 
