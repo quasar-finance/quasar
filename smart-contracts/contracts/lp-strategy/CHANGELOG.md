@@ -21,7 +21,6 @@
 - Added some doc comments
 - Created execute.rs file and created retry exit pool fn there
 - Added proptests for retry join pool
-- readd proper lock behaviour
 
 ### Features
 
@@ -30,6 +29,7 @@
 
 ### Bugfixes
 
+- readd proper lock behaviour
 - Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
 
