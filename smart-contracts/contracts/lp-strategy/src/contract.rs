@@ -498,6 +498,9 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         PENDING_ACK.remove(deps.storage, key)
     }
 
+    // add a new fresh unlocked ibc lock
+    IBC_LOCK.save(deps.storage, &Lock::new())?;
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
@@ -505,7 +508,8 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         .add_attribute(
             "deleted_pending_acks",
             msg.delete_pending_acks.len().to_string(),
-        ))
+        )
+    )
 }
 
 #[cfg(test)]
