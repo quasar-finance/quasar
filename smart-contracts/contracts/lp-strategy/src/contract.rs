@@ -508,8 +508,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         .add_attribute(
             "deleted_pending_acks",
             msg.delete_pending_acks.len().to_string(),
-        )
-    )
+        ))
 }
 
 #[cfg(test)]
