@@ -32,7 +32,8 @@ use crate::query::{
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
-    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
+    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, TOTAL_SUPPLY,
+    VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -362,8 +363,18 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // do nothing
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let invest = OLD_INVESTMENT.load(deps.storage)?;
+
+    INVESTMENT.save(
+        deps.storage,
+        &InvestmentInfo {
+            owner: invest.owner,
+            min_withdrawal: invest.min_withdrawal,
+            deposit_denom: msg.deposit_denom,
+            primitives: invest.primitives,
+        },
+    )?;
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)

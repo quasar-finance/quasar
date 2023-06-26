@@ -1417,7 +1417,7 @@ fn proper_bond_with_zero_primitive_balance() {
     let res = init(deps.as_mut(), &init_msg, &env, &info);
     assert_eq!(1, res.messages.len());
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &&even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
@@ -1667,7 +1667,7 @@ fn proper_unbond() {
     let reply_msg = reply_msg();
     let _res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &&even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
@@ -1743,8 +1743,7 @@ fn proper_unbond() {
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
 
-    // TODO is 99 sane here, probably since we calculate from ICA_BALANCES now
-    assert_eq!(balance.balance, Uint128::from(99u128));
+    assert_eq!(balance.balance, Uint128::from(297u128));
 
     // start unbond
     let unbond_info = mock_info(TEST_DEPOSITOR, &[]);
@@ -1754,7 +1753,7 @@ fn proper_unbond() {
     let unbond_res = execute(deps.as_mut(), env.clone(), unbond_info, unbond_msg).unwrap();
     assert_eq!(unbond_res.messages.len(), 4);
     assert_eq!(unbond_res.attributes[2].key, "burnt");
-    assert_eq!(unbond_res.attributes[2].value, "99");
+    assert_eq!(unbond_res.attributes[2].value, "297");
     assert_eq!(unbond_res.attributes[3].key, "bond_id");
     assert_eq!(unbond_res.attributes[3].value, "2");
 

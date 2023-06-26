@@ -87,7 +87,21 @@ pub struct AdditionalTokenInfo {
 }
 
 pub const ADDITIONAL_TOKEN_INFO: Item<AdditionalTokenInfo> = Item::new("additional_token_info");
-pub const INVESTMENT: Item<InvestmentInfo> = Item::new("invest");
+pub const OLD_INVESTMENT: Item<OldInvestmentInfo> = Item::new("invest");
+pub const INVESTMENT: Item<InvestmentInfo> = Item::new("new_invest");
+
+/// OldInvestmentInfo is a premigration version without the single_denom
+#[cw_serde]
+pub struct OldInvestmentInfo {
+    /// Owner created the contract and takes a cut
+    pub owner: Addr,
+    /// This is the minimum amount we will pull out to reinvest, as well as a minimum
+    /// that can be unbonded (to avoid needless staking tx)
+    pub min_withdrawal: Uint128,
+    /// this is the array of primitives that this vault will subscribe to
+    pub primitives: Vec<PrimitiveConfig>,
+}
+
 pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
 #[cw_serde]

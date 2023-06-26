@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
-use cw_utils::{nonpayable, PaymentError, must_pay};
+use cw_utils::{must_pay, nonpayable, PaymentError};
 
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -270,9 +270,7 @@ pub fn bond(
 
     CAP.update(
         deps.storage,
-        |cap| -> Result<crate::state::Cap, ContractError> {
-            cap.update_current(amount)
-        },
+        |cap| -> Result<crate::state::Cap, ContractError> { cap.update_current(amount) },
     )?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided
@@ -647,14 +645,230 @@ mod tests {
             (
                 "contract2".to_string(),
                 "ibc/ED07".to_string(),
-                Uint128::from(200u128),
-                Uint128::from(400u128),
+                Uint128::from(500u128),
+                Uint128::from(5000u128),
             ),
         ];
         // mock the queries so the primitives exist
         let mut deps = mock_deps_with_primitives(primitive_states);
         let env = mock_env();
-        let info = mock_info("user", &[Coin::new(1000, "token")]);
+        let info = mock_info("user", &[Coin::new(10000, "token")]);
+
+        let instantiate_msg_1 = InstantiateMsg {
+            lock_period: 3600,
+            pool_id: 2,
+            pool_denom: "gamm/pool/2".to_string(),
+            local_denom: "ibc/ED07".to_string(),
+            base_denom: "uosmo".to_string(),
+            quote_denom: "usdc".to_string(),
+            transfer_channel: "channel-0".to_string(),
+            return_source_channel: "channel-1".to_string(),
+            expected_connection: "connection-0".to_string(),
+        };
+
+        let instantiate_msg_2 = InstantiateMsg {
+            lock_period: 7200,
+            pool_id: 5,
+            pool_denom: "gamm/pool/5".to_string(),
+            local_denom: "ibc/ED07".to_string(),
+            base_denom: "uosmo".to_string(),
+            quote_denom: "uatom".to_string(),
+            transfer_channel: "channel-2".to_string(),
+            return_source_channel: "channel-3".to_string(),
+            expected_connection: "connection-1".to_string(),
+        };
+
+        // set up the contract state
+        let min_withdrawal = Uint128::new(100);
+        let invest = InvestmentInfo {
+            primitives: vec![
+                PrimitiveConfig {
+                    address: "contract1".to_string(),
+                    weight: Decimal::percent(50),
+                    init: PrimitiveInitMsg::LP(instantiate_msg_1),
+                },
+                PrimitiveConfig {
+                    address: "contract2".to_string(),
+                    weight: Decimal::percent(50),
+                    init: PrimitiveInitMsg::LP(instantiate_msg_2),
+                },
+            ],
+            min_withdrawal,
+            owner: Addr::unchecked("bob"),
+            deposit_denom: "ibc/ED07".to_string(),
+        };
+        let bond_seq = Uint128::new(1);
+
+        let supply = Supply {
+            issued: Uint128::new(5000),
+        };
+        INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
+        BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
+        TOTAL_SUPPLY.save(deps.as_mut().storage, &supply).unwrap();
+        VAULT_REWARDS
+            .save(deps.as_mut().storage, &Addr::unchecked("rewards-contract"))
+            .unwrap();
+
+        // store token info using cw20-base format
+        let token_info = TokenInfo {
+            name: "token".to_string(),
+            symbol: "token".to_string(),
+            decimals: 6,
+            total_supply: Uint128::new(5000),
+            // set self as minter, so we can properly execute mint and burn
+            mint: Some(MinterData {
+                minter: env.contract.address.clone(),
+                cap: None,
+            }),
+        };
+        TOKEN_INFO.save(deps.as_mut().storage, &token_info).unwrap();
+
+        // bond some funds
+        // let res = bond(deps.as_mut(), env, info, None).unwrap();
+
+        BONDING_SEQ_TO_ADDR
+            .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
+            .unwrap();
+
+        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user a bit less than 10% primitive shares
+        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2
+        BOND_STATE
+            .save(
+                deps.as_mut().storage,
+                "1".to_string(),
+                &vec![
+                    BondingStub {
+                        address: "contract1".to_string(),
+                        bond_response: None,
+                        amount: Uint128::new(5000),
+                        primitive_value: None,
+                    },
+                    BondingStub {
+                        address: "contract2".to_string(),
+                        bond_response: None,
+                        amount: Uint128::new(5000),
+                        primitive_value: None,
+                    },
+                ],
+            )
+            .unwrap();
+        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the
+        on_bond(
+            deps.as_mut(),
+            env.clone(),
+            MessageInfo {
+                sender: Addr::unchecked("contract1"),
+                funds: vec![],
+            },
+            Uint128::new(500),
+            "1".to_string(),
+        )
+        .unwrap();
+        on_bond(
+            deps.as_mut(),
+            env.clone(),
+            MessageInfo {
+                sender: Addr::unchecked("contract2"),
+                funds: vec![],
+            },
+            Uint128::new(500),
+            "1".to_string(),
+        )
+        .unwrap();
+
+        // start trying withdrawals
+        // our succesful withdrawal should show that it is possible for the vault contract to unbond a different amount than 350 and 150 shares
+
+        // case 1: amount is zero, skip start unbond
+        let amount = None;
+        let res = do_start_unbond(deps.as_mut(), &env, &info, amount).unwrap();
+        assert_eq!(res, None);
+
+        // case 2: amount is less than min_withdrawal, error
+        let amount = Some(Uint128::new(50));
+        let res = do_start_unbond(deps.as_mut(), &env, &info, amount);
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err(),
+            ContractError::UnbondTooSmall {
+                min_bonded: min_withdrawal
+            }
+        );
+
+        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
+        // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
+        // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
+        deps.querier.update_state(vec![
+            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
+            ("contract1", Uint128::new(1000), Uint128::new(10000)),
+            ("contract2", Uint128::new(1000), Uint128::new(10000)),
+        ]);
+
+        // case 3: amount is valid, execute start unbond on all primitive contracts
+        let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
+            .unwrap()
+            .balance;
+        let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
+
+        let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
+            .unwrap()
+            .unwrap();
+        assert_eq!(res.attributes.len(), 4);
+        assert_eq!(res.messages.len(), 3);
+
+        // check the messages sent to each primitive contract
+        let msg1 = &res.messages[0];
+        let msg2 = &res.messages[1];
+
+        // start unbond is independent of the amounts in the callback, but is dependent on the vault's amount of shares in the primitive
+        // TODO make sure these numbers make sense
+        assert_eq!(
+            msg1.msg,
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "contract1".to_string(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                    id: bond_seq.to_string(),
+                    share_amount: Uint128::new(500),
+                })
+                .unwrap(),
+                funds: vec![],
+            })
+        );
+        assert_eq!(
+            msg2.msg,
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "contract2".to_string(),
+                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                    id: bond_seq.to_string(),
+                    share_amount: Uint128::new(500),
+                })
+                .unwrap(),
+                funds: vec![],
+            })
+        );
+    }
+
+    #[test]
+    fn test_correct_start_unbond_amount_uneven_weights() {
+        let primitive_states = vec![
+            (
+                "contract1".to_string(),
+                "ibc/ED07".to_string(),
+                // we init state with 1 primitve share being 10 tokens
+                Uint128::from(900u128),
+                Uint128::from(9000u128),
+            ),
+            (
+                "contract2".to_string(),
+                "ibc/ED07".to_string(),
+                Uint128::from(100u128),
+                Uint128::from(1000u128),
+            ),
+        ];
+        // mock the queries so the primitives exist
+        let mut deps = mock_deps_with_primitives(primitive_states);
+        let env = mock_env();
+        let info = mock_info("user", &[Coin::new(10000, "token")]);
 
         let instantiate_msg_1 = InstantiateMsg {
             lock_period: 3600,
@@ -700,8 +914,9 @@ mod tests {
             deposit_denom: "ibc/ED07".to_string(),
         };
         let bond_seq = Uint128::new(1);
+
         let supply = Supply {
-            issued: Uint128::new(4500),
+            issued: Uint128::new(5000),
         };
         INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
         BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
@@ -715,7 +930,7 @@ mod tests {
             name: "token".to_string(),
             symbol: "token".to_string(),
             decimals: 6,
-            total_supply: Uint128::new(4500),
+            total_supply: Uint128::new(5000),
             // set self as minter, so we can properly execute mint and burn
             mint: Some(MinterData {
                 minter: env.contract.address.clone(),
@@ -723,12 +938,11 @@ mod tests {
             }),
         };
         TOKEN_INFO.save(deps.as_mut().storage, &token_info).unwrap();
+
         BONDING_SEQ_TO_ADDR
             .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
             .unwrap();
 
-        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user a bit less than 10% primitive shares
-        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2
         BOND_STATE
             .save(
                 deps.as_mut().storage,
@@ -737,13 +951,13 @@ mod tests {
                     BondingStub {
                         address: "contract1".to_string(),
                         bond_response: None,
-                        amount: Uint128::new(350),
+                        amount: Uint128::new(9000),
                         primitive_value: None,
                     },
                     BondingStub {
                         address: "contract2".to_string(),
                         bond_response: None,
-                        amount: Uint128::new(150),
+                        amount: Uint128::new(1000),
                         primitive_value: None,
                     },
                 ],
@@ -757,7 +971,7 @@ mod tests {
                 sender: Addr::unchecked("contract1"),
                 funds: vec![],
             },
-            Uint128::new(35),
+            Uint128::new(900),
             "1".to_string(),
         )
         .unwrap();
@@ -768,7 +982,7 @@ mod tests {
                 sender: Addr::unchecked("contract2"),
                 funds: vec![],
             },
-            Uint128::new(15),
+            Uint128::new(100),
             "1".to_string(),
         )
         .unwrap();
@@ -796,8 +1010,9 @@ mod tests {
         // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
         // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
         deps.querier.update_state(vec![
-            ("contract1", Uint128::new(4000), Uint128::new(40000)),
-            ("contract2", Uint128::new(3000), Uint128::new(30000)),
+            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
+            ("contract1", Uint128::new(1800), Uint128::new(18000)),
+            ("contract2", Uint128::new(200), Uint128::new(2000)),
         ]);
 
         // case 3: amount is valid, execute start unbond on all primitive contracts
@@ -824,7 +1039,7 @@ mod tests {
                 contract_addr: "contract1".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(407),
+                    share_amount: Uint128::new(900),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -836,7 +1051,7 @@ mod tests {
                 contract_addr: "contract2".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(305),
+                    share_amount: Uint128::new(100),
                 })
                 .unwrap(),
                 funds: vec![],
