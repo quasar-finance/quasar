@@ -29,6 +29,7 @@
 
 ### Bugfixes
 
+- readd proper lock behaviour
 - Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
 
