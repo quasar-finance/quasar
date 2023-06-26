@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, StdError, Storage,
+    SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -18,8 +19,9 @@ use crate::{
     error::ContractError,
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
-        BOND_QUEUE, CONFIG, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK,
-        PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,
+        BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
+        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN,
+        UNBOND_QUEUE,
     },
 };
 
@@ -56,8 +58,17 @@ pub fn try_icq(
             }
         }
 
+        let failed_bonds_amount = FAILED_JOIN_QUEUE
+            .iter(storage)?
+            .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
+                Ok(acc + val?.amount)
+            })?;
+
+        // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
+        // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
+        let bonding_amount = pending_bonds_value + failed_bonds_amount;
         // deposit needs to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, env.clone(), pending_bonds_value)?;
+        let packet = prepare_full_query(storage, env.clone(), bonding_amount)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
@@ -147,31 +158,31 @@ pub fn prepare_full_query(
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
     let q = Query::new()
         .add_request(
-            base_balance.encode_to_vec(),
+            base_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            quote_balance.encode_to_vec(),
+            quote_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            lp_balance.encode_to_vec(),
+            lp_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            join_pool.encode_to_vec(),
+            join_pool.encode_to_vec().into(),
             "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
         )
         .add_request(
-            exit_pool.encode_to_vec(),
+            exit_pool.encode_to_vec().into(),
             "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
-            spot_price.encode_to_vec(),
+            spot_price.encode_to_vec().into(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         )
         .add_request(
-            lock_by_id.encode_to_vec(),
+            lock_by_id.encode_to_vec().into(),
             "/osmosis.lockup.Query/LockedByID".to_string(),
         );
     Ok(q.encode_pkt())
@@ -195,6 +206,7 @@ pub fn calc_total_balance(
         .iter()
         .find(|coin| coin.denom == config.base_denom)
         .ok_or(ContractError::BaseDenomNotFound)?;
+
     let quote = exit_pool
         .iter()
         .find(|coin| coin.denom == config.quote_denom)

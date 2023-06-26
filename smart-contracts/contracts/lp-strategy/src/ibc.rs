@@ -13,9 +13,9 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
-    LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT,
-    TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
+    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
+    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -46,7 +46,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -298,14 +298,28 @@ pub fn handle_transfer_ack(
     env: Env,
     _ack_bin: Binary,
     _pkt: &IbcPacketAckMsg,
-    pending: PendingBond,
-    total_amount: Uint128,
+    mut pending: PendingBond,
+    transferred_amount: Uint128,
 ) -> Result<Response, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
     // we need to save and fetch
     let config = CONFIG.load(storage)?;
 
     let share_out_min_amount = calculate_share_out_min_amount(storage)?;
+
+    let failed_bonds_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
+        Uint128::zero(),
+        |acc, val| -> Result<Uint128, ContractError> {
+            match val?.raw_amount {
+                crate::state::RawAmount::LocalDenom(amount) => Ok(amount + acc),
+                crate::state::RawAmount::LpShares(_) => Err(ContractError::IncorrectRawAmount),
+            }
+        },
+    )?;
+    let total_amount = transferred_amount + failed_bonds_amount;
+
+    let pending_rejoins: StdResult<Vec<OngoingDeposit>> = REJOIN_QUEUE.iter(storage)?.collect();
+    pending.bonds.append(&mut pending_rejoins?);
 
     let msg = do_ibc_join_pool_swap_extern_amount_in(
         storage,
@@ -335,14 +349,16 @@ pub fn handle_icq_ack(
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
-    let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
 
+    let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
+
     // we have only dispatched on query and a single kind at this point
     let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     let base_balance =
         Uint128::new(
             raw_balance
@@ -366,9 +382,12 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     let join_pool = QueryCalcJoinPoolSharesResponse::decode(resp.responses[3].value.as_ref())?;
+
     let exit_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
+
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
     let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
     // parse the locked lp shares on Osmosis, a bit messy
