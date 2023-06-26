@@ -161,18 +161,15 @@ pub fn divide_by_ratio(
     funds: Coin,
     invest: InvestmentInfo,
 ) -> Result<Vec<(Coin, String)>, ContractError> {
-    println!("funds: {:?}", funds);
     let coins: Result<Vec<(Coin, String)>, cosmwasm_std::OverflowError> = invest
         .primitives
         .iter()
         .map(
             |config| -> Result<(Coin, String), cosmwasm_std::OverflowError> {
-                println!("weight: {:?}", config.weight);
                 config
                     .weight
                     .checked_mul(Decimal::from_uint128(funds.amount))
                     .and_then(|dec| {
-                        println!("dec: {:?}", dec);
                         Ok((
                             coin(dec.to_uint_floor().u128(), funds.denom.as_str()),
                             config.address.clone(),
@@ -279,9 +276,7 @@ pub fn bond(
 
     let mut deposit_stubs = vec![];
     let divided = divide_by_ratio(info.funds[0].clone(), invest)?;
-
-    println!("divided: {:?}", divided);
-
+    
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided
         .into_iter()
         .map(|(coin, prim_addr)| {
@@ -825,8 +820,6 @@ mod tests {
             .unwrap()
             .balance;
         let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
-        println!("{}", amount);
-        println!("{}", total_supply.total_supply);
 
         let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
             .unwrap()

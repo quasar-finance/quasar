@@ -29,7 +29,6 @@ pub fn on_bond(
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
 
-    print!("here1");
     let mut bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
 
     // lets find the primitive for this response
@@ -48,7 +47,6 @@ pub fn on_bond(
         return Err(ContractError::DuplicateBondResponse { bond_id });
     }
 
-    print!("here2");
 
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
@@ -126,18 +124,15 @@ pub fn on_bond(
                     .ok_or(ContractError::BondResponseIsEmpty {})?)
         },
     )?;
-    println!("total_vault_value: {}", total_vault_value);
-    println!("bond_stubs: {:?}", bond_stubs);
+
     // User Vault Shares =  Sum(user value per primitive) / Total Vault value * Total Vault Shares
     let total_user_value = bond_stubs
         .iter()
         .fold(Uint128::zero(), |acc, stub| acc + stub.amount);
-    println!("total_user_value: {}", total_user_value);
 
     let token_info = cw20_base::contract::query_token_info(deps.as_ref())?;
     // equal to the cw20 base total supply
     let total_vault_shares: Uint128 = token_info.total_supply;
-    println!("total_vault_shares: {}", total_vault_shares);
 
     //if either is zero, then we just mint the user value
     let tmp = total_vault_shares.checked_mul(total_vault_value).unwrap();
@@ -148,8 +143,6 @@ pub fn on_bond(
         shares_to_mint =
             total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?;
     };
-
-    println!("shares_to_mint: {}", shares_to_mint);
 
     // update total supply
     let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
@@ -163,12 +156,10 @@ pub fn on_bond(
         funds: vec![],
     };
 
-    println!("rewards time");
     let update_user_rewards_idx_msg =
         update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
     execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
-    println!("response time");
     let res = Response::new()
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
         .add_attribute("action", "on_bond")
