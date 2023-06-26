@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
+    Addr, BankMsg, DepsMut, Env, MessageInfo, Response, SubMsg, Timestamp, Uint128,
 };
 use cw20_base::contract::execute_mint;
 use quasar_types::callback::{BondResponse, UnbondResponse};
@@ -10,7 +10,6 @@ use crate::{
         Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
         PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
     },
-    types::FromUint128,
     ContractError,
 };
 
@@ -46,7 +45,6 @@ pub fn on_bond(
     {
         return Err(ContractError::DuplicateBondResponse { bond_id });
     }
-
 
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
@@ -135,13 +133,10 @@ pub fn on_bond(
     let total_vault_shares: Uint128 = token_info.total_supply;
 
     //if either is zero, then we just mint the user value
-    let tmp = total_vault_shares.checked_mul(total_vault_value).unwrap();
-    let mut shares_to_mint = Uint128::zero();
-    if tmp.is_zero() {
-        shares_to_mint = total_user_value;
+    let shares_to_mint = if total_vault_shares.is_zero() || total_vault_value.is_zero() {
+        total_user_value
     } else {
-        shares_to_mint =
-            total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?;
+        total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?
     };
 
     // update total supply
@@ -288,7 +283,7 @@ mod test {
 
     use crate::multitest::common::PrimitiveInstantiateMsg;
     use crate::state::{BondingStub, BOND_STATE};
-    use crate::tests::{mock_deps_with_primitives, QuasarQuerier};
+    use crate::tests::mock_deps_with_primitives;
     use crate::{
         callback::on_bond,
         msg::PrimitiveConfig,

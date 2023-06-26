@@ -7,10 +7,7 @@ use crate::{
         DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse, PendingBondsResponse,
         PendingUnbondsByIdResponse, PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
     },
-    state::{
-        InvestmentInfo, Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS,
-        UNBOND_STATE,
-    },
+    state::{Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
 };
 
 pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
@@ -45,9 +42,7 @@ pub fn query_tvl_info(deps: Deps) -> StdResult<TvlInfoResponse> {
 pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
-    let res = InvestmentResponse {
-        info: invest 
-    };
+    let res = InvestmentResponse { info: invest };
     Ok(res)
 }
 

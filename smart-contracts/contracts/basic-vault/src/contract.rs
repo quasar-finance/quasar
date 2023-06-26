@@ -87,7 +87,12 @@ pub fn instantiate(
         }
     }
 
-    let mut invest = InvestmentInfo {owner:info.sender.clone(),min_withdrawal:msg.min_withdrawal,primitives:msg.primitives, deposit_denom: msg.deposit_denom };
+    let mut invest = InvestmentInfo {
+        owner: info.sender.clone(),
+        min_withdrawal: msg.min_withdrawal,
+        primitives: msg.primitives,
+        deposit_denom: msg.deposit_denom,
+    };
     invest.normalize_primitive_weights();
     INVESTMENT.save(deps.storage, &invest)?;
 

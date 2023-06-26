@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
+    coin, to_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
-use cw_utils::{nonpayable, PaymentError, may_pay, one_coin, must_pay};
+use cw_utils::{nonpayable, PaymentError};
 
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -169,11 +169,11 @@ pub fn divide_by_ratio(
                 config
                     .weight
                     .checked_mul(Decimal::from_uint128(funds.amount))
-                    .and_then(|dec| {
-                        Ok((
+                    .map(|dec| {
+                        (
                             coin(dec.to_uint_floor().u128(), funds.denom.as_str()),
                             config.address.clone(),
-                        ))
+                        )
                     })
             },
         )
@@ -276,7 +276,7 @@ pub fn bond(
 
     let mut deposit_stubs = vec![];
     let divided = divide_by_ratio(info.funds[0].clone(), invest)?;
-    
+
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided
         .into_iter()
         .map(|(coin, prim_addr)| {
@@ -712,7 +712,6 @@ mod tests {
             min_withdrawal,
             owner: Addr::unchecked("bob"),
             deposit_denom: "ibc/ED07".to_string(),
-
         };
         let bond_seq = Uint128::new(1);
         let supply = Supply {
@@ -743,7 +742,7 @@ mod tests {
             .unwrap();
 
         //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user a bit less than 10% primitive shares
-        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2 
+        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2
         BOND_STATE
             .save(
                 deps.as_mut().storage,
@@ -764,7 +763,7 @@ mod tests {
                 ],
             )
             .unwrap();
-        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the 
+        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the
         on_bond(
             deps.as_mut(),
             env.clone(),
