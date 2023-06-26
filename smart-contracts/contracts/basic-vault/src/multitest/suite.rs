@@ -236,6 +236,7 @@ impl QuasarVaultSuite {
                             amount: Uint128::from(1000u128),
                         },
                     ],
+                    deposit_denom: LOCAL_DENOM.to_string(),
                 }),
                 &funds.unwrap_or(vec![]),
                 "vault_contract",
