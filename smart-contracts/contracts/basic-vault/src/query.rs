@@ -46,11 +46,7 @@ pub fn query_investment(deps: Deps) -> StdResult<InvestmentResponse> {
     let invest = INVESTMENT.load(deps.storage)?;
 
     let res = InvestmentResponse {
-        info: InvestmentInfo {
-            owner: invest.owner.clone(),
-            min_withdrawal: invest.min_withdrawal,
-            primitives: invest.primitives,
-        },
+        info: invest 
     };
     Ok(res)
 }

@@ -691,7 +691,7 @@ mod tests {
             lock_period: 7200,
             pool_id: 5,
             pool_denom: "gamm/pool/5".to_string(),
-            local_denom: "ibc/ED09".to_string(),
+            local_denom: "ibc/ED07".to_string(),
             base_denom: "uosmo".to_string(),
             quote_denom: "uatom".to_string(),
             transfer_channel: "channel-2".to_string(),
@@ -716,6 +716,8 @@ mod tests {
             ],
             min_withdrawal,
             owner: Addr::unchecked("bob"),
+            deposit_denom: "ibc/ED07".to_string(),
+
         };
         let bond_seq = Uint128::new(1);
         let supply = Supply {
@@ -837,6 +839,7 @@ mod tests {
         let msg2 = &res.messages[1];
 
         // start unbond is independent of the amounts in the callback, but is dependent on the vault's amount of shares in the primitive
+        // TODO make sure these numbers make sense
         assert_eq!(
             msg1.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
@@ -855,7 +858,7 @@ mod tests {
                 contract_addr: "contract2".to_string(),
                 msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
-                    share_amount: Uint128::new(166),
+                    share_amount: Uint128::new(305),
                 })
                 .unwrap(),
                 funds: vec![],
