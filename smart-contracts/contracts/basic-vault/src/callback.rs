@@ -28,6 +28,8 @@ pub fn on_bond(
 
     // load investment info
     let invest = INVESTMENT.load(deps.storage)?;
+
+    print!("here1");
     let mut bond_stubs = BOND_STATE.load(deps.storage, bond_id.clone())?;
 
     // lets find the primitive for this response
@@ -45,6 +47,8 @@ pub fn on_bond(
     {
         return Err(ContractError::DuplicateBondResponse { bond_id });
     }
+
+    print!("here2");
 
     // update deposit state here before doing anything else & save!
     bond_stubs.iter_mut().for_each(|s| {
@@ -159,10 +163,12 @@ pub fn on_bond(
         funds: vec![],
     };
 
+    println!("rewards time");
     let update_user_rewards_idx_msg =
         update_user_reward_index(deps.as_ref().storage, &validated_user_address)?;
     execute_mint(deps, env, sub_info, user_address, shares_to_mint)?;
 
+    println!("response time");
     let res = Response::new()
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
         .add_attribute("action", "on_bond")

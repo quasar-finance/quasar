@@ -7,7 +7,7 @@ use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult, CosmosMsg,
     Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier, QuerierResult,
     QueryRequest, Reply, Response, StdError, StdResult, SubMsgResponse, SubMsgResult, Timestamp,
-    Uint128, WasmMsg,
+    Uint128, WasmMsg, Attribute,
 };
 use cw20::BalanceResponse;
 
@@ -32,7 +32,7 @@ use crate::{
         get_deposit_amount_weights, get_deposit_and_remainder_for_ratio, get_max_bond,
         get_token_amount_weights, may_pay_with_ratio,
     },
-    msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
+    msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg}, callback::on_bond, state::{BONDING_SEQ, VAULT_REWARDS},
 };
 
 #[derive(Clone, PartialEq, prost::Message)]
@@ -1425,7 +1425,7 @@ fn proper_bond_with_zero_primitive_balance() {
 }
 
 #[test]
-fn test_bond_with_bad_primitive_state() {
+fn test_bond_with_zero_primitive_state() {
     let mut deps_1 = mock_deps_with_primitives(vec![(
         "quasar123".to_string(),
         "ibc/uosmo".to_string(),
@@ -1438,7 +1438,7 @@ fn test_bond_with_bad_primitive_state() {
         Uint128::from(1u128),
         Uint128::from(0u128),
     )]);
-    let init_msg = init_msg_with_primitive_details(vec![(
+    let init_msg: InstantiateMsg = init_msg_with_primitive_details(vec![(
         "quasar123".to_string(),
         "ibc/uosmo".to_string(),
         Decimal::one(),
@@ -1448,20 +1448,34 @@ fn test_bond_with_bad_primitive_state() {
     let _ = init(deps_1.as_mut(), &init_msg, &env, &info);
     let _ = init(deps_2.as_mut(), &init_msg, &env, &info);
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit());
+    // mock the rewards_contract address
+    VAULT_REWARDS.save(deps_1.as_mut().storage, &Addr::unchecked("rewards_contract")).unwrap();
+    VAULT_REWARDS.save(deps_2.as_mut().storage, &Addr::unchecked("rewards_contract")).unwrap();
+
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
+    let bond_seq_1 = BONDING_SEQ.load(deps_1.as_ref().storage).unwrap();
     let res_1 = execute(
         deps_1.as_mut(),
         env.clone(),
         deposit_info.clone(),
         deposit_msg.clone(),
     )
-    .unwrap_err();
-    assert_eq!(res_1.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
-    let res_2 = execute(deps_2.as_mut(), env, deposit_info, deposit_msg).unwrap_err();
-    assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
+    .unwrap();
+
+    // with changing to minting by ica_balance, if either is zero, we expect to mint user value, so we should be able to callback these primitives
+    // and receive even deposit single token amount of shares, aka 300
+    let res_1 = on_bond(deps_1.as_mut(), env.clone(), mock_info("quasar123", &vec![]), Uint128::new(250), bond_seq_1.to_string()).unwrap();
+    assert!(res_1.attributes.contains(&Attribute::new("minted", "300")));
+
+    let bond_seq_2 = BONDING_SEQ.load(deps_2 .as_ref().storage).unwrap();
+    let res_2 = execute(deps_2.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+
+    let res_2 = on_bond(deps_2.as_mut(), env.clone(), mock_info("quasar123", &vec![]), Uint128::new(250), bond_seq_2.to_string()).unwrap();
+    assert!(res_2.attributes.contains(&Attribute::new("minted", "300")));
+    // assert_eq!(res_2.to_string(), "Generic error: Unexpected primitive state, either both supply and balance should be zero, or neither.");
 }
 
 #[test]
