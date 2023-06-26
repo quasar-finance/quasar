@@ -635,14 +635,14 @@ mod tests {
     // this test tests 2 on_bond callbacks and a start unbond. The amounts returned slightly 'weird'. The main idea is that after the on_bond callbacks,
     // our user owns 10% of the vault. When we then start to unbond, we expect the user to get 10% of the value in each primitive
     #[test]
-    fn test_do_start_unbond() {
+    fn test_correct_start_unbond_amount() {
         let primitive_states = vec![
             (
                 "contract1".to_string(),
                 "ibc/ED07".to_string(),
                 // we init state with 1 primitve share being 10 tokens
-                Uint128::from(400u128),
-                Uint128::from(4000u128),
+                Uint128::from(500u128),
+                Uint128::from(5000u128),
             ),
             (
                 "contract2".to_string(),
