@@ -11,8 +11,8 @@ use crate::{
     ibc_util::do_transfer,
     icq::try_icq,
     state::{
-        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, ICA_CHANNEL,
-        PENDING_BOND_QUEUE, SHARES,
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE,
+        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES,
     },
 };
 
@@ -96,7 +96,7 @@ pub fn fold_bonds(
     let mut total = Uint128::zero();
     let mut deposits: Vec<OngoingDeposit> = vec![];
 
-    if BOND_QUEUE.is_empty(storage)? {
+    if BOND_QUEUE.is_empty(storage)? && FAILED_JOIN_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
@@ -123,6 +123,34 @@ pub fn fold_bonds(
             raw_amount: RawAmount::LocalDenom(item.amount),
             bond_id: item.bond_id,
         });
+    }
+
+    while !FAILED_JOIN_QUEUE.is_empty(storage)? {
+        let item: Bond =
+            FAILED_JOIN_QUEUE
+                .pop_front(storage)?
+                .ok_or(ContractError::QueueItemNotFound {
+                    queue: "bond".to_string(),
+                })?;
+        let claim_amount = create_claim(
+            storage,
+            item.amount,
+            &item.owner,
+            &item.bond_id,
+            total_balance,
+        )?;
+        total = total
+            .checked_add(item.amount)
+            .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
+        REJOIN_QUEUE.push_back(
+            storage,
+            &OngoingDeposit {
+                claim_amount,
+                owner: item.owner,
+                raw_amount: RawAmount::LocalDenom(item.amount),
+                bond_id: item.bond_id,
+            },
+        )?;
     }
 
     Ok(Some((total, deposits)))

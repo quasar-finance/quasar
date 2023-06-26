@@ -14,11 +14,12 @@ pub mod queries;
 pub mod reply;
 pub mod start_unbond;
 pub mod state;
-pub mod test_helpers;
 pub mod unbond;
 
 #[cfg(test)]
 pub mod integration_tests;
+pub mod proptests;
+pub mod test_helpers;
 
 #[cfg(test)]
 mod tests {
