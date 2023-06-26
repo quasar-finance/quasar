@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
-use cw_utils::{nonpayable, PaymentError};
+use cw_utils::{nonpayable, PaymentError, must_pay};
 
 use lp_strategy::msg::{IcaBalanceResponse, PrimitiveSharesResponse};
 use quasar_types::types::{CoinRatio, CoinWeight};
@@ -253,20 +253,11 @@ pub fn bond(
 ) -> Result<Response, ContractError> {
     let invest = INVESTMENT.load(deps.storage)?;
 
-    // TODO if we make the vault single asset
-    // if info.funds.is_empty() || info.funds.iter().all(|c| c.amount.is_zero()) {
-    //     return Err(ContractError::EmptyBalance {
-    //         denom: invest
-    //             .primitives
-    //             .iter()
-    //             .fold("".to_string(), |acc, p| match &p.init {
-    //                 crate::msg::PrimitiveInitMsg::LP(lp_init) => acc + &lp_init.local_denom + ",",
-    //             }),
-    //     });
-    // }
-
     // load vault info & sequence number
     let bond_seq = BONDING_SEQ.load(deps.storage)?;
+
+    // get the deposited funds
+    let amount = must_pay(&info, invest.deposit_denom.as_str())?;
 
     // find recipient
     let recipient_addr = match recipient {
@@ -275,7 +266,14 @@ pub fn bond(
     };
 
     let mut deposit_stubs = vec![];
-    let divided = divide_by_ratio(info.funds[0].clone(), invest)?;
+    let divided = divide_by_ratio(coin(amount.u128(), invest.deposit_denom.as_str()), invest)?;
+
+    CAP.update(
+        deps.storage,
+        |cap| -> Result<crate::state::Cap, ContractError> {
+            cap.update_current(amount)
+        },
+    )?;
 
     let bond_msgs: Result<Vec<WasmMsg>, ContractError> = divided
         .into_iter()
@@ -300,18 +298,6 @@ pub fn bond(
 
     // let (primitive_funding_amounts, remainder) =
     //     may_pay_with_ratio(&deps.as_ref(), &info.funds, invest.clone())?;
-
-    // TODO readd cap
-    // CAP.update(
-    //     deps.storage,
-    //     |cap| -> Result<crate::state::Cap, ContractError> {
-    //         cap.update_current(
-    //             primitive_funding_amounts
-    //                 .iter()
-    //                 .fold(Uint128::zero(), |acc, val| val.amount + acc),
-    //         )
-    //     },
-    // )?;
 
     // let bond_msgs: Result<Vec<WasmMsg>, ContractError> = invest
     //     .primitives
