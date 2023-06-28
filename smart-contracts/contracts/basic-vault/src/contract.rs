@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, SubMsgResult, Uint128, WasmMsg, Order,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
+    StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg, Attribute,
 };
 
 use cw2::set_contract_version;
@@ -11,7 +11,7 @@ use cw20_base::allowances::{
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
-    execute_burn, execute_send, execute_transfer, query_balance, query_token_info, execute_mint,
+    execute_burn, execute_mint, execute_send, execute_transfer, query_balance, query_token_info,
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
@@ -31,9 +31,9 @@ use crate::query::{
     query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
-    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, TOTAL_SUPPLY,
-    VAULT_REWARDS, PENDING_BOND_IDS, BOND_STATE,
+    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ,
+    BONDING_SEQ_TO_ADDR, BOND_STATE, CAP, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
+    INVESTMENT, OLD_INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -363,24 +363,61 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     // wipe the current share state
-    
-    
+    cw20_base::state::BALANCES.clear(deps.storage);
+    cw20_base::state::TOKEN_INFO.update(deps.storage, |old| -> Result<TokenInfo, ContractError> {
+        Ok(cw20_base::state::TokenInfo {
+            name: old.name,
+            symbol: old.symbol,
+            decimals: old.decimals,
+            total_supply: Uint128::zero(),
+            mint: old.mint,
+        })
+    })?;
+
+    let mut attributes = vec![
+        Attribute::new("migrate", CONTRACT_NAME),
+        Attribute::new("success", "true"),
+    ];
+
     // this migrate message has to be applied after the fix to the lp strategy
-    BOND_STATE.range(deps.storage, None, None, Order::Ascending).for_each(|stub| {
-        // add the newly update primitive amounts to the stub
+    let states: Vec<_> = BOND_STATE
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    states
+        .into_iter()
+        .try_for_each(|res| -> Result<(), ContractError> {
+            let stub = res?;
 
-        // recalculate the new amount of shares from this updated stub, this is basically equivalent to the total deposited amount
+            // mint the new shares, add attributes to the response
+            let sub_info = MessageInfo {
+                sender: env.contract.address.clone(),
+                funds: vec![],
+            };
 
-        // mint the new shares, add the message to response
-        execute_mint(deps, env, info, recipient, amount)
-    });
+            let bond_id = stub.0;
+            let recipient = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id)?;
 
+            let amount = stub
+                .1
+                .into_iter()
+                .fold(Uint128::zero(), |acc, stub| acc + stub.amount);
 
-    Ok(Response::new()
-        .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("success", "true"))
+            execute_mint(
+                deps.branch(),
+                env.clone(),
+                sub_info,
+                recipient.clone(),
+                amount,
+            )?;
+
+            attributes.push(Attribute::new("amount", amount.to_string()));
+            attributes.push(Attribute::new("recipient", recipient.to_string()));
+            Ok(())
+        })?;
+
+    Ok(Response::new().add_attributes(attributes))
 }
 
 #[cfg(test)]
