@@ -752,7 +752,17 @@ mod tests {
                 ],
             )
             .unwrap();
-        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the
+
+        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
+        // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
+        // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
+        deps.querier.update_state(vec![
+            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
+            ("contract1", Uint128::new(1000), Uint128::new(10000)),
+            ("contract2", Uint128::new(1000), Uint128::new(10000)),
+        ]);
+
+        // we do 2 callbacks, reflecting the updated state of the primitives
         on_bond(
             deps.as_mut(),
             env.clone(),
@@ -794,15 +804,6 @@ mod tests {
                 min_bonded: min_withdrawal
             }
         );
-
-        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
-        // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
-        // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
-        deps.querier.update_state(vec![
-            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
-            ("contract1", Uint128::new(1000), Uint128::new(10000)),
-            ("contract2", Uint128::new(1000), Uint128::new(10000)),
-        ]);
 
         // case 3: amount is valid, execute start unbond on all primitive contracts
         let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
@@ -963,7 +964,16 @@ mod tests {
                 ],
             )
             .unwrap();
-        // we do 2 callbacks, one with 35 shares and 1 wih 15 shares, this gives the
+        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
+        // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
+        // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
+        deps.querier.update_state(vec![
+            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
+            ("contract1", Uint128::new(1800), Uint128::new(18000)),
+            ("contract2", Uint128::new(200), Uint128::new(2000)),
+        ]);
+
+        // we do 2 callbacks, reflecting the user deposit and the primitive state update
         on_bond(
             deps.as_mut(),
             env.clone(),
@@ -1005,15 +1015,6 @@ mod tests {
                 min_bonded: min_withdrawal
             }
         );
-
-        // update the querier to return underlying shares of the vault, in total our vault has 5000 internal shares
-        // we expect the vault to unbond 10% of the shares it owns in each primitive, so if contract 1 returns
-        // 4000 shares and contract 2 returns 3000 shares, and we unbond 10% of the shares, we should unbond 400 and 300 shares respectively
-        deps.querier.update_state(vec![
-            // the primitives were mocked with 500 shares and 5000 tokens, we should have deposited 5000 more tokens so get 500 more prim shares
-            ("contract1", Uint128::new(1800), Uint128::new(18000)),
-            ("contract2", Uint128::new(200), Uint128::new(2000)),
-        ]);
 
         // case 3: amount is valid, execute start unbond on all primitive contracts
         let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
