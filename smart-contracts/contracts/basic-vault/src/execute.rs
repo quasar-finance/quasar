@@ -459,7 +459,7 @@ pub fn do_start_unbond(
     BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
     execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
-        Ok(Some(
+    Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
             .add_message(update_user_rewards_idx_msg)
@@ -609,7 +609,7 @@ pub fn update_cap(
 mod tests {
     use crate::callback::on_bond;
     use crate::msg::PrimitiveInitMsg;
-    use crate::state::{VAULT_REWARDS};
+    use crate::state::VAULT_REWARDS;
     use crate::tests::{mock_deps_with_primitives, TEST_ADMIN};
 
     use super::*;

@@ -72,7 +72,6 @@ impl Cap {
     }
 }
 
-
 #[cw_serde]
 pub struct AdditionalTokenInfo {
     pub thesis: String,

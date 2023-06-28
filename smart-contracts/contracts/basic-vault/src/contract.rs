@@ -362,12 +362,11 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(mut deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-
     /// Supply is dynamic and tracks the current supply of staked and ERC20 tokens.
     #[cw_serde]
     #[derive(Default)]
     pub struct Supply {
-    /// issued is how many derivative tokens this contract has issued
+        /// issued is how many derivative tokens this contract has issued
         pub issued: Uint128,
     }
 
