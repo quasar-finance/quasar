@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdError,
-    StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg, Attribute,
+    to_binary, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    StdError, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -33,7 +33,7 @@ use crate::query::{
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ,
     BONDING_SEQ_TO_ADDR, BOND_STATE, CAP, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
-    INVESTMENT, OLD_INVESTMENT, PENDING_BOND_IDS, TOTAL_SUPPLY, VAULT_REWARDS,
+    INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -363,18 +363,21 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(mut deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // wipe the current share state
     cw20_base::state::BALANCES.clear(deps.storage);
-    cw20_base::state::TOKEN_INFO.update(deps.storage, |old| -> Result<TokenInfo, ContractError> {
-        Ok(cw20_base::state::TokenInfo {
-            name: old.name,
-            symbol: old.symbol,
-            decimals: old.decimals,
-            total_supply: Uint128::zero(),
-            mint: old.mint,
-        })
-    })?;
+    cw20_base::state::TOKEN_INFO.update(
+        deps.storage,
+        |old| -> Result<TokenInfo, ContractError> {
+            Ok(cw20_base::state::TokenInfo {
+                name: old.name,
+                symbol: old.symbol,
+                decimals: old.decimals,
+                total_supply: Uint128::zero(),
+                mint: old.mint,
+            })
+        },
+    )?;
 
     let mut attributes = vec![
         Attribute::new("migrate", CONTRACT_NAME),
@@ -413,7 +416,7 @@ pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response,
             )?;
 
             attributes.push(Attribute::new("amount", amount.to_string()));
-            attributes.push(Attribute::new("recipient", recipient.to_string()));
+            attributes.push(Attribute::new("recipient", recipient));
             Ok(())
         })?;
 

@@ -201,8 +201,7 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 pub struct InvestmentResponse {
