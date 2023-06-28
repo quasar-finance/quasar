@@ -42,6 +42,8 @@ pub struct InstantiateMsg {
     /// This is the minimum amount we will pull out to reinvest, as well as a minimum
     /// that can be unbonded (to avoid needless staking tx)
     pub min_withdrawal: Uint128,
+    /// the denom in which users can deposit
+    pub deposit_denom: String,
     // the array of primitives to subscribe to for this vault
     pub primitives: Vec<PrimitiveConfig>,
     // the total amount of tokens that can be deposited, eg: max uosmo of the contract
@@ -199,7 +201,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub deposit_denom: String,
+}
 
 #[cw_serde]
 pub struct InvestmentResponse {
