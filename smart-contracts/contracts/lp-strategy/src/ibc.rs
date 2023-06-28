@@ -788,11 +788,13 @@ mod tests {
                     lock_period: 100,
                     pool_id: 1,
                     pool_denom: "gamm/pool/1".to_string(),
-                    base_denom: "uosmo".to_string(),
-                    quote_denom:
-                        "ibc/D176154B0C63D1F9C6DCFB4F70349EBF2E2B5A87A05902F57A6AE92B863E9AEC"
+                    base_denom:
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
                             .to_string(),
-                    local_denom: "ibc/local_osmo".to_string(),
+                    quote_denom: "uosmo".to_string(),
+                    local_denom:
+                        "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5"
+                            .to_string(),
                     transfer_channel: "channel-0".to_string(),
                     return_source_channel: "channel-0".to_string(),
                     expected_connection: "connection-0".to_string(),
@@ -814,7 +816,7 @@ mod tests {
             .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hzNkZBb1NDZ1YxYjNOdGJ4SUpNVGM1TVRjME5EYzNTTlcvcFFRS1VqcExDa2tLUkdsaVl5OUVNVGMyTVRVMFFqQkROak5FTVVZNVF6WkVRMFpDTkVZM01ETTBPVVZDUmpKRk1rSTFRVGczUVRBMU9UQXlSalUzUVRaQlJUa3lRamcyTTBVNVFVVkRFZ0V3U05XL3BRUUtHem9VQ2hJS0RXZGhiVzB2Y0c5dmJDODRNek1TQVRCSTFiK2xCQW9IQ0JKSTFiK2xCQXB6T213S1V3cEVhV0pqTDBReE56WXhOVFJDTUVNMk0wUXhSamxETmtSRFJrSTBSamN3TXpRNVJVSkdNa1V5UWpWQk9EZEJNRFU1TURKR05UZEJOa0ZGT1RKQ09EWXpSVGxCUlVNU0N6azBNRFl3TWpNMU1UY3hDaFVLQlhWdmMyMXZFZ3d4TWpNNE9EUTJNRGN6TVRCSTFiK2xCQW9kT2hZS0ZEQXVPVEl4TlRrNU9ESXdNREF3TURBd01EQXdTTlcvcFFRS2l3RTZnd0VLZ0FFSS9MdGlFajl2YzIxdk1YQnpjMlo2Y0Roa05tZzFjR3R6Wm5sak5tdzFNamRtYUdkMlpHcGpOVE0zZFhWbmRIQm5NbVUwZDI1M1pIRjFlWFpxWVhGa2MyaHdZV2dhQkFpSzZra2lDd2lBa3JqRG1QNy8vLzhCS2lZS0RXZGhiVzB2Y0c5dmJDODRNek1TRlRFMk1qQXhOVFU0T1RjM01ERXpNems0TURRM01ralZ2NlVFIn0").unwrap();
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2xnNlVRcFBDa1JwWW1Ndk1qY3pPVFJHUWpBNU1rUXlSVU5EUkRVMk1USXpRemMwUmpNMlJUUkRNVVk1TWpZd01ERkRSVUZFUVRsRFFUazNSVUUyTWpKQ01qVkdOREZGTlVWQ01oSUhNalV3TURBd01FaUdydk1FQ2hNNkRBb0tDZ1YxYjNOdGJ4SUJNRWlHcnZNRUNoazZFZ29RQ2d0bllXMXRMM0J2YjJ3dk1SSUJNRWlHcnZNRUNtMDZaZ29VTWpneU5EWTVOVE0yTnpFek9EQXpNems1T1RnU1RncEVhV0pqTHpJM016azBSa0l3T1RKRU1rVkRRMFExTmpFeU0wTTNORVl6TmtVMFF6RkdPVEkyTURBeFEwVkJSRUU1UTBFNU4wVkJOakl5UWpJMVJqUXhSVFZGUWpJU0JqVXdNREF3TUVpR3J2TUVDbkE2YVFwUkNrUnBZbU12TWpjek9UUkdRakE1TWtReVJVTkRSRFUyTVRJelF6YzBSak0yUlRSRE1VWTVNall3TURGRFJVRkVRVGxEUVRrM1JVRTJNakpDTWpWR05ERkZOVVZDTWhJSk5qTTJNell6TVRJMkNoUUtCWFZ2YzIxdkVnc3hNVGd4TXpnek5ESXdNVWlHcnZNRUNoNDZGd29WTVRndU5UWTBOakV4TkRnd01EQXdNREF3TURBd1NJYXU4d1FLaXdFNmd3RUtnQUVJNWZWa0VqOXZjMjF2TVhWNU5XRnlNSGxoYXpseU4zZ3pjMmRuWkRkbmMyNXlhbTEwYTNjeWRqWmxkRGgxZUhKeGF6TnRObkJvTkdaMWNYYzVaSEUyYTJGNmJYTWFCQWlCNmtraUN3aUFrcmpEbVA3Ly8vOEJLaVlLQzJkaGJXMHZjRzl2YkM4eEVoYzNNVGszTXpJMU56QTJOVGcwTnprek56QXpPVFV6TlVpR3J2TUUifQ==").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
