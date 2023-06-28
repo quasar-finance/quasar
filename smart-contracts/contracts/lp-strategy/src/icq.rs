@@ -226,7 +226,7 @@ pub fn calc_total_balance(
                     value: quote.amount.clone(),
                 }
             })?)
-            .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
+            .checked_multiply_ratio(spot_price.denominator(), spot_price.numerator())?,
         )?)
 }
 
@@ -243,7 +243,25 @@ mod tests {
         test_helpers::default_setup,
     };
 
+    use proptest::prelude::*;
+
     use super::*;
+
+    proptest! {
+        #[test]
+        fn calc_total_balance_works(ica_balance in 1..u64::MAX as u128, base_amount in 1..u64::MAX as u128, quote_amount in 1..u64::MAX as u128, spot_price in 1..u64::MAX as u128) {
+            let mut deps = mock_dependencies();
+            default_setup(deps.as_mut().storage).unwrap();
+            let config = CONFIG.load(deps.as_ref().storage).unwrap();
+            
+            let tokens = vec![OsmoCoin{ denom: config.base_denom, amount: base_amount.to_string() }, OsmoCoin{ denom: config.quote_denom, amount: quote_amount.to_string() }];
+            let spot = Decimal::raw(spot_price);
+            let total = calc_total_balance(deps.as_mut().storage, Uint128::new(ica_balance), &tokens, spot).unwrap();
+            let expecte_quote = Uint128::new(quote_amount).multiply_ratio(spot.denominator(), spot.numerator());
+            prop_assert_eq!(total.u128(), ica_balance + base_amount + expecte_quote.u128())
+        }
+    }
+
 
     #[test]
     fn try_icq_unlocked_works() {
