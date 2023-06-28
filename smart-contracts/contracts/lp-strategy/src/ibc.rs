@@ -788,11 +788,13 @@ mod tests {
                     lock_period: 100,
                     pool_id: 1,
                     pool_denom: "gamm/pool/1".to_string(),
-                    base_denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
-                    quote_denom:
-                        "uosmo"
+                    base_denom:
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
                             .to_string(),
-                    local_denom: "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5".to_string(),
+                    quote_denom: "uosmo".to_string(),
+                    local_denom:
+                        "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5"
+                            .to_string(),
                     transfer_channel: "channel-0".to_string(),
                     return_source_channel: "channel-0".to_string(),
                     expected_connection: "connection-0".to_string(),

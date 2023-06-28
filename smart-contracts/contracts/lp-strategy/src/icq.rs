@@ -253,7 +253,7 @@ mod tests {
             let mut deps = mock_dependencies();
             default_setup(deps.as_mut().storage).unwrap();
             let config = CONFIG.load(deps.as_ref().storage).unwrap();
-            
+
             let tokens = vec![OsmoCoin{ denom: config.base_denom, amount: base_amount.to_string() }, OsmoCoin{ denom: config.quote_denom, amount: quote_amount.to_string() }];
             let spot = Decimal::raw(spot_price);
             let total = calc_total_balance(deps.as_mut().storage, Uint128::new(ica_balance), &tokens, spot).unwrap();
@@ -261,7 +261,6 @@ mod tests {
             prop_assert_eq!(total.u128(), ica_balance + base_amount + expecte_quote.u128())
         }
     }
-
 
     #[test]
     fn try_icq_unlocked_works() {
