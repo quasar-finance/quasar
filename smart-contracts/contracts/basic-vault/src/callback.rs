@@ -136,7 +136,8 @@ pub fn on_bond(
     let shares_to_mint = if total_vault_shares.is_zero() || total_vault_value.is_zero() {
         total_user_value
     } else {
-        total_user_value.checked_multiply_ratio(total_vault_shares, total_vault_value)?
+        total_user_value
+            .checked_multiply_ratio(total_vault_shares, total_vault_value - total_user_value)?
     };
 
     // update total supply
