@@ -132,7 +132,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 			"symbol":                        "ORN",
 			"min_withdrawal":                "1",
 			"name":                          "ORION",
-			"deposit_denom":				 "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
+			"deposit_denom":                 "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
 			"primitives": []map[string]any{
 				{
 					"address": s.LpStrategyContractAddress1,
@@ -320,7 +320,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			s.ExecuteContract(
 				ctx,
 				s.Quasar(),
-				accBondTest0.KeyName,
+				tc.Account.KeyName,
 				s.BasicVaultContractAddress,
 				sdk.NewCoins(),
 				map[string]any{"unbond": map[string]any{"amount": tc.UnbondAmount}},
@@ -379,7 +379,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			s.ExecuteContract(
 				ctx,
 				s.Quasar(),
-				accBondTest0.KeyName,
+				tc.Account.KeyName,
 				s.BasicVaultContractAddress,
 				sdk.NewCoins(),
 				map[string]any{"claim": map[string]any{}},
