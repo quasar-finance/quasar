@@ -1,3 +1,4 @@
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -14,6 +15,7 @@ use cw20_base::contract::{
     execute_burn, execute_mint, execute_send, execute_transfer, query_balance, query_token_info,
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
+use cw_storage_plus::Item;
 use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
 use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
@@ -31,9 +33,9 @@ use crate::query::{
     query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ,
+    AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ,
     BONDING_SEQ_TO_ADDR, BOND_STATE, CAP, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
-    INVESTMENT, TOTAL_SUPPLY, VAULT_REWARDS,
+    INVESTMENT, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -99,10 +101,6 @@ pub fn instantiate(
 
     // initialize bonding sequence num
     BONDING_SEQ.save(deps.storage, &Uint128::one())?;
-
-    // set supply to 0
-    let supply = Supply::default();
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
     DEBUG_TOOL.save(deps.storage, &"Empty".to_string())?;
 
@@ -364,6 +362,18 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(mut deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+
+    /// Supply is dynamic and tracks the current supply of staked and ERC20 tokens.
+    #[cw_serde]
+    #[derive(Default)]
+    pub struct Supply {
+    /// issued is how many derivative tokens this contract has issued
+        pub issued: Uint128,
+    }
+
+    let delete_supply: Item<Uint128> = Item::new("total_supply");
+    delete_supply.remove(deps.storage);
+
     // wipe the current share state
     cw20_base::state::BALANCES.clear(deps.storage);
     cw20_base::state::TOKEN_INFO.update(
