@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    SubMsg, SubMsgResult, Uint128, WasmMsg, Order,
 };
 
 use cw2::set_contract_version;
@@ -11,7 +11,7 @@ use cw20_base::allowances::{
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
-    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
+    execute_burn, execute_send, execute_transfer, query_balance, query_token_info, execute_mint,
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
@@ -33,7 +33,7 @@ use crate::query::{
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
     CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, TOTAL_SUPPLY,
-    VAULT_REWARDS,
+    VAULT_REWARDS, PENDING_BOND_IDS, BOND_STATE,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -364,17 +364,19 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let invest = OLD_INVESTMENT.load(deps.storage)?;
+    // wipe the current share state
+    
+    
+    // this migrate message has to be applied after the fix to the lp strategy
+    BOND_STATE.range(deps.storage, None, None, Order::Ascending).for_each(|stub| {
+        // add the newly update primitive amounts to the stub
 
-    INVESTMENT.save(
-        deps.storage,
-        &InvestmentInfo {
-            owner: invest.owner,
-            min_withdrawal: invest.min_withdrawal,
-            deposit_denom: msg.deposit_denom,
-            primitives: invest.primitives,
-        },
-    )?;
+        // recalculate the new amount of shares from this updated stub, this is basically equivalent to the total deposited amount
+
+        // mint the new shares, add the message to response
+        execute_mint(deps, env, info, recipient, amount)
+    });
+
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
