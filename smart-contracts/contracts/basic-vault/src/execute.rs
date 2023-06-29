@@ -15,7 +15,7 @@ use crate::helpers::{can_unbond_from_primitive, is_contract_admin, update_user_r
 use crate::msg::PrimitiveConfig;
 use crate::state::{
     BondingStub, Cap, InvestmentInfo, Unbond, UnbondingStub, BONDING_SEQ, BONDING_SEQ_TO_ADDR,
-    BOND_STATE, CAP, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+    BOND_STATE, CAP, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE,
 };
 use crate::types::FromUint128;
 
@@ -400,10 +400,9 @@ pub fn do_start_unbond(
     // burn if balance is more than or equal to amount (handled in execute_burn)
     let update_user_rewards_idx_msg =
         update_user_reward_index(deps.as_ref().storage, &info.sender)?;
-    execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
 
     let mut unbonding_stubs = vec![];
-    let supply = TOTAL_SUPPLY.load(deps.storage)?;
+    let supply = cw20_base::contract::query_token_info(deps.as_ref())?.total_supply;
 
     let start_unbond_msgs: Vec<WasmMsg> = invest
         .primitives
@@ -418,7 +417,7 @@ pub fn do_start_unbond(
             )?;
 
             // lets get the amount of tokens to unbond for this primitive: p_unbond_amount = (v_unbond_amount / v_total_supply) * our_p_balance
-            let primitive_share_amount = Decimal::from_ratio(unbond_amount, supply.issued)
+            let primitive_share_amount = Decimal::from_ratio(unbond_amount, supply)
                 .checked_mul(Decimal::from_uint128(our_balance.balance))?
                 .to_uint_floor();
 
@@ -459,14 +458,7 @@ pub fn do_start_unbond(
     BONDING_SEQ_TO_ADDR.save(deps.storage, bond_seq.to_string(), &info.sender.to_string())?;
     BONDING_SEQ.save(deps.storage, &bond_seq.checked_add(Uint128::from(1u128))?)?;
 
-    let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
-    supply.issued = supply
-        .issued
-        .checked_sub(unbond_amount)
-        .map_err(StdError::overflow)?;
-
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
-
+    execute_burn(deps.branch(), env.clone(), info.clone(), unbond_amount)?;
     Ok(Some(
         Response::new()
             .add_messages(start_unbond_msgs)
@@ -617,7 +609,7 @@ pub fn update_cap(
 mod tests {
     use crate::callback::on_bond;
     use crate::msg::PrimitiveInitMsg;
-    use crate::state::{Supply, VAULT_REWARDS};
+    use crate::state::VAULT_REWARDS;
     use crate::tests::{mock_deps_with_primitives, TEST_ADMIN};
 
     use super::*;
@@ -699,12 +691,8 @@ mod tests {
         };
         let bond_seq = Uint128::new(1);
 
-        let supply = Supply {
-            issued: Uint128::new(5000),
-        };
         INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
         BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
-        TOTAL_SUPPLY.save(deps.as_mut().storage, &supply).unwrap();
         VAULT_REWARDS
             .save(deps.as_mut().storage, &Addr::unchecked("rewards-contract"))
             .unwrap();
@@ -723,15 +711,11 @@ mod tests {
         };
         TOKEN_INFO.save(deps.as_mut().storage, &token_info).unwrap();
 
-        // bond some funds
-        // let res = bond(deps.as_mut(), env, info, None).unwrap();
-
         BONDING_SEQ_TO_ADDR
             .save(deps.as_mut().storage, "1".to_string(), &"user".to_string())
             .unwrap();
 
-        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user a bit less than 10% primitive shares
-        // however in terms of value the user has <25% of primitive 1 of and <25% of primitive 2
+        //  mock an unfilfilled stub, do 2 callbacks to fullfill the stubs, and mint shares for the user such that the user owns 50% of the shares
         BOND_STATE
             .save(
                 deps.as_mut().storage,
@@ -809,7 +793,6 @@ mod tests {
         let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
             .unwrap()
             .balance;
-        let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
 
         let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
             .unwrap()
@@ -822,7 +805,6 @@ mod tests {
         let msg2 = &res.messages[1];
 
         // start unbond is independent of the amounts in the callback, but is dependent on the vault's amount of shares in the primitive
-        // TODO make sure these numbers make sense
         assert_eq!(
             msg1.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
@@ -916,12 +898,8 @@ mod tests {
         };
         let bond_seq = Uint128::new(1);
 
-        let supply = Supply {
-            issued: Uint128::new(5000),
-        };
         INVESTMENT.save(deps.as_mut().storage, &invest).unwrap();
         BONDING_SEQ.save(deps.as_mut().storage, &bond_seq).unwrap();
-        TOTAL_SUPPLY.save(deps.as_mut().storage, &supply).unwrap();
         VAULT_REWARDS
             .save(deps.as_mut().storage, &Addr::unchecked("rewards-contract"))
             .unwrap();

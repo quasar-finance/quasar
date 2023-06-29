@@ -72,14 +72,6 @@ impl Cap {
     }
 }
 
-/// Supply is dynamic and tracks the current supply of staked and ERC20 tokens.
-#[cw_serde]
-#[derive(Default)]
-pub struct Supply {
-    /// issued is how many derivative tokens this contract has issued
-    pub issued: Uint128,
-}
-
 #[cw_serde]
 pub struct AdditionalTokenInfo {
     pub thesis: String,
@@ -101,8 +93,6 @@ pub struct OldInvestmentInfo {
     /// this is the array of primitives that this vault will subscribe to
     pub primitives: Vec<PrimitiveConfig>,
 }
-
-pub const TOTAL_SUPPLY: Item<Supply> = Item::new("total_supply");
 
 #[cw_serde]
 #[derive(Default)]
