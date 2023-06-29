@@ -234,6 +234,67 @@ func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChai
 	return result, nil
 }
 
+func (p *Contract) MigrateContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, acc *ibc.Wallet, newCodeID uint64) (any, error) {
+	if p.contractAddress == "" {
+		return nil, fmt.Errorf("primitive not initialised")
+	}
+
+	tn := GetFullNode(chain)
+
+	argsbz, err := json.Marshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	cmds := []string{"wasm", "migrate",
+		p.contractAddress,
+		strconv.FormatUint(newCodeID, 10),
+		string(argsbz),
+		"--gas", "20000000",
+	}
+	if !funds.Empty() {
+		cmds = append(cmds, "--amount", funds.String())
+	}
+
+	txhash, err := tn.ExecTx(ctx, acc.KeyName, cmds...)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error(), "failed to execute Contract")
+	}
+
+	var resp wasmtypes.MsgMigrateContractResponse
+
+	txhashBytes, err := hex.DecodeString(txhash)
+	if err != nil {
+		return nil, err
+	}
+	res, err := tn.Client.Tx(ctx, txhashBytes, false)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error(), "failed to find tx result %s", txhash)
+	}
+	if res.TxResult.Code != 0 {
+		return nil, fmt.Errorf("tx has non-zero code (%d) with log: %s", res.TxResult.Code, res.TxResult.Log)
+	}
+
+	// Only unmarshal result if user wants to
+	if &resp != nil {
+		err = unmarshalTxResult(res.TxResult.Data, &resp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if result != nil {
+		err = json.Unmarshal(resp.Data, result)
+		if err != nil {
+			return nil, fmt.Errorf(err.Error(), "failed to unmarshal result")
+		}
+	}
+
+	p.codeID = newCodeID
+
+	return result, nil
+}
+
 func StoreContractCode(ctx context.Context, chain *cosmos.CosmosChain, filePath string, keyName string, l *zap.Logger) (uint64, error) {
 	// Read the Contract from os file
 	contract, err := os.ReadFile(filePath)
