@@ -2,7 +2,6 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_utils::nonpayable;
 
 use crate::{
-    admin::is_lock_admin,
     bond::Bond,
     error::ContractError,
     helpers::{IbcMsgKind, IcaMessages},
@@ -181,10 +180,6 @@ mod tests {
             )
             .unwrap();
 
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
-
         UNBONDING_CLAIMS
             .save(
                 deps.as_mut().storage,
@@ -287,10 +282,6 @@ mod tests {
             )
             .unwrap();
 
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
-
         UNBONDING_CLAIMS
             .save(
                 deps.as_mut().storage,
@@ -353,10 +344,6 @@ mod tests {
             )
             .unwrap();
 
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
-
         UNBONDING_CLAIMS
             .save(
                 deps.as_mut().storage,
@@ -399,29 +386,6 @@ mod tests {
     }
 
     #[test]
-    // fn test_handle_retry_exit_pool_as_not_admin_fails() {
-    //     let mut deps = mock_dependencies();
-    //     let env = mock_env();
-    //
-    //     LOCK_ADMIN
-    //         .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-    //         .unwrap();
-    //
-    //     let res = execute_retry(
-    //         deps.as_mut(),
-    //         env,
-    //         MessageInfo {
-    //             sender: Addr::unchecked("not_admin"),
-    //             funds: vec![],
-    //         },
-    //         3539,
-    //         "channel-35".to_string(),
-    //     );
-    //
-    //     assert!(res.is_err());
-    // }
-
-    #[test]
     fn test_handle_retry_exit_pool_with_wrong_seq_channel_fails() {
         let mut deps = mock_dependencies();
         let env = mock_env();
@@ -452,10 +416,6 @@ mod tests {
                 },
             )
             .unwrap();
-
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
 
         let res = execute_retry(
             deps.as_mut(),
@@ -507,10 +467,6 @@ mod tests {
                 },
             )
             .unwrap();
-
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
 
         UNBONDING_CLAIMS
             .save(
@@ -616,10 +572,6 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
-
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
 
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {
@@ -836,10 +788,6 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
-
-        // LOCK_ADMIN
-        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-        //     .unwrap();
 
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {

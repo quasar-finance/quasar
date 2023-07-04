@@ -73,10 +73,6 @@ mod tests {
 
             IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-            // LOCK_ADMIN
-            //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            //     .unwrap();
-
             // mock the failed join pool trap with 3 bonds
             let failed = PendingBond {
                 bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((claim, raw), owner), id)| {
