@@ -77,6 +77,7 @@ func (p *Contract) InstantiateContract(ctx context.Context, acc *ibc.Wallet, cha
 	}
 
 	accAddress := acc.Bech32Address(chain.Config().Bech32Prefix)
+	fmt.Println("HEHEHEHEHEHE accAddress", accAddress, acc.KeyName)
 	if acc.KeyName != "" {
 		cmds = append(cmds, "--admin", accAddress)
 	} else {

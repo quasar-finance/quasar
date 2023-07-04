@@ -57,7 +57,7 @@ func TestE2eTestBuilder(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (s *TestE2eTestBuilderSuite) TestBonds() {
+func (s *TestE2eTestBuilderSuite) TestMigration() {
 	ctx := context.Background()
 
 	// find Osmosis chain
@@ -352,6 +352,29 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		}
 	}
 
+	// migrate everything to new code ids
+	var result any
+	_, err = prim1.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = prim2.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = prim3.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = vaultContract.MigrateContract(ctx, quasar.Chain, map[string]any{}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newBasicVaultContractCodeID)
+	s.Require().NoError(err)
+
 	for _, tc := range testCases {
 		// inputs
 		var Result testSuite.ContractBalanceData
@@ -394,29 +417,6 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 			}
 		}
 	}
-
-	// migrate everything to new code ids
-	var result any
-	_, err = prim1.MigrateContract(ctx, quasar.Chain, map[string]any{
-		"delete_pending_acks": []string{},
-		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
-	s.Require().NoError(err)
-
-	_, err = prim2.MigrateContract(ctx, quasar.Chain, map[string]any{
-		"delete_pending_acks": []string{},
-		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
-	s.Require().NoError(err)
-
-	_, err = prim3.MigrateContract(ctx, quasar.Chain, map[string]any{
-		"delete_pending_acks": []string{},
-		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newLpStrategyCodeID)
-	s.Require().NoError(err)
-
-	_, err = vaultContract.MigrateContract(ctx, quasar.Chain, map[string]any{}, &result, sdk.Coins{}, quasar.ChainAccount[testSuite.AuthorityKeyName], newBasicVaultContractCodeID)
-	s.Require().NoError(err)
 
 	firstCase := testCases[0:1]
 	otherCases := testCases[1 : len(testCases)-1]
