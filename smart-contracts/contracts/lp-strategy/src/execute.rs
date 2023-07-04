@@ -21,9 +21,7 @@ pub fn execute_retry(
     channel: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
-    // for now, only the lock admin can retry
-    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
-
+    // this endpoint is permissionless in order to allow anyone trigger a retry
     let traps = TRAPS.load(deps.storage, (seq, channel.clone()))?;
     match traps.step {
         IbcMsgKind::Ica(ica_kind) => match ica_kind {
@@ -183,9 +181,9 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         UNBONDING_CLAIMS
             .save(
@@ -233,7 +231,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -289,9 +287,9 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         UNBONDING_CLAIMS
             .save(
@@ -311,7 +309,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -355,9 +353,9 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         UNBONDING_CLAIMS
             .save(
@@ -377,7 +375,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -401,27 +399,27 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_retry_exit_pool_as_not_admin_fails() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
-        let res = execute_retry(
-            deps.as_mut(),
-            env,
-            MessageInfo {
-                sender: Addr::unchecked("not_admin"),
-                funds: vec![],
-            },
-            3539,
-            "channel-35".to_string(),
-        );
-
-        assert!(res.is_err());
-    }
+    // fn test_handle_retry_exit_pool_as_not_admin_fails() {
+    //     let mut deps = mock_dependencies();
+    //     let env = mock_env();
+    //
+    //     LOCK_ADMIN
+    //         .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+    //         .unwrap();
+    //
+    //     let res = execute_retry(
+    //         deps.as_mut(),
+    //         env,
+    //         MessageInfo {
+    //             sender: Addr::unchecked("not_admin"),
+    //             funds: vec![],
+    //         },
+    //         3539,
+    //         "channel-35".to_string(),
+    //     );
+    //
+    //     assert!(res.is_err());
+    // }
 
     #[test]
     fn test_handle_retry_exit_pool_with_wrong_seq_channel_fails() {
@@ -455,15 +453,15 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         let res = execute_retry(
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             0,
@@ -510,9 +508,9 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         UNBONDING_CLAIMS
             .save(
@@ -560,7 +558,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -601,7 +599,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -619,9 +617,9 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {
@@ -664,7 +662,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -839,9 +837,9 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
+        // LOCK_ADMIN
+        //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+        //     .unwrap();
 
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {
@@ -904,7 +902,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,

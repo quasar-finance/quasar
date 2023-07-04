@@ -18,7 +18,7 @@ mod tests {
         ibc::handle_icq_ack,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK, LOCK_ADMIN,
+            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK,
             PENDING_BOND_QUEUE, TRAPS,
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
@@ -73,9 +73,9 @@ mod tests {
 
             IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-            LOCK_ADMIN
-                .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-                .unwrap();
+            // LOCK_ADMIN
+            //     .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            //     .unwrap();
 
             // mock the failed join pool trap with 3 bonds
             let failed = PendingBond {
@@ -121,7 +121,7 @@ mod tests {
                 deps.as_mut(),
                 env.clone(),
                 MessageInfo {
-                    sender: Addr::unchecked("admin"),
+                    sender: Addr::unchecked("not_admin"),
                     funds: vec![],
                 },
                 3539,
