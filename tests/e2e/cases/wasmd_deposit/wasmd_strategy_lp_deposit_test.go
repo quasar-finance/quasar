@@ -1,4 +1,4 @@
-package wasmd
+package wasmd_deposit
 
 import (
 	"context"
@@ -21,9 +21,9 @@ const (
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	osmosisPool1Path                     = "../_utils/sample_pool1.json"
-	osmosisPool2Path                     = "../_utils/sample_pool2.json"
-	osmosisPool3Path                     = "../_utils/sample_pool3.json"
+	osmosisPool1Path                     = "../_utils/pools/high_liquidity/sample_pool1.json"
+	osmosisPool2Path                     = "../_utils/pools/high_liquidity/sample_pool2.json"
+	osmosisPool3Path                     = "../_utils/pools/high_liquidity/sample_pool3.json"
 )
 
 var (

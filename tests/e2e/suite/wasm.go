@@ -90,7 +90,8 @@ func (s *E2ETestSuite) ExecuteContract(
 	keyName string,
 	contractAddr string,
 	funds sdk.Coins,
-	args any, result any,
+	args any,
+	result any,
 ) {
 	tn := GetFullNode(chain)
 
@@ -135,6 +136,7 @@ func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.C
 	return res
 }
 
+// TODO: this should be singular "Pool"
 func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
 	tn := GetFullNode(chain)
 
@@ -156,6 +158,22 @@ func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.C
 
 	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
 	s.Require().NoError(err, "failed to create pool")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
+func (s *E2ETestSuite) JoinPoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolId string, maxAmountsIn string, shareAmountOut string) {
+	tn := GetFullNode(chain)
+
+	cmds := []string{
+		"gamm", "join-pool",
+		"--gas", "20000000", "--pool-id", poolId,
+		"--max-amounts-in", maxAmountsIn,
+		"--share-amount-out", shareAmountOut,
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to join pool")
 
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
 }

@@ -1,4 +1,4 @@
-package wasmd
+package wasmd_deposit
 
 import (
 	"context"
