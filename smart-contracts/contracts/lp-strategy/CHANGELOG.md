@@ -24,8 +24,8 @@
 
 ### Features
 
-- Added retry entry point to handle exit pool errors
-- Added retry entry point to handle join pool errors
+- Added permission-less retry entrypoint to handle exit pool errors
+- Added permission-less retry entrypoint to handle join pool errors
 
 ### Bugfixes
 
