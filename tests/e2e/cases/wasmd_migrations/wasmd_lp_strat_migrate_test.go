@@ -309,7 +309,7 @@ func (s *TestE2eTestBuilderSuite) TestMigration() {
 	s.Require().NoError(err)
 
 	// generate test cases
-	testCases, err := testCasesHelper.GenerateTestCases(100120, 5, 1, 200000000)
+	testCases, err := testCasesHelper.GenerateTestCases(100120, 5, 1, 2000000)
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {
@@ -356,26 +356,51 @@ func (s *TestE2eTestBuilderSuite) TestMigration() {
 	}
 
 	// migrate everything to new code ids
-	var result any
 	_, err = prim1.MigrateContract(ctx, quasar.Chain, map[string]any{
 		"delete_pending_acks": []string{},
 		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
 	s.Require().NoError(err)
 
 	_, err = prim2.MigrateContract(ctx, quasar.Chain, map[string]any{
 		"delete_pending_acks": []string{},
 		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
 	s.Require().NoError(err)
 
 	_, err = prim3.MigrateContract(ctx, quasar.Chain, map[string]any{
 		"delete_pending_acks": []string{},
 		"delete_traps":        []string{},
-	}, &result, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
 	s.Require().NoError(err)
 
-	_, err = vaultContract.MigrateContract(ctx, quasar.Chain, map[string]any{}, &result, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newBasicVaultContractCodeID)
+	_, err = vaultContract.MigrateContract(ctx, quasar.Chain, map[string]any{}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newBasicVaultContractCodeID)
+	s.Require().NoError(err)
+
+	// execute a bank send from treasury to new bond account
+	tx, err = quasar.ExecTx(
+		ctx,
+		[]string{
+			"bank", "send",
+			quasar.ChainAccount[testSuite.AuthorityKeyName].Address,
+			bondUser.Bech32Address(quasar.Chain.Config().Bech32Prefix),
+			"1000000000" + osmosisDenomInQuasar,
+			"--gas", "20000000",
+		},
+		quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName,
+		"",
+		"",
+		nil,
+		sdk.Coins{},
+		s.Logger.With(
+			zap.String("chain_id", osmosis.Chain.Config().ChainID),
+			zap.String("test", testSuite.GetFullNode(osmosis.Chain).TestName)),
+	)
+	s.Require().NoError(err)
+	err = quasar.AssertSuccessfulResultTx(ctx, tx, nil)
+	s.Require().NoError(err)
+
+	testCases, err = testCasesHelper.GenerateTestCases(100120, 5, 1, 200000000)
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {
