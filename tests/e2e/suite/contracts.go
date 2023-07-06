@@ -75,11 +75,8 @@ func (p *Contract) InstantiateContract(ctx context.Context, acc *ibc.Wallet, cha
 	if p.label != "" {
 		cmds = append(cmds, "--label", p.label)
 	}
-
-	accAddress := acc.Bech32Address(chain.Config().Bech32Prefix)
-	fmt.Println("HEHEHEHEHEHE accAddress", accAddress, acc.KeyName)
 	if acc.KeyName != "" {
-		cmds = append(cmds, "--admin", accAddress)
+		cmds = append(cmds, "--admin", acc.Address)
 	} else {
 		// We must set this explicitly if we don't want an admin
 		cmds = append(cmds, "--no-admin")
@@ -177,7 +174,7 @@ func (p *Contract) QueryContract(ctx context.Context, chain *cosmos.CosmosChain,
 	return res, nil
 }
 
-func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, acc *ibc.Wallet) (any, error) {
+func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, keyName string) (any, error) {
 	if p.contractAddress == "" {
 		return nil, fmt.Errorf("primitive not initialised")
 	}
@@ -198,7 +195,7 @@ func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChai
 		cmds = append(cmds, "--amount", funds.String())
 	}
 
-	txhash, err := tn.ExecTx(ctx, acc.KeyName, cmds...)
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error(), "failed to execute Contract")
 	}
@@ -235,7 +232,7 @@ func (p *Contract) ExecuteContract(ctx context.Context, chain *cosmos.CosmosChai
 	return result, nil
 }
 
-func (p *Contract) MigrateContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, acc *ibc.Wallet, newCodeID uint64) (any, error) {
+func (p *Contract) MigrateContract(ctx context.Context, chain *cosmos.CosmosChain, args, result any, funds sdk.Coins, keyName string, newCodeID uint64) (any, error) {
 	if p.contractAddress == "" {
 		return nil, fmt.Errorf("primitive not initialised")
 	}
@@ -257,7 +254,7 @@ func (p *Contract) MigrateContract(ctx context.Context, chain *cosmos.CosmosChai
 		cmds = append(cmds, "--amount", funds.String())
 	}
 
-	txhash, err := tn.ExecTx(ctx, acc.KeyName, cmds...)
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error(), "failed to execute Contract")
 	}

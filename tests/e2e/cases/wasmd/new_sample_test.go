@@ -248,7 +248,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 			map[string]any{"set_depositor": map[string]any{"depositor": vaultContract.GetContractAddress()}},
 			nil,
 			sdk.Coins{},
-			quasar.ChainAccount[testSuite.AuthorityKeyName],
+			quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName,
 		)
 		s.Require().NoError(err)
 	}
@@ -263,7 +263,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
 
-	bondUser, err := quasar.CreateUserAndFund(&s.Suite, ctx, 10000000)
+	bondUser, err := quasar.CreateUserAndFund(ctx, "bondUser", 10000000)
 	s.Require().NoError(err)
 
 	// get all the channels on quassr
