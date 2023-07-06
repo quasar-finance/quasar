@@ -222,7 +222,6 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
-	// clearing cache to try bonding on osmosis side
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
@@ -234,12 +233,10 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 			},
 		},
 	)
-
 	err = json.Unmarshal(balanceBytes, &data)
 	s.Require().NoError(err)
 	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
 	s.Require().NoError(err)
-
 	// here we check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side
 	s.Require().True(int64(0) == balance)
 
@@ -405,44 +402,71 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 
 	// query trapped errors for each one of the primitives
 	// TODO
-	//// ICA 1
-	//var trappedErrors1After testsuite.ContractTrappedErrorsData
-	//trappedErrors1BytesAfter := s.ExecuteContractQuery(
-	//	ctx,
-	//	s.Quasar(),
-	//	s.LpStrategyContractAddress1,
-	//	map[string]any{
-	//		"trapped_errors": map[string]any{},
-	//	},
-	//)
-	//err = json.Unmarshal(trappedErrors1BytesAfter, &trappedErrors1After)
-	//s.Require().NoError(err)
-	//// ICA 2
-	//var trappedErrors2After testsuite.ContractTrappedErrorsData
-	//trappedErrors2BytesAfter := s.ExecuteContractQuery(
-	//	ctx,
-	//	s.Quasar(),
-	//	s.LpStrategyContractAddress2,
-	//	map[string]any{
-	//		"trapped_errors": map[string]any{},
-	//	},
-	//)
-	//err = json.Unmarshal(trappedErrors2BytesAfter, &trappedErrors2After)
-	//s.Require().NoError(err)
-	//// ICA 3
-	//var trappedErrors3After testsuite.ContractTrappedErrorsData
-	//trappedErrors3BytesAfter := s.ExecuteContractQuery(
-	//	ctx,
-	//	s.Quasar(),
-	//	s.LpStrategyContractAddress3,
-	//	map[string]any{
-	//		"trapped_errors": map[string]any{},
-	//	},
-	//)
-	//err = json.Unmarshal(trappedErrors3BytesAfter, &trappedErrors3After)
-	//s.Require().NoError(err)
+	// ICA 1
+	var trappedErrors1After testsuite.ContractTrappedErrorsData
+	trappedErrors1BytesAfter := s.ExecuteContractQuery(
+		ctx,
+		s.Quasar(),
+		s.LpStrategyContractAddress1,
+		map[string]any{
+			"trapped_errors": map[string]any{},
+		},
+	)
+	err = json.Unmarshal(trappedErrors1BytesAfter, &trappedErrors1After)
+	s.Require().NoError(err)
+	// ICA 2
+	var trappedErrors2After testsuite.ContractTrappedErrorsData
+	trappedErrors2BytesAfter := s.ExecuteContractQuery(
+		ctx,
+		s.Quasar(),
+		s.LpStrategyContractAddress2,
+		map[string]any{
+			"trapped_errors": map[string]any{},
+		},
+	)
+	err = json.Unmarshal(trappedErrors2BytesAfter, &trappedErrors2After)
+	s.Require().NoError(err)
+	// ICA 3
+	var trappedErrors3After testsuite.ContractTrappedErrorsData
+	trappedErrors3BytesAfter := s.ExecuteContractQuery(
+		ctx,
+		s.Quasar(),
+		s.LpStrategyContractAddress3,
+		map[string]any{
+			"trapped_errors": map[string]any{},
+		},
+	)
+	err = json.Unmarshal(trappedErrors3BytesAfter, &trappedErrors3After)
+	s.Require().NoError(err)
 
-	// TODO: check trappedErrors are empty now
+	// parsing trapped errors to obtain seq number and channel id
+	seqError1After, channelIdError1After := helpers.ParseTrappedError(trappedErrors1After)
+	seqError2After, channelIdError2After := helpers.ParseTrappedError(trappedErrors2After)
+	seqError3After, channelIdError3After := helpers.ParseTrappedError(trappedErrors3After)
+	t.Log(seqError1After, channelIdError1After)
+	t.Log(seqError2After, channelIdError2After)
+	t.Log(seqError3After, channelIdError3After)
+
+	// TODO: check trappedErrors are empty now or containing what we are looking for
+
+	// check user shares balance against basic vault looking for higher than 0
+	var dataAfter testsuite.ContractBalanceData
+	balanceBytesAfter := s.ExecuteContractQuery(
+		ctx,
+		s.Quasar(),
+		s.BasicVaultContractAddress,
+		map[string]any{
+			"balance": map[string]any{
+				"address": accBondTest0.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			},
+		},
+	)
+	err = json.Unmarshal(balanceBytesAfter, &dataAfter)
+	s.Require().NoError(err)
+	balanceAfter, err := strconv.ParseInt(dataAfter.Data.Balance, 10, 64)
+	s.Require().NoError(err)
+	// here we check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side
+	s.Require().True(int64(0) < balanceAfter)
 
 	// check the balance of the primitives looking for ~0 value
 	t.Log("Check ica accounts uosmo balance after retrying join pool")
@@ -456,5 +480,4 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().True(0 > balanceIca3After) // TODO: some dust threshold here probably needed
 
-	// TODO: check user shares balance against basic vault
 }
