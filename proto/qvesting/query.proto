@@ -23,11 +23,11 @@ service Query {
   }
   // VestingAccounts returns all the existing vesting accounts
   rpc VestingAccounts(QueryVestingAccountsRequest) returns (QueryVestingAccountsResponse) {
-    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_accounts";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/accounts";
   }
   // VestingAccounts returns all the existing vesting accounts
   rpc VestingLockedSupply(QueryVestingLockedSupplyRequest) returns (QueryVestingLockedSupplyResponse) {
-    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_locked_supply";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/locked_supply/{denom}";
   }
 }
 

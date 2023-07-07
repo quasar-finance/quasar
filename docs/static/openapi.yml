@@ -3846,7 +3846,7 @@ paths:
             type: boolean
       tags:
         - Query
-  /quasarlabs/quasarnode/qvesting/vesting_accounts:
+  /quasarlabs/quasarnode/qvesting/accounts:
     get:
       summary: VestingAccounts returns all the existing vesting accounts
       operationId: VestingAccounts
