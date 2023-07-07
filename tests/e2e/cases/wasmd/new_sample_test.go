@@ -280,7 +280,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		[]string{
 			"bank", "send",
 			quasar.ChainAccount[testSuite.AuthorityKeyName].Address,
-			bondUser.Bech32Address(quasar.Chain.Config().Bech32Prefix),
+			bondUser.Address,
 			"1000000000" + osmosisDenomInQuasar,
 			"--gas", "20000000",
 		},
@@ -317,7 +317,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		// outputs
 		queryArgs := map[string]any{
 			"balance": map[string]any{
-				"address": bondUser.Bech32Address(quasar.Chain.Config().Bech32Prefix),
+				"address": bondUser.Address,
 			},
 		}
 		queryArgsBz, err := json.Marshal(queryArgs)
