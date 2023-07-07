@@ -24,8 +24,8 @@ func GetQueryCmd() *cobra.Command {
 		CmdQueryParams(),
 		CmdQuerySpendableBalances(),
 		CmdQueryVestingAccounts(),
+		CmdQueryVestingLockedSupply(),
 	)
-	// this line is used by starport scaffolding # 1
 
 	return cmd
 }
@@ -97,7 +97,7 @@ func CmdQuerySpendableBalances() *cobra.Command {
 
 func CmdQueryVestingAccounts() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "vesting-accounts",
+		Use:   "accounts",
 		Short: "Query VestingAccounts",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -128,6 +128,34 @@ func CmdQueryVestingAccounts() *cobra.Command {
 	}
 
 	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
+
+	return cmd
+}
+
+func CmdQueryVestingLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "locked-supply [denom]",
+		Short: "Query QueryVestingLockedSupply",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqDenom := args[0]
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.VestingLockedSupply(ctx, &types.QueryVestingLockedSupplyRequest{Denom: reqDenom})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
 
 	return cmd
 }

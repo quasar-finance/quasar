@@ -98,3 +98,50 @@ func (k Keeper) VestingAccounts(c context.Context, req *types.QueryVestingAccoun
 	return &types.QueryVestingAccountsResponse{Accounts: accounts, Pagination: pageRes}, err
 
 }
+
+// VestingLockedSupply returns the total amount of locked supply for a given denomination across all vesting accounts.
+// The locked supply of a vesting account is the total balance of the account minus the spendable balance.
+// The function iterates over all the vesting accounts, and for each account, it retrieves the balance for the requested denomination
+// and subtracts the spendable amount. The result is added to the total locked supply.
+func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVestingLockedSupplyRequest) (*types.QueryVestingLockedSupplyResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(k.storeKey)
+	accountsStore := prefix.NewStore(store, types.VestingAccountStoreKeyPrefix)
+
+	iterator := accountsStore.Iterator(nil, nil)
+	defer iterator.Close()
+
+	resAmount := sdk.NewInt(0)
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+
+		addr := sdk.AccAddress(key)
+		acct := k.accountKeeper.GetAccount(sdkCtx, addr)
+		_, ok := acct.(exported.VestingAccount)
+		if !ok {
+			return nil, fmt.Errorf("account is not vesting account: %s", addr.String())
+		}
+
+		// get the total vesting account balance for requested denom
+		accBalance := k.bankKeeper.GetBalance(sdkCtx, addr, req.Denom)
+
+		// get the total vesting account spendable balances
+		spendableCoins := k.bankKeeper.SpendableCoins(sdkCtx, addr)
+		// iterate spendable balances looking for requested denom to subtract from total accBalance.Amount
+		for _, coin := range spendableCoins {
+			// if denom exists and amount is greater than 0 subtract it
+			if coin.Denom == req.Denom && coin.Amount.GT(sdk.NewInt(0)) {
+				accBalance.Amount = accBalance.Amount.Sub(coin.Amount)
+			}
+		}
+
+		resAmount = resAmount.Add(accBalance.Amount)
+	}
+
+	return &types.QueryVestingLockedSupplyResponse{Amount: sdk.Coin{Denom: req.Denom, Amount: resAmount}}, nil
+
+}
