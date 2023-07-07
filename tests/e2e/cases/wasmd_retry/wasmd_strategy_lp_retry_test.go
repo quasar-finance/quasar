@@ -190,7 +190,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().Equal(int64(20_000_000), balanceTester0)
 
-	t.Log("Execute bond transaction, this will fail due to slippage but next quasar tx will go through anyway")
+	t.Log("Execute first bond transaction, this should fail due to slippage as we bond 10/3 OSMO on 2denom:2denom assets pools")
 	bondAmount := int64(10_000_000)
 	s.ExecuteContract(
 		ctx,
@@ -202,12 +202,12 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		nil,
 	)
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
+	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
 	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	// still not error, as on quasar the tx has gone through
 	s.Require().NoError(err)
 
-	// we clear cache on the contracts to perform the joinPool on the osmosis side
+	t.Log("Execute first clear cache on the contracts to perform the joinPool on the osmosis side")
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
@@ -218,10 +218,11 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		nil,
 	)
 
-	t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (clear_cache)")
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
+	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
@@ -237,10 +238,9 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
 	s.Require().NoError(err)
-	// here we check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side
 	s.Require().True(int64(0) == balance)
 
-	// query the counterparty ica osmo1 addresses for each one of the primitive
+	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
 	// ICA 1
 	var icaAddress1 testsuite.ContractIcaAddressData
 	icaAddress1Bytes := s.ExecuteContractQuery(
@@ -278,8 +278,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	err = json.Unmarshal(icaAddress3Bytes, &icaAddress3)
 	s.Require().NoError(err)
 
-	// check the balance of the primitives looking for BOND_AMOUNT/3 on each one of them
-	t.Log("Check ica accounts uosmo balance after executing bond that failed")
+	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
 	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddress1.Data.Address, "uosmo")
 	s.Require().NoError(err)
 	s.Require().Equal(bondAmount/3, balanceIca1)
@@ -290,7 +289,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().Equal(bondAmount/3, balanceIca3)
 
-	// fund the Osmosis pools with more tokens to reduce next slippage and be able retrying a successful join pool
+	t.Log("Fund the Osmosis pools to increase assets to 2000000denom:2000000denom and reduce slippage for next retry")
 	poolIds := []string{"1", "2", "3"}
 	maxAmountsIn := []string{
 		"1999998000000stake1,1999998000000uosmo",
@@ -300,7 +299,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
 	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
 
-	// query trapped errors for each one of the primitives
+	t.Log("Query trapped errors for each one of the primitives")
 	// ICA 1
 	var trappedErrors1 testsuite.ContractTrappedErrorsData
 	trappedErrors1Bytes := s.ExecuteContractQuery(
@@ -338,12 +337,12 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	err = json.Unmarshal(trappedErrors3Bytes, &trappedErrors3)
 	s.Require().NoError(err)
 
-	// parsing trapped errors to obtain seq number and channel id
+	t.Log("Parsing trapped errors to obtain seq number and channel id")
 	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors1)
 	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors2)
 	seqError3, channelIdError3 := helpers.ParseTrappedError(trappedErrors3)
 
-	// retry join pool for each one of the primitives
+	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
@@ -381,11 +380,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		nil,
 	)
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
-	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
-
-	t.Log("Execute bond transaction, this should work and trigger the retry we enqueued previously")
+	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
@@ -396,12 +391,11 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		nil,
 	)
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer")
+	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer (bond)")
 	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
-	// still not error, as on quasar the tx has gone through
 	s.Require().NoError(err)
 
-	// we clear cache on the contracts to perform the joinPool on the osmosis side
+	t.Log("Execute second clear cache on the contracts to perform the joinPool on the osmosis side")
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
@@ -412,12 +406,11 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		nil,
 	)
 
-	t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
+	t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer (clear_cache)")
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
-	t.Log("Query trapped errors for each one of the primitives")
-	// TODO
+	t.Log("Query again trapped errors for each one of the primitives")
 	// ICA 1
 	var trappedErrors1After testsuite.ContractTrappedErrorsData
 	trappedErrors1BytesAfter := s.ExecuteContractQuery(
@@ -455,7 +448,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	err = json.Unmarshal(trappedErrors3BytesAfter, &trappedErrors3After)
 	s.Require().NoError(err)
 
-	// parsing trapped errors to obtain seq number and channel id
+	t.Log("Parsing again trapped errors to obtain seq number and channel id")
 	seqError1After, channelIdError1After := helpers.ParseTrappedError(trappedErrors1After)
 	seqError2After, channelIdError2After := helpers.ParseTrappedError(trappedErrors2After)
 	seqError3After, channelIdError3After := helpers.ParseTrappedError(trappedErrors3After)
@@ -465,7 +458,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 
 	// TODO: check trappedErrors are empty now or containing what we are looking for
 
-	// check user shares balance against basic vault looking for higher than 0
+	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
 	var dataAfter testsuite.ContractBalanceData
 	balanceBytesAfter := s.ExecuteContractQuery(
 		ctx,
@@ -483,8 +476,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().True(balanceAfter > int64(0))
 
-	// check the balance of the primitives looking for ~0 value
-	t.Log("Check ica accounts uosmo balance after retrying join pool")
+	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddress1.Data.Address, "uosmo")
 	s.Require().NoError(err)
 	s.Require().True(0 > balanceIca1After) // TODO: some dust threshold here probably needed
@@ -494,5 +486,4 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddress3.Data.Address, "uosmo")
 	s.Require().NoError(err)
 	s.Require().True(0 > balanceIca3After) // TODO: some dust threshold here probably needed
-
 }
