@@ -1,16 +1,15 @@
 package helpers
 
 import (
-	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"log"
 	"strconv"
 	"strings"
 )
 
-func ParseTrappedError(trappedError testsuite.ContractTrappedErrorsData) (uint64, string) {
+func ParseTrappedError(trappedErrors map[string]interface{}) (uint64, string) {
 	var seqError uint64
 	var channelIdError string
-	for key := range trappedError.Data.TrappedErrors {
+	for key := range trappedErrors {
 		splitKey := strings.Split(key, "-")
 		seqTemp, err := strconv.ParseInt(splitKey[0], 10, 64)
 		if err != nil {

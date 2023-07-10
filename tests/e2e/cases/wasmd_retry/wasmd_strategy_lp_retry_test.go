@@ -18,6 +18,7 @@ import (
 
 const (
 	StartingTokenAmount            int64 = 100_000_000_000
+	BondAmount                     int64 = 10_000_000
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
@@ -172,11 +173,92 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
 
+	// create user and check his balance
+	acc := s.createUserAndCheckBalances(ctx)
+
+	t.Log("Execute first bond transaction, this should fail due to slippage as we bond 10/3 OSMO on 2denom:2denom assets pools")
+	s.executeBondAndClearCache(ctx, acc)
+
+	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
+	balance := s.getUserSharesBalance(ctx, acc)
+	s.Require().True(int64(0) == balance)
+
+	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
+	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+
+	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
+	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca1)
+	balanceIca2, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca2)
+	balanceIca3, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca3)
+
+	t.Log("Fund the Osmosis pools to increase assets to 2000000denom:2000000denom and reduce slippage for next retry")
+	poolIds := []string{"1", "2", "3"}
+	maxAmountsIn := []string{"1999998000000stake1,1999998000000uosmo", "1999998000000uosmo,1999998000000usdc", "1999998000000fakestake,1999998000000uosmo"}
+	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
+	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
+
+	t.Log("Query trapped errors for each one of the primitives")
+	trappedErrors := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+
+	t.Log("Parsing trapped errors to obtain seq number and channel id")
+	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors[0])
+	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors[1])
+	seqError3, channelIdError3 := helpers.ParseTrappedError(trappedErrors[2])
+
+	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
+	s.executeRetryAndClearCache(
+		ctx,
+		acc,
+		[]string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3},
+		[]uint64{seqError1, seqError2, seqError3},
+		[]string{channelIdError1, channelIdError2, channelIdError3},
+	)
+
+	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
+	s.executeBondAndClearCache(ctx, acc)
+
+	t.Log("Query again trapped errors for each one of the primitives")
+	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+
+	t.Log("Parsing again trapped errors to obtain seq number and channel id")
+	seqError1After, channelIdError1After := helpers.ParseTrappedError(trappedErrorsAfter[0])
+	seqError2After, channelIdError2After := helpers.ParseTrappedError(trappedErrorsAfter[1])
+	seqError3After, channelIdError3After := helpers.ParseTrappedError(trappedErrorsAfter[2])
+	// TODO: check trappedErrors are empty now or containing what we are looking for. remove t.Log()s afterward
+	t.Log(seqError1After, channelIdError1After)
+	t.Log(seqError2After, channelIdError2After)
+	t.Log(seqError3After, channelIdError3After)
+
+	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
+	balanceAfter := s.getUserSharesBalance(ctx, acc)
+	s.Require().True(balanceAfter > int64(0))
+
+	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
+	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
+	s.Require().NoError(err)
+	s.Require().True(0 > balanceIca1After) // TODO: some dust threshold here probably needed
+	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
+	s.Require().NoError(err)
+	s.Require().True(0 > balanceIca2After) // TODO: some dust threshold here probably needed
+	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
+	s.Require().NoError(err)
+	s.Require().True(0 > balanceIca3After) // TODO: some dust threshold here probably needed
+}
+
+func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
+	t := s.T()
+
 	t.Log("Create testing account on Quasar chain with some QSR tokens for fees")
-	accBondTest0 := s.CreateUserAndFund(ctx, s.Quasar(), 1_000_000) // unused qsr, just for tx fees
+	acc := s.CreateUserAndFund(ctx, s.Quasar(), 1_000_000) // unused qsr, just for tx fees
 
 	t.Log("Fund testing account with uosmo via IBC transfer from Osmosis chain Treasury account")
-	walletAmount0 := ibc.WalletAmount{Address: accBondTest0.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: 20_000_000}
+	walletAmount0 := ibc.WalletAmount{Address: acc.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: BondAmount * 2}
 	transfer, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, walletAmount0, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
@@ -186,24 +268,28 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 
 	t.Log("Check tester accounts uosmo balance after executing IBC transfer")
-	balanceTester0, err := s.Quasar().GetBalance(ctx, accBondTest0.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	balanceTester0, err := s.Quasar().GetBalance(ctx, acc.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().Equal(int64(20_000_000), balanceTester0)
+	s.Require().Equal(BondAmount*2, balanceTester0)
 
-	t.Log("Execute first bond transaction, this should fail due to slippage as we bond 10/3 OSMO on 2denom:2denom assets pools")
-	bondAmount := int64(10_000_000)
+	return acc
+}
+
+func (s *WasmdTestSuite) executeBondAndClearCache(ctx context.Context, acc *ibc.Wallet) {
+	t := s.T()
+
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
-		accBondTest0.KeyName,
+		acc.KeyName,
 		s.BasicVaultContractAddress,
-		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, bondAmount)),
+		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, BondAmount)),
 		map[string]any{"bond": map[string]any{}},
 		nil,
 	)
 
 	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
-	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	// still not error, as on quasar the tx has gone through
 	s.Require().NoError(err)
 
@@ -221,8 +307,9 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (clear_cache)")
 	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
+}
 
-	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
+func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet) int64 {
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
@@ -230,260 +317,75 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		s.BasicVaultContractAddress,
 		map[string]any{
 			"balance": map[string]any{
-				"address": accBondTest0.Bech32Address(s.Quasar().Config().Bech32Prefix),
+				"address": acc.Bech32Address(s.Quasar().Config().Bech32Prefix),
 			},
 		},
 	)
-	err = json.Unmarshal(balanceBytes, &data)
+	err := json.Unmarshal(balanceBytes, &data)
 	s.Require().NoError(err)
 	balance, err := strconv.ParseInt(data.Data.Balance, 10, 64)
 	s.Require().NoError(err)
-	s.Require().True(int64(0) == balance)
 
-	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
-	// ICA 1
-	var icaAddress1 testsuite.ContractIcaAddressData
-	icaAddress1Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress1,
-		map[string]any{
-			"ica_address": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(icaAddress1Bytes, &icaAddress1)
-	s.Require().NoError(err)
-	// ICA 2
-	var icaAddress2 testsuite.ContractIcaAddressData
-	icaAddress2Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress2,
-		map[string]any{
-			"ica_address": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(icaAddress2Bytes, &icaAddress2)
-	s.Require().NoError(err)
-	// ICA 3
-	var icaAddress3 testsuite.ContractIcaAddressData
-	icaAddress3Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress3,
-		map[string]any{
-			"ica_address": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(icaAddress3Bytes, &icaAddress3)
-	s.Require().NoError(err)
+	return balance
+}
 
-	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
-	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddress1.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(bondAmount/3, balanceIca1)
-	balanceIca2, err := s.Osmosis().GetBalance(ctx, icaAddress2.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(bondAmount/3, balanceIca2)
-	balanceIca3, err := s.Osmosis().GetBalance(ctx, icaAddress3.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(bondAmount/3, balanceIca3)
-
-	t.Log("Fund the Osmosis pools to increase assets to 2000000denom:2000000denom and reduce slippage for next retry")
-	poolIds := []string{"1", "2", "3"}
-	maxAmountsIn := []string{
-		"1999998000000stake1,1999998000000uosmo",
-		"1999998000000uosmo,1999998000000usdc",
-		"1999998000000fakestake,1999998000000uosmo",
-	}
-	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
-	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
-
-	t.Log("Query trapped errors for each one of the primitives")
-	// ICA 1
-	var trappedErrors1 testsuite.ContractTrappedErrorsData
-	trappedErrors1Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress1,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors1Bytes, &trappedErrors1)
-	s.Require().NoError(err)
-	// ICA 2
-	var trappedErrors2 testsuite.ContractTrappedErrorsData
-	trappedErrors2Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress2,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors2Bytes, &trappedErrors2)
-	s.Require().NoError(err)
-	// ICA 3
-	var trappedErrors3 testsuite.ContractTrappedErrorsData
-	trappedErrors3Bytes := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress3,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors3Bytes, &trappedErrors3)
-	s.Require().NoError(err)
-
-	t.Log("Parsing trapped errors to obtain seq number and channel id")
-	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors1)
-	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors2)
-	seqError3, channelIdError3 := helpers.ParseTrappedError(trappedErrors3)
-
-	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		accBondTest0.KeyName,
-		s.LpStrategyContractAddress1,
-		sdk.NewCoins(), // empty amount
-		map[string]any{"retry": map[string]any{
-			"seq":     seqError1,
-			"channel": channelIdError1,
-		}},
-		nil,
-	)
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		accBondTest0.KeyName,
-		s.LpStrategyContractAddress2,
-		sdk.NewCoins(), // empty amount
-		map[string]any{"retry": map[string]any{
-			"seq":     seqError2,
-			"channel": channelIdError2,
-		}},
-		nil,
-	)
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		accBondTest0.KeyName,
-		s.LpStrategyContractAddress3,
-		sdk.NewCoins(), // empty amount
-		map[string]any{"retry": map[string]any{
-			"seq":     seqError3,
-			"channel": channelIdError3,
-		}},
-		nil,
-	)
-
-	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		accBondTest0.KeyName,
-		s.BasicVaultContractAddress,
-		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, bondAmount)),
-		map[string]any{"bond": map[string]any{}},
-		nil,
-	)
-
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the ibc transfer (bond)")
-	err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
-
-	t.Log("Execute second clear cache on the contracts to perform the joinPool on the osmosis side")
-	s.ExecuteContract(
-		ctx,
-		s.Quasar(),
-		s.ContractsDeploymentWallet.KeyName,
-		s.BasicVaultContractAddress,
-		sdk.Coins{},
-		map[string]any{"clear_cache": map[string]any{}},
-		nil,
-	)
-
-	t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer (clear_cache)")
-	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
-
-	t.Log("Query again trapped errors for each one of the primitives")
-	// ICA 1
-	var trappedErrors1After testsuite.ContractTrappedErrorsData
-	trappedErrors1BytesAfter := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress1,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors1BytesAfter, &trappedErrors1After)
-	s.Require().NoError(err)
-	// ICA 2
-	var trappedErrors2After testsuite.ContractTrappedErrorsData
-	trappedErrors2BytesAfter := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress2,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors2BytesAfter, &trappedErrors2After)
-	s.Require().NoError(err)
-	// ICA 3
-	var trappedErrors3After testsuite.ContractTrappedErrorsData
-	trappedErrors3BytesAfter := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.LpStrategyContractAddress3,
-		map[string]any{
-			"trapped_errors": map[string]any{},
-		},
-	)
-	err = json.Unmarshal(trappedErrors3BytesAfter, &trappedErrors3After)
-	s.Require().NoError(err)
-
-	t.Log("Parsing again trapped errors to obtain seq number and channel id")
-	seqError1After, channelIdError1After := helpers.ParseTrappedError(trappedErrors1After)
-	seqError2After, channelIdError2After := helpers.ParseTrappedError(trappedErrors2After)
-	seqError3After, channelIdError3After := helpers.ParseTrappedError(trappedErrors3After)
-	t.Log(seqError1After, channelIdError1After)
-	t.Log(seqError2After, channelIdError2After)
-	t.Log(seqError3After, channelIdError3After)
-
-	// TODO: check trappedErrors are empty now or containing what we are looking for
-
-	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
-	var dataAfter testsuite.ContractBalanceData
-	balanceBytesAfter := s.ExecuteContractQuery(
-		ctx,
-		s.Quasar(),
-		s.BasicVaultContractAddress,
-		map[string]any{
-			"balance": map[string]any{
-				"address": accBondTest0.Bech32Address(s.Quasar().Config().Bech32Prefix),
+func (s *WasmdTestSuite) getPrimitiveIcaAddresses(ctx context.Context, lpAddresses []string) []string {
+	var icaAddresses []string
+	for _, lpAddress := range lpAddresses {
+		var icaAddress testsuite.ContractIcaAddressData
+		icaAddress1Bytes := s.ExecuteContractQuery(
+			ctx,
+			s.Quasar(),
+			lpAddress,
+			map[string]any{
+				"ica_address": map[string]any{},
 			},
-		},
-	)
-	err = json.Unmarshal(balanceBytesAfter, &dataAfter)
-	s.Require().NoError(err)
-	balanceAfter, err := strconv.ParseInt(dataAfter.Data.Balance, 10, 64)
-	s.Require().NoError(err)
-	s.Require().True(balanceAfter > int64(0))
+		)
+		err := json.Unmarshal(icaAddress1Bytes, &icaAddress)
+		s.Require().NoError(err)
+		icaAddresses = append(icaAddresses, icaAddress.Data.Address)
+	}
 
-	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
-	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddress1.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().True(0 > balanceIca1After) // TODO: some dust threshold here probably needed
-	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddress2.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().True(0 > balanceIca2After) // TODO: some dust threshold here probably needed
-	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddress3.Data.Address, "uosmo")
-	s.Require().NoError(err)
-	s.Require().True(0 > balanceIca3After) // TODO: some dust threshold here probably needed
+	return icaAddresses
+}
+
+func (s *WasmdTestSuite) getTrappedErrors(ctx context.Context, lpAddresses []string) []map[string]interface{} {
+	var trappedErrors []map[string]interface{}
+	for _, lpAddress := range lpAddresses {
+		var trappedErrors1 testsuite.ContractTrappedErrorsData
+		trappedErrors1Bytes := s.ExecuteContractQuery(
+			ctx,
+			s.Quasar(),
+			lpAddress,
+			map[string]any{
+				"trapped_errors": map[string]any{},
+			},
+		)
+		err := json.Unmarshal(trappedErrors1Bytes, &trappedErrors1)
+		s.Require().NoError(err)
+		trappedErrors = append(trappedErrors, trappedErrors1.Data.TrappedErrors)
+	}
+
+	return trappedErrors
+}
+
+func (s *WasmdTestSuite) executeRetryAndClearCache(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
+	if len(lpAddresses) != len(seqs) || len(seqs) != len(chans) {
+		// TODO error
+	}
+
+	for i := range seqs {
+		s.ExecuteContract(
+			ctx,
+			s.Quasar(),
+			acc.KeyName,
+			lpAddresses[i],
+			sdk.NewCoins(), // empty amount
+			map[string]any{"retry": map[string]any{
+				"seq":     seqs[i],
+				"channel": chans[i],
+			}},
+			nil,
+		)
+	}
 }
