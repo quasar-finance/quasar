@@ -57,7 +57,7 @@ func CmdQueryParams() *cobra.Command {
 func CmdQuerySpendableBalances() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spendable-balances [address]",
-		Short: "Query SpendableBalances",
+		Short: "shows the spendable balances in a paginated response for a given vesting account",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqAddress := args[0]
@@ -98,7 +98,7 @@ func CmdQuerySpendableBalances() *cobra.Command {
 func CmdQueryVestingAccounts() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "accounts",
-		Short: "Query VestingAccounts",
+		Short: "shows the existing vesting accounts in a paginated response",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -135,7 +135,7 @@ func CmdQueryVestingAccounts() *cobra.Command {
 func CmdQueryVestingLockedSupply() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "locked-supply [denom]",
-		Short: "Query QueryVestingLockedSupply",
+		Short: "shows the total locked-supply in vesting accounts for a given denom",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqDenom := args[0]

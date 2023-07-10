@@ -109,23 +109,10 @@ func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVesting
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
-	accountsStore := prefix.NewStore(store, types.VestingAccountStoreKeyPrefix)
-
-	iterator := accountsStore.Iterator(nil, nil)
-	defer iterator.Close()
-
 	resAmount := sdk.NewInt(0)
-	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
 
-		addr := sdk.AccAddress(key)
-		acct := k.accountKeeper.GetAccount(sdkCtx, addr)
-		_, ok := acct.(exported.VestingAccount)
-		if !ok {
-			return nil, fmt.Errorf("account is not vesting account: %s", addr.String())
-		}
-
+	// iterate vesting accounts passing a callback function to invoke
+	err := k.iterateVestingAccounts(sdkCtx, func(addr sdk.AccAddress) error {
 		// get the total vesting account balance for requested denom
 		accBalance := k.bankKeeper.GetBalance(sdkCtx, addr, req.Denom)
 
@@ -140,8 +127,12 @@ func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVesting
 		}
 
 		resAmount = resAmount.Add(accBalance.Amount)
+		return nil
+	})
+	// Handle error from iteration of vesting accounts
+	if err != nil {
+		return nil, err
 	}
 
 	return &types.QueryVestingLockedSupplyResponse{Amount: sdk.Coin{Denom: req.Denom, Amount: resAmount}}, nil
-
 }
