@@ -60,6 +60,7 @@ var (
 			modifyMintModule(),
 			modifyIncentivesModule(),
 			modifyPoolIncentivesModule(),
+			modifyGenesisSetVotingPeriod(VotingPeriod),
 		),
 	}
 

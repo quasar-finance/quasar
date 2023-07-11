@@ -1,0 +1,17 @@
+{
+  "title": "Allow Quasar DAO address to upload Wasm contracts",
+  "description": "Some description here",
+  "changes": [
+    {
+      "subspace": "wasm",
+      "key": "uploadAccess",
+      "value": {
+        "permission": "AnyOfAddresses",
+        "addresses": [
+          "osmo1rlq43kswpawqhutgrn6dfqumnk534sh896x8vj"
+        ]
+      }
+    }
+  ],
+  "deposit": "10000000uosmo"
+}
