@@ -51,3 +51,4 @@ thiserror = { version = "1.0.31" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.2"
+osmosis-test-tube = "16.0.0"
