@@ -9,6 +9,7 @@ members = [
   "contracts/intergamm-bindings-test",
   "contracts/qoracle-bindings-test",
   "contracts/multihop-router",
+  "contracts/cl-vault",
   "packages/intergamm-bindings",
   "packages/quasar-types",
 ]
