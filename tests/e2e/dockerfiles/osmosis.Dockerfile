@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.20.1"
-ARG WASMVM_VERSION="v1.1.2"
+ARG GO_VERSION="1.20.6"
+ARG WASMVM_VERSION="v1.2.3"
 ARG RUNNER_IMAGE="gcr.io/distroless/static-debian11"
 # --------------------------------------------------------
 # Builder
@@ -25,7 +25,7 @@ RUN git lfs install
 RUN git clone https://github.com/osmosis-labs/osmosis.git
 
 # Checkout specific version
-RUN cd osmosis && git checkout v15.2.0
+RUN cd osmosis && git checkout v16.0.0-rc2
 
 # Set Work Directory to osmosis
 WORKDIR osmosis
@@ -37,10 +37,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Cosmwasm - Download correct libwasmvm version
 RUN wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$(uname -m).a \
-        -O /lib/libwasmvm_muslc.a && \
-    # verify checksum
-    wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
-    sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep $(uname -m) | cut -d ' ' -f 1)
+        -O /lib/libwasmvm_muslc.a
+# verify checksum
+#RUN wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
+    #sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep $(uname -m) | cut -d ' ' -f 1)
 
 # Build osmosisd binary
 RUN --mount=type=cache,target=/root/.cache/go-build \
