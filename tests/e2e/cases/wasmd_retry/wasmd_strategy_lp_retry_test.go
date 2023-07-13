@@ -220,8 +220,8 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 		[]string{channelIdError1, channelIdError2, channelIdError3},
 	)
 
-	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
-	s.executeBondAndClearCache(ctx, acc)
+	//t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
+	//s.executeBondAndClearCache(ctx, acc)
 
 	t.Log("Query again trapped errors for each one of the primitives")
 	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
@@ -235,10 +235,6 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log(seqError2After, channelIdError2After)
 	t.Log(seqError3After, channelIdError3After)
 
-	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
-	balanceAfter := s.getUserSharesBalance(ctx, acc)
-	s.Require().True(balanceAfter > int64(0))
-
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
 	s.Require().NoError(err)
@@ -249,6 +245,10 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
 	s.Require().NoError(err)
 	s.Require().True(0 > balanceIca3After) // TODO: some dust threshold here probably needed
+
+	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
+	balanceAfter := s.getUserSharesBalance(ctx, acc)
+	s.Require().True(balanceAfter > int64(0))
 }
 
 func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
@@ -370,6 +370,8 @@ func (s *WasmdTestSuite) getTrappedErrors(ctx context.Context, lpAddresses []str
 }
 
 func (s *WasmdTestSuite) executeRetryAndClearCache(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
+	t := s.T()
+
 	if len(lpAddresses) != len(seqs) || len(seqs) != len(chans) {
 		// TODO error
 	}
@@ -388,4 +390,19 @@ func (s *WasmdTestSuite) executeRetryAndClearCache(ctx context.Context, acc *ibc
 			nil,
 		)
 	}
+
+	t.Log("Execute first clear cache on the contracts to perform the joinPool on the osmosis side")
+	s.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		s.ContractsDeploymentWallet.KeyName,
+		s.BasicVaultContractAddress,
+		sdk.Coins{},
+		map[string]any{"clear_cache": map[string]any{}},
+		nil,
+	)
+
+	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (clear_cache)")
+	err := testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+	s.Require().NoError(err)
 }
