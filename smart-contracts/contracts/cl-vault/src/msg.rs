@@ -10,7 +10,7 @@ pub enum ExtensionExecuteMsg {
     /// Execute a callback message.
     Callback(CallbackMsg),
     /// Execute a an Apollo vault specific message.
-    Apollo(ApolloExtensionExecuteMsg),
+    Admin(AdminExtensionExecuteMsg),
     /// Execute a message from the lockup extension.
     #[cfg(feature = "lockup")]
     Lockup(LockupExecuteMsg),
@@ -22,7 +22,7 @@ pub enum ExtensionExecuteMsg {
 /// Apollo extension messages define functionality that is part of all apollo
 /// vaults, but not part of the standard.
 #[cw_serde]
-pub enum ApolloExtensionExecuteMsg {
+pub enum AdminExtensionExecuteMsg {
     /// Update the configuration of the vault.
     UpdateConfig {
         /// The config updates.
