@@ -1,23 +1,41 @@
+use std::ops::Mul;
+
 use cosmwasm_std::{Decimal, StdError, Decimal256};
 
 use crate::ContractError;
 
-pub fn liquidity0(amount: Decimal256, sqrt_price_a: Decimal256, sqrt_price_b: Decimal256) -> Result<Decimal256, ContractError> {
-    let mut sqrt_price_a = sqrt_price_a;
-    let mut sqrt_price_b = sqrt_price_b;
+const big_factor: Decimal256 = Decimal256::raw(100000000);
+
+pub fn liquidity0(amount: Decimal, sqrt_price_a: Decimal, sqrt_price_b: Decimal) -> Result<Decimal256, ContractError> {
+    let mut sqrt_price_a = Decimal256::raw(sqrt_price_a.atomics().u128()).checked_mul(big_factor)?;
+    let mut sqrt_price_b = Decimal256::raw(sqrt_price_b.atomics().u128()).checked_mul(big_factor)?;
+    let amount = Decimal256::from(amount).checked_mul(big_factor)?;
 
     if sqrt_price_a > sqrt_price_b {
         std::mem::swap(&mut sqrt_price_a, &mut sqrt_price_b);
     }
 
-    let product = sqrt_price_a.checked_mul(sqrt_price_b)?;
-    let diff = sqrt_price_b
-    .checked_sub(sqrt_price_a)?;
+    let product = sqrt_price_a.checked_mul(sqrt_price_b)?; 
+    // let product = Uint256::from(sqrt_price_a.atomics().u128()).checked_mul(Uint256::from(sqrt_price_b.atomics().u128()))?;
+    let diff = sqrt_price_b.checked_sub(sqrt_price_a)?;
+    println!("{:?}", diff);
+
 
     if diff.is_zero() {
         return Err(ContractError::Std(StdError::generic_err("liquidity0 diff is zero")));
     }
 
+    // println!("product: {:?}", product);
+    // println!("diff: {:?}", diff);
+
+    // let intermediate = amount.atomics().checked_mul(product)?;
+    // println!("amount*product: {:?}", amount.atomics().checked_mul(product)?);
+
+    // let intermediate_decimal = Decimal256::new(intermediate);
+    // println!("{:?}", intermediate_decimal);
+    // println!("{:?}", intermediate_decimal.checked_div(diff.into()).unwrap());
+
+    // during this check mul, the result is being truncated and giving is a different final result than expected
     let result = amount.checked_mul(product)?.checked_div(diff)?;
     Ok(result)
 }
@@ -50,6 +68,12 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_env, mock_info};
 
+    // #[test]
+    // fn math () {
+    //     let val = Uint256::from(70710678118654752440_u128)* Uint256::from(74161984870956629487_u128);
+    //     println!("{:?}", val)   
+    // }
+
     #[test]
     fn test_liquidity0() {
         // from the osmosis math tests
@@ -57,9 +81,9 @@ mod tests {
         // sqrtPHigh:         sqrt5500BigDec, // 5500
         // amount0Desired:    sdk.NewInt(1000000),
         // expectedLiquidity: "1519437308.014768571720923239",
-        let amount0_desired = Decimal::from_atomics(1000000_u128, 0).unwrap();
-        let current_sqrt_p = Decimal::from_atomics(70710678118654752440_u128, 18).unwrap();
-        let sqrt_p_high = Decimal::from_atomics(74161984870956629487_u128, 18).unwrap();
+        let amount0_desired = Decimal::from_ratio(1000000_u128, 1_u128);
+        let current_sqrt_p = Decimal::from_atomics(7071067811865475244000000000_u128, 18).unwrap();
+        let sqrt_p_high = Decimal::from_atomics(7416198487095662948700000000_u128, 18).unwrap();
 
         let result = liquidity0(amount0_desired.into(), current_sqrt_p.into(), sqrt_p_high.into()).unwrap();
         // TODO our amount is slightly different 10 digits behind the comma, do we care about that?
