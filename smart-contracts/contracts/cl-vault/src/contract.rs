@@ -3,6 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 // use cw2::set_contract_version;
 
+use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
@@ -24,15 +25,27 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount, recipient } => todo!(),
         cw_vault_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => todo!(),
-        cw_vault_standard::VaultStandardExecuteMsg::VaultExtension(_) => todo!(),
+        cw_vault_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => match vault_msg {
+            crate::msg::ExtensionExecuteMsg::Callback(callback_msg) => match callback_msg {
+                crate::msg::CallbackMsg::SellRewards {} => todo!(),
+                crate::msg::CallbackMsg::ProvideLiquidity {} => todo!(),
+                crate::msg::CallbackMsg::Stake {
+                    base_token_balance_before,
+                } => todo!(),
+                crate::msg::CallbackMsg::MintVaultToken { amount, recipient } => todo!(),
+            },
+            crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
+                admin::execute_admin_msg(deps, env, info, admin_msg)
+            }
+        },
     }
 }
 
