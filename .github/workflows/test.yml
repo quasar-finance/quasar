@@ -7,12 +7,10 @@ on:
       - main
   workflow_dispatch:
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
-# This workflow makes x86_64 binaries for linux.
-# TODO: add darwin later
 jobs:
   test-go:
     runs-on: ubuntu-latest
@@ -40,10 +38,20 @@ jobs:
         run: cd smart-contracts && cargo test --lib
       - name: Run vault-tests
         run: cd smart-contracts && cargo test --lib -p basic-vault
-      # - name: Compile wasm code
-      #   uses: docker://cosmwasm/rust-optimizer:0.12.6
-      #   with:
-      #     args: >-
-      #       --rm -v "$(pwd)":/code 
-      #       --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
-      #       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+  test-e2e:
+    needs: [test-go, test-rust]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Docker e2e build
+        run: make docker-e2e-build quasar-osmosis
+      - name: Compile smart contracts
+        uses: docker://cosmwasm/workspace-optimizer:0.12.11
+        with:
+          args: >-
+            --rm -v "$(pwd)":/code 
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+      - name: Run e2e tests
+        run: cd tests/e2e && make test-e2e-parallel
