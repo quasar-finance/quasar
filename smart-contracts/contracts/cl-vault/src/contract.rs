@@ -27,14 +27,28 @@ pub fn execute(
     _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: ExecuteMsg,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    match ExecuteMsg {}
+    match msg {
+        cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount, recipient } => todo!(),
+        cw_vault_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => todo!(),
+        cw_vault_standard::VaultStandardExecuteMsg::VaultExtension(_) => todo!(),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    match QueryMsg {}
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        cw_vault_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::Info {} => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::PreviewDeposit { amount } => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::PreviewRedeem { amount } => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::TotalAssets {} => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::ConvertToShares { amount } => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::ConvertToAssets { amount } => todo!(),
+        cw_vault_standard::VaultStandardQueryMsg::VaultExtension(_) => todo!(),
+    }
 }
 
 #[cfg(test)]
