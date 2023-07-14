@@ -1,26 +1,27 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cw2::set_contract_version;
 // use cw2::set_contract_version;
 
 use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::vault::execute::execute_deposit;
+use std::str::FromStr;
 
-/*
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-*/
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    todo!()
+    unimplemented!()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -31,7 +32,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount, recipient } => todo!(),
+        cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount, recipient } => {
+            execute_deposit(deps, env, &info, amount, recipient)
+        }
         cw_vault_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => todo!(),
         cw_vault_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => match vault_msg {
             crate::msg::ExtensionExecuteMsg::Callback(callback_msg) => match callback_msg {
