@@ -128,3 +128,5 @@ impl ConfigUnchecked {
         })
     }
 }
+
+pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
