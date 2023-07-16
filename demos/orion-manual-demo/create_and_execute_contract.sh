@@ -2,17 +2,6 @@
 
 set -e
 
-on_error() {
-    echo "Some error occurred"
-
-    quasarnoded q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
-
-    afplay /System/Library/Sounds/Sosumi.aiff
-    say -r 10 you suck
-}
-
-trap 'on_error' ERR
-
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"
 FEE_DENOM="uqsr"
@@ -32,10 +21,10 @@ INIT1='{"lock_period":6,"pool_id":1,"pool_denom":"gamm/pool/1","base_denom":"uos
 
 cd ../../smart-contracts
 
-docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
+docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $CODE_ID"
 
@@ -74,16 +63,16 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost 
 # echo $BOND
 # $BOND
 
-RES=$(quasarnoded tx wasm store artifacts/vault_rewards-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasarnoded tx wasm store artifacts/vault_rewards.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 VR_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
+VAULT_INIT='{"deposit_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
 # VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
@@ -98,13 +87,13 @@ echo "Got address of deployed contract = $VAULT_ADDR (vault)"
 
 echo "setting depositor"
 sleep 6
-quasarnoded tx wasm execute $ADDR1 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test $TXFLAG -y
+quasarnoded tx wasm execute $ADDR1 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test $TXFLAG -y -b block
 # sleep 6
 # quasarnoded tx wasm execute $ADDR2 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test $TXFLAG -y
 
 echo "VAULT: $VAULT_ADDR"
 # echo "Seeding liquidity"
-# quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518,1000ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878,1000ibc/391EB817CD435CDBDFC5C85301E06E1512800C98C0232E9C00AD95C77A73BFE1
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --amount 1000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
 # sleep 5
 
 ### echo "bonding multiple bonds"
@@ -139,8 +128,5 @@ echo "VAULT: $VAULT_ADDR"
 # echo "Alice balances after unbond step:"
 # quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
 # quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
-
-afplay /System/Library/Sounds/Funk.aiff
-say "I want to die"
 
 cd -
