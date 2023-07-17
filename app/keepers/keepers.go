@@ -3,6 +3,7 @@ package keepers
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
@@ -64,6 +65,7 @@ type AppKeepers struct {
 	QOracleKeeper       qoraclemodulekeeper.Keeper
 	QVestingKeeper      qvestingmodulekeeper.Keeper
 	TfKeeper            tfmodulekeeper.Keeper
+	AuthzKeeper         authzkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 

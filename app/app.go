@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
 	"io"
@@ -36,6 +37,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -125,17 +128,16 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
- 
 
 	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
 	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
- 
+
 	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
 	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
- 	// this line is used by starport scaffolding # stargate/app/moduleImport
+	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
 const (
@@ -238,10 +240,11 @@ var (
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 		qtransfer.AppModuleBasic{},
- 		tfmodule.AppModuleBasic{},
- 
+		tfmodule.AppModuleBasic{},
+
 		qvestingmodule.AppModuleBasic{},
- 	)
+		authzmodule.AppModuleBasic{},
+	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
@@ -293,7 +296,6 @@ type App struct {
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
 
- 
 	// mm is the module manager
 	mm *module.Manager
 
@@ -350,10 +352,11 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
- 		tftypes.StoreKey,
- 
+		tftypes.StoreKey,
+
 		qvestingmoduletypes.StoreKey, // TODO delete this if unused
- 		// this line is used by starport scaffolding # stargate/app/storeKey
+		authzkeeper.StoreKey,
+		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
 		paramstypes.TStoreKey,
@@ -546,7 +549,15 @@ func New(
 		app.AccountKeeper,
 		app.BankKeeper,
 	)
+
 	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// Authz
+	app.AuthzKeeper = authzkeeper.NewKeeper(
+		app.keys[authzkeeper.StoreKey],
+		appCodec,
+		bApp.MsgServiceRouter(),
+	)
 
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
@@ -694,11 +705,11 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
- 
+
 		tfModule,
- 
+
 		qvestingModule,
- 
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -730,11 +741,11 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
- 
+
 		tftypes.ModuleName,
- 
+
 		qvestingmoduletypes.ModuleName,
- 
+		authztypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -760,11 +771,12 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
- 
+
 		tftypes.ModuleName,
- 
+
 		qvestingmoduletypes.ModuleName,
- 	)
+		authztypes.ModuleName,
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -799,10 +811,11 @@ func New(
 		// wasm after ibc transfer
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
- 		tftypes.ModuleName,
- 
+		tftypes.ModuleName,
+
 		qvestingmoduletypes.ModuleName,
- 	)
+		authztypes.ModuleName,
+	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -1080,10 +1093,11 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
- 	paramsKeeper.Subspace(tftypes.ModuleName)
- 
+	paramsKeeper.Subspace(tftypes.ModuleName)
+
 	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
- 	// this line is used by starport scaffolding # stargate/app/paramSubspace
+	paramsKeeper.Subspace(authztypes.ModuleName)
+	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
 }
