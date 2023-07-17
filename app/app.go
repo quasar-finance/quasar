@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
 	"io"
@@ -36,6 +37,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -240,6 +243,7 @@ var (
 		tfmodule.AppModuleBasic{},
 
 		qvestingmodule.AppModuleBasic{},
+		authzmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -348,6 +352,7 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
+		authzkeeper.StoreKey,
 		tftypes.StoreKey,
 		qvestingmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
@@ -543,7 +548,15 @@ func New(
 		app.AccountKeeper,
 		app.BankKeeper,
 	)
+
 	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// Authz
+	app.AuthzKeeper = authzkeeper.NewKeeper(
+		app.keys[authzkeeper.StoreKey],
+		appCodec,
+		bApp.MsgServiceRouter(),
+	)
 
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
@@ -695,7 +708,7 @@ func New(
 		icaModule,
 		tfModule,
 		qvestingModule,
-
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -729,6 +742,7 @@ func New(
 		wasm.ModuleName,
 		tftypes.ModuleName,
 		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -756,6 +770,7 @@ func New(
 		wasm.ModuleName,
 		tftypes.ModuleName,
 		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -793,6 +808,7 @@ func New(
 		qtransfertypes.ModuleName,
 		tftypes.ModuleName,
 		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -1073,6 +1089,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
 	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
+	paramsKeeper.Subspace(authztypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
