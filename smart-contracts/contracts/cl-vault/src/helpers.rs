@@ -26,39 +26,68 @@ impl CwTemplateContract {
     }
 }
 
+// due to pow restrictions we need to use unsigned integers; i.e. 10.pow(-exp: u32)
+// so if the resulting power is positive, we take 10**exp;
+// and if it is negative, we take 1/10**exp.
+fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
+    if exponent >= 0 {
+        return 10u128
+            .checked_pow(exponent.abs() as u32)
+            .ok_or(ContractError::Overflow {});
+    } else {
+        // TODO: write tests for negative exponents as it looks like this will always be 0
+        return Ok(1u128
+            / 10u128
+                .checked_pow(exponent as u32)
+                .ok_or(ContractError::Overflow {})?);
+    }
+}
+
+// same as pow_ten_internal but returns a Decimal to work with negative exponents
+fn pow_ten_internal_dec(exponent: i128) -> Result<Decimal, ContractError> {
+    let p = 10u128
+        .checked_pow(exponent.abs() as u32)
+        .ok_or(ContractError::Overflow {})?;
+    if exponent >= 0 {
+        return Ok(Decimal::from_ratio(p, 1u128));
+    } else {
+        Ok(Decimal::from_ratio(1u128, p))
+    }
+}
+
 // exponent_at_current_price_one is fixed at -6?
 // we assume exp is always neg
 pub fn tick_to_price(
     tick_index: Uint128,
-    exponen_at_price_one: i128,
+    exponent_at_price_one: i128,
 ) -> Result<Decimal, ContractError> {
     if tick_index == Uint128::zero() {
         return Ok(Decimal::one());
     }
 
     let geometric_exponent_increment_distance_in_ticks = 9u128
-        .checked_mul(10u128.pow(exponen_at_price_one.abs() as u32))
+        .checked_mul(pow_ten_internal(-exponent_at_price_one)?)
         .ok_or(ContractError::Overflow {})?;
 
-    let geometric_exponential_delta: u32 = tick_index
+    // TODO: if exponent_at_price_one is not negative, we'll hit division by zero error with Osmosis current logic
+    let geometric_exponential_delta: u128 = tick_index
         .checked_div(geometric_exponent_increment_distance_in_ticks.into())?
-        .u128() as u32;
+        .u128();
 
-    let exponen_at_current_tick: i128 = exponen_at_price_one + geometric_exponential_delta as i128;
+    let exponen_at_current_tick: i128 = exponent_at_price_one + geometric_exponential_delta as i128;
 
-    let current_additive_increment_in_ticks = Decimal::from_ratio(
-        Uint128::from(1u128),
-        Uint128::from(10u128.pow(exponen_at_current_tick.abs() as u32) as u128),
-    );
+    // TODO: tick_index should always be positive, right? Osmosis go code has a check for it.
+
+    let current_additive_increment_in_ticks = pow_ten_internal_dec(exponen_at_current_tick)?;
 
     let num_additive_ticks: u128 = tick_index.u128()
-        - (geometric_exponential_delta as u128 * geometric_exponent_increment_distance_in_ticks)
-            as u128;
+        - geometric_exponential_delta * geometric_exponent_increment_distance_in_ticks;
 
-    let price = Decimal::from_ratio(10u64.pow(geometric_exponential_delta), 1u128).checked_add(
+    let price = pow_ten_internal_dec(geometric_exponential_delta as i128)?.checked_add(
         Decimal::from_ratio(num_additive_ticks, 1u128)
             .checked_mul(current_additive_increment_in_ticks)?,
     )?;
+
     Ok(price)
 }
 
