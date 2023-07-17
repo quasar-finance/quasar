@@ -3846,7 +3846,7 @@ paths:
             type: boolean
       tags:
         - Query
-  /quasarlabs/quasarnode/qvesting/vesting_accounts:
+  /quasarlabs/quasarnode/qvesting/accounts:
     get:
       summary: VestingAccounts returns all the existing vesting accounts
       operationId: VestingAccounts
@@ -3889,6 +3889,24 @@ paths:
           required: false
           schema:
             type: boolean
+      tags:
+        - Query
+  /quasarlabs/quasarnode/qvesting/locked_supply/{denom}:
+    get:
+      summary: VestingLockedSupply returns the locked supply for a given denom
+      operationId: VestingLockedSupply
+      responses:
+        '200':
+          description: A successful response.
+        default:
+          description: An unexpected error response.
+      parameters:
+        - name: denom
+          description: denom is the denom to query locked supply for.
+          in: path
+          required: true
+          schema:
+            type: string
       tags:
         - Query
 
@@ -8269,7 +8287,6 @@ components:
         pagination:
           description: pagination defines the pagination in the response.
       description: QuerySpendableBalancesResponse defines the gRPC response structure for querying\nan account's spendable balances.
-
     quasarlabs.quasarnode.qvesting.QueryVestingAccountsResponse:
       type: object
       properties:
@@ -8279,4 +8296,12 @@ components:
         pagination:
           description: pagination defines the pagination in the response.
       description: QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+    quasarlabs.quasarnode.qvesting.QueryVestingLockedSupplyResponse:
+      type: object
+      properties:
+        denom:
+          type: string
+        amount:
+          type: string
+      description: QueryVestingLockedSupplyResponse is the response type for the Query/AccountsLockedSupply RPC method.
 

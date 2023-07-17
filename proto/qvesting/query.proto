@@ -9,8 +9,6 @@ import "google/protobuf/any.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos_proto/cosmos.proto";
 
-// this line is used by starport scaffolding # 1
-
 option go_package = "github.com/quasarlabs/quasarnode/x/qvesting/types";
 
 // Query defines the gRPC querier service.
@@ -19,16 +17,18 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/params";
   }
-  // SpendableBalances queries the spenable balance of all coins for a single
-  // account.
+  // SpendableBalances queries the spenable balance of all coins for a single account.
   rpc SpendableBalances(QuerySpendableBalancesRequest) returns (QuerySpendableBalancesResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/spendable_balances/{address}";
   }
   // VestingAccounts returns all the existing vesting accounts
   rpc VestingAccounts(QueryVestingAccountsRequest) returns (QueryVestingAccountsResponse) {
-    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_accounts";
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/accounts";
   }
-  // this line is used by starport scaffolding # 2
+  // VestingAccounts returns all the existing vesting accounts
+  rpc VestingLockedSupply(QueryVestingLockedSupplyRequest) returns (QueryVestingLockedSupplyResponse) {
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/locked_supply/{denom}";
+  }
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -43,7 +43,7 @@ message QueryParamsResponse {
 // QuerySpendableBalancesRequest defines the gRPC request structure for querying
 // an account's spendable balances.
 message QuerySpendableBalancesRequest {
-  option (gogoproto.equal)           = false;
+  option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
   // address is the address to query spendable balances for.
@@ -79,4 +79,14 @@ message QueryVestingAccountsResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-// this line is used by starport scaffolding # 3
+// QueryVestingLockedSupplyRequest is the request type for the Query/VestingLockedSupply RPC method.
+message QueryVestingLockedSupplyRequest {
+  // denom is the coin denom to query locked supply for.
+  string denom = 1;
+}
+
+// QueryVestingAccountsResponse is the response type for the Query/VestingLockedSupply RPC method.
+message QueryVestingLockedSupplyResponse {
+  // amount is the supply of the coin.
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
+}

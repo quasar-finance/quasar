@@ -352,10 +352,9 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
-		tftypes.StoreKey,
-
-		qvestingmoduletypes.StoreKey, // TODO delete this if unused
 		authzkeeper.StoreKey,
+		tftypes.StoreKey,
+		qvestingmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
@@ -571,10 +570,12 @@ func New(
 		app.GetSubspace(tftypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
-		app.DistrKeeper)
+		app.DistrKeeper,
+	)
 	tfModule := tfmodule.NewAppModule(app.TfKeeper,
 		app.AccountKeeper,
-		app.BankKeeper)
+		app.BankKeeper,
+	)
 
 	// create the wasm callback plugin
 	// TODO_IMPORTANT - CALL BACK ACCOUNT
@@ -705,9 +706,7 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
-
 		tfModule,
-
 		qvestingModule,
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -741,9 +740,7 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
-
 		tftypes.ModuleName,
-
 		qvestingmoduletypes.ModuleName,
 		authztypes.ModuleName,
 	)
@@ -771,9 +768,7 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
-
 		tftypes.ModuleName,
-
 		qvestingmoduletypes.ModuleName,
 		authztypes.ModuleName,
 	)
@@ -812,7 +807,6 @@ func New(
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
 		tftypes.ModuleName,
-
 		qvestingmoduletypes.ModuleName,
 		authztypes.ModuleName,
 	)
@@ -1094,7 +1088,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
-
 	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(authztypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
