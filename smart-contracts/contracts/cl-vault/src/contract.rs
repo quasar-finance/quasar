@@ -7,7 +7,7 @@ use cw2::set_contract_version;
 use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::vault::execute::execute_deposit;
+use crate::vault::deposit::execute_deposit;
 use std::str::FromStr;
 
 // version info for migration info
