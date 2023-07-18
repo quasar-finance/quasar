@@ -1,11 +1,11 @@
 use apollo_cw_asset::{AssetInfo, AssetInfoBase};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Addr, BlockInfo, Decimal, Deps, MessageInfo, Order, StdError, StdResult, Storage, Uint128,
+    Addr, BlockInfo, Decimal, Deps, MessageInfo, Order, StdError, StdResult, Storage, Uint128, Decimal256,
 };
 use cw20::Expiration;
 use cw_dex_router::helpers::CwDexRouterBase;
-use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, MultiIndex};
+use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 use cw_vault_standard::extensions::lockup::UnlockingPosition;
 use derive_builder::Builder;
 use liquidity_helper::LiquidityHelperBase;
@@ -130,3 +130,13 @@ impl ConfigUnchecked {
 }
 
 pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
+
+#[cw_serde]
+pub struct TickExpIndexData {
+    pub initial_price: Decimal256,
+    pub max_price: Decimal256,
+    pub additive_increment_per_tick: Decimal256,
+    pub initial_tick: i64,
+}
+
+pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");

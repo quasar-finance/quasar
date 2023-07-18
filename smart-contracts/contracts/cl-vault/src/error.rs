@@ -99,8 +99,8 @@
 // }
 
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, DivideByZeroError, OverflowError,
-    StdError,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, Decimal256, DivideByZeroError,
+    OverflowError, StdError,
 };
 use thiserror::Error;
 
@@ -126,6 +126,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
+
+    #[error("Price must be between 0.000000000001 and 100000000000000000000000000000000000000. Got {:?}", price)]
+    PriceBoundError { price: Decimal256 },
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 

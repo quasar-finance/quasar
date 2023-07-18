@@ -1,5 +1,5 @@
 use apollo_cw_asset::{Asset, AssetInfo};
-use cosmwasm_std::{Coin, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{Coin, DepsMut, Env, MessageInfo, Response, Uint128, Decimal};
 use cw_dex_router::helpers::receive_asset;
 
 use crate::{state::BASE_TOKEN, ContractError};
@@ -40,6 +40,8 @@ pub(crate) fn execute_deposit(
         AssetInfo::Native(_) => amount,
     };
 
+    let amount_to_swap: Uint128 = calculate_amount_to_swap(deps, &env, user_deposit_amount)?;
+
     todo!()
 
     // // Compound. Also stakes the users deposit
@@ -63,3 +65,14 @@ pub(crate) fn execute_deposit(
     // // Merge responses and add message to mint vault token
     // Ok(merge_responses(vec![receive_res, compound_res, mint_res]).add_event(event))
 }
+
+fn calculate_amount_to_swap(
+    _deps: DepsMut,
+    _env: &Env,
+    _user_deposit_amount: Uint128,
+) -> Result<Uint128, ContractError> {
+    // TODO: set the two sides of liquidity equal to each other
+    todo!()
+}
+
+
