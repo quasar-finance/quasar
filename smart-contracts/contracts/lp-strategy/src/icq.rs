@@ -185,6 +185,7 @@ pub fn prepare_full_query(
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         );
 
+    // todo: turn this into an if let
     // only query LockedByID if we have a lock_id
     match OSMO_LOCK.may_load(storage)? {
         Some(lock_id) => {
