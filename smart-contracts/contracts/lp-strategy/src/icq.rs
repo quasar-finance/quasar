@@ -163,7 +163,7 @@ pub fn prepare_full_query(
     };
 
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    let q = Query::new()
+    let mut q = Query::new()
         .add_request(
             base_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
@@ -187,11 +187,20 @@ pub fn prepare_full_query(
         .add_request(
             spot_price.encode_to_vec().into(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
-        )
-        .add_request(
-            lock_by_id.encode_to_vec().into(),
-            "/osmosis.lockup.Query/LockedByID".to_string(),
         );
+
+    // only query LockedByID if we have a lock_id
+    match OSMO_LOCK.may_load(storage)? {
+        Some(lock_id) => {
+            let lock_by_id = LockedRequest { lock_id };
+            q = q.add_request(
+                lock_by_id.encode_to_vec().into(),
+                "/osmosis.lockup.Query/LockedByID".to_string(),
+            );
+        }
+        None => todo!(),
+    }
+
     Ok(q.encode_pkt())
 }
 

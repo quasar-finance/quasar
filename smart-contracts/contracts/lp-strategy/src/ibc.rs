@@ -43,7 +43,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    coin, coins, from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
@@ -389,26 +389,34 @@ pub fn handle_icq_ack(
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
 
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
-    let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
-    // parse the locked lp shares on Osmosis, a bit messy
-    let gamms = if let Some(lock) = lock {
-        lock.coins
-    } else {
-        vec![]
+
+    let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
+        Some(_) => {
+            let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+            // parse the locked lp shares on Osmosis, a bit messy
+            let gamms = if let Some(lock) = lock {
+                lock.coins
+            } else {
+                vec![]
+            };
+            let config = CONFIG.load(storage)?;
+            gamms
+                .into_iter()
+                .find(|val| val.denom == config.pool_denom)
+                .unwrap_or(OsmoCoin {
+                    denom: config.pool_denom.clone(),
+                    amount: Uint128::zero().to_string(),
+                })
+                .amount
+                .parse()?
+        }
+        None => Uint128::zero(),
     };
-    let config = CONFIG.load(storage)?;
-    let locked_lp_shares = gamms
-        .into_iter()
-        .find(|val| val.denom == config.pool_denom)
-        .unwrap_or(OsmoCoin {
-            denom: config.pool_denom.clone(),
-            amount: Uint128::zero().to_string(),
-        });
 
     let old_lp_shares = LP_SHARES.load(storage)?;
     // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
-        cache.locked_shares = locked_lp_shares.amount.parse()?;
+        cache.locked_shares = locked_lp_shares;
         Ok(cache)
     })?;
 
