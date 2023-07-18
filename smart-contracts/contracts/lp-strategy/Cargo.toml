@@ -22,7 +22,7 @@ cw-utils = "0.16.0"
 cw2 = "0.16.0"
 cw20 = "0.16.0"
 cw20-base = {version = "0.16.0", features = ["library"]}
-osmosis-std = {version = "0.16.0"}
+osmosis-std = {repo = "git@github.com:quasar-finance/osmosis-rust.git"}
 prost = {version = "0.11", default-features = false}
 quasar-types = {path = "../../packages/quasar-types"}
 schemars = "0.8.1"

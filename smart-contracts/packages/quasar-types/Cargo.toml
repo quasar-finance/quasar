@@ -13,8 +13,8 @@ cw20 = "0.13.4"
 derive_more = {version = "0.99.17", default-features = false, features = [
   "display",
 ]}
-osmosis-std = {version = "0.16.0"}
-osmosis-std-derive = "0.16.0"
+osmosis-std = {repo = "git@github.com:quasar-finance/osmosis-rust.git"}
+osmosis-std-derive = {repo = "git@github.com:quasar-finance/osmosis-rust.git"}
 prost = {version = "0.11", default-features = false}
 rust_decimal = "1.24.0"
 schemars = "0.8.1"
