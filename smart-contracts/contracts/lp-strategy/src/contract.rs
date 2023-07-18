@@ -63,7 +63,7 @@ pub fn instantiate(
 
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
-    OSMO_LOCK.save(deps.storage, &u64::MAX)?;
+    // OSMO_LOCK.save(deps.storage, &u64::MAX)?;
 
     LP_SHARES.save(
         deps.storage,

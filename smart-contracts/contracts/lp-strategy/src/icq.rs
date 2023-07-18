@@ -158,10 +158,6 @@ pub fn prepare_full_query(
         quote_asset_denom: config.quote_denom,
     };
 
-    let lock_by_id = LockedRequest {
-        lock_id: OSMO_LOCK.may_load(storage)?.unwrap_or(1),
-    };
-
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
     let mut q = Query::new()
         .add_request(
