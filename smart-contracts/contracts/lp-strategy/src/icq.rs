@@ -194,7 +194,7 @@ pub fn prepare_full_query(
                 "/osmosis.lockup.Query/LockedByID".to_string(),
             );
         }
-        None => todo!(),
+        None => {}
     }
 
     Ok(q.encode_pkt())
