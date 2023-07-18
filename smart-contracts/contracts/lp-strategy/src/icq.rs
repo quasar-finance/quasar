@@ -168,23 +168,23 @@ pub fn prepare_full_query(
         .add_request(
             lp_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
-        )
-        .add_request(
-            join_pool.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
-        )
-        .add_request(
-            exit_pool.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
-        )
-        .add_request(
-            spot_price.encode_to_vec().into(),
-            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
-        )
-        .add_request(
-            lock_by_id.encode_to_vec().into(),
-            "/osmosis.lockup.Query/LockedByID".to_string(),
         );
+    // .add_request(
+    //     join_pool.encode_to_vec().into(),
+    //     "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(), // err code 1
+    // );
+    // .add_request(
+    //     exit_pool.encode_to_vec().into(),
+    //     "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(), // err code 1
+    // );
+    // .add_request(
+    //     spot_price.encode_to_vec().into(),
+    //     "/osmosis.gamm.v2.Query/SpotPrice".to_string(), // err code 1
+    // );
+    // .add_request(
+    //     lock_by_id.encode_to_vec().into(),
+    //     "/osmosis.lockup.Query/LockedByID".to_string(), // err code 4
+    // );
     Ok(q.encode_pkt())
 }
 

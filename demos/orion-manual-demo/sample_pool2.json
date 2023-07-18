@@ -2,6 +2,6 @@
     "weights": "4uosmo,4usdc",
     "initial-deposit": "100000000uosmo,100000000usdc",
     "swap-fee": "0.01",
-    "exit-fee": "0.01",
+    "exit-fee": "0.00",
     "future-governor": "168h"
 }
