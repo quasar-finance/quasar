@@ -45,7 +45,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Docker e2e build
-        run: make docker-e2e-build quasar-osmosis
+        run: make docker-e2e-build quasar osmosis
       - name: Compile smart contracts
         uses: docker://cosmwasm/workspace-optimizer:0.12.11
         with:

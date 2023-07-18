@@ -321,7 +321,7 @@ docker-attach-quasar: ##@docker Connect to a terminal prompt in QUASAR node cont
 
 docker-attach-osmosis: ##@docker Connect to a terminal prompt in OSMOSIS node container
 	@echo "Connecting to osmosis docker container"
-	docker exec -it localenv-osmosis-1 /bin/ash
+	docker exec -it localenv-osmosis-1 /bin/bash
 
 docker-attach-relayer: ##@docker Connect to a terminal prompt in RLY node container
 	@echo "Connecting to relayer docker container"
@@ -358,7 +358,7 @@ docker-e2e-build:
 
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint run ./... --timeout=10m
 
 .PHONY: all build-linux install format lint build \
 	test test-all test-build test-cover test-unit test-race benchmark
