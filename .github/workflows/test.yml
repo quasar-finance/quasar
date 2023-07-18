@@ -20,7 +20,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20
+          go-version: 1.18
       - name: Display go version
         run: go version
       - name: Run all tests
@@ -46,12 +46,13 @@ jobs:
         uses: actions/checkout@v3
       - name: Docker e2e build
         run: make docker-e2e-build quasar osmosis
-      - name: Compile smart contracts
-        uses: docker://cosmwasm/workspace-optimizer:0.12.11
+      - name: Build smart contracts
+        run: make compile-wasm-artifacts
+      - uses: actions/upload-artifact@v2
         with:
-          args: >-
-            --rm -v "$(pwd)":/code 
-            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target 
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+          name: smart-contracts
+          path: |
+            smart-contracts/artifacts/basic_vault.wasm
+            smart-contracts/artifacts/lp_strategy.wasm
       - name: Run e2e tests
         run: cd tests/e2e && make test-e2e-parallel

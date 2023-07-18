@@ -27,7 +27,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20
+          go-version: 1.18
         env:
           GOOS: ${{ matrix.targetos }}
           GOARCH: ${{ matrix.arch }}
@@ -39,11 +39,3 @@ jobs:
         with:
           name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
           path: build/quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
-      - name: Build smart contracts
-        run: make compile-wasm-artifacts
-      - uses: actions/upload-artifact@v2
-        with:
-          name: smart-contracts
-          path: |
-            smart-contracts/artifacts/basic_vault.wasm
-            smart-contracts/artifacts/lp_strategy.wasm
