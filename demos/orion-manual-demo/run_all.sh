@@ -81,4 +81,17 @@ sleep 10
 
 quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
+# Check platform
+platform='unknown'
+unamestr=$(uname)
+if [ "$unamestr" = 'Linux' ]; then
+    platform='linux'
+elif [ "$unamestr" = 'Darwin' ]; then
+    platform='macos'
+fi
+
+if [ $platform = 'macos' ]; then
+    say "setup ready"
+fi
+
 wait

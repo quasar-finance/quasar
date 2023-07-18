@@ -187,6 +187,10 @@ pub fn prepare_full_query(
         .add_request(
             spot_price.encode_to_vec().into(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
+        )
+        .add_request(
+            lock_by_id.encode_to_vec().into(),
+            "/osmosis.lockup.Query/LockedByID".to_string(),
         );
     Ok(q.encode_pkt())
 }
