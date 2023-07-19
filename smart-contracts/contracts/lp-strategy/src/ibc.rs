@@ -15,7 +15,8 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -383,16 +384,31 @@ pub fn handle_icq_ack(
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
-    let join_pool = QueryCalcJoinPoolSharesResponse::decode(resp.responses[3].value.as_ref())?;
-
     let exit_pool =
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+
+    let mut next_response_idx = 5;
+    let join_pool = if SIMULATED_JOIN_AMOUNT_IN
+        .may_load(storage)?
+        .unwrap_or(0u128.into())
+        > 1u128.into()
+    {
+        next_response_idx = next_response_idx + 1;
+        QueryCalcJoinPoolSharesResponse::decode(resp.responses[next_response_idx].value.as_ref())?
+    } else {
+        QueryCalcJoinPoolSharesResponse {
+            share_out_amount: "0".to_string(),
+            tokens_out: vec![],
+        }
+    };
 
     let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
         Some(_) => {
-            let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
+            next_response_idx = next_response_idx + 1;
+            let lock =
+                LockedResponse::decode(resp.responses[next_response_idx].value.as_ref())?.lock;
             // parse the locked lp shares on Osmosis, a bit messy
             let gamms = if let Some(lock) = lock {
                 lock.coins
