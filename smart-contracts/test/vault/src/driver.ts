@@ -96,6 +96,8 @@ export async function simple_test(vaultAddress: string) {
 
   await expect_balance_increase(vaultAddress, true, true, false);
 
+  await try_icq({ vaultAddress, from: "bob" });
+
   console.log("\n=== Start Simple Start Unbond Test ===");
   let start_unbond_result = await start_unbond({
     from: "alice",
@@ -106,6 +108,8 @@ export async function simple_test(vaultAddress: string) {
   //     'Start unbond result for alice:',
   //     JSON.stringify(start_unbond_result, null, 2),
   //   )
+  await try_icq({ vaultAddress, from: "bob" });
+
   await expect_unlock_time_passed(vaultAddress, true, false, false);
 
   // let start_unbond_result_2 = await start_unbond({
@@ -119,6 +123,7 @@ export async function simple_test(vaultAddress: string) {
   //   )
 
   await expect_unlock_time_passed(vaultAddress, false, true, false);
+  await try_icq({ vaultAddress, from: "bob" });
 
   console.log("\n=== Start Simple Claim Test ===");
   await Promise.all([
