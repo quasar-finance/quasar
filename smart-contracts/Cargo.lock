@@ -1205,7 +1205,7 @@ dependencies = [
  "cw2 0.16.0",
  "cw20 0.16.0",
  "cw20-base 0.16.0",
- "osmosis-std 0.16.0",
+ "osmosis-std 0.16.1",
  "proptest",
  "prost 0.11.9",
  "quasar-types",
@@ -1305,13 +1305,12 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c254b73ab62f7e7a19eb7249cf1443e49999ecc8169bb4535a855b6e87d55498"
+version = "0.16.1"
+source = "git+https://github.com/quasar-finance/osmosis-rust.git#475dda7b01d621fe72e5124a41b2d159a3d1c742"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive 0.16.0",
+ "osmosis-std-derive 0.16.1",
  "prost 0.11.9",
  "prost-types",
  "schemars",
@@ -1333,9 +1332,8 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std-derive"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67a6feeb2c5de684262032a6719ff58cfecfdffa5f31eba1835faa857ac3a762"
+version = "0.16.1"
+source = "git+https://github.com/quasar-finance/osmosis-rust.git#475dda7b01d621fe72e5124a41b2d159a3d1c742"
 dependencies = [
  "itertools",
  "proc-macro2",
@@ -1525,8 +1523,8 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cw20 0.13.4",
  "derive_more",
- "osmosis-std 0.16.0",
- "osmosis-std-derive 0.16.0",
+ "osmosis-std 0.16.1",
+ "osmosis-std-derive 0.16.1",
  "prost 0.11.9",
  "rust_decimal",
  "schemars",
