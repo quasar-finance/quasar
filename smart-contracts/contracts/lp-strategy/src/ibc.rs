@@ -389,14 +389,16 @@ pub fn handle_icq_ack(
 
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
 
-    let mut next_response_idx = 5;
+    let mut response_idx = 4;
     let join_pool = if SIMULATED_JOIN_AMOUNT_IN
         .may_load(storage)?
         .unwrap_or(0u128.into())
         > 1u128.into()
     {
-        next_response_idx = next_response_idx + 1;
-        QueryCalcJoinPoolSharesResponse::decode(resp.responses[next_response_idx].value.as_ref())?
+        // found, increment response index
+        response_idx = response_idx + 1;
+        // decode result
+        QueryCalcJoinPoolSharesResponse::decode(resp.responses[response_idx].value.as_ref())?
     } else {
         QueryCalcJoinPoolSharesResponse {
             share_out_amount: "0".to_string(),
@@ -406,9 +408,10 @@ pub fn handle_icq_ack(
 
     let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
         Some(_) => {
-            next_response_idx = next_response_idx + 1;
-            let lock =
-                LockedResponse::decode(resp.responses[next_response_idx].value.as_ref())?.lock;
+            // found, increment response index
+            response_idx = response_idx + 1;
+            // decode result
+            let lock = LockedResponse::decode(resp.responses[response_idx].value.as_ref())?.lock;
             // parse the locked lp shares on Osmosis, a bit messy
             let gamms = if let Some(lock) = lock {
                 lock.coins
