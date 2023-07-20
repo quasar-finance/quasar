@@ -3,6 +3,7 @@ package osmosis_gauge
 import (
 	"context"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"os"
@@ -74,87 +75,63 @@ func (s *OsmosisGauge) SetupSuite() {
 	s.CreatePools(ctx)
 }
 
-func (s *OsmosisGauge) TestOsmosisGauge() {
+func (s *OsmosisGauge) TestOsmosisGauge_Success() {
 	t := s.T()
 	ctx := context.Background()
 
-	t.Log("Create an user with fund on Quasar chain")
-	userQuasar := s.CreateUserAndFund(ctx, s.Quasar(), userFunds)
-	t.Log("Check user \"uqsr\" balance expecting to be the funded amount")
-	userQuasarBalance, err := s.Quasar().GetBalance(ctx, userQuasar.Bech32Address(s.Quasar().Config().Bech32Prefix), s.Quasar().Config().Denom)
-	s.Require().NoError(err)
-	s.Require().Equal(userFunds, userQuasarBalance)
-
-	t.Log("Create an user with fund on Osmosis chain")
-	userOsmosis := s.CreateUserAndFund(ctx, s.Osmosis(), userFunds)
-	t.Log("Check user \"uosmo\" balance expecting to be the funded amount")
-	userOsmosisBalance, err := s.Osmosis().GetBalance(ctx, userOsmosis.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.Osmosis().Config().Denom)
-	s.Require().NoError(err)
-	s.Require().Equal(userFunds, userOsmosisBalance)
-
 	t.Log("IBC Transfer of \"uqsr\" from Quasar to Osmosis chain account we use to create the gauge")
 	amountQsr := ibc.WalletAmount{
-		Address: userOsmosis.Bech32Address(s.Osmosis().Config().Bech32Prefix),
+		Address: s.E2EBuilder.OsmosisAccounts.Treasury.Address,
 		Denom:   s.Quasar().Config().Denom,
 		Amount:  ibcTransferAmount,
 	}
-	txQuasarToOsmosis, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, userQuasar.KeyName, amountQsr, ibc.TransferOptions{})
+	txQuasarToOsmosis, err := s.Quasar().SendIBCTransfer(ctx, s.Quasar2OsmosisTransferChan.ChannelId, s.E2EBuilder.QuasarAccounts.Treasury.KeyName, amountQsr, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(txQuasarToOsmosis.Validate())
 
 	t.Log("Wait for quasar and osmosis block and relayer to relay IBC transfer")
-	err = testutil.WaitForBlocks(ctx, 10, s.Quasar(), s.Osmosis())
+	err = testutil.WaitForBlocks(ctx, 2, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
 	t.Log("Check Osmosis user \"uqsr\" balance after executing IBC transfer from Quasar")
-	userOsmosisBalanceQsr, err := s.Osmosis().GetBalance(ctx, userOsmosis.Bech32Address(s.Osmosis().Config().Bech32Prefix), s.QuasarDenomInOsmosis)
+	userOsmosisBalanceQsr, err := s.Osmosis().GetBalance(ctx, s.E2EBuilder.OsmosisAccounts.Treasury.Address, s.QuasarDenomInOsmosis)
 	s.Require().NoError(err)
 	s.Require().Equal(ibcTransferAmount, userOsmosisBalanceQsr)
 
-	t.Log("Check Liquidity Provider user \"uqsr\" balance before creating the Gauge expecting to be 0")
+	balance, ok := sdk.NewIntFromString("99998000000000000")
+	s.Require().True(ok)
+	cmds := []string{
+		"lockup", "lock-tokens", sdk.NewCoin("gamm/pool/1", balance).String(), "--duration", "180s",
+		"--gas", "20000000",
+	}
+	txHashLock := s.ExecTx(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, cmds...)
+	s.AssertSuccessfulResultTx(ctx, s.Osmosis(), txHashLock, nil)
+
+	t.Log("Create the gauge for poolId 1 with duration of 1s, start time now for 1 epoch")
+	nowTimestamp := time.Now().Unix()
+	cmds = []string{
+		"incentives", "create-gauge", "gamm/pool/1", sdk.NewInt64Coin(s.QuasarDenomInOsmosis, ibcTransferAmount).String(),
+		fmt.Sprintf("%d", 0), "--duration", "120s", "--start-time", strconv.FormatInt(nowTimestamp, 10),
+		"--epochs", "1", "--gas", "20000000",
+	}
+	txHashCreate := s.ExecTx(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, cmds...)
+	s.AssertSuccessfulResultTx(ctx, s.Osmosis(), txHashCreate, nil)
+
+	// check the uqsr balance of treasury to be 0
+	t.Log("Check Liquidity Provider user \"uqsr\" balance after adding a second amount to the Gauge and time passed")
 	lpBalanceQsr, err := s.Osmosis().GetBalance(ctx, s.E2EBuilder.OsmosisAccounts.Treasury.Address, s.QuasarDenomInOsmosis)
 	s.Require().NoError(err)
 	s.Require().Equal(int64(0), lpBalanceQsr)
 
-	t.Log("Create the gauge for poolId 1 with duration of 1s, start time now for 1 epoch")
-	nowTimestamp := time.Now().Unix()
-	cmds := []string{"incentives", "create-gauge", "gamm/pool/1", fmt.Sprintf("%d%s", ibcTransferAmount/2, s.QuasarDenomInOsmosis),
-		"--duration", "1h", "--start-time", strconv.FormatInt(nowTimestamp, 10), "--epochs", "1", // TODO duration doesnt work due to not enough time elapsed till here
-		"--gas", "20000000",
-	}
-	txHashCreate := s.ExecTx(ctx, s.Osmosis(), userOsmosis.KeyName, cmds...)
-	fmt.Println(txHashCreate)
-
-	// TODO wait for 1 epoch (in blocks)
-	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
-	s.Require().NoError(err)
-
-	nowTimestamp2 := time.Now().Unix()
-	fmt.Println(nowTimestamp2)
-
-	// TODO check the uqsr balance of treasury to be ibcTransferAmount/2
-	t.Log("Check Liquidity Provider user \"uqsr\" balance after creating the Gauge and time passed")
-	lpBalanceQsr, err = s.Osmosis().GetBalance(ctx, s.E2EBuilder.OsmosisAccounts.Treasury.Address, s.QuasarDenomInOsmosis)
-	s.Require().NoError(err)
-	s.Require().Equal(ibcTransferAmount/2, lpBalanceQsr)
-
-	// todo comment
-	nowTimestamp = time.Now().Unix()
-	cmds = []string{"incentives", "add-to-gauge", "1", fmt.Sprintf("%d%s", ibcTransferAmount/2, s.QuasarDenomInOsmosis),
-		"--gas", "20000000", // TODO check this
-	}
-	txHashAdd := s.ExecTx(ctx, s.Osmosis(), userOsmosis.KeyName, cmds...)
-	fmt.Println(txHashAdd)
-
-	// TODO wait for other 1 epoch (in blocks)
-	err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+	t.Log("Wait for quasar and osmosis blocks to let the minute epoch pass for rewards distribution")
+	err = testutil.WaitForBlocks(ctx, 30, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 
 	// check the uqsr balance of treasury to be ibcTransferAmount
 	t.Log("Check Liquidity Provider user \"uqsr\" balance after adding a second amount to the Gauge and time passed")
 	lpBalanceQsr, err = s.Osmosis().GetBalance(ctx, s.E2EBuilder.OsmosisAccounts.Treasury.Address, s.QuasarDenomInOsmosis)
 	s.Require().NoError(err)
-	s.Require().Equal(ibcTransferAmount/2, lpBalanceQsr)
+	s.Require().Equal(ibcTransferAmount, lpBalanceQsr)
 }
 
 func (s *OsmosisGauge) CreatePools(ctx context.Context) {
