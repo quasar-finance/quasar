@@ -1,7 +1,8 @@
 use apollo_cw_asset::{AssetInfo, AssetInfoBase};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Addr, BlockInfo, Decimal, Deps, MessageInfo, Order, StdError, StdResult, Storage, Uint128, Decimal256,
+    Addr, BlockInfo, Decimal, Decimal256, Deps, MessageInfo, Order, StdError, StdResult, Storage,
+    Uint128, Coin,
 };
 use cw20::Expiration;
 use cw_dex_router::helpers::CwDexRouterBase;
@@ -131,6 +132,7 @@ impl ConfigUnchecked {
 
 pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
 
+// TODO: this could be done using normal hashmaps maybe?
 #[cw_serde]
 pub struct TickExpIndexData {
     pub initial_price: Decimal256,
@@ -140,3 +142,35 @@ pub struct TickExpIndexData {
 }
 
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
+
+// this is the info that the contract needs to know about the pool. Saved during instantiation
+#[cw_serde]
+pub struct Investment {
+    /// Owner created the contract and takes a cut
+    pub owner: Addr,
+    /// Each vault has one specific token that is used for deposits, withdrawals and accounting
+    pub base_denom: String,
+    /// The quote denom used by the vault (asset1)
+    pub quote_denom: String,
+    /// the osmosis pool id used by the vault
+    pub pool_id: u64,
+    /// the osmosis pool address used by the vault
+    /// TODO: decide if we use Addr or String
+    pub pool_address: Addr,
+}
+
+pub const INVESTMENT: Item<Investment> = Item::new("investment");
+
+#[cw_serde]
+pub struct Strategy {
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+    // slippage tolerance in basis points (1bps = 0.01%)
+    pub slippage_tolerance: Uint128,
+}
+
+pub const STRATEGY: Item<Strategy> = Item::new("strategy");
+
+pub const USER_BALANCE: Map<Addr, Uint128> = Map::new("user_balance");
+
+pub const USER_REWARDS: Map<Addr, Vec<Coin>> = Map::new("user_rewards");
