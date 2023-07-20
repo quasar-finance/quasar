@@ -1,8 +1,8 @@
 use apollo_cw_asset::{AssetInfo, AssetInfoBase};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Addr, BlockInfo, Decimal, Decimal256, Deps, MessageInfo, Order, StdError, StdResult, Storage,
-    Uint128, Coin,
+    Addr, BlockInfo, Coin, Decimal, Decimal256, Deps, MessageInfo, Order, StdError, StdResult,
+    Storage, Uint128,
 };
 use cw20::Expiration;
 use cw_dex_router::helpers::CwDexRouterBase;
@@ -154,9 +154,6 @@ pub struct Investment {
     pub quote_denom: String,
     /// the osmosis pool id used by the vault
     pub pool_id: u64,
-    /// the osmosis pool address used by the vault
-    /// TODO: decide if we use Addr or String
-    pub pool_address: Addr,
 }
 
 pub const INVESTMENT: Item<Investment> = Item::new("investment");

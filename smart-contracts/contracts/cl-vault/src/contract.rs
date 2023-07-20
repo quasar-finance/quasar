@@ -1,7 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult, SubMsgResult,
+};
 use cw2::set_contract_version;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 // use cw2::set_contract_version;
 
 use crate::admin;
@@ -66,6 +69,31 @@ pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         cw_vault_standard::VaultStandardQueryMsg::VaultExtension(_) => todo!(),
     }
 }
+
+// #[cfg_attr(not(feature = "library"), entry_point)]
+// pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+//     // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
+//     // TODO this needs and error check and error handling
+//     let reply = REPLIES.load(deps.storage, msg.id)?;
+//     match reply {
+//         MsgCreatePositionResponse {
+//             position_id,
+//             amount0,
+//             amount1,
+//             liquidity_created,
+//             lower_tick,
+//             upper_tick,
+//         } => handle_create_position_reply(
+//             deps,
+//             position_id,
+//             amount0,
+//             amount1,
+//             liquidity_created,
+//             lower_tick,
+//             upper_tick,
+//         ),
+//     }
+// }
 
 #[cfg(test)]
 mod tests {}

@@ -32,18 +32,41 @@ pub(crate) fn execute_deposit(
         });
     }
 
+    // TODO: add description
     let (amount0, amount1) = calculate_amount_to_swap(deps.as_ref(), &env, received_amount)?;
 
     // TODO: swap amount1 of base tokens for quote tokens
+    // use GAMM to swap base tokens for quote tokens
+    let msg_swap = osmosis_std::types::osmosis::gamm::v1beta1::MsgSwapExactAmountIn {
+        sender: todo!(),
+        routes: todo!(),
+        token_in: todo!(),
+        token_out_min_amount: todo!(),
+    };
+
+    // let sub_msg_swap = SubMsg::reply_always(
+    //     CosmosMsg::Stargate {
+    //         type_url: msg_swap.TYPE_URL.to_owned(),
+    //         value: to_binary(&msg_swap)?,
+    //     },
+    //     6969,
+    // );
 
     // TODO: amount of liquidity the user gets out (does this number change over time?)
+    // should come back on the response. mind for re-deposits math
     let user_amount = Uint128::new(0);
-    // TODO: amount of liquidity the vault owns
-    let total_amount = Uint128::new(0);
+    // TODO: amount of liquidity the vault owns. Try to qury for total amount.
+    let total_amount = deps
+        .querier
+        .query_balance(env.contract.address, investment.base_denom)?
+        .amount;
     // TODO: amount of shares the vault owns
-    let total_shares = Uint128::new(0);
+    // let query = osmosis_std::types::osmosis::concentratedliquidity::v1beta1::QueryPoolResponse {
+    //     pool: todo!(),
+    // };
+    // let total_shares = deps.querier.query(&query)?.pool.total_shares;
 
-    let user_shares = calculate_user_shares(user_amount, total_amount, total_shares)?;
+    // let user_shares = calculate_user_shares(user_amount, total_amount, total_shares)?;
 
     // TODO: mint vault tokens to user (user_shares)
 
@@ -59,6 +82,7 @@ pub(crate) fn execute_deposit(
             amount: received_amount.into(),
         }],
         token_min_amount0: calculate_slippage(amount0, strategy.slippage_tolerance)?.to_string(),
+        // TODO: amount1 needs to be re-calc
         token_min_amount1: calculate_slippage(amount1, strategy.slippage_tolerance)?.to_string(),
     };
 
@@ -67,19 +91,31 @@ pub(crate) fn execute_deposit(
         value: to_binary(&cp)?,
     };
 
-    let sub_msg = SubMsg::reply_always(
-        msg, // TODO: think about id logic
-        6969,
-    );
+    // let submsg_id = next_reply_id(deps.storage)?;
+    // let reply = Reply::Join {
+    //     user_address: recipient.clone(),
+    // };
+    // REPLIES.save(deps.storage, submsg_id, &reply)?;
+
+    // let sub_msg = SubMsg::reply_always(
+    //     msg, // TODO: think about id logic
+    //     id,
+    // );
+
+    // make sure reply_id is incremented
 
     // TODO: should we save user address and estimate amount to state here or better in the callback?
-    USER_BALANCE.update(
-        deps.storage,
-        recipient,
-        |balance| -> Result<_, ContractError> { Ok(balance.unwrap_or(Uint128::zero()) + user_shares) },
-    )?;
+    // USER_BALANCE.update(
+    //     deps.storage,
+    //     recipient,
+    //     |balance| -> Result<_, ContractError> {
+    //         Ok(balance.unwrap_or(Uint128::zero()) + user_shares)
+    //     },
+    // )?;
 
-    Ok(Response::new().add_submessage(sub_msg))
+    // Ok(Response::new().add_submessage(sub_msg))
+
+    unimplemented!()
 
     // // Compound. Also stakes the users deposit
     // let compound_res = self.compound(deps, &env, user_deposit_amount)?;
@@ -113,6 +149,7 @@ fn calculate_amount_to_swap(
 }
 
 // this function returns the minimum amount of tokens that the position will accept when providing liquidity
+// TODO: evaluate if we should use Decimal
 fn calculate_slippage(
     expected_amount: Uint128,
     slippage_tolerance: Uint128,
@@ -136,9 +173,14 @@ fn calculate_user_shares(
     total_amount: Uint128,
     total_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
+    // TODO: figure if we need to use Uint256 here to not overflow
     let user_shares = user_amount / total_amount * total_shares;
     Ok(user_shares)
 }
+
+// this is called from the reply hook
+fn execute_deposit_after_swap() {}
+fn execute_mint_after_join() {}
 
 /// If exactly one coin was sent, returns it regardless of denom.
 /// Returns error if 0 or 2+ coins were sent
