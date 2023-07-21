@@ -28,6 +28,7 @@ pub fn execute_deposit(
     deps: DepsMut,
     env: Env,
     info: &MessageInfo,
+    // is this redundant?
     expected_amount: Uint128,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -54,7 +55,7 @@ pub fn execute_deposit(
             pool_id: investment.pool_id,
             token_out_denom: investment.quote_denom.clone(),
         }],
-        token_in: investment.base_denom.clone(),
+        token_in: amount1.to_string(),
     };
 
     // TODO: send a sync query and parse the response, if possible?

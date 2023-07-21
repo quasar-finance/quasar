@@ -9,7 +9,7 @@ use cw2::set_contract_version;
 use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Replies, REPLIES};
+use crate::state::{Investment, Replies, INVESTMENT, REPLIES};
 use crate::vault::deposit::{execute_deposit, handle_create_position_reply, handle_swap_reply};
 
 // version info for migration info
@@ -20,10 +20,19 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    INVESTMENT.save(
+        deps.storage,
+        &Investment {
+            owner: info.sender,
+            base_denom: todo!(),
+            quote_denom: todo!(),
+            pool_id: todo!(),
+        },
+    )?;
     unimplemented!()
 }
 
