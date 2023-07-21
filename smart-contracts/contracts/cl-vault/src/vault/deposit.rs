@@ -276,14 +276,15 @@ fn calculate_slippage(
     Ok(expected_amount.checked_sub(slippage)?)
 }
 
-// TODO: precision and safe math?
 fn calculate_user_shares(
     user_amount: Uint128,
     total_amount: Uint128,
     total_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
     // TODO: figure if we need to use Uint256 here to not overflow
-    let user_shares = user_amount / total_amount * total_shares;
+    let user_shares = user_amount
+        .checked_mul(total_shares)?
+        .checked_div(total_amount)?;
     Ok(user_shares)
 }
 
@@ -291,7 +292,11 @@ pub fn next_reply_id(deps: Deps) -> Result<u64, ContractError> {
     let last = REPLIES
         .range(deps.storage, None, None, Order::Descending)
         .next();
-    Ok(last.map_or(0, |Ok((k, _))| k + 1))
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0;
+    }
+    Ok(id + 1)
 }
 
 // this is called from the reply hook
