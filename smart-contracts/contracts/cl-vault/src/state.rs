@@ -171,3 +171,13 @@ pub const STRATEGY: Item<Strategy> = Item::new("strategy");
 pub const USER_BALANCE: Map<Addr, Uint128> = Map::new("user_balance");
 
 pub const USER_REWARDS: Map<Addr, Vec<Coin>> = Map::new("user_rewards");
+
+#[cw_serde]
+pub enum Replies {
+    Swap { user_addr: Addr, amount0: Uint128 },
+    CreatePosition { user_addr: Addr },
+
+}
+
+// TODO: can we use one map for all replies?
+pub const REPLIES: Map<u64, Replies> = Map::new("replies");

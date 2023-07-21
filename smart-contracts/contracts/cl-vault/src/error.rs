@@ -133,14 +133,24 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 
-    #[error("Deposit amount missmatch. Expected: {:?}, Received: {:?}", expected, received)]
+    #[error(
+        "Deposit amount missmatch. Expected: {:?}, Received: {:?}",
+        expected,
+        received
+    )]
     DepositMismatch {
         expected: Uint128,
         received: Uint128,
     },
 
-    #[error("Slippage tolerance must be a number between 0 and 10000. Got {}", slippage_tolerance)]
+    #[error(
+        "Slippage tolerance must be a number between 0 and 10000. Got {}",
+        slippage_tolerance
+    )]
     InvalidSlippageTolerance { slippage_tolerance: Uint128 },
+
+    #[error("No positions found for id {}", id)]
+    PositionNotFound { id: u64 },
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 
