@@ -11,6 +11,55 @@ use derive_builder::Builder;
 use liquidity_helper::LiquidityHelperBase;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use crate::base_vault::BaseVault;
+use cw_controllers::Admin;
+
+pub const VAULT: Item<Vault> = Item::new("vault");
+
+pub struct Vault<'a, S, P, V> {
+    /// The base vault implementation
+    pub base_vault: BaseVault<'a, V>,
+
+    /// The pool that this vault compounds.
+    pub pool: Item<'a, P>,
+
+    /// The staking implementation for this vault
+    pub staking: Item<'a, S>,
+
+    /// Configuration for this vault
+    pub config: Item<'a, Config>,
+
+    /// The admin address that is allowed to update the config.
+    pub admin: Admin<'a>,
+
+    /// Temporary storage of an address that will become the new admin once
+    /// they accept the transfer request.
+    pub admin_transfer: Item<'a, Addr>,
+
+    /// Stores claims of base_tokens for users who have burned their vault
+    /// tokens via ExecuteMsg::Unlock.
+    pub claims: Claims<'a>,
+}
+
+/// An unlockin position for a user that can be claimed once it has matured.
+pub type Claim = UnlockingPosition;
+/// A struct for handling the addition and removal of claims, as well as
+/// querying and force unlocking of claims.
+pub struct Claims<'a> {
+    /// All currently unclaimed claims, both unlocking and matured. Once a claim
+    /// is claimed by its owner after it has matured, it is removed from this
+    /// map.
+    claims: IndexedMap<'a, u64, Claim, ClaimIndexes<'a>>,
+    /// The pending claim that is currently being created. When the claim is
+    /// ready to be saved to the `claims` map [`self.commit_pending_claim()`]
+    /// should be called.
+    pending_claim: Item<'a, Claim>,
+    // Counter of the number of claims. Used as a default value for the ID of a new
+    // claim if the underlying staking contract doesn't issue their own IDs. This is monotonically
+    // increasing and is not decremented when a claim is removed. It represents the number of
+    // claims that have been created since creation of the `Claims` instance.
+    next_claim_id: Item<'a, u64>,
+}
 
 /// Base config struct for the contract.
 #[cw_serde]
