@@ -23,11 +23,6 @@ pub enum ExtensionExecuteMsg {
 /// vaults, but not part of the standard.
 #[cw_serde]
 pub enum AdminExtensionExecuteMsg {
-    /// Update the configuration of the vault.
-    UpdateConfig {
-        /// The config updates.
-        updates: ConfigUpdates,
-    },
     /// Update the vault admin.
     UpdateAdmin {
         /// The new admin address.
@@ -39,6 +34,11 @@ pub enum AdminExtensionExecuteMsg {
     /// Removes the initiated admin transfer. This can only be called by the
     /// admin who initiated the admin transfer.
     DropAdminTransfer {},
+    /// Update the configuration of the vault.
+    UpdateConfig {
+        /// The config updates.
+        updates: ConfigUpdates,
+    },
 }
 
 /// Apollo extension queries define functionality that is part of all apollo

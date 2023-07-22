@@ -1,14 +1,11 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use cw2::set_contract_version;
-// use cw2::set_contract_version;
 
-use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::vault::deposit::execute_deposit;
-use std::str::FromStr;
+use crate::vault::admin::execute_admin;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -46,7 +43,7 @@ pub fn execute(
                 crate::msg::CallbackMsg::MintVaultToken { amount, recipient } => todo!(),
             },
             crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
-                admin::execute_admin_msg(deps, env, info, admin_msg)
+                execute_admin(deps, env, info, admin_msg)
             }
         },
     }

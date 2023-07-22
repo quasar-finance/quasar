@@ -1,8 +1,9 @@
 use cosmwasm_std::{Addr, DepsMut, Env, Event, MessageInfo, Response};
+use cw_utils::nonpayable;
+use crate::{msg::AdminExtensionExecuteMsg, ContractError};
+use crate::state::{ConfigUpdates, ADMIN_CONFIG, VAULT_CONFIG};
 
-use crate::{msg::AdminExtensionExecuteMsg, ContractError, state::ConfigUpdates, VAULT};
-
-pub(crate) fn execute_admin_msg(
+pub(crate) fn execute_admin(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -21,16 +22,18 @@ pub fn execute_update_admin(
     info: MessageInfo,
     address: String
 ) -> Result<Response, ContractError> {
-    // load store
-    VAULT.may_load(deps.storage)?; // TODO ??
-    VAULT.admin.assert_admin(deps.as_ref(), &info.sender)?;
+    nonpayable(&info);
+
+    let admin_config = ADMIN_CONFIG.load(deps.storage)?;
+
+    admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
     let admin_addr = deps.api.addr_validate(&address)?;
-    self.admin_transfer.save(deps.storage, &admin_addr)?;
-    let event = Event::new("apollo/vaults/autocompounding_vault").add_attributes(vec![
+    admin_config.admin_transfer.save(deps.storage, &admin_addr)?;
+    let event = Event::new("vault").add_attributes(vec![
         ("action", "execute_update_admin"),
         (
             "previous_admin",
-            self.admin
+            admin_config.admin
                 .get(deps.as_ref())?
                 .unwrap_or_else(|| Addr::unchecked(""))
                 .as_ref(),
@@ -44,34 +47,41 @@ pub fn execute_accept_admin_transfer(
     deps: DepsMut,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let new_admin = self.admin_transfer.load(deps.storage)?;
+    nonpayable(&info);
+
+    let admin_config = ADMIN_CONFIG.load(deps.storage)?;
+
+    let new_admin = admin_config.admin_transfer;
     if info.sender != new_admin {
         return Err(ContractError::Unauthorized {});
     }
-    self.admin_transfer.remove(deps.storage);
-    let event = Event::new("apollo/vaults/autocompounding_vault").add_attributes(vec![
+    admin_config.admin_transfer.remove(deps.storage);
+    let event = Event::new("vault").add_attributes(vec![
         ("action", "execute_accept_admin_transfer"),
         (
             "previous_admin",
-            self.admin
+            admin_config.admin
                 .get(deps.as_ref())?
                 .unwrap_or_else(|| Addr::unchecked(""))
                 .as_ref(),
         ),
         ("new_admin", new_admin.as_ref()),
     ]);
-    self.admin.set(deps.branch(), Some(new_admin))?;
+    admin_config.admin.set(deps.branch(), Some(new_admin))?;
     Ok(Response::new().add_event(event))
-
 }
 
 pub fn execute_drop_admin_transfer(
     deps: DepsMut,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    self.admin.assert_admin(deps.as_ref(), &info.sender)?;
-    self.admin_transfer.remove(deps.storage);
-    let event = Event::new("apollo/vaults/autocompounding_vault")
+    nonpayable(&info);
+
+    let admin_config = ADMIN_CONFIG.load(deps.storage)?;
+
+    admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
+    admin_config.admin_transfer.remove(deps.storage);
+    let event = Event::new("vault")
         .add_attributes(vec![("action", "execute_drop_admin_transfer")]);
     Ok(Response::new().add_event(event))
 }
@@ -81,15 +91,17 @@ pub fn execute_update_config(
     info: MessageInfo,
     updates: ConfigUpdates
 ) -> Result<Response, ContractError> {
-    self.admin.assert_admin(deps.as_ref(), &info.sender)?;
+    nonpayable(&info);
 
-    let new_config = self
-        .config
+    let admin_config = ADMIN_CONFIG.load(deps.storage)?;
+
+    admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
+    let new_config = VAULT_CONFIG
         .load(deps.storage)?
         .update(deps.as_ref(), updates.clone())?;
-    self.config.save(deps.storage, &new_config)?;
+    VAULT_CONFIG.save(deps.storage, &new_config)?;
 
-    let event = Event::new("apollo/vaults/autocompounding_vault").add_attributes(vec![
+    let event = Event::new("vault").add_attributes(vec![
         ("action", "execute_update_config"),
         ("updates", &format!("{:?}", updates)),
     ]);
