@@ -1,5 +1,3 @@
-mod admin;
-mod base_vault;
 pub mod contract;
 mod error;
 pub mod helpers;
