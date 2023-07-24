@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, ConversionOverflowError, DivideByZeroError,
-    OverflowError, StdError,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
+    DivideByZeroError, OverflowError, StdError,
 };
 use thiserror::Error;
 
@@ -37,4 +37,12 @@ pub enum ContractError {
 
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+
+    // todo: add apollo errors one by one and see what gives us type errors
+    // apollo errors below (remove from above when you add)
+    #[error("Unexpected funds sent. Expected: {expected:?}, Actual: {actual:?}")]
+    UnexpectedFunds {
+        expected: Vec<Coin>,
+        actual: Vec<Coin>,
+    },
 }
