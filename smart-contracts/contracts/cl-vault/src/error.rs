@@ -99,8 +99,8 @@
 // }
 
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, DivideByZeroError,
-    OverflowError, StdError,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
+    DivideByZeroError, OverflowError, StdError,
 };
 use thiserror::Error;
 
@@ -138,5 +138,5 @@ pub enum ContractError {
     UnexpectedFunds {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
-    }
+    },
 }
