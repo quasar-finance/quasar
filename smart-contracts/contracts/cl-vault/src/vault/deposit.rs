@@ -21,6 +21,7 @@ pub(crate) fn execute_deposit(
         &Asset::new(BASE_TOKEN.load(deps.storage)?, amount),
     )?;
 
+    // TODO we should accept two tokens of a position
     // Check that only the expected amount of base token was sent
     if info.funds.len() > 1 {
         return Err(ContractError::UnexpectedFunds {
