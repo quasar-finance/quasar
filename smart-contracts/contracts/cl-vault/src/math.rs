@@ -1,28 +1,35 @@
-use std::ops::Mul;
+use std::{ops::Mul, str::FromStr};
 
-use cosmwasm_std::{Decimal, StdError, Decimal256};
+use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, DepsMut, Uint128};
 
-use crate::ContractError;
+use crate::{ContractError, state::{TickExpIndexData, TICK_EXP_CACHE}};
 
 const big_factor: Decimal256 = Decimal256::raw(100000000);
 
-pub fn liquidity0(amount: Decimal, sqrt_price_a: Decimal, sqrt_price_b: Decimal) -> Result<Decimal256, ContractError> {
-    let mut sqrt_price_a = Decimal256::raw(sqrt_price_a.atomics().u128()).checked_mul(big_factor)?;
-    let mut sqrt_price_b = Decimal256::raw(sqrt_price_b.atomics().u128()).checked_mul(big_factor)?;
+pub fn liquidity0(
+    amount: Decimal,
+    sqrt_price_a: Decimal,
+    sqrt_price_b: Decimal,
+) -> Result<Decimal256, ContractError> {
+    let mut sqrt_price_a =
+        Decimal256::raw(sqrt_price_a.atomics().u128()).checked_mul(big_factor)?;
+    let mut sqrt_price_b =
+        Decimal256::raw(sqrt_price_b.atomics().u128()).checked_mul(big_factor)?;
     let amount = Decimal256::from(amount).checked_mul(big_factor)?;
 
     if sqrt_price_a > sqrt_price_b {
         std::mem::swap(&mut sqrt_price_a, &mut sqrt_price_b);
     }
 
-    let product = sqrt_price_a.checked_mul(sqrt_price_b)?; 
+    let product = sqrt_price_a.checked_mul(sqrt_price_b)?;
     // let product = Uint256::from(sqrt_price_a.atomics().u128()).checked_mul(Uint256::from(sqrt_price_b.atomics().u128()))?;
     let diff = sqrt_price_b.checked_sub(sqrt_price_a)?;
     println!("{:?}", diff);
 
-
     if diff.is_zero() {
-        return Err(ContractError::Std(StdError::generic_err("liquidity0 diff is zero")));
+        return Err(ContractError::Std(StdError::generic_err(
+            "liquidity0 diff is zero",
+        )));
     }
 
     // println!("product: {:?}", product);
@@ -56,7 +63,9 @@ pub fn liquidity1(
         .checked_sub(sqrt_price_a)
         .map_err(|err| StdError::generic_err(err.to_string()))?;
     if diff.is_zero() {
-        return Err(ContractError::Std(StdError::generic_err("liquidity1 diff is zero")));
+        return Err(ContractError::Std(StdError::generic_err(
+            "liquidity1 diff is zero",
+        )));
     }
 
     let result = amount.checked_div(diff)?;
@@ -292,12 +301,12 @@ pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_env, mock_info};
+    use cosmwasm_std::{testing::{mock_env, mock_info, mock_dependencies}, Uint128};
 
     // #[test]
     // fn math () {
     //     let val = Uint256::from(70710678118654752440_u128)* Uint256::from(74161984870956629487_u128);
-    //     println!("{:?}", val)   
+    //     println!("{:?}", val)
     // }
 
     #[test]
@@ -311,7 +320,12 @@ mod tests {
         let current_sqrt_p = Decimal::from_atomics(7071067811865475244000000000_u128, 18).unwrap();
         let sqrt_p_high = Decimal::from_atomics(7416198487095662948700000000_u128, 18).unwrap();
 
-        let result = liquidity0(amount0_desired.into(), current_sqrt_p.into(), sqrt_p_high.into()).unwrap();
+        let result = liquidity0(
+            amount0_desired.into(),
+            current_sqrt_p.into(),
+            sqrt_p_high.into(),
+        )
+        .unwrap();
         // TODO our amount is slightly different 10 digits behind the comma, do we care about that?
         assert_eq!(result.to_string(), "1519437308.014768571720923239")
     }
@@ -324,5 +338,32 @@ mod tests {
 
         let result = liquidity1(amount1_desired, current_sqrt_p, sqrt_p_low).unwrap();
         assert_eq!(result.to_string(), "1517882343.751510418088349649");
+    }
+
+    #[test]
+    fn test_tick_to_price() {
+        let tick_index = Uint128::new(36650010u128);
+        let exponen_at_current_price_one = -6;
+        let expected_price = Decimal::from_atomics(165001u128, 1);
+        let price = tick_to_price(tick_index, exponen_at_current_price_one).unwrap();
+        assert_eq!(price, expected_price.unwrap());
+    }
+
+    #[test]
+    fn test_price_to_tick() {
+        let price = Decimal::from_atomics(165001u128, 1).unwrap();
+        let exponen_at_current_price_one = -6;
+        let expected_tick_index = Uint128::new(36650010u128);
+        let tick_index = price_to_tick(price, exponen_at_current_price_one).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+    }
+
+    #[test]
+    fn test_price_to_tick_3() {
+        let mut deps = mock_dependencies();
+        let price = Decimal256::from_atomics(165001u128, 1).unwrap();
+        let expected_tick_index = Uint256::from_u128(36650010u128);
+        let tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
     }
 }

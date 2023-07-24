@@ -8,4 +8,7 @@ pub mod state;
 mod tests;
 mod vault;
 
+#[cfg(test)]
+pub mod math;
+
 pub use crate::error::ContractError;
