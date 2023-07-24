@@ -126,6 +126,10 @@ pub enum ContractError {
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
+
+    #[error("This message does no accept funds")]
+    NonPayable {},
+
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 

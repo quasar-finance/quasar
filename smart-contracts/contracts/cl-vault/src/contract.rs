@@ -43,7 +43,7 @@ pub fn execute(
                 crate::msg::CallbackMsg::MintVaultToken { amount, recipient } => todo!(),
             },
             crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
-                execute_admin(deps, env, info, admin_msg)
+                execute_admin(deps, info, admin_msg)
             }
         },
     }
