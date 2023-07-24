@@ -21,16 +21,16 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     INVESTMENT.save(
         deps.storage,
         &Investment {
             owner: info.sender,
-            base_denom: todo!(),
-            quote_denom: todo!(),
-            pool_id: todo!(),
+            base_denom: msg.base_denom,
+            quote_denom: msg.quote_denom,
+            pool_id: msg.pool_id,
         },
     )?;
     unimplemented!()

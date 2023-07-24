@@ -146,6 +146,8 @@ pub struct InstantiateMsg {
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".
     pub vault_token_subdenom: String,
+    pub base_denom: String,
+    pub quote_denom: String,
 }
 
 #[cw_serde]
