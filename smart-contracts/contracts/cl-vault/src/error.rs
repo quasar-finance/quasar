@@ -112,6 +112,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Position Not Found")]
+    PositionNotFound,
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 

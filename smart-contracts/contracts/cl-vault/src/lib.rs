@@ -1,4 +1,5 @@
 mod admin;
+mod concentrated_liquidity;
 pub mod contract;
 mod error;
 pub mod helpers;
@@ -7,5 +8,6 @@ pub mod msg;
 pub mod state;
 mod tests;
 mod vault;
+mod reply;
 
 pub use crate::error::ContractError;
