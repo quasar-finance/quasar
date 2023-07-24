@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Response, Deps};
+use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response, Deps};
 use cw_utils::nonpayable;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use crate::state::{ADMIN_ADDRESS, VAULT_CONFIG, Config};
