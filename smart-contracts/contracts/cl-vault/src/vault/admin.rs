@@ -29,18 +29,17 @@ pub fn execute_update_admin(
     admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
     let admin_addr = deps.api.addr_validate(&address)?;
     admin_config.admin_transfer.save(deps.storage, &admin_addr)?;
-    let event = Event::new("vault").add_attributes(vec![
-        ("action", "execute_update_admin"),
-        (
+    
+    Ok(Response::new()
+        .add_attribute("action", "execute_update_admin")
+        .add_attribute(
             "previous_admin",
             admin_config.admin
                 .get(deps.as_ref())?
                 .unwrap_or_else(|| Addr::unchecked(""))
                 .as_ref(),
-        ),
-        ("new_admin", &address),
-    ]);
-    Ok(Response::new().add_event(event))
+        )
+        .add_attribute("new_admin", &address))
 }
 
 pub fn execute_accept_admin_transfer(
@@ -55,20 +54,20 @@ pub fn execute_accept_admin_transfer(
     if info.sender != new_admin {
         return Err(ContractError::Unauthorized {});
     }
+
     admin_config.admin_transfer.remove(deps.storage);
-    let event = Event::new("vault").add_attributes(vec![
-        ("action", "execute_accept_admin_transfer"),
-        (
+    admin_config.admin.set(deps.branch(), Some(new_admin))?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_accept_admin_transfer")
+        .add_attribute(
             "previous_admin",
             admin_config.admin
                 .get(deps.as_ref())?
                 .unwrap_or_else(|| Addr::unchecked(""))
                 .as_ref(),
-        ),
-        ("new_admin", new_admin.as_ref()),
-    ]);
-    admin_config.admin.set(deps.branch(), Some(new_admin))?;
-    Ok(Response::new().add_event(event))
+        )
+        .add_attribute("new_admin", new_admin.as_ref()))
 }
 
 pub fn execute_drop_admin_transfer(
@@ -81,9 +80,9 @@ pub fn execute_drop_admin_transfer(
 
     admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
     admin_config.admin_transfer.remove(deps.storage);
-    let event = Event::new("vault")
-        .add_attributes(vec![("action", "execute_drop_admin_transfer")]);
-    Ok(Response::new().add_event(event))
+    
+    Ok(Response::new()
+        .add_attribute("action", "execute_drop_admin_transfer"))
 }
 
 pub fn execute_update_config(
@@ -96,15 +95,14 @@ pub fn execute_update_config(
     let admin_config = ADMIN_CONFIG.load(deps.storage)?;
 
     admin_config.admin.assert_admin(deps.as_ref(), &info.sender)?;
+
     let new_config = VAULT_CONFIG
         .load(deps.storage)?
         .update(deps.as_ref(), updates.clone())?;
+
     VAULT_CONFIG.save(deps.storage, &new_config)?;
 
-    let event = Event::new("vault").add_attributes(vec![
-        ("action", "execute_update_config"),
-        ("updates", &format!("{:?}", updates)),
-    ]);
-
-    Ok(Response::default().add_event(event))
+    Ok(Response::default()
+        .add_attribute("action", "execute_update_config")
+        .add_attribute("updates", &format!("{:?}", updates)))
 }
