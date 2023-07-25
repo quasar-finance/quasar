@@ -362,6 +362,7 @@ dependencies = [
  "cw-dex-router",
  "cw-multi-test 0.16.2",
  "cw-storage-plus 1.0.1",
+ "cw-utils 0.16.0",
  "cw-vault-standard",
  "cw-vault-token",
  "cw2 1.0.1",
@@ -369,6 +370,7 @@ dependencies = [
  "cw20-base 1.0.1",
  "derive_builder",
  "liquidity-helper",
+ "osmosis-std 0.16.1",
  "osmosis-test-tube",
  "schemars",
  "semver",
@@ -2159,13 +2161,13 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std"
-version = "0.16.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c254b73ab62f7e7a19eb7249cf1443e49999ecc8169bb4535a855b6e87d55498"
+checksum = "2fa46d2ad5ae738572887974e000934374ce3546b820505c0ee19ca708e49622"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive 0.16.0",
+ "osmosis-std-derive 0.16.1",
  "prost 0.11.9",
  "prost-types",
  "schemars",
@@ -2199,9 +2201,9 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std-derive"
-version = "0.16.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67a6feeb2c5de684262032a6719ff58cfecfdffa5f31eba1835faa857ac3a762"
+checksum = "11c2ba5535743617d6f44ae8d572d064fabab6d06ffcf403512f89c58954dbe9"
 dependencies = [
  "itertools",
  "proc-macro2",
@@ -2220,7 +2222,7 @@ dependencies = [
  "bindgen",
  "cosmrs",
  "cosmwasm-std",
- "osmosis-std 0.16.0",
+ "osmosis-std 0.16.1",
  "prost 0.11.9",
  "serde",
  "serde_json",
