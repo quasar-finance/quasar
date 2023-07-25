@@ -61,7 +61,6 @@ semver = "1"
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
 cw-utils = "0.16.0"
-osmosis-std = { version = "0.16.1" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.2"
