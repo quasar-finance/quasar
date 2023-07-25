@@ -1,4 +1,3 @@
-mod admin;
 mod concentrated_liquidity;
 pub mod contract;
 mod error;
