@@ -16,14 +16,14 @@ pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
 #[cw_serde]
 pub struct PoolConfig {
-    pub pool_id: u64
+    pub pool_id: u64,
 }
 
 pub const POSITION: Item<Position> = Item::new("position");
 
 #[cw_serde]
 pub struct Position {
-    pub position_id: u64
+    pub position_id: u64,
 }
 
 /// Base config struct for the contract.

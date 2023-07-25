@@ -5,9 +5,9 @@ mod error;
 pub mod helpers;
 mod math;
 pub mod msg;
+mod reply;
 pub mod state;
 mod tests;
 mod vault;
-mod reply;
 
 pub use crate::error::ContractError;
