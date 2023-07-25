@@ -6,11 +6,11 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Std
 use cw2::set_contract_version;
 // use cw2::set_contract_version;
 
-use crate::admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Investment, Replies, INVESTMENT, REPLIES};
 use crate::vault::deposit::{execute_deposit, handle_create_position_reply, handle_swap_reply};
+use crate::vault::admin::execute_admin;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -58,7 +58,7 @@ pub fn execute(
                 crate::msg::CallbackMsg::MintVaultToken { amount, recipient } => todo!(),
             },
             crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
-                admin::execute_admin_msg(deps, env, info, admin_msg)
+                execute_admin(deps, info, admin_msg)
             }
         },
     }

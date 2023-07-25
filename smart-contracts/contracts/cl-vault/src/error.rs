@@ -99,8 +99,8 @@
 // }
 
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, Decimal256, DivideByZeroError,
-    OverflowError, StdError, Uint128,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
+    DivideByZeroError, OverflowError, StdError,
 };
 use thiserror::Error;
 
@@ -111,6 +111,9 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("Position Not Found {:?}", position_id)]
+    PositionNotFound { position_id: u64 },
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
@@ -123,6 +126,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
+
+    #[error("{0}")]
+    ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
@@ -149,8 +155,9 @@ pub enum ContractError {
     )]
     InvalidSlippageTolerance { slippage_tolerance: Uint128 },
 
-    #[error("No positions found for id {}", id)]
-    PositionNotFound { id: u64 },
+    #[error("This message does no accept funds")]
+    NonPayable {},
+
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 
