@@ -99,8 +99,8 @@
 // }
 
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, DivideByZeroError, OverflowError,
-    StdError,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
+    DivideByZeroError, OverflowError, StdError,
 };
 use thiserror::Error;
 
@@ -111,6 +111,9 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("Position Not Found")]
+    PositionNotFound,
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
@@ -123,6 +126,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
+
+    #[error("{0}")]
+    ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),

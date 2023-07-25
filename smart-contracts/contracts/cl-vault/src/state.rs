@@ -7,6 +7,20 @@ pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddres
 pub const VAULT_CONFIG: Item<Config> = Item::new("vault_config");
 pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
 
+pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
+
+#[cw_serde]
+pub struct PoolConfig {
+    pub pool_id: u64,
+}
+
+pub const POSITION: Item<Position> = Item::new("position");
+
+#[cw_serde]
+pub struct Position {
+    pub position_id: u64,
+}
+
 /// Base config struct for the contract.
 #[cw_serde]
 pub struct Config {
