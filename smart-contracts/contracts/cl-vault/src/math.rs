@@ -1,8 +1,11 @@
 use std::{ops::Mul, str::FromStr};
 
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, DepsMut, Uint128};
+use cosmwasm_std::{Decimal, Decimal256, DepsMut, StdError, Uint128, Uint256};
 
-use crate::{ContractError, state::{TickExpIndexData, TICK_EXP_CACHE}};
+use crate::{
+    state::{TickExpIndexData, TICK_EXP_CACHE},
+    ContractError,
+};
 
 const big_factor: Decimal256 = Decimal256::raw(100000000);
 
@@ -227,7 +230,7 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
         };
         TICK_EXP_CACHE.save(deps.storage, cur_exp_index, &tick_exp_index_data)?;
 
-        max_price = TICK_EXP_CACHE.load(deps.storage, cur_exp_index)?.max_price;
+        max_price = tick_exp_index_data.max_price;
         cur_exp_index += 1;
     }
 
@@ -253,9 +256,7 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
         };
         TICK_EXP_CACHE.save(deps.storage, cur_exp_index, &tick_exp_index_data)?;
 
-        min_price = TICK_EXP_CACHE
-            .load(deps.storage, cur_exp_index)?
-            .initial_price;
+        min_price = tick_exp_index_data.initial_price;
         cur_exp_index -= 1;
     }
     Ok(deps)
@@ -271,6 +272,7 @@ pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, 
         return Ok(Uint256::zero());
     }
 
+    // TODO: move this to instantiate?
     deps = build_tick_exp_cache(deps)?;
 
     let mut geo_spacing;
@@ -281,6 +283,13 @@ pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, 
             index += 1;
             geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
         }
+        let price_in_this_exponent = price - geo_spacing.initial_price;
+        let ticks_filled_by_current_spacing =
+            price_in_this_exponent / geo_spacing.additive_increment_per_tick;
+        let tick_index = Decimal256::from_ratio(geo_spacing.initial_tick as u128, 1u128)
+            .checked_add(ticks_filled_by_current_spacing)?;
+
+        return Ok(tick_index.to_uint_floor());
     } else {
         let mut index = -1;
         geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
@@ -288,20 +297,43 @@ pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, 
             index -= 1;
             geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
         }
-    }
+        println!("###DEBUGGING###");
+        println!("price: {:?}", price);
+        println!("geo_spacing: {:?}", geo_spacing);
 
-    let price_in_this_exponent = price - geo_spacing.initial_price;
-    let ticks_filled_by_current_spacing =
-        price_in_this_exponent / geo_spacing.additive_increment_per_tick;
-    let tick_index =
-        ticks_filled_by_current_spacing + Decimal256::raw(geo_spacing.initial_tick as u128);
-    Ok(tick_index.to_uint_floor())
+        let price_in_this_exponent = price - geo_spacing.initial_price;
+        println!("price_in_this_exponent: {:?}", price_in_this_exponent);
+
+        let ticks_filled_by_current_spacing =
+            price_in_this_exponent / geo_spacing.additive_increment_per_tick;
+        println!(
+            "ticks_filled_by_current_spacing: {:?}",
+            ticks_filled_by_current_spacing
+        );
+
+        println!("geo_spacing.initial_tick: {:?}", geo_spacing.initial_tick);
+
+        println!("###DEBUGGING###");
+        println!(
+            "{} - {}",
+            Decimal256::from_ratio(geo_spacing.initial_tick as u128, 1u128),
+            ticks_filled_by_current_spacing
+        );
+
+        let tick_index = Decimal256::from_ratio(geo_spacing.initial_tick as u128, 1u128)
+            .checked_sub(ticks_filled_by_current_spacing)?;
+
+        Ok(tick_index.to_uint_floor())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{testing::{mock_env, mock_info, mock_dependencies}, Uint128};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Uint128,
+    };
 
     // #[test]
     // fn math () {
@@ -351,18 +383,63 @@ mod tests {
 
     #[test]
     fn test_price_to_tick() {
-        let price = Decimal::from_atomics(165001u128, 1).unwrap();
-        let exponen_at_current_price_one = -6;
-        let expected_tick_index = Uint128::new(36650010u128);
-        let tick_index = price_to_tick(price, exponen_at_current_price_one).unwrap();
+        let mut deps = mock_dependencies();
+        // example1
+        let mut price = Decimal256::from_str("16500.1").unwrap();
+        let mut expected_tick_index = Uint256::from_u128(36650010u128);
+        let mut tick_index = price_to_tick_3(deps.as_mut(), price.into()).unwrap();
         assert_eq!(tick_index, expected_tick_index);
+
+        // example2
+        price = Decimal256::from_str("30352").unwrap();
+        expected_tick_index = Uint256::from_u128(38035200u128);
+        tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+
+        // example3
+        // price = Decimal256::from_str("1.000030").unwrap();
+        // expected_tick_index = Uint256::from_u128(0u128);
+        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // assert_eq!(tick_index, expected_tick_index);
+
+        // example4
+        price = Decimal256::from_str("30353").unwrap();
+        expected_tick_index = Uint256::from_u128(38035300u128);
+        tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+
+        // example5
+        price = Decimal256::from_str("0.000011790").unwrap();
+        expected_tick_index = Uint256::from_u128(44821000u128);
+        tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+
+        // // example4
+        // price = Decimal256::from_str("30353").unwrap();
+        // expected_tick_index = Uint256::from_u128(38035300u128);
+        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // assert_eq!(tick_index, expected_tick_index);
+        // // example4
+        // price = Decimal256::from_str("30353").unwrap();
+        // expected_tick_index = Uint256::from_u128(38035300u128);
+        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // assert_eq!(tick_index, expected_tick_index);
     }
 
     #[test]
     fn test_price_to_tick_3() {
         let mut deps = mock_dependencies();
-        let price = Decimal256::from_atomics(165001u128, 1).unwrap();
-        let expected_tick_index = Uint256::from_u128(36650010u128);
+        let price = Decimal256::from_str("30352").unwrap();
+        let expected_tick_index = Uint256::from_u128(38035200u128);
+        let tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+    }
+
+    #[test]
+    fn test_osmo_price_to_tick() {
+        let mut deps = mock_dependencies();
+        let price = Decimal256::from_str("1.000030").unwrap();
+        let expected_tick_index = Uint256::from_u128(0u128);
         let tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
     }
