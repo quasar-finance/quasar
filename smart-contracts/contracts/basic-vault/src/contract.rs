@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    StdError, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -31,9 +31,8 @@ use crate::query::{
     query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, Cap, InvestmentInfo, Supply, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP,
-    CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, TOTAL_SUPPLY,
-    VAULT_REWARDS,
+    AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -99,10 +98,6 @@ pub fn instantiate(
 
     // initialize bonding sequence num
     BONDING_SEQ.save(deps.storage, &Uint128::one())?;
-
-    // set supply to 0
-    let supply = Supply::default();
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
 
     DEBUG_TOOL.save(deps.storage, &"Empty".to_string())?;
 
@@ -363,22 +358,23 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let invest = OLD_INVESTMENT.load(deps.storage)?;
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let msgs: Result<Vec<WasmMsg>, StdError> = cw20_base::state::BALANCES
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|val| {
+            let (addr, _) = val?;
+            update_user_reward_index(deps.storage, &addr)
+        })
+        .collect();
 
-    INVESTMENT.save(
-        deps.storage,
-        &InvestmentInfo {
-            owner: invest.owner,
-            min_withdrawal: invest.min_withdrawal,
-            deposit_denom: msg.deposit_denom,
-            primitives: invest.primitives,
-        },
-    )?;
+    let wrapped_msges = msgs?.into_iter().map(CosmosMsg::Wasm);
 
     Ok(Response::new()
-        .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("success", "true"))
+        .add_attribute(
+            "updated-rewards-indexes-msges",
+            wrapped_msges.len().to_string(),
+        )
+        .add_messages(wrapped_msges))
 }
 
 #[cfg(test)]

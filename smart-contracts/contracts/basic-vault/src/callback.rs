@@ -8,7 +8,7 @@ use crate::{
     helpers::update_user_reward_index,
     state::{
         Unbond, BONDING_SEQ_TO_ADDR, BOND_STATE, DEBUG_TOOL, INVESTMENT, PENDING_BOND_IDS,
-        PENDING_UNBOND_IDS, TOTAL_SUPPLY, UNBOND_STATE,
+        PENDING_UNBOND_IDS, UNBOND_STATE,
     },
     ContractError,
 };
@@ -140,12 +140,6 @@ pub fn on_bond(
             .checked_multiply_ratio(total_vault_shares, total_vault_value - total_user_value)?
     };
 
-    // update total supply
-    let mut supply = TOTAL_SUPPLY.load(deps.storage)?;
-
-    supply.issued += shares_to_mint;
-    TOTAL_SUPPLY.save(deps.storage, &supply)?;
-
     // call into cw20-base to mint the token, call as self as no one else is allowed
     let sub_info = MessageInfo {
         sender: env.contract.address.clone(),
@@ -160,8 +154,7 @@ pub fn on_bond(
         .add_submessage(SubMsg::new(update_user_rewards_idx_msg))
         .add_attribute("action", "on_bond")
         .add_attribute("from", info.sender)
-        .add_attribute("minted", shares_to_mint)
-        .add_attribute("new_total_supply", supply.issued.to_string());
+        .add_attribute("minted", shares_to_mint);
     Ok(res)
 }
 
