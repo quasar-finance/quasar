@@ -40,8 +40,6 @@ pub struct Config {
     pub treasury: Addr,
 }
 
-pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
-
 // TODO: this could be done using normal hashmaps maybe?
 #[cw_serde]
 pub struct TickExpIndexData {

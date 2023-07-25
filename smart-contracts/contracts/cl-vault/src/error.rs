@@ -100,7 +100,7 @@
 
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
-    DivideByZeroError, OverflowError, StdError,
+    DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use thiserror::Error;
 
@@ -112,8 +112,8 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Position Not Found {:?}", position_id)]
-    PositionNotFound { position_id: u64 },
+    #[error("Position Not Found")]
+    PositionNotFound {},
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),

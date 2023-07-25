@@ -35,22 +35,15 @@ pub fn execute_deposit(
     // find recipient
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    // Receive the assets to the contract
-    let receive_res = receive_asset(
-        info,
-        &env,
-        &Asset::new(BASE_TOKEN.load(deps.storage)?, amount),
-    )?;
-
     // TODO we should accept two tokens of a position
-    // Check that only the expected amount of base token was sent
-    if info.funds.len() > 1 {
-        return Err(ContractError::UnexpectedFunds {
-            expected: vec![Coin {
-                denom: BASE_TOKEN.load(deps.storage)?.to_string(),
-                amount,
-            }],
-            actual: info.funds.clone(),
+
+    // check that only the expected amount of base token was sent.
+    let investment = INVESTMENT.load(deps.storage)?;
+    let received_amount = must_pay(&info, &investment.base_denom)?;
+    if expected_amount != received_amount {
+        return Err(ContractError::DepositMismatch {
+            expected: expected_amount,
+            received: received_amount,
         });
     }
 
@@ -187,13 +180,9 @@ pub fn handle_create_position_reply(
     let total_amount = Uint128::from_str(
         &position_response
             .position
-            .ok_or(ContractError::PositionNotFound {
-                position_id: data.position_id,
-            })?
+            .ok_or(ContractError::PositionNotFound {})?
             .position
-            .ok_or(ContractError::PositionNotFound {
-                position_id: data.position_id,
-            })?
+            .ok_or(ContractError::PositionNotFound {})?
             .liquidity,
     )?;
 
