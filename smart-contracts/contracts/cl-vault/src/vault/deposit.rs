@@ -39,7 +39,7 @@ pub fn execute_deposit(
 
     // check that only the expected amount of base token was sent.
     let investment = INVESTMENT.load(deps.storage)?;
-    let received_amount = must_pay(&info, &investment.base_denom)?;
+    let received_amount = must_pay(info, &investment.base_denom)?;
     if expected_amount != received_amount {
         return Err(ContractError::DepositMismatch {
             expected: expected_amount,
@@ -298,11 +298,7 @@ pub fn next_reply_id(deps: Deps) -> Result<u64, ContractError> {
     Ok(id + 1)
 }
 
-// this is called from the reply hook
 // don't forget to cleanup the REPLIES state item
-// REPLIES.remove(deps.storage, msg.id);
-fn execute_deposit_after_swap() {}
-fn execute_mint_after_join() {}
 
 /// If exactly one coin was sent, returns it regardless of denom.
 /// Returns error if 0 or 2+ coins were sent

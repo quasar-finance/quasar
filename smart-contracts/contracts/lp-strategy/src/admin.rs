@@ -9,7 +9,7 @@ use crate::{
 // check if sender is the admin
 pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, ContractError> {
     let depositor = DEPOSITOR.load(storage)?;
-    Ok(&depositor == sender)
+    Ok(depositor == sender)
 }
 
 pub fn add_lock_admin(

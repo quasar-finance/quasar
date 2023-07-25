@@ -1,17 +1,8 @@
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    Addr, BlockInfo, Coin, Decimal, Decimal256, Deps, MessageInfo, Order, StdError, StdResult,
-    Storage, Uint128,
-};
-use cw20::Expiration;
-use cw_dex_router::helpers::CwDexRouterBase;
-use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, Map, MultiIndex};
-use cw_vault_standard::extensions::lockup::UnlockingPosition;
-use derive_builder::Builder;
-use liquidity_helper::LiquidityHelperBase;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
+
+use cw_storage_plus::{Item, Map};
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
 pub const VAULT_CONFIG: Item<Config> = Item::new("vault_config");
@@ -84,7 +75,6 @@ pub const USER_REWARDS: Map<Addr, Vec<Coin>> = Map::new("user_rewards");
 pub enum Replies {
     Swap { user_addr: Addr, amount0: Uint128 },
     CreatePosition { user_addr: Addr },
-
 }
 
 // TODO: can we use one map for all replies?

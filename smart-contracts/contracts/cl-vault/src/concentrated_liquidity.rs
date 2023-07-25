@@ -1,7 +1,7 @@
-use cosmwasm_std::{Coin, CosmosMsg, Decimal256, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgFungifyChargedPositions, MsgWithdrawPosition, PositionByIdRequest,
+    MsgFungifyChargedPositions, MsgWithdrawPosition,
 };
 
 use crate::{
@@ -74,10 +74,10 @@ pub fn merge_positions(
     Ok(fungify)
 }
 
-pub fn get_position(
+pub fn _get_position(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
+    _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
     let position = POSITION.load(storage)?;
 

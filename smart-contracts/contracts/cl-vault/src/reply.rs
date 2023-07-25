@@ -1,5 +1,5 @@
-pub enum Reply {
-    //
-    DepositCreatePool = 1,
-    Unknow,
-}
+// pub enum Reply {
+//     //
+//     DepositCreatePool = 1,
+//     Unknow,
+// }

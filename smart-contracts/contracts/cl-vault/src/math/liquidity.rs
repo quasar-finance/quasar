@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint128, Uint256, Uint512};
+use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn liquidity0(
@@ -74,7 +74,6 @@ pub fn liquidity1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_env, mock_info};
 
     #[test]
     fn test_liquidity0() {

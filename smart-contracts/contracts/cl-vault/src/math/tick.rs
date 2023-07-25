@@ -1,6 +1,6 @@
-use std::{ops::Mul, str::FromStr};
+use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, DepsMut, StdError, Uint128, Uint256};
+use cosmwasm_std::{Decimal, Decimal256, DepsMut, Uint128, Uint256};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -86,56 +86,6 @@ pub fn tick_to_price(
     Ok(price)
 }
 
-pub fn price_to_tick(
-    price: Decimal,
-    mut exponent_at_price_one: i128,
-) -> Result<Uint128, ContractError> {
-    if price == Decimal::one() {
-        return Ok(Uint128::zero());
-    }
-
-    let mut current_price = Decimal::one();
-    let mut ticks_passed: Uint128 = Uint128::zero();
-
-    let geometric_exponent_increment_distance_in_ticks = 9u128
-        .checked_mul(pow_ten_internal(-exponent_at_price_one)?)
-        .ok_or(ContractError::Overflow {})?;
-
-    // TODO: need this to live after the loop, is there a better way to do it?
-    let mut current_additive_increment_in_ticks = Decimal::zero();
-
-    // TODO: what about when price is less or equal to one?
-    while current_price < price {
-        current_additive_increment_in_ticks = Decimal::from_ratio(
-            Uint128::one(),
-            Uint128::from(10u128.pow(exponent_at_price_one.abs() as u32) as u128),
-        );
-
-        exponent_at_price_one += 1;
-
-        let max_price_for_current_increment_in_ticks = current_additive_increment_in_ticks
-            .checked_mul(Decimal::from_ratio(
-                geometric_exponent_increment_distance_in_ticks,
-                1u128,
-            ))?;
-
-        ticks_passed += Uint128::new(geometric_exponent_increment_distance_in_ticks.into());
-
-        current_price = current_price.checked_add(max_price_for_current_increment_in_ticks)?;
-    }
-
-    // this was a negative number is Osmosis, did inverse logic to get it to work
-    let ticks_to_be_fullfilled_by_exponent_at_current_tick = current_price
-        .checked_sub(price)?
-        .checked_div(current_additive_increment_in_ticks)?;
-
-    // decide whether to use floor vs ceil
-    let tick_index = ticks_passed
-        .checked_sub(ticks_to_be_fullfilled_by_exponent_at_current_tick.to_uint_floor())?;
-
-    Ok(tick_index)
-}
-
 // THIS IS TRYING TO REPLICATE OSMOSIS GO LOGIC BUT MATH IS A BIT OFF
 // TODO: had to use a Decimal256 to support 10^35 (Osmosis max spot price)
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000";
@@ -194,7 +144,7 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
     Ok(deps)
 }
 
-pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, ContractError> {
+pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, ContractError> {
     if price > Decimal256::from_str(MAX_SPOT_PRICE)?
         || price < Decimal256::from_str(MIN_SPOT_PRICE)?
     {
@@ -262,10 +212,7 @@ pub fn price_to_tick_3(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
-        Uint128,
-    };
+    use cosmwasm_std::{testing::mock_dependencies, Uint128};
 
     #[test]
     fn test_tick_to_price() {
@@ -282,13 +229,13 @@ mod tests {
         // example1
         let mut price = Decimal256::from_str("16500.1").unwrap();
         let mut expected_tick_index = Uint256::from_u128(36650010u128);
-        let mut tick_index = price_to_tick_3(deps.as_mut(), price.into()).unwrap();
+        let mut tick_index = price_to_tick(deps.as_mut(), price.into()).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
         // example2
         price = Decimal256::from_str("30352").unwrap();
         expected_tick_index = Uint256::from_u128(38035200u128);
-        tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        tick_index = price_to_tick(deps.as_mut(), price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
         // example3
@@ -300,24 +247,24 @@ mod tests {
         // example4
         price = Decimal256::from_str("30353").unwrap();
         expected_tick_index = Uint256::from_u128(38035300u128);
-        tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        tick_index = price_to_tick(deps.as_mut(), price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
         // example5
         // price = Decimal256::from_str("0.000011790").unwrap();
         // expected_tick_index = Uint256::from_u128(44821000u128);
-        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // tick_index = price_to_tick(deps.as_mut(), price).unwrap();
         // assert_eq!(tick_index, expected_tick_index);
 
         // // example4
         // price = Decimal256::from_str("30353").unwrap();
         // expected_tick_index = Uint256::from_u128(38035300u128);
-        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // tick_index = price_to_tick(deps.as_mut(), price).unwrap();
         // assert_eq!(tick_index, expected_tick_index);
         // // example4
         // price = Decimal256::from_str("30353").unwrap();
         // expected_tick_index = Uint256::from_u128(38035300u128);
-        // tick_index = price_to_tick_3(deps.as_mut(), price).unwrap();
+        // tick_index = price_to_tick(deps.as_mut(), price).unwrap();
         // assert_eq!(tick_index, expected_tick_index);
     }
 }

@@ -129,7 +129,7 @@ pub fn prepare_full_query(
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
-    let join_pool = QueryCalcJoinPoolSharesRequest {
+    let _join_pool = QueryCalcJoinPoolSharesRequest {
         pool_id: config.pool_id,
         tokens_in: vec![OsmoCoin {
             denom: config.base_denom.clone(),
@@ -140,18 +140,18 @@ pub fn prepare_full_query(
     // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
-    let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
+    let _exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
         share_in_amount: LP_SHARES.load(storage)?.locked_shares.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
-    let spot_price = QuerySpotPriceRequest {
+    let _spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
     };
 
-    let lock_by_id = LockedRequest {
+    let _lock_by_id = LockedRequest {
         lock_id: OSMO_LOCK.may_load(storage)?.unwrap_or(1),
     };
 
