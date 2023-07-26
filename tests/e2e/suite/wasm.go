@@ -136,8 +136,7 @@ func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.C
 	return res
 }
 
-// TODO: this should be singular "Pool"
-func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
+func (s *E2ETestSuite) CreatePoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte, poolType string) {
 	tn := GetFullNode(chain)
 
 	logger := s.logger.With(
@@ -155,6 +154,10 @@ func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.C
 	s.Require().NoError(err, "failed to write pool file")
 
 	cmds = append(cmds, "--pool-file", filepath.Join(tn.HomeDir(), poolFile))
+
+	if len(poolType) != 0 {
+		cmds = append(cmds, "--pool-type", poolType)
+	}
 
 	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
 	s.Require().NoError(err, "failed to create pool")
