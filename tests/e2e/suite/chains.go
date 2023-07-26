@@ -75,6 +75,7 @@ var (
 			modifyMintModule(),
 			modifyIncentivesModule(),
 			modifyPoolIncentivesModule(),
+			modifyEpochsModule(),
 		),
 	}
 
