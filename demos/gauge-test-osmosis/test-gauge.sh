@@ -29,10 +29,10 @@ sleep 60
 echo "after the first unlock the user that created the gauge has a balance of 100_000_000_000usdc, other users that bonded for lesser time never receives usdc"
 
 BOB_USDC_BALANCE=$(osmosisd q bank balances osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d --output json | jq -r '.balances[2]')
-echo "user 2 balance in usdc: $BOB_USDC_BALANCE"
+echo "bob balance in usdc: $BOB_USDC_BALANCE"
 
 USER1_USDC_BALANCE=$(osmosisd q bank balances osmo1zaavvzxez0elundtn32qnk9lkm8kmcsz2tlhe7 --output json | jq -r '.balances[3]')
-echo "user 2 balance in usdc: $USER1_USDC_BALANCE"
+echo "user 1 balance in usdc: $USER1_USDC_BALANCE"
 
 USER2_USDC_BALANCE=$(osmosisd q bank balances osmo185fflsvwrz0cx46w6qada7mdy92m6kx4qm4l9k --output json | jq -r '.balances[3]')
 echo "user 2 balance in usdc: $USER2_USDC_BALANCE"
