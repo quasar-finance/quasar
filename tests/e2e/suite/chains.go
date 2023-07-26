@@ -5,18 +5,18 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
-	"go.uber.org/zap"
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/zap"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/protobuf/proto"
-	ibctest "github.com/strangelove-ventures/interchaintest/v4"
+	"github.com/quasarlabs/quasarnode/tests/e2e/dockerutil"
+	"github.com/strangelove-ventures/interchaintest/v4"
 	"github.com/strangelove-ventures/interchaintest/v4/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
-	"github.com/strangelove-ventures/interchaintest/v4/testutil"
-	"github.com/stretchr/testify/suite"
 )
 
 var (
@@ -158,16 +158,27 @@ func (p *Chain) GetContracts() ([]*Contract, error) {
 	}
 }
 
-func (p *Chain) CreateUserAndFund(suite *suite.Suite, ctx context.Context, amount int64) (*ibc.Wallet, error) {
-	user := ibctest.GetAndFundTestUsers(suite.T(), ctx, strings.ReplaceAll(suite.T().Name(), " ", "-"), amount, p.Chain)[0]
-
-	// Wait a few blocks
-	err := testutil.WaitForBlocks(ctx, 5, p.Chain)
+func (p *Chain) CreateUserAndFund(ctx context.Context, keyName string, amount int64) (*ibc.Wallet, error) {
+	kr := keyring.NewInMemory()
+	newAccount := interchaintest.BuildWallet(kr, keyName, p.Chain.Config())
+	err := p.Chain.Validators[0].RecoverKey(ctx, keyName, newAccount.Mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	walletamount := ibc.WalletAmount{
+		Address: newAccount.Address,
+		Denom:   p.Chain.Config().Denom,
+		Amount:  amount,
+	}
+
+	err = p.Chain.SendFunds(ctx, p.ChainAccount[AuthorityKeyName].KeyName, walletamount)
+	if err != nil {
+		return nil, err
+	}
+
+	p.ChainAccount[keyName] = &newAccount
+	return &newAccount, nil
 }
 
 func (p *Chain) ExecQuery(ctx context.Context, resp any, cmd ...string) error {

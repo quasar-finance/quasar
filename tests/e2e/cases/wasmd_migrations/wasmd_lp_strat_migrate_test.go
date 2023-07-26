@@ -3,11 +3,12 @@ package wasmd
 import (
 	"context"
 	"encoding/json"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testCasesHelper "github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
@@ -56,7 +57,7 @@ func TestE2eTestBuilder(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (s *TestE2eTestBuilderSuite) TestBonds() {
+func (s *TestE2eTestBuilderSuite) TestMigration() {
 	ctx := context.Background()
 
 	// find Osmosis chain
@@ -140,31 +141,42 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	quasar, found := s.GetChain("quasar")
 	s.Require().True(found)
 
+	_, err = quasar.CreateUserAndFund(ctx, "contractOwner", 100_000_000)
+	s.Require().NoError(err)
+
+	// store old lp strategy contract code
+	oldlpStrategyCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, oldLpStrategyContractPath, quasar.ChainAccount["contractOwner"].KeyName, s.Logger)
+	s.Require().NoError(err)
+
 	// store lp strategy contract code
-	lpStrategyCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, lpStrategyContractPath, quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName, s.Logger)
+	newLpStrategyCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, lpStrategyContractPath, quasar.ChainAccount["contractOwner"].KeyName, s.Logger)
 	s.Require().NoError(err)
 
 	// store rewards contract code
-	rewardsContractCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, vaultRewardsContractPath, quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName, s.Logger)
+	rewardsContractCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, vaultRewardsContractPath, quasar.ChainAccount["contractOwner"].KeyName, s.Logger)
+	s.Require().NoError(err)
+
+	// store old basic vault contract code
+	oldBasicVaultContractCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, oldBasicVaultContractPath, quasar.ChainAccount["contractOwner"].KeyName, s.Logger)
 	s.Require().NoError(err)
 
 	// store basic vault contract code
-	basicVaultContractCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, basicVaultStrategyContractPath, quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName, s.Logger)
+	newBasicVaultContractCodeID, err := testSuite.StoreContractCode(ctx, quasar.Chain, basicVaultStrategyContractPath, quasar.ChainAccount["contractOwner"].KeyName, s.Logger)
 	s.Require().NoError(err)
 
 	// set new contracts in quasar chain
-	newConrtacts := []*testSuite.Contract{
-		testSuite.NewContract(init1, "primitive-1", lpStrategyCodeID),
-		testSuite.NewContract(init2, "primitive-2", lpStrategyCodeID),
-		testSuite.NewContract(init3, "primitive-3", lpStrategyCodeID),
+	newContracts := []*testSuite.Contract{
+		testSuite.NewContract(init1, "primitive-1", oldlpStrategyCodeID),
+		testSuite.NewContract(init2, "primitive-2", oldlpStrategyCodeID),
+		testSuite.NewContract(init3, "primitive-3", oldlpStrategyCodeID),
 	}
-	err = quasar.SetContracts(newConrtacts)
+	err = quasar.SetContracts(newContracts)
 	s.Require().NoError(err)
 
 	// instantiate all the contracts
-	for _, c := range newConrtacts {
+	for _, c := range newContracts {
 		// instantiate primitives
-		err = c.InstantiateContract(ctx, quasar.ChainAccount[testSuite.AuthorityKeyName], quasar.Chain, sdk.Coins{})
+		err = c.InstantiateContract(ctx, quasar.ChainAccount["contractOwner"], quasar.Chain, sdk.Coins{})
 		s.Require().NoError(err)
 
 		// create ICQ channel for primitives
@@ -199,7 +211,6 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 		"symbol":                        "ORN",
 		"min_withdrawal":                "1",
 		"name":                          "ORION",
-		"deposit_denom":                 "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
 		"primitives": []map[string]any{
 			{
 				"address": prim1.GetContractAddress(),
@@ -227,14 +238,14 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 
 	// add vault contract to quasar contracts
 	vaultContracts := []*testSuite.Contract{
-		testSuite.NewContract(vaultInit, "vault", basicVaultContractCodeID),
+		testSuite.NewContract(vaultInit, "vault", oldBasicVaultContractCodeID),
 	}
 	err = quasar.SetContracts(vaultContracts)
 	s.Require().NoError(err)
 
 	// initialize vaultContract
 	for _, c := range vaultContracts {
-		err = c.InstantiateContract(ctx, quasar.ChainAccount[testSuite.AuthorityKeyName], quasar.Chain, sdk.Coins{})
+		err = c.InstantiateContract(ctx, quasar.ChainAccount["contractOwner"], quasar.Chain, sdk.Coins{})
 		s.Require().NoError(err)
 	}
 
@@ -243,13 +254,13 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	s.Require().NoError(err)
 
 	// set depositors for all primitives before executing test cases
-	for _, c := range newConrtacts {
+	for _, c := range newContracts {
 		_, err = c.ExecuteContract(ctx,
 			quasar.Chain,
 			map[string]any{"set_depositor": map[string]any{"depositor": vaultContract.GetContractAddress()}},
 			nil,
 			sdk.Coins{},
-			quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName,
+			quasar.ChainAccount["contractOwner"].KeyName,
 		)
 		s.Require().NoError(err)
 	}
@@ -264,7 +275,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
 
-	bondUser, err := quasar.CreateUserAndFund(ctx, "bondUser", 10000000)
+	bondUser, err := quasar.CreateUserAndFund(ctx, "bond_user", 10_000_000)
 	s.Require().NoError(err)
 
 	// get all the channels on quassr
@@ -298,7 +309,7 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 	s.Require().NoError(err)
 
 	// generate test cases
-	testCases, err := testCasesHelper.GenerateTestCases(100120, 5, 1, 200000000)
+	testCases, err := testCasesHelper.GenerateTestCases(100120, 5, 1, 2000000)
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {
@@ -337,6 +348,97 @@ func (s *TestE2eTestBuilderSuite) TestBonds() {
 			s.Require().NoError(err)
 
 			if balance > 10000 {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+
+	// migrate everything to new code ids
+	_, err = prim1.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = prim2.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = prim3.MigrateContract(ctx, quasar.Chain, map[string]any{
+		"delete_pending_acks": []string{},
+		"delete_traps":        []string{},
+	}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newLpStrategyCodeID)
+	s.Require().NoError(err)
+
+	_, err = vaultContract.MigrateContract(ctx, quasar.Chain, map[string]any{}, nil, sdk.Coins{}, quasar.ChainAccount["contractOwner"].KeyName, newBasicVaultContractCodeID)
+	s.Require().NoError(err)
+
+	// execute a bank send from treasury to new bond account
+	tx, err = quasar.ExecTx(
+		ctx,
+		[]string{
+			"bank", "send",
+			quasar.ChainAccount[testSuite.AuthorityKeyName].Address,
+			bondUser.Address,
+			"1000000000" + osmosisDenomInQuasar,
+			"--gas", "20000000",
+		},
+		quasar.ChainAccount[testSuite.AuthorityKeyName].KeyName,
+		"",
+		"",
+		nil,
+		sdk.Coins{},
+		s.Logger.With(
+			zap.String("chain_id", osmosis.Chain.Config().ChainID),
+			zap.String("test", testSuite.GetFullNode(osmosis.Chain).TestName)),
+	)
+	s.Require().NoError(err)
+	err = quasar.AssertSuccessfulResultTx(ctx, tx, nil)
+	s.Require().NoError(err)
+
+	testCases, err = testCasesHelper.GenerateTestCases(100120, 5, 1, 200000000)
+	s.Require().NoError(err)
+
+	for _, tc := range testCases {
+		// inputs
+		var Result testSuite.ContractBalanceData
+
+		tc.Input.Account = *bondUser
+		tc.Input.PreTxnInputCommand = []string{
+			"wasm", "execute",
+			vaultContract.GetContractAddress(),
+		}
+		tc.Input.PostTxnInputCommand = []string{
+			"--gas", "20000000",
+		}
+
+		// outputs
+		queryArgs := map[string]any{
+			"balance": map[string]any{
+				"address": bondUser.Address,
+			},
+		}
+		queryArgsBz, err := json.Marshal(queryArgs)
+		s.Require().NoError(err)
+
+		tc.Output.Result = &Result
+		tc.Output.PreQueryCommand = []string{
+			"wasm", "contract-state", "smart",
+			vaultContract.GetContractAddress(),
+		}
+		tc.Output.QueryCommand = queryArgsBz
+		tc.Output.PostQueryCommand = []string{
+			"--output", "json",
+		}
+		tc.Output.OperationOnResult = func() bool {
+			balance, err := strconv.ParseInt(Result.Data.Balance, 10, 64)
+			s.Require().NoError(err)
+
+			if balance > 20000 {
 				return true
 			} else {
 				return false
