@@ -139,6 +139,9 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] cw_utils::PaymentError),
 
+    #[error("{0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
     #[error(
         "Deposit amount missmatch. Expected: {:?}, Received: {:?}",
         expected,
