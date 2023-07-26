@@ -209,10 +209,111 @@ pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<Uint256, Co
     }
 }
 
+// TODO: hashmaps for CW maps?
+pub fn price_to_tick_signed(mut deps: DepsMut, price: Decimal256) -> Result<i128, ContractError> {
+    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
+        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
+    {
+        return Err(ContractError::PriceBoundError { price });
+    }
+    if price == Decimal256::one() {
+        // return Ok(0i128);
+        return Ok(0i128);
+    }
+
+    // TODO: move this to instantiate?
+    deps = build_tick_exp_cache(deps)?;
+
+    let mut geo_spacing;
+    if price > Decimal256::one() {
+        let mut index = 0i64;
+        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        while geo_spacing.max_price < price {
+            index += 1;
+            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        }
+        let price_in_this_exponent = price - geo_spacing.initial_price;
+        let ticks_filled_by_current_spacing =
+            price_in_this_exponent / geo_spacing.additive_increment_per_tick;
+        let tick_index = Decimal256::from_ratio(geo_spacing.initial_tick as u128, 1u128)
+            .checked_add(ticks_filled_by_current_spacing)?;
+        let tick_i128 = decimal256_to_i128(tick_index).ok_or(ContractError::Overflow {})?;
+
+        return Ok(tick_i128);
+    } else {
+        let mut index = -1;
+        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        while geo_spacing.initial_price > price {
+            index -= 1;
+            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        }
+
+        let price_in_this_exponent = price - geo_spacing.initial_price;
+
+        let ticks_filled_by_current_spacing =
+            price_in_this_exponent / geo_spacing.additive_increment_per_tick;
+        let tick_index = geo_spacing.initial_tick as i128
+            + decimal256_to_i128(ticks_filled_by_current_spacing)
+                .ok_or(ContractError::Overflow {})?;
+
+        Ok(tick_index)
+    }
+}
+
+fn decimal256_to_i128(decimal: Decimal256) -> Option<i128> {
+    if decimal > Decimal256::from_str(&i128::MAX.to_string()).unwrap() {
+        return None;
+    }
+    // Convert Decimal256 to a string
+    let decimal_str = decimal.to_string();
+
+    // Split the string at the decimal point and take the integer part
+    let integer_part = decimal_str.split('.').next()?;
+
+    // Parse the integer part to i128
+    integer_part.parse::<i128>().ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use cosmwasm_std::{testing::mock_dependencies, Uint128};
+
+    #[test]
+    fn test_decimal_256_to_i128() {
+        // zero
+        let decimal = Decimal256::zero();
+        let i128 = decimal256_to_i128(decimal).unwrap();
+        assert_eq!(i128, 0);
+        // small number
+        let decimal = Decimal256::from_str("123456").unwrap();
+        let i128 = decimal256_to_i128(decimal).unwrap();
+        assert_eq!(i128, 123456);
+        // small decimal
+        let decimal = Decimal256::from_str("123456.123456").unwrap();
+        let i128 = decimal256_to_i128(decimal).unwrap();
+        assert_eq!(i128, 123456);
+        // large number
+        let decimal = Decimal256::from_str("170141183460469231731687303715884105728").unwrap();
+        let i128 = decimal256_to_i128(decimal);
+        assert!(i128.is_none());
+        // large decimal
+        let decimal =
+            Decimal256::from_str("170141183460469231731687303715884105728.923919239129391293")
+                .unwrap();
+        let i128 = decimal256_to_i128(decimal);
+        assert!(i128.is_none());
+    }
+
+    #[test]
+    fn test_price_to_tick_signed() {
+        let mut deps = mock_dependencies();
+        // example1
+        let mut price = Decimal256::from_str("0.000011790").unwrap();
+        let mut expected_tick_index = -44821000;
+        let tick_index = price_to_tick_signed(deps.as_mut(), price).unwrap();
+        assert_eq!(expected_tick_index, tick_index);
+    }
 
     #[test]
     fn test_tick_to_price() {
