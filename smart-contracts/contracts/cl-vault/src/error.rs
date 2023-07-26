@@ -142,6 +142,12 @@ pub enum ContractError {
     #[error("{0}")]
     ParseIntError(#[from] std::num::ParseIntError),
 
+    #[error("Tick index minimum error")]
+    TickIndexMinError {},
+
+    #[error("Tick index maximum error")]
+    TickIndexMaxError {},
+
     #[error(
         "Deposit amount missmatch. Expected: {:?}, Received: {:?}",
         expected,

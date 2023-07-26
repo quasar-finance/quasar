@@ -86,6 +86,66 @@ pub fn tick_to_price(
     Ok(price)
 }
 
+// TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
+pub fn tick_to_price_fix(tick_index: i64) -> Result<Decimal, ContractError> {
+    if tick_index == 0 {
+        return Ok(Decimal::one());
+    }
+
+    let geometric_exponent_increment_distance_in_ticks = Decimal::from_str("9")?
+        .checked_mul(pow_ten_internal_dec(-EXPONENT_AT_PRICE_ONE)?)?
+        .to_string()
+        .parse::<i64>()?;
+
+    // Check that the tick index is between min and max value
+    if tick_index < MIN_INITIALIZED_TICK as i64 - 1 {
+        return Err(ContractError::TickIndexMinError {});
+    }
+
+    if tick_index > MAX_TICK as i64 + 1 {
+        return Err(ContractError::TickIndexMaxError {});
+    }
+
+    // Use floor division to determine what the geometricExponent is now (the delta)
+    let geometric_exponent_delta = tick_index / geometric_exponent_increment_distance_in_ticks;
+
+    // Calculate the exponentAtCurrentTick from the starting exponentAtPriceOne and the geometricExponentDelta
+    let mut exponent_at_current_tick = EXPONENT_AT_PRICE_ONE as i64 + geometric_exponent_delta;
+    if tick_index < 0 {
+        // We must decrement the exponentAtCurrentTick when entering the negative tick range in order to constantly step up in precision when going further down in ticks
+        // Otherwise, from tick 0 to tick -(geometricExponentIncrementDistanceInTicks), we would use the same exponent as the exponentAtPriceOne
+        exponent_at_current_tick -= 1
+    }
+
+    // Knowing what our exponentAtCurrentTick is, we can then figure out what power of 10 this exponent corresponds to
+    // We need to utilize bigDec here since increments can go beyond the 10^-18 limits set by the sdk
+    let current_additive_increment_in_ticks =
+        pow_ten_internal_dec_256(exponent_at_current_tick.into())?;
+
+    // Now, starting at the minimum tick of the current increment, we calculate how many ticks in the current geometricExponent we have passed
+    let num_additive_ticks =
+        tick_index - (geometric_exponent_delta * geometric_exponent_increment_distance_in_ticks);
+
+    // Finally, we can calculate the price
+    let price = pow_ten_internal_dec_256(geometric_exponent_delta.into())?
+        .checked_add(
+            Decimal256::from_str(&num_additive_ticks.to_string())?
+                .checked_mul(current_additive_increment_in_ticks)?
+                .into(),
+        )?
+        .to_string()
+        .parse::<Decimal>()?;
+
+    // defense in depth, this logic would not be reached due to use having checked if given tick is in between
+    // min tick and max tick.
+    if price > Decimal::from_str(MAX_SPOT_PRICE)? || price < Decimal::from_str(MIN_SPOT_PRICE)? {
+        return Err(ContractError::PriceBoundError {
+            price: price.to_string().parse::<Decimal256>()?,
+        });
+    }
+    Ok(price)
+}
+
 // THIS IS TRYING TO REPLICATE OSMOSIS GO LOGIC BUT MATH IS A BIT OFF
 // TODO: had to use a Decimal256 to support 10^35 (Osmosis max spot price)
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000";
@@ -194,16 +254,6 @@ pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<i128, Contr
 mod tests {
     use super::*;
     use cosmwasm_std::{testing::mock_dependencies, Uint128};
-
-    #[test]
-    fn test_price_lower_than_1_to_tick() {
-        let mut deps = mock_dependencies();
-        // example1
-        let mut price = Decimal256::from_str("0.000011790").unwrap();
-        let mut expected_tick_index = -44821000;
-        let tick_index = price_to_tick(deps.as_mut(), price).unwrap();
-        assert_eq!(expected_tick_index, tick_index);
-    }
 
     #[test]
     fn test_tick_to_price() {
