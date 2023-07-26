@@ -138,6 +138,7 @@ func (s *Qtransfer) SetupSuite() {
 			"symbol":                        "ORN",
 			"min_withdrawal":                "1",
 			"name":                          "ORION",
+			"deposit_denom":                 "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
 			"primitives": []map[string]any{
 				{
 					"address": s.LpStrategyContractAddress1,

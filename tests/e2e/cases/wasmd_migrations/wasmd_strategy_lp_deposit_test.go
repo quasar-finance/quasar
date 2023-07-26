@@ -3,16 +3,17 @@ package wasmd
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
+	helpers "github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 	"github.com/strangelove-ventures/interchaintest/v4/testutil"
 	"github.com/stretchr/testify/suite"
-	"strconv"
-	"testing"
 )
 
 const (
@@ -20,6 +21,8 @@ const (
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
+	oldLpStrategyContractPath            = "./resources/contract_binaries/old_lp_strategy-aarch64.wasm" // taken from commit 7de678dc22271a6576a7fb83ca35c3fe7fb9593a
+	oldBasicVaultContractPath            = "./resources/contract_binaries/old_basic_vault-aarch64.wasm" // taken from commit 7de678dc22271a6576a7fb83ca35c3fe7fb9593a
 	osmosisPool1Path                     = "../_utils/sample_pool1.json"
 	osmosisPool2Path                     = "../_utils/sample_pool2.json"
 	osmosisPool3Path                     = "../_utils/sample_pool3.json"

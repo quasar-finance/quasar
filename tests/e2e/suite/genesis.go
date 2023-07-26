@@ -307,8 +307,8 @@ func quasarPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, err
 
 	kr := keyring.NewInMemory()
 
-	accTreasury := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
-	err := val.RecoverKey(ctx, authorityKeyName, accTreasury.Mnemonic)
+	accTreasury := interchaintest.BuildWallet(kr, AuthorityKeyName, chainCfg)
+	err := val.RecoverKey(ctx, AuthorityKeyName, accTreasury.Mnemonic)
 	if err != nil {
 		return Accounts{}, err
 	}
@@ -339,8 +339,8 @@ func osmosisPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, er
 
 	kr := keyring.NewInMemory()
 
-	accTreasury := interchaintest.BuildWallet(kr, authorityKeyName, chainCfg)
-	err := val.RecoverKey(ctx, authorityKeyName, accTreasury.Mnemonic)
+	accTreasury := interchaintest.BuildWallet(kr, AuthorityKeyName, chainCfg)
+	err := val.RecoverKey(ctx, AuthorityKeyName, accTreasury.Mnemonic)
 	if err != nil {
 		return Accounts{}, err
 	}
@@ -372,4 +372,27 @@ func osmosisPreGenesis(ctx context.Context, val *cosmos.ChainNode) (Accounts, er
 	return Accounts{
 		Treasury: accTreasury,
 	}, nil
+}
+
+func addPreGenesis(ctx context.Context, val *cosmos.ChainNode, genesisCoins types.Coins) (AccountsNew, error) {
+	// todo implement a general pre genesis function
+	chainCfg := val.Chain.Config()
+
+	kr := keyring.NewInMemory()
+
+	accTreasury := interchaintest.BuildWallet(kr, AuthorityKeyName, chainCfg)
+	err := val.RecoverKey(ctx, AuthorityKeyName, accTreasury.Mnemonic)
+	if err != nil {
+		return nil, err
+	}
+
+	err = val.AddGenesisAccount(ctx, accTreasury.Address, genesisCoins)
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := make(map[string]*ibc.Wallet)
+	accounts[AuthorityKeyName] = &accTreasury
+
+	return accounts, nil
 }

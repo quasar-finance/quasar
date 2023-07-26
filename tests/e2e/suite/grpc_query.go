@@ -75,7 +75,7 @@ func (s E2ETestSuite) QueryWasmCodes(ctx context.Context, chain ibc.Chain) []was
 	return resp.CodeInfos
 }
 
-// QuerySmartWasmContractState queries the smart contract state on the given chain.
+// QuerySmartWasmContractState queries the smart Contract state on the given chain.
 func (s E2ETestSuite) QuerySmartWasmContractState(ctx context.Context, chain ibc.Chain, contractAddr string, query, result any) {
 	queryBz, err := json.Marshal(query)
 	s.Require().NoError(err)

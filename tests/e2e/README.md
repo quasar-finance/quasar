@@ -58,6 +58,20 @@ For other users:
  docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer:0.12.11
  ```
 
+## Generator
+
+To create a generator, the user would need to follow the example present in `cases/random_generator` example code. Once the rust code is ready,
+the user needs to run the command below within the `random_generator` directory : 
+
+```bash
+cargo build --release
+```
+
+Once the build is complete, the user needs to create some supporting code as mentioned in `cases/_helper/test_case_generator.go` file. 
+
+Use the new function create in the `_helper` directory to use in the test suite user is building.
+
+
 ## Testing
 
 This folder's `Makefile` contains a command that enables the execution of end-to-end (E2E) tests. This provides the
