@@ -1,11 +1,18 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{Decimal, Decimal256, DepsMut, Uint128};
+use osmosis_test_tube::cosmrs::bip32::secp256k1::elliptic_curve::PrimeCurve;
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
     ContractError,
 };
+
+const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
+const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
+const EXPONENT_AT_PRICE_ONE: i128 = -6;
+const MIN_INITIALIZED_TICK: i128 = -108000000;
+const MAX_TICK: i128 = 342000000;
 
 // due to pow restrictions we need to use unsigned integers; i.e. 10.pow(-exp: u32)
 // so if the resulting power is positive, we take 10**exp;
@@ -21,6 +28,17 @@ fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
             / 10u128
                 .checked_pow(exponent as u32)
                 .ok_or(ContractError::Overflow {})?)
+    }
+}
+
+// TODO: this should replace pow_ten_internal(exp: i128) & pow_ten_internal_dec(exp: i128)
+fn _pow_ten_internal_new(exponent: i64) -> Result<Decimal256, ContractError> {
+    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
+    // let p = 10_u128.pow(exponent as u32);
+    if exponent >= 0 {
+        return Ok(p);
+    } else {
+        Ok(Decimal256::one() / p)
     }
 }
 
@@ -49,47 +67,9 @@ fn pow_ten_internal_dec_256(exponent: i128) -> Result<Decimal256, ContractError>
 }
 
 // TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
-pub fn tick_to_price(
-    tick_index: Uint128,
-    exponent_at_price_one: i128,
-) -> Result<Decimal, ContractError> {
-    if tick_index == Uint128::zero() {
-        return Ok(Decimal::one());
-    }
-
-    let geometric_exponent_increment_distance_in_ticks = 9u128
-        .checked_mul(pow_ten_internal(-exponent_at_price_one)?)
-        .ok_or(ContractError::Overflow {})?;
-
-    // TODO: if exponent_at_price_one is not negative, we'll hit division by zero error with Osmosis current logic
-    let geometric_exponential_delta: u128 = tick_index
-        .checked_div(geometric_exponent_increment_distance_in_ticks.into())?
-        .u128();
-
-    let exponent_at_current_tick: i128 =
-        exponent_at_price_one + geometric_exponential_delta as i128;
-
-    // TODO: tick_index should always be positive, right? Osmosis go code has a check for it being neg. We use Uint128 so it can't be neg
-
-    let current_additive_increment_in_ticks = pow_ten_internal_dec(exponent_at_current_tick)?;
-
-    let num_additive_ticks: u128 = tick_index.u128()
-        - geometric_exponential_delta
-            .checked_mul(geometric_exponent_increment_distance_in_ticks)
-            .ok_or(ContractError::Overflow {})?;
-
-    let price = pow_ten_internal_dec(geometric_exponential_delta as i128)?.checked_add(
-        Decimal::from_ratio(num_additive_ticks, 1u128)
-            .checked_mul(current_additive_increment_in_ticks)?,
-    )?;
-
-    Ok(price)
-}
-
-// TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
-pub fn tick_to_price_fix(tick_index: i64) -> Result<Decimal, ContractError> {
+pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     if tick_index == 0 {
-        return Ok(Decimal::one());
+        return Ok(Decimal256::one());
     }
 
     let geometric_exponent_increment_distance_in_ticks = Decimal::from_str("9")?
@@ -98,11 +78,11 @@ pub fn tick_to_price_fix(tick_index: i64) -> Result<Decimal, ContractError> {
         .parse::<i64>()?;
 
     // Check that the tick index is between min and max value
-    if tick_index < MIN_INITIALIZED_TICK as i64 - 1 {
+    if tick_index < MIN_INITIALIZED_TICK as i64 {
         return Err(ContractError::TickIndexMinError {});
     }
 
-    if tick_index > MAX_TICK as i64 + 1 {
+    if tick_index > MAX_TICK as i64 {
         return Err(ContractError::TickIndexMaxError {});
     }
 
@@ -111,6 +91,7 @@ pub fn tick_to_price_fix(tick_index: i64) -> Result<Decimal, ContractError> {
 
     // Calculate the exponentAtCurrentTick from the starting exponentAtPriceOne and the geometricExponentDelta
     let mut exponent_at_current_tick = EXPONENT_AT_PRICE_ONE as i64 + geometric_exponent_delta;
+
     if tick_index < 0 {
         // We must decrement the exponentAtCurrentTick when entering the negative tick range in order to constantly step up in precision when going further down in ticks
         // Otherwise, from tick 0 to tick -(geometricExponentIncrementDistanceInTicks), we would use the same exponent as the exponentAtPriceOne
@@ -127,32 +108,35 @@ pub fn tick_to_price_fix(tick_index: i64) -> Result<Decimal, ContractError> {
         tick_index - (geometric_exponent_delta * geometric_exponent_increment_distance_in_ticks);
 
     // Finally, we can calculate the price
-    let price = pow_ten_internal_dec_256(geometric_exponent_delta.into())?
-        .checked_add(
+    let price: Decimal256;
+
+    if num_additive_ticks < 0 {
+        price = _pow_ten_internal_new(geometric_exponent_delta)?
+            .checked_sub(
+                Decimal::from_str(&num_additive_ticks.abs().to_string())?
+                    .checked_mul(Decimal::from_str(
+                        &current_additive_increment_in_ticks.to_string(),
+                    )?)?
+                    .into(),
+            )?
+            .into();
+    } else {
+        price = pow_ten_internal_dec_256(geometric_exponent_delta.into())?.checked_add(
             Decimal256::from_str(&num_additive_ticks.to_string())?
                 .checked_mul(current_additive_increment_in_ticks)?
                 .into(),
-        )?
-        .to_string()
-        .parse::<Decimal>()?;
+        )?;
+    }
 
     // defense in depth, this logic would not be reached due to use having checked if given tick is in between
     // min tick and max tick.
-    if price > Decimal::from_str(MAX_SPOT_PRICE)? || price < Decimal::from_str(MIN_SPOT_PRICE)? {
-        return Err(ContractError::PriceBoundError {
-            price: price.to_string().parse::<Decimal256>()?,
-        });
+    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
+        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
+    {
+        return Err(ContractError::PriceBoundError { price });
     }
     Ok(price)
 }
-
-// THIS IS TRYING TO REPLICATE OSMOSIS GO LOGIC BUT MATH IS A BIT OFF
-// TODO: had to use a Decimal256 to support 10^35 (Osmosis max spot price)
-const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000";
-const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
-const EXPONENT_AT_PRICE_ONE: i128 = -6;
-const MIN_INITIALIZED_TICK: i128 = -108000000;
-const MAX_TICK: i128 = 342000000;
 
 fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
     // Build positive indices
@@ -253,15 +237,118 @@ pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<i128, Contr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{testing::mock_dependencies, Uint128};
+    use cosmwasm_std::testing::mock_dependencies;
 
     #[test]
     fn test_tick_to_price() {
-        let tick_index = Uint128::new(36650010u128);
-        let exponen_at_current_price_one = -6;
-        let expected_price = Decimal::from_atomics(165001u128, 1);
-        let price = tick_to_price(tick_index, exponen_at_current_price_one).unwrap();
-        assert_eq!(price, expected_price.unwrap());
+        // example1
+        let tick_index = 38035200;
+        let expected_price = Decimal256::from_str("30352").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example2
+        let tick_index = 38035300;
+        let expected_price = Decimal256::from_str("30353").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example3
+        let tick_index = -44821000;
+        let expected_price = Decimal256::from_str("0.000011790").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example4
+        let tick_index = -44820900;
+        let expected_price = Decimal256::from_str("0.000011791").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example5
+        let tick_index = -12104000;
+        let expected_price = Decimal256::from_str("0.068960").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example6
+        let tick_index = -12103900;
+        let expected_price = Decimal256::from_str("0.068961").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example7
+        let tick_index = MAX_TICK as i64 - 100;
+        let expected_price =
+            Decimal256::from_str("99999000000000000000000000000000000000").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example8
+        let tick_index = MAX_TICK as i64;
+        let expected_price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example9
+        let tick_index = -20594000;
+        let expected_price = Decimal256::from_str("0.007406").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example10
+        let tick_index = -20593900;
+        let expected_price = Decimal256::from_str("0.0074061").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example11
+        let tick_index = -29204000;
+        let expected_price = Decimal256::from_str("0.00077960").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example12
+        let tick_index = -29203900;
+        let expected_price = Decimal256::from_str("0.00077961").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example13
+        let tick_index = -12150000;
+        let expected_price = Decimal256::from_str("0.068500").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example14
+        let tick_index = -12149900;
+        let expected_price = Decimal256::from_str("0.068501").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example15
+        let tick_index = 64576000;
+        let expected_price = Decimal256::from_str("25760000").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example16
+        let tick_index = 64576100;
+        let expected_price = Decimal256::from_str("25761000").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example17
+        let tick_index = 0;
+        let expected_price = Decimal256::from_str("1").unwrap();
+        let price = tick_to_price(tick_index).unwrap();
+        assert_eq!(price, expected_price);
+
+        // example19
+        assert!(tick_to_price(MAX_TICK as i64 + 1).is_err());
+
+        // example20
+        assert!(tick_to_price(MIN_INITIALIZED_TICK as i64 - 1).is_err());
     }
 
     #[test]
