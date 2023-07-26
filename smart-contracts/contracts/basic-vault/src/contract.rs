@@ -1,8 +1,7 @@
-use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
     StdError, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
@@ -12,10 +11,9 @@ use cw20_base::allowances::{
     execute_transfer_from, query_allowance,
 };
 use cw20_base::contract::{
-    execute_burn, execute_mint, execute_send, execute_transfer, query_balance, query_token_info,
+    execute_burn, execute_send, execute_transfer, query_balance, query_token_info,
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
-use cw_storage_plus::Item;
 use cw_utils::parse_instantiate_response_data;
 use lp_strategy::msg::ConfigResponse;
 use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
@@ -33,9 +31,8 @@ use crate::query::{
     query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
-    AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ,
-    BONDING_SEQ_TO_ADDR, BOND_STATE, CAP, CLAIMS, CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL,
-    INVESTMENT, VAULT_REWARDS,
+    AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -361,75 +358,23 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    /// Supply is dynamic and tracks the current supply of staked and ERC20 tokens.
-    #[cw_serde]
-    #[derive(Default)]
-    pub struct Supply {
-        /// issued is how many derivative tokens this contract has issued
-        pub issued: Uint128,
-    }
-
-    let delete_supply: Item<Uint128> = Item::new("total_supply");
-    delete_supply.remove(deps.storage);
-
-    // wipe the current share state
-    cw20_base::state::BALANCES.clear(deps.storage);
-    cw20_base::state::TOKEN_INFO.update(
-        deps.storage,
-        |old| -> Result<TokenInfo, ContractError> {
-            Ok(cw20_base::state::TokenInfo {
-                name: old.name,
-                symbol: old.symbol,
-                decimals: old.decimals,
-                total_supply: Uint128::zero(),
-                mint: old.mint,
-            })
-        },
-    )?;
-
-    let mut attributes = vec![
-        Attribute::new("migrate", CONTRACT_NAME),
-        Attribute::new("success", "true"),
-    ];
-
-    // this migrate message has to be applied after the fix to the lp strategy
-    let states: Vec<_> = BOND_STATE
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let msgs: Result<Vec<WasmMsg>, StdError> = cw20_base::state::BALANCES
         .range(deps.storage, None, None, Order::Ascending)
+        .map(|val| {
+            let (addr, _) = val?;
+            update_user_reward_index(deps.storage, &addr)
+        })
         .collect();
-    states
-        .into_iter()
-        .try_for_each(|res| -> Result<(), ContractError> {
-            let stub = res?;
 
-            // mint the new shares, add attributes to the response
-            let sub_info = MessageInfo {
-                sender: env.contract.address.clone(),
-                funds: vec![],
-            };
+    let wrapped_msges = msgs?.into_iter().map(CosmosMsg::Wasm);
 
-            let bond_id = stub.0;
-            let recipient = BONDING_SEQ_TO_ADDR.load(deps.storage, bond_id)?;
-
-            let amount = stub
-                .1
-                .into_iter()
-                .fold(Uint128::zero(), |acc, stub| acc + stub.amount);
-
-            execute_mint(
-                deps.branch(),
-                env.clone(),
-                sub_info,
-                recipient.clone(),
-                amount,
-            )?;
-
-            attributes.push(Attribute::new("amount", amount.to_string()));
-            attributes.push(Attribute::new("recipient", recipient));
-            Ok(())
-        })?;
-
-    Ok(Response::new().add_attributes(attributes))
+    Ok(Response::new()
+        .add_attribute(
+            "updated-rewards-indexes-msges",
+            wrapped_msges.len().to_string(),
+        )
+        .add_messages(wrapped_msges))
 }
 
 #[cfg(test)]
