@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, DepsMut, Uint128};
-use osmosis_test_tube::cosmrs::bip32::secp256k1::elliptic_curve::PrimeCurve;
+use cosmwasm_std::{Decimal, Decimal256, DepsMut};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -9,7 +8,7 @@ use crate::{
 };
 
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
-const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
+const MIN_SPOT_PRICE: &str = "0.000000000001";                          // 10^-12
 const EXPONENT_AT_PRICE_ONE: i128 = -6;
 const MIN_INITIALIZED_TICK: i128 = -108000000;
 const MAX_TICK: i128 = 342000000;
