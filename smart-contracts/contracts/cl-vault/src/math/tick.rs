@@ -8,15 +8,15 @@ use crate::{
 };
 
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
-const MIN_SPOT_PRICE: &str = "0.000000000001";                          // 10^-12
-const EXPONENT_AT_PRICE_ONE: i128 = -6;
-const MIN_INITIALIZED_TICK: i128 = -108000000;
+const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
+const EXPONENT_AT_PRICE_ONE: i64 = -6;
+const MIN_INITIALIZED_TICK: i64 = -108000000;
 const MAX_TICK: i128 = 342000000;
 
 // due to pow restrictions we need to use unsigned integers; i.e. 10.pow(-exp: u32)
 // so if the resulting power is positive, we take 10**exp;
 // and if it is negative, we take 1/10**exp.
-fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
+fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
     if exponent >= 0 {
         return 10u128
             .checked_pow(exponent.abs() as u32)
@@ -30,19 +30,8 @@ fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
     }
 }
 
-// TODO: this should replace pow_ten_internal(exp: i128) & pow_ten_internal_dec(exp: i128)
-fn _pow_ten_internal_new(exponent: i64) -> Result<Decimal256, ContractError> {
-    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
-    // let p = 10_u128.pow(exponent as u32);
-    if exponent >= 0 {
-        return Ok(p);
-    } else {
-        Ok(Decimal256::one() / p)
-    }
-}
-
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
-fn pow_ten_internal_dec(exponent: i128) -> Result<Decimal, ContractError> {
+fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
     let p = 10u128
         .checked_pow(exponent.abs() as u32)
         .ok_or(ContractError::Overflow {})?;
@@ -54,14 +43,13 @@ fn pow_ten_internal_dec(exponent: i128) -> Result<Decimal, ContractError> {
 }
 
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
-fn pow_ten_internal_dec_256(exponent: i128) -> Result<Decimal256, ContractError> {
-    let p = 10u128
-        .checked_pow(exponent.abs() as u32)
-        .ok_or(ContractError::Overflow {})?;
+fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> {
+    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
+    // let p = 10_u128.pow(exponent as u32);
     if exponent >= 0 {
-        return Ok(Decimal256::from_ratio(p, 1u128));
+        return Ok(p);
     } else {
-        Ok(Decimal256::from_ratio(1u128, p))
+        Ok(Decimal256::one() / p)
     }
 }
 
@@ -110,7 +98,7 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     let price: Decimal256;
 
     if num_additive_ticks < 0 {
-        price = _pow_ten_internal_new(geometric_exponent_delta)?
+        price = pow_ten_internal_dec(geometric_exponent_delta)?
             .checked_sub(
                 Decimal::from_str(&num_additive_ticks.abs().to_string())?
                     .checked_mul(Decimal::from_str(
@@ -147,10 +135,10 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
             initial_price: pow_ten_internal_dec_256(cur_exp_index.into())?,
             max_price: pow_ten_internal_dec_256((cur_exp_index + 1).into())?,
             additive_increment_per_tick: pow_ten_internal_dec_256(
-                EXPONENT_AT_PRICE_ONE + cur_exp_index as i128,
+                EXPONENT_AT_PRICE_ONE + cur_exp_index,
             )?,
             initial_tick: (9u128
-                .checked_mul(pow_ten_internal(-EXPONENT_AT_PRICE_ONE)?)
+                .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
                 .ok_or(ContractError::Overflow {})? as i64)
                 .checked_mul(cur_exp_index)
                 .ok_or(ContractError::Overflow {})?,
@@ -168,9 +156,9 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index.into())?;
         let max_price = pow_ten_internal_dec_256((cur_exp_index + 1).into())?;
         let additive_increment_per_tick =
-            pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index as i128)?;
+            pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
         let initial_tick = (9u128
-            .checked_mul(pow_ten_internal(-EXPONENT_AT_PRICE_ONE)?)
+            .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
             .ok_or(ContractError::Overflow {})? as i64)
             .checked_mul(cur_exp_index)
             .ok_or(ContractError::Overflow {})?;
