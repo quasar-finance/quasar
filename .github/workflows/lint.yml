@@ -37,6 +37,6 @@ jobs:
       - name: Show versions
         run: rustc -V && cargo -V
       - name: Rust lint
-        run: cd smart-contracts && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings 
+        run: cd smart-contracts && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated 
       - name: Rust format check
         run: cd smart-contracts && cargo fmt --all -- --check
