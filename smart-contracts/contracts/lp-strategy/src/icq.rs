@@ -155,8 +155,8 @@ pub fn prepare_full_query(
         pool_id: config.pool_id,
         share_in_amount: shares_out.to_string(),
     };
-   // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
-   let spot_price = QuerySpotPriceRequest {
+    // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
+    let spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
