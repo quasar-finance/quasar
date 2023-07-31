@@ -129,20 +129,31 @@ pub fn prepare_full_query(
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
-    let join_pool = QueryCalcJoinPoolSharesRequest {
-        pool_id: config.pool_id,
-        tokens_in: vec![OsmoCoin {
-            denom: config.base_denom.clone(),
-            amount: bonding_amount.to_string(),
-        }],
+    // we have to check that bonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    let checked_join_pool = match bonding_amount > 1u128.into() {
+        true => Some(QueryCalcJoinPoolSharesRequest {
+            pool_id: config.pool_id,
+            tokens_in: vec![OsmoCoin {
+                denom: config.base_denom.clone(),
+                amount: bonding_amount.to_string(),
+            }],
+        }),
+        false => None,
     };
 
     // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
+    let shares = LP_SHARES.load(storage)?.locked_shares;
+    let shares_out = if !shares.is_zero() {
+        shares
+    } else {
+        Uint128::one()
+    };
+
     let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: LP_SHARES.load(storage)?.locked_shares.to_string(),
+        share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
@@ -151,12 +162,8 @@ pub fn prepare_full_query(
         quote_asset_denom: config.quote_denom,
     };
 
-    let lock_by_id = LockedRequest {
-        lock_id: OSMO_LOCK.may_load(storage)?.unwrap_or(1),
-    };
-
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    let q = Query::new()
+    let mut q = Query::new()
         .add_request(
             base_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
@@ -170,21 +177,31 @@ pub fn prepare_full_query(
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            join_pool.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
-        )
-        .add_request(
             exit_pool.encode_to_vec().into(),
             "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
             spot_price.encode_to_vec().into(),
             "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
+        );
+
+    if let Some(join_pool) = checked_join_pool {
+        q = q.add_request(
+            join_pool.encode_to_vec().into(),
+            "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares".to_string(),
         )
-        .add_request(
+    }
+
+    // todo: turn this into an if let
+    // only query LockedByID if we have a lock_id
+    if let Some(lock_id) = OSMO_LOCK.may_load(storage)? {
+        let lock_by_id = LockedRequest { lock_id };
+        q = q.add_request(
             lock_by_id.encode_to_vec().into(),
             "/osmosis.lockup.Query/LockedByID".to_string(),
         );
+    }
+
     Ok(q.encode_pkt())
 }
 

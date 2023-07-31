@@ -263,7 +263,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let _config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
 
         IBC_LOCK
@@ -291,7 +291,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let _config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
 
@@ -340,7 +340,7 @@ mod tests {
         let mut deps = mock_dependencies();
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
-        let config = CONFIG.load(deps.as_ref().storage).unwrap();
+        let _config = CONFIG.load(deps.as_ref().storage).unwrap();
         let owner = Addr::unchecked("bob");
         let id = "my-id";
 
@@ -375,7 +375,7 @@ mod tests {
         let err = do_bond(
             deps.as_mut().storage,
             q,
-            env.clone(),
+            env,
             Uint128::new(1000),
             owner,
             id.to_string(),

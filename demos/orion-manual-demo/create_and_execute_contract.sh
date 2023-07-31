@@ -77,7 +77,7 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost 
 RES=$(quasarnoded tx wasm store artifacts/vault_rewards-aarch64.wasm --from alice --keyring-backend test -y --output json -b block $TXFLAG)
 VR_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
+VAULT_INIT='{"deposit_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}}]}'
 # VAULT_INIT='{"total_cap":"200000000000","thesis":"yurmom","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}}]}'
 #,{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
