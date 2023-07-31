@@ -1,2 +1,2 @@
-pub mod deposit;
 pub mod admin;
+pub mod deposit;

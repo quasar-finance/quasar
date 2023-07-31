@@ -1,7 +1,7 @@
-use cosmwasm_std::{Coin, CosmosMsg, Decimal256, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgFungifyChargedPositions, MsgWithdrawPosition, PositionByIdRequest,
+    MsgFungifyChargedPositions, MsgWithdrawPosition,
 };
 
 use crate::{
@@ -74,16 +74,16 @@ pub fn merge_positions(
     Ok(fungify)
 }
 
-pub fn get_position(
+pub fn _get_position(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
+    _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
     let position = POSITION.load(storage)?;
 
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
     let position = cl_querier.position_by_id(position.position_id)?;
-    position.position.ok_or(ContractError::PositionNotFound)
+    position.position.ok_or(ContractError::PositionNotFound {})
 }
 
 #[cfg(test)]
@@ -143,7 +143,9 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        POSITION.save(deps.as_mut().storage, &Position { position_id }).unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id })
+            .unwrap();
 
         let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
 
@@ -164,7 +166,9 @@ mod tests {
         let position_ids = vec![2, 3, 4];
 
         let position_id = 1;
-        POSITION.save(deps.as_mut().storage, &Position { position_id }).unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id })
+            .unwrap();
 
         let mut expected_position_ids = position_ids.clone();
         expected_position_ids.push(position_id);

@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod concentrated_liquidity;
 pub mod contract;
 mod error;

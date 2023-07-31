@@ -99,12 +99,12 @@
 // }
 
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
-    DivideByZeroError, OverflowError, StdError,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
+    DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -113,7 +113,7 @@ pub enum ContractError {
     Unauthorized {},
 
     #[error("Position Not Found")]
-    PositionNotFound,
+    PositionNotFound {},
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
@@ -132,6 +132,37 @@ pub enum ContractError {
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
+
+    #[error("Price must be between 0.000000000001 and 100000000000000000000000000000000000000. Got {:?}", price)]
+    PriceBoundError { price: Decimal256 },
+
+    #[error("{0}")]
+    PaymentError(#[from] cw_utils::PaymentError),
+
+    #[error("{0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Tick index minimum error")]
+    TickIndexMinError {},
+
+    #[error("Tick index maximum error")]
+    TickIndexMaxError {},
+
+    #[error(
+        "Deposit amount missmatch. Expected: {:?}, Received: {:?}",
+        expected,
+        received
+    )]
+    DepositMismatch {
+        expected: Uint128,
+        received: Uint128,
+    },
+
+    #[error(
+        "Slippage tolerance must be a number between 0 and 10000. Got {}",
+        slippage_tolerance
+    )]
+    InvalidSlippageTolerance { slippage_tolerance: Uint128 },
 
     #[error("This message does no accept funds")]
     NonPayable {},
