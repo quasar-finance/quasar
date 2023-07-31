@@ -613,11 +613,8 @@ mod tests {
     use crate::tests::{mock_deps_with_primitives, TEST_ADMIN};
 
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{
-        attr, Addr, Coin, ContractResult, CosmosMsg, QuerierResult, SystemResult, Uint128,
-        WasmQuery,
-    };
+    use cosmwasm_std::testing::{mock_env, mock_info};
+    use cosmwasm_std::{attr, Addr, Coin, CosmosMsg, Uint128};
 
     use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
     use lp_strategy::msg::InstantiateMsg;
@@ -998,7 +995,7 @@ mod tests {
         let amount = cw20_base::contract::query_balance(deps.as_ref(), "user".to_string())
             .unwrap()
             .balance;
-        let total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
+        let _total_supply = cw20_base::contract::query_token_info(deps.as_ref()).unwrap();
 
         let res = do_start_unbond(deps.as_mut(), &env, &info, Some(amount))
             .unwrap()

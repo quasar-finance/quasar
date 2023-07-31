@@ -155,8 +155,8 @@ pub fn prepare_full_query(
         pool_id: config.pool_id,
         share_in_amount: shares_out.to_string(),
     };
-    // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
-    let spot_price = QuerySpotPriceRequest {
+   // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
+   let spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
@@ -194,15 +194,12 @@ pub fn prepare_full_query(
 
     // todo: turn this into an if let
     // only query LockedByID if we have a lock_id
-    match OSMO_LOCK.may_load(storage)? {
-        Some(lock_id) => {
-            let lock_by_id = LockedRequest { lock_id };
-            q = q.add_request(
-                lock_by_id.encode_to_vec().into(),
-                "/osmosis.lockup.Query/LockedByID".to_string(),
-            );
-        }
-        None => {}
+    if let Some(lock_id) = OSMO_LOCK.may_load(storage)? {
+        let lock_by_id = LockedRequest { lock_id };
+        q = q.add_request(
+            lock_by_id.encode_to_vec().into(),
+            "/osmosis.lockup.Query/LockedByID".to_string(),
+        );
     }
 
     Ok(q.encode_pkt())

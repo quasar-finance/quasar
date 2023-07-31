@@ -44,7 +44,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    coin, coins, from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
@@ -396,7 +396,7 @@ pub fn handle_icq_ack(
         > 1u128.into()
     {
         // found, increment response index
-        response_idx = response_idx + 1;
+        response_idx += 1;
         // decode result
         QueryCalcJoinPoolSharesResponse::decode(resp.responses[response_idx].value.as_ref())?
     } else {
@@ -409,7 +409,7 @@ pub fn handle_icq_ack(
     let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
         Some(_) => {
             // found, increment response index
-            response_idx = response_idx + 1;
+            response_idx += 1;
             // decode result
             let lock = LockedResponse::decode(resp.responses[response_idx].value.as_ref())?.lock;
             // parse the locked lp shares on Osmosis, a bit messy
@@ -818,7 +818,9 @@ mod tests {
                     base_denom:
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
                             .to_string(),
-                    quote_denom: "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901".to_string(),
+                    quote_denom:
+                        "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901"
+                            .to_string(),
                     local_denom:
                         "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5"
                             .to_string(),
@@ -875,7 +877,7 @@ mod tests {
             channel: channel.clone(),
         };
 
-        handle_ica_channel(deps.as_mut(), msg.clone()).unwrap();
+        handle_ica_channel(deps.as_mut(), msg).unwrap();
 
         let expected = ChannelInfo {
             id: channel.endpoint.channel_id.clone(),
@@ -915,18 +917,18 @@ mod tests {
         let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
         let channel = IbcChannel::new(
             endpoint,
-            counterparty_endpoint.clone(),
+            counterparty_endpoint,
             IbcOrder::Ordered,
             version,
             "connection-0".to_string(),
         );
 
         let msg = IbcChannelOpenMsg::OpenTry {
-            channel: channel.clone(),
+            channel: channel,
             counterparty_version: "1".to_string(),
         };
 
-        let err = handle_ica_channel(deps.as_mut(), msg.clone()).unwrap_err();
+        let err = handle_ica_channel(deps.as_mut(), msg).unwrap_err();
         assert_eq!(err, ContractError::IncorrectChannelOpenType);
     }
 }

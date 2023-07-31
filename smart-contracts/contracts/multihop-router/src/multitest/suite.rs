@@ -69,7 +69,7 @@ impl QuasarVaultSuite {
             &init_msg,
             &funds,
             "router-contract",
-            Some(deployer.clone().to_string()),
+            Some(deployer.to_string()),
         )?;
         Ok(QuasarVaultSuite {
             app,
@@ -121,7 +121,7 @@ impl QuasarVaultSuite {
             && self.check_list_routes(expected)?)
     }
 
-    pub fn assert_get_memo(&self, expected: &[(RouteId, Route)]) -> () {
+    pub fn assert_get_memo(&self, expected: &[(RouteId, Route)]) {
         self.verify_get_memo(
             expected,
             |actual, expected| {
@@ -171,16 +171,14 @@ impl QuasarVaultSuite {
                 {
                     return Ok(on_fail(res, expected));
                 }
-            } else {
-                if MemoResponse::Actual(actual_memo.clone()) != res.memo {
-                    return Ok(on_fail(res, expected));
-                }
+            } else if MemoResponse::Actual(actual_memo.clone()) != res.memo {
+                return Ok(on_fail(res, expected));
             }
         }
         Ok(on_succes)
     }
 
-    pub fn assert_get_route(&self, expected: &[(RouteId, Route)]) -> () {
+    pub fn assert_get_route(&self, expected: &[(RouteId, Route)]) {
         self.verify_get_route(
             expected,
             |actual, expected| {
@@ -216,7 +214,7 @@ impl QuasarVaultSuite {
         Ok(on_succes)
     }
 
-    pub fn assert_list_route(&self, expected: &[(RouteId, Route)]) -> () {
+    pub fn assert_list_route(&self, expected: &[(RouteId, Route)]) {
         self.verify_get_memo(
             expected,
             |actual, expected| {
@@ -243,7 +241,7 @@ impl QuasarVaultSuite {
     ) -> AnyResult<T> {
         let res = self.query::<ListRoutesResponse>(QueryMsg::ListRoutes {})?;
         if res.routes.iter().all(|actual| expected.contains(actual)) {
-            return Ok(on_succes);
+            Ok(on_succes)
         } else {
             Ok(on_fail(res.routes.as_ref(), expected))
         }
