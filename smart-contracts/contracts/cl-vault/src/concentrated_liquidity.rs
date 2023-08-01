@@ -1,7 +1,7 @@
-use cosmwasm_std::{Coin, CosmosMsg, Decimal256, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgFungifyChargedPositions, MsgWithdrawPosition, PositionByIdRequest,
+    MsgFungifyChargedPositions, MsgWithdrawPosition,
 };
 
 use crate::{
@@ -31,8 +31,7 @@ pub fn create_position(
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
         token_min_amount1: token_min_amount1.to_string(),
-    }
-    .into();
+    };
     Ok(create_position)
 }
 
@@ -77,7 +76,7 @@ pub fn merge_positions(
 pub fn get_position(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
+    _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
     let position = POSITION.load(storage)?;
 

@@ -80,7 +80,7 @@ pub fn execute_update_config(
 
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
-        .add_attribute("updates", &format!("{:?}", updates)))
+        .add_attribute("updates", format!("{:?}", updates)))
 }
 
 /// Helper function for a streamlined admin authentication check.
@@ -94,7 +94,7 @@ pub fn execute_update_config(
 /// - `Ok(Addr)` - If the caller is the admin. The returned `Addr` is the address of the admin.
 /// - `Err(ContractError)` - If the caller is not the admin. The error variant will be `ContractError::Unauthorized`.
 pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
-    if !(ADMIN_ADDRESS.load(deps.storage)? == caller) {
+    if ADMIN_ADDRESS.load(deps.storage)? != caller {
         Err(ContractError::Unauthorized {})
     } else {
         Ok(caller.clone())
@@ -119,7 +119,7 @@ mod tests {
             .unwrap();
 
         let new_admin = Addr::unchecked("new_admin");
-        let info_admin: MessageInfo = mock_info("old_admin", &vec![]);
+        let info_admin: MessageInfo = mock_info("old_admin", &[]);
 
         execute_update_admin(deps.as_mut(), info_admin, new_admin.to_string()).unwrap();
         assert_eq!(ADMIN_ADDRESS.load(&deps.storage).unwrap(), new_admin);
@@ -134,7 +134,7 @@ mod tests {
             .unwrap();
 
         let new_admin = Addr::unchecked("new_admin");
-        let info_not_admin = mock_info("not_admin", &vec![]);
+        let info_not_admin = mock_info("not_admin", &[]);
 
         execute_update_admin(deps.as_mut(), info_not_admin, new_admin.to_string()).unwrap_err();
         assert_eq!(ADMIN_ADDRESS.load(&deps.storage).unwrap(), old_admin);
@@ -150,7 +150,7 @@ mod tests {
 
         let new_admin = Addr::unchecked("new_admin");
 
-        let info_admin_with_funds = mock_info("old_admin", &vec![coin(1, "token")]);
+        let info_admin_with_funds = mock_info("old_admin", &[coin(1, "token")]);
 
         let result =
             execute_update_admin(deps.as_mut(), info_admin_with_funds, new_admin.to_string());
@@ -165,7 +165,7 @@ mod tests {
             .save(deps.as_mut().storage, &old_admin)
             .unwrap();
 
-        let info_admin: MessageInfo = mock_info("old_admin", &vec![]);
+        let info_admin: MessageInfo = mock_info("old_admin", &[]);
 
         let res = execute_update_admin(deps.as_mut(), info_admin, old_admin.to_string());
         assert!(res.is_ok());
@@ -189,7 +189,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
-        let info_admin: MessageInfo = mock_info("admin", &vec![]);
+        let info_admin: MessageInfo = mock_info("admin", &[]);
 
         assert!(execute_update_config(deps.as_mut(), info_admin, new_config.clone()).is_ok());
         assert_eq!(
@@ -215,9 +215,9 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
-        let info_not_admin = mock_info("not_admin", &vec![]);
+        let info_not_admin = mock_info("not_admin", &[]);
 
-        assert!(execute_update_config(deps.as_mut(), info_not_admin, new_config.clone()).is_err());
+        assert!(execute_update_config(deps.as_mut(), info_not_admin, new_config).is_err());
         assert_eq!(
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
             old_config
@@ -242,7 +242,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
 
-        let info_admin_with_funds = mock_info("admin", &vec![coin(1, "token")]);
+        let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
 
         let result = execute_update_config(deps.as_mut(), info_admin_with_funds, new_config);
         assert!(result.is_err(), "Expected Err, but got: {:?}", result);
@@ -261,7 +261,7 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let info_admin: MessageInfo = mock_info("admin", &vec![]);
+        let info_admin: MessageInfo = mock_info("admin", &[]);
 
         let res = execute_update_config(deps.as_mut(), info_admin, old_config.clone());
         assert!(res.is_ok());
