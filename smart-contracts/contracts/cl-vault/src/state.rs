@@ -3,6 +3,8 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal};
 use cw_storage_plus::Item;
 
+use crate::rewards::Rewards;
+
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
 pub const VAULT_CONFIG: Item<Config> = Item::new("vault_config");
 pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
@@ -15,6 +17,9 @@ pub struct PoolConfig {
 }
 
 pub const POSITION: Item<Position> = Item::new("position");
+
+/// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
+pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
 
 #[cw_serde]
 pub struct Position {
