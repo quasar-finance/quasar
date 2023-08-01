@@ -100,7 +100,7 @@
 
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
-    DivideByZeroError, OverflowError, StdError,
+    DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use thiserror::Error;
 
@@ -146,4 +146,13 @@ pub enum ContractError {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
     },
+
+    #[error("Bad token out requested for swap, must be one of: {base_token:?}, {quote_token:?}")]
+    BadTokenForSwap {
+        base_token: String,
+        quote_token: String,
+    },
+
+    #[error("Insufficient funds for swap. Have: {balance}, Need: {needed}")]
+    InsufficientFundsForSwap { balance: Uint128, needed: Uint128 },
 }

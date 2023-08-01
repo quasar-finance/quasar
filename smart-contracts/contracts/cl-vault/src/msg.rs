@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Env, StdResult, Uint128, WasmMsg};
 use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
-use crate::state::Config;
+use crate::state::VaultConfig;
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -31,7 +31,7 @@ pub enum AdminExtensionExecuteMsg {
     /// Update the configuration of the vault.
     UpdateConfig {
         /// The config updates.
-        updates: Config,
+        updates: VaultConfig,
     },
 }
 
@@ -135,7 +135,7 @@ pub struct InstantiateMsg {
     /// LP tokens.
     pub lockup_duration: u64,
     /// Configurable parameters for the contract.
-    pub config: Config,
+    pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".

@@ -4,8 +4,9 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult}
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::vault::deposit::execute_deposit;
+use crate::swap;
 use crate::vault::admin::execute_admin;
+use crate::vault::deposit::execute_deposit;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
