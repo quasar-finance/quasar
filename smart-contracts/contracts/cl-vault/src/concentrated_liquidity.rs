@@ -101,7 +101,14 @@ mod tests {
         let mut deps = mock_dependencies();
         let pool_id = 1;
         POOL_CONFIG
-            .save(deps.as_mut().storage, &PoolConfig { pool_id })
+            .save(
+                deps.as_mut().storage,
+                &PoolConfig {
+                    pool_id,
+                    base_token: "token0".to_string(),
+                    quote_token: "token1".to_string(),
+                },
+            )
             .unwrap();
 
         let env = mock_env();
@@ -143,7 +150,9 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        POSITION.save(deps.as_mut().storage, &Position { position_id }).unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id })
+            .unwrap();
 
         let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
 
@@ -164,7 +173,9 @@ mod tests {
         let position_ids = vec![2, 3, 4];
 
         let position_id = 1;
-        POSITION.save(deps.as_mut().storage, &Position { position_id }).unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id })
+            .unwrap();
 
         let mut expected_position_ids = position_ids.clone();
         expected_position_ids.push(position_id);

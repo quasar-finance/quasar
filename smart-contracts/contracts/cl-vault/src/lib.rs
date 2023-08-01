@@ -5,9 +5,10 @@ pub mod helpers;
 mod math;
 pub mod msg;
 mod reply;
+mod rewards;
 pub mod state;
+mod swap;
 mod tests;
 mod vault;
-mod rewards;
 
 pub use crate::error::ContractError;
