@@ -924,7 +924,7 @@ mod tests {
         );
 
         let msg = IbcChannelOpenMsg::OpenTry {
-            channel: channel,
+            channel,
             counterparty_version: "1".to_string(),
         };
 

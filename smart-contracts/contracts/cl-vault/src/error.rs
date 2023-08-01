@@ -2,6 +2,7 @@ use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
     DivideByZeroError, OverflowError, StdError, Uint128,
 };
+use cw_dex::CwDexError;
 use thiserror::Error;
 
 /// AutocompoundingVault errors
@@ -25,6 +26,9 @@ pub enum ContractError {
 
     #[error("Overflow")]
     Overflow {},
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
 
     #[error("{0}")]
     CwDexError(#[from] CwDexError),

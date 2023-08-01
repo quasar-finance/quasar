@@ -4,12 +4,9 @@ use cosmwasm_std::{
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
-    osmosis::{
-        gamm::{
-            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-            v2::QuerySpotPriceRequest,
-        },
-        lockup::LockedRequest,
+    osmosis::gamm::{
+        v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
+        v2::QuerySpotPriceRequest,
     },
 };
 use prost::Message;
@@ -20,8 +17,7 @@ use crate::{
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
         BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN,
-        UNBOND_QUEUE,
+        PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,
     },
 };
 
@@ -130,7 +126,7 @@ pub fn prepare_full_query(
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
     // we have to check that bonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
-    let checked_join_pool = match bonding_amount > 1u128.into() {
+    let _checked_join_pool = match bonding_amount > 1u128.into() {
         true => Some(QueryCalcJoinPoolSharesRequest {
             pool_id: config.pool_id,
             tokens_in: vec![OsmoCoin {
@@ -151,19 +147,19 @@ pub fn prepare_full_query(
         Uint128::one()
     };
 
-    let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
+    let _exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
         share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
-    let spot_price = QuerySpotPriceRequest {
+    let _spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
     };
 
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    let mut q = Query::new()
+    let q = Query::new()
         .add_request(
             base_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
