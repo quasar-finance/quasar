@@ -12,10 +12,10 @@ pub(crate) fn execute_deposit(
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
-    let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
+    let _recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     // Receive the assets to the contract
-    let receive_res = receive_asset(
+    let _receive_res = receive_asset(
         info,
         &env,
         &Asset::new(BASE_TOKEN.load(deps.storage)?, amount),
@@ -36,7 +36,7 @@ pub(crate) fn execute_deposit(
     // If base token is a native token it was sent in the `info.funds` and is
     // already part of the contract balance. That is not the case for a cw20 token,
     // which will be received when the above `receive_res` is handled.
-    let user_deposit_amount = match BASE_TOKEN.load(deps.storage)? {
+    let _user_deposit_amount = match BASE_TOKEN.load(deps.storage)? {
         AssetInfo::Cw20(_) => Uint128::zero(),
         AssetInfo::Native(_) => amount,
     };
