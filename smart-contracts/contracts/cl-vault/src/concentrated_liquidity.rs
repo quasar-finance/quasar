@@ -74,7 +74,7 @@ pub fn merge_positions(
     Ok(fungify)
 }
 
-pub fn _get_position(
+pub fn get_position(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
     _env: &Env,

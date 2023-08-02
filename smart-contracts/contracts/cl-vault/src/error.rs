@@ -148,6 +148,9 @@ pub enum ContractError {
     #[error("Tick index maximum error")]
     TickIndexMaxError {},
 
+    #[error("Cannot handle negative powers in uints")]
+    CannotHandleNegativePowersInUint {},
+
     #[error(
         "Deposit amount missmatch. Expected: {:?}, Received: {:?}",
         expected,

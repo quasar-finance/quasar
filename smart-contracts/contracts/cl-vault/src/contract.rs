@@ -2,15 +2,15 @@ use std::env;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 // use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Investment, Replies, INVESTMENT, REPLIES};
+use crate::state::{Investment, INVESTMENT};
 use crate::vault::admin::execute_admin;
-use crate::vault::deposit::{execute_deposit, handle_create_position_reply, handle_swap_reply};
+use crate::vault::deposit::execute_deposit;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -82,21 +82,6 @@ pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         cw_vault_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_standard::VaultStandardQueryMsg::VaultExtension(_) => todo!(),
-    }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    // Save the ibc message together with the sequence number, to be handled properly later at the ack, we can pass the ibc_kind one to one
-    // TODO this needs and error check and error handling
-    let reply = REPLIES.load(deps.storage, msg.id)?;
-    match reply {
-        Replies::Swap { user_addr, amount0 } => {
-            handle_swap_reply(deps, env, user_addr, amount0, msg)
-        }
-        Replies::CreatePosition { user_addr } => {
-            handle_create_position_reply(deps, env, user_addr, msg)
-        }
     }
 }
 

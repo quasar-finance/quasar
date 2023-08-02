@@ -13,46 +13,6 @@ const EXPONENT_AT_PRICE_ONE: i64 = -6;
 const MIN_INITIALIZED_TICK: i64 = -108000000;
 const MAX_TICK: i128 = 342000000;
 
-// due to pow restrictions we need to use unsigned integers; i.e. 10.pow(-exp: u32)
-// so if the resulting power is positive, we take 10**exp;
-// and if it is negative, we take 1/10**exp.
-fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
-    if exponent >= 0 {
-        return 10u128
-            .checked_pow(exponent.abs() as u32)
-            .ok_or(ContractError::Overflow {});
-    } else {
-        // TODO: write tests for negative exponents as it looks like this will always be 0
-        Ok(1u128
-            / 10u128
-                .checked_pow(exponent as u32)
-                .ok_or(ContractError::Overflow {})?)
-    }
-}
-
-// same as pow_ten_internal but returns a Decimal to work with negative exponents
-fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
-    let p = 10u128
-        .checked_pow(exponent.abs() as u32)
-        .ok_or(ContractError::Overflow {})?;
-    if exponent >= 0 {
-        return Ok(Decimal::from_ratio(p, 1u128));
-    } else {
-        Ok(Decimal::from_ratio(1u128, p))
-    }
-}
-
-// same as pow_ten_internal but returns a Decimal to work with negative exponents
-fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> {
-    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
-    // let p = 10_u128.pow(exponent as u32);
-    if exponent >= 0 {
-        return Ok(p);
-    } else {
-        Ok(Decimal256::one() / p)
-    }
-}
-
 // TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
 pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     if tick_index == 0 {
@@ -125,6 +85,89 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     Ok(price)
 }
 
+// TODO: hashmaps vs CW maps?
+pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<i128, ContractError> {
+    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
+        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
+    {
+        return Err(ContractError::PriceBoundError { price });
+    }
+    if price == Decimal256::one() {
+        // return Ok(0i128);
+        return Ok(0i128);
+    }
+
+    // TODO: move this to instantiate?
+    deps = build_tick_exp_cache(deps)?;
+
+    let mut geo_spacing;
+    if price > Decimal256::one() {
+        let mut index = 0i64;
+        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        while geo_spacing.max_price < price {
+            index += 1;
+            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        }
+    } else {
+        let mut index = -1;
+        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        while geo_spacing.initial_price > price {
+            index -= 1;
+            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
+        }
+    }
+    let price_in_this_exponent = price - geo_spacing.initial_price;
+
+    let ticks_filled_by_current_spacing =
+        price_in_this_exponent / geo_spacing.additive_increment_per_tick;
+
+    let tick_index = geo_spacing.initial_tick as i128
+        + ticks_filled_by_current_spacing
+            .to_string()
+            .parse::<i128>()?;
+
+    Ok(tick_index)
+}
+
+// due to pow restrictions we need to use unsigned integers; i.e. 10.pow(-exp: u32)
+// so if the resulting power is positive, we take 10**exp;
+// and if it is negative, we take 1/10**exp.
+fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
+    if exponent >= 0 {
+        return 10u128
+            .checked_pow(exponent.abs() as u32)
+            .ok_or(ContractError::Overflow {});
+    } else {
+        // TODO: write tests for negative exponents as it looks like this will always be 0
+        Err(ContractError::CannotHandleNegativePowersInUint {})
+    }
+}
+
+// same as pow_ten_internal but returns a Decimal to work with negative exponents
+fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
+    let p = 10u128
+        .checked_pow(exponent.abs() as u32)
+        .ok_or(ContractError::Overflow {})?;
+    if exponent >= 0 {
+        return Ok(Decimal::from_ratio(p, 1u128));
+    } else {
+        Ok(Decimal::from_ratio(1u128, p))
+    }
+}
+
+// same as pow_ten_internal but returns a Decimal to work with negative exponents
+fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> {
+    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
+    // let p = 10_u128.pow(exponent as u32);
+    if exponent >= 0 {
+        return Ok(p);
+    } else {
+        Ok(Decimal256::one() / p)
+    }
+}
+
+
+
 fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
@@ -177,49 +220,7 @@ fn build_tick_exp_cache(deps: DepsMut) -> Result<DepsMut, ContractError> {
     Ok(deps)
 }
 
-// TODO: hashmaps vs CW maps?
-pub fn price_to_tick(mut deps: DepsMut, price: Decimal256) -> Result<i128, ContractError> {
-    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
-        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
-    {
-        return Err(ContractError::PriceBoundError { price });
-    }
-    if price == Decimal256::one() {
-        // return Ok(0i128);
-        return Ok(0i128);
-    }
 
-    // TODO: move this to instantiate?
-    deps = build_tick_exp_cache(deps)?;
-
-    let mut geo_spacing;
-    if price > Decimal256::one() {
-        let mut index = 0i64;
-        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
-        while geo_spacing.max_price < price {
-            index += 1;
-            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
-        }
-    } else {
-        let mut index = -1;
-        geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
-        while geo_spacing.initial_price > price {
-            index -= 1;
-            geo_spacing = TICK_EXP_CACHE.load(deps.storage, index)?;
-        }
-    }
-    let price_in_this_exponent = price - geo_spacing.initial_price;
-
-    let ticks_filled_by_current_spacing =
-        price_in_this_exponent / geo_spacing.additive_increment_per_tick;
-
-    let tick_index = geo_spacing.initial_tick as i128
-        + ticks_filled_by_current_spacing
-            .to_string()
-            .parse::<i128>()?;
-
-    Ok(tick_index)
-}
 
 #[cfg(test)]
 mod tests {
