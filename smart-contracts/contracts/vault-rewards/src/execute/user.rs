@@ -95,8 +95,10 @@ pub fn get_claim_amount(
                 .collect::<StdResult<Vec<(u64, RewardIndex)>>>()
                 .unwrap();
 
-            if reward_indexes.last().unwrap().0 != env.block.height && d.end == env.block.height {
-                reward_indexes.push((env.block.height, RewardIndex { vault_supply }));
+            if let Some(value) = reward_indexes.last() {
+                if value.0 != env.block.height && d.end == env.block.height {
+                    reward_indexes.push((env.block.height, RewardIndex { vault_supply }));
+                }
             }
             // iterate over reward indexes 2 at a time to calculate reward for each period
             reward_indexes
@@ -131,8 +133,8 @@ mod tests {
     use crate::execute::mock_querier::{mock_dependencies, WasmMockQuerier};
     use crate::execute::user::{execute_claim, get_claim_amount};
     use crate::execute::vault::execute_update_user_reward_index;
-    use crate::helpers::get_user_reward_index;
-    use crate::state::{Config, DistributionSchedule, CONFIG};
+    use crate::helpers::{get_user_reward_index, update_reward_index};
+    use crate::state::{Config, DistributionSchedule, CONFIG, UserBalance};
     use crate::VaultRewardsError;
     use cosmwasm_std::testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{attr, Addr, Coin, Env, OwnedDeps, Uint128};
