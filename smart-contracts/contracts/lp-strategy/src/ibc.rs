@@ -457,6 +457,7 @@ pub fn handle_icq_ack(
             value: spot_price,
         })?;
 
+    // TODO: total balance might be affected by the new exit_pool logic
     let total_balance = calc_total_balance(
         storage,
         usable_base_token_compound_balance,

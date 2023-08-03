@@ -67,21 +67,26 @@ pub fn try_icq(
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
         let bonding_amount = pending_bonds_value + failed_bonds_amount;
+
+        // we dump pending unbonds into the active unbond queue and save the total amount of shares that will be unbonded
+        let mut pending_unbonds_shares = Uint128::zero();
+        while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
+            let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
+            if let Some(unbond) = unbond {
+                UNBOND_QUEUE.push_back(storage, &unbond)?;
+                pending_unbonds_shares = pending_unbonds_shares.checked_add(unbond.lp_shares)?;
+            }
+        }
+
         // deposit needs to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, env.clone(), bonding_amount)?;
+        let packet =
+            prepare_full_query(storage, env.clone(), bonding_amount, pending_unbonds_shares)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
             data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
-
-        while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
-            let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
-            if let Some(unbond) = unbond {
-                UNBOND_QUEUE.push_back(storage, &unbond)?;
-            }
-        }
 
         let channel = ICQ_CHANNEL.load(storage)?;
 
@@ -100,6 +105,7 @@ pub fn prepare_full_query(
     storage: &mut dyn Storage,
     _env: Env,
     bonding_amount: Uint128,
+    pending_unbonds_shares: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
     let ica_channel = ICA_CHANNEL.load(storage)?;
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
@@ -141,19 +147,12 @@ pub fn prepare_full_query(
         false => None,
     };
 
-    // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
+    // we simulate the result of an exit pool with the total amount of shares that are in the UNBOND_QUEUE
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
-    let shares = LP_SHARES.load(storage)?.locked_shares;
-    let shares_out = if !shares.is_zero() {
-        shares
-    } else {
-        Uint128::one()
-    };
-
     let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: shares_out.to_string(),
+        share_in_amount: pending_unbonds_shares.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
@@ -309,7 +308,13 @@ mod tests {
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),
             data: to_binary(
-                &prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(0)).unwrap(),
+                &prepare_full_query(
+                    deps.as_mut().storage,
+                    env.clone(),
+                    Uint128::new(0),
+                    Uint128::zero(),
+                )
+                .unwrap(),
             )
             .unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
