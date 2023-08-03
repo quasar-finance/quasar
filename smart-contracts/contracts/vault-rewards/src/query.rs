@@ -1,6 +1,6 @@
-use crate::helpers::{get_user_reward_index};
+use crate::helpers::get_user_reward_index;
 use crate::msg::ConfigResponse;
-use crate::state::{CONFIG, DistributionSchedule, UserBalance};
+use crate::state::{DistributionSchedule, UserBalance, CONFIG};
 use crate::VaultRewardsError;
 use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
 use cosmwasm_std::{Addr, Deps, Env, Uint128};
