@@ -27,8 +27,7 @@ use cosmwasm_std::entry_point;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
-    QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcExitPoolCoinsFromSharesResponse,
-    QueryCalcJoinPoolSharesResponse,
+    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
 use std::str::FromStr;
 
@@ -465,9 +464,7 @@ pub fn handle_icq_ack(
             resp.responses[response_idx].value.as_ref(),
         )?
     } else {
-        QueryCalcExitPoolCoinsFromSharesResponse {
-            tokens_out: vec![],
-        }
+        QueryCalcExitPoolCoinsFromSharesResponse { tokens_out: vec![] }
     };
 
     let spot_price =

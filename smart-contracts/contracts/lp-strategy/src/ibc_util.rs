@@ -87,7 +87,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
     let config = CONFIG.load(storage)?;
 
     // if we receive no tokens in the response, we can't exit the pool
-    // todo: Should this error? 
+    // todo: Should this error?
     if exit_pool_unbonds.is_empty() {
         return Ok(Uint128::zero());
     }
@@ -223,21 +223,25 @@ pub fn do_ibc_lock_tokens(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
-        Empty, IbcEndpoint, OwnedDeps, Uint128,
+        Decimal, Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
 
     use cw_storage_plus::Map;
 
+    use osmosis_std::types::cosmos::base::v1beta1::Coin;
     use quasar_types::{
         ibc::{ChannelInfo, ChannelType, HandshakeState},
         ica::handshake::IcaMetadata,
     };
 
     use crate::{
-        ibc_util::calculate_token_out_min_amount,
+        ibc_util::{calculate_token_out_min_amount, consolidate_exit_pool_amount_into_local_denom},
         state::{SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT},
+        test_helpers::default_setup,
     };
 
     use super::calculate_share_out_min_amount;
@@ -332,5 +336,44 @@ mod tests {
         .unwrap();
 
         assert_eq!(min_amount_out, Uint128::from(8549u128));
+    }
+
+    #[test]
+    fn test_consolidate_exit_pool_amount_into_local_denom() {
+        let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let exit_pool = vec![
+            Coin {
+                denom: "uosmo".to_string(), // base_denom
+                amount: "100".to_string(),
+            },
+            Coin {
+                denom: "uqsr".to_string(), // quote_denom
+                amount: "100".to_string(),
+            },
+        ];
+
+        let spot_price = Decimal::from_str("1.0").unwrap();
+
+        let parsed = consolidate_exit_pool_amount_into_local_denom(
+            deps.as_mut().storage,
+            &exit_pool,
+            spot_price,
+        )
+        .unwrap();
+
+        assert_eq!(parsed, Uint128::new(200));
+
+        // this is for when UNBOND_QUEUE is empty
+        let exit_pool = vec![];
+        let parsed = consolidate_exit_pool_amount_into_local_denom(
+            deps.as_mut().storage,
+            &exit_pool,
+            spot_price,
+        )
+        .unwrap();
+
+        assert_eq!(parsed, Uint128::zero());
     }
 }
