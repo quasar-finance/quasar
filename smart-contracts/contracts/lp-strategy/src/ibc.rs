@@ -389,6 +389,7 @@ pub fn handle_icq_ack(
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     // TODO we can make the LP_SHARES cache less error prone here by using the actual state of lp shares
     //  We then need to query locked shares aswell, since they are not part of balance
     let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
@@ -459,6 +460,7 @@ pub fn handle_icq_ack(
     {
         // found, increment response index
         response_idx += 1;
+
         // decode result
         QueryCalcExitPoolCoinsFromSharesResponse::decode(
             resp.responses[response_idx].value.as_ref(),
@@ -824,13 +826,16 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        IbcEndpoint, IbcOrder,
+        Addr, Empty, IbcEndpoint, IbcOrder,
     };
+    use osmosis_std::types::osmosis::lockup::PeriodLock;
 
     use crate::{
-        state::{Config, SIMULATED_JOIN_AMOUNT_IN},
-        test_helpers::default_setup,
+        state::{Config, LOCK_ADMIN, SIMULATED_JOIN_AMOUNT_IN},
+        test_helpers::{create_query_response, default_setup},
     };
+
+    use cosmos_sdk_proto::cosmos::base::v1beta1::Coin as OsmoCoin;
 
     use super::*;
 
@@ -962,5 +967,217 @@ mod tests {
 
         let err = handle_ica_channel(deps.as_mut(), msg).unwrap_err();
         assert_eq!(err, ContractError::IncorrectChannelOpenType);
+    }
+
+    #[test]
+    fn test_handle_icq_ack() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        // no osmo lock as we're not sending lock ICQ
+        // OSMO_LOCK.save(deps.as_mut().storage, &1u64).unwrap();
+
+        LOCK_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            .unwrap();
+
+        // mocking the ICQ ACK
+        let raw_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uatom".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let base_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uosmo".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let quote_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uqsr".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let lp_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uosmo".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let exit_pool = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        // base denom
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                    Coin {
+                        // quote denom
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let spot_price = create_query_response(
+            QuerySpotPriceResponse {
+                spot_price: "1".to_string(),
+            }
+            .encode_to_vec(),
+        );
+
+        let join_pool = create_query_response(
+            QueryCalcJoinPoolSharesResponse {
+                share_out_amount: "123".to_string(),
+                tokens_out: vec![Coin {
+                    denom: "uosmo".to_string(),
+                    amount: Uint128::new(100),
+                }
+                .into()],
+            }
+            .encode_to_vec(),
+        );
+
+        let exit_pool_unbonds = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(320),
+                    }
+                    .into(),
+                    Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let ibc_ack = InterchainQueryPacketAck {
+            data: Binary::from(
+                &CosmosResponse {
+                    responses: vec![
+                        raw_balance.clone(),
+                        quote_balance.clone(),
+                        lp_balance.clone(),
+                        exit_pool.clone(),
+                        spot_price.clone(),
+                        join_pool.clone(),
+                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                        exit_pool_unbonds.clone(),
+                    ],
+                }
+                .encode_to_vec()[..],
+            ),
+        };
+
+        // mock the value of shares we were had before sending the query
+        SIMULATED_EXIT_SHARES_IN
+            .save(deps.as_mut().storage, &Uint128::new(100))
+            .unwrap();
+
+        // simulate that we received the ICQ ACK, shouldn't return any messages
+        let _res = handle_icq_ack(
+            deps.as_mut().storage,
+            env.clone(),
+            to_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            SIMULATED_EXIT_RESULT
+                .load(deps.as_ref().storage)
+                .unwrap()
+                .to_string(),
+            "420"
+        );
+
+        // changing spot price
+        let spot_price = create_query_response(
+            QuerySpotPriceResponse {
+                spot_price: "2".to_string(),
+            }
+            .encode_to_vec(),
+        );
+
+        // changinging exit pool amounts
+        let exit_pool_unbonds = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        // base denom
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(200),
+                    }
+                    .into(),
+                    Coin {
+                        // quote denom
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(300),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let ibc_ack = InterchainQueryPacketAck {
+            data: Binary::from(
+                &CosmosResponse {
+                    responses: vec![
+                        raw_balance,
+                        quote_balance,
+                        lp_balance,
+                        exit_pool,
+                        spot_price,
+                        join_pool,
+                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                        exit_pool_unbonds,
+                    ],
+                }
+                .encode_to_vec()[..],
+            ),
+        };
+
+        // simulate that we received another ICQ ACK, shouldn't return any messages
+        let _res =
+            handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+
+        assert_eq!(
+            SIMULATED_EXIT_RESULT
+                .load(deps.as_ref().storage)
+                .unwrap()
+                .u128(),
+            200 + (300 * 2)
+        );
     }
 }
