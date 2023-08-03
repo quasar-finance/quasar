@@ -1,11 +1,9 @@
-use std::ops::Deref;
-use crate::helpers::{get_user_reward_index, update_reward_index};
+use crate::helpers::{get_user_reward_index};
 use crate::msg::ConfigResponse;
-use crate::state::{CONFIG, DistributionSchedule, REWARD_INDEX, UserBalance};
+use crate::state::{CONFIG, DistributionSchedule, UserBalance};
 use crate::VaultRewardsError;
 use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Uint128};
-use cw20::Cw20Contract;
+use cosmwasm_std::{Addr, Deps, Env, Uint128};
 use cw_asset::AssetInfo;
 
 pub fn query_config(deps: Deps, env: Env) -> Result<ConfigResponse, VaultRewardsError> {
