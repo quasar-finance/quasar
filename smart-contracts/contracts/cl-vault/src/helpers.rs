@@ -6,9 +6,9 @@ use cosmwasm_std::{Decimal, Uint128};
 // and if it is negative, we take 1/10**exp.
 fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
     if exponent >= 0 {
-        return 10u128
-            .checked_pow(exponent.abs() as u32)
-            .ok_or(ContractError::Overflow {});
+        10u128
+            .checked_pow(exponent.unsigned_abs() as u32)
+            .ok_or(ContractError::Overflow {})
     } else {
         // TODO: write tests for negative exponents as it looks like this will always be 0
         Ok(1u128
@@ -21,10 +21,10 @@ fn pow_ten_internal(exponent: i128) -> Result<u128, ContractError> {
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
 fn pow_ten_internal_dec(exponent: i128) -> Result<Decimal, ContractError> {
     let p = 10u128
-        .checked_pow(exponent.abs() as u32)
+        .checked_pow(exponent.unsigned_abs() as u32)
         .ok_or(ContractError::Overflow {})?;
     if exponent >= 0 {
-        return Ok(Decimal::from_ratio(p, 1u128));
+        Ok(Decimal::from_ratio(p, 1u128))
     } else {
         Ok(Decimal::from_ratio(1u128, p))
     }
@@ -90,7 +90,7 @@ pub fn price_to_tick(
     while current_price < price {
         current_additive_increment_in_ticks = Decimal::from_ratio(
             Uint128::one(),
-            Uint128::from(10u128.pow(exponent_at_price_one.abs() as u32) as u128),
+            Uint128::from(10u128.pow(exponent_at_price_one.unsigned_abs() as u32)),
         );
 
         exponent_at_price_one += 1;
@@ -101,7 +101,7 @@ pub fn price_to_tick(
                 1u128,
             ))?;
 
-        ticks_passed += Uint128::new(geometric_exponent_increment_distance_in_ticks.into());
+        ticks_passed += Uint128::new(geometric_exponent_increment_distance_in_ticks);
 
         current_price = current_price.checked_add(max_price_for_current_increment_in_ticks)?;
     }
@@ -140,7 +140,7 @@ pub fn price_to_tick_2(
     while current_price < price {
         current_additive_increment_in_ticks = Decimal::from_ratio(
             Uint128::one(),
-            Uint128::from(10u128.pow(exponent_at_price_one.abs() as u32) as u128),
+            Uint128::from(10u128.pow(exponent_at_price_one.unsigned_abs() as u32)),
         );
 
         exponent_at_price_one += 1;
@@ -151,7 +151,7 @@ pub fn price_to_tick_2(
                 1u128,
             ))?;
 
-        ticks_passed += Uint128::new(geometric_exponent_increment_distance_in_ticks.into());
+        ticks_passed += Uint128::new(geometric_exponent_increment_distance_in_ticks);
 
         current_price = current_price.checked_add(max_price_for_current_increment_in_ticks)?;
     }

@@ -1,25 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, Addr, Binary, Coin, Decimal, Deps, DepsMut, Env, Order, Response, SubMsg, Uint128,
+    coin, Coin, Uint128,
 };
 
 use crate::{
     error::ContractResult,
-    reply::Replies,
-    state::{
-        CURRENT_REWARDS, LOCKED_TOKENS, LOCKED_TOTAL, POSITION, STRATEGIST_REWARDS, USER_REWARDS,
-        VAULT_CONFIG,
-    },
-    ContractError,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
-    osmosis::concentratedliquidity::v1beta1::{
-        MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
-        MsgCollectSpreadRewardsResponse,
-    },
 };
 #[cw_serde]
+#[derive(Default)]
 pub struct Rewards(Vec<Coin>);
 
 impl Rewards {
@@ -107,15 +98,11 @@ impl Rewards {
     }
 }
 
-impl Default for Rewards {
-    fn default() -> Self {
-        Rewards(Vec::default())
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    
 
     use super::*;
 

@@ -1,7 +1,6 @@
-use cosmwasm_schema::cw_serde;
+
 use cosmwasm_std::{
-    coin, Addr, Binary, Coin, Decimal, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg,
-    Uint128,
+    Addr, Binary, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg,
 };
 
 use crate::{
@@ -14,7 +13,6 @@ use crate::{
     ContractError,
 };
 use osmosis_std::types::{
-    cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{
         MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
         MsgCollectSpreadRewardsResponse,
@@ -58,7 +56,7 @@ pub fn handle_collect_incentives_reply(
 
 pub fn handle_collect_spread_rewards_reply(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     data: Binary,
 ) -> Result<Response, ContractError> {
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
@@ -80,7 +78,7 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
         vault_config.performance_fee.numerator(),
         vault_config.performance_fee.denominator(),
     )?;
-    STRATEGIST_REWARDS.update(deps.storage, |mut old| old.add(strategist_fee))?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
 
     let total_shares = LOCKED_TOTAL.load(deps.storage)?;
     // for each user with locked tokens, we distribute some part of the rewards to them

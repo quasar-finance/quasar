@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint128, Uint256, Uint512};
+use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn liquidity0(
@@ -74,7 +74,7 @@ pub fn liquidity1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_env, mock_info};
+    
 
     #[test]
     fn test_liquidity0() {
@@ -88,9 +88,9 @@ mod tests {
         let sqrt_p_high = Decimal::from_atomics(74161984870956629487_u128, 18).unwrap();
 
         let result = liquidity0(
-            amount0_desired.into(),
-            current_sqrt_p.into(),
-            sqrt_p_high.into(),
+            amount0_desired,
+            current_sqrt_p,
+            sqrt_p_high,
         )
         .unwrap();
         // TODO our amount is slightly different 10 digits behind the comma, do we care about that?
@@ -113,7 +113,7 @@ mod tests {
         let max_sqrt_price_low = Decimal::raw(300000000000000000000000000000000_u128);
         let amount0_desired: Decimal = Decimal::from_ratio(1000000_u128, 1_u128);
         // we only care about overflows here
-        let _ = liquidity0(amount0_desired.into(), max_sqrt_price, max_sqrt_price_low).unwrap();
+        let _ = liquidity0(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
     }
 
     #[test]
@@ -122,6 +122,6 @@ mod tests {
         let max_sqrt_price_low = Decimal::raw(1000000000000000000000000000000000000_u128);
         let amount0_desired: Decimal = Decimal::from_ratio(1000000_u128, 1_u128);
         // we only care about overflows here
-        let _ = liquidity1(amount0_desired.into(), max_sqrt_price, max_sqrt_price_low).unwrap();
+        let _ = liquidity1(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
     }
 }
