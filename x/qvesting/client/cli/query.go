@@ -127,6 +127,7 @@ func CmdQueryVestingAccounts() *cobra.Command {
 		},
 	}
 
+	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
 
 	return cmd
