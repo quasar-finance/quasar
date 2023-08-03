@@ -106,6 +106,8 @@ use cosmwasm_std::{
 };
 use thiserror::Error;
 
+pub type ContractResult<T> = Result<T, ContractError>;
+
 #[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]

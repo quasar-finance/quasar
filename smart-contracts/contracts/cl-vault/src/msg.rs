@@ -1,6 +1,9 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Env, StdResult, Uint128, WasmMsg};
-use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
+use cw_vault_standard::{
+    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
+    VaultStandardExecuteMsg, VaultStandardQueryMsg,
+};
 
 use crate::state::Config;
 
@@ -12,7 +15,6 @@ pub enum ExtensionExecuteMsg {
     /// Execute a an Apollo vault specific message.
     Admin(AdminExtensionExecuteMsg),
     /// Execute a message from the lockup extension.
-    #[cfg(feature = "lockup")]
     Lockup(LockupExecuteMsg),
     /// Execute a message from the force unlock extension.
     #[cfg(feature = "force-unlock")]
@@ -35,22 +37,11 @@ pub enum AdminExtensionExecuteMsg {
     },
 }
 
-/// Apollo extension queries define functionality that is part of all apollo
-/// vaults, but not part of the standard.
-#[cw_serde]
-pub enum ApolloExtensionQueryMsg {
-    /// Query the current state of the vault.
-    State {},
-}
-
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
-    #[cfg(feature = "lockup")]
     Lockup(LockupQueryMsg),
-    /// Apollo extension queries.
-    Apollo(ApolloExtensionQueryMsg),
 }
 
 /// Callback messages for the autocompounding vault `Callback` extension

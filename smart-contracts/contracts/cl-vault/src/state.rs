@@ -23,6 +23,8 @@ pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
 
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 
+pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+
 pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
 
 pub const LOCKED_TOKENS: Map<Addr, Uint128> = Map::new("locked_tokens");
