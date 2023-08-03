@@ -20,8 +20,8 @@ use crate::{
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
         BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN,
-        UNBOND_QUEUE,
+        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_EXIT_SHARES_IN,
+        SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,
     },
 };
 
@@ -136,6 +136,7 @@ pub fn prepare_full_query(
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
     // we have to check that bonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    // TODO: change > 1 for >= 1
     let checked_join_pool = match bonding_amount > 1u128.into() {
         true => Some(QueryCalcJoinPoolSharesRequest {
             pool_id: config.pool_id,
@@ -147,10 +148,22 @@ pub fn prepare_full_query(
         false => None,
     };
 
-    // we simulate the result of an exit pool with the total amount of shares that are in the UNBOND_QUEUE
+    // we save the amount to scale the slippage against in the icq ack for other incoming unbonds?
+    SIMULATED_EXIT_SHARES_IN.save(storage, &pending_unbonds_shares)?;
+
+    // we have to check that unbonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    let checked_exit_pool_unbonds = match pending_unbonds_shares >= 1u128.into() {
+        true => Some(QueryCalcExitPoolCoinsFromSharesRequest {
+            pool_id: config.pool_id,
+            share_in_amount: pending_unbonds_shares.to_string(),
+        }),
+        false => None,
+    };
+
+    // we simulate the result of an exit pool with the added amount of shares that are in the UNBOND_QUEUE
     // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
     // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
-    let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
+    let exit_total_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
         share_in_amount: pending_unbonds_shares.to_string(),
     };
@@ -176,7 +189,7 @@ pub fn prepare_full_query(
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            exit_pool.encode_to_vec().into(),
+            exit_total_pool.encode_to_vec().into(),
             "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
@@ -191,7 +204,6 @@ pub fn prepare_full_query(
         )
     }
 
-    // todo: turn this into an if let
     // only query LockedByID if we have a lock_id
     if let Some(lock_id) = OSMO_LOCK.may_load(storage)? {
         let lock_by_id = LockedRequest { lock_id };
@@ -199,6 +211,14 @@ pub fn prepare_full_query(
             lock_by_id.encode_to_vec().into(),
             "/osmosis.lockup.Query/LockedByID".to_string(),
         );
+    }
+
+    // if there're items in the unbond_queue, we query CalcExitPoolCoinsFromShares for the added share amount
+    if let Some(exit_pool) = checked_exit_pool_unbonds {
+        q = q.add_request(
+            exit_pool.encode_to_vec().into(),
+            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
+        )
     }
 
     Ok(q.encode_pkt())

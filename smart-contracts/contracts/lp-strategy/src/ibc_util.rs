@@ -81,23 +81,23 @@ pub fn parse_join_pool(
 
 pub fn consolidate_exit_pool_amount_into_local_denom(
     storage: &mut dyn Storage,
-    exit_pool: &Vec<OsmoCoin>,
+    exit_pool_unbonds: &Vec<OsmoCoin>,
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
 
     // if we receive no tokens in the response, we can't exit the pool
-    // todo: Should this error?
-    if exit_pool.is_empty() {
+    // todo: Should this error? 
+    if exit_pool_unbonds.is_empty() {
         return Ok(Uint128::zero());
     }
 
     // consolidate exit_pool.tokens_out into a single Uint128 by using spot price to convert the quote_denom to local_denom
-    let base = exit_pool
+    let base = exit_pool_unbonds
         .iter()
         .find(|coin| coin.denom == config.base_denom)
         .ok_or(ContractError::BaseDenomNotFound)?;
-    let quote = exit_pool
+    let quote = exit_pool_unbonds
         .iter()
         .find(|coin| coin.denom == config.quote_denom)
         .ok_or(ContractError::QuoteDenomNotFound)?;
@@ -138,11 +138,11 @@ pub fn calculate_token_out_min_amount(
     exit_lp_shares: Uint128,
     total_locked_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
-    let last_sim_exit_pool_result = SIMULATED_EXIT_RESULT.load(storage)?;
+    let last_sim_exit_pool_unbonds_result = SIMULATED_EXIT_RESULT.load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(last_sim_exit_pool_result
+    Ok(last_sim_exit_pool_unbonds_result
         .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
         .checked_multiply_ratio(95u128, 100u128)?)
 }
@@ -333,7 +333,4 @@ mod tests {
 
         assert_eq!(min_amount_out, Uint128::from(8549u128));
     }
-
-    #[test]
-    fn test_do_transfer() {}
 }

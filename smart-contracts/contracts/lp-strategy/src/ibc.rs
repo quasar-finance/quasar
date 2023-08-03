@@ -15,8 +15,8 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
+    SIMULATED_EXIT_RESULT, SIMULATED_EXIT_SHARES_IN, SIMULATED_JOIN_AMOUNT_IN,
+    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -27,7 +27,8 @@ use cosmwasm_std::entry_point;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
-    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+    QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcExitPoolCoinsFromSharesResponse,
+    QueryCalcJoinPoolSharesResponse,
 };
 use std::str::FromStr;
 
@@ -396,7 +397,7 @@ pub fn handle_icq_ack(
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
-    let exit_pool =
+    let exit_total_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
@@ -418,6 +419,8 @@ pub fn handle_icq_ack(
         }
     };
 
+    let config = CONFIG.load(storage)?;
+
     let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
         Some(_) => {
             // found, increment response index
@@ -430,7 +433,6 @@ pub fn handle_icq_ack(
             } else {
                 vec![]
             };
-            let config = CONFIG.load(storage)?;
             gamms
                 .into_iter()
                 .find(|val| val.denom == config.pool_denom)
@@ -451,24 +453,44 @@ pub fn handle_icq_ack(
         Ok(cache)
     })?;
 
+    let exit_pool_unbonds = if SIMULATED_EXIT_SHARES_IN
+        .may_load(storage)?
+        .unwrap_or(0u128.into())
+        >= 1u128.into()
+    {
+        // found, increment response index
+        response_idx += 1;
+        // decode result
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(
+            resp.responses[response_idx].value.as_ref(),
+        )?
+    } else {
+        QueryCalcExitPoolCoinsFromSharesResponse {
+            tokens_out: vec![],
+        }
+    };
+
     let spot_price =
         Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
             error: err,
             value: spot_price,
         })?;
 
-    // TODO: total balance might be affected by the new exit_pool logic
     let total_balance = calc_total_balance(
         storage,
         usable_base_token_compound_balance,
-        &exit_pool.tokens_out,
+        &exit_total_pool.tokens_out,
         spot_price,
     )?;
 
-    let parsed_exit_pool_out =
-        consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
-
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
+
+    // TODO: decide if we use exit_total_pool or the UNBOND_QUEUE added amount here
+    let parsed_exit_pool_out = consolidate_exit_pool_amount_into_local_denom(
+        storage,
+        &exit_pool_unbonds.tokens_out,
+        spot_price,
+    )?;
 
     let parsed_join_pool_out = parse_join_pool(storage, join_pool)?;
 
