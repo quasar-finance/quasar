@@ -74,7 +74,6 @@ pub fn liquidity1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[test]
     fn test_liquidity0() {
@@ -87,12 +86,7 @@ mod tests {
         let current_sqrt_p = Decimal::from_atomics(70710678118654752440_u128, 18).unwrap();
         let sqrt_p_high = Decimal::from_atomics(74161984870956629487_u128, 18).unwrap();
 
-        let result = liquidity0(
-            amount0_desired,
-            current_sqrt_p,
-            sqrt_p_high,
-        )
-        .unwrap();
+        let result = liquidity0(amount0_desired, current_sqrt_p, sqrt_p_high).unwrap();
         // TODO our amount is slightly different 10 digits behind the comma, do we care about that?
         assert_eq!(result.to_string(), "1519437308.014768571720923239")
     }

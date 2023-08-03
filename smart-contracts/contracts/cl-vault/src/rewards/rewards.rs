@@ -1,14 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    coin, Coin, Uint128,
-};
+use cosmwasm_std::{coin, Coin, Uint128};
 
-use crate::{
-    error::ContractResult,
-};
-use osmosis_std::types::{
-    cosmos::base::v1beta1::Coin as OsmoCoin,
-};
+use crate::error::ContractResult;
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 #[cw_serde]
 #[derive(Default)]
 pub struct Rewards(Vec<Coin>);
@@ -20,7 +14,6 @@ impl Rewards {
 
     /// calculates the percentage that the user should have
     pub fn percentage(&self, numerator: Uint128, denominator: Uint128) -> Rewards {
-        // let percentage = Decimal::from_ratio(user_shares, total_shares);
         Rewards(
             self.0
                 .iter()
@@ -96,14 +89,14 @@ impl Rewards {
     pub fn into_coins(self) -> Vec<Coin> {
         self.0
     }
+
+    pub fn from_coins(coins: Vec<Coin>) -> Self {
+        Rewards(coins)
+    }
 }
-
-
 
 #[cfg(test)]
 mod tests {
-    
-
     use super::*;
 
     #[test]
@@ -126,6 +119,207 @@ mod tests {
             ])
             .unwrap();
 
-        assert_eq!(rewards, Rewards(vec![coin(1000, "uosmo"), coin(2000, "uatom"), coin(3000, "uqsr")]))
+        assert_eq!(
+            rewards,
+            Rewards(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr")
+            ])
+        );
+
+        rewards
+            .sub(&Rewards::from_coins(vec![coin(1500, "uqsr")]))
+            .unwrap();
+
+        assert_eq!(
+            rewards,
+            Rewards(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(1500, "uqsr")
+            ])
+        );
+
+        rewards
+            .sub(&Rewards::from_coins(vec![coin(2000, "uqsr")]))
+            .unwrap_err();
+
+        rewards
+            .sub(&Rewards::from_coins(vec![
+                coin(999, "uqsr"),
+                coin(999, "uosmo"),
+            ]))
+            .unwrap();
+
+        assert_eq!(
+            rewards,
+            Rewards(vec![
+                coin(1, "uosmo"),
+                coin(2000, "uatom"),
+                coin(501, "uqsr")
+            ])
+        );
+    }
+
+    #[test]
+    fn percentage_works() {
+        let mut rewards = Rewards::new();
+        rewards
+            .update_rewards(vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "2000".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        let ratio = rewards.percentage(Uint128::new(10), Uint128::new(100));
+        assert_eq!(
+            ratio,
+            Rewards(vec![
+                coin(100, "uosmo"),
+                coin(200, "uatom"),
+                coin(300, "uqsr")
+            ])
+        )
+    }
+
+    #[test]
+    fn sub_percentage_works() {
+        let mut rewards = Rewards::new();
+        rewards
+            .update_rewards(vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "2000".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        let ratio = rewards
+            .sub_percentage(Uint128::new(10), Uint128::new(100))
+            .unwrap();
+        assert_eq!(
+            ratio,
+            Rewards(vec![
+                coin(100, "uosmo"),
+                coin(200, "uatom"),
+                coin(300, "uqsr")
+            ])
+        );
+        assert_eq!(
+            rewards,
+            Rewards(vec![
+                coin(900, "uosmo"),
+                coin(1800, "uatom"),
+                coin(2700, "uqsr")
+            ])
+        )
+    }
+
+    #[test]
+    fn merge_works() {}
+
+    #[test]
+    fn add_works() {
+        let mut rewards = Rewards::new();
+        rewards
+            .update_rewards(vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "2000".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+        rewards = rewards
+            .add(Rewards::from_coins(vec![
+                coin(2000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(6000, "uqsr"),
+                coin(1234, "umars"),
+            ]))
+            .unwrap();
+        assert_eq!(
+            rewards,
+            Rewards::from_coins(vec![
+                coin(3000, "uosmo"),
+                coin(4000, "uatom"),
+                coin(9000, "uqsr"),
+                coin(1234, "umars")
+            ])
+        )
+    }
+
+    #[test]
+    fn update_rewards_works() {
+        let mut rewards = Rewards::new();
+        rewards
+            .update_rewards(vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "2000".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        rewards
+            .update_rewards(vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "umars".into(),
+                    amount: "1234".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        assert_eq!(
+            rewards,
+            Rewards::from_coins(vec![
+                coin(2000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(6000, "uqsr"),
+                coin(1234, "umars")
+            ])
+        );
     }
 }

@@ -32,7 +32,10 @@ pub fn execute(
         cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount, recipient } => {
             execute_deposit(deps, env, &info, amount, recipient)
         }
-        cw_vault_standard::VaultStandardExecuteMsg::Redeem { recipient: _, amount: _ } => todo!(),
+        cw_vault_standard::VaultStandardExecuteMsg::Redeem {
+            recipient: _,
+            amount: _,
+        } => todo!(),
         cw_vault_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => match vault_msg {
             crate::msg::ExtensionExecuteMsg::Callback(callback_msg) => match callback_msg {
                 crate::msg::CallbackMsg::SellRewards {} => todo!(),
@@ -40,7 +43,10 @@ pub fn execute(
                 crate::msg::CallbackMsg::Stake {
                     base_token_balance_before: _,
                 } => todo!(),
-                crate::msg::CallbackMsg::MintVaultToken { amount: _, recipient: _ } => todo!(),
+                crate::msg::CallbackMsg::MintVaultToken {
+                    amount: _,
+                    recipient: _,
+                } => todo!(),
             },
             crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                 execute_admin(deps, info, admin_msg)
