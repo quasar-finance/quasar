@@ -1,7 +1,9 @@
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal};
-use cw_storage_plus::Item;
+use cosmwasm_std::{Addr, Decimal, Uint128};
+use cw_storage_plus::{Item, Map};
+
+use crate::rewards::Rewards;
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
@@ -38,6 +40,18 @@ pub struct VaultConfig {
     /// Account to receive fee payments
     pub treasury: Addr,
 }
+
+/// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
+pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
+
+pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
+
+pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+
+pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
+
+pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
+pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
 
 #[cfg(test)]
 mod tests {

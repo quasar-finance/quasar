@@ -5,6 +5,11 @@ use cosmwasm_std::{
 use cw_dex::CwDexError;
 use thiserror::Error;
 
+use std::num::ParseIntError;
+
+
+pub type ContractResult<T> = Result<T, ContractError>;
+
 /// AutocompoundingVault errors
 #[allow(missing_docs)]
 #[derive(Error, Debug)]
@@ -42,6 +47,9 @@ pub enum ContractError {
     #[error("This message does no accept funds")]
     NonPayable {},
 
+    #[error("{0}")]
+    ParseIntError(#[from] ParseIntError),
+
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 
@@ -52,6 +60,7 @@ pub enum ContractError {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
     },
+
 
     #[error("Bad token out requested for swap, must be one of: {base_token:?}, {quote_token:?}")]
     BadTokenForSwap {
