@@ -25,7 +25,7 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
         .parse::<i64>()?;
 
     // Check that the tick index is between min and max value
-    if tick_index < MIN_INITIALIZED_TICK as i64 {
+    if tick_index < MIN_INITIALIZED_TICK {
         return Err(ContractError::TickIndexMinError {});
     }
 
@@ -37,7 +37,7 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     let geometric_exponent_delta = tick_index / geometric_exponent_increment_distance_in_ticks;
 
     // Calculate the exponentAtCurrentTick from the starting exponentAtPriceOne and the geometricExponentDelta
-    let mut exponent_at_current_tick = EXPONENT_AT_PRICE_ONE as i64 + geometric_exponent_delta;
+    let mut exponent_at_current_tick = EXPONENT_AT_PRICE_ONE + geometric_exponent_delta;
 
     if tick_index < 0 {
         // We must decrement the exponentAtCurrentTick when entering the negative tick range in order to constantly step up in precision when going further down in ticks
@@ -47,8 +47,7 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
 
     // Knowing what our exponentAtCurrentTick is, we can then figure out what power of 10 this exponent corresponds to
     // We need to utilize bigDec here since increments can go beyond the 10^-18 limits set by the sdk
-    let current_additive_increment_in_ticks =
-        pow_ten_internal_dec_256(exponent_at_current_tick.into())?;
+    let current_additive_increment_in_ticks = pow_ten_internal_dec_256(exponent_at_current_tick)?;
 
     // Now, starting at the minimum tick of the current increment, we calculate how many ticks in the current geometricExponent we have passed
     let num_additive_ticks =
@@ -60,18 +59,15 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     if num_additive_ticks < 0 {
         price = pow_ten_internal_dec(geometric_exponent_delta)?
             .checked_sub(
-                Decimal::from_str(&num_additive_ticks.abs().to_string())?
-                    .checked_mul(Decimal::from_str(
-                        &current_additive_increment_in_ticks.to_string(),
-                    )?)?
-                    .into(),
+                Decimal::from_str(&num_additive_ticks.abs().to_string())?.checked_mul(
+                    Decimal::from_str(&current_additive_increment_in_ticks.to_string())?,
+                )?,
             )?
             .into();
     } else {
-        price = pow_ten_internal_dec_256(geometric_exponent_delta.into())?.checked_add(
+        price = pow_ten_internal_dec_256(geometric_exponent_delta)?.checked_add(
             Decimal256::from_str(&num_additive_ticks.to_string())?
-                .checked_mul(current_additive_increment_in_ticks)?
-                .into(),
+                .checked_mul(current_additive_increment_in_ticks)?,
         )?;
     }
 
@@ -134,9 +130,9 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
 // and if it is negative, we take 1/10**exp.
 fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
     if exponent >= 0 {
-        return 10u128
-            .checked_pow(exponent.abs() as u32)
-            .ok_or(ContractError::Overflow {});
+        10u128
+            .checked_pow(exponent.unsigned_abs() as u32)
+            .ok_or(ContractError::Overflow {})
     } else {
         // TODO: write tests for negative exponents as it looks like this will always be 0
         Err(ContractError::CannotHandleNegativePowersInUint {})
@@ -146,10 +142,10 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
 fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
     let p = 10u128
-        .checked_pow(exponent.abs() as u32)
+        .checked_pow(exponent.unsigned_abs() as u32)
         .ok_or(ContractError::Overflow {})?;
     if exponent >= 0 {
-        return Ok(Decimal::from_ratio(p, 1u128));
+        Ok(Decimal::from_ratio(p, 1u128))
     } else {
         Ok(Decimal::from_ratio(1u128, p))
     }
@@ -157,10 +153,10 @@ fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
 
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
 fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> {
-    let p = Decimal256::from_str("10")?.checked_pow(exponent.abs() as u32)?;
+    let p = Decimal256::from_str("10")?.checked_pow(exponent.unsigned_abs() as u32)?;
     // let p = 10_u128.pow(exponent as u32);
     if exponent >= 0 {
-        return Ok(p);
+        Ok(p)
     } else {
         Ok(Decimal256::one() / p)
     }
@@ -173,8 +169,8 @@ fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> 
 
     while max_price < Decimal256::from_str(MAX_SPOT_PRICE)? {
         let tick_exp_index_data = TickExpIndexData {
-            initial_price: pow_ten_internal_dec_256(cur_exp_index.into())?,
-            max_price: pow_ten_internal_dec_256((cur_exp_index + 1).into())?,
+            initial_price: pow_ten_internal_dec_256(cur_exp_index)?,
+            max_price: pow_ten_internal_dec_256(cur_exp_index + 1)?,
             additive_increment_per_tick: pow_ten_internal_dec_256(
                 EXPONENT_AT_PRICE_ONE + cur_exp_index,
             )?,
@@ -194,8 +190,8 @@ fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> 
     let mut min_price = Decimal256::one();
     cur_exp_index = -1;
     while min_price > Decimal256::from_str(MIN_SPOT_PRICE)? {
-        let initial_price = pow_ten_internal_dec_256(cur_exp_index.into())?;
-        let max_price = pow_ten_internal_dec_256((cur_exp_index + 1).into())?;
+        let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
+        let max_price = pow_ten_internal_dec_256(cur_exp_index + 1)?;
         let additive_increment_per_tick =
             pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
         let initial_tick = (9u128
@@ -332,7 +328,7 @@ mod tests {
         assert!(tick_to_price(MAX_TICK as i64 + 1).is_err());
 
         // example20
-        assert!(tick_to_price(MIN_INITIALIZED_TICK as i64 - 1).is_err());
+        assert!(tick_to_price(MIN_INITIALIZED_TICK - 1).is_err());
     }
 
     #[test]

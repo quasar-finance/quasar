@@ -14,6 +14,7 @@ pub enum Replies {
     CollectIncentives,
     // after gathering rewards, we divide them over share holders
     CollectSpreadRewards,
+
     // withdraw position
     WithdrawPosition,
     // create position
@@ -22,6 +23,9 @@ pub enum Replies {
     Swap,
     // fungify
     Fungify,
+
+    // handle
+    WithdrawUser,
 
     #[default]
     Unknown,
@@ -34,8 +38,9 @@ pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, Con
         Replies::CollectSpreadRewards => todo!(),
         Replies::WithdrawPosition => todo!(),
         Replies::CreatePosition => todo!(),
-        Replies::Unknown => todo!(),
         Replies::Swap => todo!(),
         Replies::Fungify => todo!(),
+        Replies::WithdrawUser => todo!(),
+        Replies::Unknown => todo!(),
     }
 }

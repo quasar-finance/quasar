@@ -17,11 +17,8 @@ pub fn get_spot_price(
     let pool_config = POOL_CONFIG.load(storage)?;
 
     let pm_querier = PoolmanagerQuerier::new(querier);
-    let spot_price = pm_querier.spot_price(
-        pool_config.pool_id,
-        pool_config.base_token,
-        pool_config.quote_token,
-    )?;
+    let spot_price =
+        pm_querier.spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?;
 
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
@@ -43,7 +40,7 @@ pub fn get_spot_price(
 //     let cl_querier = ConcentratedliquidityQuerier::new(querier);
 //     let liquidity = cl_querier.liquidity_net_in_direction(
 //         pool_id,
-//         pool_config.base_token,
+//         pool_config.token0,
 //         lower_tick,
 //         false,
 //         upper_tick,
@@ -56,50 +53,50 @@ pub fn get_spot_price(
 
 /// get_liquidity_needed_for_tokens
 ///
-/// this function calculates the liquidity needed for depositing base_token and quote token amounts respectively and returns both.
+/// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
 /// depositing both tokens would result in a refund of the token with higher needed liquidity
 ///
-/// thanks: https://github.com/osmosis-labs/osmosis/blob/ma * (liquidity_needed_base_token - liquidity_needed_quote_token)/ liquidity_needed_base_token
+/// thanks: https://github.com/osmosis-labs/osmosis/blob/ma * (liquidity_needed_token0 - liquidity_needed_token1)/ liquidity_needed_token0
 /// in(deposit_amount_0/x/concentrated-liquidity/README.md#adding-liquidity
 pub fn get_liquidity_needed_for_tokens(
-    delta_base_token: String,
-    delta_quote_token: String,
+    delta_token0: String,
+    delta_token1: String,
     lower_tick: i128,
     upper_tick: i128,
 ) -> Result<(Uint128, Uint128), ContractError> {
-    let delta_x = Uint128::from_str(&delta_base_token)?;
-    let delta_y = Uint128::from_str(&delta_quote_token)?;
+    let delta_x = Uint128::from_str(&delta_token0)?;
+    let delta_y = Uint128::from_str(&delta_token1)?;
     // calc liquidity needed for token
     unimplemented!("get_liquidity_needed_for_tokens")
 }
 
 pub fn get_deposit_amounts_for_liquidity_needed(
-    liquidity_needed_base_token: Uint128,
-    liquidity_needed_quote_token: Uint128,
-    base_token_amount: String,
-    quote_token_amount: String,
+    liquidity_needed_token0: Uint128,
+    liquidity_needed_token1: Uint128,
+    token0_amount: String,
+    token1_amount: String,
     // i hate this type but it's arguably a good way to write this
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
     // calc deposit amounts for liquidity needed
-    let amount_0 = Uint128::from_str(&base_token_amount)?;
-    let amount_1 = Uint128::from_str(&quote_token_amount)?;
+    let amount_0 = Uint128::from_str(&token0_amount)?;
+    let amount_1 = Uint128::from_str(&token1_amount)?;
 
     // one of these will be zero
     let mut remainder_0 = Uint128::zero();
     let mut remainder_1 = Uint128::zero();
 
     let (deposit_amount_0, deposit_amount_1) =
-        if (liquidity_needed_base_token > liquidity_needed_quote_token) {
+        if (liquidity_needed_token0 > liquidity_needed_token1) {
             // scale base token amount down by L1/L0, take full amount of quote token
             let new_amount_0 =
-                amount_0.multiply_ratio(liquidity_needed_quote_token, liquidity_needed_base_token);
+                amount_0.multiply_ratio(liquidity_needed_token1, liquidity_needed_token0);
             remainder_0 = amount_0.checked_sub(new_amount_0).unwrap();
 
             (new_amount_0, amount_1)
         } else {
             // scale quote token amount down by L0/L1, take full amount of base token
             let new_amount_1 =
-                amount_1.multiply_ratio(liquidity_needed_base_token, liquidity_needed_quote_token);
+                amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
             remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
 
             (amount_0, new_amount_1)

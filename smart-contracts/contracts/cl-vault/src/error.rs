@@ -3,6 +3,7 @@ use cosmwasm_std::{
     Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use cw_dex::CwDexError;
+use cw_utils::PaymentError;
 use thiserror::Error;
 
 use std::num::ParseIntError;
@@ -51,6 +52,9 @@ pub enum ContractError {
 
     #[error("This message does no accept funds")]
     NonPayable {},
+
+    #[error("{0}")]
+    PaymentError(#[from] PaymentError),
 
     #[error("{0}")]
     ParseIntError(#[from] ParseIntError),

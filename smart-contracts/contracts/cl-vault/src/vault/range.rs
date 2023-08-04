@@ -193,11 +193,11 @@ pub fn handle_withdraw_position_response(
             .expect("Could not convert upper_tick to i64 from i128"),
         tokens_provided: vec![
             OsmoCoin {
-                denom: pool_config.base_token.clone(),
+                denom: pool_config.token0.clone(),
                 amount: deposit.0.to_string(),
             },
             OsmoCoin {
-                denom: pool_config.quote_token.clone(),
+                denom: pool_config.token1.clone(),
                 amount: deposit.1.to_string(),
             },
         ],
@@ -216,14 +216,8 @@ pub fn handle_withdraw_position_response(
         .add_attribute("method", "create_position")
         .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
         .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
-        .add_attribute(
-            "token0",
-            format!("{:?}{:?}", deposit.0, pool_config.base_token),
-        )
-        .add_attribute(
-            "token1",
-            format!("{:?}{:?}", deposit.1, pool_config.quote_token),
-        ))
+        .add_attribute("token0", format!("{:?}{:?}", deposit.0, pool_config.token0))
+        .add_attribute("token1", format!("{:?}{:?}", deposit.1, pool_config.token1)))
 }
 
 // do swap
@@ -244,11 +238,9 @@ pub fn handle_create_position_response(
 
     // get remaining balance in contract for each token (one of these should be zero i think)
     let balance0 =
-        querier.query_balance(env.contract.address.clone(), pool_config.base_token.clone())?;
-    let balance1 = querier.query_balance(
-        env.contract.address.clone(),
-        pool_config.quote_token.clone(),
-    )?;
+        querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
+    let balance1 =
+        querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
     let (swap_amount, swap_direction) = if !balance0.amount.is_zero() {
         (balance0.amount, SwapDirection::ZeroToOne)
@@ -263,11 +255,11 @@ pub fn handle_create_position_response(
     let spot_price = get_spot_price(storage, querier)?;
     let (token_in_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
-            pool_config.base_token,
+            pool_config.token0,
             swap_amount.checked_multiply_ratio(spot_price.numerator(), spot_price.denominator()),
         ),
         SwapDirection::OneToZero => (
-            pool_config.quote_token,
+            pool_config.token1,
             swap_amount.checked_multiply_ratio(spot_price.denominator(), spot_price.numerator()),
         ),
     };
@@ -291,11 +283,14 @@ pub fn handle_create_position_response(
     MODIFY_RANGE_STATE.update(
         storage,
         |mrs| -> Result<Option<ModifyRangeState>, ContractError> {
-            if let Some(mut mrs) = mrs {
-                mrs.new_range_position_ids
-                    .push(create_position_message.position_id)
-            }
-            Ok(mrs)
+            Ok(match mrs {
+                Some(mut mrs) => {
+                    mrs.new_range_position_ids
+                        .push(create_position_message.position_id);
+                    Some(mrs)
+                }
+                None => None,
+            })
         },
     )?;
 
@@ -325,11 +320,9 @@ pub fn handle_swap_response(
 
     // get post swap balances to create positions with
     let balance0 =
-        querier.query_balance(env.contract.address.clone(), pool_config.base_token.clone())?;
-    let balance1 = querier.query_balance(
-        env.contract.address.clone(),
-        pool_config.quote_token.clone(),
-    )?;
+        querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
+    let balance1 =
+        querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
     // todo: extract this to a function
     let create_position_msg = MsgCreatePosition {
@@ -345,11 +338,11 @@ pub fn handle_swap_response(
             .expect("Could not convert upper_tick to i64 from i128"),
         tokens_provided: vec![
             OsmoCoin {
-                denom: pool_config.base_token.clone(),
+                denom: pool_config.token0.clone(),
                 amount: balance0.amount.to_string(),
             },
             OsmoCoin {
-                denom: pool_config.quote_token.clone(),
+                denom: pool_config.token1.clone(),
                 amount: balance1.amount.to_string(),
             },
         ],
@@ -376,11 +369,11 @@ pub fn handle_swap_response(
         .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
         .add_attribute(
             "token0",
-            format!("{:?}{:?}", balance0.amount, pool_config.base_token),
+            format!("{:?}{:?}", balance0.amount, pool_config.token0),
         )
         .add_attribute(
             "token1",
-            format!("{:?}{:?}", balance1.amount, pool_config.quote_token),
+            format!("{:?}{:?}", balance1.amount, pool_config.token1),
         ))
 }
 
