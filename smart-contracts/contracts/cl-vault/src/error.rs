@@ -20,6 +20,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Pool-id {pool_id} not found")]
+    PoolNotFound { pool_id: u64 },
+
     #[error("Position Not Found")]
     PositionNotFound,
 

@@ -1,11 +1,11 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Env, StdResult, Uint128, WasmMsg};
-use cw_vault_standard::{
+use cw_vault_multi_standard::{
     extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
-use crate::state::VaultConfig;
+use crate::{query::PoolResponse, state::VaultConfig};
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -53,6 +53,17 @@ pub struct ModifyRangeMsg {
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
     Lockup(LockupQueryMsg),
+    /// Queries related to Concentrated Liquidity
+    ConcentratedLiquidity(ClQueryMsg),
+}
+
+///
+#[cw_serde]
+#[derive(QueryResponses)]
+pub enum ClQueryMsg {
+    /// Get the underlying pool of the vault
+    #[returns(PoolResponse)]
+    Pool {},
 }
 
 /// Callback messages for the autocompounding vault `Callback` extension

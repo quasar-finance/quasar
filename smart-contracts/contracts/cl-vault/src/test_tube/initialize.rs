@@ -5,6 +5,7 @@ pub mod initialize {
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
     };
+    use osmosis_test_tube::SigningAccount;
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message,
         osmosis_std::types::osmosis::concentratedliquidity::{
@@ -16,7 +17,7 @@ pub mod initialize {
     use crate::msg::InstantiateMsg;
     use crate::state::VaultConfig;
 
-    pub fn default_init() -> (OsmosisTestApp, Addr, u64) {
+    pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
@@ -60,7 +61,7 @@ pub mod initialize {
         tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, u64) {
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         // create new osmosis appchain instance.
         let app = OsmosisTestApp::new();
 
@@ -128,9 +129,9 @@ pub mod initialize {
                 swap_max_slippage: Decimal::percent(5),
             },
             vault_token_subdenom: "utestvault".to_string(),
-            range_admin: "range_admin".to_string(),
+            range_admin: admin.address(),
         };
-        let _contract = wasm
+        let contract = wasm
             .instantiate(
                 code_id,
                 &instantiate_msg,
@@ -141,7 +142,6 @@ pub mod initialize {
             )
             .unwrap();
 
-        let contract_address = "fake_addy".to_string();
-        (app, Addr::unchecked(contract_address), pool.id)
+        (app, Addr::unchecked(contract.data.address), pool.id, admin)
     }
 }

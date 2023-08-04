@@ -4,6 +4,7 @@ mod error;
 pub mod helpers;
 mod math;
 pub mod msg;
+mod query;
 mod reply;
 mod rewards;
 pub mod state;
