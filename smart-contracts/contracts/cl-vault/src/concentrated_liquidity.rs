@@ -37,7 +37,7 @@ pub fn create_position(
 
 // TODO verify that liquidity amount should be Decimal256
 pub fn withdraw_from_position(
-    storage: &mut dyn Storage,
+    storage: &dyn Storage,
     env: &Env,
     liquidity_amount: Decimal256,
 ) -> Result<MsgWithdrawPosition, ContractError> {
@@ -74,7 +74,7 @@ pub fn merge_positions(
 }
 
 pub fn get_position(
-    storage: &mut dyn Storage,
+    storage: &dyn Storage,
     querier: &QuerierWrapper,
     _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
@@ -104,8 +104,8 @@ mod tests {
                 deps.as_mut().storage,
                 &PoolConfig {
                     pool_id,
-                    base_token: "token0".to_string(),
-                    quote_token: "token1".to_string(),
+                    token0: "token0".to_string(),
+                    token1: "token1".to_string(),
                 },
             )
             .unwrap();

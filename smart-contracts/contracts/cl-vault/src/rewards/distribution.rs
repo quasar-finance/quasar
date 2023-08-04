@@ -36,7 +36,7 @@ pub fn handle_collect_incentives_reply(
     CURRENT_REWARDS.update(
         deps.storage,
         |mut rewards| -> Result<Rewards, ContractError> {
-            rewards.update_rewards(response.collected_incentives);
+            rewards.update_rewards(response.collected_incentives)?;
             Ok(rewards)
         },
     )?;
@@ -130,7 +130,7 @@ mod tests {
         Decimal, Uint128,
     };
 
-    use crate::state::{VaultConfig, Position};
+    use crate::state::{Position, VaultConfig};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
     use super::*;
@@ -200,10 +200,7 @@ mod tests {
             treasury: Addr::unchecked("strategy_man"),
         };
         VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &vault_config,
-            )
+            .save(deps.as_mut().storage, &vault_config)
             .unwrap();
 
         // mock a vec of user shares
@@ -224,7 +221,7 @@ mod tests {
             .save(deps.as_mut().storage, &strategist_rewards)
             .unwrap();
 
-        let resp = handle_collect_spread_rewards_reply(deps.as_mut(), env.clone(), msg).unwrap();
+        let _resp = handle_collect_spread_rewards_reply(deps.as_mut(), env, msg).unwrap();
 
         // we have collected vec![coin(1234, "uosmo"), coin(2345, "uqsr"), coin(3456, "uatom")] at this point
         let rewards = Rewards::from_coins(vec![

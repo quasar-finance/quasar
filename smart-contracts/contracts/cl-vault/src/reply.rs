@@ -5,5 +5,7 @@ pub enum Replies {
     CollectIncentives,
     // after gathering rewards, we divide them over share holders
     CollectSpreadRewards,
+    // handle
+    WithdrawUser,
     Unknown,
 }

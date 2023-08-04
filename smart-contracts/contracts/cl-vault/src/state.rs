@@ -1,27 +1,23 @@
-use apollo_cw_asset::AssetInfo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Uint128, Decimal256};
+use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Item, Map};
 
 use crate::rewards::Rewards;
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
-// We should move base_token and quote_token into PoolConfig (see struct below)
-pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
-
 pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
-    pub base_token: String,  // todo: Verify in instantiate message
-    pub quote_token: String, // todo: Verify in instantiate message
+    pub token0: String, // todo: Verify in instantiate message
+    pub token1: String, // todo: Verify in instantiate message
 }
 
 impl PoolConfig {
     pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        vec![&self.base_token, &self.quote_token].contains(&&token.into())
+        vec![&self.token0, &self.token1].contains(&&token.into())
     }
 }
 
@@ -40,6 +36,8 @@ pub struct VaultConfig {
     /// Account to receive fee payments
     pub treasury: Addr,
 }
+
+pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
@@ -62,6 +60,7 @@ pub struct TickExpIndexData {
 }
 
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
+pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
 
 #[cfg(test)]
 mod tests {
@@ -71,8 +70,8 @@ mod tests {
     fn test_pool_contains_token() {
         let pool_config = PoolConfig {
             pool_id: 1,
-            base_token: "token1".to_string(),
-            quote_token: "token2".to_string(),
+            token0: "token1".to_string(),
+            token1: "token2".to_string(),
         };
 
         assert!(pool_config.pool_contains_token("token1"));
