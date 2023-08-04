@@ -10,27 +10,38 @@ use crate::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, price_to_tick,
         with_slippage,
     },
+    reply::Replies,
     state::{ADMIN_ADDRESS, POOL_CONFIG, RANGE_ADMIN, VAULT_CONFIG},
     swap::SwapDirection,
     ContractError,
 };
 
-// pub fn execute_modify_range(
-//     deps: DepsMut,
-//     env: Env,
-//     info: MessageInfo,
-//     lower_amount: Uint128,
-//     upper_amount: Uint128,
-// ) -> Result<Response, ContractError> {
-//     // let lower_tick = price_to_tick(price, exponent_at_price_one)
-// }
+pub fn execute_modify_range(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    lower_price: Uint128,
+    upper_price: Uint128,
+) -> Result<Response, ContractError> {
+    // let lower_tick = price_to_tick(price, exponent_at_price_one)
+
+    execute_modify_range_ticks(
+        deps,
+        env,
+        info,
+        lower_price,
+        upper_price,
+        price_to_tick(lower_price),
+        price_to_tick(upper_price),
+    )
+}
 
 pub fn execute_modify_range_ticks(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lower_amount: Uint128,
-    upper_amount: Uint128,
+    lower_price: Uint128,
+    upper_price: Uint128,
     lower_tick: i64,
     upper_tick: i64,
 ) -> Result<Response, ContractError> {
@@ -59,7 +70,7 @@ pub fn execute_modify_range_ticks(
     let asset1 = position.asset1.expect("Could not find asset1 in position");
     // should move this into the reply of withdraw position
     let (liquidity_needed_0, liquidity_needed_1) =
-        get_liquidity_needed_for_tokens(lower_amount, upper_amount, lower_tick, upper_tick)?;
+        get_liquidity_needed_for_tokens(asset0.amount, asset1.amount, lower_tick, upper_tick)?;
 
     let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
         liquidity_needed_0,
@@ -102,9 +113,10 @@ pub fn execute_modify_range_ticks(
                 .to_string(),
         };
 
-    let msg = SubMsg::reply_always(create_position_msg.into(), RebalanceId);
+    let msg = SubMsg::reply_always(create_position_msg.into(), Replies::CreatePosition);
 
     Ok(Response::default()
+        .add_submessage(msg)
         .add_attribute("action", "execute_rebalance")
         .add_attribute("lower_bound", format!("{:?}", lower_tick))
         .add_attribute("upper_bound", format!("{:?}", upper_tick)))

@@ -43,9 +43,9 @@ pub enum AdminExtensionExecuteMsg {
 #[cw_serde]
 pub struct ModifyRangeMsg {
     /// The new lower bound of the range
-    lower_bound: Uint128,
+    lower_price: Uint128,
     /// The new upper bound of the range
-    upper_bound: Uint128,
+    upper_price: Uint128,
 }
 
 /// Extension query messages for an apollo autocompounding vault

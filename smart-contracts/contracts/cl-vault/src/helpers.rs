@@ -207,11 +207,13 @@ pub fn price_to_tick_2(
 /// thanks: https://github.com/osmosis-labs/osmosis/blob/ma * (liquidity_needed_base_token - liquidity_needed_quote_token)/ liquidity_needed_base_token
 /// in(deposit_amount_0/x/concentrated-liquidity/README.md#adding-liquidity
 pub fn get_liquidity_needed_for_tokens(
-    delta_base_token: Uint128,
-    delta_quote_token: Uint128,
+    delta_base_token: String,
+    delta_quote_token: String,
     lower_tick: i64,
     upper_tick: i64,
 ) -> Result<(Uint128, Uint128), ContractError> {
+    let delta_x = Uint128::from_str(&delta_base_token)?;
+    let delta_y = Uint128::from_str(&delta_quote_token)?;
     // calc liquidity needed for token
     unimplemented!("get_liquidity_needed_for_tokens")
 }
