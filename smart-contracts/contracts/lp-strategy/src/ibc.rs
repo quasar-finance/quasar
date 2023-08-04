@@ -15,7 +15,8 @@ use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
     LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS,
+    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -383,32 +384,58 @@ pub fn handle_icq_ack(
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
-    let join_pool = QueryCalcJoinPoolSharesResponse::decode(resp.responses[3].value.as_ref())?;
-
     let exit_pool =
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[4].value.as_ref())?;
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[5].value.as_ref())?.spot_price;
-    let lock = LockedResponse::decode(resp.responses[6].value.as_ref())?.lock;
-    // parse the locked lp shares on Osmosis, a bit messy
-    let gamms = if let Some(lock) = lock {
-        lock.coins
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+
+    let mut response_idx = 4;
+    let join_pool = if SIMULATED_JOIN_AMOUNT_IN
+        .may_load(storage)?
+        .unwrap_or(0u128.into())
+        > 1u128.into()
+    {
+        // found, increment response index
+        response_idx += 1;
+        // decode result
+        QueryCalcJoinPoolSharesResponse::decode(resp.responses[response_idx].value.as_ref())?
     } else {
-        vec![]
+        QueryCalcJoinPoolSharesResponse {
+            share_out_amount: "0".to_string(),
+            tokens_out: vec![],
+        }
     };
-    let config = CONFIG.load(storage)?;
-    let locked_lp_shares = gamms
-        .into_iter()
-        .find(|val| val.denom == config.pool_denom)
-        .unwrap_or(OsmoCoin {
-            denom: config.pool_denom.clone(),
-            amount: Uint128::zero().to_string(),
-        });
+
+    let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
+        Some(_) => {
+            // found, increment response index
+            response_idx += 1;
+            // decode result
+            let lock = LockedResponse::decode(resp.responses[response_idx].value.as_ref())?.lock;
+            // parse the locked lp shares on Osmosis, a bit messy
+            let gamms = if let Some(lock) = lock {
+                lock.coins
+            } else {
+                vec![]
+            };
+            let config = CONFIG.load(storage)?;
+            gamms
+                .into_iter()
+                .find(|val| val.denom == config.pool_denom)
+                .unwrap_or(OsmoCoin {
+                    denom: config.pool_denom.clone(),
+                    amount: Uint128::zero().to_string(),
+                })
+                .amount
+                .parse()?
+        }
+        None => Uint128::zero(),
+    };
 
     let old_lp_shares = LP_SHARES.load(storage)?;
     // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
-        cache.locked_shares = locked_lp_shares.amount.parse()?;
+        cache.locked_shares = locked_lp_shares;
         Ok(cache)
     })?;
 
@@ -791,7 +818,9 @@ mod tests {
                     base_denom:
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
                             .to_string(),
-                    quote_denom: "uosmo".to_string(),
+                    quote_denom:
+                        "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901"
+                            .to_string(),
                     local_denom:
                         "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5"
                             .to_string(),
@@ -816,7 +845,7 @@ mod tests {
             .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2xnNlVRcFBDa1JwWW1Ndk1qY3pPVFJHUWpBNU1rUXlSVU5EUkRVMk1USXpRemMwUmpNMlJUUkRNVVk1TWpZd01ERkRSVUZFUVRsRFFUazNSVUUyTWpKQ01qVkdOREZGTlVWQ01oSUhNalV3TURBd01FaUdydk1FQ2hNNkRBb0tDZ1YxYjNOdGJ4SUJNRWlHcnZNRUNoazZFZ29RQ2d0bllXMXRMM0J2YjJ3dk1SSUJNRWlHcnZNRUNtMDZaZ29VTWpneU5EWTVOVE0yTnpFek9EQXpNems1T1RnU1RncEVhV0pqTHpJM016azBSa0l3T1RKRU1rVkRRMFExTmpFeU0wTTNORVl6TmtVMFF6RkdPVEkyTURBeFEwVkJSRUU1UTBFNU4wVkJOakl5UWpJMVJqUXhSVFZGUWpJU0JqVXdNREF3TUVpR3J2TUVDbkE2YVFwUkNrUnBZbU12TWpjek9UUkdRakE1TWtReVJVTkRSRFUyTVRJelF6YzBSak0yUlRSRE1VWTVNall3TURGRFJVRkVRVGxEUVRrM1JVRTJNakpDTWpWR05ERkZOVVZDTWhJSk5qTTJNell6TVRJMkNoUUtCWFZ2YzIxdkVnc3hNVGd4TXpnek5ESXdNVWlHcnZNRUNoNDZGd29WTVRndU5UWTBOakV4TkRnd01EQXdNREF3TURBd1NJYXU4d1FLaXdFNmd3RUtnQUVJNWZWa0VqOXZjMjF2TVhWNU5XRnlNSGxoYXpseU4zZ3pjMmRuWkRkbmMyNXlhbTEwYTNjeWRqWmxkRGgxZUhKeGF6TnRObkJvTkdaMWNYYzVaSEUyYTJGNmJYTWFCQWlCNmtraUN3aUFrcmpEbVA3Ly8vOEJLaVlLQzJkaGJXMHZjRzl2YkM4eEVoYzNNVGszTXpJMU56QTJOVGcwTnprek56QXpPVFV6TlVpR3J2TUUifQ==").unwrap();
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2xVNlV3cFJDa1JwWW1Ndk1qY3pPVFJHUWpBNU1rUXlSVU5EUkRVMk1USXpRemMwUmpNMlJUUkRNVVk1TWpZd01ERkRSVUZFUVRsRFFUazNSVUUyTWpKQ01qVkdOREZGTlVWQ01oSUpNVEV5TWpFek1qUTNDbFE2VWdwUUNrUnBZbU12UXpFME1FRkdSRFUwTWtGRk56ZENSRGRFUTBNNE0wWXhNMFpFUkRoRE5VVTFRa0k0UXpRNU1qazNPRFZGTmtWRE1rWTBRell6TmtZNU9FWXhOemt3TVJJSU1qWTROekV6TnpRS0tUb25DaVVLRFdkaGJXMHZjRzl2YkM4NE1ETVNGRFkxTURnM05qazBPREF4TURZeU5EWXdNVEE0Q3FzQk9xZ0JDbElLUkdsaVl5OHlOek01TkVaQ01Ea3lSREpGUTBORU5UWXhNak5ETnpSR016WkZORU14UmpreU5qQXdNVU5GUVVSQk9VTkJPVGRGUVRZeU1rSXlOVVkwTVVVMVJVSXlFZ295TlRZNE56QTROelExQ2xJS1JHbGlZeTlETVRRd1FVWkVOVFF5UVVVM04wSkVOMFJEUXpnelJqRXpSa1JFT0VNMVJUVkNRamhETkRreU9UYzROVVUyUlVNeVJqUkROak0yUmprNFJqRTNPVEF4RWdveU1UY3dOVFkxTXpNNENoZzZGZ29VTUM0NE5EVXdNREkxTVRBd01EQXdNREF3TURBS2h3RTZoQUVLZ1FFSTVQVmtFajl2YzIxdk1YZGxlbkZoZG5ZNE5uQjVOSE5tWXpOM1pubDBiVFY1Ym1ONk5YcG1Oakk1Wm10NE4yb3daM0JsTlhwNWRtTnlPVGwwZUhNNWRuWjNjemNhQkFpQjZra2lDd2lBa3JqRG1QNy8vLzhCS2ljS0RXZGhiVzB2Y0c5dmJDODRNRE1TRmpJek5EQXpOVGs0TWpBd09UTTVOVFV6TkRJNU1EUT0ifQ==").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
@@ -848,7 +877,7 @@ mod tests {
             channel: channel.clone(),
         };
 
-        handle_ica_channel(deps.as_mut(), msg.clone()).unwrap();
+        handle_ica_channel(deps.as_mut(), msg).unwrap();
 
         let expected = ChannelInfo {
             id: channel.endpoint.channel_id.clone(),
@@ -888,18 +917,18 @@ mod tests {
         let version = r#"{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}"#.to_string();
         let channel = IbcChannel::new(
             endpoint,
-            counterparty_endpoint.clone(),
+            counterparty_endpoint,
             IbcOrder::Ordered,
             version,
             "connection-0".to_string(),
         );
 
         let msg = IbcChannelOpenMsg::OpenTry {
-            channel: channel.clone(),
+            channel,
             counterparty_version: "1".to_string(),
         };
 
-        let err = handle_ica_channel(deps.as_mut(), msg.clone()).unwrap_err();
+        let err = handle_ica_channel(deps.as_mut(), msg).unwrap_err();
         assert_eq!(err, ContractError::IncorrectChannelOpenType);
     }
 }

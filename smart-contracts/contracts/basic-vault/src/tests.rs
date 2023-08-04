@@ -1417,7 +1417,7 @@ fn proper_bond_with_zero_primitive_balance() {
     let res = init(deps.as_mut(), &init_msg, &env, &info);
     assert_eq!(1, res.messages.len());
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &&even_deposit_single_token());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
@@ -1469,7 +1469,7 @@ fn test_bond_with_zero_primitive_state() {
         recipient: Option::None,
     };
     let bond_seq_1 = BONDING_SEQ.load(deps_1.as_ref().storage).unwrap();
-    let res_1 = execute(
+    let _res_1 = execute(
         deps_1.as_mut(),
         env.clone(),
         deposit_info.clone(),
@@ -1482,7 +1482,7 @@ fn test_bond_with_zero_primitive_state() {
     let res_1 = on_bond(
         deps_1.as_mut(),
         env.clone(),
-        mock_info("quasar123", &vec![]),
+        mock_info("quasar123", &[]),
         Uint128::new(250),
         bond_seq_1.to_string(),
     )
@@ -1490,12 +1490,12 @@ fn test_bond_with_zero_primitive_state() {
     assert!(res_1.attributes.contains(&Attribute::new("minted", "300")));
 
     let bond_seq_2 = BONDING_SEQ.load(deps_2.as_ref().storage).unwrap();
-    let res_2 = execute(deps_2.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+    let _res_2 = execute(deps_2.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
 
     let res_2 = on_bond(
         deps_2.as_mut(),
-        env.clone(),
-        mock_info("quasar123", &vec![]),
+        env,
+        mock_info("quasar123", &[]),
         Uint128::new(250),
         bond_seq_2.to_string(),
     )
@@ -1667,7 +1667,7 @@ fn proper_unbond() {
     let reply_msg = reply_msg();
     let _res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
 
-    let deposit_info = mock_info(TEST_DEPOSITOR, &&even_deposit_single_token());
+    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };

@@ -1,4 +1,4 @@
-use crate::state::{Config, ADMIN_ADDRESS, VAULT_CONFIG};
+use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -70,7 +70,7 @@ pub fn execute_update_admin(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    updates: Config,
+    updates: VaultConfig,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
 
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn test_execute_update_config_success() {
         let admin = Addr::unchecked("admin");
-        let old_config = Config {
+        let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
         };
@@ -185,7 +185,7 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = Config {
+        let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn test_execute_update_config_not_admin() {
         let admin = Addr::unchecked("admin");
-        let old_config = Config {
+        let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
         };
@@ -211,7 +211,7 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = Config {
+        let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_execute_update_config_with_funds() {
         let admin = Addr::unchecked("admin");
-        let old_config = Config {
+        let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
         };
@@ -237,7 +237,7 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = Config {
+        let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
         };
@@ -251,7 +251,7 @@ mod tests {
     #[test]
     fn test_execute_update_config_same_config() {
         let admin = Addr::unchecked("admin");
-        let old_config = Config {
+        let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
         };

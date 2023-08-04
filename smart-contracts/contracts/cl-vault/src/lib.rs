@@ -5,8 +5,9 @@ pub mod helpers;
 mod math;
 pub mod msg;
 mod reply;
-pub(crate) mod rewards;
+mod rewards;
 pub mod state;
+mod swap;
 mod tests;
 mod vault;
 

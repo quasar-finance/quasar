@@ -100,7 +100,14 @@ mod tests {
         let mut deps = mock_dependencies();
         let pool_id = 1;
         POOL_CONFIG
-            .save(deps.as_mut().storage, &PoolConfig { pool_id })
+            .save(
+                deps.as_mut().storage,
+                &PoolConfig {
+                    pool_id,
+                    base_token: "token0".to_string(),
+                    quote_token: "token1".to_string(),
+                },
+            )
             .unwrap();
 
         let env = mock_env();

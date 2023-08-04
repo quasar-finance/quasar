@@ -1,27 +1,27 @@
 [package]
+edition = "2021"
 name = "quasar-types"
 version = "0.1.0"
-edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cosmos-sdk-proto = { version = "0.15", default-features = false }
-prost = { version = "0.11", default-features = false }
-thiserror = { version = "1.0.23" }
-serde-json-wasm = { version = "0.4.1", default-features = false }
-derive_more = { version = "0.99.17", default-features = false, features = [
-    "display",
-] }
-rust_decimal = "1.24.0"
-cw20 = "0.13.4"
-cosmwasm-std = { version = "1.0.0", features = ["abort", "stargate"] }
+cosmos-sdk-proto = {version = "0.15", default-features = false}
+cosmwasm-std = {version = "1.0.0", features = ["abort", "stargate"]}
 cw-storage-plus = "1.0.1"
+cw20 = "0.13.4"
+derive_more = {version = "0.99.17", default-features = false, features = [
+  "display",
+]}
+osmosis-std = {git = "https://github.com/quasar-finance/osmosis-rust.git"}
+osmosis-std-derive = {git = "https://github.com/quasar-finance/osmosis-rust.git"}
+prost = {version = "0.11", default-features = false}
+rust_decimal = "1.24.0"
 schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = [
-    "derive",
-    "alloc",
-] }
+serde = {version = "1.0.103", default-features = false, features = [
+  "derive",
+  "alloc",
+]}
+serde-json-wasm = {version = "0.4.1", default-features = false}
 serde_test = "1.0"
-osmosis-std = { version = "0.13.2" }
-osmosis-std-derive = "0.13.2"
+thiserror = {version = "1.0.23"}

@@ -130,7 +130,7 @@ mod tests {
         Decimal, Uint128,
     };
 
-    use crate::state::{Config, Position};
+    use crate::state::{VaultConfig, Position};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
     use super::*;
@@ -195,7 +195,7 @@ mod tests {
         .unwrap();
 
         // we need a vault config to distribute the rewards in the vault config
-        let vault_config = Config {
+        let vault_config = VaultConfig {
             performance_fee: Decimal::percent(20),
             treasury: Addr::unchecked("strategy_man"),
         };
@@ -284,7 +284,7 @@ mod tests {
         VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
-                &Config {
+                &VaultConfig {
                     performance_fee: Decimal::percent(20),
                     treasury: Addr::unchecked("strategy_man"),
                 },

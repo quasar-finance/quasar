@@ -5,7 +5,8 @@ use cw_vault_standard::{
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
-use crate::state::Config;
+
+use crate::state::VaultConfig;
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -33,7 +34,7 @@ pub enum AdminExtensionExecuteMsg {
     /// Update the configuration of the vault.
     UpdateConfig {
         /// The config updates.
-        updates: Config,
+        updates: VaultConfig,
     },
 }
 
@@ -42,6 +43,7 @@ pub enum AdminExtensionExecuteMsg {
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
     Lockup(LockupQueryMsg),
+
 }
 
 /// Callback messages for the autocompounding vault `Callback` extension
@@ -126,7 +128,7 @@ pub struct InstantiateMsg {
     /// LP tokens.
     pub lockup_duration: u64,
     /// Configurable parameters for the contract.
-    pub config: Config,
+    pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".
