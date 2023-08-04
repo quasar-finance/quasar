@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
-    DivideByZeroError, OverflowError, StdError, Uint128,
+    DivideByZeroError, OverflowError, StdError, Uint128, Decimal256,
 };
 use cw_dex::CwDexError;
 use thiserror::Error;
@@ -70,4 +70,16 @@ pub enum ContractError {
 
     #[error("Insufficient funds for swap. Have: {balance}, Need: {needed}")]
     InsufficientFundsForSwap { balance: Uint128, needed: Uint128 },
+
+    #[error("Tick index minimum error")]
+    TickIndexMinError {},
+
+    #[error("Tick index maximum error")]
+    TickIndexMaxError {},
+
+    #[error("Price must be between 0.000000000001 and 100000000000000000000000000000000000000. Got {:?}", price)]
+    PriceBoundError { price: Decimal256 },
+
+    #[error("Cannot handle negative powers in uints")]
+    CannotHandleNegativePowersInUint {},
 }

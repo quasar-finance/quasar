@@ -1,6 +1,6 @@
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128, Decimal256};
 use cw_storage_plus::{Item, Map};
 
 use crate::rewards::Rewards;
@@ -52,6 +52,16 @@ pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration
 
 pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
 pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
+
+#[cw_serde]
+pub struct TickExpIndexData {
+    pub initial_price: Decimal256,
+    pub max_price: Decimal256,
+    pub additive_increment_per_tick: Decimal256,
+    pub initial_tick: i64,
+}
+
+pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 
 #[cfg(test)]
 mod tests {
