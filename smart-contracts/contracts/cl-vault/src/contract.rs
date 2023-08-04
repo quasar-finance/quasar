@@ -4,8 +4,14 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult}
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+<<<<<<< HEAD
+=======
+
+use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
+>>>>>>> cc089559 ([WIP:50%] create position)
 use crate::vault::admin::execute_admin;
 use crate::vault::deposit::execute_deposit;
+use crate::vault::range::execute_modify_range;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -13,11 +19,15 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    // save contract admin
+    ADMIN_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.admin)?)?;
+    // save range admin
+    RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
     unimplemented!()
 }
 
@@ -52,6 +62,12 @@ pub fn execute(
                 execute_admin(deps, info, admin_msg)
             }
             crate::msg::ExtensionExecuteMsg::Lockup(_) => todo!(),
+            crate::msg::ExtensionExecuteMsg::Quasar(quasar_msg) => match quasar_msg {
+                crate::msg::QuasarExtensionExecuteMsg::ModifyRange {
+                    lower_bound,
+                    upper_bound,
+                } => execute_modify_range(deps, env, info, lower_bound, upper_bound),
+            },
         },
     }
 }

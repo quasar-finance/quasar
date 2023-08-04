@@ -1,6 +1,6 @@
 use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response};
+use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response, Uint128};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(

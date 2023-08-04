@@ -5,7 +5,8 @@ use cw_storage_plus::{Item, Map};
 
 use crate::rewards::Rewards;
 
-pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
+pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
+pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
 // We should move base_token and quote_token into PoolConfig (see struct below)
 pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
@@ -39,6 +40,10 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
+    /// create position max slippage
+    pub create_position_max_slippage: Decimal,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
 }
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
