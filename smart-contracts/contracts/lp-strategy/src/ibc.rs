@@ -823,21 +823,16 @@ pub(crate) fn on_packet_timeout(
 
 #[cfg(test)]
 mod tests {
-
-    use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
-        Addr, Empty, IbcEndpoint, IbcOrder,
-    };
-    use osmosis_std::types::osmosis::lockup::PeriodLock;
-
+    use super::*;
     use crate::{
         state::{Config, LOCK_ADMIN, SIMULATED_JOIN_AMOUNT_IN},
         test_helpers::{create_query_response, default_setup},
     };
-
     use cosmos_sdk_proto::cosmos::base::v1beta1::Coin as OsmoCoin;
-
-    use super::*;
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr, Empty, IbcEndpoint, IbcOrder,
+    };
 
     #[test]
     fn handle_icq_ack_works() {
@@ -977,28 +972,18 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        // no osmo lock as we're not sending lock ICQ
+        // no osmo lock as we're not sending lock ICQ for simplicity
         // OSMO_LOCK.save(deps.as_mut().storage, &1u64).unwrap();
 
         LOCK_ADMIN
             .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
             .unwrap();
 
-        // mocking the ICQ ACK
+        // mocking the ICQ ACK (some values don't make sense, but we're not using them in this math calculation)
         let raw_balance = create_query_response(
             QueryBalanceResponse {
                 balance: Some(OsmoCoin {
                     denom: "uatom".to_string(),
-                    amount: "100".to_string(),
-                }),
-            }
-            .encode_to_vec(),
-        );
-
-        let base_balance = create_query_response(
-            QueryBalanceResponse {
-                balance: Some(OsmoCoin {
-                    denom: "uosmo".to_string(),
                     amount: "100".to_string(),
                 }),
             }
@@ -1117,11 +1102,12 @@ mod tests {
             SIMULATED_EXIT_RESULT
                 .load(deps.as_ref().storage)
                 .unwrap()
-                .to_string(),
-            "420"
+                .u128(),
+            // base_amount + (quote_amount * spot_price)
+            100 + (100 * 1)
         );
 
-        // changing spot price
+        // changing some ICQ ACK params to create a different test scenario
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
                 spot_price: "2".to_string(),
@@ -1129,7 +1115,6 @@ mod tests {
             .encode_to_vec(),
         );
 
-        // changinging exit pool amounts
         let exit_pool_unbonds = create_query_response(
             QueryCalcExitPoolCoinsFromSharesResponse {
                 tokens_out: vec![
@@ -1177,6 +1162,7 @@ mod tests {
                 .load(deps.as_ref().storage)
                 .unwrap()
                 .u128(),
+            // base_amount + (quote_amount * spot_price)
             200 + (300 * 2)
         );
     }

@@ -135,9 +135,8 @@ pub fn prepare_full_query(
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
-    // we have to check that bonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
-    // TODO: change > 1 for >= 1
-    let checked_join_pool = match bonding_amount > 1u128.into() {
+    // we have to check that bonding amount is >= 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    let checked_join_pool = match bonding_amount >= 1u128.into() {
         true => Some(QueryCalcJoinPoolSharesRequest {
             pool_id: config.pool_id,
             tokens_in: vec![OsmoCoin {
@@ -151,7 +150,7 @@ pub fn prepare_full_query(
     // we save the amount to scale the slippage against in the icq ack for other incoming unbonds?
     SIMULATED_EXIT_SHARES_IN.save(storage, &pending_unbonds_shares)?;
 
-    // we have to check that unbonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    // we have to check that unbonding amount is >= 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
     let checked_exit_pool_unbonds = match pending_unbonds_shares >= 1u128.into() {
         true => Some(QueryCalcExitPoolCoinsFromSharesRequest {
             pool_id: config.pool_id,
