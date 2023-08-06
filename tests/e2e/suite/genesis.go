@@ -204,16 +204,64 @@ func modifyIncentivesModule() genesisModifiers {
 		v := map[string]any{
 			"last_gauge_id": "0",
 			"lockable_durations": []string{
-				"1s",
+				"60s",
 				"120s",
 				"180s",
 				"240s",
 			},
 			"params": map[string]any{
-				"distr_epoch_identifier": "day",
+				"distr_epoch_identifier": "minute",
 			},
 		}
 		err := dyno.Set(gen, v, "app_state", "incentives")
+		return gen, err
+	}
+}
+
+func modifyEpochsModule() genesisModifiers {
+	return func(gen any) (any, error) {
+		v := map[string]any{
+			"epochs": []any{
+				map[string]any{
+
+					"identifier":                 "day",
+					"start_time":                 "0001-01-01T00:00:00Z",
+					"duration":                   "86400s",
+					"current_epoch":              "0",
+					"current_epoch_start_time":   "0001-01-01T00:00:00Z",
+					"epoch_counting_started":     false,
+					"current_epoch_start_height": "0",
+				},
+				map[string]any{
+					"identifier":                 "hour",
+					"start_time":                 "0001-01-01T00:00:00Z",
+					"duration":                   "3600s",
+					"current_epoch":              "0",
+					"current_epoch_start_time":   "0001-01-01T00:00:00Z",
+					"epoch_counting_started":     false,
+					"current_epoch_start_height": "0",
+				},
+				map[string]any{
+					"identifier":                 "week",
+					"start_time":                 "0001-01-01T00:00:00Z",
+					"duration":                   "604800s",
+					"current_epoch":              "0",
+					"current_epoch_start_time":   "0001-01-01T00:00:00Z",
+					"epoch_counting_started":     false,
+					"current_epoch_start_height": "0",
+				},
+				map[string]any{
+					"identifier":                 "minute",
+					"start_time":                 "0001-01-01T00:00:00Z",
+					"duration":                   "60s",
+					"current_epoch":              "0",
+					"current_epoch_start_time":   "0001-01-01T00:00:00Z",
+					"epoch_counting_started":     false,
+					"current_epoch_start_height": "0",
+				},
+			},
+		}
+		err := dyno.Set(gen, v, "app_state", "epochs")
 		return gen, err
 	}
 }
@@ -239,6 +287,7 @@ func modifyPoolIncentivesModule() genesisModifiers {
 				"total_weight": "11100",
 			},
 			"lockable_durations": []string{
+				"60s",
 				"120s",
 				"180s",
 				"240s",
