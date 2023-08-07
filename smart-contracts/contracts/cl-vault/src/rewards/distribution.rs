@@ -130,7 +130,7 @@ mod tests {
         Decimal, Uint128,
     };
 
-    use crate::state::{VaultConfig, Position};
+    use crate::state::{Position, VaultConfig};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
     use super::*;
@@ -198,12 +198,11 @@ mod tests {
         let vault_config = VaultConfig {
             performance_fee: Decimal::percent(20),
             treasury: Addr::unchecked("strategy_man"),
+            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &vault_config,
-            )
+            .save(deps.as_mut().storage, &vault_config)
             .unwrap();
 
         // mock a vec of user shares
@@ -287,6 +286,8 @@ mod tests {
                 &VaultConfig {
                     performance_fee: Decimal::percent(20),
                     treasury: Addr::unchecked("strategy_man"),
+                    create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
+                    swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
                 },
             )
             .unwrap();

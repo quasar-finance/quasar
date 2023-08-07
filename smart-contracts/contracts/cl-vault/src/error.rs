@@ -1,12 +1,11 @@
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError,
-    DivideByZeroError, OverflowError, StdError, Uint128, Decimal256,
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
+    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use cw_dex::CwDexError;
 use thiserror::Error;
 
 use std::num::ParseIntError;
-
 
 pub type ContractResult<T> = Result<T, ContractError>;
 
@@ -28,6 +27,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
+
+    #[error("{0}")]
+    Decimal256RangeExceededError(#[from] Decimal256RangeExceeded),
 
     #[error("Overflow")]
     Overflow {},
@@ -60,7 +62,6 @@ pub enum ContractError {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
     },
-
 
     #[error("Bad token out requested for swap, must be one of: {base_token:?}, {quote_token:?}")]
     BadTokenForSwap {

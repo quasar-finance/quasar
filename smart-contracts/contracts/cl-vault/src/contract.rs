@@ -1,10 +1,11 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg};
 
+use crate::reply::handle_reply;
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use crate::vault::admin::execute_admin;
 use crate::vault::deposit::execute_deposit;
@@ -80,6 +81,11 @@ pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         cw_vault_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_standard::VaultStandardQueryMsg::VaultExtension(_) => todo!(),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+    handle_reply(deps, env, msg)
 }
 
 #[cfg(test)]
