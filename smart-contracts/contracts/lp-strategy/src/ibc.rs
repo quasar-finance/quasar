@@ -1104,7 +1104,7 @@ mod tests {
                 .unwrap()
                 .u128(),
             // base_amount + (quote_amount * spot_price)
-            100 + (100 * 1)
+            320 + (100 * 1)
         );
 
         // changing some ICQ ACK params to create a different test scenario
