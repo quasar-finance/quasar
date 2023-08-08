@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/CosmWasm/wasmd v0.31.0
 	github.com/cosmos/cosmos-sdk v0.45.16
-	github.com/cosmos/ibc-go/v4 v4.3.0
+	github.com/cosmos/ibc-go/v4 v4.4.2
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -29,7 +29,7 @@ require (
 )
 
 require (
-	github.com/CosmWasm/wasmvm v1.2.3
+	github.com/CosmWasm/wasmvm v1.2.1
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2
 	github.com/cosmos/gogoproto v1.4.6
 	github.com/strangelove-ventures/async-icq/v4 v4.0.0-rc0
