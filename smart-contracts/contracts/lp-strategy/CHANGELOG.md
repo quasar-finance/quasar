@@ -33,6 +33,7 @@
 - readd proper lock behaviour
 - Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
+- make it so that the primitive compounds
 
 ## V0.1.1 08-05-2023
 

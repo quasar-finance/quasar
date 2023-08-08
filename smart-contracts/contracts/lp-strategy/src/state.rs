@@ -83,6 +83,12 @@ pub(crate) const LP_SHARES: Item<LpCache> = Item::new("lp_shares");
 
 // the latest known ica balance
 pub(crate) const TOTAL_VAULT_BALANCE: Item<Uint128> = Item::new("total_vault_balance");
+/// the "free balance" on osmo side, this is the amount of tokens that we can compound into the pool
+/// actually, we also subtract out any failed bond attempts & any failed unbond attempts (trapped_errors, and failed join pool)
+/// failed join pool is bonded back in via a different mechanism
+/// trapped errors are not bonded back in, but they are not lost either
+/// the only part that isn't accounted for is the failed returnTransfer attempts, but we never run that path simultaneously due to locks to it's fine
+pub(crate) const USABLE_COMPOUND_BALANCE: Item<Uint128> = Item::new("usable_compound_balance");
 
 // TODO we probably want to change this to an OngoingDeposit
 pub(crate) const BONDING_CLAIMS: Map<(&Addr, &str), Uint128> = Map::new("bonding_claims");

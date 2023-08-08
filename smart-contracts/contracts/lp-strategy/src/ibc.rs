@@ -16,7 +16,7 @@ use crate::state::{
     LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
     ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
     SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS,
+    TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -317,7 +317,17 @@ pub fn handle_transfer_ack(
             }
         },
     )?;
-    let total_amount = transferred_amount + failed_bonds_amount;
+
+    // add in usable base token compound balance to include rewards
+    // TODO: In an ideal world, I'd also fix share_out_min_amount to adjust for the amount we are compounding
+    // However, share_out_min_amount is already broken (doens't include failed_bonds_amount), the fix would live in ibc_util.rs L:78 (this would only fix failed_join_amount)
+    // a better fix would be to get the last state of the pool and do the math on our side to then also be able to include this USABLE_COMPOUND_BALANCE
+    // howver, if we are going to deprecate this vault, I'd argue it's not worth it - seeing as the compound balance would just be "extra money" for a user anyway
+    // TODO: remove this comment
+    let usable_base_token_compound_balance = USABLE_COMPOUND_BALANCE.load(storage)?;
+
+    let total_amount =
+        transferred_amount + failed_bonds_amount + usable_base_token_compound_balance;
 
     let pending_rejoins: StdResult<Vec<OngoingDeposit>> = REJOIN_QUEUE.iter(storage)?.collect();
     pending.bonds.append(&mut pending_rejoins?);
@@ -370,7 +380,9 @@ pub fn handle_icq_ack(
                 })?,
         );
 
-    let usable_base_balance = get_usable_compound_balance(storage, base_balance)?;
+    // free base_token osmo side balance but subtracted out anything from trapped_errors, saved for use in transfer ack
+    let usable_base_token_compound_balance = get_usable_compound_balance(storage, base_balance)?;
+    USABLE_COMPOUND_BALANCE.save(storage, &usable_base_token_compound_balance)?;
 
     // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
@@ -447,7 +459,7 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        usable_base_balance,
+        usable_base_token_compound_balance,
         &exit_pool.tokens_out,
         spot_price,
     )?;
