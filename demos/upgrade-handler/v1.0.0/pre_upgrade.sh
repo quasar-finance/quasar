@@ -13,9 +13,12 @@ on_error() {
 trap 'on_error' ERR
 
 # create a pool on osmosis to test against
-osmosisd tx gamm create-pool --pool-file ./pools/sample_pool1.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
-osmosisd tx gamm create-pool --pool-file ./pools/sample_pool2.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
-osmosisd tx gamm create-pool --pool-file ./pools/sample_pool3.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
+osmosisd tx gamm create-pool --pool-file ./pools/sample_pool1.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
+sleep 6
+osmosisd tx gamm create-pool --pool-file ./pools/sample_pool2.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
+sleep 6
+osmosisd tx gamm create-pool --pool-file ./pools/sample_pool3.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
+sleep 6
 
 echo "ibc transferring uosmo"
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10000000000uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
@@ -23,7 +26,6 @@ sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
 sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
-sleep 6
 
 #     lock_period is  60 for 60 sec, in prod should be at least: 60 sec/min * 60 min/hr * 24hr * 14days "1209600"
 #     pool_id is hardcoded to 1 for this testing setup, expected to be done by the instantiater on local/testnet
@@ -89,6 +91,7 @@ echo "Got basic vault CODE_ID = $VAULT_CODE_ID"
 
 VAULT_INIT='{"total_cap":"200000000000","thesis":"test vault","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"OPRO","min_withdrawal":"1","name":"OPRO","deposit_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","primitives":[{"address":"'$ADDR1'","weight":"0.333333333333","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.333333333333","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.333333333333","init":{"l_p":'$INIT3'}}]}'
 OUT=$($BINARY tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from $ACCOUNT_NAME --keyring-backend test --label "vault 1" -b block -y --admin $ACCOUNT_ADDRESS --chain-id $CHAIN_ID --gas 7000000 --fees 10000uqsr --node $RPC)
+export VAULT_ADDR=""
 VAULT_ADDR=$($BINARY query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed vault contract address = $VAULT_ADDR"
 
@@ -106,5 +109,6 @@ echo "query balance of the bonding account on vault"
 $BINARY query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}'
 
 echo "perform an unbond action right befor chain upgrade"
-$BINARY tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"9000000"}}' --from $ACCOUNT_NAME --keyring-backend test -y -b block --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 --node $RPC
+$BINARY tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"9000000"}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 --node $RPC
 
+cd ../demos/upgrade-handler/v1.0.0

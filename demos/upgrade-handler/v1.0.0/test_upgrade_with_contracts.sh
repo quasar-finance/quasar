@@ -5,8 +5,13 @@ cleanup() {
   kill $OSMO_PID
   kill $QUASAR_PID
   kill $RLY_PID_1
-  kill $QUASAR_PID_1
 }
+
+pkill quasarnoded
+pkill osmosisd
+pkill rly
+
+sleep 3
 
 trap cleanup 1 2 3 6
 
@@ -37,14 +42,13 @@ quasarnoded status
 osmosisd status
 
 # run pre upgrade actions like pools creation, contract deployments and bonding actions
-./pre_upgrade.sh
+. ./pre_upgrade.sh
 
 # run upgrade part that performs a chain upgrade
-./upgrade.sh &
-QUASAR_PID=$!
+. ./upgrade.sh
 
 # run post upgrade actions like new bonds, unbond and claim.
-./post_upgrade.sh
+. ./post_upgrade.sh
 
 # Check platform
 platform='unknown'

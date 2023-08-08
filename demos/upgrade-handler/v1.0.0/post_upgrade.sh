@@ -5,11 +5,12 @@ BINARY=quasarnoded
 CHAIN_ID="quasar"
 ACCOUNT_NAME="my_treasury"
 RPC="http://127.0.0.1:26659"
+echo "Vault address : $VAULT_ADDR"
 
 # let the chain start after upgrade and produce some blocks
 sleep 15
 
-echo "perform a claim on the account an unbond before chain upgrade"
+echo "perform a claim for an unbond made before the chain upgrade"
 $BINARY tx wasm execute $VAULT_ADDR '{"claim":{}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id quasar --fees 10000uqsr --gas 7000000 --node $RPC
 
 sleep 60

@@ -12,11 +12,14 @@ NUM1=20
 UPGRADE_HEIGHT=$(expr $NUM1 + $CURRENT_BLOCK)
 echo $UPGRADE_HEIGHT
 
+# sleep for a few seconds after the previous file transaction
+sleep 6
+
 # Submit governance proposal for software-upgrade to v1
 echo ">>> Submitting proposal for software-upgrade"
-$BINARY tx gov submit-proposal software-upgrade "v1" --title "Software Upgrade to v1" --description "This software-upgrade v1 introduces qvesting, token factory and authx module" --upgrade-height $UPGRADE_HEIGHT --deposit 100uqsr --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 --node $RPC
+$BINARY tx gov submit-proposal software-upgrade "v1" --title "Software Upgrade to v1" --description "This software-upgrade v1 introduces qvesting, token factory and authz module" --upgrade-height $UPGRADE_HEIGHT --deposit 100uqsr --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 --node $RPC
 
-sleep 5
+sleep 20
 
 echo ">>> Voting yes to proposal"
 $BINARY tx gov vote 1 yes --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
@@ -49,4 +52,4 @@ BINARY=quasarnoded
 HOME_QSR=$HOME/.quasarnode
 
 echo "starting with new binary"
-$BINARY start --home $HOME_QSR >>./logs/quasar.log 2>&1
+$BINARY start --home $HOME_QSR >>./logs/quasar.log 2>&1 &
