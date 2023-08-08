@@ -66,3 +66,8 @@ fi
 ## wait is added so that the all the processes are not killed.
 ## please perform all the other queries after the announcement of test finished in order to check all the actions are working properly
 wait
+
+# Run these commands once you have finished with the tests
+#pkill quasarnoded
+#pkill osmosisd
+#pkill rly
