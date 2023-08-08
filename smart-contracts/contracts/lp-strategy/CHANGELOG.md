@@ -34,6 +34,7 @@
 - Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
 - make it so that the primitive compounds
+- using only the unbonds amount to calculate slippage (previously using total shares amount)
 
 ## V0.1.1 08-05-2023
 
