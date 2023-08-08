@@ -23,11 +23,11 @@ mkdir ./logs
 # COSMOS_PID=$!
 
 # run quasar and save pid
-./quasar_localnet.sh &
+../quasar_localnet.sh &
 QUASAR_PID=$!
 
 #run osmo and save pid
-./osmo_localnet.sh &
+../osmo_localnet.sh &
 OSMO_PID=$!
 
 # wait for chains to start
