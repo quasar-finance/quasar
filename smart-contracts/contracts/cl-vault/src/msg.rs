@@ -5,7 +5,6 @@ use cw_vault_standard::{
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
-
 use crate::state::VaultConfig;
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -43,7 +42,6 @@ pub enum AdminExtensionExecuteMsg {
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
     Lockup(LockupQueryMsg),
-
 }
 
 /// Callback messages for the autocompounding vault `Callback` extension

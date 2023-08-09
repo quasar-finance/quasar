@@ -22,16 +22,16 @@ pub fn estimate_swap(
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.base_token,
-            quote_token: pool_config.quote_token,
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
         });
     }
 
     // get token_out_denom
-    let token_out_denom = if *token_in_denom == pool_config.base_token {
-        pool_config.quote_token
+    let token_out_denom = if *token_in_denom == pool_config.token0 {
+        pool_config.token1
     } else {
-        pool_config.base_token
+        pool_config.token0
     };
 
     // we will only ever have a route length of one, this will likely change once we start selecting different routes
@@ -70,8 +70,8 @@ pub fn swap(
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.base_token,
-            quote_token: pool_config.quote_token,
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
         });
     }
 
@@ -85,10 +85,10 @@ pub fn swap(
     }
 
     // get token_out_denom
-    let token_out_denom = if *token_in_denom == pool_config.base_token {
-        pool_config.quote_token
+    let token_out_denom = if *token_in_denom == pool_config.token0 {
+        pool_config.token1
     } else {
-        pool_config.base_token
+        pool_config.token0
     };
 
     // we will only ever have a route length of one, this will likely change once we start selecting different routes
@@ -124,8 +124,8 @@ mod tests {
     fn mock_pool_config() -> PoolConfig {
         PoolConfig {
             pool_id: 1,
-            base_token: "token0".to_string(),
-            quote_token: "token1".to_string(),
+            token0: "token0".to_string(),
+            token1: "token1".to_string(),
         }
     }
 

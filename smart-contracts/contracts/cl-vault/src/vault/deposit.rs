@@ -1,8 +1,8 @@
 use apollo_cw_asset::{Asset, AssetInfo};
-use cosmwasm_std::{Coin, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
 use cw_dex_router::helpers::receive_asset;
 
-use crate::{state::BASE_TOKEN, ContractError};
+use crate::{state::POOL_CONFIG, ContractError};
 
 pub(crate) fn execute_deposit(
     deps: DepsMut,
@@ -14,32 +14,14 @@ pub(crate) fn execute_deposit(
     // Unwrap recipient or use caller's address
     let _recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
     // Receive the assets to the contract
     let _receive_res = receive_asset(
         info,
         &env,
-        &Asset::new(BASE_TOKEN.load(deps.storage)?, amount),
+        &Asset::new(AssetInfo::Native(pool_config.token0), amount),
     )?;
-
-    // TODO we should accept two tokens of a position
-    // Check that only the expected amount of base token was sent
-    if info.funds.len() > 1 {
-        return Err(ContractError::UnexpectedFunds {
-            expected: vec![Coin {
-                denom: BASE_TOKEN.load(deps.storage)?.to_string(),
-                amount,
-            }],
-            actual: info.funds.clone(),
-        });
-    }
-
-    // If base token is a native token it was sent in the `info.funds` and is
-    // already part of the contract balance. That is not the case for a cw20 token,
-    // which will be received when the above `receive_res` is handled.
-    let _user_deposit_amount = match BASE_TOKEN.load(deps.storage)? {
-        AssetInfo::Cw20(_) => Uint128::zero(),
-        AssetInfo::Native(_) => amount,
-    };
 
     todo!()
 
