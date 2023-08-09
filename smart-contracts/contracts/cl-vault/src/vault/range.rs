@@ -1,23 +1,52 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    Addr, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, Response, Storage,
-    SubMsg, Uint128,
+    Addr, Decimal, Decimal256, Deps, DepsMut, Empty, Env, Fraction, MessageInfo, QuerierWrapper,
+    Response, Storage, SubMsg, Uint128,
 };
 use cw_utils::nonpayable;
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use osmosis_std::types::{
+    cosmos::base::v1beta1::Coin as OsmoCoin,
+    osmosis::{
+        concentratedliquidity::{
+            self,
+            v1beta1::{
+                MsgCreatePosition, MsgCreatePositionResponse, MsgFungifyChargedPositionsResponse,
+                MsgWithdrawPosition, MsgWithdrawPositionResponse,
+            },
+        },
+        gamm::v1beta1::{MsgSwapExactAmountIn, MsgSwapExactAmountInResponse},
+        poolmanager::{self, v1beta1::SwapAmountInRoute},
+    },
+};
 
 use crate::{
     concentrated_liquidity::get_position,
     helpers::{
-        get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, with_slippage,
+        get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
+        with_slippage,
     },
     math::tick::price_to_tick,
     reply::Replies,
-    state::{ADMIN_ADDRESS, POOL_CONFIG, RANGE_ADMIN, VAULT_CONFIG},
-    swap::SwapDirection,
+    state::{
+        ModifyRangeState, Position, SwapDirection, ADMIN_ADDRESS, MODIFY_RANGE_STATE, POOL_CONFIG,
+        POSITION, RANGE_ADMIN, VAULT_CONFIG,
+    },
+    swap::swap,
     ContractError,
 };
+
+fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let admin = RANGE_ADMIN.load(storage)?;
+    if &admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+    Ok(RANGE_ADMIN.load(deps.storage)?)
+}
 
 pub fn execute_modify_range(
     deps: DepsMut,
@@ -46,18 +75,6 @@ pub fn execute_modify_range(
     )
 }
 
-fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    let admin = RANGE_ADMIN.load(storage)?;
-    if &admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    Ok(())
-}
-
-fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
-    Ok(RANGE_ADMIN.load(deps.storage)?)
-}
-
 pub fn execute_modify_range_ticks(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
@@ -70,6 +87,8 @@ pub fn execute_modify_range_ticks(
 ) -> Result<Response, ContractError> {
     assert_range_admin(storage, &info.sender)?;
 
+    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
+
     let pool_config = POOL_CONFIG.load(storage)?;
     let vault_config = VAULT_CONFIG.load(storage)?;
 
@@ -80,87 +99,352 @@ pub fn execute_modify_range_ticks(
     // * deposit up to max liq we can right now, then swap remaining over and deposit again
 
     // this will error if we dont have a position anyway
-    let position = get_position(storage, &querier, &env)?;
+    let position_breakdown = get_position(storage, &querier, &env)?;
 
-    let liquidity = match position.position {
-        Some(position) => Decimal::from_str(&position.liquidity)
-            .expect("Could not parse liquidity from Osmosis-provided position"),
-        // note: we would never reach here due to error in get_position if not found, but it is a valid branch in our code
-        None => Decimal::zero(),
+    let position = match position_breakdown.position {
+        Some(position) => position,
+        None => {
+            // todo: i guess we can support range modification without a position too? then we'd need to check if we have any balance.
+            // however line 83 (6 lines up from here) will error if we dont have a position anyway
+            return Err(ContractError::PositionNotFound {});
+        }
     };
 
-    let asset0 = position.asset0.expect("Could not find asset0 in position");
-    let asset1 = position.asset1.expect("Could not find asset1 in position");
+    let withdraw_msg = MsgWithdrawPosition {
+        position_id: position.position_id.clone(),
+        sender: env.contract.address.to_string(),
+        liquidity_amount: position.liquidity.clone(),
+    };
+
+    let msg = SubMsg::reply_always(withdraw_msg, Replies::WithdrawPosition.into());
+
+    MODIFY_RANGE_STATE.save(
+        storage,
+        // todo: should modifyrangestate be an enum?
+        &Some(ModifyRangeState {
+            lower_tick,
+            upper_tick,
+            new_range_position_ids: vec![],
+        }),
+    )?;
+
+    Ok(Response::default()
+        .add_submessage(msg)
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "withdraw_position")
+        .add_attribute("position_id", position.position_id.to_string())
+        .add_attribute("liquidity_amount", position.liquidity.to_string()))
+}
+
+// do create new position
+pub fn handle_withdraw_position_response(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    info: MessageInfo,
+    msg: MsgWithdrawPositionResponse,
+) -> Result<Response, ContractError> {
+    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+        Some(modify_range_state) => modify_range_state,
+        None => return Err(ContractError::ModifyRangeStateNotFound {}),
+    };
+
+    let pool_config = POOL_CONFIG.load(storage)?;
+    let vault_config = VAULT_CONFIG.load(storage)?;
+
+    let amount0 = msg.amount0;
+    let amount1 = msg.amount1;
+
     // should move this into the reply of withdraw position
     let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
-        asset0.amount.clone(),
-        asset1.amount.clone(),
-        lower_tick,
-        upper_tick,
+        amount0.clone(),
+        amount1.clone(),
+        modify_range_state.lower_tick,
+        modify_range_state.upper_tick,
     )?;
 
     let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
         liquidity_needed_0,
         liquidity_needed_1,
-        asset0.amount,
-        asset1.amount,
+        amount0,
+        amount1,
     )?;
 
-    let ratio_0_1 = Decimal::from_ratio(deposit.0, deposit.1);
-    let (swap_amount, swap_direction) = if !remainders.0.is_zero() {
-        (remainders.0, SwapDirection::ZeroToOne)
-    } else if !remainders.1.is_zero() {
-        (remainders.1, SwapDirection::OneToZero)
+    // let (swap_amount, swap_direction) = if !remainders.0.is_zero() {
+    //     (remainders.0, SwapDirection::ZeroToOne)
+    // } else if !remainders.1.is_zero() {
+    //     (remainders.1, SwapDirection::OneToZero)
+    // } else {
+    //     // we shouldn't reach here
+    //     (Uint128::zero(), SwapDirection::ZeroToOne)
+    // };
+
+    // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
+    let create_position_msg = MsgCreatePosition {
+        pool_id: pool_config.pool_id,
+        sender: env.contract.address.to_string(),
+        lower_tick: modify_range_state
+            .lower_tick
+            .try_into()
+            .expect("Could not convert lower_tick to i64 from i128"),
+        upper_tick: modify_range_state
+            .upper_tick
+            .try_into()
+            .expect("Could not convert upper_tick to i64 from i128"),
+        tokens_provided: vec![
+            OsmoCoin {
+                denom: pool_config.base_token.clone(),
+                amount: deposit.0.to_string(),
+            },
+            OsmoCoin {
+                denom: pool_config.quote_token.clone(),
+                amount: deposit.1.to_string(),
+            },
+        ],
+        // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
+        token_min_amount0: with_slippage(deposit.0, vault_config.create_position_max_slippage)?
+            .to_string(),
+        token_min_amount1: with_slippage(deposit.1, vault_config.create_position_max_slippage)?
+            .to_string(),
+    };
+
+    let msg: SubMsg = SubMsg::reply_always(create_position_msg, Replies::CreatePosition.into());
+
+    Ok(Response::new()
+        .add_submessage(msg)
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "create_position")
+        .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
+        .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
+        .add_attribute(
+            "token0",
+            format!("{:?}{:?}", deposit.0, pool_config.base_token),
+        )
+        .add_attribute(
+            "token1",
+            format!("{:?}{:?}", deposit.1, pool_config.quote_token),
+        ))
+}
+
+// do swap
+pub fn handle_create_position_response(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    info: MessageInfo,
+    create_position_message: MsgCreatePositionResponse,
+) -> Result<Response, ContractError> {
+    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+        Some(modify_range_state) => modify_range_state,
+        None => return Err(ContractError::ModifyRangeStateNotFound {}),
+    };
+
+    let pool_config = POOL_CONFIG.load(storage)?;
+    let vault_config = VAULT_CONFIG.load(storage)?;
+
+    // get remaining balance in contract for each token (one of these should be zero i think)
+    let balance0 =
+        querier.query_balance(env.contract.address.clone(), pool_config.base_token.clone())?;
+    let balance1 = querier.query_balance(
+        env.contract.address.clone(),
+        pool_config.quote_token.clone(),
+    )?;
+
+    let (swap_amount, swap_direction) = if !balance0.amount.is_zero() {
+        (balance0.amount, SwapDirection::ZeroToOne)
+    } else if !balance1.amount.is_zero() {
+        (balance1.amount, SwapDirection::OneToZero)
     } else {
         // we shouldn't reach here
         (Uint128::zero(), SwapDirection::ZeroToOne)
     };
 
-    // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-    let create_position_msg =
-        osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePosition {
-            pool_id: pool_config.pool_id,
-            sender: env.contract.address.to_string(),
-            lower_tick: lower_tick
-                .try_into()
-                .expect("Could not convert lower_tick to i64 from i128"),
-            upper_tick: upper_tick
-                .try_into()
-                .expect("Could not convert upper_tick to i64 from i128"),
-            tokens_provided: vec![
-                OsmoCoin {
-                    denom: pool_config.base_token,
-                    amount: deposit.0.to_string(),
-                },
-                OsmoCoin {
-                    denom: pool_config.quote_token,
-                    amount: deposit.1.to_string(),
-                },
-            ],
-            // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-            token_min_amount0: with_slippage(deposit.0, vault_config.create_position_max_slippage)?
-                .to_string(),
-            token_min_amount1: with_slippage(deposit.1, vault_config.create_position_max_slippage)?
-                .to_string(),
-        };
+    // todo check that this math is right with spot price (numerators, denominators)
+    let spot_price = get_spot_price(storage, querier)?;
+    let (token_in_denom, token_out_ideal_amount) = match swap_direction {
+        SwapDirection::ZeroToOne => (
+            pool_config.base_token,
+            swap_amount.checked_multiply_ratio(spot_price.numerator(), spot_price.denominator()),
+        ),
+        SwapDirection::OneToZero => (
+            pool_config.quote_token,
+            swap_amount.checked_multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+        ),
+    };
 
-    // let msg = SubMsg::reply_always(create_position_msg.into(), Replies::CreatePosition.into());
+    let token_out_min_amount = token_out_ideal_amount?.checked_multiply_ratio(
+        vault_config.swap_max_slippage.numerator(),
+        vault_config.swap_max_slippage.denominator(),
+    )?;
 
-    Ok(Response::default()
-        // .add_submessage(msg)
-        .add_attribute("action", "execute_rebalance")
-        .add_attribute("lower_bound", format!("{:?}", lower_tick))
-        .add_attribute("upper_bound", format!("{:?}", upper_tick)))
+    let swap_msg = swap(
+        querier,
+        storage,
+        &env,
+        swap_amount,
+        &token_in_denom,
+        token_out_min_amount,
+    )?;
+
+    let msg: SubMsg = SubMsg::reply_always(swap_msg, Replies::Swap.into());
+
+    MODIFY_RANGE_STATE.update(
+        storage,
+        |mrs| -> Result<Option<ModifyRangeState>, ContractError> {
+            if let Some(mut mrs) = mrs {
+                mrs.new_range_position_ids
+                    .push(create_position_message.position_id)
+            }
+            Ok(mrs)
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_submessage(msg)
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "swap")
+        .add_attribute("token_in", format!("{:?}{:?}", swap_amount, token_in_denom))
+        .add_attribute("token_out_min", format!("{:?}", token_out_min_amount)))
 }
 
-// do create new position
-pub fn handle_withdraw_position_response(deps: DepsMut, env: Env, info: MessageInfo) {}
-
-// do swap
-pub fn handle_create_position_response(deps: DepsMut, env: Env, info: MessageInfo) {}
-
 // do deposit
-pub fn handle_swap_response(deps: DepsMut, env: Env, info: MessageInfo) {}
+pub fn handle_swap_response(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    info: MessageInfo,
+    msg: MsgSwapExactAmountInResponse,
+) -> Result<Response, ContractError> {
+    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+        Some(modify_range_state) => modify_range_state,
+        None => return Err(ContractError::ModifyRangeStateNotFound {}),
+    };
+
+    let pool_config = POOL_CONFIG.load(storage)?;
+    let vault_config = VAULT_CONFIG.load(storage)?;
+
+    // get post swap balances to create positions with
+    let balance0 =
+        querier.query_balance(env.contract.address.clone(), pool_config.base_token.clone())?;
+    let balance1 = querier.query_balance(
+        env.contract.address.clone(),
+        pool_config.quote_token.clone(),
+    )?;
+
+    // todo: extract this to a function
+    let create_position_msg = MsgCreatePosition {
+        pool_id: pool_config.pool_id,
+        sender: env.contract.address.to_string(),
+        lower_tick: modify_range_state
+            .lower_tick
+            .try_into()
+            .expect("Could not convert lower_tick to i64 from i128"),
+        upper_tick: modify_range_state
+            .upper_tick
+            .try_into()
+            .expect("Could not convert upper_tick to i64 from i128"),
+        tokens_provided: vec![
+            OsmoCoin {
+                denom: pool_config.base_token.clone(),
+                amount: balance0.amount.to_string(),
+            },
+            OsmoCoin {
+                denom: pool_config.quote_token.clone(),
+                amount: balance1.amount.to_string(),
+            },
+        ],
+        // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
+        token_min_amount0: with_slippage(
+            balance0.amount,
+            vault_config.create_position_max_slippage,
+        )?
+        .to_string(),
+        token_min_amount1: with_slippage(
+            balance1.amount,
+            vault_config.create_position_max_slippage,
+        )?
+        .to_string(),
+    };
+
+    let msg: SubMsg = SubMsg::reply_always(create_position_msg, Replies::CreatePosition.into());
+
+    Ok(Response::new()
+        .add_submessage(msg)
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "create_position2")
+        .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
+        .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
+        .add_attribute(
+            "token0",
+            format!("{:?}{:?}", balance0.amount, pool_config.base_token),
+        )
+        .add_attribute(
+            "token1",
+            format!("{:?}{:?}", balance1.amount, pool_config.quote_token),
+        ))
+}
 
 // do merge position & exit
-pub fn handle_deposit_response(deps: DepsMut, env: Env, info: MessageInfo) {}
+pub fn handle_deposit_response(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    info: MessageInfo,
+    create_position_message: MsgCreatePositionResponse,
+) -> Result<Response, ContractError> {
+    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+        Some(modify_range_state) => modify_range_state,
+        None => return Err(ContractError::ModifyRangeStateNotFound {}),
+    };
+
+    modify_range_state
+        .new_range_position_ids
+        .push(create_position_message.position_id);
+
+    let fungify_positions_msg = concentratedliquidity::v1beta1::MsgFungifyChargedPositions {
+        position_ids: modify_range_state.new_range_position_ids.clone(),
+        sender: env.contract.address.to_string(),
+    };
+
+    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Fungify.into());
+
+    Ok(Response::new()
+        .add_submessage(msg)
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "fungify_positions")
+        .add_attribute(
+            "position_ids",
+            format!("{:?}", modify_range_state.new_range_position_ids),
+        ))
+}
+
+pub fn handle_fungify_charged_positions_response(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    info: MessageInfo,
+    fungify_positions_msg: MsgFungifyChargedPositionsResponse,
+) -> Result<Response, ContractError> {
+    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+        Some(modify_range_state) => modify_range_state,
+        None => return Err(ContractError::ModifyRangeStateNotFound {}),
+    };
+
+    let pool_config = POOL_CONFIG.load(storage)?;
+    let vault_config = VAULT_CONFIG.load(storage)?;
+
+    POSITION.save(
+        storage,
+        &Position {
+            position_id: fungify_positions_msg.new_position_id,
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "fungify_positions_success")
+        .add_attribute(
+            "position_ids",
+            format!("{:?}", modify_range_state.new_range_position_ids),
+        ))
+}

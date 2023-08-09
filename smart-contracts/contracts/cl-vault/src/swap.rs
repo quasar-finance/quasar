@@ -7,11 +7,6 @@ use osmosis_std::types::{
 
 use crate::{state::POOL_CONFIG, ContractError};
 
-pub enum SwapDirection {
-    ZeroToOne,
-    OneToZero,
-}
-
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
 /// this will likely be expanded once we allow arbitrary pool swaps

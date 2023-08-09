@@ -1,8 +1,30 @@
 use std::str::FromStr;
 
 use crate::{state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{Decimal, Fraction, QuerierWrapper, Uint128};
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
+use cosmwasm_std::{Decimal, Fraction, QuerierWrapper, Storage, Uint128};
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::ConcentratedliquidityQuerier,
+    poolmanager::{self, v1beta1::PoolmanagerQuerier},
+};
+
+/// get_spot_price
+///
+/// gets the spot price of the pool which this vault is managing funds in. This will always return token0 in terms of token1 (or would it be the other way around?)
+pub fn get_spot_price(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+) -> Result<Decimal, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
+
+    let pm_querier = PoolmanagerQuerier::new(querier);
+    let spot_price = pm_querier.spot_price(
+        pool_config.pool_id,
+        pool_config.base_token,
+        pool_config.quote_token,
+    )?;
+
+    Ok(Decimal::from_str(&spot_price.spot_price)?)
+}
 
 /// get_tokens_in_range
 ///

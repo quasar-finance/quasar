@@ -22,6 +22,9 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
+    #[error("Modify range state item not found")]
+    ModifyRangeStateNotFound,
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
