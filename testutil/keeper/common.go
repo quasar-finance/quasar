@@ -9,8 +9,12 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (kf KeeperFactory) ParamsKeeper() paramskeeper.Keeper {
@@ -59,4 +63,40 @@ func (kf KeeperFactory) CapabilityKeeper() capabilitykeeper.Keeper {
 	)
 
 	return *capabilityKeeper
+}
+
+func (kf KeeperFactory) StakingKeeper(paramsKeeper paramskeeper.Keeper,
+	accountKeeper authkeeper.AccountKeeper,
+	// bankKeeper bankkeeper.BaseKeeper) stakingkeeper.Keeper {
+	bankKeeper bankkeeper.Keeper) stakingkeeper.Keeper {
+	storeKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+
+	subspace := paramsKeeper.Subspace(stakingtypes.ModuleName)
+	stakingKeeper := stakingkeeper.NewKeeper(
+		kf.EncodingConfig.Marshaler, storeKey, accountKeeper, bankKeeper, subspace)
+
+	return stakingKeeper
+}
+
+func (kf KeeperFactory) DistributionKeeper(paramsKeeper paramskeeper.Keeper,
+	accountKeeper authkeeper.AccountKeeper,
+	// bankKeeper bankkeeper.BaseKeeper,
+	bankKeeper bankkeeper.Keeper,
+	stakingKeeper stakingkeeper.Keeper,
+	feeCollectorName string,
+	blockedAddrs map[string]bool) distrkeeper.Keeper {
+
+	storeKey := sdk.NewKVStoreKey(distrtypes.StoreKey)
+	kf.StateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, kf.DB)
+	subspace := paramsKeeper.Subspace(distrtypes.ModuleName)
+	disrKeeper := distrkeeper.NewKeeper(kf.EncodingConfig.Marshaler,
+		storeKey,
+		subspace,
+		accountKeeper,
+		bankKeeper,
+		stakingKeeper,
+		feeCollectorName,
+		blockedAddrs)
+	return disrKeeper
 }

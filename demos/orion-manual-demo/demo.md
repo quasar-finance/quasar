@@ -694,36 +694,4 @@ osmosisd tx ibc-transfer transfer transfer channel-1 quasar1sqlsc5024sszglyh7psw
 osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
 quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
 ```
-
-
-## Set the Price of in quasarnode
-```
-quasarnoded tx qoracle stable-price ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 "1" --from alice --node tcp://localhost:26659 --chain-id quasar --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
-```
-
-## Request Deposit 
-```
-quasarnoded tx qbank request-deposit "MID" "orion" 110ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 Days_7 --from alice --node tcp://localhost:26659 --chain-id quasar --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
-```
-- Post check - 
-Note that, it will also packet forward the deposited tokens to osmosis via cosmos. Check the 
-osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq address for initial version ( hardcoded in code )
-
-## Other sample commands 
-### Query port info from intergamm module 
-```
-quasarnoded q intergamm get-port-info osmosis transfer  --node tcp://localhost:26659
-portInfo:
-  channelID: channel-2
-  connectionID: connection-1
-  counterpartyChannelID: channel-1
-  portID: transfer
-```
-```
-quasarnoded q intergamm get-port-info osmosis icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc  --node tcp://localhost:26659
-portInfo:
-  channelID: channel-1
-  connectionID: connection-1
-  counterpartyChannelID: channel-2
-  portID: icacontroller-quasar14yjkz7yxapuee3d7qkhwzlumwrarayfh0pycxc
-```
+ 
