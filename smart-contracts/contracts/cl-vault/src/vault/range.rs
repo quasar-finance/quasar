@@ -418,6 +418,7 @@ pub fn handle_deposit_response(
         ))
 }
 
+// store new position id and exit
 pub fn handle_fungify_charged_positions_response(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
@@ -425,13 +426,10 @@ pub fn handle_fungify_charged_positions_response(
     info: MessageInfo,
     fungify_positions_msg: MsgFungifyChargedPositionsResponse,
 ) -> Result<Response, ContractError> {
-    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+    let modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
-
-    let pool_config = POOL_CONFIG.load(storage)?;
-    let vault_config = VAULT_CONFIG.load(storage)?;
 
     POSITION.save(
         storage,
@@ -443,6 +441,8 @@ pub fn handle_fungify_charged_positions_response(
     Ok(Response::new()
         .add_attribute("action", "modify_range")
         .add_attribute("method", "fungify_positions_success")
+        .add_attribute("modify_range_status", "success")
+        .add_attribute("status", "success")
         .add_attribute(
             "position_ids",
             format!("{:?}", modify_range_state.new_range_position_ids),
