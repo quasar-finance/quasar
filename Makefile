@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
+VERSION="v1.0.0-rc1-testnet"
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
@@ -251,9 +251,9 @@ compile-wasm-artifacts:
 ###                                Docker                                  ###
 ###############################################################################
 
-RUNNER_BASE_IMAGE_DISTROLESS := gcr.io/distroless/static
-RUNNER_BASE_IMAGE_ALPINE := alpine:3.16
-RUNNER_BASE_IMAGE_NONROOT := gcr.io/distroless/static:nonroot
+RUNNER_BASE_IMAGE_DISTROLESS := gcr.io/distroless/static-debian11
+RUNNER_BASE_IMAGE_ALPINE := alpine:3.17
+RUNNER_BASE_IMAGE_NONROOT := gcr.io/distroless/static-debian11:nonroot
 
 docker-build:
 	@DOCKER_BUILDKIT=1 docker build \
