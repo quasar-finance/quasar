@@ -159,12 +159,16 @@ pub fn prepare_full_query(
         false => None,
     };
 
-    // we simulate the result of an exit pool with the added amount of shares that are in the UNBOND_QUEUE
-    // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
-    // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
+    let shares = LP_SHARES.load(storage)?.locked_shares;
+    let shares_out = if !shares.is_zero() {
+        shares
+    } else {
+        Uint128::one()
+    };
+
     let exit_total_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
-        share_in_amount: pending_unbonds_shares.to_string(),
+        share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
     let spot_price = QuerySpotPriceRequest {
