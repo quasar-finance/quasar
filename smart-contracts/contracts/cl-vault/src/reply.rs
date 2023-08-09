@@ -27,6 +27,9 @@ pub enum Replies {
     // handle
     WithdrawUser,
 
+    // handle
+    WithdrawUser,
+
     #[default]
     Unknown,
 }
