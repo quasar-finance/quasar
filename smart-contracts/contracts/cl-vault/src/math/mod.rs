@@ -1,3 +1,2 @@
 mod liquidity;
-#[cfg(test)]
-mod tick;
+pub mod tick;

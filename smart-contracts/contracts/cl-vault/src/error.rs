@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
-    DivideByZeroError, OverflowError, StdError, Uint128,
+    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use cw_dex::CwDexError;
 use cw_utils::PaymentError;
@@ -23,11 +23,17 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
+    #[error("Modify range state item not found")]
+    ModifyRangeStateNotFound,
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
     #[error("{0}")]
     CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
+
+    #[error("{0}")]
+    Decimal256RangeExceededError(#[from] Decimal256RangeExceeded),
 
     #[error("Overflow")]
     Overflow {},

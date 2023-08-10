@@ -12,8 +12,11 @@ use crate::state::VaultConfig;
 pub enum ExtensionExecuteMsg {
     /// Execute a callback message.
     Callback(CallbackMsg),
-    /// Execute a an Apollo vault specific message.
+    /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
+    /// Rebalance our liquidity range based on an off-chain message
+    /// given to us by RANGE_ADMIN
+    ModifyRange(ModifyRangeMsg),
     /// Execute a message from the lockup extension.
     Lockup(LockupExecuteMsg),
     /// Execute a message from the force unlock extension.
@@ -35,6 +38,14 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+}
+
+#[cw_serde]
+pub struct ModifyRangeMsg {
+    /// The new lower bound of the range
+    pub lower_price: Uint128,
+    /// The new upper bound of the range
+    pub upper_price: Uint128,
 }
 
 /// Extension query messages for an apollo autocompounding vault
@@ -120,6 +131,8 @@ pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 pub struct InstantiateMsg {
     /// Address that is allowed to update config.
     pub admin: String,
+    /// Address that is allowed to update range.
+    pub range_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// The lockup duration in seconds that this vault will use when staking

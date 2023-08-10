@@ -4,7 +4,8 @@ use cw_storage_plus::{Item, Map};
 
 use crate::rewards::Rewards;
 
-pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address"); // aliceaddress
+pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
+pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
 pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
@@ -35,21 +36,50 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
+    /// create position max slippage
+    pub create_position_max_slippage: Decimal,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
 }
+
+#[cw_serde]
+pub enum SwapDirection {
+    ZeroToOne,
+    OneToZero,
+}
+
+#[cw_serde]
+pub struct ModifyRangeState {
+    // pre-withdraw state items
+    pub lower_tick: i128,
+    pub upper_tick: i128,
+    // pre-deposit state items
+    pub new_range_position_ids: Vec<u64>,
+}
+
+// todo: i kinda want to rename above to this
+// #[cw_serde]
+// pub enum ModifyRangeState {
+//     Idle,
+//     PreWithdraw { ... },
+//     PreDeposit { ... },
+//     PreSwap { ... },
+//     PreDeposit2 { ... },
+//     PostModifyRange { ... },
+// }
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
-
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
-
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 
 pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
-
 pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
 pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
+
+pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 
 #[cw_serde]
 pub struct TickExpIndexData {
