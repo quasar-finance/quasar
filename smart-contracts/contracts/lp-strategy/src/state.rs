@@ -113,7 +113,7 @@ pub(crate) const SIMULATED_JOIN_AMOUNT_IN: Item<Uint128> = Item::new("simulated_
 pub(crate) const SIMULATED_EXIT_RESULT: Item<Uint128> = Item::new("simulated_exit_result");
 // we save the amount that went into the QueryCalcExitPoolCoinsFromSharesRequest, so we can scale up the slippage amount (if more unbonds come)
 // need to check if (...) applies here
-pub(crate) const SIMULATED_EXIT_SHARES_IN: Item<Uint128> = Item::new("simulated_join_amount");
+pub(crate) const SIMULATED_EXIT_SHARES_IN: Item<Uint128> = Item::new("simulated_exit_amount");
 // CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
 pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
 
