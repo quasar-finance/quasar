@@ -1085,8 +1085,13 @@ mod tests {
             ),
         };
 
-        // mock the value of shares we were had before sending the query
+        // mock the value of shares we had before sending the query
         SIMULATED_EXIT_SHARES_IN
+            .save(deps.as_mut().storage, &Uint128::new(100))
+            .unwrap();
+
+        // mock the value of shares we had before sending the query
+        SIMULATED_JOIN_AMOUNT_IN
             .save(deps.as_mut().storage, &Uint128::new(100))
             .unwrap();
 
