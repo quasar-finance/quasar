@@ -35,6 +35,7 @@
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
 - make it so that the primitive compounds
 - using only the unbonds amount to calculate slippage (previously using total shares amount)
+- fixed math on consolidate_exit_pool_amount_into_local_denom
 
 ## V0.1.1 08-05-2023
 

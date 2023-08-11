@@ -138,9 +138,7 @@ pub fn calculate_token_out_min_amount(storage: &dyn Storage) -> Result<Uint128, 
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
-    Ok(last_sim_exit_pool_unbonds_result
-        // .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
-        .checked_multiply_ratio(95u128, 100u128)?)
+    Ok(last_sim_exit_pool_unbonds_result.checked_multiply_ratio(95u128, 100u128)?)
 }
 
 /// prepare the submsg for joining the pool
