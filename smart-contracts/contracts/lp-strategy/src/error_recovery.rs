@@ -250,11 +250,8 @@ fn handle_join_swap_recovery(
         Ok(old)
     })?;
 
-    // TODO update me
-    let locked_shares = Uint128::from(100u128);
-
     let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, locked_shares).unwrap();
+        calculate_token_out_min_amount(storage).unwrap();
 
     let exit = do_exit_swap(storage, env, token_out_min_amount, total_exit)?;
     Ok(create_ibc_ack_submsg(

@@ -86,7 +86,7 @@ pub fn batch_unbond(
 
     // important to use lp_shares before it gets updated
     let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, old_lp_shares.locked_shares)?;
+        calculate_token_out_min_amount(storage)?;
 
     let msg = exit_swap(
         storage,
@@ -482,8 +482,6 @@ mod tests {
 
         let token_out_min_amount = calculate_token_out_min_amount(
             deps.as_mut().storage,
-            expected_exit_amount,
-            total_locked_shares,
         )
         .unwrap();
 
@@ -642,7 +640,7 @@ mod tests {
         let locked_shares = Uint128::from(100u128);
 
         let token_out_min_amount =
-            calculate_token_out_min_amount(deps.as_mut().storage, total_exit, locked_shares)
+            calculate_token_out_min_amount(deps.as_mut().storage)
                 .unwrap();
 
         let msg = exit_swap(

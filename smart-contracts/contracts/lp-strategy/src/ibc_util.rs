@@ -120,7 +120,7 @@ pub fn consolidate_exit_pool_amount_into_local_denom(
                     value: quote.amount.clone(),
                 })?,
         )
-        .checked_multiply_ratio(spot_price.numerator(), spot_price.denominator())?,
+        .checked_multiply_ratio(spot_price.denominator(), spot_price.numerator())?,
     )?)
 }
 
@@ -135,15 +135,13 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 // exit shares should never be more than total shares here
 pub fn calculate_token_out_min_amount(
     storage: &dyn Storage,
-    exit_lp_shares: Uint128,
-    total_locked_shares: Uint128,
 ) -> Result<Uint128, ContractError> {
     let last_sim_exit_pool_unbonds_result = SIMULATED_EXIT_RESULT.load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
     // diminish the share_out_amount by 5 percent to allow for slippage of 5% on the swap
     Ok(last_sim_exit_pool_unbonds_result
-        .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
+        // .checked_multiply_ratio(exit_lp_shares, total_locked_shares)?
         .checked_multiply_ratio(95u128, 100u128)?)
 }
 
@@ -317,8 +315,6 @@ mod tests {
 
         let min_amount_out = calculate_token_out_min_amount(
             deps.as_mut().storage,
-            exit_shares_amount,
-            total_shares_amount,
         )
         .unwrap();
 
@@ -330,8 +326,6 @@ mod tests {
 
         let min_amount_out = calculate_token_out_min_amount(
             deps.as_mut().storage,
-            exit_shares_amount,
-            total_shares_amount,
         )
         .unwrap();
 
