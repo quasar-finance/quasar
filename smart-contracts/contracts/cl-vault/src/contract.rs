@@ -100,7 +100,7 @@ pub fn execute(
             amount: _,
             asset: _,
             recipient: _,
-        } => unimplemented!(),
+        } => todo!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::MultiDeposit { recipient: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount)
