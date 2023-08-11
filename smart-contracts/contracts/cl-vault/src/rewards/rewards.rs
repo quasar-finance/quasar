@@ -87,7 +87,7 @@ impl Rewards {
     }
 
     pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
-        let rewards = Rewards::into_coins(self);
+        let rewards = self.into_coins();
         self.0.clear();
 
         Ok(BankMsg::Send {
