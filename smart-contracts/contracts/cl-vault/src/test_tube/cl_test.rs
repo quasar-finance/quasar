@@ -6,7 +6,7 @@ mod tests {
         tokenfactory::v1beta1::QueryDenomsFromCreatorRequest,
     };
     use osmosis_test_tube::{
-        cosmrs::proto::traits::Message, Account, ConcentratedLiquidity, Module, TokenFactory, Wasm,
+        cosmrs::proto::traits::Message, ConcentratedLiquidity, Module, TokenFactory, Wasm,
     };
 
     use crate::{
@@ -17,7 +17,7 @@ mod tests {
 
     #[test]
     fn default_init_works() {
-        let (app, contract_address, _cl_pool_id, admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

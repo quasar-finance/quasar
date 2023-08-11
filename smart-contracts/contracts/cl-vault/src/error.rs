@@ -29,6 +29,9 @@ pub enum ContractError {
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
 
+    #[error("Vault shares sent in does not equal amount requested")]
+    IncorrectShares,
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 

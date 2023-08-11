@@ -1,7 +1,3 @@
-use std::default;
-
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
 use cosmwasm_std::{DepsMut, Env, Reply, Response, StdError};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
@@ -34,7 +30,7 @@ pub enum Replies {
     Unknown,
 }
 
-pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn handle_reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id.into() {
         Replies::DepositCreatePool => todo!(),
         Replies::CollectIncentives => todo!(),
