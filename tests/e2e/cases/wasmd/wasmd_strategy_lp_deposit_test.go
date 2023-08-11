@@ -3,9 +3,10 @@ package wasmd
 import (
 	"context"
 	"encoding/json"
-	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	"strconv"
 	"testing"
+
+	helpers "github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
@@ -18,9 +19,9 @@ import (
 
 const (
 	StartingTokenAmount            int64 = 100_000_000_000
-	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy.wasm"
-	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault.wasm"
-	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards.wasm"
+	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
+	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
+	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
 	osmosisPool1Path                     = "../_utils/sample_pool1.json"
 	osmosisPool2Path                     = "../_utils/sample_pool2.json"
 	osmosisPool3Path                     = "../_utils/sample_pool3.json"
@@ -429,8 +430,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 				s.Quasar(),
 				s.LpStrategyContractAddress1,
 				map[string]any{
-					"trapped_errors": map[string]any{
-					},
+					"trapped_errors": map[string]any{},
 				},
 			)
 			t.Log(string(errorsPrim1))
@@ -439,8 +439,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 				s.Quasar(),
 				s.LpStrategyContractAddress2,
 				map[string]any{
-					"trapped_errors": map[string]any{
-					},
+					"trapped_errors": map[string]any{},
 				},
 			)
 			t.Log(string(errorsPrim2))
@@ -449,19 +448,18 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 				s.Quasar(),
 				s.LpStrategyContractAddress3,
 				map[string]any{
-					"trapped_errors": map[string]any{
-					},
+					"trapped_errors": map[string]any{},
 				},
 			)
 			t.Log(string(errorsPrim3))
 
 			balanceChange := balanceAfter.Balances.AmountOf(s.OsmosisDenomInQuasar).Sub(balanceBefore.Balances.AmountOf(s.OsmosisDenomInQuasar)).Int64()
 			s.Require().True(int64(float64(tc.expectedBalanceChange)*(1-tc.expectedBalanceDeviation)) <= balanceChange)
-			t.Logf("%d",balanceChange)
+			t.Logf("%d", balanceChange)
 
 			balance := balanceAfter.Balances.AmountOf(s.OsmosisDenomInQuasar).Int64()
 			t.Logf("%d", balanceBefore.Balances.AmountOf(s.OsmosisDenomInQuasar).Int64())
-			t.Logf("%d",balance)
+			t.Logf("%d", balance)
 			s.Require().True(balanceChange <= int64(float64(tc.expectedBalanceChange)*(1+tc.expectedBalanceDeviation)))
 		default:
 			t.Log("This testCase does not contain any transaction type")
