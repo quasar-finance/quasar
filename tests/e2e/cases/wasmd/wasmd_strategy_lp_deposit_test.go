@@ -252,7 +252,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 		{
 			Account:                  *accBondTest0,
 			Action:                   "claim",
-			expectedBalanceChange:    1000,
+			expectedBalanceChange:    3000,
 			expectedBalanceDeviation: 0.1,
 		},
 		{
