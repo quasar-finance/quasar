@@ -35,7 +35,7 @@ use crate::{
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
-    if &admin != sender {
+    if admin != sender {
         return Err(ContractError::Unauthorized {});
     }
     Ok(())
@@ -60,16 +60,7 @@ pub fn execute_modify_range(
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
 
-    execute_modify_range_ticks(
-        storage,
-        &querier,
-        env,
-        info,
-        lower_price,
-        upper_price,
-        lower_tick,
-        upper_tick,
-    )
+    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick)
 }
 
 pub fn execute_modify_range_ticks(
@@ -77,8 +68,6 @@ pub fn execute_modify_range_ticks(
     querier: &QuerierWrapper,
     env: Env,
     info: MessageInfo,
-    _lower_price: Uint128,
-    _upper_price: Uint128,
     lower_tick: i128,
     upper_tick: i128,
 ) -> Result<Response, ContractError> {
