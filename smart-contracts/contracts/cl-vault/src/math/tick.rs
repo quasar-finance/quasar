@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, DepsMut, Storage};
+use cosmwasm_std::{Decimal, Decimal256, Storage};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},

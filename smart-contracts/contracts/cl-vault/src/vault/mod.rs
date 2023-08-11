@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod claim;
 pub mod deposit;
 pub mod range;
-mod withdraw;
+pub mod withdraw;
