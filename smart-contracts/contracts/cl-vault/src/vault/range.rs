@@ -1,10 +1,8 @@
-use std::str::FromStr;
-
 use cosmwasm_std::{
-    Addr, Decimal, Decimal256, Deps, DepsMut, Empty, Env, Fraction, MessageInfo, QuerierWrapper,
-    Response, Storage, SubMsg, Uint128,
+    Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage,
+    SubMsg, Uint128,
 };
-use cw_utils::nonpayable;
+
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
@@ -15,8 +13,7 @@ use osmosis_std::types::{
                 MsgWithdrawPosition, MsgWithdrawPositionResponse,
             },
         },
-        gamm::v1beta1::{MsgSwapExactAmountIn, MsgSwapExactAmountInResponse},
-        poolmanager::{self, v1beta1::SwapAmountInRoute},
+        gamm::v1beta1::MsgSwapExactAmountInResponse,
     },
 };
 
@@ -29,8 +26,8 @@ use crate::{
     math::tick::price_to_tick,
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDirection, ADMIN_ADDRESS, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, VAULT_CONFIG,
+        ModifyRangeState, Position, SwapDirection, MODIFY_RANGE_STATE, POOL_CONFIG, POSITION,
+        RANGE_ADMIN, VAULT_CONFIG,
     },
     swap::swap,
     ContractError,
@@ -80,8 +77,8 @@ pub fn execute_modify_range_ticks(
     querier: &QuerierWrapper,
     env: Env,
     info: MessageInfo,
-    lower_price: Uint128,
-    upper_price: Uint128,
+    _lower_price: Uint128,
+    _upper_price: Uint128,
     lower_tick: i128,
     upper_tick: i128,
 ) -> Result<Response, ContractError> {
@@ -89,8 +86,8 @@ pub fn execute_modify_range_ticks(
 
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
-    let pool_config = POOL_CONFIG.load(storage)?;
-    let vault_config = VAULT_CONFIG.load(storage)?;
+    let _pool_config = POOL_CONFIG.load(storage)?;
+    let _vault_config = VAULT_CONFIG.load(storage)?;
 
     // This function is the entrypoint into the dsm routine that will go through the following steps
     // * how much liq do we have in current range
@@ -99,7 +96,7 @@ pub fn execute_modify_range_ticks(
     // * deposit up to max liq we can right now, then swap remaining over and deposit again
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(storage, &querier, &env)?;
+    let position_breakdown = get_position(storage, querier, &env)?;
 
     let position = match position_breakdown.position {
         Some(position) => position,
@@ -111,7 +108,7 @@ pub fn execute_modify_range_ticks(
     };
 
     let withdraw_msg = MsgWithdrawPosition {
-        position_id: position.position_id.clone(),
+        position_id: position.position_id,
         sender: env.contract.address.to_string(),
         liquidity_amount: position.liquidity.clone(),
     };
@@ -133,18 +130,18 @@ pub fn execute_modify_range_ticks(
         .add_attribute("action", "modify_range")
         .add_attribute("method", "withdraw_position")
         .add_attribute("position_id", position.position_id.to_string())
-        .add_attribute("liquidity_amount", position.liquidity.to_string()))
+        .add_attribute("liquidity_amount", position.liquidity))
 }
 
 // do create new position
 pub fn handle_withdraw_position_response(
     storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    _querier: &QuerierWrapper,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: MsgWithdrawPositionResponse,
 ) -> Result<Response, ContractError> {
-    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+    let modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
@@ -163,7 +160,7 @@ pub fn handle_withdraw_position_response(
         modify_range_state.upper_tick,
     )?;
 
-    let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
+    let (deposit, _remainders) = get_deposit_amounts_for_liquidity_needed(
         liquidity_needed_0,
         liquidity_needed_1,
         amount0,
@@ -225,10 +222,10 @@ pub fn handle_create_position_response(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     create_position_message: MsgCreatePositionResponse,
 ) -> Result<Response, ContractError> {
-    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+    let _modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
@@ -307,10 +304,10 @@ pub fn handle_swap_response(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
     env: Env,
-    info: MessageInfo,
-    msg: MsgSwapExactAmountInResponse,
+    _info: MessageInfo,
+    _msg: MsgSwapExactAmountInResponse,
 ) -> Result<Response, ContractError> {
-    let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+    let modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
@@ -380,9 +377,9 @@ pub fn handle_swap_response(
 // do merge position & exit
 pub fn handle_deposit_response(
     storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    _querier: &QuerierWrapper,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     create_position_message: MsgCreatePositionResponse,
 ) -> Result<Response, ContractError> {
     let mut modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
@@ -414,9 +411,9 @@ pub fn handle_deposit_response(
 // store new position id and exit
 pub fn handle_fungify_charged_positions_response(
     storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
-    env: Env,
-    info: MessageInfo,
+    _querier: &QuerierWrapper,
+    _env: Env,
+    _info: MessageInfo,
     fungify_positions_msg: MsgFungifyChargedPositionsResponse,
 ) -> Result<Response, ContractError> {
     let modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {

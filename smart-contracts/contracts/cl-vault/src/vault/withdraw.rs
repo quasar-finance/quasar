@@ -19,12 +19,20 @@ pub fn execute_withdraw(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    sender: &str,
+    recipient: Option<String>,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
+    let receiver = recipient.unwrap_or(info.sender.to_string());
+
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // update the user's shares
     let shares = must_pay(&info, vault_denom.as_str())?;
+
+    // shares sent in should equal the amount requested. This is redundant but its to comply with the vault standard
+    if shares != amount {
+        return Err(ContractError::IncorrectShares {});
+    }
 
     // burn the shares
     let burn_coin = one_coin(&info)?;
@@ -35,7 +43,7 @@ pub fn execute_withdraw(
     }
     .into();
 
-    let addr = deps.api.addr_validate(sender)?;
+    let addr = deps.api.addr_validate(&receiver)?;
     CURRENT_WITHDRAWER.save(deps.storage, &addr)?;
 
     // withdraw the user's funds from the position

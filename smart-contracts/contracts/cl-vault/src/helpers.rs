@@ -2,10 +2,7 @@ use std::str::FromStr;
 
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{Decimal, Fraction, QuerierWrapper, Storage, Uint128};
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::ConcentratedliquidityQuerier,
-    poolmanager::{self, v1beta1::PoolmanagerQuerier},
-};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// get_spot_price
 ///
@@ -61,11 +58,11 @@ pub fn get_spot_price(
 pub fn get_liquidity_needed_for_tokens(
     delta_token0: String,
     delta_token1: String,
-    lower_tick: i128,
-    upper_tick: i128,
+    _lower_tick: i128,
+    _upper_tick: i128,
 ) -> Result<(Uint128, Uint128), ContractError> {
-    let delta_x = Uint128::from_str(&delta_token0)?;
-    let delta_y = Uint128::from_str(&delta_token1)?;
+    let _delta_x = Uint128::from_str(&delta_token0)?;
+    let _delta_y = Uint128::from_str(&delta_token1)?;
     // calc liquidity needed for token
     unimplemented!("get_liquidity_needed_for_tokens")
 }
@@ -85,22 +82,22 @@ pub fn get_deposit_amounts_for_liquidity_needed(
     let mut remainder_0 = Uint128::zero();
     let mut remainder_1 = Uint128::zero();
 
-    let (deposit_amount_0, deposit_amount_1) =
-        if (liquidity_needed_token0 > liquidity_needed_token1) {
-            // scale base token amount down by L1/L0, take full amount of quote token
-            let new_amount_0 =
-                amount_0.multiply_ratio(liquidity_needed_token1, liquidity_needed_token0);
-            remainder_0 = amount_0.checked_sub(new_amount_0).unwrap();
+    let (deposit_amount_0, deposit_amount_1) = if liquidity_needed_token0 > liquidity_needed_token1
+    {
+        // scale base token amount down by L1/L0, take full amount of quote token
+        let new_amount_0 =
+            amount_0.multiply_ratio(liquidity_needed_token1, liquidity_needed_token0);
+        remainder_0 = amount_0.checked_sub(new_amount_0).unwrap();
 
-            (new_amount_0, amount_1)
-        } else {
-            // scale quote token amount down by L0/L1, take full amount of base token
-            let new_amount_1 =
-                amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
-            remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
+        (new_amount_0, amount_1)
+    } else {
+        // scale quote token amount down by L0/L1, take full amount of base token
+        let new_amount_1 =
+            amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
+        remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
 
-            (amount_0, new_amount_1)
-        };
+        (amount_0, new_amount_1)
+    };
 
     Ok((
         (deposit_amount_0, deposit_amount_1),
@@ -120,6 +117,4 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}
