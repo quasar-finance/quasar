@@ -1054,7 +1054,7 @@ mod tests {
                 tokens_out: vec![
                     Coin {
                         denom: "uqsr".to_string(),
-                        amount: Uint128::new(320),
+                        amount: Uint128::new(100),
                     }
                     .into(),
                     Coin {
@@ -1087,7 +1087,7 @@ mod tests {
 
         // mock the value of shares we had before sending the query
         SIMULATED_EXIT_SHARES_IN
-            .save(deps.as_mut().storage, &Uint128::new(100))
+            .save(deps.as_mut().storage, &Uint128::new(200))
             .unwrap();
 
         // mock the value of shares we had before sending the query
@@ -1108,14 +1108,14 @@ mod tests {
                 .load(deps.as_ref().storage)
                 .unwrap()
                 .u128(),
-            // base_amount + (quote_amount * spot_price)
-            320 + (100 * 1)
+            // base_amount + (quote_amount / spot_price)
+            100 + (100 / 1)
         );
 
         // changing some ICQ ACK params to create a different test scenario
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
-                spot_price: "2".to_string(),
+                spot_price: "5".to_string(),
             }
             .encode_to_vec(),
         );
@@ -1126,13 +1126,13 @@ mod tests {
                     Coin {
                         // base denom
                         denom: "uosmo".to_string(),
-                        amount: Uint128::new(200),
+                        amount: Uint128::new(1000),
                     }
                     .into(),
                     Coin {
                         // quote denom
                         denom: "uqsr".to_string(),
-                        amount: Uint128::new(300),
+                        amount: Uint128::new(5000),
                     }
                     .into(),
                 ],
@@ -1167,8 +1167,8 @@ mod tests {
                 .load(deps.as_ref().storage)
                 .unwrap()
                 .u128(),
-            // base_amount + (quote_amount * spot_price)
-            200 + (300 * 2)
+            // base_amount + (quote_amount / spot_price)
+            1000 + (5000 / 5)
         );
     }
 }

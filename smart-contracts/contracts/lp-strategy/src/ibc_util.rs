@@ -133,9 +133,7 @@ pub fn calculate_share_out_min_amount(storage: &mut dyn Storage) -> Result<Uint1
 }
 
 // exit shares should never be more than total shares here
-pub fn calculate_token_out_min_amount(
-    storage: &dyn Storage,
-) -> Result<Uint128, ContractError> {
+pub fn calculate_token_out_min_amount(storage: &dyn Storage) -> Result<Uint128, ContractError> {
     let last_sim_exit_pool_unbonds_result = SIMULATED_EXIT_RESULT.load(storage)?;
 
     // todo: better dynamic slippage estimation, especially for volatile tokens
@@ -224,6 +222,7 @@ mod tests {
     use std::str::FromStr;
 
     use cosmwasm_std::{
+        coin,
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Decimal, Empty, IbcEndpoint, OwnedDeps, Uint128,
     };
@@ -306,30 +305,58 @@ mod tests {
     #[test]
     fn test_calculate_token_out_min_amount() {
         let mut deps = mock_dependencies();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        let exit_amount_local_denom = consolidate_exit_pool_amount_into_local_denom(
+            deps.as_mut().storage,
+            &vec![
+                Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "50".to_string(),
+                },
+                Coin {
+                    denom: "uqsr".to_string(),
+                    amount: "50".to_string(),
+                },
+            ],
+            Decimal::from_str("1.0").unwrap(),
+        )
+        .unwrap();
+
         SIMULATED_EXIT_RESULT
-            .save(deps.as_mut().storage, &Uint128::from(999999u128))
+            .save(deps.as_mut().storage, &exit_amount_local_denom)
             .unwrap();
 
-        let exit_shares_amount = Uint128::from(100u128);
-        let total_shares_amount = Uint128::from(100u128);
+        let min_amount_out = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
 
-        let min_amount_out = calculate_token_out_min_amount(
+        assert_eq!(min_amount_out, Uint128::from(95u128));
+
+        // now lets test with a different amount of exit shares
+        let exit_amount_local_denom = consolidate_exit_pool_amount_into_local_denom(
             deps.as_mut().storage,
+            &vec![
+                Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "500".to_string(),
+                },
+                Coin {
+                    denom: "uqsr".to_string(),
+                    amount: "50".to_string(),
+                },
+            ],
+            // 1 uosmos = 10 uqsr -> price = 0.1 osmo for 1 uqsr
+            Decimal::from_str("0.1").unwrap(),
         )
         .unwrap();
 
-        assert_eq!(min_amount_out, Uint128::from(949999u128));
+        SIMULATED_EXIT_RESULT
+            .save(deps.as_mut().storage, &exit_amount_local_denom)
+            .unwrap();
 
-        // now lets test with a different amount of exit shares and total shares
-        let exit_shares_amount = Uint128::from(900u128);
-        let total_shares_amount = Uint128::from(100000u128);
+        let min_amount_out = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
 
-        let min_amount_out = calculate_token_out_min_amount(
-            deps.as_mut().storage,
-        )
-        .unwrap();
-
-        assert_eq!(min_amount_out, Uint128::from(8549u128));
+        // (500 uosmo + (50 uqsr / 0.1 osmo / uqsr)) * 0.95 = (500 + 500) * 0.95 uosmo = 950 uosmo
+        assert_eq!(min_amount_out, Uint128::from(1000u128 * 95u128 / 100u128));
     }
 
     #[test]
