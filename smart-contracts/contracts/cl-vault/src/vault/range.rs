@@ -63,6 +63,11 @@ pub fn execute_modify_range(
     execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick)
 }
 
+/// This function is the entrypoint into the dsm routine that will go through the following steps
+/// * how much liq do we have in current range
+/// * so how much of each asset given liq would we have at current price
+/// * how much of each asset do we need to move to get to new range
+/// * deposit up to max liq we can right now, then swap remaining over and deposit again
 pub fn execute_modify_range_ticks(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
@@ -77,12 +82,6 @@ pub fn execute_modify_range_ticks(
 
     let _pool_config = POOL_CONFIG.load(storage)?;
     let _vault_config = VAULT_CONFIG.load(storage)?;
-
-    // This function is the entrypoint into the dsm routine that will go through the following steps
-    // * how much liq do we have in current range
-    // * so how much of each asset given liq would we have at current price
-    // * how much of each asset do we need to move to get to new range
-    // * deposit up to max liq we can right now, then swap remaining over and deposit again
 
     // this will error if we dont have a position anyway
     let position_breakdown = get_position(storage, querier, &env)?;
@@ -426,4 +425,195 @@ pub fn handle_fungify_charged_positions_response(
             "position_ids",
             format!("{:?}", modify_range_state.new_range_position_ids),
         ))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::marker::PhantomData;
+
+    use cosmwasm_std::{
+        from_binary,
+        testing::{
+            mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
+        },
+        to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
+        QuerierResult, QueryRequest, Storage, Timestamp,
+    };
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+        },
+    };
+    use prost::Message;
+
+    use crate::state::{
+        PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+    };
+
+    pub struct QuasarQuerier {
+        position: FullPositionBreakdown,
+    }
+
+    impl QuasarQuerier {
+        pub fn new(position: FullPositionBreakdown) -> QuasarQuerier {
+            QuasarQuerier { position }
+        }
+    }
+
+    impl Querier for QuasarQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
+            let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
+            match request {
+                QueryRequest::Stargate { path, data } => {
+                    match prost::Message::decode(data.as_slice()).unwrap() {
+                        PositionByIdRequest { position_id } => {
+                            if position_id == self.position.position.clone().unwrap().position_id {
+                                QuerierResult::Ok(ContractResult::Ok(
+                                    self.position.encode_to_vec().try_into().unwrap(),
+                                ))
+                            } else {
+                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                                    kind: format!("position id not found: {position_id:?}"),
+                                })
+                            }
+                        }
+                        _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                            kind: format!("Unmocked wasm query type: {path:?}"),
+                        }),
+                    }
+                }
+                _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                    kind: format!("Unmocked query type: {request:?}"),
+                }),
+            }
+            // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
+        }
+    }
+
+    fn mock_deps_with_querier(
+        info: &MessageInfo,
+    ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: QuasarQuerier::new(FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 1,
+                    address: MOCK_CONTRACT_ADDR.to_string(),
+                    pool_id: 1,
+                    lower_tick: 100,
+                    upper_tick: 1000,
+                    join_time: None,
+                    liquidity: "1000000.1".to_string(),
+                }),
+                asset0: Some(OsmoCoin {
+                    denom: "token0".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                asset1: Some(OsmoCoin {
+                    denom: "token1".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                claimable_spread_rewards: vec![
+                    OsmoCoin {
+                        denom: "token0".to_string(),
+                        amount: "100".to_string(),
+                    },
+                    OsmoCoin {
+                        denom: "token1".to_string(),
+                        amount: "100".to_string(),
+                    },
+                ],
+                claimable_incentives: vec![],
+                forfeited_incentives: vec![],
+            }),
+            custom_query_type: PhantomData,
+        };
+
+        let storage = &mut deps.storage;
+
+        RANGE_ADMIN.save(storage, &info.sender).unwrap();
+        POOL_CONFIG
+            .save(
+                storage,
+                &PoolConfig {
+                    pool_id: 1,
+                    token0: "token0".to_string(),
+                    token1: "token1".to_string(),
+                },
+            )
+            .unwrap();
+        VAULT_CONFIG
+            .save(
+                storage,
+                &VaultConfig {
+                    performance_fee: Decimal::zero(),
+                    treasury: Addr::unchecked("treasure"),
+                    create_position_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                    swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                },
+            )
+            .unwrap();
+        POSITION
+            .save(storage, &crate::state::Position { position_id: 1 })
+            .unwrap();
+
+        deps
+    }
+
+    #[test]
+    fn test_assert_range_admin() {
+        let mut deps = mock_dependencies();
+        let info = mock_info("addr0000", &[]);
+
+        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
+
+        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap();
+
+        let info = mock_info("addr0001", &[]);
+        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
+
+        let info = mock_info("addr0000", &[]);
+        RANGE_ADMIN
+            .save(&mut deps.storage, &info.sender)
+            .unwrap_err();
+
+        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
+    }
+
+    #[test]
+    fn test_get_range_admin() {
+        let mut deps = mock_dependencies();
+        let info = mock_info("addr0000", &[]);
+
+        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
+
+        assert_eq!(super::get_range_admin(deps.as_ref()).unwrap(), info.sender);
+    }
+
+    #[test]
+    fn test_execute_modify_range() {
+        let info = mock_info("addr0000", &[]);
+        let mut deps = mock_deps_with_querier(&info);
+
+        let env = mock_env();
+        let lower_price = 1_000_000_000_000_000_000u128;
+        let upper_price = 1_000_000_000_000_000_000u128;
+
+        let res = super::execute_modify_range(
+            deps.as_mut(),
+            env,
+            info,
+            lower_price.into(),
+            upper_price.into(),
+        )
+        .unwrap();
+
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(res.attributes[0].value, "modify_range");
+        assert_eq!(res.attributes[1].value, "withdraw_position");
+        assert_eq!(res.attributes[2].value, "position_id");
+        assert_eq!(res.attributes[3].value, "liquidity_amount");
+    }
 }
