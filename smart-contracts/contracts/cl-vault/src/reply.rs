@@ -6,8 +6,8 @@ use crate::{contract::handle_create_denom_reply, ContractError};
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u64)]
 pub enum Replies {
-    //
-    DepositCreatePool = 1,
+    // handles position creation for a user deposit
+    DepositCreatePosition = 1,
     // when handling rewards, we first collect incentives, then collect rewards
     CollectIncentives,
     // after gathering rewards, we divide them over share holders

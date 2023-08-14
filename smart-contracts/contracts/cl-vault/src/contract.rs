@@ -96,7 +96,7 @@ pub fn execute(
             amount: _,
             asset: _,
             recipient: _,
-        } => todo!(),
+        } => unimplemented!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::MultiDeposit { recipient: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount)
@@ -106,7 +106,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Lockup(_) => todo!(),
+                crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,

@@ -68,6 +68,15 @@ pub struct ModifyRangeState {
 //     PostModifyRange { ... },
 // }
 
+pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
+
+#[cw_serde]
+pub struct CurrentDeposit {
+    pub token0_in: Uint128,
+    pub token1_in: Uint128,
+    pub sender: Addr,
+}
+
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
