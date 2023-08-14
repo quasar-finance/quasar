@@ -1,7 +1,10 @@
 use cosmwasm_std::{DepsMut, Env, Reply, Response, StdError};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
-use crate::{contract::handle_create_denom_reply, ContractError};
+use crate::{
+    contract::handle_create_denom_reply, vault::deposit::handle_deposit_create_position,
+    ContractError,
+};
 
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u64)]
@@ -30,9 +33,9 @@ pub enum Replies {
     Unknown,
 }
 
-pub fn handle_reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id.into() {
-        Replies::DepositCreatePool => todo!(),
+        Replies::DepositCreatePosition => handle_deposit_create_position(deps, env, msg.result),
         Replies::CollectIncentives => todo!(),
         Replies::CollectSpreadRewards => todo!(),
         Replies::WithdrawPosition => todo!(),
@@ -40,14 +43,7 @@ pub fn handle_reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, Co
         Replies::Swap => todo!(),
         Replies::Fungify => todo!(),
         Replies::WithdrawUser => todo!(),
-        Replies::CreateDenom => handle_create_denom_reply(
-            deps,
-            msg.result
-                .into_result()
-                .map_err(StdError::generic_err)?
-                .data
-                .unwrap(), // TODO this unwrap should probably be an ok_or
-        ),
+        Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => todo!(),
         Replies::Unknown => todo!(),
     }

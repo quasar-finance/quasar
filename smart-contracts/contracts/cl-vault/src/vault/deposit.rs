@@ -3,19 +3,17 @@ use std::str::FromStr;
 use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
     coin, BankMsg, Binary, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    Uint128,
+    SubMsgResult, Uint128,
 };
 use cw_dex_router::helpers::receive_asset;
 
-use osmosis_std::try_proto_to_cosmwasm_coins;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMintResponse;
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
         concentratedliquidity::v1beta1::{
             ConcentratedliquidityQuerier, MsgCreatePositionResponse, MsgFungifyChargedPositions,
         },
-        tokenfactory::v1beta1::{MsgMint, TokenfactoryQuerier},
+        tokenfactory::v1beta1::MsgMint,
     },
 };
 
@@ -96,7 +94,7 @@ pub(crate) fn execute_multi_deposit(
         &env,
         range.lower_tick,
         range.upper_tick,
-        vec![token0, token1],
+        vec![token0.clone(), token1.clone()],
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -106,9 +104,9 @@ pub(crate) fn execute_multi_deposit(
         &CurrentDeposit {
             token0_in: token0.amount,
             token1_in: token1.amount,
-            sender: info.sender,
+            sender: recipient,
         },
-    );
+    )?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         create_msg,
@@ -116,10 +114,10 @@ pub(crate) fn execute_multi_deposit(
     )))
 }
 
-fn handle_deposit_create_position(
+pub fn handle_deposit_create_position(
     deps: DepsMut,
     env: Env,
-    data: Binary,
+    data: SubMsgResult,
 ) -> ContractResult<Response> {
     let resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
@@ -136,7 +134,7 @@ fn handle_deposit_create_position(
 
     // TODO change error type to something more descriptive
     let total_shares: Uint128 = bq
-        .supply_of(vault_denom)?
+        .supply_of(vault_denom.clone())?
         .amount
         .ok_or(ContractError::IncorrectShares)?
         .amount
@@ -156,7 +154,7 @@ fn handle_deposit_create_position(
         mint_to_address: env.contract.address.to_string(),
     };
     // save the shares in the user map
-    LOCKED_SHARES.save(deps.storage, current_deposit.sender, &user_shares)?;
+    LOCKED_SHARES.save(deps.storage, current_deposit.sender.clone(), &user_shares)?;
 
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
@@ -179,11 +177,11 @@ fn handle_deposit_create_position(
     );
 
     //fungify our positions together and mint the user shares to the cl-vault
-    let response = Response::new().add_submessage(fungify).add_message(mint);
+    let mut response = Response::new().add_submessage(fungify).add_message(mint);
 
     // if we have any funds to refund, refund them
     if let Some(msg) = bank_msg {
-        response.add_message(msg);
+        response = response.add_message(msg);
     }
 
     Ok(response)
@@ -221,13 +219,87 @@ fn refund_bank_msg(
 }
 
 /// returns the Coin of the needed denoms in the order given in denoms
+
 fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<(Coin, Coin)> {
-    let funds = info.funds.into_iter();
-    let token0 = funds
+    if info.funds.len() != 2 {
+        return Err(cw_utils::PaymentError::MultipleDenoms {  }.into());
+    }
+    
+    let token0 = info
+        .funds
+        .clone()
+        .into_iter()
         .find(|coin| coin.denom == denoms.0)
         .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
-    let token1 = funds
+
+    let token1 = info
+        .funds
+        .clone()
+        .into_iter()
         .find(|coin| coin.denom == denoms.1)
         .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
+
     Ok((token0, token1))
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::Addr;
+
+    use super::*;
+
+    #[test]
+    fn refund_bank_msg() {
+
+    }
+
+    #[test]
+    fn must_pay_two_works_ordered() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected0.clone(), expected1.clone()],
+        };
+        let (token0, token1) =
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!(expected0, token0);
+        assert_eq!(expected1, token1);
+    }
+
+    #[test]
+    fn must_pay_two_works_unordered() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected1.clone(), expected0.clone()],
+        };
+        let (token0, token1) =
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!(expected0, token0);
+        assert_eq!(expected1, token1);
+    }
+
+    #[test]
+    fn must_pay_two_rejects_three() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
+        };
+        let err = 
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
+
+    #[test]
+    fn must_pay_two_rejects_one() {
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![coin(200, "uqsr")],
+        };
+        let err = 
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
 }
