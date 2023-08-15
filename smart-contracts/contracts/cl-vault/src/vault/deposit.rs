@@ -264,7 +264,7 @@ mod tests {
         testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
     };
-    use osmosis_std::types::cosmos::bank::v1beta1::QuerySupplyOfRequest;
+    use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
@@ -272,7 +272,6 @@ mod tests {
             PositionByIdResponse,
         },
     };
-    use cosmwasm_std::ContractResult as CwContractResult;
     use prost::Message;
 
     use crate::state::Position;
@@ -297,10 +296,18 @@ mod tests {
                 &CurrentDeposit {
                     token0_in: Uint128::new(100),
                     token1_in: Uint128::new(100),
-                    sender: sender,
+                    sender: sender.clone(),
                 },
             )
             .unwrap();
+        POOL_CONFIG.save(
+            deps.as_mut().storage,
+            &PoolConfig {
+                pool_id: 1,
+                token0: "token0".to_string(),
+                token1: "token1".to_string(),
+            },
+        ).unwrap();
 
         let result = SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
@@ -309,7 +316,7 @@ mod tests {
                     position_id: 2,
                     amount0: "100".to_string(),
                     amount1: "100".to_string(),
-                    liquidity_created: "1000.0".to_string(),
+                    liquidity_created: "500000.1".to_string(),
                     lower_tick: 1,
                     upper_tick: 100,
                 }
@@ -318,7 +325,12 @@ mod tests {
             ),
         });
 
-        let response = handle_deposit_create_position(deps.as_mut(), env, result).unwrap();
+        let response = handle_deposit_create_position(deps.as_mut(), env.clone(), result).unwrap();
+        assert_eq!(response.messages.len(), 2);
+        assert_eq!(response.messages[0], SubMsg::reply_on_success(MsgFungifyChargedPositions { position_ids: vec![1, 2], sender: env.contract.address.to_string() }, Replies::Fungify.into()));
+        // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
+        assert_eq!(LOCKED_SHARES.load(deps.as_ref().storage, sender).unwrap(), Uint128::new(50));
+        assert_eq!(response.messages[1], SubMsg::new(MsgMint { sender: env.contract.address.to_string(), amount: Some(OsmoCoin{ denom: "money".to_string(), amount: 50.to_string() }), mint_to_address: env.contract.address.to_string() }));
     }
 
     #[test]
@@ -533,8 +545,15 @@ mod tests {
                             let query_supply_of_request: QuerySupplyOfRequest =
                                 prost::Message::decode(data.as_slice()).unwrap();
                             let denom = query_supply_of_request.denom;
-                            println!("{}", denom);
-                            todo!()
+                            QuerierResult::Ok(CwContractResult::Ok(
+                                to_binary(&QuerySupplyOfResponse {
+                                    amount: Some(OsmoCoin {
+                                        denom,
+                                        amount: 100.to_string(),
+                                    }),
+                                })
+                                .unwrap(),
+                            ))
                         }
                         &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                             kind: format!("Unmocked stargate query path: {path:?}"),
@@ -561,7 +580,7 @@ mod tests {
                     lower_tick: 100,
                     upper_tick: 1000,
                     join_time: None,
-                    liquidity: "1000000.1".to_string(),
+                    liquidity: "1000000.2".to_string(),
                 }),
                 asset0: Some(OsmoCoin {
                     denom: "token0".to_string(),
