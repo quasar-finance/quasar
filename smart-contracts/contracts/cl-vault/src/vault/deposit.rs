@@ -154,7 +154,17 @@ pub fn handle_deposit_create_position(
         mint_to_address: env.contract.address.to_string(),
     };
     // save the shares in the user map
-    LOCKED_SHARES.save(deps.storage, current_deposit.sender.clone(), &user_shares)?;
+    LOCKED_SHARES.update(
+        deps.storage,
+        current_deposit.sender.clone(),
+        |old| -> Result<Uint128, ContractError> {
+            if let Some(old_shares) = old {
+                Ok(user_shares + old_shares)
+            } else {
+                Ok(user_shares)
+            }
+        },
+    )?;
 
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
@@ -246,15 +256,69 @@ fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::mock_env, Addr};
+    use std::marker::PhantomData;
+
+    use cosmwasm_std::{
+        from_binary,
+        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse, to_binary,
+    };
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest, PositionByIdResponse,
+        },
+    };
+    use prost::Message;
+    use cosmwasm_std::ContractResult as CwContractResult;
+
+    use crate::state::Position;
 
     use super::*;
+
+    #[test]
+    fn handle_deposit_create_position_works() {
+        let mut deps = mock_deps_with_querier();
+        let env = mock_env();
+        let sender = Addr::unchecked("alice");
+        VAULT_DENOM.save(deps.as_mut().storage, &"money".to_string()).unwrap();
+        POSITION.save(deps.as_mut().storage, &Position{ position_id: 1 }).unwrap();
+
+
+        CURRENT_DEPOSIT
+            .save(
+                deps.as_mut().storage,
+                &CurrentDeposit {
+                    token0_in: Uint128::new(100),
+                    token1_in: Uint128::new(100),
+                    sender: sender,
+                },
+            )
+            .unwrap();
+
+        let result = SubMsgResult::Ok(SubMsgResponse {
+            events: vec![],
+            data: Some(
+                MsgCreatePositionResponse {
+                    position_id: 2,
+                    amount0: "100".to_string(),
+                    amount1: "100".to_string(),
+                    liquidity_created: "1000.0".to_string(),
+                    lower_tick: 1,
+                    upper_tick: 100,
+                }
+                .try_into()
+                .unwrap(),
+            ),
+        });
+
+        let response = handle_deposit_create_position(deps.as_mut(), env, result).unwrap();
+    }
 
     #[test]
     fn refund_bank_msg_2_leftover() {
         let env = mock_env();
         let user = Addr::unchecked("alice");
-
 
         let current_deposit = CurrentDeposit {
             token0_in: Uint128::new(200),
@@ -272,7 +336,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response =
+            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -288,7 +353,6 @@ mod tests {
         let env = mock_env();
         let user = Addr::unchecked("alice");
 
-
         let current_deposit = CurrentDeposit {
             token0_in: Uint128::new(200),
             token1_in: Uint128::new(400),
@@ -305,7 +369,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response =
+            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -320,7 +385,6 @@ mod tests {
     fn refund_bank_msg_token0_leftover() {
         let env = mock_env();
         let user = Addr::unchecked("alice");
-
 
         let current_deposit = CurrentDeposit {
             token0_in: Uint128::new(200),
@@ -338,7 +402,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response =
+            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -353,7 +418,6 @@ mod tests {
     fn refund_bank_msg_none_leftover() {
         let env = mock_env();
         let user = Addr::unchecked("alice");
-
 
         let current_deposit = CurrentDeposit {
             token0_in: Uint128::new(200),
@@ -371,7 +435,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response =
+            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 
@@ -421,5 +486,90 @@ mod tests {
             funds: vec![coin(200, "uqsr")],
         };
         let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
+
+    pub struct QuasarQuerier {
+        position: FullPositionBreakdown,
+    }
+
+    impl QuasarQuerier {
+        pub fn new(position: FullPositionBreakdown) -> QuasarQuerier {
+            QuasarQuerier { position }
+        }
+    }
+
+    impl Querier for QuasarQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
+            let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
+            match request {
+                QueryRequest::Stargate { path, data } => {
+                    match prost::Message::decode(data.as_slice()).unwrap() {
+                        PositionByIdRequest { position_id } => {
+                            if position_id == self.position.position.clone().unwrap().position_id {
+                                QuerierResult::Ok(
+                                    CwContractResult::Ok(
+                                        to_binary(&PositionByIdResponse {
+                                            position: Some(self.position.clone()),
+                                        })
+                                        .unwrap(),
+                                    ),
+                                )
+                            } else {
+                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                                    kind: format!("position id not found: {position_id:?}"),
+                                })
+                            }
+                        }
+                        _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                            kind: format!("Unmocked wasm query type: {path:?}"),
+                        }),
+                    }
+                }
+                _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                    kind: format!("Unmocked query type: {request:?}"),
+                }),
+            }
+            // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
+        }
+    }
+
+    fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: QuasarQuerier::new(FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 1,
+                    address: MOCK_CONTRACT_ADDR.to_string(),
+                    pool_id: 1,
+                    lower_tick: 100,
+                    upper_tick: 1000,
+                    join_time: None,
+                    liquidity: "1000000.1".to_string(),
+                }),
+                asset0: Some(OsmoCoin {
+                    denom: "token0".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                asset1: Some(OsmoCoin {
+                    denom: "token1".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                claimable_spread_rewards: vec![
+                    OsmoCoin {
+                        denom: "token0".to_string(),
+                        amount: "100".to_string(),
+                    },
+                    OsmoCoin {
+                        denom: "token1".to_string(),
+                        amount: "100".to_string(),
+                    },
+                ],
+                claimable_incentives: vec![],
+                forfeited_incentives: vec![],
+            }),
+            custom_query_type: PhantomData,
+        };
+        deps
     }
 }
