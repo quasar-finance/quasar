@@ -507,35 +507,39 @@ mod tests {
         fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
             let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
             match request {
-                QueryRequest::Stargate { path, data } => match path.as_str() {
-                    PositionByIdRequest::TYPE_URL => {
-                        let position_by_id_request: PositionByIdRequest =
-                            prost::Message::decode(data.as_slice()).unwrap();
-                        let position_id = position_by_id_request.position_id;
-                        if position_id == self.position.position.clone().unwrap().position_id {
-                            QuerierResult::Ok(CwContractResult::Ok(
-                                to_binary(&PositionByIdResponse {
-                                    position: Some(self.position.clone()),
+                QueryRequest::Stargate { path, data } => {
+                    println!("{}", path.as_str());
+                    println!("{}", PositionByIdRequest::TYPE_URL);
+                    match path.as_str() {
+                        "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
+                            let position_by_id_request: PositionByIdRequest =
+                                prost::Message::decode(data.as_slice()).unwrap();
+                            let position_id = position_by_id_request.position_id;
+                            if position_id == self.position.position.clone().unwrap().position_id {
+                                QuerierResult::Ok(CwContractResult::Ok(
+                                    to_binary(&PositionByIdResponse {
+                                        position: Some(self.position.clone()),
+                                    })
+                                    .unwrap(),
+                                ))
+                            } else {
+                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                                    kind: format!("position id not found: {position_id:?}"),
                                 })
-                                .unwrap(),
-                            ))
-                        } else {
-                            QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                kind: format!("position id not found: {position_id:?}"),
-                            })
+                            }
                         }
+                        "/cosmos.bank.v1beta1.Query/SupplyOf" => {
+                            let query_supply_of_request: QuerySupplyOfRequest =
+                                prost::Message::decode(data.as_slice()).unwrap();
+                            let denom = query_supply_of_request.denom;
+                            println!("{}", denom);
+                            todo!()
+                        }
+                        &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                            kind: format!("Unmocked stargate query path: {path:?}"),
+                        }),
                     }
-                    QuerySupplyOfRequest::TYPE_URL => {
-                        let query_supply_of_request: QuerySupplyOfRequest =
-                            prost::Message::decode(data.as_slice()).unwrap();
-                        let denom = query_supply_of_request.denom;
-                        println!("{}", denom);
-                        todo!()
-                    }
-                    &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                        kind: format!("Unmocked stargate query path: {path:?}"),
-                    }),
-                },
+                }
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                     kind: format!("Unmocked query type: {request:?}"),
                 }),
