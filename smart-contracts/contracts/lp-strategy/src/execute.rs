@@ -792,9 +792,9 @@ mod tests {
                         raw_balance,
                         quote_balance,
                         lp_balance,
-                        join_pool,
                         exit_pool,
                         spot_price,
+                        join_pool,
                         lock,
                     ],
                 }
@@ -1015,9 +1015,9 @@ mod tests {
                         raw_balance,
                         quote_balance,
                         lp_balance,
-                        join_pool,
                         exit_pool,
                         spot_price,
+                        join_pool,
                         lock,
                     ],
                 }

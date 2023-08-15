@@ -7,3 +7,10 @@ pub mod icq;
 pub mod queue;
 pub mod traits;
 pub mod types;
+
+pub mod shim {
+    pub struct Any {
+        pub type_url: String,
+        pub value: Vec<u8>,
+    }
+}

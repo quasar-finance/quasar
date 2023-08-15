@@ -1,10 +1,14 @@
-use apollo_cw_asset::AssetInfo;
-use cosmwasm_std::{Coin, DivideByZeroError, OverflowError, StdError};
-use cw_controllers::AdminError;
+use cosmwasm_std::{
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
+    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
+};
 use cw_dex::CwDexError;
-use cw_dex_router::ContractError as CwDexRouterError;
-use cw_vault_token::CwTokenError;
+use cw_utils::PaymentError;
 use thiserror::Error;
+
+use std::num::ParseIntError;
+
+pub type ContractResult<T> = Result<T, ContractError>;
 
 /// AutocompoundingVault errors
 #[allow(missing_docs)]
@@ -13,87 +17,83 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("Unauthorized")]
+    Unauthorized {},
+
+    #[error("Pool-id {pool_id} not found")]
+    PoolNotFound { pool_id: u64 },
+
+    #[error("Position Not Found")]
+    PositionNotFound,
+
+    #[error("Modify range state item not found")]
+    ModifyRangeStateNotFound,
+
+    #[error("Vault shares sent in does not equal amount requested")]
+    IncorrectShares,
+
+    #[error("{0}")]
+    DivideByZeroError(#[from] DivideByZeroError),
+
+    #[error("{0}")]
+    CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
+
+    #[error("{0}")]
+    Decimal256RangeExceededError(#[from] Decimal256RangeExceeded),
+
+    #[error("Overflow")]
+    Overflow {},
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
+
     #[error("{0}")]
     CwDexError(#[from] CwDexError),
 
     #[error("{0}")]
-    CwTokenError(#[from] CwTokenError),
+    ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    CwDexRouterError(#[from] CwDexRouterError),
+    MultiplyRatioError(#[from] CheckedFromRatioError),
+
+    #[error("This message does no accept funds")]
+    NonPayable {},
 
     #[error("{0}")]
-    Overflow(#[from] OverflowError),
+    PaymentError(#[from] PaymentError),
 
     #[error("{0}")]
-    AdminError(#[from] AdminError),
+    ParseIntError(#[from] ParseIntError),
 
-    #[error("{0}")]
-    Cw20BaseError(#[from] cw20_base::ContractError),
+    // Add any other custom errors you like here.
+    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 
-    #[error("{0}")]
-    DivideByZero(#[from] DivideByZeroError),
-
-    #[error("{0}")]
-    SemVer(#[from] semver::Error),
-
-    #[error("Unauthorized")]
-    Unauthorized {},
-
-    #[error("invalid reply id: {id}; must be 1, 2 or 3")]
-    InvalidReplyId { id: u64 },
-
-    #[error("Invalid asset deposited.")]
-    InvalidDepositAsset {},
-
-    #[error("Invalid assets requested for withdrawal.")]
-    InvalidWithdrawalAssets {},
-
-    #[error("Invalid vault token deposited.")]
-    InvalidVaultTokenDeposited {},
-
-    #[error("Invalid base token.")]
-    InvalidBaseToken {},
-
-    #[error("asset field does not equal coins sent")]
-    InvalidAssetField {},
-
-    #[error("Invalid reward liquidation target. Reward liquidation target must be one of the pool assets. Expected one of: {expected:?}. Got {actual:?}")]
-    InvalidRewardLiquidationTarget {
-        expected: Vec<AssetInfo>,
-        actual: AssetInfo,
-    },
-
-    #[error("Unknown reply ID: {0}")]
-    UnknownReplyId(u64),
-
+    // todo: add apollo errors one by one and see what gives us type errors
+    // apollo errors below (remove from above when you add)
     #[error("Unexpected funds sent. Expected: {expected:?}, Actual: {actual:?}")]
     UnexpectedFunds {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
     },
 
-    #[error("No data in SubMsgResponse")]
-    NoDataInSubMsgResponse {},
+    #[error("Bad token out requested for swap, must be one of: {base_token:?}, {quote_token:?}")]
+    BadTokenForSwap {
+        base_token: String,
+        quote_token: String,
+    },
 
-    #[error("{0}")]
-    Generic(String),
-}
+    #[error("Insufficient funds for swap. Have: {balance}, Need: {needed}")]
+    InsufficientFundsForSwap { balance: Uint128, needed: Uint128 },
 
-impl From<String> for ContractError {
-    fn from(val: String) -> Self {
-        ContractError::Generic(val)
-    }
-}
+    #[error("Tick index minimum error")]
+    TickIndexMinError {},
 
-impl From<&str> for ContractError {
-    fn from(val: &str) -> Self {
-        ContractError::Generic(val.into())
-    }
-}
+    #[error("Tick index maximum error")]
+    TickIndexMaxError {},
 
-impl From<ContractError> for StdError {
-    fn from(e: ContractError) -> Self {
-        StdError::generic_err(e.to_string())
-    }
+    #[error("Price must be between 0.000000000001 and 100000000000000000000000000000000000000. Got {:?}", price)]
+    PriceBoundError { price: Decimal256 },
+
+    #[error("Cannot handle negative powers in uints")]
+    CannotHandleNegativePowersInUint {},
 }

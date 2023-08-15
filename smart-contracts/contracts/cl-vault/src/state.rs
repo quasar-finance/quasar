@@ -1,132 +1,121 @@
-use apollo_cw_asset::{AssetInfo, AssetInfoBase};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    Addr, BlockInfo, Decimal, Deps, MessageInfo, Order, StdError, StdResult, Storage, Uint128,
-};
-use cw20::Expiration;
-use cw_dex_router::helpers::CwDexRouterBase;
-use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, MultiIndex};
-use cw_vault_standard::extensions::lockup::UnlockingPosition;
-use derive_builder::Builder;
-use liquidity_helper::LiquidityHelperBase;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_storage_plus::{Item, Map};
+
+use crate::rewards::Rewards;
+
+pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
+pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
+pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
+
+#[cw_serde]
+pub struct PoolConfig {
+    pub pool_id: u64,
+    pub token0: String, // todo: Verify in instantiate message
+    pub token1: String, // todo: Verify in instantiate message
+}
+
+impl PoolConfig {
+    pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
+        vec![&self.token0, &self.token1].contains(&&token.into())
+    }
+}
+
+pub const POSITION: Item<Position> = Item::new("position");
+
+#[cw_serde]
+pub struct Position {
+    pub position_id: u64,
+}
 
 /// Base config struct for the contract.
 #[cw_serde]
-#[derive(Builder)]
-#[builder(derive(Serialize, Deserialize, Debug, PartialEq, JsonSchema))]
-pub struct ConfigBase<T> {
+pub struct VaultConfig {
     /// Percentage of profit to be charged as performance fee
     pub performance_fee: Decimal,
     /// Account to receive fee payments
-    pub treasury: T,
-    /// Router address
-    pub router: CwDexRouterBase<T>,
-    /// The assets that are given as liquidity mining rewards that the vault
-    /// will compound into more of base_token.
-    pub reward_assets: Vec<AssetInfoBase<T>>,
-    /// The asset to which we should swap reward_assets into before providing
-    /// liquidity. Should be one of the assets in the pool.
-    pub reward_liquidation_target: AssetInfoBase<T>,
-    /// Whitelisted addresses that can call ForceWithdraw and
-    /// ForceWithdrawUnlocking
-    pub force_withdraw_whitelist: Vec<T>,
-    /// Helper for providing liquidity with unbalanced assets.
-    pub liquidity_helper: LiquidityHelperBase<T>,
+    pub treasury: Addr,
+    /// create position max slippage
+    pub create_position_max_slippage: Decimal,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
 }
 
-/// Config with non-validated addresses.
-pub type ConfigUnchecked = ConfigBase<String>;
-/// Config with validated addresses.
-pub type Config = ConfigBase<Addr>;
-/// Config updates struct containing same fields as Config, but all fields are
-/// optional.
-pub type ConfigUpdates = ConfigBaseBuilder<String>;
+#[cw_serde]
+pub enum SwapDirection {
+    ZeroToOne,
+    OneToZero,
+}
 
-/// Merges the old config with a new partial config.
-impl Config {
-    /// Updates the existing config with the new config updates. If a field is
-    /// `None` in the `updates` then the old config is kept, else it is updated
-    /// to the new value.
-    pub fn update(self, deps: Deps, updates: ConfigUpdates) -> StdResult<Config> {
-        ConfigUnchecked {
-            performance_fee: updates.performance_fee.unwrap_or(self.performance_fee),
-            treasury: updates.treasury.unwrap_or_else(|| self.treasury.into()),
-            router: updates.router.unwrap_or_else(|| self.router.into()),
-            reward_assets: updates
-                .reward_assets
-                .unwrap_or_else(|| self.reward_assets.into_iter().map(Into::into).collect()),
-            reward_liquidation_target: updates
-                .reward_liquidation_target
-                .unwrap_or_else(|| self.reward_liquidation_target.into()),
-            force_withdraw_whitelist: updates.force_withdraw_whitelist.unwrap_or_else(|| {
-                self.force_withdraw_whitelist
-                    .into_iter()
-                    .map(Into::into)
-                    .collect()
-            }),
-            liquidity_helper: updates
-                .liquidity_helper
-                .unwrap_or_else(|| self.liquidity_helper.into()),
-        }
-        .check(deps)
+#[cw_serde]
+pub struct ModifyRangeState {
+    // pre-withdraw state items
+    pub lower_tick: i128,
+    pub upper_tick: i128,
+    // pre-deposit state items
+    pub new_range_position_ids: Vec<u64>,
+}
+
+// todo: i kinda want to rename above to this
+// #[cw_serde]
+// pub enum ModifyRangeState {
+//     Idle,
+//     PreWithdraw { ... },
+//     PreDeposit { ... },
+//     PreSwap { ... },
+//     PreDeposit2 { ... },
+//     PostModifyRange { ... },
+// }
+
+pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
+
+#[cw_serde]
+pub struct CurrentDeposit {
+    pub token0_in: Uint128,
+    pub token1_in: Uint128,
+    pub sender: Addr,
+}
+
+pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
+
+/// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
+pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
+pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
+pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+
+// TODO should this be a const on 0?
+pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
+pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
+pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
+
+pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
+
+#[cw_serde]
+pub struct TickExpIndexData {
+    pub initial_price: Decimal256,
+    pub max_price: Decimal256,
+    pub additive_increment_per_tick: Decimal256,
+    pub initial_tick: i64,
+}
+
+pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
+pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
+
+#[cfg(test)]
+mod tests {
+    use super::PoolConfig;
+
+    #[test]
+    fn test_pool_contains_token() {
+        let pool_config = PoolConfig {
+            pool_id: 1,
+            token0: "token1".to_string(),
+            token1: "token2".to_string(),
+        };
+
+        assert!(pool_config.pool_contains_token("token1"));
+        assert!(pool_config.pool_contains_token("token2"));
+        assert!(!pool_config.pool_contains_token("token3"));
     }
 }
-
-impl ConfigUnchecked {
-    /// Constructs a Config from the unchecked config, validating all addresses.
-    pub fn check(&self, deps: Deps) -> StdResult<Config> {
-        if self.performance_fee > Decimal::one() {
-            return Err(StdError::generic_err(
-                "Performance fee cannot be greater than 100%",
-            ));
-        }
-
-        let reward_assets: Vec<AssetInfo> = self
-            .reward_assets
-            .iter()
-            .map(|x| x.check(deps.api))
-            .collect::<StdResult<_>>()?;
-        let router = self.router.check(deps.api)?;
-        let reward_liquidation_target = self.reward_liquidation_target.check(deps.api)?;
-
-        // Check that the router can route between all reward assets and the
-        // reward liquidation target. We discard the actual path because we
-        // don't need it here. We just need to make sure the paths exist.
-        for asset in &reward_assets {
-            // We skip the reward liquidation target because we don't need to
-            // route to it.
-            if asset == &reward_liquidation_target {
-                continue;
-            }
-            // We map the error here because the error coming from the router is
-            // not passed along into the query error, and thus we will otherwise
-            // just see "Querier contract error" and no more information.
-            router
-                .query_path_for_pair(&deps.querier, asset, &reward_liquidation_target)
-                .map_err(|_| {
-                    StdError::generic_err(format!(
-                        "Could not read path in cw-dex-router for {:?} -> {:?}",
-                        asset, reward_liquidation_target
-                    ))
-                })?;
-        }
-
-        Ok(Config {
-            performance_fee: self.performance_fee,
-            treasury: deps.api.addr_validate(&self.treasury)?,
-            reward_assets,
-            reward_liquidation_target,
-            router,
-            force_withdraw_whitelist: self
-                .force_withdraw_whitelist
-                .iter()
-                .map(|x| deps.api.addr_validate(x))
-                .collect::<StdResult<_>>()?,
-            liquidity_helper: self.liquidity_helper.check(deps.api)?,
-        })
-    }
-}
-
-pub const BASE_TOKEN: Item<AssetInfo> = Item::new("base_token");
