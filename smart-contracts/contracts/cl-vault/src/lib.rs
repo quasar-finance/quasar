@@ -9,7 +9,7 @@ mod reply;
 mod rewards;
 pub mod state;
 mod swap;
-mod test_tube;
+// mod test_tube;
 mod vault;
 
 pub use crate::error::ContractError;

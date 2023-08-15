@@ -507,7 +507,7 @@ mod tests {
         fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
             let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
             match request {
-                QueryRequest::Stargate { path, data } => match path {
+                QueryRequest::Stargate { path, data } => match path.as_str() {
                     PositionByIdRequest::TYPE_URL => {
                         let position_by_id_request: PositionByIdRequest =
                             prost::Message::decode(data.as_slice()).unwrap();
@@ -532,6 +532,9 @@ mod tests {
                         println!("{}", denom);
                         todo!()
                     }
+                    &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                        kind: format!("Unmocked stargate query path: {path:?}"),
+                    }),
                 },
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                     kind: format!("Unmocked query type: {request:?}"),

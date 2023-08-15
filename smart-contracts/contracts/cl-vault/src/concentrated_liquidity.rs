@@ -78,11 +78,14 @@ pub fn get_position(
     querier: &QuerierWrapper,
     _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
+    println!("Test something.");
     let position = POSITION.load(storage)?;
 
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
     let position = cl_querier.position_by_id(position.position_id)?;
-    position.position.ok_or(ContractError::PositionNotFound)
+    let yo = position.position.ok_or(ContractError::PositionNotFound);
+    println!("Test something 2.");
+    yo
 }
 
 #[cfg(test)]
