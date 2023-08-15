@@ -258,18 +258,22 @@ fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<
 mod tests {
     use std::marker::PhantomData;
 
+    use cosmwasm_std::ContractResult as CwContractResult;
     use cosmwasm_std::{
         from_binary,
         testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse, to_binary,
+        to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
     };
+    use osmosis_std::types::cosmos::bank::v1beta1::QuerySupplyOfRequest;
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest, PositionByIdResponse,
+            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+            PositionByIdResponse,
         },
     };
     use cosmwasm_std::ContractResult as CwContractResult;
+    use prost::Message;
 
     use crate::state::Position;
 
@@ -280,9 +284,12 @@ mod tests {
         let mut deps = mock_deps_with_querier();
         let env = mock_env();
         let sender = Addr::unchecked("alice");
-        VAULT_DENOM.save(deps.as_mut().storage, &"money".to_string()).unwrap();
-        POSITION.save(deps.as_mut().storage, &Position{ position_id: 1 }).unwrap();
-
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"money".to_string())
+            .unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id: 1 })
+            .unwrap();
 
         CURRENT_DEPOSIT
             .save(
@@ -502,25 +509,35 @@ mod tests {
             let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
             match request {
                 QueryRequest::Stargate { path, data } => {
-                    match prost::Message::decode(data.as_slice()).unwrap() {
-                        PositionByIdRequest { position_id } => {
+                    println!("{}", path.as_str());
+                    println!("{}", PositionByIdRequest::TYPE_URL);
+                    match path.as_str() {
+                        "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
+                            let position_by_id_request: PositionByIdRequest =
+                                prost::Message::decode(data.as_slice()).unwrap();
+                            let position_id = position_by_id_request.position_id;
                             if position_id == self.position.position.clone().unwrap().position_id {
-                                QuerierResult::Ok(
-                                    CwContractResult::Ok(
-                                        to_binary(&PositionByIdResponse {
-                                            position: Some(self.position.clone()),
-                                        })
-                                        .unwrap(),
-                                    ),
-                                )
+                                QuerierResult::Ok(CwContractResult::Ok(
+                                    to_binary(&PositionByIdResponse {
+                                        position: Some(self.position.clone()),
+                                    })
+                                    .unwrap(),
+                                ))
                             } else {
                                 QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                                     kind: format!("position id not found: {position_id:?}"),
                                 })
                             }
                         }
-                        _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                            kind: format!("Unmocked wasm query type: {path:?}"),
+                        "/cosmos.bank.v1beta1.Query/SupplyOf" => {
+                            let query_supply_of_request: QuerySupplyOfRequest =
+                                prost::Message::decode(data.as_slice()).unwrap();
+                            let denom = query_supply_of_request.denom;
+                            println!("{}", denom);
+                            todo!()
+                        }
+                        &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                            kind: format!("Unmocked stargate query path: {path:?}"),
                         }),
                     }
                 }
