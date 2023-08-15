@@ -287,6 +287,18 @@ pub fn handle_create_position_response(
         .add_attribute("token_out_min", format!("{:?}", token_out_min_amount)))
 }
 
+// this function assumes that we are swapping and depositing into a valid range
+pub fn swap_deposit_merge(
+    storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+    _info: MessageInfo,
+    _msg: MsgSwapExactAmountInResponse,
+    new_lower_tick: i128,
+    new_upper_tick: i128,
+) -> Result<Response, ContractError> {
+}
+
 // do deposit
 pub fn handle_swap_response(
     storage: &mut dyn Storage,
@@ -439,10 +451,14 @@ mod tests {
         to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
         QuerierResult, QueryRequest, Storage, Timestamp,
     };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+    use osmosis_std::{
+        shim::Any,
+        types::{
+            cosmos::base::v1beta1::Coin as OsmoCoin,
+            osmosis::concentratedliquidity::v1beta1::{
+                FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+                PositionByIdResponse,
+            },
         },
     };
     use prost::Message;
@@ -470,7 +486,10 @@ mod tests {
                         PositionByIdRequest { position_id } => {
                             if position_id == self.position.position.clone().unwrap().position_id {
                                 QuerierResult::Ok(ContractResult::Ok(
-                                    self.position.encode_to_vec().try_into().unwrap(),
+                                    to_binary(&PositionByIdResponse {
+                                        position: Some(self.position.clone()),
+                                    })
+                                    .unwrap(),
                                 ))
                             } else {
                                 QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
@@ -575,11 +594,9 @@ mod tests {
         super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
 
         let info = mock_info("addr0000", &[]);
-        RANGE_ADMIN
-            .save(&mut deps.storage, &info.sender)
-            .unwrap_err();
+        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
+        super::assert_range_admin(&mut deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
     }
 
     #[test]
@@ -613,7 +630,7 @@ mod tests {
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "modify_range");
         assert_eq!(res.attributes[1].value, "withdraw_position");
-        assert_eq!(res.attributes[2].value, "position_id");
-        assert_eq!(res.attributes[3].value, "liquidity_amount");
+        assert_eq!(res.attributes[2].value, "1");
+        assert_eq!(res.attributes[3].value, "1000000.1");
     }
 }
