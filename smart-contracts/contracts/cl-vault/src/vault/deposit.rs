@@ -269,7 +269,6 @@ mod tests {
             FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest, PositionByIdResponse,
         },
     };
-    use prost::Message;
     use cosmwasm_std::ContractResult as CwContractResult;
 
     use crate::state::Position;
