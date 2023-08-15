@@ -287,17 +287,17 @@ pub fn handle_create_position_response(
         .add_attribute("token_out_min", format!("{:?}", token_out_min_amount)))
 }
 
-// this function assumes that we are swapping and depositing into a valid range
-pub fn swap_deposit_merge(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
-    env: Env,
-    _info: MessageInfo,
-    _msg: MsgSwapExactAmountInResponse,
-    new_lower_tick: i128,
-    new_upper_tick: i128,
-) -> Result<Response, ContractError> {
-}
+// // this function assumes that we are swapping and depositing into a valid range
+// pub fn swap_deposit_merge(
+//     storage: &mut dyn Storage,
+//     querier: &QuerierWrapper,
+//     env: Env,
+//     _info: MessageInfo,
+//     _msg: MsgSwapExactAmountInResponse,
+//     new_lower_tick: i128,
+//     new_upper_tick: i128,
+// ) -> Result<Response, ContractError> {
+// }
 
 // do deposit
 pub fn handle_swap_response(
