@@ -197,19 +197,21 @@ fn refund_bank_msg(
     let refund0 = current_deposit
         .token0_in
         .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
+
     let refund1 = current_deposit
         .token1_in
         .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
+
     let mut coins: Vec<Coin> = vec![];
-    if refund0.is_zero() {
+    if !refund0.is_zero() {
         coins.push(coin(refund0.u128(), denom0))
     }
-    if refund1.is_zero() {
+    if !refund1.is_zero() {
         coins.push(coin(refund1.u128(), denom1))
     }
     let bank_msg: Option<BankMsg> = if !coins.is_empty() {
         Some(BankMsg::Send {
-            to_address: env.contract.address.to_string(),
+            to_address: current_deposit.sender.to_string(),
             amount: coins,
         })
     } else {
@@ -222,9 +224,9 @@ fn refund_bank_msg(
 
 fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<(Coin, Coin)> {
     if info.funds.len() != 2 {
-        return Err(cw_utils::PaymentError::MultipleDenoms {  }.into());
+        return Err(cw_utils::PaymentError::MultipleDenoms {}.into());
     }
-    
+
     let token0 = info
         .funds
         .clone()
@@ -244,13 +246,133 @@ fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{testing::mock_env, Addr};
 
     use super::*;
 
     #[test]
-    fn refund_bank_msg() {
+    fn refund_bank_msg_2_leftover() {
+        let env = mock_env();
+        let user = Addr::unchecked("alice");
 
+
+        let current_deposit = CurrentDeposit {
+            token0_in: Uint128::new(200),
+            token1_in: Uint128::new(400),
+            sender: user,
+        };
+        let resp = MsgCreatePositionResponse {
+            position_id: 1,
+            amount0: 150.to_string(),
+            amount1: 250.to_string(),
+            liquidity_created: "100000.000".to_string(),
+            lower_tick: 1,
+            upper_tick: 100,
+        };
+        let denom0 = "uosmo".to_string();
+        let denom1 = "uatom".to_string();
+
+        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        assert!(response.is_some());
+        assert_eq!(
+            response.unwrap(),
+            BankMsg::Send {
+                to_address: current_deposit.sender.to_string(),
+                amount: vec![coin(50, "uosmo"), coin(150, "uatom")]
+            }
+        )
+    }
+
+    #[test]
+    fn refund_bank_msg_token1_leftover() {
+        let env = mock_env();
+        let user = Addr::unchecked("alice");
+
+
+        let current_deposit = CurrentDeposit {
+            token0_in: Uint128::new(200),
+            token1_in: Uint128::new(400),
+            sender: user,
+        };
+        let resp = MsgCreatePositionResponse {
+            position_id: 1,
+            amount0: 200.to_string(),
+            amount1: 250.to_string(),
+            liquidity_created: "100000.000".to_string(),
+            lower_tick: 1,
+            upper_tick: 100,
+        };
+        let denom0 = "uosmo".to_string();
+        let denom1 = "uatom".to_string();
+
+        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        assert!(response.is_some());
+        assert_eq!(
+            response.unwrap(),
+            BankMsg::Send {
+                to_address: current_deposit.sender.to_string(),
+                amount: vec![coin(150, "uatom")]
+            }
+        )
+    }
+
+    #[test]
+    fn refund_bank_msg_token0_leftover() {
+        let env = mock_env();
+        let user = Addr::unchecked("alice");
+
+
+        let current_deposit = CurrentDeposit {
+            token0_in: Uint128::new(200),
+            token1_in: Uint128::new(400),
+            sender: user,
+        };
+        let resp = MsgCreatePositionResponse {
+            position_id: 1,
+            amount0: 150.to_string(),
+            amount1: 400.to_string(),
+            liquidity_created: "100000.000".to_string(),
+            lower_tick: 1,
+            upper_tick: 100,
+        };
+        let denom0 = "uosmo".to_string();
+        let denom1 = "uatom".to_string();
+
+        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        assert!(response.is_some());
+        assert_eq!(
+            response.unwrap(),
+            BankMsg::Send {
+                to_address: current_deposit.sender.to_string(),
+                amount: vec![coin(50, "uosmo")]
+            }
+        )
+    }
+
+    #[test]
+    fn refund_bank_msg_none_leftover() {
+        let env = mock_env();
+        let user = Addr::unchecked("alice");
+
+
+        let current_deposit = CurrentDeposit {
+            token0_in: Uint128::new(200),
+            token1_in: Uint128::new(400),
+            sender: user,
+        };
+        let resp = MsgCreatePositionResponse {
+            position_id: 1,
+            amount0: 200.to_string(),
+            amount1: 400.to_string(),
+            liquidity_created: "100000.000".to_string(),
+            lower_tick: 1,
+            upper_tick: 100,
+        };
+        let denom0 = "uosmo".to_string();
+        let denom1 = "uatom".to_string();
+
+        let response = refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        assert!(response.is_none());
     }
 
     #[test]
@@ -289,8 +411,7 @@ mod tests {
             sender: Addr::unchecked("sender"),
             funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
         };
-        let err = 
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
@@ -299,7 +420,6 @@ mod tests {
             sender: Addr::unchecked("sender"),
             funds: vec![coin(200, "uqsr")],
         };
-        let err = 
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 }
