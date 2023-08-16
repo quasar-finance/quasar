@@ -436,6 +436,7 @@ dependencies = [
  "num_enum",
  "osmosis-std 0.16.2",
  "osmosis-test-tube",
+ "prost 0.11.9",
  "schemars",
  "semver",
  "serde",

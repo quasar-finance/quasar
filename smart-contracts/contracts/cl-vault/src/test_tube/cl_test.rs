@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use cw_vault_multi_standard::VaultInfoResponse;
-    use osmosis_std::types::osmosis::{
+    use osmosis_std::types::{osmosis::{
         concentratedliquidity::v1beta1::{Pool, PoolsRequest},
         tokenfactory::v1beta1::QueryDenomsFromCreatorRequest,
-    };
+    }, cosmos::base::v1beta1::Coin};
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message, ConcentratedLiquidity, Module, TokenFactory, Wasm,
     };
@@ -14,6 +14,15 @@ mod tests {
         query::PoolResponse,
         test_tube::default_init,
     };
+
+    #[test]
+    fn deposit_works() {
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let alice = app.init_account(&[
+            Coin::new(1_000_000_000_000, "uatom"),
+            Coin::new(1_000_000_000_000, "uosmo"),
+        ]);
+    }
 
     #[test]
     fn default_init_works() {
