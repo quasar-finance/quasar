@@ -300,14 +300,16 @@ mod tests {
                 },
             )
             .unwrap();
-        POOL_CONFIG.save(
-            deps.as_mut().storage,
-            &PoolConfig {
-                pool_id: 1,
-                token0: "token0".to_string(),
-                token1: "token1".to_string(),
-            },
-        ).unwrap();
+        POOL_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &PoolConfig {
+                    pool_id: 1,
+                    token0: "token0".to_string(),
+                    token1: "token1".to_string(),
+                },
+            )
+            .unwrap();
 
         let result = SubMsgResult::Ok(SubMsgResponse {
             events: vec![],

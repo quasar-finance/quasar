@@ -1,4 +1,6 @@
-use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg};
+use cosmwasm_std::{
+    Addr, Binary, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg, SubMsgResult,
+};
 
 use crate::{
     error::ContractResult,
@@ -29,7 +31,7 @@ pub fn claim_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError>
 pub fn handle_collect_incentives_reply(
     deps: DepsMut,
     env: Env,
-    data: Binary,
+    data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
     let response: MsgCollectIncentivesResponse = data.try_into()?;
@@ -52,7 +54,7 @@ pub fn handle_collect_incentives_reply(
 pub fn handle_collect_spread_rewards_reply(
     deps: DepsMut,
     _env: Env,
-    data: Binary,
+    data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
@@ -127,7 +129,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
-        Decimal, Uint128,
+        Decimal, SubMsgResponse, Uint128,
     };
 
     use crate::state::{Position, VaultConfig};
@@ -176,7 +178,15 @@ mod tests {
         .try_into()
         .unwrap();
 
-        let resp = handle_collect_incentives_reply(deps.as_mut(), env.clone(), msg).unwrap();
+        let resp = handle_collect_incentives_reply(
+            deps.as_mut(),
+            env.clone(),
+            SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(msg),
+            }),
+        )
+        .unwrap();
 
         assert_eq!(
             resp.messages[0].msg,
@@ -223,7 +233,15 @@ mod tests {
             .save(deps.as_mut().storage, &strategist_rewards)
             .unwrap();
 
-        let _resp = handle_collect_spread_rewards_reply(deps.as_mut(), env, msg).unwrap();
+        let _resp = handle_collect_spread_rewards_reply(
+            deps.as_mut(),
+            env,
+            SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(msg),
+            }),
+        )
+        .unwrap();
 
         // we have collected vec![coin(1234, "uosmo"), coin(2345, "uqsr"), coin(3456, "uatom")] at this point
         let rewards = Rewards::from_coins(vec![
