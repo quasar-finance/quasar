@@ -114,7 +114,7 @@ pub(crate) fn execute_multi_deposit(
     )))
 }
 
-pub fn handle_deposit_create_position(
+pub fn handle_deposit_create_position_reply(
     deps: DepsMut,
     env: Env,
     data: SubMsgResult,
@@ -325,12 +325,35 @@ mod tests {
             ),
         });
 
-        let response = handle_deposit_create_position(deps.as_mut(), env.clone(), result).unwrap();
+        let response =
+            handle_deposit_create_position_reply(deps.as_mut(), env.clone(), result).unwrap();
         assert_eq!(response.messages.len(), 2);
-        assert_eq!(response.messages[0], SubMsg::reply_on_success(MsgFungifyChargedPositions { position_ids: vec![1, 2], sender: env.contract.address.to_string() }, Replies::Fungify.into()));
+        assert_eq!(
+            response.messages[0],
+            SubMsg::reply_on_success(
+                MsgFungifyChargedPositions {
+                    position_ids: vec![1, 2],
+                    sender: env.contract.address.to_string()
+                },
+                Replies::Fungify.into()
+            )
+        );
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
-        assert_eq!(LOCKED_SHARES.load(deps.as_ref().storage, sender).unwrap(), Uint128::new(50));
-        assert_eq!(response.messages[1], SubMsg::new(MsgMint { sender: env.contract.address.to_string(), amount: Some(OsmoCoin{ denom: "money".to_string(), amount: 50.to_string() }), mint_to_address: env.contract.address.to_string() }));
+        assert_eq!(
+            LOCKED_SHARES.load(deps.as_ref().storage, sender).unwrap(),
+            Uint128::new(50)
+        );
+        assert_eq!(
+            response.messages[1],
+            SubMsg::new(MsgMint {
+                sender: env.contract.address.to_string(),
+                amount: Some(OsmoCoin {
+                    denom: "money".to_string(),
+                    amount: 50.to_string()
+                }),
+                mint_to_address: env.contract.address.to_string()
+            })
+        );
     }
 
     #[test]

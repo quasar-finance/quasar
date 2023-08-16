@@ -2,7 +2,7 @@ use cosmwasm_std::{DepsMut, Env, Reply, Response, StdError};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
-    contract::handle_create_denom_reply, vault::deposit::handle_deposit_create_position,
+    contract::handle_create_denom_reply, vault::deposit::handle_deposit_create_position_reply,
     ContractError,
 };
 
@@ -35,7 +35,9 @@ pub enum Replies {
 
 pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id.into() {
-        Replies::DepositCreatePosition => handle_deposit_create_position(deps, env, msg.result),
+        Replies::DepositCreatePosition => {
+            handle_deposit_create_position_reply(deps, env, msg.result)
+        }
         Replies::CollectIncentives => todo!(),
         Replies::CollectSpreadRewards => todo!(),
         Replies::WithdrawPosition => todo!(),

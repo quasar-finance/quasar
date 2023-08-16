@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Coin;
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::{osmosis::{
         concentratedliquidity::v1beta1::{Pool, PoolsRequest},
