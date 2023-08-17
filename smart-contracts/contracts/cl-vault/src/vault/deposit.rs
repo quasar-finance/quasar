@@ -26,7 +26,7 @@ use crate::{
     ContractError,
 };
 
-pub(crate) fn execute_deposit(
+pub(crate) fn execute_any_deposit(
     deps: DepsMut,
     env: Env,
     info: &MessageInfo,
@@ -46,30 +46,9 @@ pub(crate) fn execute_deposit(
     )?;
 
     todo!()
-
-    // // Compound. Also stakes the users deposit
-    // let compound_res = self.compound(deps, &env, user_deposit_amount)?;
-
-    // // Mint vault tokens to recipient
-    // let mint_res = Response::new().add_message(
-    //     CallbackMsg::MintVaultToken {
-    //         amount,
-    //         recipient: recipient.clone(),
-    //     }
-    //     .into_cosmos_msg(&env)?,
-    // );
-
-    // let event = Event::new("apollo/vaults/execute_staking").add_attributes(vec![
-    //     attr("action", "deposit"),
-    //     attr("recipient", recipient),
-    //     attr("amount", amount),
-    // ]);
-
-    // // Merge responses and add message to mint vault token
-    // Ok(merge_responses(vec![receive_res, compound_res, mint_res]).add_event(event))
 }
 
-pub(crate) fn execute_multi_deposit(
+pub(crate) fn execute_exact_deposit(
     deps: DepsMut,
     env: Env,
     info: &MessageInfo,

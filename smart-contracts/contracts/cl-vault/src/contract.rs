@@ -96,12 +96,12 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        cw_vault_multi_standard::VaultStandardExecuteMsg::SingleDeposit {
+        cw_vault_multi_standard::VaultStandardExecuteMsg::AnyDeposit {
             amount: _,
             asset: _,
             recipient: _,
-        } => todo!(),
-        cw_vault_multi_standard::VaultStandardExecuteMsg::MultiDeposit { recipient: _ } => todo!(),
+        } => execute_any_deposit(),
+        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => execute_exact_deposit(deps, info, env, recipient),
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount)
         }
