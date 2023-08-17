@@ -56,7 +56,6 @@ pub struct ModifyRangeState {
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
 }
-
 // todo: i kinda want to rename above to this
 // #[cw_serde]
 // pub enum ModifyRangeState {
@@ -67,15 +66,6 @@ pub struct ModifyRangeState {
 //     PreDeposit2 { ... },
 //     PostModifyRange { ... },
 // }
-
-pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
-
-#[cw_serde]
-pub struct CurrentDeposit {
-    pub token0_in: Uint128,
-    pub token1_in: Uint128,
-    pub sender: Addr,
-}
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
@@ -90,6 +80,8 @@ pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
 pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
+pub const SWAP_DEPOSIT_MERGE_STATE: Item<SwapDepositMergeState> =
+    Item::new("swap_deposit_merge_state");
 
 #[cw_serde]
 pub struct TickExpIndexData {

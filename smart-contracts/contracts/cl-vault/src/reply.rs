@@ -35,7 +35,7 @@ pub enum Replies {
     Unknown,
 }
 
-pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn handle_reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id.into() {
         Replies::DepositCreatePosition => {
             handle_deposit_create_position_reply(deps, env, msg.result)
