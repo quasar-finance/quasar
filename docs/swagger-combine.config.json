@@ -15,34 +15,26 @@
             }
         },
         {
-            "url": "../tmp-swagger-gen/intergamm/query.swagger.json",
-            "operationIds": {
-                "rename": {
-                    "Params": "IntergammParams"
-                }
-            }
-        },
-        {
-            "url": "../tmp-swagger-gen/orion/query.swagger.json",
-            "operationIds": {
-                "rename": {
-                    "Params": "OrionParams"
-                }
-            }
-        },
-        {
-            "url": "../tmp-swagger-gen/qbank/query.swagger.json",
-            "operationIds": {
-                "rename": {
-                    "Params": "QBankParams"
-                }
-            }
-        },
-        {
             "url": "../tmp-swagger-gen/qoracle/query.swagger.json",
             "operationIds": {
                 "rename": {
                     "Params": "QOracleParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/qvesting/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "QVestingParams"
+                }
+            }
+        },
+        {
+            "url": "../tmp-swagger-gen/tokenfactory/v1beta1/query.swagger.json",
+            "operationIds": {
+                "rename": {
+                    "Params": "TokenfactoryParams"
                 }
             }
         }

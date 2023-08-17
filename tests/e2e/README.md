@@ -68,6 +68,7 @@ flexibility to either run the complete test suite or execute specific test cases
 To execute all test cases, simply run the following command:
 
 ```bash
+cd tests/e2e
 make test-e2e
 ```
 
@@ -81,6 +82,7 @@ If you want to run specific test cases instead of the entire suite, you can do s
 use the following command:
 
 ```bash
+cd tests/e2e
 CASES="case1 case2 case3" make test-e2e
 ```
 

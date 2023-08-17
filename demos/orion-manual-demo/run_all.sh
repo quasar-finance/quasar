@@ -23,22 +23,20 @@ mkdir ./logs
 # COSMOS_PID=$!
 
 # run quasar and save pid
-./quasar_localnet.sh &
+../quasar_localnet.sh &
 QUASAR_PID=$!
 
 #run osmo and save pid
-./osmo_localnet.sh &
+../osmo_localnet.sh &
 OSMO_PID=$!
 
 # wait for chains to start
 sleep 10
 
 # create a pool on osmosis to test against
-osmosisd tx gamm create-pool --pool-file ./sample_pool1.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
-sleep 6
-osmosisd tx gamm create-pool --pool-file ./sample_pool2.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
-sleep 6
-osmosisd tx gamm create-pool --pool-file ./sample_pool3.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo
+osmosisd tx gamm create-pool --pool-file ./sample_pool1.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
+osmosisd tx gamm create-pool --pool-file ./sample_pool2.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
+osmosisd tx gamm create-pool --pool-file ./sample_pool3.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
 
 # run hermes and save pid, run_hermes and setup_go_relayer might not relay over the same channel out of the box due to connection creation in both scripts
 # ./run_hermes.sh  &
@@ -83,8 +81,17 @@ sleep 10
 
 quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 
-echo "setup ready for use"
-afplay /System/Library/Sounds/Funk.aiff
-say -r 200 "setup ready"
+# Check platform
+platform='unknown'
+unamestr=$(uname)
+if [ "$unamestr" = 'Linux' ]; then
+    platform='linux'
+elif [ "$unamestr" = 'Darwin' ]; then
+    platform='macos'
+fi
+
+if [ $platform = 'macos' ]; then
+    say "setup ready"
+fi
 
 wait

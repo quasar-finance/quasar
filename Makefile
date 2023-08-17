@@ -203,7 +203,7 @@ $(MOCKSDIR)/:
 ###                           Tests & Simulation                            ###
 ###############################################################################
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... ./x/tokenfactory/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
 PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
 PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
 TEST_PACKAGES=./...
@@ -342,6 +342,7 @@ docker-e2e-build:
 		DOCKER_BUILDKIT=1 docker build \
 			-t $$chain:local \
 			-t $$chain:local-distroless \
+			--build-arg GO_VERSION=$(GO_VERSION) \
 			--build-arg RUNNER_IMAGE=$(RUNNER_BASE_IMAGE_DISTROLESS) \
 			--build-arg GIT_VERSION=$(VERSION) \
 			--build-arg GIT_COMMIT=$(COMMIT) \

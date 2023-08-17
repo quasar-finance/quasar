@@ -185,17 +185,6 @@ mod tests {
                 .encode_to_vec(),
             );
 
-            let join_pool = create_query_response(
-                QueryCalcJoinPoolSharesResponse {
-                    share_out_amount: "123".to_string(),
-                    tokens_out: vec![OsmoCoin {
-                        denom: "uosmo".to_string(),
-                        amount: join_pool_rq.to_string(),
-                    }],
-                }
-                .encode_to_vec(),
-            );
-
             let exit_pool = create_query_response(
                 QueryCalcExitPoolCoinsFromSharesResponse {
                     tokens_out: vec![
@@ -221,6 +210,17 @@ mod tests {
                 .encode_to_vec(),
             );
 
+            let join_pool = create_query_response(
+                QueryCalcJoinPoolSharesResponse {
+                    share_out_amount: "123".to_string(),
+                    tokens_out: vec![OsmoCoin {
+                        denom: "uosmo".to_string(),
+                        amount: join_pool_rq.to_string(),
+                    }],
+                }
+                .encode_to_vec(),
+            );
+
             // LockResponse is fixed to None in this test for simplicity
             let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
@@ -231,9 +231,9 @@ mod tests {
                             raw_balance,
                             quote_balance,
                             lp_balance,
-                            join_pool,
                             exit_pool,
                             spot_price,
+                            join_pool,
                             lock,
                         ],
                     }

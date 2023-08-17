@@ -246,7 +246,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20b42021d8488665b1a0d9748f1f81df7235362d194f44481e2e61bf376b77b4"
 dependencies = [
- "prost 0.11.8",
+ "prost 0.11.9",
  "prost-types",
  "tendermint-proto 0.23.9",
 ]
@@ -257,7 +257,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "673d31bd830c0772d78545de20d975129b6ab2f7db4e4e9313c3b8777d319194"
 dependencies = [
- "prost 0.11.8",
+ "prost 0.11.9",
  "prost-types",
  "tendermint-proto 0.26.0",
 ]
@@ -1068,7 +1068,7 @@ dependencies = [
  "cw2 0.14.0",
  "cw20 0.14.0",
  "osmosis-std 0.12.0",
- "prost 0.11.8",
+ "prost 0.11.9",
  "schemars",
  "semver",
  "serde",
@@ -1205,9 +1205,9 @@ dependencies = [
  "cw2 0.16.0",
  "cw20 0.16.0",
  "cw20-base 0.16.0",
- "osmosis-std 0.13.2",
+ "osmosis-std 0.16.1",
  "proptest",
- "prost 0.11.8",
+ "prost 0.11.9",
  "quasar-types",
  "schemars",
  "serde",
@@ -1296,7 +1296,7 @@ dependencies = [
  "chrono",
  "cosmwasm-std",
  "osmosis-std-derive 0.12.0",
- "prost 0.11.8",
+ "prost 0.11.9",
  "prost-types",
  "schemars",
  "serde",
@@ -1305,14 +1305,13 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10d6fe6ac7fcba45ed61d738091d33c838c4cabbcf4892dc7aa56d19d39cc976"
+version = "0.16.1"
+source = "git+https://github.com/quasar-finance/osmosis-rust.git#475dda7b01d621fe72e5124a41b2d159a3d1c742"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive 0.13.2",
- "prost 0.11.8",
+ "osmosis-std-derive 0.16.1",
+ "prost 0.11.9",
  "prost-types",
  "schemars",
  "serde",
@@ -1333,12 +1332,12 @@ dependencies = [
 
 [[package]]
 name = "osmosis-std-derive"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a455e262a6fdfd3914f3a4e11e6bc0ce491901cb9d507d7856d7ef6e129e90c6"
+version = "0.16.1"
+source = "git+https://github.com/quasar-finance/osmosis-rust.git#475dda7b01d621fe72e5124a41b2d159a3d1c742"
 dependencies = [
  "itertools",
  "proc-macro2",
+ "prost-types",
  "quote",
  "syn",
 ]
@@ -1416,12 +1415,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.11.8"
+version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48e50df39172a3e7eb17e14642445da64996989bc212b583015435d39a58537"
+checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
 dependencies = [
  "bytes",
- "prost-derive 0.11.8",
+ "prost-derive 0.11.9",
 ]
 
 [[package]]
@@ -1439,9 +1438,9 @@ dependencies = [
 
 [[package]]
 name = "prost-derive"
-version = "0.11.8"
+version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ea9b0f8cbe5e15a8a042d030bd96668db28ecb567ec37d691971ff5731d2b1b"
+checksum = "e5d2d8d10f3c6ded6da8b05b5fb3b8a5082514344d56c9f871412d29b4e075b4"
 dependencies = [
  "anyhow",
  "itertools",
@@ -1452,11 +1451,11 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.11.8"
+version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "379119666929a1afd7a043aa6cf96fa67a6dce9af60c88095a4686dbce4c9c88"
+checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
- "prost 0.11.8",
+ "prost 0.11.9",
 ]
 
 [[package]]
@@ -1524,9 +1523,9 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cw20 0.13.4",
  "derive_more",
- "osmosis-std 0.13.2",
- "osmosis-std-derive 0.13.2",
- "prost 0.11.8",
+ "osmosis-std 0.16.1",
+ "osmosis-std-derive 0.16.1",
+ "prost 0.11.9",
  "rust_decimal",
  "schemars",
  "serde",
@@ -1953,7 +1952,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.8",
+ "prost 0.11.9",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -1971,7 +1970,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.8",
+ "prost 0.11.9",
  "prost-types",
  "serde",
  "serde_bytes",

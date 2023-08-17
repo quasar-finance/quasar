@@ -95,5 +95,5 @@ fn route_lifecycle_works() {
         attr("route_id", "destination: osmosis, asset: uosmo"),
     ]);
     res.assert_event(&e);
-    suite.assert_queries(&vec![]);
+    suite.assert_queries(&[]);
 }
