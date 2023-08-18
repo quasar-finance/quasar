@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
-    coin, BankMsg, Binary, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    coin, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Attribute,
 };
 use cw_dex_router::helpers::receive_asset;
 
@@ -22,10 +22,11 @@ use crate::{
     concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
     reply::Replies,
-    state::{CurrentDeposit, PoolConfig, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
+    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
     ContractError,
 };
 
+// execute_any_deposit is a nice to have feature for the cl vault.
 pub(crate) fn execute_any_deposit(
     deps: DepsMut,
     env: Env,
@@ -36,18 +37,12 @@ pub(crate) fn execute_any_deposit(
     // Unwrap recipient or use caller's address
     let _recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    // Receive the assets to the contract
-    let _receive_res = receive_asset(
-        info,
-        &env,
-        &Asset::new(AssetInfo::Native(pool_config.token0), amount),
-    )?;
-
     todo!()
 }
 
+
+/// Try to deposit as much user funds as we can into the a position and 
+/// refund the rest to the caller
 pub(crate) fn execute_exact_deposit(
     deps: DepsMut,
     env: Env,
@@ -93,6 +88,9 @@ pub(crate) fn execute_exact_deposit(
     )))
 }
 
+
+/// handles the reply to creating a position for a user deposit
+/// and calculates the refund for the user
 pub fn handle_deposit_create_position_reply(
     deps: DepsMut,
     env: Env,
@@ -111,11 +109,10 @@ pub fn handle_deposit_create_position_reply(
         .ok_or(ContractError::PositionNotFound)?;
     let total_liquidity = Decimal::from_str(total_position.liquidity.as_str())?;
 
-    // TODO change error type to something more descriptive
     let total_shares: Uint128 = bq
         .supply_of(vault_denom.clone())?
         .amount
-        .ok_or(ContractError::IncorrectShares)?
+        .unwrap()
         .amount
         .parse::<u128>()?
         .into();
@@ -127,6 +124,7 @@ pub fn handle_deposit_create_position_reply(
     // once tokenfactory has send hooks, we can remove the lockup and have the users
     // own the shares in their balance
     // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
+    // this is blocked by Osmosis v17 update
     let mint = MsgMint {
         sender: env.contract.address.to_string(),
         amount: Some(coin(user_shares.u128(), vault_denom).into()),
@@ -149,40 +147,40 @@ pub fn handle_deposit_create_position_reply(
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let bank_msg = refund_bank_msg(
-        &env,
         current_deposit,
         &resp,
         pool_config.token0,
         pool_config.token1,
     )?;
 
+    let position_ids = vec![total_position.position_id, resp.position_id];
+    let fungify_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
     // merge our position with the main position
     let fungify = SubMsg::reply_on_success(
         MsgFungifyChargedPositions {
-            position_ids: vec![total_position.position_id, resp.position_id],
+            position_ids,
             sender: env.contract.address.to_string(),
         },
         Replies::Fungify.into(),
     );
 
     //fungify our positions together and mint the user shares to the cl-vault
-    let mut response = Response::new().add_submessage(fungify).add_message(mint);
+    let mut response = Response::new().add_submessage(fungify).add_attributes(fungify_attrs).add_message(mint);
 
     // if we have any funds to refund, refund them
-    if let Some(msg) = bank_msg {
-        response = response.add_message(msg);
+    if let Some((msg, attr)) = bank_msg {
+        response = response.add_message(msg).add_attributes(attr);
     }
 
     Ok(response)
 }
 
 fn refund_bank_msg(
-    env: &Env,
     current_deposit: CurrentDeposit,
     resp: &MsgCreatePositionResponse,
     denom0: String,
     denom1: String,
-) -> Result<Option<BankMsg>, ContractError> {
+) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
     let refund0 = current_deposit
         .token0_in
         .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
@@ -191,22 +189,30 @@ fn refund_bank_msg(
         .token1_in
         .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
 
+    let mut attr: Vec<Attribute> = vec![];
+
     let mut coins: Vec<Coin> = vec![];
     if !refund0.is_zero() {
+        attr.push(Attribute::new("refund0-amount", refund0));
+        attr.push(Attribute::new("refund0-denom", denom0.as_str()));
+
         coins.push(coin(refund0.u128(), denom0))
     }
     if !refund1.is_zero() {
+        attr.push(Attribute::new("refund1-amount", refund1));
+        attr.push(Attribute::new("refund1-denom", denom1.as_str()));
+
         coins.push(coin(refund1.u128(), denom1))
     }
-    let bank_msg: Option<BankMsg> = if !coins.is_empty() {
-        Some(BankMsg::Send {
+    let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
+        Some((BankMsg::Send {
             to_address: current_deposit.sender.to_string(),
             amount: coins,
-        })
+        }, attr))
     } else {
         None
     };
-    Ok(bank_msg)
+    Ok((result))
 }
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -359,7 +365,7 @@ mod tests {
         let denom1 = "uatom".to_string();
 
         let response =
-            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -392,7 +398,7 @@ mod tests {
         let denom1 = "uatom".to_string();
 
         let response =
-            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -425,7 +431,7 @@ mod tests {
         let denom1 = "uatom".to_string();
 
         let response =
-            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap(),
@@ -458,7 +464,7 @@ mod tests {
         let denom1 = "uatom".to_string();
 
         let response =
-            refund_bank_msg(&env, current_deposit.clone(), &resp, denom0, denom1).unwrap();
+            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

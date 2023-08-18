@@ -25,6 +25,8 @@ use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use crate::vault::admin::execute_admin;
 
+use crate::vault::deposit::execute_any_deposit;
+use crate::vault::deposit::execute_exact_deposit;
 use crate::vault::range::execute_modify_range;
 use crate::vault::withdraw::execute_withdraw;
 
@@ -100,8 +102,8 @@ pub fn execute(
             amount: _,
             asset: _,
             recipient: _,
-        } => execute_any_deposit(),
-        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => execute_exact_deposit(deps, info, env, recipient),
+        } => unimplemented!(),
+        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => execute_exact_deposit(deps, env, &info, recipient),
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount)
         }
