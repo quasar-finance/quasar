@@ -22,9 +22,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
+    FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
+    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -500,6 +500,11 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
     // add a new fresh unlocked ibc lock
     IBC_LOCK.save(deps.storage, &Lock::new())?;
+
+    // goodbye join queue
+    while !FAILED_JOIN_QUEUE.is_empty(deps.storage)? {
+        FAILED_JOIN_QUEUE.pop_front(deps.storage)?;
+    }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
