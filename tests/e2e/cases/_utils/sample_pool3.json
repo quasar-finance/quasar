@@ -1,7 +1,7 @@
 {
-    "weights": "4fakestake,4uosmo",
-    "initial-deposit": "2000000000000fakestake,2000000000000uosmo",
+    "initial-deposit": "106055963258fakestake,56739266313uosmo",
     "swap-fee": "0.01",
     "exit-fee": "0.00",
-    "future-governor": "168h"
+    "future-governor": "168h",
+    "scaling-factors": "1,1"
 }

@@ -19,7 +19,7 @@ use crate::{
     ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
-        LpCache, RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, PENDING_UNBOND_QUEUE, RETURNING,
+        RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, PENDING_UNBOND_QUEUE, RETURNING,
         RETURN_SOURCE_PORT, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
@@ -54,11 +54,7 @@ pub fn do_unbond(
     Ok(PENDING_UNBOND_QUEUE.push_back(storage, &unbond)?)
 }
 
-pub fn batch_unbond(
-    storage: &mut dyn Storage,
-    env: &Env,
-    old_lp_shares: LpCache,
-) -> Result<Option<SubMsg>, ContractError> {
+pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMsg>, ContractError> {
     let mut total_exit = Uint128::zero();
     let mut pending: Vec<ReturningUnbond> = vec![];
 
@@ -85,8 +81,7 @@ pub fn batch_unbond(
     }
 
     // important to use lp_shares before it gets updated
-    let token_out_min_amount =
-        calculate_token_out_min_amount(storage, total_exit, old_lp_shares.locked_shares)?;
+    let token_out_min_amount = calculate_token_out_min_amount(storage)?;
 
     let msg = exit_swap(
         storage,
@@ -401,13 +396,7 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
         let env = mock_env();
 
-        let cache = crate::state::LpCache {
-            locked_shares: Uint128::new(500),
-            w_unlocked_shares: Uint128::zero(),
-            d_unlocked_shares: Uint128::zero(),
-        };
-
-        let res = batch_unbond(deps.as_mut().storage, &env, cache).unwrap();
+        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_none())
     }
 
@@ -418,8 +407,6 @@ mod tests {
         let env = mock_env();
         let owner = Addr::unchecked("bob");
         let id = "my-id".to_string();
-
-        let total_locked_shares = Uint128::new(500);
 
         // test specific setup
         LP_SHARES
@@ -467,8 +454,7 @@ mod tests {
             .save(deps.as_mut().storage, &Uint128::from(100u128))
             .unwrap();
 
-        let lp_cache = LP_SHARES.load(deps.as_mut().storage).unwrap();
-        let res = batch_unbond(deps.as_mut().storage, &env, lp_cache).unwrap();
+        let res = batch_unbond(deps.as_mut().storage, &env).unwrap();
         assert!(res.is_some());
 
         // checking above we have total exit amount = 100 + 101 + 102
@@ -480,12 +466,7 @@ mod tests {
             .fold(Uint128::zero(), |acc, u| acc + u.lp_shares);
         assert_eq!(expected_exit_amount, actual_exit_amount);
 
-        let token_out_min_amount = calculate_token_out_min_amount(
-            deps.as_mut().storage,
-            expected_exit_amount,
-            total_locked_shares,
-        )
-        .unwrap();
+        let token_out_min_amount = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
 
         // check that the packet is as we expect
         let ica_address = get_ica_address(
@@ -639,11 +620,7 @@ mod tests {
                 RawAmount::LpShares(val) => acc + val,
             });
 
-        let locked_shares = Uint128::from(100u128);
-
-        let token_out_min_amount =
-            calculate_token_out_min_amount(deps.as_mut().storage, total_exit, locked_shares)
-                .unwrap();
+        let token_out_min_amount = calculate_token_out_min_amount(deps.as_mut().storage).unwrap();
 
         let msg = exit_swap(
             deps.as_mut().storage,
