@@ -11,7 +11,7 @@ use quasar_types::ibc::IcsAck;
 
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
-use crate::error::ContractError;
+use crate::error::{ContractError, Trap};
 use crate::execute::execute_retry;
 use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
@@ -22,7 +22,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
+    Config, LpCache, OngoingDeposit, PendingBond, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
     FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
     START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
 };
@@ -501,10 +501,30 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     // add a new fresh unlocked ibc lock
     IBC_LOCK.save(deps.storage, &Lock::new())?;
 
-    // goodbye join queue
+    let mut fjq = vec![];
     while !FAILED_JOIN_QUEUE.is_empty(deps.storage)? {
-        FAILED_JOIN_QUEUE.pop_front(deps.storage)?;
+        let fj = FAILED_JOIN_QUEUE.pop_front(deps.storage)?;
+        fjq.push(fj.unwrap());
     }
+
+    TRAPS.save(
+        deps.storage,
+        (1, "undefined-purge".to_string()),
+        &Trap {
+            error: "rejoin purge".to_string(),
+            step: crate::helpers::IbcMsgKind::Ica(
+                crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                    bonds: fjq.into_iter().map(|b| OngoingDeposit {
+                        claim_amount: Uint128::new(1),
+                        raw_amount: RawAmount::LocalDenom(b.amount),
+                        owner: b.owner,
+                        bond_id: b.bond_id,
+                    }).collect(),
+                }),
+            ),
+            last_succesful: false,
+        },
+    )?;
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
