@@ -507,24 +507,29 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         fjq.push(fj.unwrap());
     }
 
-    TRAPS.save(
-        deps.storage,
-        (1, "undefined-purge".to_string()),
-        &Trap {
-            error: "rejoin purge".to_string(),
-            step: crate::helpers::IbcMsgKind::Ica(
-                crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                    bonds: fjq.into_iter().map(|b| OngoingDeposit {
-                        claim_amount: Uint128::new(1),
-                        raw_amount: RawAmount::LocalDenom(b.amount),
-                        owner: b.owner,
-                        bond_id: b.bond_id,
-                    }).collect(),
-                }),
-            ),
-            last_succesful: false,
-        },
-    )?;
+    if !fjq.is_empty() {
+        TRAPS.save(
+            deps.storage,
+            (1, "undefined-purge".to_string()),
+            &Trap {
+                error: "rejoin purge".to_string(),
+                step: crate::helpers::IbcMsgKind::Ica(
+                    crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
+                        bonds: fjq
+                            .into_iter()
+                            .map(|b| OngoingDeposit {
+                                claim_amount: Uint128::new(1),
+                                raw_amount: RawAmount::LocalDenom(b.amount),
+                                owner: b.owner,
+                                bond_id: b.bond_id,
+                            })
+                            .collect(),
+                    }),
+                ),
+                last_succesful: false,
+            },
+        )?;
+    }
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
@@ -548,11 +553,64 @@ mod tests {
     use crate::{
         bond::Bond,
         error::Trap,
+        queries::handle_trapped_errors_query,
         state::{PendingBond, Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
         test_helpers::default_setup,
     };
 
     use super::*;
+
+    #[test]
+    fn migrate_purges_queue() {
+        let env = mock_env();
+        let mut deps = mock_dependencies();
+
+        FAILED_JOIN_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(101),
+                    owner: Addr::unchecked("vault"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        FAILED_JOIN_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(101),
+                    owner: Addr::unchecked("vault"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        FAILED_JOIN_QUEUE
+            .push_back(
+                deps.as_mut().storage,
+                &Bond {
+                    amount: Uint128::new(101),
+                    owner: Addr::unchecked("vault"),
+                    bond_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+
+        let msg = MigrateMsg {
+            delete_traps: vec![],
+            delete_pending_acks: vec![],
+        };
+
+        migrate(deps.as_mut(), env, msg.clone()).unwrap();
+        assert!(FAILED_JOIN_QUEUE.is_empty(deps.as_mut().storage).unwrap());
+        assert_eq!(
+            handle_trapped_errors_query(deps.as_ref())
+                .unwrap()
+                .errors
+                .len(),
+            1
+        );
+    }
 
     #[test]
     fn migrate_msg_works_for_pending_acks() {
