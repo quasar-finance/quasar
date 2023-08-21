@@ -30,8 +30,7 @@ mod tests {
         },
     };
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
+        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v2::QuerySpotPriceResponse,
     };
     use proptest::collection::vec;
 
@@ -248,21 +247,12 @@ mod tests {
             // simulate that we received the ICQ ACK
             let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
-            // get the failed pending bonds total amount
-            let failed_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-                let amount = match bond.raw_amount {
-                    RawAmount::LocalDenom(amount) => amount,
-                    RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-                };
-                acc + amount
-            });
-
             // get the pending bonds total amount
             let pending_total_amount = pending_bonds.iter().fold(Uint128::zero(), |acc, bond| {
                 acc + bond.amount
             });
 
-            // check that the res amount matches the amount in both queues
+            // check that the res amount matches the amount in the pending queue ONLY
             // only if there are messages
             if res.messages.len() !=0 {
                 match &res.messages[0].msg {
@@ -271,7 +261,7 @@ mod tests {
                             amount,
                             &Coin {
                                 denom: "ibc/local_osmo".to_string(),
-                                amount: failed_total_amount + pending_total_amount,
+                                amount: pending_total_amount,
                             }
                         );
                     }

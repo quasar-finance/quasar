@@ -804,23 +804,14 @@ mod tests {
 
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
-        // get the failed pending bonds total amount
-        let pending_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-            let amount = match bond.raw_amount {
-                RawAmount::LocalDenom(amount) => amount,
-                RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-            };
-            acc + amount
-        });
-
-        // check that the res amount matches the amount in the failed join queue
+        // we do NOT transfer any token here, failed bonds were already transferred to the contract before failing and stay there
         match &res.messages[0].msg {
             CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
                 assert_eq!(
                     amount,
                     &Coin {
                         denom: "ibc/local_osmo".to_string(),
-                        amount: pending_total_amount,
+                        amount: Uint128::zero(),
                     }
                 );
             }
@@ -1027,28 +1018,19 @@ mod tests {
 
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
-        // get the failed pending bonds total amount
-        let failed_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-            let amount = match bond.raw_amount {
-                RawAmount::LocalDenom(amount) => amount,
-                RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-            };
-            acc + amount
-        });
-
         // get the pending bonds total amount
         let pending_total_amount = pedning_bonds
             .iter()
             .fold(Uint128::zero(), |acc, bond| acc + bond.amount);
 
-        // check that the res amount matches the amount in both queues
+        // check that the res amount matches the amount in the pending queue ONLY
         match &res.messages[0].msg {
             CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
                 assert_eq!(
                     amount,
                     &Coin {
                         denom: "ibc/local_osmo".to_string(),
-                        amount: failed_total_amount + pending_total_amount,
+                        amount: pending_total_amount,
                     }
                 );
             }

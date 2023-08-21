@@ -128,7 +128,7 @@ pub fn fold_bonds(
             FAILED_JOIN_QUEUE
                 .pop_front(storage)?
                 .ok_or(ContractError::QueueItemNotFound {
-                    queue: "bond".to_string(),
+                    queue: "failed_join".to_string(),
                 })?;
         let claim_amount = create_claim(
             storage,
@@ -137,9 +137,10 @@ pub fn fold_bonds(
             &item.bond_id,
             total_balance,
         )?;
-        total = total
-            .checked_add(item.amount)
-            .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
+        // we do not need to include failed bonds in total as we then transfer total (but failed bonds are already in the contract)
+        // total = total
+        //     .checked_add(item.amount)
+        //     .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
         REJOIN_QUEUE.push_back(
             storage,
             &OngoingDeposit {

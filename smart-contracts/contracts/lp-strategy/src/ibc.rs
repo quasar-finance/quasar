@@ -483,7 +483,6 @@ pub fn handle_icq_ack(
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
 
-    // TODO: decide if we use exit_total_pool or the UNBOND_QUEUE added amount here
     let parsed_exit_pool_out = consolidate_exit_pool_amount_into_local_denom(
         storage,
         &exit_pool_unbonds.tokens_out,
