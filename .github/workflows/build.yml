@@ -22,10 +22,7 @@ jobs:
     strategy:
       matrix:
         arch: [ amd64, arm64 ]
-        targetos: [ darwin, linux ]
-        include:
-          - targetos: darwin
-            arch: arm64
+        targetos: [ linux ]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
