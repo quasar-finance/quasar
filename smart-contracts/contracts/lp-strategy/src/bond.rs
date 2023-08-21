@@ -74,7 +74,7 @@ pub fn batch_bond(
 
     if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
         if amount.is_zero() {
-            return Ok(None)
+            Ok(None)
         } else {
             Ok(Some(do_transfer(
                 storage,
@@ -141,10 +141,7 @@ pub fn fold_bonds(
             &item.bond_id,
             total_balance,
         )?;
-        // we do not need to include failed bonds in total as we then transfer total (but failed bonds are already in the contract)
-        // total = total
-        //     .checked_add(item.amount)
-        //     .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
+
         REJOIN_QUEUE.push_back(
             storage,
             &OngoingDeposit {
