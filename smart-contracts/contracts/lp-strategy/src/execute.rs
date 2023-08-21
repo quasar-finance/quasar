@@ -805,18 +805,8 @@ mod tests {
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
         // we do NOT transfer any token here, failed bonds were already transferred to the contract before failing and stay there
-        match &res.messages[0].msg {
-            CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
-                assert_eq!(
-                    amount,
-                    &Coin {
-                        denom: "ibc/local_osmo".to_string(),
-                        amount: Uint128::zero(),
-                    }
-                );
-            }
-            _ => panic!("unexpected message type"),
-        }
+        // as we do not have any bond_queue items, we return None here
+        assert!(res.messages.is_empty());
 
         // check that the failed join queue is emptied
         assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());

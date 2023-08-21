@@ -73,14 +73,18 @@ pub fn batch_bond(
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
-        Ok(Some(do_transfer(
-            storage,
-            env,
-            amount,
-            transfer_chan,
-            to_address,
-            deposits,
-        )?))
+        if amount.is_zero() {
+            return Ok(None)
+        } else {
+            Ok(Some(do_transfer(
+                storage,
+                env,
+                amount,
+                transfer_chan,
+                to_address,
+                deposits,
+            )?))
+        }
     } else {
         Ok(None)
     }
