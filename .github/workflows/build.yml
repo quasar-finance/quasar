@@ -16,10 +16,9 @@ concurrency:
 # This workflow makes x86_64 binaries for linux.
 # TODO: add darwin later
 jobs:
-  build:
+  build-go:
     name: quasar-${{ matrix.targetos }}-${{ matrix.arch }}
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         arch: [ amd64, arm64 ]
@@ -41,9 +40,9 @@ jobs:
             Makefile
             .github/workflows/build.yml
       - name: Setup Golang
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.20.5
+          go-version: 1.20.7
         env:
           GOOS: ${{ matrix.targetos }}
           GOARCH: ${{ matrix.arch }}
@@ -51,13 +50,32 @@ jobs:
         run: go version
       - name: Build quasarnoded
         run: make build-reproducible-${{ matrix.arch }}
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
           path: build/quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
+  build-rust:
+    name: quasar-${{ matrix.targetos }}-${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [ amd64, arm64 ]
+        targetos: [ darwin, linux ]
+        include:
+          - targetos: darwin
+            arch: arm64
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Get git diff
+        uses: technote-space/get-diff-action@v6.1.2
+        with:
+          PATTERNS: |
+            **/**.rs
+            Makefile
       - name: Build smart contracts
         run: make compile-wasm-artifacts
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: smart-contracts
           path: |
