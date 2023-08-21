@@ -27,7 +27,6 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Get git diff
-        if: env.GIT_DIFF
         uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
@@ -66,7 +65,6 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Get git diff
-        if: env.GIT_DIFF
         uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
