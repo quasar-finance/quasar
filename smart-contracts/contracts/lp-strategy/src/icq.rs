@@ -20,8 +20,8 @@ use crate::{
     helpers::{check_icq_channel, create_ibc_ack_submsg, get_ica_address, IbcMsgKind},
     state::{
         BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES,
-        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_JOIN_AMOUNT_IN,
-        UNBOND_QUEUE,
+        OSMO_LOCK, PENDING_BOND_QUEUE, PENDING_UNBOND_QUEUE, SIMULATED_EXIT_SHARES_IN,
+        SIMULATED_JOIN_AMOUNT_IN, UNBOND_QUEUE,
     },
 };
 
@@ -67,21 +67,26 @@ pub fn try_icq(
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
         let bonding_amount = pending_bonds_value + failed_bonds_amount;
+
+        // we dump pending unbonds into the active unbond queue and save the total amount of shares that will be unbonded
+        let mut pending_unbonds_shares = Uint128::zero();
+        while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
+            let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
+            if let Some(unbond) = unbond {
+                UNBOND_QUEUE.push_back(storage, &unbond)?;
+                pending_unbonds_shares = pending_unbonds_shares.checked_add(unbond.lp_shares)?;
+            }
+        }
+
         // deposit needs to internally rebuild the amount of funds under the smart contract
-        let packet = prepare_full_query(storage, env.clone(), bonding_amount)?;
+        let packet =
+            prepare_full_query(storage, env.clone(), bonding_amount, pending_unbonds_shares)?;
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
             data: to_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
-
-        while !PENDING_UNBOND_QUEUE.is_empty(storage)? {
-            let unbond = PENDING_UNBOND_QUEUE.pop_front(storage)?;
-            if let Some(unbond) = unbond {
-                UNBOND_QUEUE.push_back(storage, &unbond)?;
-            }
-        }
 
         let channel = ICQ_CHANNEL.load(storage)?;
 
@@ -100,6 +105,7 @@ pub fn prepare_full_query(
     storage: &mut dyn Storage,
     _env: Env,
     bonding_amount: Uint128,
+    pending_unbonds_shares: Uint128,
 ) -> Result<InterchainQueryPacketData, ContractError> {
     let ica_channel = ICA_CHANNEL.load(storage)?;
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
@@ -129,8 +135,8 @@ pub fn prepare_full_query(
     // we save the amount to scale the slippage against in the icq ack for other incoming bonds
     SIMULATED_JOIN_AMOUNT_IN.save(storage, &bonding_amount)?;
 
-    // we have to check that bonding amount is > 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
-    let checked_join_pool = match bonding_amount > 1u128.into() {
+    // we have to check that bonding amount is >= 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    let checked_join_pool = match bonding_amount >= 1u128.into() {
         true => Some(QueryCalcJoinPoolSharesRequest {
             pool_id: config.pool_id,
             tokens_in: vec![OsmoCoin {
@@ -141,9 +147,18 @@ pub fn prepare_full_query(
         false => None,
     };
 
-    // we simulate the result of an exit pool of our entire locked vault to get the total value in lp tokens
-    // any funds still in one of the unlocked states when the contract can dispatch an icq again, should not be
-    // taken into account, since they are either unlocking (out of the vault value), or errored in deposit
+    // we save the amount to scale the slippage against in the icq ack for other incoming unbonds?
+    SIMULATED_EXIT_SHARES_IN.save(storage, &pending_unbonds_shares)?;
+
+    // we have to check that unbonding amount is >= 1u128, because otherwise we get ABCI error code 1 (see osmosis: osmosis/x/gamm/pool-models/stableswap/amm.go:299 for the error we get in stableswap pools)
+    let checked_exit_pool_unbonds = match pending_unbonds_shares >= 1u128.into() {
+        true => Some(QueryCalcExitPoolCoinsFromSharesRequest {
+            pool_id: config.pool_id,
+            share_in_amount: pending_unbonds_shares.to_string(),
+        }),
+        false => None,
+    };
+
     let shares = LP_SHARES.load(storage)?.locked_shares;
     let shares_out = if !shares.is_zero() {
         shares
@@ -151,7 +166,7 @@ pub fn prepare_full_query(
         Uint128::one()
     };
 
-    let exit_pool = QueryCalcExitPoolCoinsFromSharesRequest {
+    let exit_total_pool = QueryCalcExitPoolCoinsFromSharesRequest {
         pool_id: config.pool_id,
         share_in_amount: shares_out.to_string(),
     };
@@ -177,7 +192,7 @@ pub fn prepare_full_query(
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
         )
         .add_request(
-            exit_pool.encode_to_vec().into(),
+            exit_total_pool.encode_to_vec().into(),
             "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
         )
         .add_request(
@@ -192,7 +207,6 @@ pub fn prepare_full_query(
         )
     }
 
-    // todo: turn this into an if let
     // only query LockedByID if we have a lock_id
     if let Some(lock_id) = OSMO_LOCK.may_load(storage)? {
         let lock_by_id = LockedRequest { lock_id };
@@ -200,6 +214,14 @@ pub fn prepare_full_query(
             lock_by_id.encode_to_vec().into(),
             "/osmosis.lockup.Query/LockedByID".to_string(),
         );
+    }
+
+    // if there're items in the unbond_queue, we query CalcExitPoolCoinsFromShares for the added share amount
+    if let Some(exit_pool) = checked_exit_pool_unbonds {
+        q = q.add_request(
+            exit_pool.encode_to_vec().into(),
+            "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares".to_string(),
+        )
     }
 
     Ok(q.encode_pkt())
@@ -309,7 +331,13 @@ mod tests {
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),
             data: to_binary(
-                &prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(0)).unwrap(),
+                &prepare_full_query(
+                    deps.as_mut().storage,
+                    env.clone(),
+                    Uint128::new(0),
+                    Uint128::zero(),
+                )
+                .unwrap(),
             )
             .unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
