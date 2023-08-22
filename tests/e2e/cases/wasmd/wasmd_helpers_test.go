@@ -154,5 +154,5 @@ func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	// Read the contract from os file
 	poolBz, err = os.ReadFile(osmosisPool3Path)
 	s.Require().NoError(err)
-	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
+	s.CreateStableswapPoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
 }
