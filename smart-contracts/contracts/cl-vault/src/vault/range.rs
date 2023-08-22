@@ -30,7 +30,7 @@ use crate::{
         POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
     swap::swap,
-    ContractError,
+    ContractError, merge::MergeResponse,
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
@@ -417,7 +417,7 @@ pub fn handle_iteration_create_position_reply(
         sender: env.contract.address.to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Fungify.into());
+    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Merge.into());
 
     Ok(Response::new()
         .add_submessage(msg)
@@ -430,18 +430,15 @@ pub fn handle_iteration_create_position_reply(
 }
 
 // store new position id and exit
-pub fn handle_fungify_charged_positions_response(
-    deps: DepsMut,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
+pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     deps.api.debug("fungifying");
-    let fungify_positions_msg: MsgFungifyChargedPositionsResponse = data.try_into()?;
+    let merge_response: MergeResponse = data.try_into()?;
 
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
     POSITION.save(
         deps.storage,
         &Position {
-            position_id: fungify_positions_msg.new_position_id,
+            position_id: merge_response.new_position_id,
         },
     )?;
 

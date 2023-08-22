@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
-    coin, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    coin, to_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, DepsMut, Env,
+    Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 use cw_dex_router::helpers::receive_asset;
 
@@ -20,6 +20,7 @@ use osmosis_std::types::{
 use crate::{
     concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
+    msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
     ContractError,
@@ -177,22 +178,27 @@ pub fn handle_deposit_create_position_reply(
 
     let position_ids = vec![total_position.position_id, resp.position_id];
     deps.api.debug(format!("{:?}", position_ids).as_str());
-    let fungify_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
-    // merge our position with the main position
-    let fungify = SubMsg::reply_on_success(
-        MsgFungifyChargedPositions {
+    let merge_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
+    let merge_msg =
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids,
-            sender: env.contract.address.to_string(),
+        }));
+    // merge our position with the main position
+    let merge = SubMsg::reply_on_success(
+        cosmwasm_std::WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&merge_msg)?,
+            funds: vec![],
         },
-        Replies::Fungify.into(),
+        Replies::Merge.into(),
     );
 
     // deps.api.debug(format!("{:?}", fungify).as_str());
     deps.api.debug(format!("{:?}", mint).as_str());
     //fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
-        .add_submessage(fungify)
-        .add_attributes(fungify_attrs)
+        .add_submessage(merge)
+        .add_attributes(merge_attrs)
         .add_message(mint);
 
     // if we have any funds to refund, refund them
@@ -330,7 +336,7 @@ mod tests {
                     position_ids: vec![1, 2],
                     sender: env.contract.address.to_string()
                 },
-                Replies::Fungify.into()
+                Replies::Merge.into()
             )
         );
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty

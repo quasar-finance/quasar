@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::{Deque, Item, Map};
 
-use crate::rewards::Rewards;
+use crate::{merge::CurrentMergeWithdraw, rewards::Rewards};
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
@@ -81,6 +81,9 @@ pub struct SwapDepositMergeState {
 //     PreDeposit2 { ... },
 //     PostModifyRange { ... },
 // }
+
+/// The merge of positions currently being executed
+pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
