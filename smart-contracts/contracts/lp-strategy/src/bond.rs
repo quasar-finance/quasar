@@ -323,8 +323,13 @@ mod tests {
         assert!(res.is_some());
 
         // mocking the pending bonds is real ugly here
-        let packet =
-            prepare_full_query(deps.as_mut().storage, env.clone(), Uint128::new(1000)).unwrap();
+        let packet = prepare_full_query(
+            deps.as_mut().storage,
+            env.clone(),
+            Uint128::new(1000),
+            Uint128::zero(),
+        )
+        .unwrap();
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
