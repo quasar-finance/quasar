@@ -89,6 +89,8 @@ pub struct SwapDepositMergeState {
 }
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
+pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
+
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
