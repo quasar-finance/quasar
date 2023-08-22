@@ -56,6 +56,21 @@ pub struct ModifyRangeState {
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
 }
+
+#[cw_serde]
+pub struct CurrentDeposit {
+    pub token0_in: Uint128,
+    pub token1_in: Uint128,
+    pub sender: Addr,
+}
+
+#[cw_serde]
+pub struct SwapDepositMergeState {
+    pub target_lower_tick: i64,
+    pub target_upper_tick: i64,
+    pub target_range_position_ids: Vec<u64>,
+}
+
 // todo: i kinda want to rename above to this
 // #[cw_serde]
 // pub enum ModifyRangeState {
@@ -67,15 +82,13 @@ pub struct ModifyRangeState {
 //     PostModifyRange { ... },
 // }
 
-#[cw_serde]
 pub struct SwapDepositMergeState {
     pub target_lower_tick: i64,
     pub target_upper_tick: i64,
     pub target_range_position_ids: Vec<u64>,
 }
 
-pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
-
+pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");

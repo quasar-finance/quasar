@@ -3,6 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg;
 use cosmwasm_std::Reply;
 use cosmwasm_std::SubMsg;
+use cosmwasm_std::SubMsgResult;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
@@ -77,7 +78,10 @@ pub fn instantiate(
     )))
 }
 
-pub fn handle_create_denom_reply(deps: DepsMut, data: Binary) -> Result<Response, ContractError> {
+pub fn handle_create_denom_reply(
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
     let response: MsgCreateDenomResponse = data.try_into()?;
     VAULT_DENOM.save(deps.storage, &response.new_token_denom)?;
 
@@ -106,7 +110,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Lockup(_) => todo!(),
+                crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,

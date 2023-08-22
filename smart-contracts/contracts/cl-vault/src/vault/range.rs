@@ -1,6 +1,10 @@
 use cosmwasm_std::{
     Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage,
+<<<<<<< HEAD
     SubMsg, Uint128,
+=======
+    SubMsg, SubMsgResult, Uint128,
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
 };
 
 use osmosis_std::types::{
@@ -122,6 +126,7 @@ pub fn execute_modify_range_ticks(
 }
 
 // do create new position
+<<<<<<< HEAD
 pub fn handle_withdraw_position_response(
     storage: &mut dyn Storage,
     _querier: &QuerierWrapper,
@@ -130,12 +135,22 @@ pub fn handle_withdraw_position_response(
     msg: MsgWithdrawPositionResponse,
 ) -> Result<Response, ContractError> {
     let modify_range_state = match MODIFY_RANGE_STATE.load(storage)? {
+=======
+pub fn handle_withdraw_position_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let msg: MsgWithdrawPositionResponse = data.try_into()?;
+
+    let modify_range_state = match MODIFY_RANGE_STATE.load(deps.storage)? {
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
 
-    let pool_config = POOL_CONFIG.load(storage)?;
-    let vault_config = VAULT_CONFIG.load(storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
@@ -184,7 +199,10 @@ pub fn handle_withdraw_position_response(
             .to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(create_position_msg, Replies::CreatePosition.into());
+    let msg: SubMsg = SubMsg::reply_always(
+        create_position_msg,
+        Replies::RangeInitialCreatePosition.into(),
+    );
 
     Ok(Response::new()
         .add_submessage(msg)
@@ -197,13 +215,38 @@ pub fn handle_withdraw_position_response(
 }
 
 // do swap
-pub fn handle_create_position_response(
+pub fn handle_initial_create_position_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let create_position_message: MsgCreatePositionResponse = data.try_into()?;
+
+    // target range for our imminent swap
+    let target_lower_tick = create_position_message.lower_tick;
+    let target_upper_tick = create_position_message.upper_tick;
+
+    do_swap_deposit_merge(
+        deps.storage,
+        &deps.querier,
+        env,
+        target_lower_tick,
+        target_upper_tick,
+    )
+}
+
+// TODO move this to a callback execute msg on the contract?
+/// this function assumes that we are swapping and depositing into a valid range
+///
+/// It also calculates the exact amount we should be swapping based on current balances and the new range
+pub fn do_swap_deposit_merge(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
     env: Env,
-    info: MessageInfo,
-    create_position_message: MsgCreatePositionResponse,
+    target_lower_tick: i64,
+    target_upper_tick: i64,
 ) -> Result<Response, ContractError> {
+<<<<<<< HEAD
     // target range for our imminent swap
     let target_lower_tick = create_position_message.lower_tick;
     let target_upper_tick = create_position_message.upper_tick;
@@ -229,6 +272,8 @@ pub fn do_swap_deposit_merge(
     target_lower_tick: i64,
     target_upper_tick: i64,
 ) -> Result<Response, ContractError> {
+=======
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(storage)?;
     if (swap_deposit_merge_state.is_some()) {
         return Err(ContractError::SwapInProgress {});
@@ -306,26 +351,33 @@ pub fn do_swap_deposit_merge(
 }
 
 // do deposit
-pub fn handle_swap_response(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+pub fn handle_swap_reply(
+    deps: DepsMut,
     env: Env,
+<<<<<<< HEAD
     _info: MessageInfo,
     _msg: MsgSwapExactAmountInResponse,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(storage)? {
+=======
+    data: SubMsgResult
+) -> Result<Response, ContractError> {
+    let msg: MsgSwapExactAmountInResponse = data.try_into()?;
+
+    let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
         Some(swap_deposit_merge) => swap_deposit_merge,
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
     };
 
-    let pool_config = POOL_CONFIG.load(storage)?;
-    let vault_config = VAULT_CONFIG.load(storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // get post swap balances to create positions with
     let balance0 =
-        querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
+    deps.querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
     let balance1 =
-        querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
+    deps.querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
     // todo: extract this to a function
     let create_position_msg = MsgCreatePosition {
@@ -362,7 +414,10 @@ pub fn handle_swap_response(
         .to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(create_position_msg, Replies::CreatePosition.into());
+    let msg: SubMsg = SubMsg::reply_always(
+        create_position_msg,
+        Replies::RangeInitialCreatePosition.into(),
+    );
 
     Ok(Response::new()
         .add_submessage(msg)
@@ -387,6 +442,7 @@ pub fn handle_swap_response(
 }
 
 // do merge position & exit
+<<<<<<< HEAD
 pub fn handle_deposit_response(
     storage: &mut dyn Storage,
     _querier: &QuerierWrapper,
@@ -395,6 +451,16 @@ pub fn handle_deposit_response(
     create_position_message: MsgCreatePositionResponse,
 ) -> Result<Response, ContractError> {
     let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(storage)? {
+=======
+pub fn handle_iteration_create_position_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let create_position_message: MsgCreatePositionResponse = data.try_into()?;
+
+    let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
         Some(swap_deposit_merge) => swap_deposit_merge,
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
     };
@@ -403,7 +469,11 @@ pub fn handle_deposit_response(
         .target_range_position_ids
         .push(create_position_message.position_id);
 
+<<<<<<< HEAD
     SWAP_DEPOSIT_MERGE_STATE.save(storage, &swap_deposit_merge_state)?;
+=======
+    SWAP_DEPOSIT_MERGE_STATE.save(deps.storage, &swap_deposit_merge_state)?;
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
 
     let fungify_positions_msg = concentratedliquidity::v1beta1::MsgFungifyChargedPositions {
         position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
@@ -424,6 +494,7 @@ pub fn handle_deposit_response(
 
 // store new position id and exit
 pub fn handle_fungify_charged_positions_response(
+<<<<<<< HEAD
     storage: &mut dyn Storage,
     _querier: &QuerierWrapper,
     _env: Env,
@@ -431,8 +502,16 @@ pub fn handle_fungify_charged_positions_response(
     fungify_positions_msg: MsgFungifyChargedPositionsResponse,
 ) -> Result<Response, ContractError> {
     SWAP_DEPOSIT_MERGE_STATE.remove(storage);
+=======
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let fungify_positions_msg: MsgFungifyChargedPositionsResponse = data.try_into()?;
+
+    SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
+>>>>>>> 5671ea628f15feb06c0175b4d5247418cbe3718d
     POSITION.save(
-        storage,
+        deps.storage,
         &Position {
             position_id: fungify_positions_msg.new_position_id,
         },

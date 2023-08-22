@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, BankMsg, Binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    Uint128,
+    SubMsgResult, Uint128,
 };
 use cw_utils::{must_pay, one_coin};
 use osmosis_std::types::osmosis::{
@@ -74,7 +74,10 @@ fn withdraw(
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
-fn handle_withdraw_user_reply(deps: DepsMut, data: Binary) -> Result<Response, ContractError> {
+pub fn handle_withdraw_user_reply(
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
@@ -94,7 +97,7 @@ fn handle_withdraw_user_reply(deps: DepsMut, data: Binary) -> Result<Response, C
 #[cfg(test)]
 mod tests {
     use crate::state::PoolConfig;
-    use cosmwasm_std::{testing::mock_dependencies, Addr, CosmosMsg};
+    use cosmwasm_std::{testing::mock_dependencies, Addr, CosmosMsg, SubMsgResponse};
 
     use super::*;
 
@@ -118,14 +121,21 @@ mod tests {
             )
             .unwrap();
 
-        let reply = MsgWithdrawPositionResponse {
+        let msg = MsgWithdrawPositionResponse {
             amount0: "1000".to_string(),
             amount1: "1000".to_string(),
         }
         .try_into()
         .unwrap();
 
-        let response = handle_withdraw_user_reply(deps.as_mut(), reply).unwrap();
+        let response = handle_withdraw_user_reply(
+            deps.as_mut(),
+            SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(msg),
+            }),
+        )
+        .unwrap();
         assert_eq!(
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
