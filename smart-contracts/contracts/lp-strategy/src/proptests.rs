@@ -19,7 +19,7 @@ mod tests {
         ibc_lock::Lock,
         state::{
             OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK, LOCK_ADMIN,
-            PENDING_BOND_QUEUE, TRAPS,
+            PENDING_BOND_QUEUE, REJOIN_QUEUE, TRAPS,
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
@@ -78,9 +78,9 @@ mod tests {
 
             // mock the failed join pool trap with 3 bonds
             let failed = PendingBond {
-                bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((claim, raw), owner), id)| {
+                bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((_claim, raw), owner), id)| {
                     OngoingDeposit {
-                        claim_amount: Uint128::new(*claim),
+                        claim_amount: Uint128::new(*raw),
                         raw_amount: RawAmount::LocalDenom(Uint128::new(*raw)),
                         owner: Addr::unchecked(owner),
                         bond_id: id.to_string(),
@@ -273,6 +273,11 @@ mod tests {
             // check that the failed join & pending queues are emptied
             prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
             prop_assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
+
+            // failed bonds should be now in the REJOIN_QUEUE
+            let rejoin_queue: Result<Vec<OngoingDeposit>, StdError> =
+            REJOIN_QUEUE.iter(&deps.storage).unwrap().collect();
+            assert_eq!(failed.bonds, rejoin_queue.unwrap());
         }
     }
 }
