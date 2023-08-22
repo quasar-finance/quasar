@@ -47,7 +47,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -329,8 +329,11 @@ pub fn handle_transfer_ack(
     let total_amount =
         transferred_amount + failed_bonds_amount + usable_base_token_compound_balance;
 
-    let pending_rejoins: StdResult<Vec<OngoingDeposit>> = REJOIN_QUEUE.iter(storage)?.collect();
-    pending.bonds.append(&mut pending_rejoins?);
+    // remove all items from REJOIN_QUEUE & add them to the deposits: Vec<OngoingDeposit>
+    while !REJOIN_QUEUE.is_empty(storage)? {
+        let rejoin = REJOIN_QUEUE.pop_front(storage)?;
+        pending.bonds.push(rejoin.unwrap());
+    }
 
     let msg = do_ibc_join_pool_swap_extern_amount_in(
         storage,

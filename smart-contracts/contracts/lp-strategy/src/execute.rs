@@ -130,7 +130,7 @@ mod tests {
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
 
     use crate::ibc::handle_icq_ack;
-    use crate::state::PENDING_BOND_QUEUE;
+    use crate::state::{PENDING_BOND_QUEUE, REJOIN_QUEUE};
     use crate::test_helpers::{create_query_response, pending_bond_to_bond};
     use crate::{
         contract::execute_try_icq,
@@ -828,19 +828,19 @@ mod tests {
         let failed = PendingBond {
             bonds: vec![
                 OngoingDeposit {
-                    claim_amount: Uint128::new(100),
+                    claim_amount: Uint128::new(1000),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
                     owner: Addr::unchecked("address"),
                     bond_id: "1".to_string(),
                 },
                 OngoingDeposit {
-                    claim_amount: Uint128::new(99),
+                    claim_amount: Uint128::new(999),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(999)),
                     owner: Addr::unchecked("address"),
                     bond_id: "2".to_string(),
                 },
                 OngoingDeposit {
-                    claim_amount: Uint128::new(101),
+                    claim_amount: Uint128::new(1000),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
                     owner: Addr::unchecked("address"),
                     bond_id: "3".to_string(),
@@ -861,7 +861,7 @@ mod tests {
             .unwrap();
 
         // mock pending deposits and add them to the pending queue
-        let pedning_bonds = vec![
+        let pending_bonds = vec![
             Bond {
                 amount: Uint128::new(5_000),
                 owner: Addr::unchecked("address"),
@@ -874,7 +874,7 @@ mod tests {
             },
         ];
 
-        for bond in pedning_bonds.iter() {
+        for bond in pending_bonds.iter() {
             PENDING_BOND_QUEUE
                 .push_back(deps.as_mut().storage, bond)
                 .unwrap();
@@ -1009,7 +1009,7 @@ mod tests {
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
         // get the pending bonds total amount
-        let pending_total_amount = pedning_bonds
+        let pending_total_amount = pending_bonds
             .iter()
             .fold(Uint128::zero(), |acc, bond| acc + bond.amount);
 
@@ -1030,5 +1030,10 @@ mod tests {
         // check that the failed join & pending queues are emptied
         assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
         assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
+
+        // failed bonds should be now in the REJOIN_QUEUE
+        let rejoin_queue: Result<Vec<OngoingDeposit>, StdError> =
+            REJOIN_QUEUE.iter(&deps.storage).unwrap().collect();
+        assert_eq!(failed.bonds, rejoin_queue.unwrap());
     }
 }
