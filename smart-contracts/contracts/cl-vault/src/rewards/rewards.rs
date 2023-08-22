@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Uint128};
+use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Uint128};
 
 use crate::error::ContractResult;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -86,8 +86,29 @@ impl Rewards {
             })
     }
 
-    pub fn into_coins(self) -> Vec<Coin> {
+    pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
+        let rewards = self.into_coins();
+        self.0.clear();
+
+        Ok(BankMsg::Send {
+            to_address: recipient.into(),
+            amount: rewards,
+        }
+        .into())
+    }
+
+    pub fn into_attributes(&self) -> Vec<Attribute> {
         self.0
+            .iter()
+            .map(|c| Attribute {
+                key: c.denom.clone(),
+                value: c.amount.to_string(),
+            })
+            .collect()
+    }
+
+    pub fn into_coins(&self) -> Vec<Coin> {
+        self.0.clone()
     }
 
     pub fn from_coins(coins: Vec<Coin>) -> Self {

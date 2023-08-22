@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, BankMsg, Binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    Uint128,
+    SubMsgResult, Uint128,
 };
 use cw_utils::{must_pay, one_coin};
 use osmosis_std::types::osmosis::{
@@ -19,12 +19,20 @@ pub fn execute_withdraw(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    sender: &str,
+    recipient: Option<String>,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
+    let receiver = recipient.unwrap_or(info.sender.to_string());
+
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // update the user's shares
     let shares = must_pay(&info, vault_denom.as_str())?;
+
+    // shares sent in should equal the amount requested. This is redundant but its to comply with the vault standard
+    if shares != amount {
+        return Err(ContractError::IncorrectShares {});
+    }
 
     // burn the shares
     let burn_coin = one_coin(&info)?;
@@ -35,7 +43,7 @@ pub fn execute_withdraw(
     }
     .into();
 
-    let addr = deps.api.addr_validate(sender)?;
+    let addr = deps.api.addr_validate(&receiver)?;
     CURRENT_WITHDRAWER.save(deps.storage, &addr)?;
 
     // withdraw the user's funds from the position
@@ -66,7 +74,10 @@ fn withdraw(
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
-fn handle_withdraw_user_reply(deps: DepsMut, data: Binary) -> Result<Response, ContractError> {
+pub fn handle_withdraw_user_reply(
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
@@ -86,7 +97,7 @@ fn handle_withdraw_user_reply(deps: DepsMut, data: Binary) -> Result<Response, C
 #[cfg(test)]
 mod tests {
     use crate::state::PoolConfig;
-    use cosmwasm_std::{testing::mock_dependencies, Addr, CosmosMsg};
+    use cosmwasm_std::{testing::mock_dependencies, Addr, CosmosMsg, SubMsgResponse};
 
     use super::*;
 
@@ -110,14 +121,21 @@ mod tests {
             )
             .unwrap();
 
-        let reply = MsgWithdrawPositionResponse {
+        let msg = MsgWithdrawPositionResponse {
             amount0: "1000".to_string(),
             amount1: "1000".to_string(),
         }
         .try_into()
         .unwrap();
 
-        let response = handle_withdraw_user_reply(deps.as_mut(), reply).unwrap();
+        let response = handle_withdraw_user_reply(
+            deps.as_mut(),
+            SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(msg),
+            }),
+        )
+        .unwrap();
         assert_eq!(
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {

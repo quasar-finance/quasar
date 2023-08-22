@@ -29,6 +29,15 @@ pub enum ContractError {
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
 
+    #[error("Cannot do two swaps at the same time")]
+    SwapInProgress,
+
+    #[error("Swap deposit merge state item not found")]
+    SwapDepositMergeStateNotFound,
+
+    #[error("Vault shares sent in does not equal amount requested")]
+    IncorrectShares,
+
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
