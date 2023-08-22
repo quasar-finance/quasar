@@ -4,14 +4,18 @@ use cosmwasm_std::CosmosMsg;
 use cosmwasm_std::Reply;
 use cosmwasm_std::SubMsg;
 use cosmwasm_std::SubMsgResult;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
 
+use crate::concentrated_liquidity::create_position;
 use crate::error::ContractError;
 use crate::error::ContractResult;
+use crate::helpers::must_pay_two;
 use crate::msg::ModifyRangeMsg;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
@@ -19,7 +23,9 @@ use crate::query::query_pool;
 use crate::reply::handle_reply;
 use crate::reply::Replies;
 
+use crate::state::Position;
 use crate::state::LOCKUP_DURATION;
+use crate::state::POSITION;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
@@ -38,7 +44,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
@@ -56,8 +62,8 @@ pub fn instantiate(
         deps.storage,
         &PoolConfig {
             pool_id: pool.id,
-            token0: pool.token0,
-            token1: pool.token1,
+            token0: pool.token0.clone(),
+            token1: pool.token1.clone(),
         },
     )?;
 
@@ -74,10 +80,44 @@ pub fn instantiate(
     }
     .into();
 
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        create_denom,
-        Replies::CreateDenom as u64,
-    )))
+    // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
+    let (initial0, initial1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+
+    let create_pos = create_position(
+        deps.storage,
+        &env,
+        msg.initial_lower_tick,
+        msg.initial_upper_tick,
+        vec![initial0, initial1],
+        Uint128::zero(),
+        Uint128::zero(),
+    )?;
+
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            create_denom,
+            Replies::CreateDenom as u64,
+        ))
+        .add_submessage(SubMsg::reply_on_success(
+            create_pos,
+            Replies::InstantiateCreatePosition as u64,
+        )))
+}
+
+pub fn handle_instantiate_create_position_reply(
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let response: MsgCreatePositionResponse = data.try_into()?;
+    POSITION.save(
+        deps.storage,
+        &Position {
+            position_id: response.position_id,
+        },
+    )?;
+    Ok(Response::new()
+        .add_attribute("initial-position", response.position_id.to_string())
+        .add_attribute("initial-liquidity", response.liquidity_created))
 }
 
 pub fn handle_create_denom_reply(
@@ -102,7 +142,7 @@ pub fn execute(
             amount: _,
             asset: _,
             recipient: _,
-        } => todo!(),
+        } => unimplemented!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, &info, recipient)
         }
@@ -114,6 +154,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
+                crate::msg::ExtensionExecuteMsg::Merge(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,

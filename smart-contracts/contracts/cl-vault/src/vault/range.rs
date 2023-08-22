@@ -18,7 +18,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    concentrated_liquidity::get_position,
+    concentrated_liquidity::{create_position, get_position, may_get_position},
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
@@ -249,7 +249,7 @@ pub fn do_swap_deposit_merge(
     target_upper_tick: i64,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(storage)?;
-    if (swap_deposit_merge_state.is_some()) {
+    if swap_deposit_merge_state.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
 
@@ -328,8 +328,7 @@ pub fn do_swap_deposit_merge(
 pub fn handle_swap_reply(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
-    _msg: MsgSwapExactAmountInResponse,
+    data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let msg: MsgSwapExactAmountInResponse = data.try_into()?;
 
@@ -455,6 +454,7 @@ pub fn handle_fungify_charged_positions_response(
     _info: MessageInfo,
     fungify_positions_msg: MsgFungifyChargedPositionsResponse,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("fungifying");
     let fungify_positions_msg: MsgFungifyChargedPositionsResponse = data.try_into()?;
 
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);

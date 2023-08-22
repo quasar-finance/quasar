@@ -15,6 +15,8 @@ pub enum ExtensionExecuteMsg {
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
+    /// provides a fungify callback interface for the contract to use
+    Merge(MergePositionMsg),
     /// Execute a message from the lockup extension.
     Lockup(LockupExecuteMsg),
     /// Execute a message from the force unlock extension.
@@ -44,6 +46,11 @@ pub struct ModifyRangeMsg {
     pub lower_price: Uint128,
     /// The new upper bound of the range
     pub upper_price: Uint128,
+}
+
+#[cw_serde]
+pub struct MergePositionMsg {
+    pub position_ids: Vec<u64>,
 }
 
 /// Extension query messages for an apollo autocompounding vault
@@ -87,6 +94,9 @@ pub struct InstantiateMsg {
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".
     pub vault_token_subdenom: String,
+    // create a position upon initialization
+    pub initial_lower_tick: i64,
+    pub initial_upper_tick: i64,
 }
 
 #[cw_serde]

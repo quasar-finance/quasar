@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
-    coin, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Attribute,
+    coin, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 use cw_dex_router::helpers::receive_asset;
 
@@ -17,7 +17,6 @@ use osmosis_std::types::{
     },
 };
 
-use crate::state::LOCKED_SHARES;
 use crate::{
     concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
@@ -25,6 +24,7 @@ use crate::{
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
     ContractError,
 };
+use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 pub(crate) fn execute_any_deposit(
@@ -40,8 +40,7 @@ pub(crate) fn execute_any_deposit(
     todo!()
 }
 
-
-/// Try to deposit as much user funds as we can into the a position and 
+/// Try to deposit as much user funds as we can into the a position and
 /// refund the rest to the caller
 pub(crate) fn execute_exact_deposit(
     deps: DepsMut,
@@ -82,12 +81,13 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+    deps.api.debug(format!("{:?}", create_msg).as_str());
+
+    Ok(Response::new().add_submessage(SubMsg::reply_always(
         create_msg,
         Replies::DepositCreatePosition as u64,
     )))
 }
-
 
 /// handles the reply to creating a position for a user deposit
 /// and calculates the refund for the user
@@ -101,24 +101,44 @@ pub fn handle_deposit_create_position_reply(
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
+    deps.api.debug("position created");
     // we mint shares according to the liquidity created
-    let liquidity = Decimal::from_str(resp.liquidity_created.as_str())?;
+    let liquidity = Decimal256::from_str(resp.liquidity_created.as_str())?;
 
     let total_position = get_position(deps.storage, &deps.querier, &env)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
-    let total_liquidity = Decimal::from_str(total_position.liquidity.as_str())?;
+    deps.api.debug("dammnit");
 
-    let total_shares: Uint128 = bq
+    let total_liquidity = Decimal256::from_str(total_position.liquidity.as_str())?;
+
+    deps.api.debug("here1");
+
+    let total_shares: Uint256 = bq
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
         .amount
         .parse::<u128>()?
         .into();
+    deps.api.debug(total_shares.to_string().as_str());
 
     let ratio = liquidity.checked_div(total_liquidity)?;
-    let user_shares = total_shares.multiply_ratio(ratio.numerator(), ratio.denominator());
+    deps.api.debug(ratio.to_string().as_str());
+    let user_shares: Uint128 = if total_shares.is_zero() {
+        Uint256::one()
+            .multiply_ratio(ratio.numerator(), ratio.denominator())
+            .try_into()
+            .unwrap()
+    } else {
+        total_shares
+            .multiply_ratio(ratio.numerator(), ratio.denominator())
+            .try_into()
+            .unwrap()
+    };
+    deps.api.debug(user_shares.to_string().as_str());
+
+    deps.api.debug("here2");
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -127,7 +147,7 @@ pub fn handle_deposit_create_position_reply(
     // this is blocked by Osmosis v17 update
     let mint = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(user_shares.u128(), vault_denom).into()),
+        amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
     // save the shares in the user map
@@ -143,6 +163,8 @@ pub fn handle_deposit_create_position_reply(
         },
     )?;
 
+    deps.api.debug("here3");
+
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -154,6 +176,7 @@ pub fn handle_deposit_create_position_reply(
     )?;
 
     let position_ids = vec![total_position.position_id, resp.position_id];
+    deps.api.debug(format!("{:?}", position_ids).as_str());
     let fungify_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
     // merge our position with the main position
     let fungify = SubMsg::reply_on_success(
@@ -164,11 +187,17 @@ pub fn handle_deposit_create_position_reply(
         Replies::Fungify.into(),
     );
 
+    // deps.api.debug(format!("{:?}", fungify).as_str());
+    deps.api.debug(format!("{:?}", mint).as_str());
     //fungify our positions together and mint the user shares to the cl-vault
-    let mut response = Response::new().add_submessage(fungify).add_attributes(fungify_attrs).add_message(mint);
+    let mut response = Response::new()
+        .add_submessage(fungify)
+        .add_attributes(fungify_attrs)
+        .add_message(mint);
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
+        deps.api.debug(format!("{:?}", msg).as_str());
         response = response.add_message(msg).add_attributes(attr);
     }
 
@@ -205,50 +234,29 @@ fn refund_bank_msg(
         coins.push(coin(refund1.u128(), denom1))
     }
     let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
-        Some((BankMsg::Send {
-            to_address: current_deposit.sender.to_string(),
-            amount: coins,
-        }, attr))
+        Some((
+            BankMsg::Send {
+                to_address: current_deposit.sender.to_string(),
+                amount: coins,
+            },
+            attr,
+        ))
     } else {
         None
     };
-    Ok((result))
-}
-
-/// returns the Coin of the needed denoms in the order given in denoms
-
-fn must_pay_two(info: &MessageInfo, denoms: (String, String)) -> ContractResult<(Coin, Coin)> {
-    if info.funds.len() != 2 {
-        return Err(cw_utils::PaymentError::MultipleDenoms {}.into());
-    }
-
-    let token0 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.0)
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
-
-    let token1 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.1)
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
-
-    Ok((token0, token1))
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use std::marker::PhantomData;
 
-    use cosmwasm_std::ContractResult as CwContractResult;
     use cosmwasm_std::{
         from_binary,
-        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
     };
+    use cosmwasm_std::{Binary, ContractResult as CwContractResult};
     use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -259,7 +267,7 @@ mod tests {
     };
     use prost::Message;
 
-    use crate::state::Position;
+    use crate::state::{PoolConfig, Position};
 
     use super::*;
 
@@ -364,11 +372,10 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response =
-            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
-            response.unwrap(),
+            response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
                 amount: vec![coin(50, "uosmo"), coin(150, "uatom")]
@@ -397,11 +404,10 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response =
-            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
-            response.unwrap(),
+            response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
                 amount: vec![coin(150, "uatom")]
@@ -430,11 +436,10 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response =
-            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
-            response.unwrap(),
+            response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
                 amount: vec![coin(50, "uosmo")]
@@ -463,57 +468,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response =
-            refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
-    }
-
-    #[test]
-    fn must_pay_two_works_ordered() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected0.clone(), expected1.clone()],
-        };
-        let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!(expected0, token0);
-        assert_eq!(expected1, token1);
-    }
-
-    #[test]
-    fn must_pay_two_works_unordered() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected1.clone(), expected0.clone()],
-        };
-        let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!(expected0, token0);
-        assert_eq!(expected1, token1);
-    }
-
-    #[test]
-    fn must_pay_two_rejects_three() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
-        };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
-    }
-
-    #[test]
-    fn must_pay_two_rejects_one() {
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![coin(200, "uqsr")],
-        };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     pub struct QuasarQuerier {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod initialize {
-    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
@@ -93,7 +93,6 @@ pub mod initialize {
                     denom0: "uatom".to_string(),
                     denom1: "uosmo".to_string(),
                     tick_spacing: 1,
-                    exponent_at_price_one: "-6".to_string(),
                     spread_factor: "0".to_string(),
                 }],
             },
@@ -130,6 +129,8 @@ pub mod initialize {
             },
             vault_token_subdenom: "utestvault".to_string(),
             range_admin: admin.address(),
+            initial_lower_tick: 1,
+            initial_upper_tick: 100,
         };
         let contract = wasm
             .instantiate(
@@ -137,7 +138,7 @@ pub mod initialize {
                 &instantiate_msg,
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                &[],
+                &[coin(100, "uatom"), coin(100, "uosmo")],
                 &admin,
             )
             .unwrap();

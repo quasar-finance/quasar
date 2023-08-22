@@ -1,8 +1,35 @@
 use std::str::FromStr;
 
-use crate::{state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{Decimal, Fraction, QuerierWrapper, Storage, Uint128};
+use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
+use cosmwasm_std::{Coin, Decimal, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+
+/// returns the Coin of the needed denoms in the order given in denoms
+
+pub(crate) fn must_pay_two(
+    info: &MessageInfo,
+    denoms: (String, String),
+) -> ContractResult<(Coin, Coin)> {
+    if info.funds.len() != 2 {
+        return Err(cw_utils::PaymentError::MultipleDenoms {}.into());
+    }
+
+    let token0 = info
+        .funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.0)
+        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
+
+    let token1 = info
+        .funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.1)
+        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
+
+    Ok((token0, token1))
+}
 
 /// get_spot_price
 ///
@@ -117,4 +144,57 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    use cosmwasm_std::{coin, Addr};
+
+    use super::*;
+
+    #[test]
+    fn must_pay_two_works_ordered() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected0.clone(), expected1.clone()],
+        };
+        let (token0, token1) =
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!(expected0, token0);
+        assert_eq!(expected1, token1);
+    }
+
+    #[test]
+    fn must_pay_two_works_unordered() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected1.clone(), expected0.clone()],
+        };
+        let (token0, token1) =
+            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!(expected0, token0);
+        assert_eq!(expected1, token1);
+    }
+
+    #[test]
+    fn must_pay_two_rejects_three() {
+        let expected0 = coin(100, "uatom");
+        let expected1 = coin(200, "uosmo");
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
+        };
+        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
+
+    #[test]
+    fn must_pay_two_rejects_one() {
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![coin(200, "uqsr")],
+        };
+        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
+}
