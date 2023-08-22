@@ -82,7 +82,6 @@ pub struct SwapDepositMergeState {
 //     PostModifyRange { ... },
 // }
 
-
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 

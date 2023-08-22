@@ -18,7 +18,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    concentrated_liquidity::get_position,
+    concentrated_liquidity::{create_position, get_position, may_get_position},
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
@@ -232,7 +232,7 @@ pub fn do_swap_deposit_merge(
     target_upper_tick: i64,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(storage)?;
-    if (swap_deposit_merge_state.is_some()) {
+    if swap_deposit_merge_state.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
 
@@ -311,7 +311,7 @@ pub fn do_swap_deposit_merge(
 pub fn handle_swap_reply(
     deps: DepsMut,
     env: Env,
-    data: SubMsgResult
+    data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let msg: MsgSwapExactAmountInResponse = data.try_into()?;
 
@@ -324,10 +324,12 @@ pub fn handle_swap_reply(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // get post swap balances to create positions with
-    let balance0 =
-    deps.querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
-    let balance1 =
-    deps.querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
+    let balance0 = deps
+        .querier
+        .query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
+    let balance1 = deps
+        .querier
+        .query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
     // todo: extract this to a function
     let create_position_msg = MsgCreatePosition {
@@ -432,6 +434,7 @@ pub fn handle_fungify_charged_positions_response(
     deps: DepsMut,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("fungifying");
     let fungify_positions_msg: MsgFungifyChargedPositionsResponse = data.try_into()?;
 
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
