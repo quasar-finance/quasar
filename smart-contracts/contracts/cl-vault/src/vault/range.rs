@@ -24,6 +24,7 @@ use crate::{
         with_slippage,
     },
     math::tick::price_to_tick,
+    merge::MergeResponse,
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
@@ -218,24 +219,6 @@ pub fn handle_initial_create_position_reply(
         target_lower_tick,
         target_upper_tick,
     )
-}
-
-// TODO move this to a callback execute msg on the contract?
-/// this function assumes that we are swapping and depositing into a valid range
-///
-/// It also calculates the exact amount we should be swapping based on current balances and the new range
-pub fn do_swap_deposit_merge(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
-    env: Env,
-    target_lower_tick: i64,
-    target_upper_tick: i64,
-) -> Result<Response, ContractError> {
-    // target range for our imminent swap
-    let target_lower_tick = create_position_message.lower_tick;
-    let target_upper_tick = create_position_message.upper_tick;
-
-    do_swap_deposit_merge(storage, querier, env, target_lower_tick, target_upper_tick)
 }
 
 /// this function assumes that we are swapping and depositing into a valid range
@@ -434,7 +417,7 @@ pub fn handle_iteration_create_position_reply(
         sender: env.contract.address.to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Fungify.into());
+    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Merge.into());
 
     Ok(Response::new()
         .add_submessage(msg)
@@ -447,21 +430,15 @@ pub fn handle_iteration_create_position_reply(
 }
 
 // store new position id and exit
-pub fn handle_fungify_charged_positions_response(
-    storage: &mut dyn Storage,
-    _querier: &QuerierWrapper,
-    _env: Env,
-    _info: MessageInfo,
-    fungify_positions_msg: MsgFungifyChargedPositionsResponse,
-) -> Result<Response, ContractError> {
+pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     deps.api.debug("fungifying");
-    let fungify_positions_msg: MsgFungifyChargedPositionsResponse = data.try_into()?;
+    let merge_response: MergeResponse = data.try_into()?;
 
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
     POSITION.save(
         deps.storage,
         &Position {
-            position_id: fungify_positions_msg.new_position_id,
+            position_id: merge_response.new_position_id,
         },
     )?;
 

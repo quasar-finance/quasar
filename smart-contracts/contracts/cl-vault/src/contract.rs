@@ -16,6 +16,7 @@ use crate::concentrated_liquidity::create_position;
 use crate::error::ContractError;
 use crate::error::ContractResult;
 use crate::helpers::must_pay_two;
+use crate::merge::execute_merge;
 use crate::msg::ModifyRangeMsg;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
@@ -154,7 +155,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => todo!(),
+                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, msg),
                 crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
