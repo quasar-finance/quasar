@@ -20,10 +20,11 @@ use crate::{
     },
     start_unbond::StartUnbond,
     state::{
-        FundPath, Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS, CONFIG, IBC_LOCK,
-        ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, PENDING_BOND_QUEUE,
-        PENDING_UNBONDING_CLAIMS, REPLIES, SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT,
-        START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        FundPath, OngoingDeposit, Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS,
+        CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, REJOIN_QUEUE, REPLIES, SHARES,
+        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE,
+        TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -60,11 +61,15 @@ pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
     let bq: Result<Vec<Bond>, StdError> = BOND_QUEUE.iter(deps.storage)?.collect();
     let suq: Result<Vec<StartUnbond>, StdError> = START_UNBOND_QUEUE.iter(deps.storage)?.collect();
     let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE.iter(deps.storage)?.collect();
+    let fjq: Result<Vec<Bond>, StdError> = FAILED_JOIN_QUEUE.iter(deps.storage)?.collect();
+    let rj: Result<Vec<OngoingDeposit>, StdError> = REJOIN_QUEUE.iter(deps.storage)?.collect();
     Ok(GetQueuesResponse {
         pending_bond_queue: pbq?,
         bond_queue: bq?,
         start_unbond_queue: suq?,
         unbond_queue: uq?,
+        failed_join_queue: fjq?,
+        rejoin_queue: rj?,
     })
 }
 

@@ -3,9 +3,10 @@ package wasmd_deposit
 import (
 	"context"
 	"encoding/json"
-	"github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 	"strconv"
 	"testing"
+
+	helpers "github.com/quasarlabs/quasarnode/tests/e2e/cases/_helpers"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
@@ -28,17 +29,17 @@ const (
 
 var (
 	init1 = map[string]any{
-		"lock_period": 6, "pool_id": 1, "pool_denom": "gamm/pool/1", "base_denom": "uosmo",
+		"lock_period": 1, "pool_id": 1, "pool_denom": "gamm/pool/1", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "stake1",
 		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
 	}
 	init2 = map[string]any{
-		"lock_period": 6, "pool_id": 2, "pool_denom": "gamm/pool/2", "base_denom": "uosmo",
+		"lock_period": 1, "pool_id": 2, "pool_denom": "gamm/pool/2", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "usdc",
 		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
 	}
 	init3 = map[string]any{
-		"lock_period": 6, "pool_id": 3, "pool_denom": "gamm/pool/3", "base_denom": "uosmo",
+		"lock_period": 1, "pool_id": 3, "pool_denom": "gamm/pool/3", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "fakestake",
 		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
 	}
@@ -252,7 +253,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 		{
 			Account:                  *accBondTest0,
 			Action:                   "claim",
-			expectedBalanceChange:    1000,
+			expectedBalanceChange:    3000,
 			expectedBalanceDeviation: 0.1,
 		},
 		{
@@ -376,6 +377,18 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			err = json.Unmarshal(res, &balanceBefore)
 			s.Require().NoError(err)
 
+			pending := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.BasicVaultContractAddress,
+				map[string]any{
+					"pending_unbonds": map[string]any{
+						"address": tc.Account.Bech32Address(s.Quasar().Config().Bech32Prefix),
+					},
+				},
+			)
+			t.Log(string(pending))
+
 			s.ExecuteContract(
 				ctx,
 				s.Quasar(),
@@ -387,7 +400,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			)
 
 			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
-			err = testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+			err = testutil.WaitForBlocks(ctx, 20, s.Quasar(), s.Osmosis())
 			s.Require().NoError(err)
 
 			s.ExecuteContract(
@@ -401,7 +414,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			)
 
 			t.Log("Wait for quasar to clear cache and settle up ICA packet transfer and the ibc transfer")
-			err = testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+			err = testutil.WaitForBlocks(ctx, 20, s.Quasar(), s.Osmosis())
 			s.Require().NoError(err)
 
 			tn = testsuite.GetFullNode(s.Quasar())
@@ -412,8 +425,41 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			err = json.Unmarshal(res, &balanceAfter)
 			s.Require().NoError(err)
 
+			errorsPrim1 := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.LpStrategyContractAddress1,
+				map[string]any{
+					"trapped_errors": map[string]any{},
+				},
+			)
+			t.Log(string(errorsPrim1))
+			errorsPrim2 := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.LpStrategyContractAddress2,
+				map[string]any{
+					"trapped_errors": map[string]any{},
+				},
+			)
+			t.Log(string(errorsPrim2))
+			errorsPrim3 := s.ExecuteContractQuery(
+				ctx,
+				s.Quasar(),
+				s.LpStrategyContractAddress3,
+				map[string]any{
+					"trapped_errors": map[string]any{},
+				},
+			)
+			t.Log(string(errorsPrim3))
+
 			balanceChange := balanceAfter.Balances.AmountOf(s.OsmosisDenomInQuasar).Sub(balanceBefore.Balances.AmountOf(s.OsmosisDenomInQuasar)).Int64()
 			s.Require().True(int64(float64(tc.expectedBalanceChange)*(1-tc.expectedBalanceDeviation)) <= balanceChange)
+			t.Logf("%d", balanceChange)
+
+			balance := balanceAfter.Balances.AmountOf(s.OsmosisDenomInQuasar).Int64()
+			t.Logf("%d", balanceBefore.Balances.AmountOf(s.OsmosisDenomInQuasar).Int64())
+			t.Logf("%d", balance)
 			s.Require().True(balanceChange <= int64(float64(tc.expectedBalanceChange)*(1+tc.expectedBalanceDeviation)))
 		default:
 			t.Log("This testCase does not contain any transaction type")

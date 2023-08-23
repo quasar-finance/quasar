@@ -199,6 +199,31 @@ func (s *E2ETestSuite) JoinPoolOnOsmosis(ctx context.Context, chain *cosmos.Cosm
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
 }
 
+func (s *E2ETestSuite) CreateStableswapPoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
+	tn := GetFullNode(chain)
+
+	logger := s.logger.With(
+		zap.String("chain_id", tn.Chain.Config().ChainID),
+		zap.String("test", tn.TestName),
+	)
+
+	cmds := []string{"gamm", "create-pool",
+		"--gas", "20000000",
+	}
+
+	poolFile := "sample.json"
+	fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
+	err := fw.WriteFile(ctx, tn.VolumeName, poolFile, poolBytes)
+	s.Require().NoError(err, "failed to write pool file")
+
+	cmds = append(cmds, "--pool-file", filepath.Join(tn.HomeDir(), poolFile), "--pool-type", "stableswap")
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to create pool")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
 func (s *E2ETestSuite) SendTokensToOneAddress(ctx context.Context, chain *cosmos.CosmosChain, fromAddress, toAddress ibc.Wallet, amount string) {
 	tn := GetFullNode(chain)
 
