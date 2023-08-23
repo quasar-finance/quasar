@@ -24,13 +24,14 @@ use crate::{
         with_slippage,
     },
     math::tick::price_to_tick,
+    merge::MergeResponse,
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
         POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
     swap::swap,
-    ContractError, merge::MergeResponse,
+    ContractError,
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {

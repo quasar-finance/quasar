@@ -91,6 +91,10 @@ pub enum ContractError {
     #[error("Insufficient funds for swap. Have: {balance}, Need: {needed}")]
     InsufficientFundsForSwap { balance: Uint128, needed: Uint128 },
 
+    #[error("Cannot merge positions that are in different ticks")]
+    DifferentTicksInMerge,
+
+
     #[error("Tick index minimum error")]
     TickIndexMinError {},
 

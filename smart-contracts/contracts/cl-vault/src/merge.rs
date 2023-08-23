@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_binary, to_binary, DepsMut, Env, Response, StdError, SubMsg,
-    SubMsgResult, Uint128, CosmosMsg,
+    coin, from_binary, to_binary, CosmosMsg, Decimal, DepsMut, Env, Response, StdError, SubMsg,
+    SubMsgResult, Uint128,
 };
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse,
-    MsgWithdrawPosition, MsgWithdrawPositionResponse,
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
 };
 
 use crate::{
@@ -12,28 +14,46 @@ use crate::{
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
-    state::{CURRENT_MERGE, MODIFY_RANGE_STATE, POOL_CONFIG},
+    state::{CURRENT_MERGE, MODIFY_RANGE_STATE, POOL_CONFIG, CurrentMergePosition, CURRENT_MERGE_POSITION},
     ContractError,
 };
 
 pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> ContractResult<Response> {
     // save a state entry that we can reuse over executions
 
+    let mut range: Option<CurrentMergePosition> = None;
     // Withdraw all positions
     let withdraw_msgs: ContractResult<Vec<MsgWithdrawPosition>> = msg
         .position_ids
         .into_iter()
         .map(|position_id| {
             let position = get_position(deps.storage, &deps.querier, &env)?;
+            let p = position.position.unwrap();
+
+            // if we already have queried a range to seen as "canonical", compare the range of the position 
+            // and error if they are not the same else we set the value of range. Thus the first queried position is seen as canonical
+            if let Some(range) = &range {
+                if range.lower_tick != p.lower_tick || range.upper_tick != p.upper_tick {
+                    return Err(ContractError::DifferentTicksInMerge);
+                }
+            } else {
+                range = Some(CurrentMergePosition { lower_tick: p.lower_tick, upper_tick: p.upper_tick })
+            }
+
+            
             // save the position as an ongoing withdraw
             // create a withdraw msg to dispatch
+            let liquidity_amount =
+                Decimal::from_str(p.liquidity.as_str())?;
             Ok(MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.to_string(),
-                liquidity_amount: position.position.unwrap().liquidity,
+                liquidity_amount: liquidity_amount.to_uint_floor().to_string(),
             })
         })
         .collect();
+    
+    CURRENT_MERGE_POSITION.save(deps.storage, &range.unwrap())?;
 
     // push all items on the queue
     for msg in withdraw_msgs? {
@@ -42,10 +62,12 @@ pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> Contract
 
     // pop the first item and dispatch it
     let current = CURRENT_MERGE.front(deps.storage)?.unwrap();
-    
-    let msg: CosmosMsg = current.msg.into();
+
+    // let msg: CosmosMsg = current.msg.into();
+    deps.api
+        .debug(format!("initial_withdraw: {:?}", current.msg).as_str());
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
+        current.msg,
         Replies::WithdrawMerge as u64,
     )))
 }
@@ -67,7 +89,6 @@ pub fn handle_merge_withdraw_reply(
     env: Env,
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
-
     let response: MsgWithdrawPositionResponse = msg.try_into()?;
 
     // get the corresponding withdraw
@@ -91,11 +112,12 @@ pub fn handle_merge_withdraw_reply(
     // so then we empty the entire queue, add all results together and create a new position
     // under the current range with that
     if let Some(_) = next.result {
-        let range = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+        let range = CURRENT_MERGE_POSITION.load(deps.storage)?;
         let (amount0, amount1) = CURRENT_MERGE.iter(deps.storage)?.try_fold(
             (Uint128::zero(), Uint128::zero()),
             |(acc0, acc1), withdraw| -> Result<(Uint128, Uint128), ContractError> {
                 let w = withdraw?.result.unwrap();
+                deps.api.debug(format!("{:?}", w).as_str());
                 Ok((acc0 + w.amount0, acc1 + w.amount1))
             },
         )?;
@@ -118,10 +140,12 @@ pub fn handle_merge_withdraw_reply(
             Replies::CreatePositionMerge as u64,
         )))
     } else {
-        Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-            next.msg,
-            Replies::WithdrawMerge as u64,
-        )))
+        let msg: CosmosMsg = next.msg.into();
+
+        deps.api
+            .debug(format!("iteration_withdraw: {:?}", msg).as_str());
+        Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64)))
     }
 }
 
@@ -156,4 +180,12 @@ impl TryFrom<SubMsgResult> for MergeResponse {
                 })?,
         )
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn execute_merge_works() {}
 }
