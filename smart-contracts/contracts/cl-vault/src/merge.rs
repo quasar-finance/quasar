@@ -1,10 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_binary, to_binary, DepsMut, Env, Response, StdError, SubMsg,
-    SubMsgResult, Uint128, CosmosMsg,
+    coin, from_binary, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, SubMsg,
+    SubMsgResult, Uint128,
 };
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse,
-    MsgWithdrawPosition, MsgWithdrawPositionResponse,
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
 };
 
 use crate::{
@@ -42,12 +42,12 @@ pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> Contract
 
     // pop the first item and dispatch it
     let current = CURRENT_MERGE.front(deps.storage)?.unwrap();
-    
+
     let msg: CosmosMsg = current.msg.into();
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
-        Replies::WithdrawMerge as u64,
-    )))
+    Ok(
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64)),
+    )
 }
 
 #[cw_serde]
@@ -67,7 +67,6 @@ pub fn handle_merge_withdraw_reply(
     env: Env,
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
-
     let response: MsgWithdrawPositionResponse = msg.try_into()?;
 
     // get the corresponding withdraw
