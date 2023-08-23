@@ -5,6 +5,7 @@ use cosmwasm_std::{
     coin, from_binary, to_binary, CosmosMsg, Decimal, DepsMut, Env, Response, StdError, SubMsg,
     SubMsgResult, Uint128,
 };
+use cw_utils::{parse_reply_execute_data, parse_execute_response_data};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
 };
@@ -17,6 +18,12 @@ use crate::{
     state::{CURRENT_MERGE, MODIFY_RANGE_STATE, POOL_CONFIG, CurrentMergePosition, CURRENT_MERGE_POSITION},
     ContractError,
 };
+
+#[cw_serde]
+pub struct MergeResponse {
+    pub new_position_id: u64,
+}
+
 
 pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> ContractResult<Response> {
     // save a state entry that we can reuse over executions
@@ -45,10 +52,11 @@ pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> Contract
             // create a withdraw msg to dispatch
             let liquidity_amount =
                 Decimal::from_str(p.liquidity.as_str())?;
+            deps.api.debug(format!("initial_withdraw: {:?}", liquidity_amount).as_str());
             Ok(MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.to_string(),
-                liquidity_amount: liquidity_amount.to_uint_floor().to_string(),
+                liquidity_amount: liquidity_amount.atomics().to_string(),
             })
         })
         .collect();
@@ -90,7 +98,7 @@ pub fn handle_merge_withdraw_reply(
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
     let response: MsgWithdrawPositionResponse = msg.try_into()?;
-
+    deps.api.debug(format!("{:?}", response).as_str());
     // get the corresponding withdraw
     let last = CURRENT_MERGE.pop_front(deps.storage)?.unwrap();
 
@@ -123,15 +131,21 @@ pub fn handle_merge_withdraw_reply(
         )?;
         let pool: crate::state::PoolConfig = POOL_CONFIG.load(deps.storage)?;
 
+        let mut tokens = vec![];
+        if !amount0.is_zero() {
+            tokens.push(coin(amount0.into(), pool.token0))
+        }
+        if !amount1.is_zero() {
+            tokens.push(coin(amount1.into(), pool.token1))
+        }
+        
+
         let position = create_position(
             deps.storage,
             &env,
             range.lower_tick as i64,
             range.upper_tick as i64,
-            vec![
-                coin(amount0.into(), pool.token0),
-                coin(amount1.into(), pool.token1),
-            ],
+            tokens,
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -158,27 +172,23 @@ pub fn handle_merge_create_position_reply(
     // TODO decide if we want any healthchecks here
     Ok(Response::new().set_data(to_binary(&MergeResponse {
         new_position_id: response.position_id,
-    })?))
+    })?.0))
 }
 
-#[cw_serde]
-pub struct MergeResponse {
-    pub new_position_id: u64,
-}
 
 impl TryFrom<SubMsgResult> for MergeResponse {
     type Error = StdError;
 
     fn try_from(value: SubMsgResult) -> Result<Self, Self::Error> {
-        from_binary(
-            &value
+        let data = &value
                 .into_result()
                 .map_err(|err| StdError::generic_err(err))?
                 .data
                 .ok_or(StdError::NotFound {
                     kind: "MergeResponse".to_string(),
-                })?,
-        )
+                })?;
+        let response = parse_execute_response_data(&data.0).unwrap();
+        from_binary(&response.data.unwrap())
     }
 }
 
@@ -188,4 +198,17 @@ pub mod tests {
 
     #[test]
     fn execute_merge_works() {}
+
+    #[test]
+    fn serde_merge_response_is_inverse() {
+        let expected = MergeResponse {
+            new_position_id: 5,
+        };
+
+        let data = &to_binary(&expected).unwrap();
+        println!("{:?}", data);
+
+        let result = from_binary(&data).unwrap();
+        assert_eq!(expected, result)
+    }
 }
