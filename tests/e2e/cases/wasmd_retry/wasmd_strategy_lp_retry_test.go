@@ -188,23 +188,28 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 
 	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
 	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
-	t.Log(balanceIca1)
 	s.Require().NoError(err)
-	//s.Require().Equal(BondAmount/3, balanceIca1)
+	s.Require().Equal(BondAmount/3, balanceIca1)
 	balanceIca2, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
-	t.Log(balanceIca2)
 	s.Require().NoError(err)
-	//s.Require().Equal(BondAmount/3, balanceIca2)
+	s.Require().Equal(BondAmount/3, balanceIca2)
 	balanceIca3, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
-	t.Log(balanceIca3)
 	s.Require().NoError(err)
-	//s.Require().Equal(BondAmount/3, balanceIca3)
+	s.Require().Equal(BondAmount/3, balanceIca3)
 
-	//t.Log("Fund the Osmosis pools to increase assets to 2000000denom:2000000denom and reduce slippage for next retry")
-	//poolIds := []string{"1", "2", "3"}
-	//maxAmountsIn := []string{"1999998000000stake1,1999998000000uosmo", "1999998000000uosmo,1999998000000usdc", "1999998000000fakestake,1999998000000uosmo"}
-	//sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
-	//s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
+	t.Log("Fund the Osmosis pools to increase assets to 2000000denom:2000000denom and reduce slippage for next retry")
+	poolIds := []string{"1", "2", "3"}
+	maxAmountsIn := []string{
+		"3012045987951stake1,8333324666667uosmo",
+		"8333324666667uosmo,3012045987951usdc",
+		"3012045987951fakestake,8333324666667uosmo",
+	}
+	sharesAmountOut := []string{
+		"99999900000000000000000000",
+		"99999900000000000000000000",
+		"99999900000000000000000000",
+	}
+	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
 
 	t.Log("Query trapped errors for each one of the primitives")
 	trappedErrors := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
