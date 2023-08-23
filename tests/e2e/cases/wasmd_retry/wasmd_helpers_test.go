@@ -144,17 +144,17 @@ func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
-	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "stableswap")
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 
 	// Read the contract from os file
 	poolBz, err = os.ReadFile(osmosisPool2Path)
 	s.Require().NoError(err)
-	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "stableswap")
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 
 	// Read the contract from os file
 	poolBz, err = os.ReadFile(osmosisPool3Path)
 	s.Require().NoError(err)
-	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "stableswap")
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 }
 
 func (s *WasmdTestSuite) JoinPools(ctx context.Context, poolIds []string, maxAmountsIn []string, sharesAmountOut []string) {

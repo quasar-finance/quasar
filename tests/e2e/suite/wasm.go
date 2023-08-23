@@ -165,6 +165,24 @@ func (s *E2ETestSuite) CreatePoolOnOsmosis(ctx context.Context, chain *cosmos.Co
 	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
 }
 
+func (s *E2ETestSuite) SwapTokenOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, tokenIn string, tokenOutMinAmount string, flagSwapRouteDenoms string, flagSwapRoutePoolIds string) {
+	tn := GetFullNode(chain)
+
+	cmds := []string{
+		"gamm", "swap-exact-amount-in",
+		tokenIn,
+		tokenOutMinAmount,
+		"--swap-route-denoms", flagSwapRouteDenoms,
+		"--swap-route-pool-ids", flagSwapRoutePoolIds,
+		"--gas", "20000000",
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to swap token")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
 func (s *E2ETestSuite) JoinPoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolId string, maxAmountsIn string, shareAmountOut string) {
 	tn := GetFullNode(chain)
 
