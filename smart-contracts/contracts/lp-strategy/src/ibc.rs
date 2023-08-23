@@ -13,10 +13,10 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
-    SIMULATED_EXIT_RESULT, SIMULATED_EXIT_SHARES_IN, SIMULATED_JOIN_AMOUNT_IN,
-    SIMULATED_JOIN_RESULT, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
+    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE, SIMULATED_EXIT_RESULT,
+    SIMULATED_EXIT_SHARES_IN, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -47,7 +47,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -329,8 +329,11 @@ pub fn handle_transfer_ack(
     let total_amount =
         transferred_amount + failed_bonds_amount + usable_base_token_compound_balance;
 
-    let pending_rejoins: StdResult<Vec<OngoingDeposit>> = REJOIN_QUEUE.iter(storage)?.collect();
-    pending.bonds.append(&mut pending_rejoins?);
+    // remove all items from REJOIN_QUEUE & add them to the deposits: Vec<OngoingDeposit>
+    while !REJOIN_QUEUE.is_empty(storage)? {
+        let rejoin = REJOIN_QUEUE.pop_front(storage)?;
+        pending.bonds.push(rejoin.unwrap());
+    }
 
     let msg = do_ibc_join_pool_swap_extern_amount_in(
         storage,
@@ -483,7 +486,6 @@ pub fn handle_icq_ack(
 
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
 
-    // TODO: decide if we use exit_total_pool or the UNBOND_QUEUE added amount here
     let parsed_exit_pool_out = consolidate_exit_pool_amount_into_local_denom(
         storage,
         &exit_pool_unbonds.tokens_out,
