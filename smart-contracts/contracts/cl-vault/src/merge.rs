@@ -3,9 +3,9 @@ use std::str::FromStr;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, from_binary, to_binary, CosmosMsg, Decimal, DepsMut, Env, Response, StdError, SubMsg,
-    SubMsgResult, Uint128,
+    SubMsgResult, Uint128, MessageInfo,
 };
-use cw_utils::{parse_reply_execute_data, parse_execute_response_data};
+use cw_utils::{parse_execute_response_data, parse_reply_execute_data};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
 };
@@ -15,7 +15,10 @@ use crate::{
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
-    state::{CURRENT_MERGE, MODIFY_RANGE_STATE, POOL_CONFIG, CurrentMergePosition, CURRENT_MERGE_POSITION},
+    state::{
+        CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, MODIFY_RANGE_STATE,
+        POOL_CONFIG,
+    },
     ContractError,
 };
 
@@ -24,9 +27,11 @@ pub struct MergeResponse {
     pub new_position_id: u64,
 }
 
-
-pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> ContractResult<Response> {
-    // save a state entry that we can reuse over executions
+pub fn execute_merge(deps: DepsMut, env: Env, info: MessageInfo, msg: MergePositionMsg) -> ContractResult<Response> {
+    //check that the sender is our contract
+    if env.contract.address != info.sender {
+        return Err(ContractError::Unauthorized { });
+    }
 
     let mut range: Option<CurrentMergePosition> = None;
     // Withdraw all positions
@@ -37,22 +42,24 @@ pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> Contract
             let position = get_position(deps.storage, &deps.querier, &env)?;
             let p = position.position.unwrap();
 
-            // if we already have queried a range to seen as "canonical", compare the range of the position 
+            // if we already have queried a range to seen as "canonical", compare the range of the position
             // and error if they are not the same else we set the value of range. Thus the first queried position is seen as canonical
             if let Some(range) = &range {
                 if range.lower_tick != p.lower_tick || range.upper_tick != p.upper_tick {
                     return Err(ContractError::DifferentTicksInMerge);
                 }
             } else {
-                range = Some(CurrentMergePosition { lower_tick: p.lower_tick, upper_tick: p.upper_tick })
+                range = Some(CurrentMergePosition {
+                    lower_tick: p.lower_tick,
+                    upper_tick: p.upper_tick,
+                })
             }
 
-            
             // save the position as an ongoing withdraw
             // create a withdraw msg to dispatch
-            let liquidity_amount =
-                Decimal::from_str(p.liquidity.as_str())?;
-            deps.api.debug(format!("initial_withdraw: {:?}", liquidity_amount).as_str());
+            let liquidity_amount = Decimal::from_str(p.liquidity.as_str())?;
+            deps.api
+                .debug(format!("initial_withdraw: {:?}", liquidity_amount).as_str());
             Ok(MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.to_string(),
@@ -60,7 +67,7 @@ pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> Contract
             })
         })
         .collect();
-    
+
     CURRENT_MERGE_POSITION.save(deps.storage, &range.unwrap())?;
 
     // push all items on the queue
@@ -138,7 +145,6 @@ pub fn handle_merge_withdraw_reply(
         if !amount1.is_zero() {
             tokens.push(coin(amount1.into(), pool.token1))
         }
-        
 
         let position = create_position(
             deps.storage,
@@ -170,23 +176,25 @@ pub fn handle_merge_create_position_reply(
 ) -> ContractResult<Response> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
     // TODO decide if we want any healthchecks here
-    Ok(Response::new().set_data(to_binary(&MergeResponse {
-        new_position_id: response.position_id,
-    })?.0))
+    Ok(Response::new().set_data(
+        to_binary(&MergeResponse {
+            new_position_id: response.position_id,
+        })?
+        .0,
+    ))
 }
-
 
 impl TryFrom<SubMsgResult> for MergeResponse {
     type Error = StdError;
 
     fn try_from(value: SubMsgResult) -> Result<Self, Self::Error> {
         let data = &value
-                .into_result()
-                .map_err(|err| StdError::generic_err(err))?
-                .data
-                .ok_or(StdError::NotFound {
-                    kind: "MergeResponse".to_string(),
-                })?;
+            .into_result()
+            .map_err(|err| StdError::generic_err(err))?
+            .data
+            .ok_or(StdError::NotFound {
+                kind: "MergeResponse".to_string(),
+            })?;
         let response = parse_execute_response_data(&data.0).unwrap();
         from_binary(&response.data.unwrap())
     }
@@ -201,9 +209,7 @@ pub mod tests {
 
     #[test]
     fn serde_merge_response_is_inverse() {
-        let expected = MergeResponse {
-            new_position_id: 5,
-        };
+        let expected = MergeResponse { new_position_id: 5 };
 
         let data = &to_binary(&expected).unwrap();
         println!("{:?}", data);

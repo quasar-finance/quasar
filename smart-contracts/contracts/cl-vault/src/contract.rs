@@ -155,7 +155,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, msg),
+                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
