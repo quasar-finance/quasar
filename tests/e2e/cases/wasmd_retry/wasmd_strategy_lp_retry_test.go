@@ -291,15 +291,18 @@ func (s *WasmdTestSuite) executeBondTriggerSlippageAndClearCache(ctx context.Con
 		nil,
 	)
 
-	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
-	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
-	// still not error, as on quasar the tx has gone through
+	t.Log("Wait only 3 blocks on quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
+	err := testutil.WaitForBlocks(ctx, 3, s.Quasar(), s.Osmosis())
+	// still not error, as on quasar the tx has gone through, this execution has been nothing more than the trigger to start the bonding process via ICA/ICQ
 	s.Require().NoError(err)
 
-	// TODO recalculate blocks to wait
-	// TODO execute gamm swap with other account to change the price more than 5 percent
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "uosmo", "0", "", "")
+	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
+	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
 
+	// TODO: is this needed? once finished the test try a run without that
 	t.Log("Execute first clear cache on the contracts to perform the joinPool on the osmosis side")
 	s.ExecuteContract(
 		ctx,
