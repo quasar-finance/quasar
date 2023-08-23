@@ -332,9 +332,15 @@ mod tests {
         assert_eq!(
             response.messages[0],
             SubMsg::reply_on_success(
-                MsgFungifyChargedPositions {
-                    position_ids: vec![1, 2],
-                    sender: env.contract.address.to_string()
+                WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_binary(&ExecuteMsg::VaultExtension(
+                        crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+                            position_ids: vec![1, 2]
+                        })
+                    ))
+                    .unwrap(),
+                    funds: vec![]
                 },
                 Replies::Merge.into()
             )
