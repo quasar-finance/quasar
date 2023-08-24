@@ -18,7 +18,7 @@ mod tests {
         ibc::handle_icq_ack,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK,
+            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK, REJOIN_QUEUE,
             PENDING_BOND_QUEUE, TRAPS,
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
