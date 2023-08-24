@@ -126,14 +126,12 @@ pub fn handle_deposit_create_position_reply(
 
     let ratio = liquidity.checked_div(total_liquidity)?;
     deps.api.debug(ratio.to_string().as_str());
-    let user_shares: Uint128 = if total_shares.is_zero() {
-        Uint256::one()
-            .multiply_ratio(ratio.numerator(), ratio.denominator())
-            .try_into()
-            .unwrap()
+    let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
+        liquidity.to_uint_floor().try_into().unwrap()
     } else {
         total_shares
-            .multiply_ratio(ratio.numerator(), ratio.denominator())
+            .multiply_ratio(liquidity.numerator(), liquidity.denominator())
+            .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
             .try_into()
             .unwrap()
     };
@@ -261,6 +259,7 @@ mod tests {
         from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
+        WasmMsg,
     };
     use cosmwasm_std::{Binary, ContractResult as CwContractResult};
     use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
@@ -332,9 +331,15 @@ mod tests {
         assert_eq!(
             response.messages[0],
             SubMsg::reply_on_success(
-                MsgFungifyChargedPositions {
-                    position_ids: vec![1, 2],
-                    sender: env.contract.address.to_string()
+                WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_binary(&ExecuteMsg::VaultExtension(
+                        crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+                            position_ids: vec![1, 2]
+                        })
+                    ))
+                    .unwrap(),
+                    funds: vec![]
                 },
                 Replies::Merge.into()
             )
@@ -355,6 +360,26 @@ mod tests {
                 mint_to_address: env.contract.address.to_string()
             })
         );
+    }
+
+    #[test]
+    fn test_shares() {
+        let total_shares = Uint256::from(1000000000_u128);
+        let total_liquidity = Decimal256::from_str("1000000000").unwrap();
+        let liquidity = Decimal256::from_str("5000000").unwrap();
+
+        let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
+            liquidity.to_uint_floor().try_into().unwrap()
+        } else {
+            let ratio = liquidity.checked_div(total_liquidity).unwrap();
+            total_shares
+                .multiply_ratio(liquidity.numerator(), liquidity.denominator())
+                .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
+                .try_into()
+                .unwrap()
+        };
+
+        println!("{}", user_shares.to_string());
     }
 
     #[test]

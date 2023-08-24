@@ -82,9 +82,15 @@ pub struct SwapDepositMergeState {
 //     PostModifyRange { ... },
 // }
 
+#[cw_serde]
+pub struct CurrentMergePosition {
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+}
+
 /// The merge of positions currently being executed
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
-
+pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
