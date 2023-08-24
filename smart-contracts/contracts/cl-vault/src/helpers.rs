@@ -143,6 +143,13 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
     Ok(adjusted_amount)
 }
 
+#[macro_export]
+macro_rules! debug {
+    ($deps: ident, $tag:literal, $($arg:tt)*) => {
+        $deps.api.debug(format!(concat!($tag, " :{:?}"), $($arg)*).as_str())
+    };
+}
+
 #[cfg(test)]
 mod tests {
 

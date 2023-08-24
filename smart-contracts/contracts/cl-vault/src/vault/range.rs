@@ -431,7 +431,6 @@ pub fn handle_iteration_create_position_reply(
 
 // store new position id and exit
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
-    deps.api.debug("fungifying");
     let merge_response: MergeResponse = data.try_into()?;
 
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);

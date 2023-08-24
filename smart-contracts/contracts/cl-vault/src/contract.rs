@@ -21,6 +21,9 @@ use crate::msg::ModifyRangeMsg;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
 use crate::query::query_pool;
+use crate::query::query_position;
+use crate::query::query_user_balance;
+use crate::query::query_user_rewards;
 use crate::reply::handle_reply;
 use crate::reply::Replies;
 
@@ -156,7 +159,6 @@ pub fn execute(
                     execute_admin(deps, info, admin_msg)
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
-                crate::msg::ExtensionExecuteMsg::Lockup(msg) => todo!(),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -179,9 +181,17 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Lockup(_) => todo!(),
+            crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
+                crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
+                    query_user_balance(deps, user)
+                }
+                crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
+                    query_user_rewards(deps, user)
+                }
+            },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => query_pool(deps),
+                crate::msg::ClQueryMsg::Position {} => query_position(deps),
             },
         },
     }

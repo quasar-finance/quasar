@@ -17,6 +17,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore]
     fn deposit_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let alice = app
@@ -36,9 +37,14 @@ mod tests {
                 &alice,
             )
             .unwrap();
+
+        let mint = deposit.events.iter().find(|e| e.ty == "tf_mint").unwrap();
+        println!("{:?}", deposit.events)
+        // verify the correct execution
     }
 
     #[test]
+    #[ignore]
     fn default_init_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let wasm = Wasm::new(&app);

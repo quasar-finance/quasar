@@ -1,11 +1,14 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Uint128};
 use cw_vault_multi_standard::{
     extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
-use crate::{query::PoolResponse, state::VaultConfig};
+use crate::{
+    query::{PoolResponse, PositionResponse},
+    state::VaultConfig,
+};
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -17,11 +20,6 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// Execute a message from the lockup extension.
-    Lockup(LockupExecuteMsg),
-    /// Execute a message from the force unlock extension.
-    #[cfg(feature = "force-unlock")]
-    ForceUnlock(ForceUnlockExecuteMsg),
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -57,18 +55,27 @@ pub struct MergePositionMsg {
 #[cw_serde]
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
-    Lockup(LockupQueryMsg),
+    Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
 }
 
-///
+/// Extension query messages for user balance related queries
+#[cw_serde]
+pub enum UserBalanceQueryMsg {
+    UserLockedBalance { user: Addr },
+    UserRewards { user: Addr },
+}
+
+/// Extension query messages for related concentrated liquidity
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum ClQueryMsg {
     /// Get the underlying pool of the vault
     #[returns(PoolResponse)]
     Pool {},
+    #[returns(PositionResponse)]
+    Position {},
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
