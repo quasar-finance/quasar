@@ -28,8 +28,11 @@ Misc
 ## Queries
 
 - `QueryParams`
-- `QuerySpendableBalances`
 - `QueryVestingAccounts`
+- `QueryQVestingAccounts`
+- `QuerySpendableBalances`
+- `QuerySpendableSupply`
+- `QueryVestingLockedSupply`
 
 ## Events
 
