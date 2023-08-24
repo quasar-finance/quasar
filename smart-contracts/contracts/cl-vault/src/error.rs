@@ -94,7 +94,6 @@ pub enum ContractError {
     #[error("Cannot merge positions that are in different ticks")]
     DifferentTicksInMerge,
 
-
     #[error("Tick index minimum error")]
     TickIndexMinError {},
 

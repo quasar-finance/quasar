@@ -19,6 +19,7 @@ use osmosis_std::types::{
 
 use crate::{
     concentrated_liquidity::{create_position, get_position},
+    debug,
     error::ContractResult,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
@@ -82,8 +83,6 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    deps.api.debug(format!("{:?}", create_msg).as_str());
-
     Ok(Response::new().add_submessage(SubMsg::reply_always(
         create_msg,
         Replies::DepositCreatePosition as u64,
@@ -102,18 +101,14 @@ pub fn handle_deposit_create_position_reply(
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    deps.api.debug("position created");
     // we mint shares according to the liquidity created
     let liquidity = Decimal256::from_str(resp.liquidity_created.as_str())?;
 
     let total_position = get_position(deps.storage, &deps.querier, &env)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
-    deps.api.debug("dammnit");
 
     let total_liquidity = Decimal256::from_str(total_position.liquidity.as_str())?;
-
-    deps.api.debug("here1");
 
     let total_shares: Uint256 = bq
         .supply_of(vault_denom.clone())?
@@ -122,11 +117,8 @@ pub fn handle_deposit_create_position_reply(
         .amount
         .parse::<u128>()?
         .into();
-    deps.api.debug(total_shares.to_string().as_str());
 
-    let ratio = liquidity.checked_div(total_liquidity)?;
-    deps.api.debug(ratio.to_string().as_str());
-    let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
+    let user_shares: Uint128 = if total_shares.is_zero() {
         liquidity.to_uint_floor().try_into().unwrap()
     } else {
         total_shares
@@ -135,9 +127,6 @@ pub fn handle_deposit_create_position_reply(
             .try_into()
             .unwrap()
     };
-    deps.api.debug(user_shares.to_string().as_str());
-
-    deps.api.debug("here2");
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -162,8 +151,6 @@ pub fn handle_deposit_create_position_reply(
         },
     )?;
 
-    deps.api.debug("here3");
-
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -175,7 +162,6 @@ pub fn handle_deposit_create_position_reply(
     )?;
 
     let position_ids = vec![total_position.position_id, resp.position_id];
-    deps.api.debug(format!("{:?}", position_ids).as_str());
     let merge_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
@@ -191,8 +177,6 @@ pub fn handle_deposit_create_position_reply(
         Replies::Merge.into(),
     );
 
-    // deps.api.debug(format!("{:?}", fungify).as_str());
-    deps.api.debug(format!("{:?}", mint).as_str());
     //fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
         .add_submessage(merge)
@@ -201,7 +185,6 @@ pub fn handle_deposit_create_position_reply(
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
-        deps.api.debug(format!("{:?}", msg).as_str());
         response = response.add_message(msg).add_attributes(attr);
     }
 
