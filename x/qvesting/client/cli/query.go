@@ -22,8 +22,10 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		CmdQueryParams(),
-		CmdQuerySpendableBalances(),
 		CmdQueryVestingAccounts(),
+		CmdQueryQVestingAccounts(),
+		CmdQuerySpendableBalances(),
+		CmdQuerySpendableSupply(),
 		CmdQueryVestingLockedSupply(),
 	)
 
@@ -50,6 +52,82 @@ func CmdQueryParams() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdQueryVestingAccounts() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "vesting-accounts",
+		Short: "shows all the existing vesting accounts in a paginated response",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryVestingAccountsRequest{
+				Pagination: pageReq,
+			}
+
+			res, err := queryClient.VestingAccounts(ctx, params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
+
+	return cmd
+}
+
+func CmdQueryQVestingAccounts() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "qvesting-accounts",
+		Short: "shows the existing vesting accounts created via qvesting module in a paginated response",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryQVestingAccountsRequest{
+				Pagination: pageReq,
+			}
+
+			res, err := queryClient.QVestingAccounts(ctx, params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "qvesting-accounts")
 
 	return cmd
 }
@@ -95,12 +173,14 @@ func CmdQuerySpendableBalances() *cobra.Command {
 	return cmd
 }
 
-func CmdQueryVestingAccounts() *cobra.Command {
+func CmdQuerySpendableSupply() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "accounts",
-		Short: "shows the existing vesting accounts in a paginated response",
-		Args:  cobra.ExactArgs(0),
+		Use:   "spendable-supply [denom]",
+		Short: "shows the aggregated total spendable balances supply for a given denom",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqDenom := args[0]
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -109,16 +189,7 @@ func CmdQueryVestingAccounts() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 			ctx := cmd.Context()
 
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
-			if err != nil {
-				return err
-			}
-
-			params := &types.QueryVestingAccountsRequest{
-				Pagination: pageReq,
-			}
-
-			res, err := queryClient.VestingAccounts(ctx, params)
+			res, err := queryClient.SpendableSupply(ctx, &types.QuerySpendableSupplyRequest{Denom: reqDenom})
 			if err != nil {
 				return err
 			}
@@ -126,16 +197,14 @@ func CmdQueryVestingAccounts() *cobra.Command {
 			return clientCtx.PrintProto(res)
 		},
 	}
-
 	flags.AddQueryFlagsToCmd(cmd)
-	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
 
 	return cmd
 }
 
 func CmdQueryVestingLockedSupply() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "locked-supply [denom]",
+		Use:   "vesting-locked-supply [denom]",
 		Short: "shows the total locked-supply in vesting accounts for a given denom",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {

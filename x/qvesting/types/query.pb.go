@@ -6,14 +6,14 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-proto"
-	types1 "github.com/cosmos/cosmos-sdk/codec/types"
+	types "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
-	_ "github.com/cosmos/gogoproto/gogoproto"
+	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/regen-network/cosmos-proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -117,6 +117,208 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
+type QueryVestingAccountsRequest struct {
+	// pagination defines an optional pagination for the request.
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryVestingAccountsRequest) Reset()         { *m = QueryVestingAccountsRequest{} }
+func (m *QueryVestingAccountsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryVestingAccountsRequest) ProtoMessage()    {}
+func (*QueryVestingAccountsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{2}
+}
+func (m *QueryVestingAccountsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryVestingAccountsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryVestingAccountsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryVestingAccountsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryVestingAccountsRequest.Merge(m, src)
+}
+func (m *QueryVestingAccountsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryVestingAccountsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryVestingAccountsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryVestingAccountsRequest proto.InternalMessageInfo
+
+func (m *QueryVestingAccountsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+type QueryVestingAccountsResponse struct {
+	// accounts are the existing vesting accounts
+	Accounts []*types.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+	// pagination defines the pagination in the response.
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryVestingAccountsResponse) Reset()         { *m = QueryVestingAccountsResponse{} }
+func (m *QueryVestingAccountsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryVestingAccountsResponse) ProtoMessage()    {}
+func (*QueryVestingAccountsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{3}
+}
+func (m *QueryVestingAccountsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryVestingAccountsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryVestingAccountsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryVestingAccountsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryVestingAccountsResponse.Merge(m, src)
+}
+func (m *QueryVestingAccountsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryVestingAccountsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryVestingAccountsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryVestingAccountsResponse proto.InternalMessageInfo
+
+func (m *QueryVestingAccountsResponse) GetAccounts() []*types.Any {
+	if m != nil {
+		return m.Accounts
+	}
+	return nil
+}
+
+func (m *QueryVestingAccountsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
+type QueryQVestingAccountsRequest struct {
+	// pagination defines an optional pagination for the request.
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryQVestingAccountsRequest) Reset()         { *m = QueryQVestingAccountsRequest{} }
+func (m *QueryQVestingAccountsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryQVestingAccountsRequest) ProtoMessage()    {}
+func (*QueryQVestingAccountsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{4}
+}
+func (m *QueryQVestingAccountsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryQVestingAccountsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryQVestingAccountsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryQVestingAccountsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryQVestingAccountsRequest.Merge(m, src)
+}
+func (m *QueryQVestingAccountsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryQVestingAccountsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryQVestingAccountsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryQVestingAccountsRequest proto.InternalMessageInfo
+
+func (m *QueryQVestingAccountsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+type QueryQVestingAccountsResponse struct {
+	// accounts are the existing vesting accounts
+	Accounts []*types.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+	// pagination defines the pagination in the response.
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryQVestingAccountsResponse) Reset()         { *m = QueryQVestingAccountsResponse{} }
+func (m *QueryQVestingAccountsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryQVestingAccountsResponse) ProtoMessage()    {}
+func (*QueryQVestingAccountsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{5}
+}
+func (m *QueryQVestingAccountsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryQVestingAccountsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryQVestingAccountsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryQVestingAccountsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryQVestingAccountsResponse.Merge(m, src)
+}
+func (m *QueryQVestingAccountsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryQVestingAccountsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryQVestingAccountsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryQVestingAccountsResponse proto.InternalMessageInfo
+
+func (m *QueryQVestingAccountsResponse) GetAccounts() []*types.Any {
+	if m != nil {
+		return m.Accounts
+	}
+	return nil
+}
+
+func (m *QueryQVestingAccountsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 // QuerySpendableBalancesRequest defines the gRPC request structure for querying
 // an account's spendable balances.
 type QuerySpendableBalancesRequest struct {
@@ -130,7 +332,7 @@ func (m *QuerySpendableBalancesRequest) Reset()         { *m = QuerySpendableBal
 func (m *QuerySpendableBalancesRequest) String() string { return proto.CompactTextString(m) }
 func (*QuerySpendableBalancesRequest) ProtoMessage()    {}
 func (*QuerySpendableBalancesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{2}
+	return fileDescriptor_2ccd23b8551580b1, []int{6}
 }
 func (m *QuerySpendableBalancesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -172,7 +374,7 @@ func (m *QuerySpendableBalancesResponse) Reset()         { *m = QuerySpendableBa
 func (m *QuerySpendableBalancesResponse) String() string { return proto.CompactTextString(m) }
 func (*QuerySpendableBalancesResponse) ProtoMessage()    {}
 func (*QuerySpendableBalancesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{3}
+	return fileDescriptor_2ccd23b8551580b1, []int{7}
 }
 func (m *QuerySpendableBalancesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -215,24 +417,24 @@ func (m *QuerySpendableBalancesResponse) GetPagination() *query.PageResponse {
 	return nil
 }
 
-// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
-type QueryVestingAccountsRequest struct {
-	// pagination defines an optional pagination for the request.
-	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+// QuerySpendableSupplyRequest is the request type for the Query/SpendableSupply RPC method.
+type QuerySpendableSupplyRequest struct {
+	// denom is the coin denom to query locked supply for.
+	Denom string `protobuf:"bytes,1,opt,name=denom,proto3" json:"denom,omitempty"`
 }
 
-func (m *QueryVestingAccountsRequest) Reset()         { *m = QueryVestingAccountsRequest{} }
-func (m *QueryVestingAccountsRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryVestingAccountsRequest) ProtoMessage()    {}
-func (*QueryVestingAccountsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{4}
+func (m *QuerySpendableSupplyRequest) Reset()         { *m = QuerySpendableSupplyRequest{} }
+func (m *QuerySpendableSupplyRequest) String() string { return proto.CompactTextString(m) }
+func (*QuerySpendableSupplyRequest) ProtoMessage()    {}
+func (*QuerySpendableSupplyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{8}
 }
-func (m *QueryVestingAccountsRequest) XXX_Unmarshal(b []byte) error {
+func (m *QuerySpendableSupplyRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryVestingAccountsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QuerySpendableSupplyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryVestingAccountsRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QuerySpendableSupplyRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -242,45 +444,43 @@ func (m *QueryVestingAccountsRequest) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *QueryVestingAccountsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryVestingAccountsRequest.Merge(m, src)
+func (m *QuerySpendableSupplyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QuerySpendableSupplyRequest.Merge(m, src)
 }
-func (m *QueryVestingAccountsRequest) XXX_Size() int {
+func (m *QuerySpendableSupplyRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryVestingAccountsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryVestingAccountsRequest.DiscardUnknown(m)
+func (m *QuerySpendableSupplyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QuerySpendableSupplyRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryVestingAccountsRequest proto.InternalMessageInfo
+var xxx_messageInfo_QuerySpendableSupplyRequest proto.InternalMessageInfo
 
-func (m *QueryVestingAccountsRequest) GetPagination() *query.PageRequest {
+func (m *QuerySpendableSupplyRequest) GetDenom() string {
 	if m != nil {
-		return m.Pagination
+		return m.Denom
 	}
-	return nil
+	return ""
 }
 
-// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
-type QueryVestingAccountsResponse struct {
-	// accounts are the existing vesting accounts
-	Accounts []*types1.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
-	// pagination defines the pagination in the response.
-	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+// QuerySpendableSupplyResponse is the response type for the Query/SpendableSupply RPC method.
+type QuerySpendableSupplyResponse struct {
+	// amount is the supply of the coin.
+	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
 }
 
-func (m *QueryVestingAccountsResponse) Reset()         { *m = QueryVestingAccountsResponse{} }
-func (m *QueryVestingAccountsResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryVestingAccountsResponse) ProtoMessage()    {}
-func (*QueryVestingAccountsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{5}
+func (m *QuerySpendableSupplyResponse) Reset()         { *m = QuerySpendableSupplyResponse{} }
+func (m *QuerySpendableSupplyResponse) String() string { return proto.CompactTextString(m) }
+func (*QuerySpendableSupplyResponse) ProtoMessage()    {}
+func (*QuerySpendableSupplyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{9}
 }
-func (m *QueryVestingAccountsResponse) XXX_Unmarshal(b []byte) error {
+func (m *QuerySpendableSupplyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryVestingAccountsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QuerySpendableSupplyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryVestingAccountsResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QuerySpendableSupplyResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -290,30 +490,23 @@ func (m *QueryVestingAccountsResponse) XXX_Marshal(b []byte, deterministic bool)
 		return b[:n], nil
 	}
 }
-func (m *QueryVestingAccountsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryVestingAccountsResponse.Merge(m, src)
+func (m *QuerySpendableSupplyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QuerySpendableSupplyResponse.Merge(m, src)
 }
-func (m *QueryVestingAccountsResponse) XXX_Size() int {
+func (m *QuerySpendableSupplyResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryVestingAccountsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryVestingAccountsResponse.DiscardUnknown(m)
+func (m *QuerySpendableSupplyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QuerySpendableSupplyResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryVestingAccountsResponse proto.InternalMessageInfo
+var xxx_messageInfo_QuerySpendableSupplyResponse proto.InternalMessageInfo
 
-func (m *QueryVestingAccountsResponse) GetAccounts() []*types1.Any {
+func (m *QuerySpendableSupplyResponse) GetAmount() types1.Coin {
 	if m != nil {
-		return m.Accounts
+		return m.Amount
 	}
-	return nil
-}
-
-func (m *QueryVestingAccountsResponse) GetPagination() *query.PageResponse {
-	if m != nil {
-		return m.Pagination
-	}
-	return nil
+	return types1.Coin{}
 }
 
 // QueryVestingLockedSupplyRequest is the request type for the Query/VestingLockedSupply RPC method.
@@ -326,7 +519,7 @@ func (m *QueryVestingLockedSupplyRequest) Reset()         { *m = QueryVestingLoc
 func (m *QueryVestingLockedSupplyRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryVestingLockedSupplyRequest) ProtoMessage()    {}
 func (*QueryVestingLockedSupplyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{6}
+	return fileDescriptor_2ccd23b8551580b1, []int{10}
 }
 func (m *QueryVestingLockedSupplyRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -365,14 +558,14 @@ func (m *QueryVestingLockedSupplyRequest) GetDenom() string {
 // QueryVestingAccountsResponse is the response type for the Query/VestingLockedSupply RPC method.
 type QueryVestingLockedSupplyResponse struct {
 	// amount is the supply of the coin.
-	Amount types.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
+	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
 }
 
 func (m *QueryVestingLockedSupplyResponse) Reset()         { *m = QueryVestingLockedSupplyResponse{} }
 func (m *QueryVestingLockedSupplyResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryVestingLockedSupplyResponse) ProtoMessage()    {}
 func (*QueryVestingLockedSupplyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2ccd23b8551580b1, []int{7}
+	return fileDescriptor_2ccd23b8551580b1, []int{11}
 }
 func (m *QueryVestingLockedSupplyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -401,20 +594,24 @@ func (m *QueryVestingLockedSupplyResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryVestingLockedSupplyResponse proto.InternalMessageInfo
 
-func (m *QueryVestingLockedSupplyResponse) GetAmount() types.Coin {
+func (m *QueryVestingLockedSupplyResponse) GetAmount() types1.Coin {
 	if m != nil {
 		return m.Amount
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryParamsResponse")
-	proto.RegisterType((*QuerySpendableBalancesRequest)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableBalancesRequest")
-	proto.RegisterType((*QuerySpendableBalancesResponse)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableBalancesResponse")
 	proto.RegisterType((*QueryVestingAccountsRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingAccountsRequest")
 	proto.RegisterType((*QueryVestingAccountsResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingAccountsResponse")
+	proto.RegisterType((*QueryQVestingAccountsRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryQVestingAccountsRequest")
+	proto.RegisterType((*QueryQVestingAccountsResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryQVestingAccountsResponse")
+	proto.RegisterType((*QuerySpendableBalancesRequest)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableBalancesRequest")
+	proto.RegisterType((*QuerySpendableBalancesResponse)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableBalancesResponse")
+	proto.RegisterType((*QuerySpendableSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableSupplyRequest")
+	proto.RegisterType((*QuerySpendableSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableSupplyResponse")
 	proto.RegisterType((*QueryVestingLockedSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingLockedSupplyRequest")
 	proto.RegisterType((*QueryVestingLockedSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingLockedSupplyResponse")
 }
@@ -422,52 +619,58 @@ func init() {
 func init() { proto.RegisterFile("qvesting/query.proto", fileDescriptor_2ccd23b8551580b1) }
 
 var fileDescriptor_2ccd23b8551580b1 = []byte{
-	// 716 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcf, 0x4f, 0x13, 0x4f,
-	0x1c, 0xed, 0xf0, 0xfd, 0x52, 0x71, 0x48, 0x34, 0x0e, 0x35, 0x29, 0x2b, 0x6e, 0xc9, 0x1e, 0xb0,
-	0x21, 0x61, 0x07, 0x4a, 0x0c, 0x89, 0x02, 0x4a, 0x25, 0x7a, 0xd0, 0x03, 0x96, 0xc4, 0x83, 0x1c,
-	0xc8, 0xec, 0xee, 0xb8, 0x6e, 0x68, 0x67, 0xb6, 0x9d, 0x5d, 0x62, 0x43, 0xb8, 0x78, 0x32, 0xf1,
-	0x62, 0xe2, 0x3f, 0x00, 0x57, 0x13, 0x6f, 0x9e, 0x3d, 0x13, 0x4f, 0x44, 0x0f, 0x72, 0x52, 0x03,
-	0x1e, 0xfc, 0x33, 0x4c, 0x67, 0x66, 0xfb, 0x03, 0x0a, 0x85, 0xc6, 0x53, 0x3b, 0x3f, 0xde, 0xfb,
-	0xbc, 0xf7, 0xd9, 0xcf, 0x1b, 0x98, 0xa9, 0x6e, 0x52, 0x11, 0x05, 0xcc, 0xc7, 0xd5, 0x98, 0xd6,
-	0xea, 0x76, 0x58, 0xe3, 0x11, 0x47, 0x66, 0x35, 0x26, 0x82, 0xd4, 0xca, 0xc4, 0x11, 0xb6, 0xfa,
-	0xcb, 0xb8, 0x47, 0xed, 0xe4, 0xae, 0x91, 0xf1, 0xb9, 0xcf, 0xe5, 0x55, 0xdc, 0xf8, 0xa7, 0x50,
-	0xc6, 0x98, 0xcf, 0xb9, 0x5f, 0xa6, 0x98, 0x84, 0x01, 0x26, 0x8c, 0xf1, 0x88, 0x44, 0x01, 0x67,
-	0x42, 0x9f, 0x4e, 0xba, 0x5c, 0x54, 0xb8, 0xc0, 0x0e, 0x11, 0x54, 0x15, 0xc3, 0x9b, 0x33, 0x0e,
-	0x8d, 0xc8, 0x0c, 0x0e, 0x89, 0x1f, 0x30, 0x79, 0x59, 0xdf, 0xbd, 0xde, 0x54, 0x15, 0x92, 0x1a,
-	0xa9, 0x24, 0x14, 0xa3, 0xba, 0x80, 0x5c, 0x39, 0xf1, 0x0b, 0x4c, 0x98, 0x56, 0x6c, 0x98, 0xed,
-	0xec, 0x09, 0xaf, 0xcb, 0x83, 0x84, 0x71, 0x54, 0x9d, 0xaf, 0x2b, 0xd1, 0x6a, 0xa1, 0x8e, 0xac,
-	0x0c, 0x44, 0x4f, 0x1b, 0x72, 0x56, 0x64, 0xa9, 0x12, 0xad, 0xc6, 0x54, 0x44, 0xd6, 0x1a, 0x1c,
-	0xe9, 0xd8, 0x15, 0x21, 0x67, 0x82, 0xa2, 0x65, 0x98, 0x56, 0x92, 0xb2, 0x60, 0x1c, 0xe4, 0x87,
-	0x0b, 0x13, 0xf6, 0xd9, 0xad, 0xb2, 0x15, 0xbe, 0xf8, 0xff, 0xde, 0x8f, 0x5c, 0xaa, 0xa4, 0xb1,
-	0xd6, 0x5b, 0x00, 0x6f, 0x4a, 0xf6, 0xd5, 0x90, 0x32, 0x8f, 0x38, 0x65, 0x5a, 0x24, 0x65, 0xc2,
-	0x5c, 0x9a, 0x94, 0x47, 0x59, 0x78, 0x89, 0x78, 0x5e, 0x8d, 0x0a, 0x55, 0xe8, 0x72, 0x29, 0x59,
-	0xa2, 0x87, 0x10, 0xb6, 0xfa, 0x95, 0x1d, 0xd0, 0x2a, 0xb4, 0xa3, 0x86, 0x7d, 0x5b, 0x7d, 0x49,
-	0xdd, 0x04, 0x7b, 0x85, 0xf8, 0x54, 0xb3, 0x96, 0xda, 0x90, 0x77, 0x86, 0xde, 0xec, 0xe4, 0x52,
-	0x7f, 0x76, 0x72, 0x29, 0xeb, 0x2b, 0x80, 0xe6, 0x69, 0x6a, 0xb4, 0x6d, 0x1f, 0x0e, 0x39, 0x7a,
-	0x2f, 0x0b, 0xc6, 0xff, 0xcb, 0x0f, 0x17, 0x46, 0x3b, 0x4a, 0x26, 0xc5, 0x1e, 0xf0, 0x80, 0x15,
-	0xa7, 0x1b, 0x5e, 0x3f, 0xfc, 0xcc, 0xe5, 0xfd, 0x20, 0x7a, 0x19, 0x3b, 0xb6, 0xcb, 0x2b, 0xba,
-	0xe3, 0xfa, 0x67, 0x4a, 0x78, 0x1b, 0x38, 0xaa, 0x87, 0x54, 0x48, 0x80, 0x28, 0x35, 0xc9, 0xd1,
-	0xa3, 0x2e, 0xee, 0x6e, 0xf5, 0x74, 0xa7, 0x54, 0xb6, 0xdb, 0xb3, 0x28, 0xbc, 0x21, 0x3d, 0x3d,
-	0x53, 0xdf, 0x61, 0xc9, 0x75, 0x79, 0xcc, 0xa2, 0x66, 0x7f, 0x3b, 0xbb, 0x08, 0xfa, 0xed, 0xa2,
-	0xf5, 0x11, 0xc0, 0xb1, 0xee, 0x75, 0x9a, 0x03, 0x33, 0x44, 0xf4, 0x9e, 0xee, 0x5c, 0xc6, 0x56,
-	0x63, 0x6c, 0x27, 0x63, 0x6c, 0x2f, 0xb1, 0x7a, 0x11, 0x7d, 0xf9, 0x34, 0x75, 0xa5, 0x93, 0xa4,
-	0xd4, 0x44, 0xfe, 0xbb, 0xb6, 0xcc, 0xc1, 0x5c, 0xbb, 0xdc, 0x27, 0xdc, 0xdd, 0xa0, 0xde, 0x6a,
-	0x1c, 0x86, 0xe5, 0x7a, 0xd2, 0x9a, 0x0c, 0x1c, 0xf4, 0x28, 0xe3, 0x15, 0x3d, 0x78, 0x6a, 0x61,
-	0xad, 0xc1, 0xf1, 0xd3, 0x81, 0xda, 0xeb, 0x1c, 0x4c, 0x93, 0x4a, 0x43, 0xb0, 0x6e, 0xe8, 0x19,
-	0x33, 0xa2, 0xf3, 0xa0, 0xae, 0x17, 0x76, 0xd3, 0x70, 0x50, 0xb2, 0xa3, 0x5d, 0x00, 0xd3, 0x2a,
-	0x32, 0xa8, 0xd0, 0x2b, 0x5a, 0x27, 0x53, 0x6b, 0xcc, 0x5e, 0x08, 0xa3, 0x64, 0x5b, 0xf6, 0xeb,
-	0x6f, 0xbf, 0xdf, 0x0f, 0xe4, 0xd1, 0x04, 0x6e, 0x81, 0x71, 0x0b, 0x8c, 0x8f, 0x3d, 0x46, 0xe8,
-	0x00, 0xc0, 0x6b, 0x27, 0xa2, 0x82, 0x16, 0xce, 0x55, 0xfa, 0xb4, 0xc0, 0x1b, 0x8b, 0xfd, 0xc2,
-	0xb5, 0x89, 0x65, 0x69, 0x62, 0x11, 0xcd, 0xf7, 0x32, 0x21, 0x12, 0x8a, 0xf5, 0x24, 0x74, 0x78,
-	0x4b, 0xbf, 0x2d, 0xdb, 0xe8, 0x33, 0x80, 0x57, 0x8f, 0x4d, 0x32, 0xba, 0x7b, 0x2e, 0x65, 0xdd,
-	0x73, 0x66, 0xcc, 0xf7, 0x07, 0xd6, 0xa6, 0xa6, 0xa5, 0xa9, 0x49, 0x94, 0xef, 0x65, 0xaa, 0x19,
-	0x94, 0xef, 0x00, 0x8e, 0x74, 0x19, 0x51, 0x74, 0xef, 0x22, 0x3a, 0xba, 0xa4, 0xc2, 0xb8, 0xdf,
-	0x3f, 0x81, 0x36, 0xb3, 0x20, 0xcd, 0xcc, 0xa1, 0xdb, 0xbd, 0xcc, 0x94, 0x25, 0x7a, 0x5d, 0x48,
-	0x38, 0xde, 0x92, 0xf9, 0xdb, 0x2e, 0x3e, 0xde, 0x3b, 0x34, 0xc1, 0xfe, 0xa1, 0x09, 0x7e, 0x1d,
-	0x9a, 0xe0, 0xdd, 0x91, 0x99, 0xda, 0x3f, 0x32, 0x53, 0x07, 0x47, 0x66, 0xea, 0xf9, 0x4c, 0xdb,
-	0x3b, 0xdb, 0x9d, 0xfa, 0x55, 0x8b, 0x5c, 0x3e, 0xbb, 0x4e, 0x5a, 0xbe, 0x3d, 0xb3, 0x7f, 0x03,
-	0x00, 0x00, 0xff, 0xff, 0x6a, 0x65, 0x05, 0xb0, 0xff, 0x07, 0x00, 0x00,
+	// 814 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0xcf, 0x4f, 0x13, 0x4b,
+	0x1c, 0xef, 0xf0, 0x1e, 0x7d, 0x30, 0x24, 0x8f, 0xf7, 0x86, 0xbe, 0x04, 0xf6, 0xe1, 0x96, 0xec,
+	0x01, 0x1b, 0x13, 0x76, 0x69, 0x7b, 0x00, 0x91, 0x9f, 0x15, 0xf5, 0xa0, 0x07, 0x28, 0x89, 0x26,
+	0x72, 0x20, 0xb3, 0xed, 0xb0, 0x36, 0xb4, 0x3b, 0xdb, 0xce, 0x96, 0xd8, 0x10, 0x2e, 0x9e, 0x4c,
+	0xbc, 0x98, 0xf8, 0x0f, 0xe0, 0xd5, 0x44, 0x4f, 0xfe, 0x0d, 0x86, 0x70, 0x50, 0xa2, 0x17, 0x4e,
+	0x62, 0xc0, 0x83, 0x7f, 0x86, 0xe9, 0xcc, 0xec, 0xf6, 0x37, 0x5d, 0xaa, 0x26, 0x9e, 0x76, 0x67,
+	0x77, 0x3e, 0xdf, 0xef, 0xe7, 0xf3, 0xe9, 0x7c, 0x3f, 0x5b, 0x18, 0x29, 0xee, 0x12, 0xe6, 0xe6,
+	0x6c, 0xcb, 0x28, 0x96, 0x49, 0xa9, 0xa2, 0x3b, 0x25, 0xea, 0x52, 0xa4, 0x16, 0xcb, 0x98, 0xe1,
+	0x52, 0x1e, 0x9b, 0x4c, 0x17, 0xb7, 0x36, 0xcd, 0x12, 0xdd, 0xdb, 0xab, 0x44, 0x2c, 0x6a, 0x51,
+	0xbe, 0xd5, 0xa8, 0xde, 0x09, 0x94, 0x32, 0x6e, 0x51, 0x6a, 0xe5, 0x89, 0x81, 0x9d, 0x9c, 0x81,
+	0x6d, 0x9b, 0xba, 0xd8, 0xcd, 0x51, 0x9b, 0xc9, 0xb7, 0xd7, 0x32, 0x94, 0x15, 0x28, 0x33, 0x4c,
+	0xcc, 0x88, 0x68, 0x66, 0xec, 0xc6, 0x4d, 0xe2, 0xe2, 0xb8, 0xe1, 0x60, 0x2b, 0x67, 0xf3, 0xcd,
+	0x72, 0xef, 0x7f, 0x3e, 0x2b, 0x07, 0x97, 0x70, 0xc1, 0x2b, 0x31, 0x26, 0x1b, 0xf0, 0x95, 0x59,
+	0xde, 0x36, 0xb0, 0x2d, 0x19, 0x2b, 0x6a, 0x7d, 0x75, 0xaf, 0x6e, 0x86, 0xe6, 0xbc, 0x8a, 0x63,
+	0xe2, 0xfd, 0x96, 0x20, 0x2d, 0x16, 0xe2, 0x95, 0x16, 0x81, 0x68, 0xbd, 0x4a, 0x67, 0x8d, 0xb7,
+	0x4a, 0x93, 0x62, 0x99, 0x30, 0x57, 0xdb, 0x84, 0x23, 0x0d, 0x4f, 0x99, 0x43, 0x6d, 0x46, 0xd0,
+	0x2a, 0x0c, 0x0b, 0x4a, 0xa3, 0x60, 0x02, 0xc4, 0x86, 0x12, 0x93, 0xfa, 0xc5, 0x56, 0xe9, 0x02,
+	0x9f, 0xfa, 0xf3, 0xf0, 0x73, 0x34, 0x94, 0x96, 0x58, 0x8d, 0xc0, 0xff, 0x79, 0xf1, 0xfb, 0x62,
+	0xd3, 0x4a, 0x26, 0x43, 0xcb, 0xb6, 0xeb, 0xf5, 0x46, 0xb7, 0x21, 0xac, 0x59, 0xe2, 0x37, 0x92,
+	0xa4, 0xab, 0x0a, 0x75, 0xf1, 0x63, 0x49, 0x9d, 0xfa, 0x1a, 0xb6, 0x88, 0xc4, 0xa6, 0xeb, 0x90,
+	0xda, 0x6b, 0x00, 0xc7, 0xdb, 0xf7, 0xf1, 0xd5, 0x0c, 0x60, 0xf9, 0x6c, 0x14, 0x4c, 0xfc, 0x11,
+	0x1b, 0x4a, 0x44, 0x74, 0xe1, 0xb1, 0xee, 0x79, 0xac, 0xaf, 0xd8, 0x95, 0x14, 0x3a, 0x7a, 0x3b,
+	0xf5, 0x77, 0x63, 0x91, 0xb4, 0x8f, 0x44, 0x77, 0x1a, 0xe8, 0xf6, 0x71, 0xba, 0x57, 0xbb, 0xd2,
+	0x15, 0x14, 0x1a, 0xf8, 0x6e, 0x4b, 0xba, 0xeb, 0xbf, 0xd8, 0x97, 0x37, 0x00, 0x5e, 0xe9, 0xd0,
+	0xe8, 0xf7, 0x34, 0xe6, 0x99, 0x47, 0x78, 0xc3, 0x21, 0x76, 0x16, 0x9b, 0x79, 0x92, 0xc2, 0x79,
+	0x6c, 0x67, 0x88, 0x6f, 0xcd, 0x28, 0xfc, 0x0b, 0x67, 0xb3, 0x25, 0xc2, 0xc4, 0xc1, 0x1c, 0x4c,
+	0x7b, 0xcb, 0x26, 0xd3, 0xfa, 0x7a, 0x35, 0x6d, 0x6e, 0xe0, 0xe9, 0x41, 0x34, 0xf4, 0xed, 0x20,
+	0x1a, 0xd2, 0x3e, 0x02, 0xa8, 0x76, 0x62, 0x23, 0xfd, 0xb3, 0xe0, 0x80, 0x29, 0x9f, 0x49, 0xff,
+	0xc6, 0x1a, 0x5a, 0x7a, 0xcd, 0x6e, 0xd2, 0x9c, 0x9d, 0x9a, 0xae, 0xce, 0xc6, 0xab, 0xd3, 0x68,
+	0xcc, 0xca, 0xb9, 0x8f, 0xca, 0xa6, 0x9e, 0xa1, 0x05, 0x39, 0xa1, 0xf2, 0x32, 0xc5, 0xb2, 0x3b,
+	0x86, 0x5b, 0x71, 0x08, 0xe3, 0x00, 0x96, 0xf6, 0x8b, 0xff, 0x3c, 0x8b, 0x93, 0x72, 0x24, 0x7d,
+	0x4d, 0x1b, 0x65, 0xc7, 0xc9, 0x57, 0x3c, 0x7f, 0x23, 0xb0, 0x3f, 0x4b, 0x6c, 0x5a, 0x90, 0xee,
+	0x8a, 0x85, 0xf6, 0x40, 0x1e, 0xd8, 0x16, 0x90, 0xb4, 0x61, 0x06, 0x86, 0x71, 0xa1, 0x7a, 0x16,
+	0xe4, 0x61, 0xbd, 0xc0, 0x04, 0x19, 0x10, 0x62, 0xbb, 0x36, 0x03, 0xa3, 0xf5, 0x83, 0x7b, 0x8f,
+	0x66, 0x76, 0x48, 0x36, 0x08, 0xa3, 0x4d, 0x38, 0xd1, 0x19, 0xf8, 0x83, 0xac, 0x12, 0x1f, 0x06,
+	0x61, 0x3f, 0xaf, 0x8e, 0x5e, 0x02, 0x18, 0x16, 0xc9, 0x86, 0x12, 0xdd, 0x12, 0xb0, 0x35, 0x5c,
+	0x95, 0xe4, 0xa5, 0x30, 0x82, 0xb6, 0xa6, 0x3f, 0xf9, 0xf4, 0xf5, 0x45, 0x5f, 0x0c, 0x4d, 0x1a,
+	0x35, 0xb0, 0x51, 0x03, 0x1b, 0x4d, 0xdf, 0x0c, 0xf4, 0x0e, 0xc0, 0xe1, 0xa6, 0xf9, 0x46, 0x37,
+	0x02, 0x35, 0x6e, 0x1f, 0x3f, 0xca, 0x7c, 0x6f, 0x60, 0x49, 0x7f, 0x96, 0xd3, 0x4f, 0xa0, 0xe9,
+	0x6e, 0xf4, 0xe5, 0x75, 0xcb, 0x8f, 0x91, 0x23, 0x00, 0xff, 0x69, 0x4e, 0x2a, 0x14, 0x8c, 0x4c,
+	0x87, 0x24, 0x55, 0x16, 0x7a, 0x44, 0x4b, 0x2d, 0xd7, 0xb9, 0x96, 0x24, 0x8a, 0x77, 0xd3, 0x52,
+	0x6c, 0x11, 0x73, 0x02, 0xe0, 0xbf, 0x2d, 0xb9, 0x81, 0x82, 0xf1, 0xe9, 0x94, 0x7e, 0xca, 0x62,
+	0xaf, 0x70, 0xa9, 0x67, 0x95, 0xeb, 0x59, 0x44, 0xf3, 0xdd, 0xf4, 0x30, 0xaf, 0xc4, 0x96, 0x97,
+	0x40, 0xc6, 0x9e, 0x0c, 0xda, 0x7d, 0xf4, 0x1e, 0xc0, 0xe1, 0xa6, 0x24, 0x08, 0x78, 0xe0, 0xda,
+	0x87, 0x4e, 0xc0, 0x03, 0xd7, 0x21, 0x7c, 0xb4, 0x65, 0x2e, 0x6a, 0x0e, 0xcd, 0x06, 0x17, 0xc5,
+	0x78, 0x05, 0x63, 0x8f, 0x67, 0xc9, 0x3e, 0x3a, 0x05, 0x70, 0xa4, 0x4d, 0x90, 0xa0, 0xa5, 0xcb,
+	0x0c, 0x42, 0x9b, 0xec, 0x52, 0x96, 0x7b, 0x2f, 0x20, 0xc5, 0xdd, 0xe2, 0xe2, 0x96, 0xd0, 0x42,
+	0xd0, 0x69, 0xca, 0xf3, 0x2a, 0x4d, 0x0a, 0x53, 0x77, 0x0f, 0xcf, 0x54, 0x70, 0x7c, 0xa6, 0x82,
+	0x2f, 0x67, 0x2a, 0x78, 0x7e, 0xae, 0x86, 0x8e, 0xcf, 0xd5, 0xd0, 0xc9, 0xb9, 0x1a, 0x7a, 0x18,
+	0xaf, 0xfb, 0x18, 0xb5, 0x6f, 0xf1, 0xb8, 0xd6, 0x84, 0x7f, 0x9b, 0xcc, 0x30, 0xff, 0x6b, 0x90,
+	0xfc, 0x1e, 0x00, 0x00, 0xff, 0xff, 0x7f, 0x12, 0x9a, 0x49, 0x54, 0x0b, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -484,10 +687,14 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// VestingAccounts returns all the existing vesting accounts
+	VestingAccounts(ctx context.Context, in *QueryVestingAccountsRequest, opts ...grpc.CallOption) (*QueryVestingAccountsResponse, error)
+	// VestingAccounts returns all the existing vesting accounts
+	QVestingAccounts(ctx context.Context, in *QueryQVestingAccountsRequest, opts ...grpc.CallOption) (*QueryQVestingAccountsResponse, error)
 	// SpendableBalances queries the spenable balance of all coins for a single account.
 	SpendableBalances(ctx context.Context, in *QuerySpendableBalancesRequest, opts ...grpc.CallOption) (*QuerySpendableBalancesResponse, error)
 	// VestingAccounts returns all the existing vesting accounts
-	VestingAccounts(ctx context.Context, in *QueryVestingAccountsRequest, opts ...grpc.CallOption) (*QueryVestingAccountsResponse, error)
+	SpendableSupply(ctx context.Context, in *QuerySpendableSupplyRequest, opts ...grpc.CallOption) (*QuerySpendableSupplyResponse, error)
 	// VestingAccounts returns all the existing vesting accounts
 	VestingLockedSupply(ctx context.Context, in *QueryVestingLockedSupplyRequest, opts ...grpc.CallOption) (*QueryVestingLockedSupplyResponse, error)
 }
@@ -509,6 +716,24 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
+func (c *queryClient) VestingAccounts(ctx context.Context, in *QueryVestingAccountsRequest, opts ...grpc.CallOption) (*QueryVestingAccountsResponse, error) {
+	out := new(QueryVestingAccountsResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/VestingAccounts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QVestingAccounts(ctx context.Context, in *QueryQVestingAccountsRequest, opts ...grpc.CallOption) (*QueryQVestingAccountsResponse, error) {
+	out := new(QueryQVestingAccountsResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/QVestingAccounts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) SpendableBalances(ctx context.Context, in *QuerySpendableBalancesRequest, opts ...grpc.CallOption) (*QuerySpendableBalancesResponse, error) {
 	out := new(QuerySpendableBalancesResponse)
 	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/SpendableBalances", in, out, opts...)
@@ -518,9 +743,9 @@ func (c *queryClient) SpendableBalances(ctx context.Context, in *QuerySpendableB
 	return out, nil
 }
 
-func (c *queryClient) VestingAccounts(ctx context.Context, in *QueryVestingAccountsRequest, opts ...grpc.CallOption) (*QueryVestingAccountsResponse, error) {
-	out := new(QueryVestingAccountsResponse)
-	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/VestingAccounts", in, out, opts...)
+func (c *queryClient) SpendableSupply(ctx context.Context, in *QuerySpendableSupplyRequest, opts ...grpc.CallOption) (*QuerySpendableSupplyResponse, error) {
+	out := new(QuerySpendableSupplyResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/SpendableSupply", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -540,10 +765,14 @@ func (c *queryClient) VestingLockedSupply(ctx context.Context, in *QueryVestingL
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// VestingAccounts returns all the existing vesting accounts
+	VestingAccounts(context.Context, *QueryVestingAccountsRequest) (*QueryVestingAccountsResponse, error)
+	// VestingAccounts returns all the existing vesting accounts
+	QVestingAccounts(context.Context, *QueryQVestingAccountsRequest) (*QueryQVestingAccountsResponse, error)
 	// SpendableBalances queries the spenable balance of all coins for a single account.
 	SpendableBalances(context.Context, *QuerySpendableBalancesRequest) (*QuerySpendableBalancesResponse, error)
 	// VestingAccounts returns all the existing vesting accounts
-	VestingAccounts(context.Context, *QueryVestingAccountsRequest) (*QueryVestingAccountsResponse, error)
+	SpendableSupply(context.Context, *QuerySpendableSupplyRequest) (*QuerySpendableSupplyResponse, error)
 	// VestingAccounts returns all the existing vesting accounts
 	VestingLockedSupply(context.Context, *QueryVestingLockedSupplyRequest) (*QueryVestingLockedSupplyResponse, error)
 }
@@ -555,11 +784,17 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
+func (*UnimplementedQueryServer) VestingAccounts(ctx context.Context, req *QueryVestingAccountsRequest) (*QueryVestingAccountsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VestingAccounts not implemented")
+}
+func (*UnimplementedQueryServer) QVestingAccounts(ctx context.Context, req *QueryQVestingAccountsRequest) (*QueryQVestingAccountsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QVestingAccounts not implemented")
+}
 func (*UnimplementedQueryServer) SpendableBalances(ctx context.Context, req *QuerySpendableBalancesRequest) (*QuerySpendableBalancesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SpendableBalances not implemented")
 }
-func (*UnimplementedQueryServer) VestingAccounts(ctx context.Context, req *QueryVestingAccountsRequest) (*QueryVestingAccountsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method VestingAccounts not implemented")
+func (*UnimplementedQueryServer) SpendableSupply(ctx context.Context, req *QuerySpendableSupplyRequest) (*QuerySpendableSupplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SpendableSupply not implemented")
 }
 func (*UnimplementedQueryServer) VestingLockedSupply(ctx context.Context, req *QueryVestingLockedSupplyRequest) (*QueryVestingLockedSupplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VestingLockedSupply not implemented")
@@ -587,6 +822,42 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_VestingAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryVestingAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).VestingAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/VestingAccounts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).VestingAccounts(ctx, req.(*QueryVestingAccountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QVestingAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryQVestingAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QVestingAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/QVestingAccounts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QVestingAccounts(ctx, req.(*QueryQVestingAccountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_SpendableBalances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QuerySpendableBalancesRequest)
 	if err := dec(in); err != nil {
@@ -605,20 +876,20 @@ func _Query_SpendableBalances_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_VestingAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryVestingAccountsRequest)
+func _Query_SpendableSupply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QuerySpendableSupplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).VestingAccounts(ctx, in)
+		return srv.(QueryServer).SpendableSupply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/VestingAccounts",
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/SpendableSupply",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).VestingAccounts(ctx, req.(*QueryVestingAccountsRequest))
+		return srv.(QueryServer).SpendableSupply(ctx, req.(*QuerySpendableSupplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -650,12 +921,20 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Params_Handler,
 		},
 		{
+			MethodName: "VestingAccounts",
+			Handler:    _Query_VestingAccounts_Handler,
+		},
+		{
+			MethodName: "QVestingAccounts",
+			Handler:    _Query_QVestingAccounts_Handler,
+		},
+		{
 			MethodName: "SpendableBalances",
 			Handler:    _Query_SpendableBalances_Handler,
 		},
 		{
-			MethodName: "VestingAccounts",
-			Handler:    _Query_VestingAccounts_Handler,
+			MethodName: "SpendableSupply",
+			Handler:    _Query_SpendableSupply_Handler,
 		},
 		{
 			MethodName: "VestingLockedSupply",
@@ -719,6 +998,174 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryVestingAccountsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryVestingAccountsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryVestingAccountsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryVestingAccountsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryVestingAccountsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryVestingAccountsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Accounts) > 0 {
+		for iNdEx := len(m.Accounts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Accounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryQVestingAccountsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryQVestingAccountsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryQVestingAccountsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryQVestingAccountsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryQVestingAccountsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryQVestingAccountsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Accounts) > 0 {
+		for iNdEx := len(m.Accounts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Accounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -813,7 +1260,7 @@ func (m *QuerySpendableBalancesResponse) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryVestingAccountsRequest) Marshal() (dAtA []byte, err error) {
+func (m *QuerySpendableSupplyRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -823,32 +1270,27 @@ func (m *QueryVestingAccountsRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryVestingAccountsRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QuerySpendableSupplyRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryVestingAccountsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QuerySpendableSupplyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Denom)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryVestingAccountsResponse) Marshal() (dAtA []byte, err error) {
+func (m *QuerySpendableSupplyResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -858,42 +1300,26 @@ func (m *QueryVestingAccountsResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryVestingAccountsResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QuerySpendableSupplyResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryVestingAccountsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QuerySpendableSupplyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
 	}
-	if len(m.Accounts) > 0 {
-		for iNdEx := len(m.Accounts) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Accounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -991,6 +1417,70 @@ func (m *QueryParamsResponse) Size() (n int) {
 	return n
 }
 
+func (m *QueryVestingAccountsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryVestingAccountsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for _, e := range m.Accounts {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryQVestingAccountsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryQVestingAccountsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for _, e := range m.Accounts {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
 func (m *QuerySpendableBalancesRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1027,35 +1517,27 @@ func (m *QuerySpendableBalancesResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryVestingAccountsRequest) Size() (n int) {
+func (m *QuerySpendableSupplyRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
+	l = len(m.Denom)
+	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
 
-func (m *QueryVestingAccountsResponse) Size() (n int) {
+func (m *QuerySpendableSupplyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Accounts) > 0 {
-		for _, e := range m.Accounts {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
+	l = m.Amount.Size()
+	n += 1 + l + sovQuery(uint64(l))
 	return n
 }
 
@@ -1198,6 +1680,418 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryVestingAccountsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryVestingAccountsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryVestingAccountsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryVestingAccountsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryVestingAccountsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryVestingAccountsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Accounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Accounts = append(m.Accounts, &types.Any{})
+			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryQVestingAccountsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryQVestingAccountsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryQVestingAccountsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryQVestingAccountsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryQVestingAccountsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryQVestingAccountsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Accounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Accounts = append(m.Accounts, &types.Any{})
+			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1398,7 +2292,7 @@ func (m *QuerySpendableBalancesResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Balances = append(m.Balances, types.Coin{})
+			m.Balances = append(m.Balances, types1.Coin{})
 			if err := m.Balances[len(m.Balances)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1460,7 +2354,7 @@ func (m *QuerySpendableBalancesResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryVestingAccountsRequest) Unmarshal(dAtA []byte) error {
+func (m *QuerySpendableSupplyRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1483,17 +2377,17 @@ func (m *QueryVestingAccountsRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryVestingAccountsRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QuerySpendableSupplyRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryVestingAccountsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QuerySpendableSupplyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1503,27 +2397,23 @@ func (m *QueryVestingAccountsRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthQuery
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageRequest{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1546,7 +2436,7 @@ func (m *QueryVestingAccountsRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryVestingAccountsResponse) Unmarshal(dAtA []byte) error {
+func (m *QuerySpendableSupplyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1569,15 +2459,15 @@ func (m *QueryVestingAccountsResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryVestingAccountsResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QuerySpendableSupplyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryVestingAccountsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QuerySpendableSupplyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Accounts", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1604,44 +2494,7 @@ func (m *QueryVestingAccountsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Accounts = append(m.Accounts, &types1.Any{})
-			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageResponse{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
