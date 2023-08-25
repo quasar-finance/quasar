@@ -27,6 +27,9 @@ func GetQueryCmd() *cobra.Command {
 		CmdQuerySpendableBalances(),
 		CmdQuerySpendableSupply(),
 		CmdQueryVestingLockedSupply(),
+		CmdQueryDelegationLockedSupply(),
+		CmdQueryDelegatorLockedSupply(),
+		CmdTotalLockedSupply(),
 	)
 
 	return cmd
@@ -135,7 +138,7 @@ func CmdQueryQVestingAccounts() *cobra.Command {
 func CmdQuerySpendableBalances() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spendable-balances [address]",
-		Short: "shows the spendable balances in a paginated response for a given vesting account",
+		Short: "shows the spendable balances for a given vesting account in a paginated response ",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqAddress := args[0]
@@ -176,7 +179,7 @@ func CmdQuerySpendableBalances() *cobra.Command {
 func CmdQuerySpendableSupply() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spendable-supply [denom]",
-		Short: "shows the aggregated total spendable balances supply for a given denom",
+		Short: "shows the total spendable balances supply across all accounts for a given denom",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqDenom := args[0]
@@ -197,6 +200,7 @@ func CmdQuerySpendableSupply() *cobra.Command {
 			return clientCtx.PrintProto(res)
 		},
 	}
+
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
@@ -205,7 +209,7 @@ func CmdQuerySpendableSupply() *cobra.Command {
 func CmdQueryVestingLockedSupply() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vesting-locked-supply [denom]",
-		Short: "shows the total locked-supply in vesting accounts for a given denom",
+		Short: "shows the total vesting locked supply across all the accounts for a given denom",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqDenom := args[0]
@@ -226,6 +230,93 @@ func CmdQueryVestingLockedSupply() *cobra.Command {
 			return clientCtx.PrintProto(res)
 		},
 	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdQueryDelegationLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delegation-locked-supply",
+		Short: "shows the total delegation locked supply across all accounts for the staking denom",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.DelegationLockedSupply(ctx, &types.QueryDelegationLockedSupplyRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdQueryDelegatorLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delegator-locked-supply [address]",
+		Short: "shows the total delegation locked supply in delegation for a given account and the staking denom",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqAddress := args[0]
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.DelegatorLockedSupply(ctx, &types.QueryDelegatorLockedSupplyRequest{Address: reqAddress})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdTotalLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "total-locked-supply",
+		Short: "shows the total vesting and delegation locked supply across all accounts for the staking denom",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.TotalLockedSupply(ctx, &types.QueryTotalLockedSupplyRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

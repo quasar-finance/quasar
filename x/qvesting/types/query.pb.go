@@ -218,7 +218,7 @@ func (m *QueryVestingAccountsResponse) GetPagination() *query.PageResponse {
 	return nil
 }
 
-// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
+// QueryQVestingAccountsRequest is the request type for the Query/Accounts RPC method.
 type QueryQVestingAccountsRequest struct {
 	// pagination defines an optional pagination for the request.
 	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
@@ -264,7 +264,7 @@ func (m *QueryQVestingAccountsRequest) GetPagination() *query.PageRequest {
 	return nil
 }
 
-// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+// QueryQVestingAccountsResponse is the response type for the Query/Accounts RPC method.
 type QueryQVestingAccountsResponse struct {
 	// accounts are the existing vesting accounts
 	Accounts []*types.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
@@ -361,8 +361,7 @@ func (m *QuerySpendableBalancesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QuerySpendableBalancesRequest proto.InternalMessageInfo
 
-// QuerySpendableBalancesResponse defines the gRPC response structure for querying
-// an account's spendable balances.
+// QuerySpendableBalancesResponse defines the gRPC response structure for querying an account's spendable balances.
 type QuerySpendableBalancesResponse struct {
 	// balances is the spendable balances of all the coins.
 	Balances github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=balances,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"balances"`
@@ -555,7 +554,7 @@ func (m *QueryVestingLockedSupplyRequest) GetDenom() string {
 	return ""
 }
 
-// QueryVestingAccountsResponse is the response type for the Query/VestingLockedSupply RPC method.
+// QueryVestingLockedSupplyResponse is the response type for the Query/VestingLockedSupply RPC method.
 type QueryVestingLockedSupplyResponse struct {
 	// amount is the supply of the coin.
 	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
@@ -601,6 +600,264 @@ func (m *QueryVestingLockedSupplyResponse) GetAmount() types1.Coin {
 	return types1.Coin{}
 }
 
+// QueryVestingLockedSupplyRequest is the request type for the Query/DelegationLockedSupply RPC method.
+type QueryDelegationLockedSupplyRequest struct {
+}
+
+func (m *QueryDelegationLockedSupplyRequest) Reset()         { *m = QueryDelegationLockedSupplyRequest{} }
+func (m *QueryDelegationLockedSupplyRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDelegationLockedSupplyRequest) ProtoMessage()    {}
+func (*QueryDelegationLockedSupplyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{12}
+}
+func (m *QueryDelegationLockedSupplyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDelegationLockedSupplyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDelegationLockedSupplyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDelegationLockedSupplyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDelegationLockedSupplyRequest.Merge(m, src)
+}
+func (m *QueryDelegationLockedSupplyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDelegationLockedSupplyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDelegationLockedSupplyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDelegationLockedSupplyRequest proto.InternalMessageInfo
+
+// QueryVestingLockedSupplyResponse is the response type for the Query/DelegationLockedSupply RPC method.
+type QueryDelegationLockedSupplyResponse struct {
+	// amount is the supply of the coin.
+	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
+}
+
+func (m *QueryDelegationLockedSupplyResponse) Reset()         { *m = QueryDelegationLockedSupplyResponse{} }
+func (m *QueryDelegationLockedSupplyResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDelegationLockedSupplyResponse) ProtoMessage()    {}
+func (*QueryDelegationLockedSupplyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{13}
+}
+func (m *QueryDelegationLockedSupplyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDelegationLockedSupplyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDelegationLockedSupplyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDelegationLockedSupplyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDelegationLockedSupplyResponse.Merge(m, src)
+}
+func (m *QueryDelegationLockedSupplyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDelegationLockedSupplyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDelegationLockedSupplyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDelegationLockedSupplyResponse proto.InternalMessageInfo
+
+func (m *QueryDelegationLockedSupplyResponse) GetAmount() types1.Coin {
+	if m != nil {
+		return m.Amount
+	}
+	return types1.Coin{}
+}
+
+// QueryDelegatorLockedSupplyRequest is the request type for the Query/DelegatorLockedSupply RPC method.
+type QueryDelegatorLockedSupplyRequest struct {
+	// address is the address to query delegation balance for.
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (m *QueryDelegatorLockedSupplyRequest) Reset()         { *m = QueryDelegatorLockedSupplyRequest{} }
+func (m *QueryDelegatorLockedSupplyRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDelegatorLockedSupplyRequest) ProtoMessage()    {}
+func (*QueryDelegatorLockedSupplyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{14}
+}
+func (m *QueryDelegatorLockedSupplyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDelegatorLockedSupplyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDelegatorLockedSupplyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDelegatorLockedSupplyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDelegatorLockedSupplyRequest.Merge(m, src)
+}
+func (m *QueryDelegatorLockedSupplyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDelegatorLockedSupplyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDelegatorLockedSupplyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDelegatorLockedSupplyRequest proto.InternalMessageInfo
+
+func (m *QueryDelegatorLockedSupplyRequest) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+// QueryDelegatorLockedSupplyResponse is the response type for the Query/DelegatorLockedSupply RPC method.
+type QueryDelegatorLockedSupplyResponse struct {
+	// amount is the supply of the coin.
+	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
+}
+
+func (m *QueryDelegatorLockedSupplyResponse) Reset()         { *m = QueryDelegatorLockedSupplyResponse{} }
+func (m *QueryDelegatorLockedSupplyResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDelegatorLockedSupplyResponse) ProtoMessage()    {}
+func (*QueryDelegatorLockedSupplyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{15}
+}
+func (m *QueryDelegatorLockedSupplyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDelegatorLockedSupplyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDelegatorLockedSupplyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDelegatorLockedSupplyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDelegatorLockedSupplyResponse.Merge(m, src)
+}
+func (m *QueryDelegatorLockedSupplyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDelegatorLockedSupplyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDelegatorLockedSupplyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDelegatorLockedSupplyResponse proto.InternalMessageInfo
+
+func (m *QueryDelegatorLockedSupplyResponse) GetAmount() types1.Coin {
+	if m != nil {
+		return m.Amount
+	}
+	return types1.Coin{}
+}
+
+// QueryTotalLockedSupplyRequest is the request type for the Query/TotalLockedSupply RPC method.
+type QueryTotalLockedSupplyRequest struct {
+}
+
+func (m *QueryTotalLockedSupplyRequest) Reset()         { *m = QueryTotalLockedSupplyRequest{} }
+func (m *QueryTotalLockedSupplyRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryTotalLockedSupplyRequest) ProtoMessage()    {}
+func (*QueryTotalLockedSupplyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{16}
+}
+func (m *QueryTotalLockedSupplyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTotalLockedSupplyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTotalLockedSupplyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTotalLockedSupplyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTotalLockedSupplyRequest.Merge(m, src)
+}
+func (m *QueryTotalLockedSupplyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTotalLockedSupplyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTotalLockedSupplyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTotalLockedSupplyRequest proto.InternalMessageInfo
+
+// QueryTotalLockedSupplyResponse is the response type for the Query/TotalLockedSupply RPC method.
+type QueryTotalLockedSupplyResponse struct {
+	// amount is the supply of the coin.
+	Amount types1.Coin `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount"`
+}
+
+func (m *QueryTotalLockedSupplyResponse) Reset()         { *m = QueryTotalLockedSupplyResponse{} }
+func (m *QueryTotalLockedSupplyResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryTotalLockedSupplyResponse) ProtoMessage()    {}
+func (*QueryTotalLockedSupplyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2ccd23b8551580b1, []int{17}
+}
+func (m *QueryTotalLockedSupplyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTotalLockedSupplyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTotalLockedSupplyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTotalLockedSupplyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTotalLockedSupplyResponse.Merge(m, src)
+}
+func (m *QueryTotalLockedSupplyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTotalLockedSupplyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTotalLockedSupplyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTotalLockedSupplyResponse proto.InternalMessageInfo
+
+func (m *QueryTotalLockedSupplyResponse) GetAmount() types1.Coin {
+	if m != nil {
+		return m.Amount
+	}
+	return types1.Coin{}
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryParamsResponse")
@@ -614,63 +871,79 @@ func init() {
 	proto.RegisterType((*QuerySpendableSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QuerySpendableSupplyResponse")
 	proto.RegisterType((*QueryVestingLockedSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingLockedSupplyRequest")
 	proto.RegisterType((*QueryVestingLockedSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryVestingLockedSupplyResponse")
+	proto.RegisterType((*QueryDelegationLockedSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryDelegationLockedSupplyRequest")
+	proto.RegisterType((*QueryDelegationLockedSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryDelegationLockedSupplyResponse")
+	proto.RegisterType((*QueryDelegatorLockedSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryDelegatorLockedSupplyRequest")
+	proto.RegisterType((*QueryDelegatorLockedSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryDelegatorLockedSupplyResponse")
+	proto.RegisterType((*QueryTotalLockedSupplyRequest)(nil), "quasarlabs.quasarnode.qvesting.QueryTotalLockedSupplyRequest")
+	proto.RegisterType((*QueryTotalLockedSupplyResponse)(nil), "quasarlabs.quasarnode.qvesting.QueryTotalLockedSupplyResponse")
 }
 
 func init() { proto.RegisterFile("qvesting/query.proto", fileDescriptor_2ccd23b8551580b1) }
 
 var fileDescriptor_2ccd23b8551580b1 = []byte{
-	// 814 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0xcf, 0x4f, 0x13, 0x4b,
-	0x1c, 0xef, 0xf0, 0x1e, 0x7d, 0x30, 0x24, 0x8f, 0xf7, 0x86, 0xbe, 0x04, 0xf6, 0xe1, 0x96, 0xec,
-	0x01, 0x1b, 0x13, 0x76, 0x69, 0x7b, 0x00, 0x91, 0x9f, 0x15, 0xf5, 0xa0, 0x07, 0x28, 0x89, 0x26,
-	0x72, 0x20, 0xb3, 0xed, 0xb0, 0x36, 0xb4, 0x3b, 0xdb, 0xce, 0x96, 0xd8, 0x10, 0x2e, 0x9e, 0x4c,
-	0xbc, 0x98, 0xf8, 0x0f, 0xe0, 0xd5, 0x44, 0x4f, 0xfe, 0x0d, 0x86, 0x70, 0x50, 0xa2, 0x17, 0x4e,
-	0x62, 0xc0, 0x83, 0x7f, 0x86, 0xe9, 0xcc, 0xec, 0xf6, 0x37, 0x5d, 0xaa, 0x26, 0x9e, 0x76, 0x67,
-	0x77, 0x3e, 0xdf, 0xef, 0xe7, 0xf3, 0xe9, 0x7c, 0x3f, 0x5b, 0x18, 0x29, 0xee, 0x12, 0xe6, 0xe6,
-	0x6c, 0xcb, 0x28, 0x96, 0x49, 0xa9, 0xa2, 0x3b, 0x25, 0xea, 0x52, 0xa4, 0x16, 0xcb, 0x98, 0xe1,
-	0x52, 0x1e, 0x9b, 0x4c, 0x17, 0xb7, 0x36, 0xcd, 0x12, 0xdd, 0xdb, 0xab, 0x44, 0x2c, 0x6a, 0x51,
-	0xbe, 0xd5, 0xa8, 0xde, 0x09, 0x94, 0x32, 0x6e, 0x51, 0x6a, 0xe5, 0x89, 0x81, 0x9d, 0x9c, 0x81,
-	0x6d, 0x9b, 0xba, 0xd8, 0xcd, 0x51, 0x9b, 0xc9, 0xb7, 0xd7, 0x32, 0x94, 0x15, 0x28, 0x33, 0x4c,
-	0xcc, 0x88, 0x68, 0x66, 0xec, 0xc6, 0x4d, 0xe2, 0xe2, 0xb8, 0xe1, 0x60, 0x2b, 0x67, 0xf3, 0xcd,
-	0x72, 0xef, 0x7f, 0x3e, 0x2b, 0x07, 0x97, 0x70, 0xc1, 0x2b, 0x31, 0x26, 0x1b, 0xf0, 0x95, 0x59,
-	0xde, 0x36, 0xb0, 0x2d, 0x19, 0x2b, 0x6a, 0x7d, 0x75, 0xaf, 0x6e, 0x86, 0xe6, 0xbc, 0x8a, 0x63,
-	0xe2, 0xfd, 0x96, 0x20, 0x2d, 0x16, 0xe2, 0x95, 0x16, 0x81, 0x68, 0xbd, 0x4a, 0x67, 0x8d, 0xb7,
-	0x4a, 0x93, 0x62, 0x99, 0x30, 0x57, 0xdb, 0x84, 0x23, 0x0d, 0x4f, 0x99, 0x43, 0x6d, 0x46, 0xd0,
-	0x2a, 0x0c, 0x0b, 0x4a, 0xa3, 0x60, 0x02, 0xc4, 0x86, 0x12, 0x93, 0xfa, 0xc5, 0x56, 0xe9, 0x02,
-	0x9f, 0xfa, 0xf3, 0xf0, 0x73, 0x34, 0x94, 0x96, 0x58, 0x8d, 0xc0, 0xff, 0x79, 0xf1, 0xfb, 0x62,
-	0xd3, 0x4a, 0x26, 0x43, 0xcb, 0xb6, 0xeb, 0xf5, 0x46, 0xb7, 0x21, 0xac, 0x59, 0xe2, 0x37, 0x92,
-	0xa4, 0xab, 0x0a, 0x75, 0xf1, 0x63, 0x49, 0x9d, 0xfa, 0x1a, 0xb6, 0x88, 0xc4, 0xa6, 0xeb, 0x90,
-	0xda, 0x6b, 0x00, 0xc7, 0xdb, 0xf7, 0xf1, 0xd5, 0x0c, 0x60, 0xf9, 0x6c, 0x14, 0x4c, 0xfc, 0x11,
-	0x1b, 0x4a, 0x44, 0x74, 0xe1, 0xb1, 0xee, 0x79, 0xac, 0xaf, 0xd8, 0x95, 0x14, 0x3a, 0x7a, 0x3b,
-	0xf5, 0x77, 0x63, 0x91, 0xb4, 0x8f, 0x44, 0x77, 0x1a, 0xe8, 0xf6, 0x71, 0xba, 0x57, 0xbb, 0xd2,
-	0x15, 0x14, 0x1a, 0xf8, 0x6e, 0x4b, 0xba, 0xeb, 0xbf, 0xd8, 0x97, 0x37, 0x00, 0x5e, 0xe9, 0xd0,
-	0xe8, 0xf7, 0x34, 0xe6, 0x99, 0x47, 0x78, 0xc3, 0x21, 0x76, 0x16, 0x9b, 0x79, 0x92, 0xc2, 0x79,
-	0x6c, 0x67, 0x88, 0x6f, 0xcd, 0x28, 0xfc, 0x0b, 0x67, 0xb3, 0x25, 0xc2, 0xc4, 0xc1, 0x1c, 0x4c,
-	0x7b, 0xcb, 0x26, 0xd3, 0xfa, 0x7a, 0x35, 0x6d, 0x6e, 0xe0, 0xe9, 0x41, 0x34, 0xf4, 0xed, 0x20,
-	0x1a, 0xd2, 0x3e, 0x02, 0xa8, 0x76, 0x62, 0x23, 0xfd, 0xb3, 0xe0, 0x80, 0x29, 0x9f, 0x49, 0xff,
-	0xc6, 0x1a, 0x5a, 0x7a, 0xcd, 0x6e, 0xd2, 0x9c, 0x9d, 0x9a, 0xae, 0xce, 0xc6, 0xab, 0xd3, 0x68,
-	0xcc, 0xca, 0xb9, 0x8f, 0xca, 0xa6, 0x9e, 0xa1, 0x05, 0x39, 0xa1, 0xf2, 0x32, 0xc5, 0xb2, 0x3b,
-	0x86, 0x5b, 0x71, 0x08, 0xe3, 0x00, 0x96, 0xf6, 0x8b, 0xff, 0x3c, 0x8b, 0x93, 0x72, 0x24, 0x7d,
-	0x4d, 0x1b, 0x65, 0xc7, 0xc9, 0x57, 0x3c, 0x7f, 0x23, 0xb0, 0x3f, 0x4b, 0x6c, 0x5a, 0x90, 0xee,
-	0x8a, 0x85, 0xf6, 0x40, 0x1e, 0xd8, 0x16, 0x90, 0xb4, 0x61, 0x06, 0x86, 0x71, 0xa1, 0x7a, 0x16,
-	0xe4, 0x61, 0xbd, 0xc0, 0x04, 0x19, 0x10, 0x62, 0xbb, 0x36, 0x03, 0xa3, 0xf5, 0x83, 0x7b, 0x8f,
-	0x66, 0x76, 0x48, 0x36, 0x08, 0xa3, 0x4d, 0x38, 0xd1, 0x19, 0xf8, 0x83, 0xac, 0x12, 0x1f, 0x06,
-	0x61, 0x3f, 0xaf, 0x8e, 0x5e, 0x02, 0x18, 0x16, 0xc9, 0x86, 0x12, 0xdd, 0x12, 0xb0, 0x35, 0x5c,
-	0x95, 0xe4, 0xa5, 0x30, 0x82, 0xb6, 0xa6, 0x3f, 0xf9, 0xf4, 0xf5, 0x45, 0x5f, 0x0c, 0x4d, 0x1a,
-	0x35, 0xb0, 0x51, 0x03, 0x1b, 0x4d, 0xdf, 0x0c, 0xf4, 0x0e, 0xc0, 0xe1, 0xa6, 0xf9, 0x46, 0x37,
-	0x02, 0x35, 0x6e, 0x1f, 0x3f, 0xca, 0x7c, 0x6f, 0x60, 0x49, 0x7f, 0x96, 0xd3, 0x4f, 0xa0, 0xe9,
-	0x6e, 0xf4, 0xe5, 0x75, 0xcb, 0x8f, 0x91, 0x23, 0x00, 0xff, 0x69, 0x4e, 0x2a, 0x14, 0x8c, 0x4c,
-	0x87, 0x24, 0x55, 0x16, 0x7a, 0x44, 0x4b, 0x2d, 0xd7, 0xb9, 0x96, 0x24, 0x8a, 0x77, 0xd3, 0x52,
-	0x6c, 0x11, 0x73, 0x02, 0xe0, 0xbf, 0x2d, 0xb9, 0x81, 0x82, 0xf1, 0xe9, 0x94, 0x7e, 0xca, 0x62,
-	0xaf, 0x70, 0xa9, 0x67, 0x95, 0xeb, 0x59, 0x44, 0xf3, 0xdd, 0xf4, 0x30, 0xaf, 0xc4, 0x96, 0x97,
-	0x40, 0xc6, 0x9e, 0x0c, 0xda, 0x7d, 0xf4, 0x1e, 0xc0, 0xe1, 0xa6, 0x24, 0x08, 0x78, 0xe0, 0xda,
-	0x87, 0x4e, 0xc0, 0x03, 0xd7, 0x21, 0x7c, 0xb4, 0x65, 0x2e, 0x6a, 0x0e, 0xcd, 0x06, 0x17, 0xc5,
-	0x78, 0x05, 0x63, 0x8f, 0x67, 0xc9, 0x3e, 0x3a, 0x05, 0x70, 0xa4, 0x4d, 0x90, 0xa0, 0xa5, 0xcb,
-	0x0c, 0x42, 0x9b, 0xec, 0x52, 0x96, 0x7b, 0x2f, 0x20, 0xc5, 0xdd, 0xe2, 0xe2, 0x96, 0xd0, 0x42,
-	0xd0, 0x69, 0xca, 0xf3, 0x2a, 0x4d, 0x0a, 0x53, 0x77, 0x0f, 0xcf, 0x54, 0x70, 0x7c, 0xa6, 0x82,
-	0x2f, 0x67, 0x2a, 0x78, 0x7e, 0xae, 0x86, 0x8e, 0xcf, 0xd5, 0xd0, 0xc9, 0xb9, 0x1a, 0x7a, 0x18,
-	0xaf, 0xfb, 0x18, 0xb5, 0x6f, 0xf1, 0xb8, 0xd6, 0x84, 0x7f, 0x9b, 0xcc, 0x30, 0xff, 0x6b, 0x90,
-	0xfc, 0x1e, 0x00, 0x00, 0xff, 0xff, 0x7f, 0x12, 0x9a, 0x49, 0x54, 0x0b, 0x00, 0x00,
+	// 970 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x57, 0x41, 0x8f, 0xdb, 0x44,
+	0x18, 0xcd, 0x2c, 0x34, 0x2c, 0x53, 0xa9, 0xa5, 0xd3, 0x14, 0xed, 0x9a, 0xe2, 0x2c, 0x06, 0x95,
+	0x08, 0xa9, 0x76, 0x93, 0x08, 0xb5, 0xb4, 0xdd, 0xb6, 0xc9, 0x2e, 0x20, 0x04, 0x87, 0x36, 0x45,
+	0x20, 0xa8, 0x60, 0x35, 0x8e, 0xa7, 0x26, 0xaa, 0xe3, 0x71, 0x32, 0x4e, 0x45, 0xb4, 0xda, 0x0b,
+	0x27, 0x24, 0x2e, 0x48, 0xfc, 0x81, 0xe5, 0x8a, 0x04, 0x27, 0x7e, 0x03, 0x5a, 0xed, 0x01, 0x56,
+	0x70, 0xd9, 0x13, 0x8b, 0x36, 0x1c, 0xe0, 0xcc, 0x1f, 0x40, 0x99, 0x19, 0x7b, 0x63, 0xc7, 0x4e,
+	0x9c, 0x04, 0xa4, 0x9e, 0x12, 0xdb, 0xf3, 0xbd, 0xef, 0xbd, 0xe7, 0xf9, 0xe6, 0x25, 0xb0, 0xd0,
+	0x79, 0x4c, 0x98, 0xdf, 0x72, 0x6d, 0xa3, 0xd3, 0x23, 0xdd, 0xbe, 0xee, 0x75, 0xa9, 0x4f, 0x91,
+	0xda, 0xe9, 0x61, 0x86, 0xbb, 0x0e, 0x36, 0x99, 0x2e, 0xbe, 0xba, 0xd4, 0x22, 0x7a, 0xb0, 0x56,
+	0x29, 0xd8, 0xd4, 0xa6, 0x7c, 0xa9, 0x31, 0xfc, 0x26, 0xaa, 0x94, 0x8b, 0x36, 0xa5, 0xb6, 0x43,
+	0x0c, 0xec, 0xb5, 0x0c, 0xec, 0xba, 0xd4, 0xc7, 0x7e, 0x8b, 0xba, 0x4c, 0x3e, 0x7d, 0xad, 0x49,
+	0x59, 0x9b, 0x32, 0xc3, 0xc4, 0x8c, 0x88, 0x66, 0xc6, 0xe3, 0xb2, 0x49, 0x7c, 0x5c, 0x36, 0x3c,
+	0x6c, 0xb7, 0x5c, 0xbe, 0x58, 0xae, 0xbd, 0x10, 0xb2, 0xf2, 0x70, 0x17, 0xb7, 0x03, 0x88, 0x55,
+	0xd9, 0x80, 0x5f, 0x99, 0xbd, 0x87, 0x06, 0x76, 0x25, 0x63, 0x45, 0x1d, 0x45, 0x0f, 0x70, 0x9b,
+	0xb4, 0x15, 0x20, 0xae, 0x8a, 0xe7, 0x5b, 0x82, 0xb4, 0xb8, 0x10, 0x8f, 0xb4, 0x02, 0x44, 0xf7,
+	0x86, 0x74, 0xee, 0xf2, 0x56, 0x0d, 0xd2, 0xe9, 0x11, 0xe6, 0x6b, 0x0f, 0xe0, 0xf9, 0xc8, 0x5d,
+	0xe6, 0x51, 0x97, 0x11, 0xb4, 0x09, 0xf3, 0x82, 0xd2, 0x0a, 0x58, 0x03, 0xa5, 0xd3, 0x95, 0x4b,
+	0xfa, 0x64, 0xab, 0x74, 0x51, 0x5f, 0x7f, 0x7a, 0xef, 0xf7, 0x62, 0xae, 0x21, 0x6b, 0x35, 0x02,
+	0x5f, 0xe0, 0xe0, 0x1f, 0x88, 0x45, 0xb5, 0x66, 0x93, 0xf6, 0x5c, 0x3f, 0xe8, 0x8d, 0xde, 0x82,
+	0xf0, 0xc4, 0x92, 0xb0, 0x91, 0x24, 0x3d, 0x54, 0xa8, 0x8b, 0x97, 0x25, 0x75, 0xea, 0x77, 0xb1,
+	0x4d, 0x64, 0x6d, 0x63, 0xa4, 0x52, 0xfb, 0x1e, 0xc0, 0x8b, 0xc9, 0x7d, 0x42, 0x35, 0xcb, 0x58,
+	0xde, 0x5b, 0x01, 0x6b, 0x4f, 0x95, 0x4e, 0x57, 0x0a, 0xba, 0xf0, 0x58, 0x0f, 0x3c, 0xd6, 0x6b,
+	0x6e, 0xbf, 0x8e, 0xf6, 0x7f, 0xbc, 0x7c, 0x26, 0x0a, 0xd2, 0x08, 0x2b, 0xd1, 0xdb, 0x11, 0xba,
+	0x4b, 0x9c, 0xee, 0xab, 0x53, 0xe9, 0x0a, 0x0a, 0x11, 0xbe, 0x0f, 0x25, 0xdd, 0x7b, 0xff, 0xb3,
+	0x2f, 0x3f, 0x00, 0xf8, 0x62, 0x4a, 0xa3, 0x27, 0xd3, 0x98, 0xaf, 0x02, 0xc2, 0xf7, 0x3d, 0xe2,
+	0x5a, 0xd8, 0x74, 0x48, 0x1d, 0x3b, 0xd8, 0x6d, 0x92, 0xd0, 0x9a, 0x15, 0xf8, 0x0c, 0xb6, 0xac,
+	0x2e, 0x61, 0x62, 0x63, 0x3e, 0xdb, 0x08, 0x2e, 0x63, 0xa6, 0x2d, 0xcd, 0x6b, 0xda, 0xf5, 0xe5,
+	0x2f, 0x77, 0x8b, 0xb9, 0xbf, 0x76, 0x8b, 0x39, 0xed, 0x57, 0x00, 0xd5, 0x34, 0x36, 0xd2, 0x3f,
+	0x1b, 0x2e, 0x9b, 0xf2, 0x9e, 0xf4, 0x6f, 0x35, 0xd2, 0x32, 0x68, 0xb6, 0x41, 0x5b, 0x6e, 0xfd,
+	0xca, 0x70, 0x36, 0xbe, 0x3b, 0x2a, 0x96, 0xec, 0x96, 0xff, 0x59, 0xcf, 0xd4, 0x9b, 0xb4, 0x2d,
+	0x27, 0x54, 0x7e, 0x5c, 0x66, 0xd6, 0x23, 0xc3, 0xef, 0x7b, 0x84, 0xf1, 0x02, 0xd6, 0x08, 0xc1,
+	0xff, 0x3b, 0x8b, 0xab, 0x72, 0x24, 0x43, 0x4d, 0xf7, 0x7b, 0x9e, 0xe7, 0xf4, 0x03, 0x7f, 0x0b,
+	0xf0, 0x94, 0x45, 0x5c, 0xda, 0x96, 0xee, 0x8a, 0x0b, 0xed, 0x43, 0xb9, 0x61, 0xc7, 0x8a, 0xa4,
+	0x0d, 0x57, 0x61, 0x1e, 0xb7, 0x87, 0x7b, 0x41, 0x6e, 0xd6, 0x09, 0x26, 0xc8, 0x03, 0x42, 0x2c,
+	0xd7, 0xae, 0xc2, 0xe2, 0xe8, 0xe0, 0xbe, 0x47, 0x9b, 0x8f, 0x88, 0x95, 0x85, 0xd1, 0x03, 0xb8,
+	0x96, 0x5e, 0xb8, 0x28, 0xab, 0x57, 0xa0, 0xc6, 0xc1, 0x37, 0x89, 0x43, 0x6c, 0x6e, 0x5b, 0x02,
+	0x31, 0xed, 0x53, 0xf8, 0xf2, 0xc4, 0x55, 0x8b, 0xb2, 0x58, 0x87, 0x2f, 0x8d, 0xe2, 0xd3, 0x6e,
+	0x92, 0x3b, 0xa9, 0xf3, 0xa0, 0x7d, 0x12, 0x15, 0x11, 0x2f, 0x5f, 0x94, 0x5d, 0x51, 0x4e, 0xea,
+	0xfb, 0xd4, 0xc7, 0x4e, 0x92, 0x3d, 0x1f, 0xc9, 0xe1, 0x49, 0x58, 0xb0, 0x60, 0xef, 0xca, 0x3f,
+	0x67, 0xe0, 0x29, 0x8e, 0x8d, 0xbe, 0x05, 0x30, 0x2f, 0x92, 0x07, 0x55, 0xa6, 0x25, 0xd4, 0x78,
+	0xf8, 0x29, 0xd5, 0x99, 0x6a, 0x04, 0x6d, 0x4d, 0xff, 0xe2, 0xb7, 0x3f, 0xbf, 0x59, 0x2a, 0xa1,
+	0x4b, 0xc6, 0x49, 0xb1, 0x71, 0x52, 0x6c, 0xc4, 0x32, 0x1d, 0xfd, 0x04, 0xe0, 0xd9, 0xd8, 0xf9,
+	0x8b, 0x6e, 0x64, 0x6a, 0x9c, 0x1c, 0x0f, 0xca, 0xcd, 0xf9, 0x8a, 0x25, 0xfd, 0x6b, 0x9c, 0x7e,
+	0x05, 0x5d, 0x99, 0x46, 0x5f, 0x7e, 0x6e, 0x85, 0xc7, 0xfc, 0x3e, 0x80, 0xcf, 0xc5, 0x93, 0x04,
+	0x65, 0x23, 0x93, 0x92, 0x74, 0xca, 0xfa, 0x9c, 0xd5, 0x52, 0xcb, 0x1b, 0x5c, 0x4b, 0x15, 0x95,
+	0xa7, 0x69, 0xe9, 0x8c, 0x89, 0x39, 0x04, 0xf0, 0xdc, 0xd8, 0xb9, 0x8e, 0xb2, 0xf1, 0x49, 0x4b,
+	0x27, 0xe5, 0xd6, 0xbc, 0xe5, 0x52, 0xcf, 0x26, 0xd7, 0x73, 0x0b, 0xdd, 0x9c, 0xa6, 0x87, 0x05,
+	0x10, 0x5b, 0x41, 0x42, 0x18, 0xdb, 0x72, 0xf0, 0x77, 0xd0, 0xcf, 0x00, 0x9e, 0x8d, 0x9d, 0xd4,
+	0x19, 0x37, 0x5c, 0x72, 0x28, 0x64, 0xdc, 0x70, 0x29, 0xe1, 0xa0, 0xdd, 0xe1, 0xa2, 0xae, 0xa3,
+	0x6b, 0xd9, 0x45, 0x31, 0x8e, 0x60, 0x6c, 0xf3, 0xb3, 0x7e, 0x07, 0x1d, 0x01, 0x78, 0x3e, 0xe1,
+	0xa0, 0x47, 0xb7, 0x67, 0x19, 0x84, 0x84, 0x33, 0x4a, 0xb9, 0x33, 0x3f, 0x80, 0x14, 0xf7, 0x26,
+	0x17, 0x77, 0x1b, 0xad, 0x67, 0x9d, 0x26, 0x87, 0xa3, 0xc4, 0x15, 0x0e, 0x00, 0x7c, 0x3e, 0x39,
+	0x47, 0x50, 0x3d, 0x13, 0xc7, 0x89, 0x51, 0xa5, 0x6c, 0x2c, 0x84, 0x31, 0xeb, 0x7b, 0xb4, 0x42,
+	0x9c, 0xa8, 0x5a, 0xf4, 0x37, 0x80, 0x17, 0x12, 0xe3, 0x08, 0xd5, 0x66, 0x21, 0x98, 0x98, 0x84,
+	0x4a, 0x7d, 0x11, 0x08, 0x29, 0xf1, 0x1d, 0x2e, 0x71, 0x03, 0xd5, 0x32, 0x4a, 0xa4, 0xdd, 0xf8,
+	0xfb, 0x0c, 0x87, 0xf0, 0x17, 0x00, 0xcf, 0x8d, 0x45, 0x5f, 0xc6, 0xf3, 0x25, 0x2d, 0x53, 0x33,
+	0x9e, 0x2f, 0xa9, 0x89, 0xab, 0xdd, 0xe0, 0xfa, 0x5e, 0x47, 0xd5, 0x69, 0xfa, 0xfc, 0x21, 0x44,
+	0x54, 0x5b, 0xfd, 0xdd, 0xbd, 0x63, 0x15, 0x1c, 0x1c, 0xab, 0xe0, 0x8f, 0x63, 0x15, 0x7c, 0x3d,
+	0x50, 0x73, 0x07, 0x03, 0x35, 0x77, 0x38, 0x50, 0x73, 0x1f, 0x97, 0x47, 0x7e, 0xd0, 0x26, 0x03,
+	0x7f, 0x3e, 0x02, 0x3d, 0xfc, 0x7d, 0x6b, 0xe6, 0xf9, 0xdf, 0x8b, 0xea, 0xbf, 0x01, 0x00, 0x00,
+	0xff, 0xff, 0x1f, 0x40, 0x59, 0xa1, 0x98, 0x0f, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -687,16 +960,22 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// VestingAccounts queries all the vesting accounts created from all sources
 	VestingAccounts(ctx context.Context, in *QueryVestingAccountsRequest, opts ...grpc.CallOption) (*QueryVestingAccountsResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// QVestingAccounts queries all the vesting accounts created via qvesting module
 	QVestingAccounts(ctx context.Context, in *QueryQVestingAccountsRequest, opts ...grpc.CallOption) (*QueryQVestingAccountsResponse, error)
-	// SpendableBalances queries the spenable balance of all coins for a single account.
+	// SpendableBalances queries the spendable balance of all coins for a single account.
 	SpendableBalances(ctx context.Context, in *QuerySpendableBalancesRequest, opts ...grpc.CallOption) (*QuerySpendableBalancesResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// SpendableSupply queries the total spendable supply for a given denom
 	SpendableSupply(ctx context.Context, in *QuerySpendableSupplyRequest, opts ...grpc.CallOption) (*QuerySpendableSupplyResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// VestingLockedSupply queries the total vesting locked amount for a given denom
 	VestingLockedSupply(ctx context.Context, in *QueryVestingLockedSupplyRequest, opts ...grpc.CallOption) (*QueryVestingLockedSupplyResponse, error)
+	// DelegationLockedSupply queries the total delegated supply across all delegations for the staking denom
+	DelegationLockedSupply(ctx context.Context, in *QueryDelegationLockedSupplyRequest, opts ...grpc.CallOption) (*QueryDelegationLockedSupplyResponse, error)
+	// DelegatorLockedSupply queries the total delegated supply across all delegations for the staking denom
+	DelegatorLockedSupply(ctx context.Context, in *QueryDelegatorLockedSupplyRequest, opts ...grpc.CallOption) (*QueryDelegatorLockedSupplyResponse, error)
+	// TotalLockedSupply queries the total locked supply across all vesting and delegations for the staking denom
+	TotalLockedSupply(ctx context.Context, in *QueryTotalLockedSupplyRequest, opts ...grpc.CallOption) (*QueryTotalLockedSupplyResponse, error)
 }
 
 type queryClient struct {
@@ -761,20 +1040,53 @@ func (c *queryClient) VestingLockedSupply(ctx context.Context, in *QueryVestingL
 	return out, nil
 }
 
+func (c *queryClient) DelegationLockedSupply(ctx context.Context, in *QueryDelegationLockedSupplyRequest, opts ...grpc.CallOption) (*QueryDelegationLockedSupplyResponse, error) {
+	out := new(QueryDelegationLockedSupplyResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/DelegationLockedSupply", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) DelegatorLockedSupply(ctx context.Context, in *QueryDelegatorLockedSupplyRequest, opts ...grpc.CallOption) (*QueryDelegatorLockedSupplyResponse, error) {
+	out := new(QueryDelegatorLockedSupplyResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/DelegatorLockedSupply", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) TotalLockedSupply(ctx context.Context, in *QueryTotalLockedSupplyRequest, opts ...grpc.CallOption) (*QueryTotalLockedSupplyResponse, error) {
+	out := new(QueryTotalLockedSupplyResponse)
+	err := c.cc.Invoke(ctx, "/quasarlabs.quasarnode.qvesting.Query/TotalLockedSupply", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// VestingAccounts queries all the vesting accounts created from all sources
 	VestingAccounts(context.Context, *QueryVestingAccountsRequest) (*QueryVestingAccountsResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// QVestingAccounts queries all the vesting accounts created via qvesting module
 	QVestingAccounts(context.Context, *QueryQVestingAccountsRequest) (*QueryQVestingAccountsResponse, error)
-	// SpendableBalances queries the spenable balance of all coins for a single account.
+	// SpendableBalances queries the spendable balance of all coins for a single account.
 	SpendableBalances(context.Context, *QuerySpendableBalancesRequest) (*QuerySpendableBalancesResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// SpendableSupply queries the total spendable supply for a given denom
 	SpendableSupply(context.Context, *QuerySpendableSupplyRequest) (*QuerySpendableSupplyResponse, error)
-	// VestingAccounts returns all the existing vesting accounts
+	// VestingLockedSupply queries the total vesting locked amount for a given denom
 	VestingLockedSupply(context.Context, *QueryVestingLockedSupplyRequest) (*QueryVestingLockedSupplyResponse, error)
+	// DelegationLockedSupply queries the total delegated supply across all delegations for the staking denom
+	DelegationLockedSupply(context.Context, *QueryDelegationLockedSupplyRequest) (*QueryDelegationLockedSupplyResponse, error)
+	// DelegatorLockedSupply queries the total delegated supply across all delegations for the staking denom
+	DelegatorLockedSupply(context.Context, *QueryDelegatorLockedSupplyRequest) (*QueryDelegatorLockedSupplyResponse, error)
+	// TotalLockedSupply queries the total locked supply across all vesting and delegations for the staking denom
+	TotalLockedSupply(context.Context, *QueryTotalLockedSupplyRequest) (*QueryTotalLockedSupplyResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -798,6 +1110,15 @@ func (*UnimplementedQueryServer) SpendableSupply(ctx context.Context, req *Query
 }
 func (*UnimplementedQueryServer) VestingLockedSupply(ctx context.Context, req *QueryVestingLockedSupplyRequest) (*QueryVestingLockedSupplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VestingLockedSupply not implemented")
+}
+func (*UnimplementedQueryServer) DelegationLockedSupply(ctx context.Context, req *QueryDelegationLockedSupplyRequest) (*QueryDelegationLockedSupplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DelegationLockedSupply not implemented")
+}
+func (*UnimplementedQueryServer) DelegatorLockedSupply(ctx context.Context, req *QueryDelegatorLockedSupplyRequest) (*QueryDelegatorLockedSupplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DelegatorLockedSupply not implemented")
+}
+func (*UnimplementedQueryServer) TotalLockedSupply(ctx context.Context, req *QueryTotalLockedSupplyRequest) (*QueryTotalLockedSupplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TotalLockedSupply not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -912,6 +1233,60 @@ func _Query_VestingLockedSupply_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_DelegationLockedSupply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDelegationLockedSupplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).DelegationLockedSupply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/DelegationLockedSupply",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).DelegationLockedSupply(ctx, req.(*QueryDelegationLockedSupplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_DelegatorLockedSupply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDelegatorLockedSupplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).DelegatorLockedSupply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/DelegatorLockedSupply",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).DelegatorLockedSupply(ctx, req.(*QueryDelegatorLockedSupplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_TotalLockedSupply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryTotalLockedSupplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).TotalLockedSupply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quasarlabs.quasarnode.qvesting.Query/TotalLockedSupply",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).TotalLockedSupply(ctx, req.(*QueryTotalLockedSupplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "quasarlabs.quasarnode.qvesting.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -939,6 +1314,18 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VestingLockedSupply",
 			Handler:    _Query_VestingLockedSupply_Handler,
+		},
+		{
+			MethodName: "DelegationLockedSupply",
+			Handler:    _Query_DelegationLockedSupply_Handler,
+		},
+		{
+			MethodName: "DelegatorLockedSupply",
+			Handler:    _Query_DelegatorLockedSupply_Handler,
+		},
+		{
+			MethodName: "TotalLockedSupply",
+			Handler:    _Query_TotalLockedSupply_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1386,6 +1773,181 @@ func (m *QueryVestingLockedSupplyResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryDelegationLockedSupplyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDelegationLockedSupplyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDelegationLockedSupplyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDelegationLockedSupplyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDelegationLockedSupplyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDelegationLockedSupplyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDelegatorLockedSupplyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDelegatorLockedSupplyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDelegatorLockedSupplyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDelegatorLockedSupplyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDelegatorLockedSupplyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDelegatorLockedSupplyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryTotalLockedSupplyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTotalLockedSupplyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTotalLockedSupplyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryTotalLockedSupplyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTotalLockedSupplyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTotalLockedSupplyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1555,6 +2117,70 @@ func (m *QueryVestingLockedSupplyRequest) Size() (n int) {
 }
 
 func (m *QueryVestingLockedSupplyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Amount.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryDelegationLockedSupplyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryDelegationLockedSupplyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Amount.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryDelegatorLockedSupplyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryDelegatorLockedSupplyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Amount.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryTotalLockedSupplyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryTotalLockedSupplyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2628,6 +3254,437 @@ func (m *QueryVestingLockedSupplyResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: QueryVestingLockedSupplyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDelegationLockedSupplyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDelegationLockedSupplyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDelegationLockedSupplyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDelegationLockedSupplyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDelegationLockedSupplyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDelegationLockedSupplyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDelegatorLockedSupplyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDelegatorLockedSupplyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDelegatorLockedSupplyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDelegatorLockedSupplyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDelegatorLockedSupplyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDelegatorLockedSupplyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTotalLockedSupplyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTotalLockedSupplyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTotalLockedSupplyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTotalLockedSupplyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTotalLockedSupplyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTotalLockedSupplyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

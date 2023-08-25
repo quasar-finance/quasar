@@ -39,7 +39,7 @@ func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types
 // only the vesting accounts and paginates the results based on the provided query request.
 func (k Keeper) VestingAccounts(c context.Context, req *types.QueryVestingAccountsRequest) (*types.QueryVestingAccountsResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
@@ -71,10 +71,10 @@ func (k Keeper) VestingAccounts(c context.Context, req *types.QueryVestingAccoun
 	return &types.QueryVestingAccountsResponse{Accounts: vestingAccounts, Pagination: pageRes}, nil
 }
 
-// QVestingAccounts queries and returns a list of vesting accounts present in the qvesting module filtering out the ones created with auth module.
+// QVestingAccounts queries and returns a list of vesting accounts present in the qvesting module filtering out the ones created with auth module
 func (k Keeper) QVestingAccounts(c context.Context, req *types.QueryQVestingAccountsRequest) (*types.QueryQVestingAccountsResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
@@ -105,10 +105,10 @@ func (k Keeper) QVestingAccounts(c context.Context, req *types.QueryQVestingAcco
 	return &types.QueryQVestingAccountsResponse{Accounts: accounts, Pagination: pageRes}, err
 }
 
-// SpendableBalances implements a gRPC query handler for retrieving an account's spendable balances.
+// SpendableBalances queries and returns an account's spendable balances in a paginated response
 func (k Keeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	addr, err := sdk.AccAddressFromBech32(req.Address)
@@ -143,32 +143,31 @@ func (k Keeper) SpendableBalances(ctx context.Context, req *types.QuerySpendable
 	}, nil
 }
 
-// SpendableSupply provides an aggregated overview of the total of the spendable balances across all accounts for a given denom.
+// SpendableSupply queries and returns an aggregated overview of the total spendable supply across all accounts for a given denom
 func (k Keeper) SpendableSupply(ctx context.Context, req *types.QuerySpendableSupplyRequest) (*types.QuerySpendableSupplyResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	resAmount := sdk.NewInt(0)
 
-	// Iterate vesting accounts passing a callback function to invoke
-	err := k.iterateVestingAccounts(sdkCtx, func(addr sdk.AccAddress) error {
-		resAmount = resAmount.Add(k.bankKeeper.SpendableCoins(sdkCtx, addr).AmountOf(req.Denom))
+	// Get all accounts
+	allAccounts := k.accountKeeper.GetAllAccounts(sdkCtx)
 
-		return nil
-	})
-	if err != nil {
-		return nil, err
+	// Iterate over all accounts to find their spendable coins
+	for _, account := range allAccounts {
+		spendable := k.bankKeeper.SpendableCoins(sdkCtx, account.GetAddress())
+		resAmount = resAmount.Add(spendable.AmountOf(req.Denom))
 	}
 
 	return &types.QuerySpendableSupplyResponse{Amount: sdk.Coin{Denom: req.Denom, Amount: resAmount}}, nil
 }
 
-// VestingLockedSupply returns the total amount of locked supply for a given denomination across all vesting accounts.
+// VestingLockedSupply queries and returns the total locked supply for a given denom across all vesting accounts
 func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVestingLockedSupplyRequest) (*types.QueryVestingLockedSupplyResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -192,6 +191,92 @@ func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVesting
 	}
 
 	return &types.QueryVestingLockedSupplyResponse{Amount: sdk.Coin{Denom: req.Denom, Amount: resAmount}}, nil
+}
+
+// DelegationLockedSupply queries and returns the total delegated supply across all delegations for the staking denom
+func (k Keeper) DelegationLockedSupply(c context.Context, req *types.QueryDelegationLockedSupplyRequest) (*types.QueryDelegationLockedSupplyResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	totalDelegated := sdk.NewInt(0)
+
+	// Get staking denom from staking parameters
+	params := k.stakingKeeper.GetParams(ctx)
+	stakingDenom := params.BondDenom
+
+	// Get all delegations
+	allDelegations := k.stakingKeeper.GetAllDelegations(ctx)
+
+	// Iterate over all delegations to sum up the amounts
+	for _, delegation := range allDelegations {
+		totalDelegated = totalDelegated.Add(delegation.Shares.RoundInt())
+	}
+
+	return &types.QueryDelegationLockedSupplyResponse{Amount: sdk.Coin{Denom: stakingDenom, Amount: totalDelegated}}, nil
+}
+
+// DelegatorLockedSupply queries and returns the total delegated amount for a given account and the staking denom
+func (k Keeper) DelegatorLockedSupply(c context.Context, req *types.QueryDelegatorLockedSupplyRequest) (*types.QueryDelegatorLockedSupplyResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	totalDelegated := sdk.NewInt(0)
+
+	// Get staking denom from staking parameters
+	params := k.stakingKeeper.GetParams(ctx)
+	stakingDenom := params.BondDenom
+
+	// Get all delegations for the specific delegator
+	bech32, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	allDelegations := k.stakingKeeper.GetDelegatorDelegations(ctx, bech32, uint16(1000)) // assuming a reasonable maxRetrieve
+
+	// Iterate over all delegations to sum up the amounts
+	for _, delegation := range allDelegations {
+		totalDelegated = totalDelegated.Add(delegation.Shares.RoundInt())
+	}
+
+	return &types.QueryDelegatorLockedSupplyResponse{Amount: sdk.Coin{Denom: stakingDenom, Amount: totalDelegated}}, nil
+}
+
+// TotalLockedSupply queries and returns the total locked supply across all accounts for the staking denom
+func (k Keeper) TotalLockedSupply(ctx context.Context, req *types.QueryTotalLockedSupplyRequest) (*types.QueryTotalLockedSupplyResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	totalLocked := sdk.NewInt(0)
+
+	// Get staking denom from staking parameters
+	params := k.stakingKeeper.GetParams(sdkCtx)
+	stakingDenom := params.BondDenom
+
+	allAccounts := k.accountKeeper.GetAllAccounts(sdkCtx)
+
+	for _, account := range allAccounts {
+		accountAddress := account.GetAddress()
+
+		// Check if it's a vesting account or not
+		if vestingAccount, ok := account.(exported.VestingAccount); ok {
+			delegatedFree := vestingAccount.GetDelegatedFree().AmountOf(stakingDenom)
+			delegatedVesting := vestingAccount.GetDelegatedVesting().AmountOf(stakingDenom)
+			totalLocked = totalLocked.Add(delegatedFree).Add(delegatedVesting)
+		} else {
+			delegations := k.stakingKeeper.GetDelegatorDelegations(sdkCtx, accountAddress, uint16(1000)) // assuming a reasonable maxRetrieve
+			for _, delegation := range delegations {
+				totalLocked = totalLocked.Add(delegation.Shares.RoundInt())
+			}
+		}
+	}
+
+	return &types.QueryTotalLockedSupplyResponse{Amount: sdk.Coin{Denom: stakingDenom, Amount: totalLocked}}, nil
 }
 
 // paginateSlice paginates a slice given the pagination params

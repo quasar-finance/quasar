@@ -37,6 +37,18 @@ service Query {
   rpc VestingLockedSupply(QueryVestingLockedSupplyRequest) returns (QueryVestingLockedSupplyResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_locked_supply/{denom}";
   }
+  // DelegationLockedSupply queries the total delegated supply across all delegations for the staking denom
+  rpc DelegationLockedSupply(QueryDelegationLockedSupplyRequest) returns (QueryDelegationLockedSupplyResponse) {
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/delegation_locked_supply";
+  }
+  // DelegatorLockedSupply queries the total delegated supply across all delegations for the staking denom
+  rpc DelegatorLockedSupply(QueryDelegatorLockedSupplyRequest) returns (QueryDelegatorLockedSupplyResponse) {
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/delegator_locked_supply/{address}";
+  }
+  // TotalLockedSupply queries the total locked supply across all vesting and delegations for the staking denom
+  rpc TotalLockedSupply(QueryTotalLockedSupplyRequest) returns (QueryTotalLockedSupplyResponse) {
+    option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/total_locked_supply";
+  }
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -121,6 +133,36 @@ message QueryVestingLockedSupplyRequest {
 
 // QueryVestingLockedSupplyResponse is the response type for the Query/VestingLockedSupply RPC method.
 message QueryVestingLockedSupplyResponse {
+  // amount is the supply of the coin.
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryVestingLockedSupplyRequest is the request type for the Query/DelegationLockedSupply RPC method.
+message QueryDelegationLockedSupplyRequest {}
+
+// QueryVestingLockedSupplyResponse is the response type for the Query/DelegationLockedSupply RPC method.
+message QueryDelegationLockedSupplyResponse {
+  // amount is the supply of the coin.
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryDelegatorLockedSupplyRequest is the request type for the Query/DelegatorLockedSupply RPC method.
+message QueryDelegatorLockedSupplyRequest {
+  // address is the address to query delegation balance for.
+  string address = 1;
+}
+
+// QueryDelegatorLockedSupplyResponse is the response type for the Query/DelegatorLockedSupply RPC method.
+message QueryDelegatorLockedSupplyResponse {
+  // amount is the supply of the coin.
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryTotalLockedSupplyRequest is the request type for the Query/TotalLockedSupply RPC method.
+message QueryTotalLockedSupplyRequest {}
+
+// QueryTotalLockedSupplyResponse is the response type for the Query/TotalLockedSupply RPC method.
+message QueryTotalLockedSupplyResponse {
   // amount is the supply of the coin.
   cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
 }
