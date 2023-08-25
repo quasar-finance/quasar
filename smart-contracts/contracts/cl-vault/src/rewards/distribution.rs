@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, Binary, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg, SubMsgResult, Uint128,
+    Addr, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg, SubMsgResult, Uint128,
 };
 
 use crate::{
