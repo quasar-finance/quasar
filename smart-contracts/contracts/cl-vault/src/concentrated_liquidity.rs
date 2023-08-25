@@ -47,31 +47,11 @@ pub fn withdraw_from_position(
     let withdraw_position = MsgWithdrawPosition {
         position_id: position.position_id,
         sender,
-        liquidity_amount: liquidity_amount.to_string(),
+        liquidity_amount: liquidity_amount.atomics().to_string(),
     };
     Ok(withdraw_position)
 }
 
-// merge any newly created user positions with our main position
-pub fn merge_positions(
-    storage: &mut dyn Storage,
-    env: &Env,
-    mut position_ids: Vec<u64>,
-) -> Result<MsgFungifyChargedPositions, ContractError> {
-    let sender = env.contract.address.to_string();
-    let position = POSITION.load(storage)?;
-
-    // TODO we could add some extra verifications here checking that the pool positions are the same
-    // but we should figure out whether thats something we want, since all positions should be the same according
-    // to the logic of the entire cl-vault
-
-    position_ids.push(position.position_id);
-    let fungify = MsgFungifyChargedPositions {
-        position_ids,
-        sender,
-    };
-    Ok(fungify)
-}
 
 pub fn get_position(
     storage: &dyn Storage,
