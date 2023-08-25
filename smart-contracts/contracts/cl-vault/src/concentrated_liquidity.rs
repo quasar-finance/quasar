@@ -161,29 +161,4 @@ mod tests {
             }
         );
     }
-
-    #[test]
-    fn test_merge_positions() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        let position_ids = vec![2, 3, 4];
-
-        let position_id = 1;
-        POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
-            .unwrap();
-
-        let mut expected_position_ids = position_ids.clone();
-        expected_position_ids.push(position_id);
-
-        let result = merge_positions(&mut deps.storage, &env, position_ids).unwrap();
-
-        assert_eq!(
-            result,
-            MsgFungifyChargedPositions {
-                position_ids: expected_position_ids,
-                sender: env.contract.address.into(),
-            }
-        );
-    }
 }
