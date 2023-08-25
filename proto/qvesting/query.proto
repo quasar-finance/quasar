@@ -17,23 +17,23 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/params";
   }
-  // VestingAccounts returns all the existing vesting accounts
+  // VestingAccounts queries all the vesting accounts created from all sources
   rpc VestingAccounts(QueryVestingAccountsRequest) returns (QueryVestingAccountsResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_accounts";
   }
-  // VestingAccounts returns all the existing vesting accounts
+  // QVestingAccounts queries all the vesting accounts created via qvesting module
   rpc QVestingAccounts(QueryQVestingAccountsRequest) returns (QueryQVestingAccountsResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/qvesting_accounts";
   }
-  // SpendableBalances queries the spenable balance of all coins for a single account.
+  // SpendableBalances queries the spendable balance of all coins for a single account.
   rpc SpendableBalances(QuerySpendableBalancesRequest) returns (QuerySpendableBalancesResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/spendable_balances/{address}";
   }
-  // VestingAccounts returns all the existing vesting accounts
+  // SpendableSupply queries the total spendable supply for a given denom
   rpc SpendableSupply(QuerySpendableSupplyRequest) returns (QuerySpendableSupplyResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/spendable_supply/{denom}";
   }
-  // VestingAccounts returns all the existing vesting accounts
+  // VestingLockedSupply queries the total vesting locked amount for a given denom
   rpc VestingLockedSupply(QueryVestingLockedSupplyRequest) returns (QueryVestingLockedSupplyResponse) {
     option (google.api.http).get = "/quasarlabs/quasarnode/qvesting/vesting_locked_supply/{denom}";
   }
@@ -63,13 +63,13 @@ message QueryVestingAccountsResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-// QueryVestingAccountsRequest is the request type for the Query/Accounts RPC method.
+// QueryQVestingAccountsRequest is the request type for the Query/Accounts RPC method.
 message QueryQVestingAccountsRequest {
   // pagination defines an optional pagination for the request.
   cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-// QueryVestingAccountsResponse is the response type for the Query/Accounts RPC method.
+// QueryQVestingAccountsResponse is the response type for the Query/Accounts RPC method.
 message QueryQVestingAccountsResponse {
   // accounts are the existing vesting accounts
   repeated google.protobuf.Any accounts = 1 [(cosmos_proto.accepts_interface) = "VestingAccount"];
@@ -91,8 +91,7 @@ message QuerySpendableBalancesRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
-// QuerySpendableBalancesResponse defines the gRPC response structure for querying
-// an account's spendable balances.
+// QuerySpendableBalancesResponse defines the gRPC response structure for querying an account's spendable balances.
 message QuerySpendableBalancesResponse {
   // balances is the spendable balances of all the coins.
   repeated cosmos.base.v1beta1.Coin balances = 1
@@ -120,7 +119,7 @@ message QueryVestingLockedSupplyRequest {
   string denom = 1;
 }
 
-// QueryVestingAccountsResponse is the response type for the Query/VestingLockedSupply RPC method.
+// QueryVestingLockedSupplyResponse is the response type for the Query/VestingLockedSupply RPC method.
 message QueryVestingLockedSupplyResponse {
   // amount is the supply of the coin.
   cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
