@@ -3,16 +3,20 @@ use cosmwasm_std::{
     SubMsgResult, Uint128,
 };
 use cw_utils::{must_pay, one_coin};
-use osmosis_std::types::{osmosis::{
-    concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
-    tokenfactory::v1beta1::MsgBurn,
-}, cosmos::bank::v1beta1::BankQuerier};
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier,
+    osmosis::{
+        concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
+        tokenfactory::v1beta1::MsgBurn,
+    },
+};
 
 use crate::{
     concentrated_liquidity::{get_position, withdraw_from_position},
+    debug,
     reply::Replies,
     state::{CURRENT_WITHDRAWER, LOCKED_SHARES, POOL_CONFIG, VAULT_DENOM},
-    ContractError, debug,
+    ContractError,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
@@ -33,7 +37,9 @@ pub fn execute_withdraw(
 
     // get the amount from locked shares
     let locked_amount = LOCKED_SHARES.load(deps.storage, info.sender.clone())?;
-    let left_over = locked_amount.checked_div(amount).map_err(|_| ContractError::InsufficientFunds)?;
+    let left_over = locked_amount
+        .checked_div(amount)
+        .map_err(|_| ContractError::InsufficientFunds)?;
     LOCKED_SHARES.save(deps.storage, info.sender, &left_over)?;
 
     debug!(deps, "locked", locked_amount);
@@ -73,12 +79,12 @@ fn withdraw(
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     let total_shares: Uint128 = bq
-    .supply_of(vault_denom)?
-    .amount
-    .unwrap()
-    .amount
-    .parse::<u128>()?
-    .into();
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
 
     debug!(deps, "shares", shares);
     debug!(deps, "total_liq", total_liquidity);

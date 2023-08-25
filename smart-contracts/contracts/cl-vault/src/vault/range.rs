@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage,
-    SubMsg, SubMsgResult, Uint128,
+    to_binary, Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -25,6 +25,7 @@ use crate::{
     },
     math::tick::price_to_tick,
     merge::MergeResponse,
+    msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
@@ -61,7 +62,18 @@ pub fn execute_modify_range(
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
 
-    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick)
+    execute_modify_range_ticks(
+        storage,
+        &querier,
+        env,
+        info,
+        lower_tick
+            .try_into()
+            .expect("Could not cast lower tick from i128 to i64"),
+        upper_tick
+            .try_into()
+            .expect("Could not cast upper tick from i128 to i64"),
+    )
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -74,8 +86,8 @@ pub fn execute_modify_range_ticks(
     querier: &QuerierWrapper,
     env: Env,
     info: MessageInfo,
-    lower_tick: i128,
-    upper_tick: i128,
+    lower_tick: i64,
+    upper_tick: i64,
 ) -> Result<Response, ContractError> {
     assert_range_admin(storage, &info.sender)?;
 
@@ -160,14 +172,8 @@ pub fn handle_withdraw_position_reply(
     let create_position_msg = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender: env.contract.address.to_string(),
-        lower_tick: modify_range_state
-            .lower_tick
-            .try_into()
-            .expect("Could not convert lower_tick to i64 from i128"),
-        upper_tick: modify_range_state
-            .upper_tick
-            .try_into()
-            .expect("Could not convert upper_tick to i64 from i128"),
+        lower_tick: modify_range_state.lower_tick,
+        upper_tick: modify_range_state.upper_tick,
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
@@ -406,21 +412,31 @@ pub fn handle_iteration_create_position_reply(
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
     };
 
+    // add the position id to the ones we need to merge
     swap_deposit_merge_state
         .target_range_position_ids
         .push(create_position_message.position_id);
 
-    SWAP_DEPOSIT_MERGE_STATE.save(deps.storage, &swap_deposit_merge_state)?;
+    // call merge
+    let merge_msg =
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+            position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
+        }));
+    // merge our position with the main position
+    let merge = SubMsg::reply_on_success(
+        cosmwasm_std::WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&merge_msg)?,
+            funds: vec![],
+        },
+        Replies::Merge.into(),
+    );
 
-    let fungify_positions_msg = concentratedliquidity::v1beta1::MsgFungifyChargedPositions {
-        position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
-        sender: env.contract.address.to_string(),
-    };
-
-    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Merge.into());
+    // clear state to allow for new liquidity movement operations
+    SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
     Ok(Response::new()
-        .add_submessage(msg)
+        .add_submessage(merge)
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "fungify_positions")
         .add_attribute(
@@ -433,7 +449,6 @@ pub fn handle_iteration_create_position_reply(
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let merge_response: MergeResponse = data.try_into()?;
 
-    SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
     POSITION.save(
         deps.storage,
         &Position {

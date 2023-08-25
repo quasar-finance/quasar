@@ -19,7 +19,6 @@ use osmosis_std::types::{
 
 use crate::{
     concentrated_liquidity::{create_position, get_position},
-    debug,
     error::ContractResult,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
