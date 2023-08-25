@@ -1,3 +1,8 @@
+use std::str::FromStr;
+
+use cosmwasm_std::Decimal;
+use cosmwasm_std::Decimal256;
+use cosmwasm_std::coin;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg;
@@ -11,8 +16,10 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 use crate::concentrated_liquidity::create_position;
+use crate::debug;
 use crate::error::ContractError;
 use crate::error::ContractResult;
 use crate::helpers::must_pay_two;
@@ -110,6 +117,7 @@ pub fn instantiate(
 
 pub fn handle_instantiate_create_position_reply(
     deps: DepsMut,
+    env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = data.try_into()?;
@@ -119,7 +127,18 @@ pub fn handle_instantiate_create_position_reply(
             position_id: response.position_id,
         },
     )?;
+
+    let liquidity = Decimal::raw(response.liquidity_created.parse()?);
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    // todo do we want to mint the initial mint to the instantiater, or just not care?
+    let mint = MsgMint {
+        sender: env.contract.address.to_string(),
+        amount: Some(coin(liquidity.atomics().u128(), vault_denom).into()),
+        mint_to_address: env.contract.address.to_string(),
+    };
+
     Ok(Response::new()
+        .add_message(mint)
         .add_attribute("initial-position", response.position_id.to_string())
         .add_attribute("initial-liquidity", response.liquidity_created))
 }

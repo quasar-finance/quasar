@@ -101,16 +101,18 @@ pub fn handle_deposit_create_position_reply(
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    // we mint shares according to the liquidity created
-    let liquidity = Decimal256::from_str(resp.liquidity_created.as_str())?;
+    // we mint shares according to the liquidity created in the position creation
+    // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
+    let liquidity = Decimal::raw(resp.liquidity_created.parse()?);
 
     let total_position = get_position(deps.storage, &deps.querier, &env)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let total_liquidity = Decimal256::from_str(total_position.liquidity.as_str())?;
+    // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
+    let total_liquidity = Decimal::from_str(total_position.liquidity.as_str())?;
 
-    let total_shares: Uint256 = bq
+    let total_shares: Uint128 = bq
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
