@@ -7,18 +7,19 @@ mod tests {
         tokenfactory::v1beta1::QueryDenomsFromCreatorRequest,
     };
     use osmosis_test_tube::{
-        cosmrs::proto::traits::Message, ConcentratedLiquidity, Module, TokenFactory, Wasm,
+        cosmrs::proto::traits::Message, Account, ConcentratedLiquidity, Module, TokenFactory, Wasm,
     };
 
     use crate::{
+        debug,
         msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-        query::PoolResponse,
+        query::{PoolResponse, UserBalanceResponse},
         test_tube::default_init,
     };
 
     #[test]
     #[ignore]
-    fn deposit_works() {
+    fn deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let alice = app
             .init_account(&[
@@ -39,7 +40,30 @@ mod tests {
             .unwrap();
 
         let mint = deposit.events.iter().find(|e| e.ty == "tf_mint").unwrap();
-        println!("{:?}", deposit.events)
+
+        let shares: UserBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserLockedBalance {
+                        user: alice.address(),
+                    },
+                )),
+            )
+            .unwrap();
+        assert!(!shares.balance.is_zero());
+
+        let withdraw = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::Redeem {
+                    recipient: None,
+                    amount: shares.balance,
+                },
+                &[],
+                &alice,
+            )
+            .unwrap();
         // verify the correct execution
     }
 

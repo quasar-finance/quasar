@@ -102,7 +102,6 @@ pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 // TODO should this be a const on 0?
 pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
 pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
-pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 pub const SWAP_DEPOSIT_MERGE_STATE: Item<SwapDepositMergeState> =
