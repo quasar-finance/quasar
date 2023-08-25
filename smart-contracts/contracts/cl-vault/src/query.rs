@@ -45,12 +45,14 @@ pub fn query_position(deps: Deps) -> ContractResult<Binary> {
     let position_id = POSITION.load(deps.storage)?.position_id;
     Ok(to_binary(&PositionResponse { position_id })?)
 }
-pub fn query_user_balance(deps: Deps, user: Addr) -> ContractResult<Binary> {
-    let balance = LOCKED_SHARES.load(deps.storage, user)?;
+pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<Binary> {
+    let balance = LOCKED_SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
     Ok(to_binary(&UserBalanceResponse { balance })?)
 }
 
-pub fn query_user_rewards(deps: Deps, user: Addr) -> ContractResult<Binary> {
-    let rewards = USER_REWARDS.load(deps.storage, user)?.into_coins();
+pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<Binary> {
+    let rewards = USER_REWARDS
+        .load(deps.storage, deps.api.addr_validate(&user)?)?
+        .into_coins();
     Ok(to_binary(&UserRewardsResponse { rewards })?)
 }

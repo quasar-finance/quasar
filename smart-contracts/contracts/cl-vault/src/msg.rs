@@ -63,8 +63,8 @@ pub enum ExtensionQueryMsg {
 /// Extension query messages for user balance related queries
 #[cw_serde]
 pub enum UserBalanceQueryMsg {
-    UserLockedBalance { user: Addr },
-    UserRewards { user: Addr },
+    UserLockedBalance { user: String },
+    UserRewards { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
