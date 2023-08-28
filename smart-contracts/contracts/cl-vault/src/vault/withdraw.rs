@@ -1,8 +1,7 @@
 use cosmwasm_std::{
-    coin, BankMsg, Binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Attribute,
 };
-use cw_utils::{must_pay, one_coin};
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
@@ -42,7 +41,6 @@ pub fn execute_withdraw(
         .map_err(|_| ContractError::InsufficientFunds)?;
     LOCKED_SHARES.save(deps.storage, info.sender, &left_over)?;
 
-    debug!(deps, "locked", locked_amount);
     // burn the shares
     let burn_coin = coin(amount.u128(), vault_denom);
     let burn: CosmosMsg = MsgBurn {
@@ -59,8 +57,13 @@ pub fn execute_withdraw(
     let msg = withdraw(deps, &env, amount)?;
 
     Ok(Response::new()
+        .add_attribute("method", "withdraw")
+        .add_attribute("action", "withdraw")
+        .add_attribute("liquidity_amount", msg.liquidity_amount.as_str())
+        .add_attribute("share_amount", amount)
         .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawUser as u64))
-        .add_message(burn))
+        .add_message(burn)
+    )
 }
 
 fn withdraw(
@@ -86,14 +89,10 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    debug!(deps, "shares", shares);
-    debug!(deps, "total_liq", total_liquidity);
-
     let user_liquidity = Decimal256::from_ratio(shares, 1_u128)
         .checked_mul(total_liquidity)?
         .checked_div(Decimal256::from_ratio(total_shares, 1_u128))?;
 
-    debug!(deps, "user_liq", user_liquidity);
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
@@ -109,12 +108,16 @@ pub fn handle_withdraw_user_reply(
     let coin0 = coin(response.amount0.parse()?, pool_config.token0);
     let coin1 = coin(response.amount1.parse()?, pool_config.token1);
 
+    let withdraw_attrs = vec![Attribute::new("token0-amount", coin0.amount), Attribute::new("token1-amount", coin1.amount)];
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
         amount: vec![coin0, coin1],
     };
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new().add_message(msg)
+    .add_attribute("method", "withdraw-position-reply")
+    .add_attribute("action", "withdraw")
+    .add_attributes(withdraw_attrs))
 }
 
 #[cfg(test)]
