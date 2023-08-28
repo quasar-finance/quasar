@@ -15,10 +15,7 @@ use crate::{
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
-    state::{
-        CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION,
-        POOL_CONFIG,
-    },
+    state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
     ContractError,
 };
 
@@ -83,12 +80,13 @@ pub fn execute_merge(
     let current = CURRENT_MERGE.front(deps.storage)?.unwrap();
 
     // let msg: CosmosMsg = current.msg.into();
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        current.msg,
-        Replies::WithdrawMerge as u64,
-    ))
-    .add_attribute("method", "merge")
-    .add_attribute("action", "merge"))
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            current.msg,
+            Replies::WithdrawMerge as u64,
+        ))
+        .add_attribute("method", "merge")
+        .add_attribute("action", "merge"))
 }
 
 #[cw_serde]
@@ -178,14 +176,15 @@ pub fn handle_merge_create_position_reply(
 ) -> ContractResult<Response> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
     // TODO decide if we want any healthchecks here
-    Ok(Response::new().set_data(
-        to_binary(&MergeResponse {
-            new_position_id: response.position_id,
-        })?
-        .0,
-    )    
-    .add_attribute("method", "create-position-reply")
-    .add_attribute("action", "merge"))
+    Ok(Response::new()
+        .set_data(
+            to_binary(&MergeResponse {
+                new_position_id: response.position_id,
+            })?
+            .0,
+        )
+        .add_attribute("method", "create-position-reply")
+        .add_attribute("action", "merge"))
 }
 
 impl TryFrom<SubMsgResult> for MergeResponse {

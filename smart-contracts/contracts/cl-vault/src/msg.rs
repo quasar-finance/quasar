@@ -1,12 +1,12 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_vault_multi_standard::{
     extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
 use crate::{
-    query::{PoolResponse, PositionResponse},
+    query::{PoolResponse, PositionResponse, RangeAdminResponse},
     state::VaultConfig,
 };
 
@@ -31,6 +31,11 @@ pub enum AdminExtensionExecuteMsg {
         /// The new admin address.
         address: String,
     },
+    /// Update the range adming,
+    UpdateRangeAdmin {
+        /// the new range admin
+        address: String,
+    },
     /// Update the configuration of the vault.
     UpdateConfig {
         /// The config updates.
@@ -44,6 +49,8 @@ pub struct ModifyRangeMsg {
     pub lower_price: Uint128,
     /// The new upper bound of the range
     pub upper_price: Uint128,
+    /// max position slippage
+    pub max_slippage: Decimal,
 }
 
 #[cw_serde]
@@ -76,6 +83,8 @@ pub enum ClQueryMsg {
     Pool {},
     #[returns(PositionResponse)]
     Position {},
+    #[returns(RangeAdminResponse)]
+    RangeAdmin {},
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

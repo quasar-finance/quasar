@@ -54,15 +54,14 @@ pub fn execute_modify_range(
     info: MessageInfo,
     lower_price: Uint128,
     upper_price: Uint128,
+    max_slippage: Decimal
 ) -> Result<Response, ContractError> {
-    // let lower_tick = price_to_tick(price, exponent_at_price_one)
-
     let storage = deps.storage;
     let querier = deps.querier;
 
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
-    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick)
+    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick, max_slippage)
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -77,6 +76,7 @@ pub fn execute_modify_range_ticks(
     info: MessageInfo,
     lower_tick: i128,
     upper_tick: i128,
+    max_slippage: Decimal
 ) -> Result<Response, ContractError> {
     assert_range_admin(storage, &info.sender)?;
 
@@ -114,6 +114,7 @@ pub fn execute_modify_range_ticks(
             lower_tick,
             upper_tick,
             new_range_position_ids: vec![],
+            max_slippage,
         }),
     )?;
 
@@ -133,13 +134,9 @@ pub fn handle_withdraw_position_reply(
 ) -> Result<Response, ContractError> {
     let msg: MsgWithdrawPositionResponse = data.try_into()?;
 
-    let modify_range_state = match MODIFY_RANGE_STATE.load(deps.storage)? {
-        Some(modify_range_state) => modify_range_state,
-        None => return Err(ContractError::ModifyRangeStateNotFound {}),
-    };
+    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
@@ -182,9 +179,9 @@ pub fn handle_withdraw_position_reply(
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(deposit.0, vault_config.create_position_max_slippage)?
+        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?
             .to_string(),
-        token_min_amount1: with_slippage(deposit.1, vault_config.create_position_max_slippage)?
+        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?
             .to_string(),
     };
 
@@ -325,7 +322,8 @@ pub fn handle_swap_reply(
     };
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+
 
     // get post swap balances to create positions with
     let balance0 = deps
@@ -360,12 +358,12 @@ pub fn handle_swap_reply(
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
         token_min_amount0: with_slippage(
             balance0.amount,
-            vault_config.create_position_max_slippage,
+            modify_range_state.max_slippage,
         )?
         .to_string(),
         token_min_amount1: with_slippage(
             balance1.amount,
-            vault_config.create_position_max_slippage,
+            modify_range_state.max_slippage,
         )?
         .to_string(),
     };
@@ -454,7 +452,7 @@ pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Respon
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         from_binary,
@@ -582,7 +580,6 @@ mod tests {
                 &VaultConfig {
                     performance_fee: Decimal::zero(),
                     treasury: Addr::unchecked("treasure"),
-                    create_position_max_slippage: Decimal::from_ratio(1u128, 20u128),
                     swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
                 },
             )
@@ -630,6 +627,7 @@ mod tests {
         let env = mock_env();
         let lower_price = 1_000_000_000_000_000_000u128;
         let upper_price = 1_000_000_000_000_000_000u128;
+        let max_slippage = Decimal::from_str("0.5").unwrap();
 
         let res = super::execute_modify_range(
             deps.as_mut(),
@@ -637,6 +635,7 @@ mod tests {
             info,
             lower_price.into(),
             upper_price.into(),
+            max_slippage
         )
         .unwrap();
 

@@ -82,15 +82,15 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    Ok(Response::new().add_submessage(SubMsg::reply_always(
-        create_msg,
-        Replies::DepositCreatePosition as u64,
-    ))
-    .add_attribute("method", "exact-deposit")
-    .add_attribute("action", "exact-deposit")
-    .add_attribute("amount0", token0.amount)
-    .add_attribute("amount1", token1.amount)
-)
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_always(
+            create_msg,
+            Replies::DepositCreatePosition as u64,
+        ))
+        .add_attribute("method", "exact-deposit")
+        .add_attribute("action", "exact-deposit")
+        .add_attribute("amount0", token0.amount)
+        .add_attribute("amount1", token1.amount))
 }
 
 /// handles the reply to creating a position for a user deposit
@@ -313,7 +313,9 @@ mod tests {
                     position_id: 2,
                     amount0: "100".to_string(),
                     amount1: "100".to_string(),
-                    liquidity_created: "500000.1".to_string(),
+                    // MsgCreatePositionResponse returns a uint, which represents an 18 decimal in
+                    // for the liquidity created to be 500000.1, we expect this number to be 500000100000000000000000
+                    liquidity_created: "500000100000000000000000".to_string(),
                     lower_tick: 1,
                     upper_tick: 100,
                 }

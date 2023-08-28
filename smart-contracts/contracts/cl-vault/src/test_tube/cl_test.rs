@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Coin, Uint128};
+    use cosmwasm_std::{Coin, Uint128, Decimal};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::osmosis::{
         concentratedliquidity::v1beta1::{Pool, PoolsRequest},
@@ -11,7 +11,6 @@ mod tests {
     };
 
     use crate::{
-        debug,
         msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PoolResponse, UserBalanceResponse},
         test_tube::default_init,
@@ -86,6 +85,7 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Uint128::new(2),
                         upper_price: Uint128::new(200),
+                        max_slippage: Decimal::permille(5),
                     },
                 )),
                 &[],

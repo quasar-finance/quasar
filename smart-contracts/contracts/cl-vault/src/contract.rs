@@ -184,7 +184,8 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
-                }) => execute_modify_range(deps, env, info, lower_price, upper_price),
+                    max_slippage,
+                }) => execute_modify_range(deps, env, info, lower_price, upper_price, max_slippage),
             }
         }
     }
@@ -220,6 +221,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
                 crate::msg::ClQueryMsg::Position {} => Ok(to_binary(&query_position(deps)?)?),
+                crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
             },
         },
     }
