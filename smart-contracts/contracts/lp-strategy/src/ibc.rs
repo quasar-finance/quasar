@@ -308,7 +308,7 @@ pub fn handle_transfer_ack(
 
     let share_out_min_amount = calculate_share_out_min_amount(storage)?;
 
-    let failed_bonds_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
+    let rejoin_queue_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val?.raw_amount {
@@ -324,10 +324,10 @@ pub fn handle_transfer_ack(
     // a better fix would be to get the last state of the pool and do the math on our side to then also be able to include this USABLE_COMPOUND_BALANCE
     // howver, if we are going to deprecate this vault, I'd argue it's not worth it - seeing as the compound balance would just be "extra money" for a user anyway
     // TODO: remove this comment
-    let usable_base_token_compound_balance = USABLE_COMPOUND_BALANCE.load(storage)?;
+    let base_token_rewards = USABLE_COMPOUND_BALANCE.load(storage)?;
 
     let total_amount =
-        transferred_amount + failed_bonds_amount + usable_base_token_compound_balance;
+        transferred_amount + rejoin_queue_amount + base_token_rewards;
 
     // remove all items from REJOIN_QUEUE & add them to the deposits: Vec<OngoingDeposit>
     while !REJOIN_QUEUE.is_empty(storage)? {

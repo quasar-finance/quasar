@@ -3,7 +3,7 @@ mod tests {
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Binary, Coin, CosmosMsg, IbcMsg, MessageInfo, StdError, Uint128,
+        to_binary, Addr, Binary, Coin, CosmosMsg, IbcMsg, MessageInfo, StdError, Uint128, Empty,
     };
     use proptest::prelude::*;
     use prost::Message;
@@ -18,7 +18,7 @@ mod tests {
         ibc::handle_icq_ack,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK,
+            OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK, LOCK_ADMIN,
             PENDING_BOND_QUEUE, REJOIN_QUEUE, TRAPS,
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
@@ -72,6 +72,10 @@ mod tests {
 
             IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
+            LOCK_ADMIN
+                .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+                .unwrap();
+
             // mock the failed join pool trap with 3 bonds
             let failed = PendingBond {
                 bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((_claim, raw), owner), id)| {
@@ -116,7 +120,7 @@ mod tests {
                 deps.as_mut(),
                 env.clone(),
                 MessageInfo {
-                    sender: Addr::unchecked("not_admin"),
+                    sender: Addr::unchecked("admin"),
                     funds: vec![],
                 },
                 3539,

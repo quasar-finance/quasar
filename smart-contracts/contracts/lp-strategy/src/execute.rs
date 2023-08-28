@@ -2,10 +2,13 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_utils::nonpayable;
 
 use crate::{
-    bond::Bond,
+    bond::{create_claim, Bond},
     error::ContractError,
     helpers::{IbcMsgKind, IcaMessages},
-    state::{PendingBond, RawAmount, FAILED_JOIN_QUEUE, TRAPS},
+    state::{
+        OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, REJOIN_QUEUE,
+        TOTAL_VAULT_BALANCE, TRAPS,
+    },
     unbond::{do_unbond, PendingReturningUnbonds},
 };
 
@@ -54,7 +57,7 @@ pub fn handle_retry_join_pool(
                     deps.storage,
                     &Bond {
                         amount,
-                        owner: ongoing_deposit.owner,
+                        owner: ongoing_deposit.owner.clone(),
                         bond_id: ongoing_deposit.bond_id.clone(),
                     },
                 )?;
@@ -134,8 +137,7 @@ mod tests {
         error::Trap,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, PENDING_UNBOND_QUEUE,
-            UNBONDING_CLAIMS,
+            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, PENDING_UNBOND_QUEUE, UNBONDING_CLAIMS,
         },
         test_helpers::default_setup,
         unbond::ReturningUnbond,

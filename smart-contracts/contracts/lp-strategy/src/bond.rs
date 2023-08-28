@@ -10,8 +10,8 @@ use crate::{
     ibc_util::do_transfer,
     icq::try_icq,
     state::{
-        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE,
-        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES,
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG,
+        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES, FAILED_JOIN_QUEUE,
     },
 };
 
@@ -98,7 +98,7 @@ pub fn fold_bonds(
     let mut total = Uint128::zero();
     let mut deposits: Vec<OngoingDeposit> = vec![];
 
-    if BOND_QUEUE.is_empty(storage)? && FAILED_JOIN_QUEUE.is_empty(storage)? {
+    if BOND_QUEUE.is_empty(storage)? && REJOIN_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 
@@ -157,7 +157,7 @@ pub fn fold_bonds(
 }
 
 // create_claim
-fn create_claim(
+pub fn create_claim(
     storage: &mut dyn Storage,
     user_balance: Uint128,
     address: &Addr,
