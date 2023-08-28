@@ -474,23 +474,17 @@ mod tests {
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
         },
         to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
-        QuerierResult, QueryRequest, Storage, Timestamp,
+        QuerierResult, QueryRequest,
     };
-    use osmosis_std::{
-        shim::Any,
-        types::{
-            cosmos::base::v1beta1::Coin as OsmoCoin,
-            osmosis::concentratedliquidity::v1beta1::{
-                FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-                PositionByIdResponse,
-            },
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+            PositionByIdResponse,
         },
     };
-    use prost::Message;
 
-    use crate::state::{
-        PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
-    };
+    use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
 
     pub struct QuasarQuerier {
         position: FullPositionBreakdown,

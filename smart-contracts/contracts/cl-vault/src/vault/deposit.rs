@@ -262,7 +262,6 @@ mod tests {
             PositionByIdResponse,
         },
     };
-    use prost::Message;
 
     use crate::state::{PoolConfig, Position};
 
@@ -363,7 +362,7 @@ mod tests {
         let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
             liquidity.to_uint_floor().try_into().unwrap()
         } else {
-            let ratio = liquidity.checked_div(total_liquidity).unwrap();
+            let _ratio = liquidity.checked_div(total_liquidity).unwrap();
             total_shares
                 .multiply_ratio(liquidity.numerator(), liquidity.denominator())
                 .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
@@ -371,12 +370,12 @@ mod tests {
                 .unwrap()
         };
 
-        println!("{}", user_shares.to_string());
+        println!("{}", user_shares);
     }
 
     #[test]
     fn refund_bank_msg_2_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -408,7 +407,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token1_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -440,7 +439,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token0_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -472,7 +471,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_none_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -491,7 +490,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 
@@ -558,7 +557,7 @@ mod tests {
     }
 
     fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        let mut deps = OwnedDeps {
+        OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(FullPositionBreakdown {
@@ -593,7 +592,6 @@ mod tests {
                 forfeited_incentives: vec![],
             }),
             custom_query_type: PhantomData,
-        };
-        deps
+        }
     }
 }

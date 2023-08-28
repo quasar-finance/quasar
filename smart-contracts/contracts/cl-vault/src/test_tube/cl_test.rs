@@ -11,7 +11,6 @@ mod tests {
     };
 
     use crate::{
-        debug,
         msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PoolResponse, UserBalanceResponse},
         test_tube::default_init,
@@ -39,7 +38,7 @@ mod tests {
             )
             .unwrap();
 
-        let mint = deposit.events.iter().find(|e| e.ty == "tf_mint").unwrap();
+        let _mint = deposit.events.iter().find(|e| e.ty == "tf_mint").unwrap();
 
         let shares: UserBalanceResponse = wasm
             .query(
@@ -53,7 +52,7 @@ mod tests {
             .unwrap();
         assert!(!shares.balance.is_zero());
 
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
@@ -71,7 +70,7 @@ mod tests {
     #[ignore]
     fn move_range_works() {
         let (app, contract, _cl_pool_id, admin) = default_init();
-        let alice = app
+        let _alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
                 Coin::new(1_000_000_000_000, "uosmo"),
@@ -79,7 +78,7 @@ mod tests {
             .unwrap();
 
         let wasm = Wasm::new(&app);
-        let result = wasm
+        let _result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(

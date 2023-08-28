@@ -181,9 +181,9 @@ mod tests {
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
-            funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
+            funds: vec![expected1, expected0, coin(200, "uqsr")],
         };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
@@ -192,6 +192,6 @@ mod tests {
             sender: Addr::unchecked("sender"),
             funds: vec![coin(200, "uqsr")],
         };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 }

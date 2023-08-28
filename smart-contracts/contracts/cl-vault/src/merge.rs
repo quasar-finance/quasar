@@ -217,7 +217,7 @@ pub mod tests {
         let data = &to_binary(&expected).unwrap();
         println!("{:?}", data);
 
-        let result = from_binary(&data).unwrap();
+        let result = from_binary(data).unwrap();
         assert_eq!(expected, result)
     }
 }
