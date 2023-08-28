@@ -79,17 +79,19 @@ mod tests {
             .unwrap();
 
         let wasm = Wasm::new(&app);
-        let result = wasm.execute(
-            contract.as_str(),
-            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
-                    lower_price: Uint128::new(2),
-                    upper_price: Uint128::new(200),
-                },
-            )),
-            &[],
-            &admin,
-        ).unwrap();
+        let result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Uint128::new(2),
+                        upper_price: Uint128::new(200),
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
     }
 
     #[test]
