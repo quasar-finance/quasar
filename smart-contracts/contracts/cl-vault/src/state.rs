@@ -37,6 +37,7 @@ pub struct VaultConfig {
     /// Account to receive fee payments
     pub treasury: Addr,
     /// create position max slippage
+    // TODO remove this in favor of setting it in create_position
     pub create_position_max_slippage: Decimal,
     /// swap max slippage
     pub swap_max_slippage: Decimal,

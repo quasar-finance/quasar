@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
-    to_binary, Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
+    to_binary, Addr, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -111,10 +113,12 @@ pub fn execute_modify_range_ticks(
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
         sender: env.contract.address.to_string(),
-        liquidity_amount: position.liquidity.clone(),
+        liquidity_amount: Decimal::from_str(position.liquidity.as_str())?
+            .atomics()
+            .to_string(),
     };
 
-    let msg = SubMsg::reply_always(withdraw_msg, Replies::WithdrawPosition.into());
+    let msg = SubMsg::reply_on_success(withdraw_msg, Replies::WithdrawPosition.into());
 
     MODIFY_RANGE_STATE.save(
         storage,
@@ -191,7 +195,7 @@ pub fn handle_withdraw_position_reply(
             .to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(
+    let msg: SubMsg = SubMsg::reply_on_success(
         create_position_msg,
         Replies::RangeInitialCreatePosition.into(),
     );

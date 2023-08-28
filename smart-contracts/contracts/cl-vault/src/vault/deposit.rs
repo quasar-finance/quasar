@@ -28,6 +28,7 @@ use crate::{
 use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
+// but left out of the current release.
 pub(crate) fn execute_any_deposit(
     deps: DepsMut,
     env: Env,
@@ -36,9 +37,7 @@ pub(crate) fn execute_any_deposit(
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
-    let _recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
-
-    todo!()
+    unimplemented!()
 }
 
 /// Try to deposit as much user funds as we can into the a position and
@@ -85,7 +84,12 @@ pub(crate) fn execute_exact_deposit(
     Ok(Response::new().add_submessage(SubMsg::reply_always(
         create_msg,
         Replies::DepositCreatePosition as u64,
-    )))
+    ))
+    .add_attribute("method", "exact-deposit")
+    .add_attribute("action", "exact-deposit")
+    .add_attribute("amount0", token0.amount)
+    .add_attribute("amount1", token1.amount)
+)
 }
 
 /// handles the reply to creating a position for a user deposit
@@ -134,6 +138,11 @@ pub fn handle_deposit_create_position_reply(
     // own the shares in their balance
     // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
     // this is blocked by Osmosis v17 update
+    let mint_attrs = vec![
+        Attribute::new("mint-share-amount", user_shares),
+        Attribute::new("receiver", current_deposit.sender.as_str()),
+    ];
+
     let mint = MsgMint {
         sender: env.contract.address.to_string(),
         amount: Some(coin(user_shares.into(), vault_denom).into()),
@@ -182,7 +191,10 @@ pub fn handle_deposit_create_position_reply(
     let mut response = Response::new()
         .add_submessage(merge)
         .add_attributes(merge_attrs)
-        .add_message(mint);
+        .add_message(mint)
+        .add_attributes(mint_attrs)
+        .add_attribute("method", "create-position-reply")
+        .add_attribute("action", "exact-deposit");
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {

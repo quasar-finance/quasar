@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
-use cosmwasm_std::Decimal;
-use cosmwasm_std::Decimal256;
 use cosmwasm_std::coin;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::to_binary;
 use cosmwasm_std::CosmosMsg;
+use cosmwasm_std::Decimal;
+use cosmwasm_std::Decimal256;
 use cosmwasm_std::Reply;
 use cosmwasm_std::SubMsg;
 use cosmwasm_std::SubMsgResult;
@@ -29,6 +30,8 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
 use crate::query::query_pool;
 use crate::query::query_position;
+use crate::query::query_total_assets;
+use crate::query::query_total_vault_token_supply;
 use crate::query::query_user_balance;
 use crate::query::query_user_rewards;
 use crate::reply::handle_reply;
@@ -188,29 +191,35 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => query_info(deps),
+        cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
+            Ok(to_binary(&query_info(deps)?)?)
+        }
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => todo!(),
+        cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
+            Ok(to_binary(&query_total_assets(deps, env)?)?)
+        }
+        cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
+            Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
+        }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
-                    query_user_balance(deps, user)
+                    Ok(to_binary(&query_user_balance(deps, user)?)?)
                 }
                 crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
-                    query_user_rewards(deps, user)
+                    Ok(to_binary(&query_user_rewards(deps, user)?)?)
                 }
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
-                crate::msg::ClQueryMsg::Pool {} => query_pool(deps),
-                crate::msg::ClQueryMsg::Position {} => query_position(deps),
+                crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
+                crate::msg::ClQueryMsg::Position {} => Ok(to_binary(&query_position(deps)?)?),
             },
         },
     }

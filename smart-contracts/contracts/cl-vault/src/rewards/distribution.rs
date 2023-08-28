@@ -6,15 +6,18 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, LOCKED_SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS,
-        VAULT_CONFIG, VAULT_DENOM,
+        CURRENT_REWARDS, LOCKED_SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
+        VAULT_DENOM,
     },
     ContractError,
 };
-use osmosis_std::types::{osmosis::concentratedliquidity::v1beta1::{
-    MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
-    MsgCollectSpreadRewardsResponse,
-}, cosmos::bank::v1beta1::BankQuerier};
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier,
+    osmosis::concentratedliquidity::v1beta1::{
+        MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
+        MsgCollectSpreadRewardsResponse,
+    },
+};
 
 use super::rewards::Rewards;
 
@@ -83,12 +86,12 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     let total_shares: Uint128 = bq
-    .supply_of(vault_denom)?
-    .amount
-    .unwrap()
-    .amount
-    .parse::<u128>()?
-    .into();
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
 
     // for each user with locked tokens, we distribute some part of the rewards to them
     let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = LOCKED_SHARES

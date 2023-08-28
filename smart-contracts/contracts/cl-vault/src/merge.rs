@@ -5,7 +5,7 @@ use cosmwasm_std::{
     coin, from_binary, to_binary, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
     StdError, SubMsg, SubMsgResult, Uint128,
 };
-use cw_utils::{parse_execute_response_data, parse_reply_execute_data};
+use cw_utils::parse_execute_response_data;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
 };
@@ -16,7 +16,7 @@ use crate::{
     msg::MergePositionMsg,
     reply::Replies,
     state::{
-        CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, MODIFY_RANGE_STATE,
+        CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION,
         POOL_CONFIG,
     },
     ContractError,
@@ -86,7 +86,9 @@ pub fn execute_merge(
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         current.msg,
         Replies::WithdrawMerge as u64,
-    )))
+    ))
+    .add_attribute("method", "merge")
+    .add_attribute("action", "merge"))
 }
 
 #[cw_serde]
@@ -163,7 +165,9 @@ pub fn handle_merge_withdraw_reply(
         let msg: CosmosMsg = next.msg.into();
 
         Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64)))
+            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64))
+            .add_attribute("method", "withdraw-position-reply")
+            .add_attribute("action", "merge"))
     }
 }
 
@@ -179,7 +183,9 @@ pub fn handle_merge_create_position_reply(
             new_position_id: response.position_id,
         })?
         .0,
-    ))
+    )    
+    .add_attribute("method", "create-position-reply")
+    .add_attribute("action", "merge"))
 }
 
 impl TryFrom<SubMsgResult> for MergeResponse {
