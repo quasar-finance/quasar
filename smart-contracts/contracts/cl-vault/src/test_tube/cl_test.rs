@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{Coin, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::osmosis::{
         concentratedliquidity::v1beta1::{Pool, PoolsRequest},
@@ -12,7 +12,7 @@ mod tests {
 
     use crate::{
         debug,
-        msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, QueryMsg},
+        msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PoolResponse, UserBalanceResponse},
         test_tube::default_init,
     };
@@ -65,6 +65,31 @@ mod tests {
             )
             .unwrap();
         // verify the correct execution
+    }
+
+    #[test]
+    #[ignore]
+    fn move_range_works() {
+        let (app, contract, _cl_pool_id, admin) = default_init();
+        let alice = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, "uatom"),
+                Coin::new(1_000_000_000_000, "uosmo"),
+            ])
+            .unwrap();
+
+        let wasm = Wasm::new(&app);
+        let result = wasm.execute(
+            contract.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                ModifyRangeMsg {
+                    lower_price: Uint128::new(2),
+                    upper_price: Uint128::new(200),
+                },
+            )),
+            &[],
+            &admin,
+        ).unwrap();
     }
 
     #[test]

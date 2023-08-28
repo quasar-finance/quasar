@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
     Addr, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage,
-    SubMsg, SubMsgResult, Uint128,
+    SubMsg, SubMsgResult, Uint128, Decimal,
 };
 
 use osmosis_std::types::{
@@ -31,7 +33,7 @@ use crate::{
         POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
     swap::swap,
-    ContractError,
+    ContractError
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
@@ -60,7 +62,6 @@ pub fn execute_modify_range(
 
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
-
     execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick)
 }
 
@@ -99,10 +100,10 @@ pub fn execute_modify_range_ticks(
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
         sender: env.contract.address.to_string(),
-        liquidity_amount: position.liquidity.clone(),
+        liquidity_amount: Decimal::from_str(position.liquidity.as_str())?.atomics().to_string(),
     };
 
-    let msg = SubMsg::reply_always(withdraw_msg, Replies::WithdrawPosition.into());
+    let msg = SubMsg::reply_on_success(withdraw_msg, Replies::WithdrawPosition.into());
 
     MODIFY_RANGE_STATE.save(
         storage,
@@ -134,6 +135,7 @@ pub fn handle_withdraw_position_reply(
         Some(modify_range_state) => modify_range_state,
         None => return Err(ContractError::ModifyRangeStateNotFound {}),
     };
+
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -185,7 +187,7 @@ pub fn handle_withdraw_position_reply(
             .to_string(),
     };
 
-    let msg: SubMsg = SubMsg::reply_always(
+    let msg: SubMsg = SubMsg::reply_on_success(
         create_position_msg,
         Replies::RangeInitialCreatePosition.into(),
     );
