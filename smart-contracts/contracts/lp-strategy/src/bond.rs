@@ -10,8 +10,8 @@ use crate::{
     ibc_util::do_transfer,
     icq::try_icq,
     state::{
-        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG,
-        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES, FAILED_JOIN_QUEUE,
+        OngoingDeposit, RawAmount, BONDING_CLAIMS, BOND_QUEUE, CONFIG, FAILED_JOIN_QUEUE,
+        ICA_CHANNEL, PENDING_BOND_QUEUE, REJOIN_QUEUE, SHARES,
     },
 };
 

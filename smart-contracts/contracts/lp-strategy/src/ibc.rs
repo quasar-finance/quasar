@@ -326,8 +326,7 @@ pub fn handle_transfer_ack(
     // TODO: remove this comment
     let base_token_rewards = USABLE_COMPOUND_BALANCE.load(storage)?;
 
-    let total_amount =
-        transferred_amount + rejoin_queue_amount + base_token_rewards;
+    let total_amount = transferred_amount + rejoin_queue_amount + base_token_rewards;
 
     // remove all items from REJOIN_QUEUE & add them to the deposits: Vec<OngoingDeposit>
     while !REJOIN_QUEUE.is_empty(storage)? {
