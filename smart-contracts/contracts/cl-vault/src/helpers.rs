@@ -1,4 +1,4 @@
-use std::{str::FromStr};
+use std::str::FromStr;
 
 use crate::{error::ContractResult, math::tick::tick_to_price, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{

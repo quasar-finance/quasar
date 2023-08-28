@@ -8,18 +8,16 @@ use cosmwasm_std::{
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
-        concentratedliquidity::{
-            v1beta1::{
-                MsgCreatePosition, MsgCreatePositionResponse,
-                MsgWithdrawPosition, MsgWithdrawPositionResponse,
-            },
+        concentratedliquidity::v1beta1::{
+            MsgCreatePosition, MsgCreatePositionResponse, MsgWithdrawPosition,
+            MsgWithdrawPositionResponse,
         },
         gamm::v1beta1::MsgSwapExactAmountInResponse,
     },
 };
 
 use crate::{
-    concentrated_liquidity::{get_position},
+    concentrated_liquidity::get_position,
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,

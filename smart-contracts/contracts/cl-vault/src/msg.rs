@@ -1,8 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Uint128};
-use cw_vault_multi_standard::{
-    VaultStandardExecuteMsg, VaultStandardQueryMsg,
-};
+use cosmwasm_std::Uint128;
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{PoolResponse, PositionResponse},

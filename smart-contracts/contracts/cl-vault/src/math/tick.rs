@@ -54,7 +54,6 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
         tick_index - (geometric_exponent_delta * geometric_exponent_increment_distance_in_ticks);
 
     // Finally, we can calculate the price
-    
 
     let price: Decimal256 = if num_additive_ticks < 0 {
         pow_ten_internal_dec(geometric_exponent_delta)?
