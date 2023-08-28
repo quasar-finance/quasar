@@ -5,7 +5,7 @@ use crate::{
     msg::ExecuteMsg,
     state::{
         PendingBond, PendingSingleUnbond, RawAmount, BOND_QUEUE, CHANNELS, CONFIG, IBC_LOCK,
-        REPLIES, SHARES, START_UNBOND_QUEUE, TRAPS, UNBOND_QUEUE,
+        REPLIES, SHARES, START_UNBOND_QUEUE, TRAPS, UNBOND_QUEUE, FAILED_JOIN_QUEUE, REJOIN_QUEUE,
     },
     unbond::PendingReturningUnbonds,
 };
@@ -130,7 +130,22 @@ pub fn get_usable_compound_balance(
     // two cases where we exclude funds, either transfer succeeded, but not ica, or transfer succeeded and subsequent ica failed
     let traps = TRAPS.range(storage, None, None, Order::Ascending);
 
-    let excluded_funds = traps.fold(Uint128::zero(), |acc, wrapped_trap| {
+    let failed_join_queue_amount = FAILED_JOIN_QUEUE.iter(storage)?.try_fold(
+        Uint128::zero(),
+        |acc, val| -> Result<Uint128, ContractError> { Ok(acc + val?.amount) },
+    )?;
+
+    let rejoin_queue_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
+        Uint128::zero(),
+        |acc, val| -> Result<Uint128, ContractError> {
+            match val?.raw_amount {
+                crate::state::RawAmount::LocalDenom(amount) => Ok(amount + acc),
+                crate::state::RawAmount::LpShares(_) => Err(ContractError::IncorrectRawAmount),
+            }
+        },
+    )?;
+
+    let trapped_errors_amount = traps.fold(Uint128::zero(), |acc, wrapped_trap| {
         let trap = wrapped_trap.unwrap().1;
         if trap.last_succesful {
             if let IbcMsgKind::Transfer { pending: _, amount } = trap.step {
@@ -151,6 +166,10 @@ pub fn get_usable_compound_balance(
             acc
         }
     });
+
+    let excluded_funds = failed_join_queue_amount
+        .checked_add(rejoin_queue_amount)?
+        .checked_add(trapped_errors_amount)?;
 
     Ok(balance.saturating_sub(excluded_funds))
 }

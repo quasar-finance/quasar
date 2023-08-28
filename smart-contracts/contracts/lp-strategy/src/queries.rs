@@ -288,6 +288,19 @@ mod tests {
     }
 
     #[test]
+    fn get_trapped_errors_when_empty() {
+        let deps = mock_dependencies();
+        let env = mock_env();
+
+        let q = QueryMsg::TrappedErrors {};
+
+        let res: TrappedErrorsResponse =
+            from_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+
+        assert!(res.errors.is_empty());
+    }
+
+    #[test]
     fn proper_get_claimable_funds() {
         let mut deps = mock_dependencies();
         let env = mock_env();

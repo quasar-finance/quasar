@@ -498,7 +498,7 @@ pub fn handle_icq_ack(
     SIMULATED_EXIT_RESULT.save(storage, &parsed_exit_pool_out)?;
 
     // todo move this to below into the lock decisions
-    let bond = batch_bond(storage, &env, total_balance)?;
+    let bond: Option<SubMsg> = batch_bond(storage, &env, total_balance)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();

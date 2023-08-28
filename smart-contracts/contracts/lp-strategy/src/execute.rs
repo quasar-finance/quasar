@@ -118,7 +118,7 @@ mod tests {
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Empty, StdError, Timestamp, Uint128,
+        to_binary, Addr, StdError, Timestamp, Uint128,
     };
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
@@ -134,7 +134,7 @@ mod tests {
         error::Trap,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, LOCK_ADMIN, PENDING_UNBOND_QUEUE,
+            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, PENDING_UNBOND_QUEUE,
             UNBONDING_CLAIMS,
         },
         test_helpers::default_setup,
