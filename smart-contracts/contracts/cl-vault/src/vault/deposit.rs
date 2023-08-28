@@ -1,18 +1,14 @@
 use std::str::FromStr;
 
-use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
-    coin, to_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, DepsMut, Env,
-    Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
 };
-use cw_dex_router::helpers::receive_asset;
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
-        concentratedliquidity::v1beta1::{
-            ConcentratedliquidityQuerier, MsgCreatePositionResponse, MsgFungifyChargedPositions,
-        },
+        concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, MsgCreatePositionResponse},
         tokenfactory::v1beta1::MsgMint,
     },
 };
@@ -30,11 +26,11 @@ use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
 pub(crate) fn execute_any_deposit(
-    deps: DepsMut,
-    env: Env,
-    info: &MessageInfo,
-    amount: Uint128,
-    recipient: Option<String>,
+    _deps: DepsMut,
+    _env: Env,
+    _info: &MessageInfo,
+    _amount: Uint128,
+    _recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     unimplemented!()
@@ -52,7 +48,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two(info, (pool.token0, pool.token1))?;
 
     let position = POSITION.load(deps.storage)?;
     let range = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -81,15 +77,15 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    Ok(Response::new().add_submessage(SubMsg::reply_always(
-        create_msg,
-        Replies::DepositCreatePosition as u64,
-    ))
-    .add_attribute("method", "exact-deposit")
-    .add_attribute("action", "exact-deposit")
-    .add_attribute("amount0", token0.amount)
-    .add_attribute("amount1", token1.amount)
-)
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_always(
+            create_msg,
+            Replies::DepositCreatePosition as u64,
+        ))
+        .add_attribute("method", "exact-deposit")
+        .add_attribute("action", "exact-deposit")
+        .add_attribute("amount0", token0.amount)
+        .add_attribute("amount1", token1.amount))
 }
 
 /// handles the reply to creating a position for a user deposit
@@ -254,8 +250,8 @@ mod tests {
     use cosmwasm_std::{
         from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
-        WasmMsg,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        SubMsgResponse, Uint256, WasmMsg,
     };
     use cosmwasm_std::{Binary, ContractResult as CwContractResult};
     use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};

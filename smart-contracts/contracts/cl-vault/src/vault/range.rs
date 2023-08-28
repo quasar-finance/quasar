@@ -9,9 +9,8 @@ use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
         concentratedliquidity::{
-            self,
             v1beta1::{
-                MsgCreatePosition, MsgCreatePositionResponse, MsgFungifyChargedPositionsResponse,
+                MsgCreatePosition, MsgCreatePositionResponse,
                 MsgWithdrawPosition, MsgWithdrawPositionResponse,
             },
         },
@@ -20,7 +19,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    concentrated_liquidity::{create_position, get_position, may_get_position},
+    concentrated_liquidity::{get_position},
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
@@ -323,7 +322,7 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    let msg: MsgSwapExactAmountInResponse = data.try_into()?;
+    let _msg: MsgSwapExactAmountInResponse = data.try_into()?;
 
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,

@@ -1,7 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Uint128};
 use cw_vault_multi_standard::{
-    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 

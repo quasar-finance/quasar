@@ -2,7 +2,7 @@ use cosmwasm_std::{
     coin, Attribute, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128,
 };
-use cw_utils::{must_pay, one_coin};
+
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
