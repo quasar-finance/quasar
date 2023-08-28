@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use cosmwasm_std::Decimal;
-use cosmwasm_std::Decimal256;
 use cosmwasm_std::coin;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::CosmosMsg;
+use cosmwasm_std::Decimal;
+use cosmwasm_std::Decimal256;
 use cosmwasm_std::Reply;
 use cosmwasm_std::SubMsg;
 use cosmwasm_std::SubMsgResult;
@@ -29,6 +29,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
 use crate::query::query_pool;
 use crate::query::query_position;
+use crate::query::query_total_assets;
 use crate::query::query_user_balance;
 use crate::query::query_user_rewards;
 use crate::reply::handle_reply;
@@ -188,14 +189,14 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => query_info(deps),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => todo!(),
+        cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => query_total_assets(deps, env),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
