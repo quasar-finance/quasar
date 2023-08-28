@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Attribute,
+    coin, Attribute, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -62,8 +62,7 @@ pub fn execute_withdraw(
         .add_attribute("liquidity_amount", msg.liquidity_amount.as_str())
         .add_attribute("share_amount", amount)
         .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawUser as u64))
-        .add_message(burn)
-    )
+        .add_message(burn))
 }
 
 fn withdraw(
@@ -108,16 +107,20 @@ pub fn handle_withdraw_user_reply(
     let coin0 = coin(response.amount0.parse()?, pool_config.token0);
     let coin1 = coin(response.amount1.parse()?, pool_config.token1);
 
-    let withdraw_attrs = vec![Attribute::new("token0-amount", coin0.amount), Attribute::new("token1-amount", coin1.amount)];
+    let withdraw_attrs = vec![
+        Attribute::new("token0-amount", coin0.amount),
+        Attribute::new("token1-amount", coin1.amount),
+    ];
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
         amount: vec![coin0, coin1],
     };
-    Ok(Response::new().add_message(msg)
-    .add_attribute("method", "withdraw-position-reply")
-    .add_attribute("action", "withdraw")
-    .add_attributes(withdraw_attrs))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "withdraw-position-reply")
+        .add_attribute("action", "withdraw")
+        .add_attributes(withdraw_attrs))
 }
 
 #[cfg(test)]
