@@ -52,7 +52,6 @@ pub fn withdraw_from_position(
     Ok(withdraw_position)
 }
 
-
 pub fn get_position(
     storage: &dyn Storage,
     querier: &QuerierWrapper,

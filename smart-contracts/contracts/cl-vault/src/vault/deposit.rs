@@ -29,6 +29,7 @@ use crate::{
 use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
+// but left out of the current release.
 pub(crate) fn execute_any_deposit(
     deps: DepsMut,
     env: Env,
@@ -37,9 +38,7 @@ pub(crate) fn execute_any_deposit(
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
-    let _recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
-
-    todo!()
+    unimplemented!()
 }
 
 /// Try to deposit as much user funds as we can into the a position and
