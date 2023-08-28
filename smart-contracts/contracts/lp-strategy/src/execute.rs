@@ -2,13 +2,10 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_utils::nonpayable;
 
 use crate::{
-    bond::{create_claim, Bond},
+    bond::Bond,
     error::ContractError,
     helpers::{IbcMsgKind, IcaMessages},
-    state::{
-        OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, REJOIN_QUEUE,
-        TOTAL_VAULT_BALANCE, TRAPS,
-    },
+    state::{PendingBond, RawAmount, FAILED_JOIN_QUEUE, TRAPS},
     unbond::{do_unbond, PendingReturningUnbonds},
 };
 
@@ -130,7 +127,7 @@ mod tests {
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
 
     use crate::ibc::handle_icq_ack;
-    use crate::state::{PENDING_BOND_QUEUE, REJOIN_QUEUE};
+    use crate::state::{PENDING_BOND_QUEUE, REJOIN_QUEUE, SIMULATED_JOIN_AMOUNT_IN};
     use crate::test_helpers::{create_query_response, pending_bond_to_bond};
     use crate::{
         contract::execute_try_icq,
@@ -760,8 +757,17 @@ mod tests {
         // as we do not have any bond_queue items, we return None here
         assert!(res.messages.is_empty());
 
-        // check that the failed join queue is emptied
-        assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+        assert!(TRAPS.is_empty(deps.as_ref().storage));
+
+        // BOND_QUEUE & REJOIN_QUEUE are empty, thus nothing happens (need to bond to move FAILED_JOIN_QUEUE to REJOIN_QUEUE)
+        assert_eq!(FAILED_JOIN_QUEUE.len(&deps.storage).unwrap(), 3);
+
+        assert_eq!(
+            SIMULATED_JOIN_AMOUNT_IN
+                .load(deps.as_ref().storage)
+                .unwrap(),
+            Uint128::new(1000 + 999 + 1000)
+        );
     }
 
     #[test]

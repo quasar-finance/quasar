@@ -3,7 +3,7 @@ mod tests {
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Binary, Coin, CosmosMsg, IbcMsg, MessageInfo, StdError, Uint128, Empty,
+        to_binary, Addr, Binary, Coin, CosmosMsg, Empty, IbcMsg, MessageInfo, StdError, Uint128,
     };
     use proptest::prelude::*;
     use prost::Message;
@@ -270,14 +270,22 @@ mod tests {
              }
 
 
-            // check that the failed join & pending queues are emptied
-            prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+            // if BOND_QUEUE & REJOIN_QUEUE are empty FAILED_JOIN_QUEUE items are not moved to REJOIN_QUEUE
+            if !pending_bonds.is_empty() && !failed.bonds.is_empty() {
+                prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+            }
+
+            // PENDING_BOND_QUEUE should be empty
             prop_assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
 
             // failed bonds should be now in the REJOIN_QUEUE
             let rejoin_queue: Result<Vec<OngoingDeposit>, StdError> =
             REJOIN_QUEUE.iter(&deps.storage).unwrap().collect();
-            assert_eq!(failed.bonds, rejoin_queue.unwrap());
+
+            // only check when there's pending bonds & failed bonds
+            if !pending_bonds.is_empty() && !failed.bonds.is_empty() {
+                assert_eq!(failed.bonds, rejoin_queue.unwrap());
+            }
         }
     }
 }
