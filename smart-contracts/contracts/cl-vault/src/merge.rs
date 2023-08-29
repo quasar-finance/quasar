@@ -130,15 +130,18 @@ pub fn handle_merge_withdraw_reply(
     if let Some(_) = next.result {
         let range = CURRENT_MERGE_POSITION.load(deps.storage)?;
         let (mut amount0, mut amount1) = (Uint128::zero(), Uint128::zero());
-        
+
         // sum all results in the queue while emptying the queue
         while !CURRENT_MERGE.is_empty(deps.storage)? {
-            let w = CURRENT_MERGE.pop_front(deps.storage)?.unwrap().result.unwrap();
+            let w = CURRENT_MERGE
+                .pop_front(deps.storage)?
+                .unwrap()
+                .result
+                .unwrap();
             amount0 += w.amount0;
             amount1 += w.amount1;
-
         }
-        
+
         let pool: crate::state::PoolConfig = POOL_CONFIG.load(deps.storage)?;
 
         let mut tokens = vec![];
