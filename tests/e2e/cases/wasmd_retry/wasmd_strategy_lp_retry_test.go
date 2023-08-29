@@ -19,6 +19,7 @@ import (
 const (
 	StartingTokenAmount            int64 = 100_000_000_000
 	BondAmount                     int64 = 10_000_000
+	SharesAmount                   int64 = 10_000_000
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
@@ -76,16 +77,11 @@ type WasmdTestSuite struct {
 	OsmosisDenomInQuasar string
 	QuasarDenomInOsmosis string
 
-	LpStrategyContractAddress1 string
-	LpStrategyContractAddress2 string
-	LpStrategyContractAddress3 string
-
 	ContractsDeploymentWallet *ibc.Wallet
 
-	RewardsStoreID            uint64
-	PrimitiveStoreID          uint64
-	VaultStoreID              uint64
-	BasicVaultContractAddress string
+	RewardsStoreID   uint64
+	PrimitiveStoreID uint64
+	VaultStoreID     uint64
 }
 
 func (s *WasmdTestSuite) SetupSuite() {
@@ -111,84 +107,30 @@ func (s *WasmdTestSuite) SetupSuite() {
 
 	// Setup an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
-
-	// Send tokens to the respective account and create the required pools
-	s.CreatePools(ctx)
-
-	// Deploy the lp strategy contract
-	s.deployPrimitives(ctx, s.ContractsDeploymentWallet, lpStrategyContractPath, "lp_strategy_test", init1, init2, init3)
-
-	// Deploy reward contract
-	s.deployRewardsContract(ctx, s.ContractsDeploymentWallet, vaultRewardsContractPath)
-
-	// deploy basic_vault contract
-	s.BasicVaultContractAddress = s.deployVault(ctx, s.ContractsDeploymentWallet, basicVaultStrategyContractPath, "basic_vault",
-		map[string]any{
-			"total_cap":                     "200000000000",
-			"thesis":                        "e2e",
-			"vault_rewards_code_id":         s.RewardsStoreID,
-			"reward_token":                  map[string]any{"native": "uqsr"},
-			"reward_distribution_schedules": []string{},
-			"decimals":                      6,
-			"symbol":                        "ORN",
-			"min_withdrawal":                "1",
-			"name":                          "ORION",
-			"deposit_denom":                 s.OsmosisDenomInQuasar,
-			"primitives": []map[string]any{
-				{
-					"address": s.LpStrategyContractAddress1,
-					"weight":  "0.333333333333",
-					"init": map[string]any{
-						"l_p": init1,
-					},
-				},
-				{
-					"address": s.LpStrategyContractAddress2,
-					"weight":  "0.333333333333",
-					"init": map[string]any{
-						"l_p": init2,
-					},
-				},
-				{
-					"address": s.LpStrategyContractAddress3,
-					"weight":  "0.333333333333",
-					"init": map[string]any{
-						"l_p": init3,
-					},
-				},
-			},
-		})
-
-	// set depositors for all the primitives
-	s.setDepositorForContracts(ctx, s.ContractsDeploymentWallet,
-		map[string]any{
-			"set_depositor": map[string]any{
-				"depositor": s.BasicVaultContractAddress,
-			},
-		},
-	)
 }
 
 func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
 
+	basicVaultAddress, lpAddresses := s.deployContracts(ctx)
+
 	// create user and check his balance
 	acc := s.createUserAndCheckBalances(ctx)
 
 	t.Log("Execute first bond transaction, this should fail due to slippage as we bond 10/3 OSMO on 2denom:2denom assets pools")
-	s.executeBond(ctx, acc)
+	s.executeBond(ctx, acc, basicVaultAddress)
 	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
-	s.executeSandwichAttack(ctx)
+	s.executeSandwichAttackJoin(ctx)
 	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx) // TODO: is this rly needed?
+	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
 
 	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
-	balance := s.getUserSharesBalance(ctx, acc)
+	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
 	s.Require().True(int64(0) == balance)
 
 	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
-	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
 
 	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
 	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
@@ -201,15 +143,9 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().Equal(BondAmount/3, balanceIca3)
 
-	t.Log("Fund the Osmosis pools to increase pool assets amount and reduce slippage for next retry")
-	// Preparing array fo payloads to joinPools, those are magic numbers based on the test's values so any change to initial setup will cause a fail here
-	poolIds := []string{"1", "2", "3"}
-	maxAmountsIn := []string{"3012045987951stake1,8333324666667uosmo", "8333324666667uosmo,3012045987951usdc", "3012045987951fakestake,8333324666667uosmo"}
-	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
-	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
-
 	t.Log("Query trapped errors for each one of the primitives")
-	trappedErrors := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+	trappedErrors := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+
 	t.Log("Parsing trapped errors to obtain seq number and channel id and checking length of each is 1")
 	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors[0])
 	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors[1])
@@ -222,35 +158,33 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.executeRetry(
 		ctx,
 		acc,
-		[]string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3},
+		[]string{lpAddresses[0], lpAddresses[1], lpAddresses[2]},
 		[]uint64{seqError1, seqError2, seqError3},
 		[]string{channelIdError1, channelIdError2, channelIdError3},
 	)
-	t.Log("Execute second clear cache to perform the retry")
-	//s.executeClearCache(ctx) // TODO: is this rly needed?
 
 	t.Log("Query again trapped errors for each one of the primitives")
-	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
 	s.Require().Equal(len(trappedErrorsAfter[0]), 0)
 	s.Require().Equal(len(trappedErrorsAfter[1]), 0)
 	s.Require().Equal(len(trappedErrorsAfter[2]), 0)
 
 	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
-	s.executeBond(ctx, acc)
+	s.executeBond(ctx, acc, basicVaultAddress)
 	t.Log("Execute third clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx) // TODO: is this rly needed?
+	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
 
 	t.Log("Query again trapped errors for each one of the primitives")
-	trappedErrorsAfterSecondBond := s.getTrappedErrors(ctx, []string{s.LpStrategyContractAddress1, s.LpStrategyContractAddress2, s.LpStrategyContractAddress3})
+	trappedErrorsAfterSecondBond := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
 	s.Require().Equal(len(trappedErrorsAfterSecondBond[0]), 0)
 	s.Require().Equal(len(trappedErrorsAfterSecondBond[1]), 0)
 	s.Require().Equal(len(trappedErrorsAfterSecondBond[2]), 0)
 
 	// TODO: query rejoin_queue failed_join_queue and check they are empty, but seems that lp primitives are not exposing this query entrypoint?
 
-	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
-	balanceAfter := s.getUserSharesBalance(ctx, acc)
-	s.Require().True(balanceAfter > int64(0))
+	t.Log("Check that the user shares balance is ~20 as both join pools should have worked")
+	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
+	s.Require().Equal(int64(BondAmount*2-1-1), balanceAfter)
 
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
@@ -264,11 +198,177 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().True(0 >= balanceIca3After) // TODO: some dust threshold here probably needed
 }
 
+func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
+	t := s.T()
+	ctx := context.Background()
+	basicVaultAddress, lpAddresses := s.deployContracts(ctx)
+
+	// create user and check his balance
+	acc := s.createUserAndCheckBalances(ctx)
+
+	t.Log("Execute first bond transaction, this should work")
+	s.executeBond(ctx, acc, basicVaultAddress)
+
+	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Check that the user shares balance is still ~10 as the joinPool should have worked")
+	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
+	s.Require().True(int64(9999999) == balance)
+
+	t.Log("Get ICA addresses for each one of the primitive")
+	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+
+	t.Log("uosmo balance of the primitives should be 0")
+	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), balanceIca1)
+	balanceIca2, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), balanceIca2)
+	balanceIca3, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), balanceIca3)
+
+	t.Log("Query trapped errors for each primitive & check length should be 0")
+	trappedErrors := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+	s.Require().Equal(0, len(trappedErrors[0]))
+	s.Require().Equal(0, len(trappedErrors[1]))
+	s.Require().Equal(0, len(trappedErrors[2]))
+
+	t.Log("Execute unbond, this should work")
+	s.executeUnbond(ctx, acc, basicVaultAddress)
+
+	t.Log("Execute second clear cache to perform the begin unlocking on osmosis")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Execute claim, this should fail due to frontrunning")
+	s.executeClaim(ctx, acc, basicVaultAddress)
+
+	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
+	s.executeSandwichAttackExit(ctx)
+
+	t.Log("Execute fourth clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Query trapped errors for each one of the primitives")
+	trappedErrorsAfterClaim := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+
+	t.Log("Parsing trapped errors to obtain seq number and channel id and checking length of each is 1")
+	seqError1Claim, channelIdError1Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[0])
+	seqError2Claim, channelIdError2Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[1])
+	seqError3Claim, channelIdError3Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[2])
+	s.Require().Equal(1, len(trappedErrorsAfterClaim[0]))
+	s.Require().Equal(1, len(trappedErrorsAfterClaim[1]))
+	s.Require().Equal(1, len(trappedErrorsAfterClaim[2]))
+
+	//t.Log("Execute sandwich attack after ICA/ICQ to revert changes")
+	//s.executeSandwichAttackJoin(ctx)
+
+	// TODO: check PENDING_UNBOND_QUEUE during handle_retry_exit_pool
+
+	t.Log("Execute retry endpoints against all primitives")
+	s.executeRetry(
+		ctx,
+		acc,
+		[]string{lpAddresses[0], lpAddresses[1], lpAddresses[2]},
+		[]uint64{seqError1Claim, seqError2Claim, seqError3Claim},
+		[]string{channelIdError1Claim, channelIdError2Claim, channelIdError3Claim},
+	)
+
+	t.Log("Query again trapped errors for each one of the primitives")
+	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+	s.Require().Equal(0, len(trappedErrorsAfter[0]))
+	s.Require().Equal(0, len(trappedErrorsAfter[1]))
+	s.Require().Equal(0, len(trappedErrorsAfter[2]))
+
+	t.Log("Execute second bond transaction, this should work and also trigger the exit_pool we enqueued previously via retry endpoint")
+	s.executeBond(ctx, acc, basicVaultAddress)
+	t.Log("Execute third clear cache to perform the exit pool on osmosis")
+	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
+
+	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
+	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
+	s.Require().Equal(BondAmount/2-1, balanceAfter)
+
+	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
+	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca1After) // TODO: some dust threshold here probably needed
+	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca2After) // TODO: some dust threshold here probably needed
+	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
+	s.Require().NoError(err)
+	s.Require().Equal(BondAmount/3, balanceIca3After) // TODO: some dust threshold here probably needed
+}
+
+func (s *WasmdTestSuite) deployContracts(ctx context.Context) (string, []string) {
+	// Send tokens to the respective account and create the required pools
+	s.CreatePools(ctx)
+
+	// Deploy the lp strategy contract
+
+	lpAddress1, lpAddress2, lpAddress3 := s.deployPrimitives(ctx, s.ContractsDeploymentWallet, lpStrategyContractPath, "lp_strategy_test", init1, init2, init3)
+
+	// Deploy reward contract
+	s.deployRewardsContract(ctx, s.ContractsDeploymentWallet, vaultRewardsContractPath)
+
+	// deploy basic_vault contract
+	basicVaultAddress := s.deployVault(ctx, s.ContractsDeploymentWallet, basicVaultStrategyContractPath, "basic_vault",
+		map[string]any{
+			"total_cap":                     "200000000000",
+			"thesis":                        "e2e",
+			"vault_rewards_code_id":         s.RewardsStoreID,
+			"reward_token":                  map[string]any{"native": "uqsr"},
+			"reward_distribution_schedules": []string{},
+			"decimals":                      6,
+			"symbol":                        "ORN",
+			"min_withdrawal":                "1",
+			"name":                          "ORION",
+			"deposit_denom":                 s.OsmosisDenomInQuasar,
+			"primitives": []map[string]any{
+				{
+					"address": lpAddress1,
+					"weight":  "0.333333333333",
+					"init": map[string]any{
+						"l_p": init1,
+					},
+				},
+				{
+					"address": lpAddress2,
+					"weight":  "0.333333333333",
+					"init": map[string]any{
+						"l_p": init2,
+					},
+				},
+				{
+					"address": lpAddress3,
+					"weight":  "0.333333333333",
+					"init": map[string]any{
+						"l_p": init3,
+					},
+				},
+			},
+		})
+
+	// set depositors for all the primitives
+	s.setDepositorForContracts(ctx, s.ContractsDeploymentWallet,
+		map[string]any{
+			"set_depositor": map[string]any{
+				"depositor": basicVaultAddress,
+			},
+		},
+		[]string{lpAddress1, lpAddress2, lpAddress3},
+	)
+	return basicVaultAddress, []string{lpAddress1, lpAddress2, lpAddress3}
+}
+
 func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
 	t := s.T()
 
 	t.Log("Create testing account on Quasar chain with some QSR tokens for fees")
-	acc := s.CreateUserAndFund(ctx, s.Quasar(), 1_000_000) // unused qsr, just for tx fees
+	acc := s.CreateUserAndFund(ctx, s.Quasar(), 10_000_000) // unused qsr, just for tx fees
 
 	t.Log("Fund testing account with uosmo via IBC transfer from Osmosis chain Treasury account")
 	walletAmount0 := ibc.WalletAmount{Address: acc.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: BondAmount * 2}
@@ -288,14 +388,14 @@ func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wa
 	return acc
 }
 
-func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet) {
+func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
 		acc.KeyName,
-		s.BasicVaultContractAddress,
+		basicVaultAddress,
 		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, BondAmount)),
 		map[string]any{"bond": map[string]any{}},
 		nil,
@@ -307,14 +407,49 @@ func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet) {
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeClearCache(ctx context.Context) {
+func (s *WasmdTestSuite) executeUnbond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+	t := s.T()
+
+	s.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		acc.KeyName,
+		basicVaultAddress,
+		sdk.NewCoins(),
+		map[string]any{"unbond": map[string]any{"amount": "5000000"}},
+		nil,
+	)
+
+	t.Log("Wait 3 blocks on quasar and osmosis to settle up ICA packet unbond and the IBC transfer (unbond)")
+	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
+	s.Require().NoError(err)
+}
+
+func (s *WasmdTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+	t := s.T()
+
+	s.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		acc.KeyName,
+		basicVaultAddress,
+		sdk.NewCoins(),
+		map[string]any{"claim": map[string]any{}},
+		nil,
+	)
+	t.Log("Wait 1 block on quasar and osmosis to settle up ICA packet claim and the IBC transfer (claim)")
+	err := testutil.WaitForBlocks(ctx, 1, s.Quasar(), s.Osmosis())
+	s.Require().NoError(err)
+}
+
+func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
 		ctx,
 		s.Quasar(),
 		s.ContractsDeploymentWallet.KeyName,
-		s.BasicVaultContractAddress,
+		basicVaultAddress,
 		sdk.Coins{},
 		map[string]any{"clear_cache": map[string]any{}},
 		nil,
@@ -325,11 +460,19 @@ func (s *WasmdTestSuite) executeClearCache(ctx context.Context) {
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeSandwichAttack(ctx context.Context) {
+func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
+}
+
+func (s *WasmdTestSuite) executeSandwichAttackExit(ctx context.Context) {
+	// re-ordered swaps to avoid race conditions
+	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333fakestake", "1", "uosmo", "3")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333usdc", "1", "uosmo", "2")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333stake1", "1", "uosmo", "1")
 }
 
 func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
@@ -355,12 +498,12 @@ func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAd
 	// TODO: wait for blocks here?
 }
 
-func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet) int64 {
+func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) int64 {
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
 		s.Quasar(),
-		s.BasicVaultContractAddress,
+		basicVaultAddress,
 		map[string]any{
 			"balance": map[string]any{
 				"address": acc.Bech32Address(s.Quasar().Config().Bech32Prefix),
