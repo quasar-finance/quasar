@@ -248,7 +248,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
 	s.executeSandwichAttackExit(ctx)
 
-	t.Log("Execute fourth clear cache")
+	t.Log("Execute third clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
 	t.Log("Query trapped errors for each one of the primitives")
@@ -282,8 +282,8 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().Equal(0, len(trappedErrorsAfter[1]))
 	s.Require().Equal(0, len(trappedErrorsAfter[2]))
 
-	t.Log("Execute second bond transaction, this should work and also trigger the exit_pool we enqueued previously via retry endpoint")
-	s.executeBond(ctx, acc, basicVaultAddress)
+	//t.Log("Execute second bond transaction, this should work and also trigger the exit_pool we enqueued previously via retry endpoint")
+	//s.executeBond(ctx, acc, basicVaultAddress)
 	t.Log("Execute third clear cache to perform the exit pool on osmosis")
 	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
 

@@ -22,9 +22,9 @@ use crate::{
     state::{
         FundPath, OngoingDeposit, Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS,
         CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK,
-        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, REJOIN_QUEUE, REPLIES, SHARES,
-        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE,
-        TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, PENDING_UNBOND_QUEUE, REJOIN_QUEUE, REPLIES,
+        SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE,
+        TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
@@ -63,6 +63,7 @@ pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
     let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE.iter(deps.storage)?.collect();
     let fjq: Result<Vec<Bond>, StdError> = FAILED_JOIN_QUEUE.iter(deps.storage)?.collect();
     let rj: Result<Vec<OngoingDeposit>, StdError> = REJOIN_QUEUE.iter(deps.storage)?.collect();
+    let puq: Result<Vec<Unbond>, StdError> = PENDING_UNBOND_QUEUE.iter(deps.storage)?.collect();
     Ok(GetQueuesResponse {
         pending_bond_queue: pbq?,
         bond_queue: bq?,
@@ -70,6 +71,7 @@ pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
         unbond_queue: uq?,
         failed_join_queue: fjq?,
         rejoin_queue: rj?,
+        pending_unbond_queue: puq?,
     })
 }
 
