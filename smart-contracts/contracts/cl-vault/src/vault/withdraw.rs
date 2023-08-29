@@ -1,20 +1,25 @@
 use cosmwasm_std::{
-    coin, BankMsg, Binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    coin, Attribute, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128,
 };
-use cw_utils::{must_pay, one_coin};
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
-    tokenfactory::v1beta1::MsgBurn,
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier,
+    osmosis::{
+        concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
+        tokenfactory::v1beta1::MsgBurn,
+    },
 };
 
 use crate::{
     concentrated_liquidity::{get_position, withdraw_from_position},
+    debug,
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, LOCKED_TOTAL, POOL_CONFIG, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, LOCKED_SHARES, POOL_CONFIG, VAULT_DENOM},
     ContractError,
 };
 
+// any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
+// currently that functions as a bandaid
 pub fn execute_withdraw(
     deps: DepsMut,
     env: Env,
@@ -26,16 +31,18 @@ pub fn execute_withdraw(
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    // update the user's shares
-    let shares = must_pay(&info, vault_denom.as_str())?;
+    // get the sent along shares
+    // let shares = must_pay(&info, vault_denom.as_str())?;
 
-    // shares sent in should equal the amount requested. This is redundant but its to comply with the vault standard
-    if shares != amount {
-        return Err(ContractError::IncorrectShares {});
-    }
+    // get the amount from locked shares
+    let locked_amount = LOCKED_SHARES.load(deps.storage, info.sender.clone())?;
+    let left_over = locked_amount
+        .checked_div(amount)
+        .map_err(|_| ContractError::InsufficientFunds)?;
+    LOCKED_SHARES.save(deps.storage, info.sender, &left_over)?;
 
     // burn the shares
-    let burn_coin = one_coin(&info)?;
+    let burn_coin = coin(amount.u128(), vault_denom);
     let burn: CosmosMsg = MsgBurn {
         sender: env.contract.address.clone().into_string(),
         amount: Some(burn_coin.into()),
@@ -47,9 +54,13 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &addr)?;
 
     // withdraw the user's funds from the position
-    let msg = withdraw(deps, &env, shares)?;
+    let msg = withdraw(deps, &env, amount)?;
 
     Ok(Response::new()
+        .add_attribute("method", "withdraw")
+        .add_attribute("action", "withdraw")
+        .add_attribute("liquidity_amount", msg.liquidity_amount.as_str())
+        .add_attribute("share_amount", amount)
         .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawUser as u64))
         .add_message(burn))
 }
@@ -65,12 +76,22 @@ fn withdraw(
         .ok_or(ContractError::PositionNotFound)?
         .liquidity
         .parse()?;
-    let total_shares: Uint128 = LOCKED_TOTAL.load(deps.storage)?;
 
-    // user_liquidity = user_shares * total_liquidity / total_shares
+    let bq = BankQuerier::new(&deps.querier);
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+
+    let total_shares: Uint128 = bq
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
+
     let user_liquidity = Decimal256::from_ratio(shares, 1_u128)
         .checked_mul(total_liquidity)?
         .checked_div(Decimal256::from_ratio(total_shares, 1_u128))?;
+
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
@@ -86,12 +107,20 @@ pub fn handle_withdraw_user_reply(
     let coin0 = coin(response.amount0.parse()?, pool_config.token0);
     let coin1 = coin(response.amount1.parse()?, pool_config.token1);
 
+    let withdraw_attrs = vec![
+        Attribute::new("token0-amount", coin0.amount),
+        Attribute::new("token1-amount", coin1.amount),
+    ];
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
         amount: vec![coin0, coin1],
     };
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "withdraw-position-reply")
+        .add_attribute("action", "withdraw")
+        .add_attributes(withdraw_attrs))
 }
 
 #[cfg(test)]

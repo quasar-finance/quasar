@@ -1,11 +1,14 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_vault_multi_standard::{
     extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
-use crate::{query::PoolResponse, state::VaultConfig};
+use crate::{
+    query::{PoolResponse, PositionResponse, RangeAdminResponse},
+    state::VaultConfig,
+};
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -15,11 +18,8 @@ pub enum ExtensionExecuteMsg {
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
-    /// Execute a message from the lockup extension.
-    Lockup(LockupExecuteMsg),
-    /// Execute a message from the force unlock extension.
-    #[cfg(feature = "force-unlock")]
-    ForceUnlock(ForceUnlockExecuteMsg),
+    /// provides a fungify callback interface for the contract to use
+    Merge(MergePositionMsg),
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -29,6 +29,11 @@ pub enum AdminExtensionExecuteMsg {
     /// Update the vault admin.
     UpdateAdmin {
         /// The new admin address.
+        address: String,
+    },
+    /// Update the range adming,
+    UpdateRangeAdmin {
+        /// the new range admin
         address: String,
     },
     /// Update the configuration of the vault.
@@ -44,24 +49,42 @@ pub struct ModifyRangeMsg {
     pub lower_price: Uint128,
     /// The new upper bound of the range
     pub upper_price: Uint128,
+    /// max position slippage
+    pub max_slippage: Decimal,
+}
+
+#[cw_serde]
+pub struct MergePositionMsg {
+    pub position_ids: Vec<u64>,
 }
 
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
     /// Queries related to the lockup extension.
-    Lockup(LockupQueryMsg),
+    Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
 }
 
-///
+/// Extension query messages for user balance related queries
+#[cw_serde]
+pub enum UserBalanceQueryMsg {
+    UserLockedBalance { user: String },
+    UserRewards { user: String },
+}
+
+/// Extension query messages for related concentrated liquidity
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum ClQueryMsg {
     /// Get the underlying pool of the vault
     #[returns(PoolResponse)]
     Pool {},
+    #[returns(PositionResponse)]
+    Position {},
+    #[returns(RangeAdminResponse)]
+    RangeAdmin {},
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
@@ -87,6 +110,9 @@ pub struct InstantiateMsg {
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".
     pub vault_token_subdenom: String,
+    // create a position upon initialization
+    pub initial_lower_tick: i64,
+    pub initial_upper_tick: i64,
 }
 
 #[cw_serde]

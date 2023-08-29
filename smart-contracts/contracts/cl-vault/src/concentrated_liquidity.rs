@@ -47,30 +47,9 @@ pub fn withdraw_from_position(
     let withdraw_position = MsgWithdrawPosition {
         position_id: position.position_id,
         sender,
-        liquidity_amount: liquidity_amount.to_string(),
+        liquidity_amount: liquidity_amount.atomics().to_string(),
     };
     Ok(withdraw_position)
-}
-
-// merge any newly created user positions with our main position
-pub fn merge_positions(
-    storage: &mut dyn Storage,
-    env: &Env,
-    mut position_ids: Vec<u64>,
-) -> Result<MsgFungifyChargedPositions, ContractError> {
-    let sender = env.contract.address.to_string();
-    let position = POSITION.load(storage)?;
-
-    // TODO we could add some extra verifications here checking that the pool positions are the same
-    // but we should figure out whether thats something we want, since all positions should be the same according
-    // to the logic of the entire cl-vault
-
-    position_ids.push(position.position_id);
-    let fungify = MsgFungifyChargedPositions {
-        position_ids,
-        sender,
-    };
-    Ok(fungify)
 }
 
 pub fn get_position(
@@ -83,6 +62,23 @@ pub fn get_position(
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
     let position = cl_querier.position_by_id(position.position_id)?;
     position.position.ok_or(ContractError::PositionNotFound)
+}
+
+pub fn may_get_position(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    _env: &Env,
+) -> Result<Option<FullPositionBreakdown>, ContractError> {
+    let position = POSITION.may_load(storage)?;
+    if let Some(position) = position {
+        let cl_querier = ConcentratedliquidityQuerier::new(querier);
+        let position = cl_querier.position_by_id(position.position_id)?;
+        Ok(Some(
+            position.position.ok_or(ContractError::PositionNotFound)?,
+        ))
+    } else {
+        Ok(None)
+    }
 }
 
 #[cfg(test)]
@@ -160,32 +156,7 @@ mod tests {
             MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.into(),
-                liquidity_amount: liquidity_amount.to_string()
-            }
-        );
-    }
-
-    #[test]
-    fn test_merge_positions() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        let position_ids = vec![2, 3, 4];
-
-        let position_id = 1;
-        POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
-            .unwrap();
-
-        let mut expected_position_ids = position_ids.clone();
-        expected_position_ids.push(position_id);
-
-        let result = merge_positions(&mut deps.storage, &env, position_ids).unwrap();
-
-        assert_eq!(
-            result,
-            MsgFungifyChargedPositions {
-                position_ids: expected_position_ids,
-                sender: env.contract.address.into(),
+                liquidity_amount: liquidity_amount.atomics().to_string()
             }
         );
     }

@@ -2,5 +2,5 @@
 wasm = "build --release --lib --target wasm32-unknown-unknown"
 unit-test = "test --lib"
 schema = "run --bin schema"
-test-tube = "test --package cl-vault --lib -- test_tube:: --nocapture"
+test-tube = "test --package cl-vault --lib -- --include-ignored test_tube:: --nocapture"
 test-tube-build = "build --release --lib --target  wasm32-unknown-unknown --target-dir ./test-tube-build"

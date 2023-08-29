@@ -3,6 +3,7 @@ pub mod contract;
 mod error;
 pub mod helpers;
 mod math;
+mod merge;
 pub mod msg;
 mod query;
 mod reply;

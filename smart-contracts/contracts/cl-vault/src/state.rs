@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::{Deque, Item, Map};
 
-use crate::rewards::Rewards;
+use crate::{merge::CurrentMergeWithdraw, rewards::Rewards};
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
@@ -36,8 +36,6 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// create position max slippage
-    pub create_position_max_slippage: Decimal,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
 }
@@ -53,6 +51,8 @@ pub struct ModifyRangeState {
     // pre-withdraw state items
     pub lower_tick: i128,
     pub upper_tick: i128,
+    // the max slippage for modifying the range
+    pub max_slippage: Decimal,
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
 }
@@ -82,7 +82,15 @@ pub struct SwapDepositMergeState {
 //     PostModifyRange { ... },
 // }
 
+#[cw_serde]
+pub struct CurrentMergePosition {
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+}
 
+/// The merge of positions currently being executed
+pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
+pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
@@ -94,7 +102,6 @@ pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 // TODO should this be a const on 0?
 pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
 pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
-pub const LOCKED_TOTAL: Item<Uint128> = Item::new("locked_total");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 pub const SWAP_DEPOSIT_MERGE_STATE: Item<SwapDepositMergeState> =

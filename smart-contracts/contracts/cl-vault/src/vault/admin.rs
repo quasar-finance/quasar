@@ -1,4 +1,4 @@
-use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG};
+use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG, RANGE_ADMIN};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -15,6 +15,7 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateConfig { updates } => {
             execute_update_config(deps, info, updates)
         }
+        AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => execute_update_range_admin(deps, info, address),
     }
 }
 
@@ -50,6 +51,30 @@ pub fn execute_update_admin(
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
+
+/// Updates the range admin of the contract.
+///
+/// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
+/// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
+/// If both checks pass, it saves the new range admin address in the state.
+pub fn execute_update_range_admin(
+    deps: DepsMut,
+    info: MessageInfo,
+    address: String,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+
+    let _ = assert_admin(deps.as_ref(), &info.sender)?;
+    let previous_admin = RANGE_ADMIN.load(deps.storage)?;
+    let new_admin = deps.api.addr_validate(&address)?;
+    RANGE_ADMIN.save(deps.storage, &new_admin)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_update_admin")
+        .add_attribute("previous_admin", previous_admin)
+        .add_attribute("new_admin", &new_admin))
+}
+
 
 /// Updates the configuration of the contract.
 ///
@@ -173,12 +198,84 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_update_range_admin_success() {
+        let admin = Addr::unchecked("admin");
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS
+            .save(deps.as_mut().storage, &admin)
+            .unwrap();
+
+        let old_range_admin = Addr::unchecked("rang_admin1");   
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let new_range_admin = Addr::unchecked("rang_admin2");
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        execute_update_range_admin(deps.as_mut(), info_admin, new_range_admin.to_string()).unwrap();
+        assert_eq!(RANGE_ADMIN.load(&deps.storage).unwrap(), new_range_admin);
+    }
+
+    #[test]
+    fn test_execute_update_range_admin_not_admin() {
+        let admin = Addr::unchecked("admin");
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS
+            .save(deps.as_mut().storage, &admin)
+            .unwrap();
+
+        let old_range_admin = Addr::unchecked("rang_admin1");   
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let new_range_admin = Addr::unchecked("rang_admin2");
+        let info_not_admin = mock_info("not_admin", &[]);
+
+        execute_update_range_admin(deps.as_mut(), info_not_admin, new_range_admin.to_string()).unwrap_err();
+        assert_eq!(RANGE_ADMIN.load(&deps.storage).unwrap(), old_range_admin);
+    }
+
+    #[test]
+    fn test_execute_update_range_admin_with_funds() {
+        let admin = Addr::unchecked("admin");
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS
+            .save(deps.as_mut().storage, &admin)
+            .unwrap();
+
+        let old_range_admin = Addr::unchecked("rang_admin1");   
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let new_range_admin = Addr::unchecked("rang_admin2");
+
+        let info_admin_with_funds = mock_info(admin.as_str(), &[coin(1, "token")]);
+
+        let result =
+        execute_update_range_admin(deps.as_mut(), info_admin_with_funds, new_range_admin.to_string());
+        assert!(result.is_err(), "Expected Err, but got: {:?}", result);
+    }
+
+    #[test]
+    fn test_execute_update_range_admin_same_admin() {
+        let admin = Addr::unchecked("admin");
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS
+            .save(deps.as_mut().storage, &admin)
+            .unwrap();
+
+        let old_range_admin = Addr::unchecked("rang_admin1");   
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let new_range_admin = Addr::unchecked("rang_admin1");
+
+        let info_admin = mock_info(admin.as_str(), &[]);
+
+        let res = execute_update_range_admin(deps.as_mut(), info_admin, new_range_admin.to_string());
+        assert!(res.is_ok());
+        assert_eq!(RANGE_ADMIN.load(&deps.storage).unwrap(), old_range_admin);
+    }
+
+
+    #[test]
     fn test_execute_update_config_success() {
         let admin = Addr::unchecked("admin");
         let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let mut deps = mock_dependencies();
@@ -190,7 +287,6 @@ mod tests {
         let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let info_admin: MessageInfo = mock_info("admin", &[]);
@@ -208,7 +304,6 @@ mod tests {
         let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let mut deps = mock_dependencies();
@@ -220,7 +315,6 @@ mod tests {
         let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let info_not_admin = mock_info("not_admin", &[]);
@@ -238,7 +332,6 @@ mod tests {
         let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let mut deps = mock_dependencies();
@@ -250,7 +343,6 @@ mod tests {
         let new_config = VaultConfig {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
 
@@ -266,7 +358,6 @@ mod tests {
         let old_config = VaultConfig {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
-            create_position_max_slippage: Decimal::from_ratio(1u128, 100u128),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
         let mut deps = mock_dependencies();
