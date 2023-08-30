@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::Coin;
-    use osmosis_std::types::{osmosis::{poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute}, concentratedliquidity::v1beta1::ClaimableSpreadRewardsRequest}};
-    use osmosis_test_tube::{ConcentratedLiquidity, Module, PoolManager, Wasm, Account};
+    use osmosis_std::types::osmosis::{poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute}, concentratedliquidity::v1beta1::ClaimableSpreadRewardsRequest};
+    use osmosis_test_tube::{Module, PoolManager, Wasm, Account};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use crate::{msg::ExecuteMsg, test_tube::default_init};
 
@@ -96,5 +96,15 @@ mod tests {
             &bob,
         ).unwrap();
 
+        let res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards { }),
+                &[],
+                &alice,
+            )
+            .unwrap();
+
+        println!("{:?}", res.events)
     }
 }

@@ -1,7 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use cw_vault_multi_standard::{
-    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
     VaultStandardExecuteMsg, VaultStandardQueryMsg,
 };
 
@@ -20,6 +19,10 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// Distribute any rewards over all users
+    DistributeRewards {},
+    /// Claim rewards belonging to a single user
+    ClaimRewards {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
