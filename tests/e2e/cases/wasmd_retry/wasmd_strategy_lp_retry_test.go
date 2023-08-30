@@ -123,7 +123,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
 	s.executeSandwichAttackJoin(ctx)
 	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
+	s.executeClearCache(ctx, basicVaultAddress)
 
 	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
 	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
@@ -150,9 +150,9 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors[0])
 	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors[1])
 	seqError3, channelIdError3 := helpers.ParseTrappedError(trappedErrors[2])
-	s.Require().Equal(len(trappedErrors[0]), 1)
-	s.Require().Equal(len(trappedErrors[1]), 1)
-	s.Require().Equal(len(trappedErrors[2]), 1)
+	s.Require().Equal(1, len(trappedErrors[0]))
+	s.Require().Equal(1, len(trappedErrors[1]))
+	s.Require().Equal(1, len(trappedErrors[2]))
 
 	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
 	s.executeRetry(
@@ -165,22 +165,20 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 
 	t.Log("Query again trapped errors for each one of the primitives")
 	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(len(trappedErrorsAfter[0]), 0)
-	s.Require().Equal(len(trappedErrorsAfter[1]), 0)
-	s.Require().Equal(len(trappedErrorsAfter[2]), 0)
+	s.Require().Equal(0, len(trappedErrorsAfter[0]))
+	s.Require().Equal(0, len(trappedErrorsAfter[1]))
+	s.Require().Equal(0, len(trappedErrorsAfter[2]))
 
 	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
 	s.executeBond(ctx, acc, basicVaultAddress)
 	t.Log("Execute third clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
+	s.executeClearCache(ctx, basicVaultAddress)
 
 	t.Log("Query again trapped errors for each one of the primitives")
 	trappedErrorsAfterSecondBond := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(len(trappedErrorsAfterSecondBond[0]), 0)
-	s.Require().Equal(len(trappedErrorsAfterSecondBond[1]), 0)
-	s.Require().Equal(len(trappedErrorsAfterSecondBond[2]), 0)
-
-	// TODO: query rejoin_queue failed_join_queue and check they are empty, but seems that lp primitives are not exposing this query entrypoint?
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[0]))
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[1]))
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[2]))
 
 	t.Log("Check that the user shares balance is ~20 as both join pools should have worked")
 	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
@@ -189,13 +187,13 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
 	s.Require().NoError(err)
-	s.Require().True(0 >= balanceIca1After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(uint64(0), balanceIca1After)
 	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
 	s.Require().NoError(err)
-	s.Require().True(0 >= balanceIca2After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(uint64(0), balanceIca2After)
 	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
 	s.Require().NoError(err)
-	s.Require().True(0 >= balanceIca3After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(uint64(0), balanceIca3After)
 }
 
 func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
@@ -203,7 +201,6 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx)
 
-	// create user and check his balance
 	acc := s.createUserAndCheckBalances(ctx)
 
 	t.Log("Execute first bond transaction, this should work")
@@ -212,7 +209,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Check that the user shares balance is still ~10 as the joinPool should have worked")
+	t.Log("Check that the user shares balance is ~10 as the joinPool should have worked")
 	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
 	s.Require().True(int64(9999999) == balance)
 
@@ -242,11 +239,8 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	t.Log("Execute second clear cache to perform the begin unlocking on osmosis")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Execute claim, this should fail due to frontrunning")
+	t.Log("Execute claim before ICA/ICQ. Claim should fail due to slippage")
 	s.executeClaim(ctx, acc, basicVaultAddress)
-
-	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
-	s.executeSandwichAttackExit(ctx)
 
 	t.Log("Execute third clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
@@ -261,11 +255,6 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().Equal(1, len(trappedErrorsAfterClaim[0]))
 	s.Require().Equal(1, len(trappedErrorsAfterClaim[1]))
 	s.Require().Equal(1, len(trappedErrorsAfterClaim[2]))
-
-	//t.Log("Execute sandwich attack after ICA/ICQ to revert changes")
-	//s.executeSandwichAttackJoin(ctx)
-
-	// TODO: check PENDING_UNBOND_QUEUE during handle_retry_exit_pool
 
 	t.Log("Execute retry endpoints against all primitives")
 	s.executeRetry(
@@ -282,25 +271,40 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().Equal(0, len(trappedErrorsAfter[1]))
 	s.Require().Equal(0, len(trappedErrorsAfter[2]))
 
-	//t.Log("Execute second bond transaction, this should work and also trigger the exit_pool we enqueued previously via retry endpoint")
-	//s.executeBond(ctx, acc, basicVaultAddress)
-	t.Log("Execute third clear cache to perform the exit pool on osmosis")
-	s.executeClearCache(ctx, basicVaultAddress) // TODO: is this rly needed?
+	t.Log("Fund the Osmosis pools to increase pool assets amount and reduce slippage for next retry")
+	// Preparing array fo payloads to joinPools, those are magic numbers based on the test's values so any change to initial setup will cause a fail here
+	poolIds := []string{"1", "2", "3"}
+	maxAmountsIn := []string{"3876858349171stake1,6461430323493uosmo", "6461430323493uosmo,3876858349171usdc", "3876858349171fakestake,6461430323493uosmo"}
+	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
+	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
 
-	t.Log("Check that the user shares balance is higher 0 as the joinPool should happened twice")
+	t.Log("Execute fourth clear cache to perform the exit pool on osmosis")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Check that the user shares balance is ~5 shares")
 	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
 	s.Require().Equal(BondAmount/2-1, balanceAfter)
 
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca1After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(int64(0), balanceIca1After)
 	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca2After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(int64(0), balanceIca2After)
 	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca3After) // TODO: some dust threshold here probably needed
+	s.Require().Equal(int64(0), balanceIca3After)
+
+	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
+	balanceVault, err := s.Quasar().GetBalance(ctx, basicVaultAddress, s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(1), balanceVault)
+
+	t.Log("Check uOSMO balance of the user on their wallet. Should be greater than 15")
+	userBalance, err := s.Quasar().GetBalance(ctx, acc.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().True(userBalance > int64(14_999_999))
 }
 
 func (s *WasmdTestSuite) deployContracts(ctx context.Context) (string, []string) {
@@ -403,7 +407,6 @@ func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basic
 
 	t.Log("Wait 3 blocks on quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
 	err := testutil.WaitForBlocks(ctx, 3, s.Quasar(), s.Osmosis())
-	// still not error, as on quasar the tx has gone through, this execution has been nothing more than the trigger to start the bonding process via ICA/ICQ
 	s.Require().NoError(err)
 }
 
@@ -420,7 +423,7 @@ func (s *WasmdTestSuite) executeUnbond(ctx context.Context, acc *ibc.Wallet, bas
 		nil,
 	)
 
-	t.Log("Wait 3 blocks on quasar and osmosis to settle up ICA packet unbond and the IBC transfer (unbond)")
+	t.Log("Wait 5 blocks on quasar and osmosis to settle up ICA packet unbond and the IBC transfer (unbond)")
 	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 }
@@ -437,8 +440,8 @@ func (s *WasmdTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basi
 		map[string]any{"claim": map[string]any{}},
 		nil,
 	)
-	t.Log("Wait 1 block on quasar and osmosis to settle up ICA packet claim and the IBC transfer (claim)")
-	err := testutil.WaitForBlocks(ctx, 1, s.Quasar(), s.Osmosis())
+	t.Log("Wait 3 block on quasar and osmosis to settle up ICA packet claim and the IBC transfer (claim)")
+	err := testutil.WaitForBlocks(ctx, 3, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 }
 
@@ -467,19 +470,7 @@ func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
 }
 
-func (s *WasmdTestSuite) executeSandwichAttackExit(ctx context.Context) {
-	// re-ordered swaps to avoid race conditions
-	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333fakestake", "1", "uosmo", "3")
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333usdc", "1", "uosmo", "2")
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333stake1", "1", "uosmo", "1")
-}
-
 func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
-	if len(lpAddresses) != len(seqs) || len(seqs) != len(chans) {
-		// TODO error
-	}
-
 	for i := range seqs {
 		s.ExecuteContract(
 			ctx,
@@ -494,8 +485,6 @@ func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAd
 			nil,
 		)
 	}
-
-	// TODO: wait for blocks here?
 }
 
 func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) int64 {
