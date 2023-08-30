@@ -187,13 +187,13 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(0), balanceIca1After)
+	s.Require().Equal(int64(0), balanceIca1After)
 	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(0), balanceIca2After)
+	s.Require().Equal(int64(0), balanceIca2After)
 	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(0), balanceIca3After)
+	s.Require().Equal(int64(0), balanceIca3After)
 }
 
 func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
@@ -465,9 +465,9 @@ func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddres
 
 func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
 }
 
 func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
