@@ -29,6 +29,7 @@ const (
 )
 
 var (
+	// Join
 	init1 = map[string]any{
 		"lock_period": 6, "pool_id": 1, "pool_denom": "gamm/pool/1", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "stake1",
@@ -41,6 +42,22 @@ var (
 	}
 	init3 = map[string]any{
 		"lock_period": 6, "pool_id": 3, "pool_denom": "gamm/pool/3", "base_denom": "uosmo",
+		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "fakestake",
+		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
+	}
+	// Exit
+	init4 = map[string]any{
+		"lock_period": 6, "pool_id": 4, "pool_denom": "gamm/pool/4", "base_denom": "uosmo",
+		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "stake1",
+		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
+	}
+	init5 = map[string]any{
+		"lock_period": 6, "pool_id": 5, "pool_denom": "gamm/pool/5", "base_denom": "uosmo",
+		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "usdc",
+		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
+	}
+	init6 = map[string]any{
+		"lock_period": 6, "pool_id": 6, "pool_denom": "gamm/pool/6", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "fakestake",
 		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
 	}
@@ -107,13 +124,16 @@ func (s *WasmdTestSuite) SetupSuite() {
 
 	// Setup an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
+
+	// Create Pools twice in order to create them in a range from poolId 1 to 6 for both test cases as Join and Exit
+	s.CreatePools(ctx)
+	s.CreatePools(ctx)
 }
 
 func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
-
-	basicVaultAddress, lpAddresses := s.deployContracts(ctx)
+	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init1, init2, init3})
 
 	// create user and check his balance
 	acc := s.createUserAndCheckBalances(ctx)
@@ -182,7 +202,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 
 	t.Log("Check that the user shares balance is ~20 as both join pools should have worked")
 	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
-	s.Require().Equal(int64(BondAmount*2-1-1), balanceAfter)
+	s.Require().Equal(BondAmount*2-1-1, balanceAfter)
 
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
 	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
@@ -199,7 +219,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
-	basicVaultAddress, lpAddresses := s.deployContracts(ctx)
+	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init4, init5, init6})
 
 	acc := s.createUserAndCheckBalances(ctx)
 
@@ -273,7 +293,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 
 	t.Log("Fund the Osmosis pools to increase pool assets amount and reduce slippage for next retry")
 	// Preparing array fo payloads to joinPools, those are magic numbers based on the test's values so any change to initial setup will cause a fail here
-	poolIds := []string{"1", "2", "3"}
+	poolIds := []string{"4", "5", "6"}
 	maxAmountsIn := []string{"3876858349171stake1,6461430323493uosmo", "6461430323493uosmo,3876858349171usdc", "3876858349171fakestake,6461430323493uosmo"}
 	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
 	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
@@ -307,18 +327,16 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().True(userBalance > int64(14_999_999))
 }
 
-func (s *WasmdTestSuite) deployContracts(ctx context.Context) (string, []string) {
-	// Send tokens to the respective account and create the required pools
-	s.CreatePools(ctx)
+func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string]any) (string, []string) {
+	t := s.T()
 
-	// Deploy the lp strategy contract
+	t.Log("Deploy the lp strategy contract")
+	lpAddress1, lpAddress2, lpAddress3 := s.deployPrimitives(ctx, s.ContractsDeploymentWallet, lpStrategyContractPath, "lp_strategy_test", inits[0], inits[1], inits[2])
 
-	lpAddress1, lpAddress2, lpAddress3 := s.deployPrimitives(ctx, s.ContractsDeploymentWallet, lpStrategyContractPath, "lp_strategy_test", init1, init2, init3)
-
-	// Deploy reward contract
+	t.Log("Deploy reward contract")
 	s.deployRewardsContract(ctx, s.ContractsDeploymentWallet, vaultRewardsContractPath)
 
-	// deploy basic_vault contract
+	t.Log("Deploy basic vault contract")
 	basicVaultAddress := s.deployVault(ctx, s.ContractsDeploymentWallet, basicVaultStrategyContractPath, "basic_vault",
 		map[string]any{
 			"total_cap":                     "200000000000",
@@ -336,27 +354,27 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context) (string, []string)
 					"address": lpAddress1,
 					"weight":  "0.333333333333",
 					"init": map[string]any{
-						"l_p": init1,
+						"l_p": inits[0],
 					},
 				},
 				{
 					"address": lpAddress2,
 					"weight":  "0.333333333333",
 					"init": map[string]any{
-						"l_p": init2,
+						"l_p": inits[1],
 					},
 				},
 				{
 					"address": lpAddress3,
 					"weight":  "0.333333333333",
 					"init": map[string]any{
-						"l_p": init3,
+						"l_p": inits[2],
 					},
 				},
 			},
 		})
 
-	// set depositors for all the primitives
+	t.Log("Set depositors for all the primitives")
 	s.setDepositorForContracts(ctx, s.ContractsDeploymentWallet,
 		map[string]any{
 			"set_depositor": map[string]any{
@@ -365,6 +383,7 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context) (string, []string)
 		},
 		[]string{lpAddress1, lpAddress2, lpAddress3},
 	)
+
 	return basicVaultAddress, []string{lpAddress1, lpAddress2, lpAddress3}
 }
 
@@ -465,9 +484,9 @@ func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddres
 
 func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
-	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
+	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
 }
 
 func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
