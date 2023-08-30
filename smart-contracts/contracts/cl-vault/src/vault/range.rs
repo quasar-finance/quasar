@@ -54,14 +54,22 @@ pub fn execute_modify_range(
     info: MessageInfo,
     lower_price: Uint128,
     upper_price: Uint128,
-    max_slippage: Decimal
+    max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     let storage = deps.storage;
     let querier = deps.querier;
 
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
-    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick, max_slippage)
+    execute_modify_range_ticks(
+        storage,
+        &querier,
+        env,
+        info,
+        lower_tick,
+        upper_tick,
+        max_slippage,
+    )
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -76,7 +84,7 @@ pub fn execute_modify_range_ticks(
     info: MessageInfo,
     lower_tick: i128,
     upper_tick: i128,
-    max_slippage: Decimal
+    max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     assert_range_admin(storage, &info.sender)?;
 
@@ -179,10 +187,8 @@ pub fn handle_withdraw_position_reply(
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?
-            .to_string(),
-        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?
-            .to_string(),
+        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?.to_string(),
+        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?.to_string(),
     };
 
     let msg: SubMsg = SubMsg::reply_on_success(
@@ -324,7 +330,6 @@ pub fn handle_swap_reply(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
-
     // get post swap balances to create positions with
     let balance0 = deps
         .querier
@@ -356,16 +361,10 @@ pub fn handle_swap_reply(
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(
-            balance0.amount,
-            modify_range_state.max_slippage,
-        )?
-        .to_string(),
-        token_min_amount1: with_slippage(
-            balance1.amount,
-            modify_range_state.max_slippage,
-        )?
-        .to_string(),
+        token_min_amount0: with_slippage(balance0.amount, modify_range_state.max_slippage)?
+            .to_string(),
+        token_min_amount1: with_slippage(balance1.amount, modify_range_state.max_slippage)?
+            .to_string(),
     };
 
     let msg: SubMsg = SubMsg::reply_always(
@@ -635,7 +634,7 @@ mod tests {
             info,
             lower_price.into(),
             upper_price.into(),
-            max_slippage
+            max_slippage,
         )
         .unwrap();
 

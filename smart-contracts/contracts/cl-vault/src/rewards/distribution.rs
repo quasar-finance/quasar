@@ -22,7 +22,7 @@ use osmosis_std::types::{
 use super::rewards::Rewards;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn claim_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &Rewards::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(

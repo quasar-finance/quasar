@@ -37,6 +37,7 @@ use crate::query::query_user_rewards;
 use crate::reply::handle_reply;
 use crate::reply::Replies;
 
+use crate::rewards::execute_distribute_rewards;
 use crate::state::Position;
 use crate::state::LOCKUP_DURATION;
 use crate::state::POSITION;
@@ -45,6 +46,7 @@ use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use crate::vault::admin::execute_admin;
 
+use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::execute_any_deposit;
 use crate::vault::deposit::execute_exact_deposit;
 use crate::vault::range::execute_modify_range;
@@ -186,6 +188,12 @@ pub fn execute(
                     upper_price,
                     max_slippage,
                 }) => execute_modify_range(deps, env, info, lower_price, upper_price, max_slippage),
+                crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
+                    execute_distribute_rewards(deps, env)
+                }
+                crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
+                    execute_claim_user_rewards(deps, info.sender.as_str())
+                }
             }
         }
     }
