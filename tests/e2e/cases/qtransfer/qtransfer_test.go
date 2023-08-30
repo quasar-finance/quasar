@@ -138,6 +138,7 @@ func (s *Qtransfer) SetupSuite() {
 			"symbol":                        "ORN",
 			"min_withdrawal":                "1",
 			"name":                          "ORION",
+			"deposit_denom":                 s.OsmosisDenomInQuasar,
 			"primitives": []map[string]any{
 				{
 					"address": s.LpStrategyContractAddress1,
