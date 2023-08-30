@@ -358,14 +358,8 @@ pub fn handle_swap_reply(
     let create_position_msg = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender: env.contract.address.to_string(),
-        lower_tick: swap_deposit_merge_state
-            .target_lower_tick
-            .try_into()
-            .expect("Could not convert lower_tick to i64 from i128"),
-        upper_tick: swap_deposit_merge_state
-            .target_upper_tick
-            .try_into()
-            .expect("Could not convert upper_tick to i64 from i128"),
+        lower_tick: swap_deposit_merge_state.target_lower_tick,
+        upper_tick: swap_deposit_merge_state.target_upper_tick,
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
