@@ -68,7 +68,7 @@ mod tests {
             .unwrap();
         assert!(!shares.balance.is_zero());
 
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {

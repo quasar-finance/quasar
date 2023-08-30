@@ -1,4 +1,4 @@
-use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG, RANGE_ADMIN};
+use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -15,7 +15,9 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateConfig { updates } => {
             execute_update_config(deps, info, updates)
         }
-        AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => execute_update_range_admin(deps, info, address),
+        AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
+            execute_update_range_admin(deps, info, address)
+        }
     }
 }
 
@@ -74,7 +76,6 @@ pub fn execute_update_range_admin(
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
-
 
 /// Updates the configuration of the contract.
 ///
@@ -201,12 +202,12 @@ mod tests {
     fn test_execute_update_range_admin_success() {
         let admin = Addr::unchecked("admin");
         let mut deps = mock_dependencies();
-        ADMIN_ADDRESS
-            .save(deps.as_mut().storage, &admin)
-            .unwrap();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &old_range_admin)
+            .unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -218,16 +219,17 @@ mod tests {
     fn test_execute_update_range_admin_not_admin() {
         let admin = Addr::unchecked("admin");
         let mut deps = mock_dependencies();
-        ADMIN_ADDRESS
-            .save(deps.as_mut().storage, &admin)
-            .unwrap();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &old_range_admin)
+            .unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
         let info_not_admin = mock_info("not_admin", &[]);
 
-        execute_update_range_admin(deps.as_mut(), info_not_admin, new_range_admin.to_string()).unwrap_err();
+        execute_update_range_admin(deps.as_mut(), info_not_admin, new_range_admin.to_string())
+            .unwrap_err();
         assert_eq!(RANGE_ADMIN.load(&deps.storage).unwrap(), old_range_admin);
     }
 
@@ -235,18 +237,21 @@ mod tests {
     fn test_execute_update_range_admin_with_funds() {
         let admin = Addr::unchecked("admin");
         let mut deps = mock_dependencies();
-        ADMIN_ADDRESS
-            .save(deps.as_mut().storage, &admin)
-            .unwrap();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &old_range_admin)
+            .unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
 
         let info_admin_with_funds = mock_info(admin.as_str(), &[coin(1, "token")]);
 
-        let result =
-        execute_update_range_admin(deps.as_mut(), info_admin_with_funds, new_range_admin.to_string());
+        let result = execute_update_range_admin(
+            deps.as_mut(),
+            info_admin_with_funds,
+            new_range_admin.to_string(),
+        );
         assert!(result.is_err(), "Expected Err, but got: {:?}", result);
     }
 
@@ -254,21 +259,21 @@ mod tests {
     fn test_execute_update_range_admin_same_admin() {
         let admin = Addr::unchecked("admin");
         let mut deps = mock_dependencies();
-        ADMIN_ADDRESS
-            .save(deps.as_mut().storage, &admin)
-            .unwrap();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &old_range_admin)
+            .unwrap();
         let new_range_admin = Addr::unchecked("rang_admin1");
 
         let info_admin = mock_info(admin.as_str(), &[]);
 
-        let res = execute_update_range_admin(deps.as_mut(), info_admin, new_range_admin.to_string());
+        let res =
+            execute_update_range_admin(deps.as_mut(), info_admin, new_range_admin.to_string());
         assert!(res.is_ok());
         assert_eq!(RANGE_ADMIN.load(&deps.storage).unwrap(), old_range_admin);
     }
-
 
     #[test]
     fn test_execute_update_config_success() {
