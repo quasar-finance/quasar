@@ -71,6 +71,11 @@ To execute all test cases, simply run the following command:
 cd tests/e2e
 make test-e2e
 ```
+or its parallel variant
+```bash
+cd tests/e2e
+make test-e2e-parallel
+```
 
 This command will iterate over all test folders found within `./tests/e2e/cases`, excluding those beginning with an
 underscore. For each of these folders, it will execute the `go test ./...` command.
@@ -78,7 +83,7 @@ underscore. For each of these folders, it will execute the `go test ./...` comma
 ### Running Specific Test Cases
 
 If you want to run specific test cases instead of the entire suite, you can do so by using an environment variable named
-`CASES` to specify the test case folders. For example, to run the test cases `case1`, `case2`, and `case3`, you would
+`CASES` to specify the test case folders. For example, to run the test cases `case1_folder`, `case2_folder`, and `case3_folder`, you would
 use the following command:
 
 ```bash
@@ -86,7 +91,7 @@ cd tests/e2e
 CASES="./cases/case1_folder /cases/case2_folder /cases/case3_folder" make test-e2e
 ```
 
-This command will only execute the `go test ./...` command in the directories `case1`, `case2`, and `case3`.
+This command will only execute the `go test ./...` command in the desired subdirectories.
 
 ---
 

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	osmosisPool1Path        = "../_utils/high_liquidity/balancer_pool1.json"
+	osmosisPool1Path        = "../_utils/pools/high_liquidity/balancer_pool1.json"
 	userFunds         int64 = int64(100_000_000_000)
 	ibcTransferAmount int64 = int64(10_000_000_000)
 )
