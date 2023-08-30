@@ -83,7 +83,7 @@ use the following command:
 
 ```bash
 cd tests/e2e
-CASES="case1 case2 case3" make test-e2e
+CASES="./cases/case1_folder /cases/case2_folder /cases/case3_folder" make test-e2e
 ```
 
 This command will only execute the `go test ./...` command in the directories `case1`, `case2`, and `case3`.
