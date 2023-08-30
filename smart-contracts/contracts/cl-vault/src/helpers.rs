@@ -171,7 +171,7 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
         .try_into()?;
 
     let swap_amount =
-        token1_balance.checked_mul(pool_metadata_constant.checked_add(Uint128::one())?)?;
+        token1_balance.checked_div(pool_metadata_constant.checked_add(Uint128::one())?)?;
 
     Ok(swap_amount)
 }

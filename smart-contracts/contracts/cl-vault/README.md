@@ -113,9 +113,9 @@ $$y'=y''P_s\sqrt{P_u}\sqrt{P_l}$$
 
 substituting and solving for the amount of tokens to swap given our total amount of y tokens gives us:
 
-$$y''=(1+P_s\sqrt{P_u}\sqrt{P_l})y$$
+$$y''=\frac{y}{(1+P_s\sqrt{P_u}\sqrt{P_l})}$$
 or, given our pool metadata constant from earlier:
-$$y''=(1+K)y$$
+$$y''=\frac{y}{(1+K)}$$
 Where $y''$ is the amount of tokens we will swap. and $y$ is the total amount of tokens we have.
 
 ### Further/Future optimizations
