@@ -155,7 +155,7 @@ mod tests {
             MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.into(),
-                liquidity_amount: liquidity_amount.to_string()
+                liquidity_amount: liquidity_amount.atomics().to_string()
             }
         );
     }

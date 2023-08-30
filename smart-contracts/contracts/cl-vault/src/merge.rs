@@ -129,13 +129,19 @@ pub fn handle_merge_withdraw_reply(
     // under the current range with that
     if next.result.is_some() {
         let range = CURRENT_MERGE_POSITION.load(deps.storage)?;
-        let (amount0, amount1) = CURRENT_MERGE.iter(deps.storage)?.try_fold(
-            (Uint128::zero(), Uint128::zero()),
-            |(acc0, acc1), withdraw| -> Result<(Uint128, Uint128), ContractError> {
-                let w = withdraw?.result.unwrap();
-                Ok((acc0 + w.amount0, acc1 + w.amount1))
-            },
-        )?;
+        let (mut amount0, mut amount1) = (Uint128::zero(), Uint128::zero());
+
+        // sum all results in the queue while emptying the queue
+        while !CURRENT_MERGE.is_empty(deps.storage)? {
+            let w = CURRENT_MERGE
+                .pop_front(deps.storage)?
+                .unwrap()
+                .result
+                .unwrap();
+            amount0 += w.amount0;
+            amount1 += w.amount1;
+        }
+
         let pool: crate::state::PoolConfig = POOL_CONFIG.load(deps.storage)?;
 
         let mut tokens = vec![];

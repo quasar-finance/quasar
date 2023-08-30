@@ -307,7 +307,9 @@ mod tests {
                     position_id: 2,
                     amount0: "100".to_string(),
                     amount1: "100".to_string(),
-                    liquidity_created: "500000.1".to_string(),
+                    // MsgCreatePositionResponse returns a uint, which represents an 18 decimal in
+                    // for the liquidity created to be 500000.1, we expect this number to be 500000100000000000000000
+                    liquidity_created: "500000100000000000000000".to_string(),
                     lower_tick: 1,
                     upper_tick: 100,
                 }

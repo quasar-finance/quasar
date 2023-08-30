@@ -36,9 +36,6 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// create position max slippage
-    // TODO remove this in favor of setting it in create_position
-    pub create_position_max_slippage: Decimal,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
 }
@@ -54,6 +51,8 @@ pub struct ModifyRangeState {
     // pre-withdraw state items
     pub lower_tick: i64,
     pub upper_tick: i64,
+    // the max slippage for modifying the range
+    pub max_slippage: Decimal,
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
 }

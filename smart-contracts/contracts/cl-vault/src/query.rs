@@ -35,6 +35,11 @@ pub struct TotalAssetsResponse {
 }
 
 #[cw_serde]
+pub struct RangeAdminResponse {
+    pub address: String,
+}
+
+#[cw_serde]
 pub struct TotalVaultTokenSupplyResponse {
     total: Uint128,
 }
