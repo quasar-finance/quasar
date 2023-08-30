@@ -19,8 +19,9 @@ use osmosis_std::types::{
 use crate::{
     concentrated_liquidity::get_position,
     helpers::{
-        get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
-        with_slippage,
+        get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens,
+        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+        get_spot_price, with_slippage,
     },
     math::tick::price_to_tick,
     merge::MergeResponse,
@@ -268,10 +269,29 @@ pub fn do_swap_deposit_merge(
     let balance1 =
         querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
+    // TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage, to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.amount.is_zero() {
-        (balance0.amount, SwapDirection::ZeroToOne)
+        (
+            get_single_sided_deposit_0_to_1_swap_amount(
+                storage,
+                querier,
+                balance0.amount,
+                target_lower_tick,
+                target_upper_tick,
+            )?,
+            SwapDirection::ZeroToOne,
+        )
     } else if !balance1.amount.is_zero() {
-        (balance1.amount, SwapDirection::OneToZero)
+        (
+            get_single_sided_deposit_1_to_0_swap_amount(
+                storage,
+                querier,
+                balance1.amount,
+                target_lower_tick,
+                target_upper_tick,
+            )?,
+            SwapDirection::OneToZero,
+        )
     } else {
         // we shouldn't reach here
         (Uint128::zero(), SwapDirection::ZeroToOne)

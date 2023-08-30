@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops::Add, str::FromStr};
 
 use crate::{error::ContractResult, math::tick::tick_to_price, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -127,6 +127,53 @@ pub fn get_deposit_amounts_for_liquidity_needed(
         (deposit_amount_0, deposit_amount_1),
         (remainder_0, remainder_1),
     ))
+}
+
+// this math is straight from the readme
+pub fn get_single_sided_deposit_0_to_1_swap_amount(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0_balance: Uint128,
+    lower_tick: i64,
+    upper_tick: i64,
+) -> Result<Uint128, ContractError> {
+    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let lower_price = tick_to_price(lower_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
+    let pool_metadata_constant: Uint128 = spot_price
+        .checked_mul(lower_price.sqrt())?
+        .checked_mul(upper_price.sqrt())?
+        .to_uint_floor() // todo: this is big, so should be safe, right?
+        .try_into()?;
+
+    let swap_amount = token0_balance.checked_multiply_ratio(
+        pool_metadata_constant,
+        pool_metadata_constant.checked_add(Uint128::one())?,
+    )?;
+
+    Ok(swap_amount)
+}
+
+pub fn get_single_sided_deposit_1_to_0_swap_amount(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token1_balance: Uint128,
+    lower_tick: i64,
+    upper_tick: i64,
+) -> Result<Uint128, ContractError> {
+    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let lower_price = tick_to_price(lower_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
+    let pool_metadata_constant: Uint128 = spot_price
+        .checked_mul(lower_price.sqrt())?
+        .checked_mul(upper_price.sqrt())?
+        .to_uint_floor() // todo: this is big, so should be safe, right?
+        .try_into()?;
+
+    let swap_amount =
+        token1_balance.checked_mul(pool_metadata_constant.checked_add(Uint128::one())?)?;
+
+    Ok(swap_amount)
 }
 
 pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
