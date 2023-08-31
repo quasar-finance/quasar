@@ -1,20 +1,11 @@
-use cosmwasm_std::{DepsMut, Env, Reply, Response, StdError};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
-use crate::{
-    contract::{handle_create_denom_reply, handle_instantiate_create_position_reply},
-    merge::{handle_merge_create_position_reply, handle_merge_withdraw_reply},
-    rewards::{handle_collect_incentives_reply, handle_collect_spread_rewards_reply},
-    vault::{
-        deposit::handle_deposit_create_position_reply,
-        range::{
-            handle_initial_create_position_reply, handle_iteration_create_position_reply,
-            handle_merge_response, handle_swap_reply, handle_withdraw_position_reply,
-        },
-        withdraw::handle_withdraw_user_reply,
-    },
-    ContractError,
-};
+use cosmwasm_std::{coin, Decimal, DepsMut, Env, Response, SubMsgResult};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::{MsgCreateDenomResponse, MsgMint};
+
+use crate::ContractError;
+use crate::state::{Position, POSITION, VAULT_DENOM};
 
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u64)]
@@ -51,29 +42,41 @@ pub enum Replies {
     Unknown,
 }
 
-pub fn handle_reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id.into() {
-        Replies::DepositCreatePosition => {
-            handle_deposit_create_position_reply(deps, env, msg.result)
-        }
-        Replies::InstantiateCreatePosition => {
-            handle_instantiate_create_position_reply(deps, env, msg.result)
-        }
-        Replies::CollectIncentives => handle_collect_incentives_reply(deps, env, msg.result),
-        Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),
-        Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env, msg.result),
-        Replies::RangeInitialCreatePosition => {
-            handle_initial_create_position_reply(deps, env, msg.result)
-        }
-        Replies::RangeIterationCreatePosition => {
-            handle_iteration_create_position_reply(deps, env, msg.result)
-        }
-        Replies::Swap => handle_swap_reply(deps, env, msg.result),
-        Replies::Merge => handle_merge_response(deps, msg.result),
-        Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
-        Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
-        Replies::WithdrawMerge => handle_merge_withdraw_reply(deps, env, msg.result),
-        Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
-        Replies::Unknown => unimplemented!(),
-    }
+pub fn handle_create_denom_reply(
+    deps: DepsMut,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let response: MsgCreateDenomResponse = data.try_into()?;
+    VAULT_DENOM.save(deps.storage, &response.new_token_denom)?;
+
+    Ok(Response::new().add_attribute("vault_denom", response.new_token_denom))
+}
+
+pub fn handle_instantiate_create_position_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let response: MsgCreatePositionResponse = data.try_into()?;
+    POSITION.save(
+        deps.storage,
+        &Position {
+            position_id: response.position_id,
+        },
+    )?;
+
+    let liquidity = Decimal::raw(response.liquidity_created.parse()?); // DOUBTS: is this shares amount?
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+
+    // todo do we want to mint the initial mint to the instantiater, or just not care?
+    let mint_msg = MsgMint {
+        sender: env.contract.address.to_string(),
+        amount: Some(coin(liquidity.atomics().u128(), vault_denom).into()),
+        mint_to_address: env.contract.address.to_string(),
+    };
+
+    Ok(Response::new()
+        .add_message(mint_msg)
+        .add_attribute("initial_position", response.position_id.to_string())
+        .add_attribute("initial_liquidity", response.liquidity_created))
 }

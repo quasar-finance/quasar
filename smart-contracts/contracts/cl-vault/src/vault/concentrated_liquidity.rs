@@ -1,7 +1,6 @@
 use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgFungifyChargedPositions, MsgWithdrawPosition,
+    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
 };
 
 use crate::{
@@ -28,9 +27,9 @@ pub fn create_position(
         upper_tick,
         tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
         // An sdk.Int in the Go code
-        token_min_amount0: token_min_amount0.to_string(),
+        token_min_amount0: token_min_amount0.to_string(), // DOUBTS: Why don't we expect a min amount?
         // An sdk.Int in the Go code
-        token_min_amount1: token_min_amount1.to_string(),
+        token_min_amount1: token_min_amount1.to_string(), // DOUBTS: Why don't we expect a min amount?
     };
     Ok(create_position)
 }

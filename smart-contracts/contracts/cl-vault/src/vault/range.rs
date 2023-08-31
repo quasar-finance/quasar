@@ -20,13 +20,13 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    concentrated_liquidity::{create_position, get_position, may_get_position},
+    vault::concentrated_liquidity::{create_position, get_position, may_get_position},
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
     },
     math::tick::price_to_tick,
-    merge::MergeResponse,
+    vault::merge::MergeResponse,
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
@@ -48,7 +48,7 @@ fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
-pub fn execute_modify_range(
+pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -61,7 +61,7 @@ pub fn execute_modify_range(
 
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
-    execute_modify_range_ticks(storage, &querier, env, info, lower_tick, upper_tick, max_slippage)
+    execute_update_range_ticks(storage, &querier, env, info, lower_tick, upper_tick, max_slippage)
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -69,7 +69,7 @@ pub fn execute_modify_range(
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
-pub fn execute_modify_range_ticks(
+pub fn execute_update_range_ticks(
     storage: &mut dyn Storage,
     querier: &QuerierWrapper,
     env: Env,
@@ -135,7 +135,6 @@ pub fn handle_withdraw_position_reply(
     let msg: MsgWithdrawPositionResponse = data.try_into()?;
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     let amount0 = msg.amount0;
@@ -620,7 +619,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_modify_range() {
+    fn test_execute_update_range() {
         let info = mock_info("addr0000", &[]);
         let mut deps = mock_deps_with_querier(&info);
 
@@ -629,7 +628,7 @@ mod tests {
         let upper_price = 1_000_000_000_000_000_000u128;
         let max_slippage = Decimal::from_str("0.5").unwrap();
 
-        let res = super::execute_modify_range(
+        let res = super::execute_update_range(
             deps.as_mut(),
             env,
             info,

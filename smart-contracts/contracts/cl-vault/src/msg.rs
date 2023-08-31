@@ -103,7 +103,7 @@ pub struct InstantiateMsg {
     pub pool_id: u64,
     /// The lockup duration in seconds that this vault will use when staking
     /// LP tokens.
-    pub lockup_duration: u64,
+    pub lockup_duration: u64, // DOUBTS: Is this matching the same seconds duration from the Osmosis Lockup module/contracts? Is this preventing moving ranges or moving ranges is allowed for the already deposited+locked liquidity?
     /// Configurable parameters for the contract.
     pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.

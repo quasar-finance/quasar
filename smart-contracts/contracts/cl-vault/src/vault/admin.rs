@@ -1,9 +1,10 @@
 use crate::state::{VaultConfig, ADMIN_ADDRESS, VAULT_CONFIG, RANGE_ADMIN};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Addr, Deps, DepsMut, MessageInfo, Response};
+use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
+use crate::helpers::assert_admin;
 
-pub(crate) fn execute_admin(
+pub(crate) fn execute_update(
     deps: DepsMut,
     info: MessageInfo,
     admin_msg: AdminExtensionExecuteMsg,
@@ -24,17 +25,6 @@ pub(crate) fn execute_admin(
 /// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
 /// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
 /// If both checks pass, it saves the new admin address in the state.
-///
-/// # Parameters
-///
-/// - `deps`: A mutable reference to the contract's dependencies.
-/// - `info`: The information about the calling message.
-/// - `address`: The address of the new admin.
-///
-/// # Returns
-///
-/// - `Ok(Response)` - If the admin was successfully updated. The response contains the appropriate attributes.
-/// - `Err(ContractError)` - If the function failed to update the admin due to an error.
 pub fn execute_update_admin(
     deps: DepsMut,
     info: MessageInfo,
@@ -63,8 +53,8 @@ pub fn execute_update_range_admin(
     address: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
 
-    let _ = assert_admin(deps.as_ref(), &info.sender)?;
     let previous_admin = RANGE_ADMIN.load(deps.storage)?;
     let new_admin = deps.api.addr_validate(&address)?;
     RANGE_ADMIN.save(deps.storage, &new_admin)?;
@@ -81,24 +71,12 @@ pub fn execute_update_range_admin(
 /// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
 /// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
 /// If both checks pass, it saves the new configuration in the state.
-///
-/// # Parameters
-///
-/// - `deps`: A mutable reference to the contract's dependencies.
-/// - `info`: The information about the calling message.
-/// - `updates`: The new configuration.
-///
-/// # Returns
-///
-/// - `Ok(Response)` - If the configuration was successfully updated. The response contains the appropriate attributes.
-/// - `Err(ContractError)` - If the function failed to update the configuration due to an error.
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     updates: VaultConfig,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-
     assert_admin(deps.as_ref(), &info.sender)?;
 
     VAULT_CONFIG.save(deps.storage, &updates)?;
@@ -106,24 +84,6 @@ pub fn execute_update_config(
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("updates", format!("{:?}", updates)))
-}
-
-/// Helper function for a streamlined admin authentication check.
-///
-/// This function compares the address of the message sender (caller) with the current admin
-/// address stored in the state. This provides a convenient way to verify if the caller
-/// is the admin in a single line.
-///
-/// # Returns
-///
-/// - `Ok(Addr)` - If the caller is the admin. The returned `Addr` is the address of the admin.
-/// - `Err(ContractError)` - If the caller is not the admin. The error variant will be `ContractError::Unauthorized`.
-pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
-    if ADMIN_ADDRESS.load(deps.storage)? != caller {
-        Err(ContractError::Unauthorized {})
-    } else {
-        Ok(caller.clone())
-    }
 }
 
 #[cfg(test)]
@@ -205,8 +165,8 @@ mod tests {
             .save(deps.as_mut().storage, &admin)
             .unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -222,8 +182,8 @@ mod tests {
             .save(deps.as_mut().storage, &admin)
             .unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
         let info_not_admin = mock_info("not_admin", &[]);
 
@@ -239,8 +199,8 @@ mod tests {
             .save(deps.as_mut().storage, &admin)
             .unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap();
         let new_range_admin = Addr::unchecked("rang_admin2");
 
         let info_admin_with_funds = mock_info(admin.as_str(), &[coin(1, "token")]);
@@ -258,8 +218,8 @@ mod tests {
             .save(deps.as_mut().storage, &admin)
             .unwrap();
 
-        let old_range_admin = Addr::unchecked("rang_admin1");   
-        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap(); 
+        let old_range_admin = Addr::unchecked("rang_admin1");
+        RANGE_ADMIN.save(deps.as_mut().storage, &old_range_admin).unwrap();
         let new_range_admin = Addr::unchecked("rang_admin1");
 
         let info_admin = mock_info(admin.as_str(), &[]);

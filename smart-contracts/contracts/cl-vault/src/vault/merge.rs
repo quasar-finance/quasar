@@ -11,7 +11,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 };
 
 use crate::{
-    concentrated_liquidity::{create_position, get_position},
+    vault::concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,

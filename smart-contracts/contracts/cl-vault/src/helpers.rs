@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{Coin, Decimal, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use crate::state::ADMIN_ADDRESS;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -141,6 +142,17 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
     )?;
 
     Ok(adjusted_amount)
+}
+
+/// This function compares the address of the message sender (caller) with the current admin
+/// address stored in the state. This provides a convenient way to verify if the caller
+/// is the admin in a single line.
+pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
+    if ADMIN_ADDRESS.load(deps.storage)? != caller {
+        Err(ContractError::Unauthorized {})
+    } else {
+        Ok(caller.clone())
+    }
 }
 
 #[macro_export]
