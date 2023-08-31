@@ -155,7 +155,7 @@ pub fn handle_deposit_create_position_reply(
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let bank_msg = refund_bank_msg(
-        current_deposit,
+        current_deposit.clone(),
         &resp,
         pool_config.token0,
         pool_config.token1,
@@ -179,7 +179,7 @@ pub fn handle_deposit_create_position_reply(
 
     let mint_attrs = vec![
         Attribute::new("mint-share-amount", user_shares),
-        Attribute::new("receiver", &current_deposit.sender),
+        Attribute::new("receiver", current_deposit.sender),
     ];
 
     //fungify our positions together and mint the user shares to the cl-vault
