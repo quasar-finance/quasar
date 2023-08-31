@@ -49,8 +49,8 @@ pub enum SwapDirection {
 #[cw_serde]
 pub struct ModifyRangeState {
     // pre-withdraw state items
-    pub lower_tick: i128,
-    pub upper_tick: i128,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
     // the max slippage for modifying the range
     pub max_slippage: Decimal,
     // pre-deposit state items

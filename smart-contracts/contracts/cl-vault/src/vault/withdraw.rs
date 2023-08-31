@@ -2,6 +2,7 @@ use cosmwasm_std::{
     coin, Attribute, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128,
 };
+
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
@@ -87,6 +88,9 @@ fn withdraw(
         .amount
         .parse::<u128>()?
         .into();
+
+    debug!(deps, "shares", shares);
+    debug!(deps, "total_liq", total_liquidity);
 
     let user_liquidity = Decimal256::from_ratio(shares, 1_u128)
         .checked_mul(total_liquidity)?

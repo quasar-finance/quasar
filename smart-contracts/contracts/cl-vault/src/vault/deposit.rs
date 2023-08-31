@@ -1,25 +1,20 @@
 use std::str::FromStr;
 
-use apollo_cw_asset::{Asset, AssetInfo};
 use cosmwasm_std::{
-    coin, to_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, DepsMut, Env,
-    Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
 };
-use cw_dex_router::helpers::receive_asset;
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
-        concentratedliquidity::v1beta1::{
-            ConcentratedliquidityQuerier, MsgCreatePositionResponse, MsgFungifyChargedPositions,
-        },
+        concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, MsgCreatePositionResponse},
         tokenfactory::v1beta1::MsgMint,
     },
 };
 
 use crate::{
     concentrated_liquidity::{create_position, get_position},
-    debug,
     error::ContractResult,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
@@ -31,11 +26,11 @@ use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
 pub(crate) fn execute_any_deposit(
-    deps: DepsMut,
-    env: Env,
-    info: &MessageInfo,
-    amount: Uint128,
-    recipient: Option<String>,
+    _deps: DepsMut,
+    _env: Env,
+    _info: &MessageInfo,
+    _amount: Uint128,
+    _recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     unimplemented!()
@@ -53,7 +48,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two(info, (pool.token0, pool.token1))?;
 
     let position = POSITION.load(deps.storage)?;
     let range = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -255,8 +250,8 @@ mod tests {
     use cosmwasm_std::{
         from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
-        WasmMsg,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        SubMsgResponse, Uint256, WasmMsg,
     };
     use cosmwasm_std::{Binary, ContractResult as CwContractResult};
     use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
@@ -267,7 +262,6 @@ mod tests {
             PositionByIdResponse,
         },
     };
-    use prost::Message;
 
     use crate::state::{PoolConfig, Position};
 
@@ -370,7 +364,7 @@ mod tests {
         let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
             liquidity.to_uint_floor().try_into().unwrap()
         } else {
-            let ratio = liquidity.checked_div(total_liquidity).unwrap();
+            let _ratio = liquidity.checked_div(total_liquidity).unwrap();
             total_shares
                 .multiply_ratio(liquidity.numerator(), liquidity.denominator())
                 .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
@@ -378,12 +372,12 @@ mod tests {
                 .unwrap()
         };
 
-        println!("{}", user_shares.to_string());
+        println!("{}", user_shares);
     }
 
     #[test]
     fn refund_bank_msg_2_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -415,7 +409,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token1_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -447,7 +441,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token0_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -479,7 +473,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_none_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -498,7 +492,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 
@@ -565,7 +559,7 @@ mod tests {
     }
 
     fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        let mut deps = OwnedDeps {
+        OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(FullPositionBreakdown {
@@ -600,7 +594,6 @@ mod tests {
                 forfeited_incentives: vec![],
             }),
             custom_query_type: PhantomData,
-        };
-        deps
+        }
     }
 }

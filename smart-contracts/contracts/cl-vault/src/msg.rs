@@ -1,9 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
-use cw_vault_multi_standard::{
-    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
-    VaultStandardExecuteMsg, VaultStandardQueryMsg,
-};
+use cosmwasm_std::{Decimal, Uint128};
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{PoolResponse, PositionResponse, RangeAdminResponse},

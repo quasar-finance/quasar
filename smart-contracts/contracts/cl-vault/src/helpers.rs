@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
-use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{Coin, Decimal, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128};
+use crate::{error::ContractResult, math::tick::tick_to_price, state::POOL_CONFIG, ContractError};
+use cosmwasm_std::{
+    Coin, Decimal, Decimal256, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
+};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -47,51 +49,46 @@ pub fn get_spot_price(
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
 
-/// get_tokens_in_range
-///
-/// gets the total amount of each token in a given range
-///
-/// thanks: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#deducing-the-quantity-of-tokens-x-and-y-for-a-tick-range
-// pub fn get_tokens_in_range(
-//     storage: &dyn Storage,
-//     querier: &QuerierWrapper,
-//     pool_id: u64,
-//     lower_tick: Uint128,
-//     upper_tick: Uint128,
-// ) -> Result<Uint128, ContractError> {
-//     let pool_config = POOL_CONFIG.load(storage)?;
-
-//     let cl_querier = ConcentratedliquidityQuerier::new(querier);
-//     let liquidity = cl_querier.liquidity_net_in_direction(
-//         pool_id,
-//         pool_config.token0,
-//         lower_tick,
-//         false,
-//         upper_tick,
-//         false,
-//     )?;
-
-//     let lower_tick_price =
-//     liquidity.current_tick
-// }
-
 /// get_liquidity_needed_for_tokens
 ///
 /// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
 /// depositing both tokens would result in a refund of the token with higher needed liquidity
 ///
-/// thanks: https://github.com/osmosis-labs/osmosis/blob/ma * (liquidity_needed_token0 - liquidity_needed_token1)/ liquidity_needed_token0
-/// in(deposit_amount_0/x/concentrated-liquidity/README.md#adding-liquidity
+/// thanks: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#adding-liquidity
 pub fn get_liquidity_needed_for_tokens(
     delta_token0: String,
     delta_token1: String,
-    _lower_tick: i128,
-    _upper_tick: i128,
+    lower_tick: i64,
+    upper_tick: i64,
 ) -> Result<(Uint128, Uint128), ContractError> {
-    let _delta_x = Uint128::from_str(&delta_token0)?;
-    let _delta_y = Uint128::from_str(&delta_token1)?;
+    // todo check that decimal casts are correct
+    let delta_x = Decimal256::from_atomics(Uint128::from_str(&delta_token0)?, 18)?;
+    let delta_y = Decimal256::from_atomics(Uint128::from_str(&delta_token1)?, 18)?;
     // calc liquidity needed for token
-    unimplemented!("get_liquidity_needed_for_tokens")
+
+    // save gas and read easier by calcing ahead (gas savings prob already done by compiler)
+    let price_lower = tick_to_price(lower_tick)?;
+    let price_upper = tick_to_price(upper_tick)?;
+    let sqrt_price_lower = price_lower.sqrt();
+    let sqrt_price_upper = price_upper.sqrt();
+    let denominator = sqrt_price_upper.checked_sub(sqrt_price_lower)?;
+
+    // liquidity follows the formula found in the link above this function. basically this:
+    // liquidity_x = (delta_x * sqrt(price_lower) * sqrt(price_upper))/(sqrt(price_upper) - sqrt(price_lower))
+    // liquidity_7 = (delta_x)/(sqrt(price_upper) - sqrt(price_lower))
+    // overflow city?
+    let liquidity_x = delta_x
+        .checked_mul(sqrt_price_lower)?
+        .checked_mul(sqrt_price_upper)?
+        .checked_div(denominator)?;
+
+    let liquidity_y = delta_y.checked_div(denominator)?;
+
+    // todo: check this is what we want
+    Ok((
+        liquidity_x.atomics().try_into()?,
+        liquidity_y.atomics().try_into()?,
+    ))
 }
 
 pub fn get_deposit_amounts_for_liquidity_needed(
@@ -132,6 +129,53 @@ pub fn get_deposit_amounts_for_liquidity_needed(
     ))
 }
 
+// this math is straight from the readme
+pub fn get_single_sided_deposit_0_to_1_swap_amount(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0_balance: Uint128,
+    lower_tick: i64,
+    upper_tick: i64,
+) -> Result<Uint128, ContractError> {
+    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let lower_price = tick_to_price(lower_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
+    let pool_metadata_constant: Uint128 = spot_price
+        .checked_mul(lower_price.sqrt())?
+        .checked_mul(upper_price.sqrt())?
+        .to_uint_floor() // todo: this is big, so should be safe, right?
+        .try_into()?;
+
+    let swap_amount = token0_balance.checked_multiply_ratio(
+        pool_metadata_constant,
+        pool_metadata_constant.checked_add(Uint128::one())?,
+    )?;
+
+    Ok(swap_amount)
+}
+
+pub fn get_single_sided_deposit_1_to_0_swap_amount(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token1_balance: Uint128,
+    lower_tick: i64,
+    upper_tick: i64,
+) -> Result<Uint128, ContractError> {
+    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let lower_price = tick_to_price(lower_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
+    let pool_metadata_constant: Uint128 = spot_price
+        .checked_mul(lower_price.sqrt())?
+        .checked_mul(upper_price.sqrt())?
+        .to_uint_floor() // todo: this is big, so should be safe, right?
+        .try_into()?;
+
+    let swap_amount =
+        token1_balance.checked_div(pool_metadata_constant.checked_add(Uint128::one())?)?;
+
+    Ok(swap_amount)
+}
+
 pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
     let slippage_multiplier = Decimal::one().checked_sub(slippage)?;
 
@@ -141,13 +185,6 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
     )?;
 
     Ok(adjusted_amount)
-}
-
-#[macro_export]
-macro_rules! debug {
-    ($deps: ident, $tag:literal, $($arg:tt)*) => {
-        $deps.api.debug(format!(concat!($tag, " :{:?}"), $($arg)*).as_str())
-    };
 }
 
 #[cfg(test)]
@@ -191,9 +228,9 @@ mod tests {
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
-            funds: vec![expected1.clone(), expected0.clone(), coin(200, "uqsr")],
+            funds: vec![expected1, expected0, coin(200, "uqsr")],
         };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
@@ -202,6 +239,6 @@ mod tests {
             sender: Addr::unchecked("sender"),
             funds: vec![coin(200, "uqsr")],
         };
-        let err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 }
