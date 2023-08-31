@@ -120,7 +120,6 @@ pub mod initialize {
         let instantiate_msg = InstantiateMsg {
             admin: admin.address(),
             pool_id: pool.id,
-            lockup_duration: 0,
             config: VaultConfig {
                 performance_fee: Decimal::percent(5),
                 treasury: Addr::unchecked(admin.address()),
