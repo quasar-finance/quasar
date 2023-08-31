@@ -28,6 +28,7 @@ jobs:
             **/**.go
             go.mod
             go.sum
+            Makefile
       - name: Setup Golang
         if: env.GIT_DIFF
         uses: actions/setup-go@v4
@@ -49,6 +50,7 @@ jobs:
         with:
           PATTERNS: |
             **/**.rs
+            Makefile
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
