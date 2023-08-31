@@ -95,13 +95,11 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
-pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards");
+pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 
-// TODO should this be a const on 0?
-pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
-pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens");
+pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 pub const SWAP_DEPOSIT_MERGE_STATE: Item<SwapDepositMergeState> =

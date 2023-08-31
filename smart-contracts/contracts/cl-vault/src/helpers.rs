@@ -20,14 +20,14 @@ pub(crate) fn must_pay_two(
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.0)
+        .find(|coin| coin.denom == denoms.0 && coin.amount > Uint128::zero())
         .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
 
     let token1 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.1)
+        .find(|coin| coin.denom == denoms.1 && coin.amount > Uint128::zero())
         .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
 
     Ok((token0, token1))
