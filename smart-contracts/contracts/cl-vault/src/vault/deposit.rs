@@ -179,7 +179,7 @@ pub fn handle_deposit_create_position_reply(
 
     let mint_attrs = vec![
         Attribute::new("mint-share-amount", user_shares),
-        Attribute::new("receiver", &current_deposit.sender.as_str()),
+        Attribute::new("receiver", &current_deposit.sender),
     ];
 
     //fungify our positions together and mint the user shares to the cl-vault
