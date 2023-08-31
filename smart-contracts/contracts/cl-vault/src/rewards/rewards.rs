@@ -97,7 +97,7 @@ impl Rewards {
         .into())
     }
 
-    pub fn into_attributes(&self) -> Vec<Attribute> {
+    pub fn into_attributes(self) -> Vec<Attribute> {
         self.0
             .iter()
             .map(|c| Attribute {

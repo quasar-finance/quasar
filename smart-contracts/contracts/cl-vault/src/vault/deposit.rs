@@ -120,13 +120,11 @@ pub fn handle_deposit_create_position_reply(
         .into();
 
     let user_shares: Uint128 = if total_shares.is_zero() {
-        liquidity.to_uint_floor().try_into().unwrap()
+        liquidity.to_uint_floor()
     } else {
         total_shares
             .multiply_ratio(liquidity.numerator(), liquidity.denominator())
             .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
-            .try_into()
-            .unwrap()
     };
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
