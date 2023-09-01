@@ -2,7 +2,7 @@ use crate::{
     concentrated_liquidity::get_position,
     error::ContractResult,
     state::{
-        PoolConfig, LOCKED_SHARES, METADATA, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM, ADMIN_ADDRESS,
+        PoolConfig, SHARES, METADATA, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM, ADMIN_ADDRESS,
     },
 };
 use cosmwasm_schema::cw_serde;

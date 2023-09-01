@@ -66,8 +66,8 @@ pub fn execute_modify_range(
         &querier,
         env,
         info,
-        lower_tick,
-        upper_tick,
+        lower_tick.try_into().unwrap(),
+        upper_tick.try_into().unwrap(),
         max_slippage,
     )
 }
