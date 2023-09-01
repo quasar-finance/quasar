@@ -21,7 +21,7 @@ use crate::{
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
     ContractError,
 };
-use crate::{helpers::must_pay_two, state::LOCKED_SHARES};
+use crate::{helpers::must_pay_two, state::SHARES};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
@@ -97,7 +97,6 @@ pub fn handle_deposit_create_position_reply(
 ) -> ContractResult<Response> {
     let resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
-    let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // we mint shares according to the liquidity created in the position creation
@@ -111,7 +110,7 @@ pub fn handle_deposit_create_position_reply(
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
     let total_liquidity = Decimal::from_str(total_position.liquidity.as_str())?;
 
-    let total_shares: Uint128 = bq
+    let total_shares: Uint128 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -134,18 +133,13 @@ pub fn handle_deposit_create_position_reply(
     // own the shares in their balance
     // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
     // this is blocked by Osmosis v17 update
-    let mint_attrs = vec![
-        Attribute::new("mint-share-amount", user_shares),
-        Attribute::new("receiver", current_deposit.sender.as_str()),
-    ];
-
     let mint = MsgMint {
         sender: env.contract.address.to_string(),
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
     // save the shares in the user map
-    LOCKED_SHARES.update(
+    SHARES.update(
         deps.storage,
         current_deposit.sender.clone(),
         |old| -> Result<Uint128, ContractError> {
@@ -161,7 +155,7 @@ pub fn handle_deposit_create_position_reply(
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let bank_msg = refund_bank_msg(
-        current_deposit,
+        current_deposit.clone(),
         &resp,
         pool_config.token0,
         pool_config.token1,
@@ -182,6 +176,11 @@ pub fn handle_deposit_create_position_reply(
         },
         Replies::Merge.into(),
     );
+
+    let mint_attrs = vec![
+        Attribute::new("mint-share-amount", user_shares),
+        Attribute::new("receiver", current_deposit.sender),
+    ];
 
     //fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
@@ -339,7 +338,7 @@ mod tests {
         );
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
         assert_eq!(
-            LOCKED_SHARES.load(deps.as_ref().storage, sender).unwrap(),
+            SHARES.load(deps.as_ref().storage, sender).unwrap(),
             Uint128::new(50)
         );
         assert_eq!(
