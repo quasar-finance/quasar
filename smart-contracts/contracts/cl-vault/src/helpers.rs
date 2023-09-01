@@ -198,13 +198,6 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     }
 }
 
-#[macro_export]
-macro_rules! debug {
-    ($deps: ident, $tag:literal, $($arg:tt)*) => {
-        $deps.api.debug(format!(concat!($tag, " :{:?}"), $($arg)*).as_str())
-    };
-}
-
 #[cfg(test)]
 mod tests {
 
