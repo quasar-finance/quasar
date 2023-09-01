@@ -20,13 +20,13 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    vault::concentrated_liquidity::{create_position, get_position, may_get_position},
+    concentrated_liquidity::{create_position, get_position, may_get_position},
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
     },
     math::tick::price_to_tick,
-    vault::merge::MergeResponse,
+    merge::MergeResponse,
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
@@ -61,7 +61,20 @@ pub fn execute_update_range(
 
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
-    execute_update_range_ticks(storage, &querier, env, info, lower_tick, upper_tick, max_slippage)
+
+    execute_modify_range_ticks(
+        storage,
+        &querier,
+        env,
+        info,
+        lower_tick
+            .try_into()
+            .expect("Could not cast lower tick from i128 to i64"),
+        upper_tick
+            .try_into()
+            .expect("Could not cast upper tick from i128 to i64"),
+        max_slippage,
+    )
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -74,9 +87,9 @@ pub fn execute_update_range_ticks(
     querier: &QuerierWrapper,
     env: Env,
     info: MessageInfo,
-    lower_tick: i128,
-    upper_tick: i128,
-    max_slippage: Decimal
+    lower_tick: i64,
+    upper_tick: i64,
+    max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     assert_range_admin(storage, &info.sender)?;
 
@@ -159,14 +172,8 @@ pub fn handle_withdraw_position_reply(
     let create_position_msg = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender: env.contract.address.to_string(),
-        lower_tick: modify_range_state
-            .lower_tick
-            .try_into()
-            .expect("Could not convert lower_tick to i64 from i128"),
-        upper_tick: modify_range_state
-            .upper_tick
-            .try_into()
-            .expect("Could not convert upper_tick to i64 from i128"),
+        lower_tick: modify_range_state.lower_tick,
+        upper_tick: modify_range_state.upper_tick,
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
@@ -178,10 +185,8 @@ pub fn handle_withdraw_position_reply(
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?
-            .to_string(),
-        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?
-            .to_string(),
+        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?.to_string(),
+        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?.to_string(),
     };
 
     let msg: SubMsg = SubMsg::reply_on_success(
@@ -220,7 +225,6 @@ pub fn handle_initial_create_position_reply(
     )
 }
 
-// TODO move this to a callback execute msg on the contract?
 /// this function assumes that we are swapping and depositing into a valid range
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
@@ -261,10 +265,29 @@ pub fn do_swap_deposit_merge(
     let balance1 =
         querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
 
+    // TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage, to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.amount.is_zero() {
-        (balance0.amount, SwapDirection::ZeroToOne)
+        (
+            get_single_sided_deposit_0_to_1_swap_amount(
+                storage,
+                querier,
+                balance0.amount,
+                target_lower_tick,
+                target_upper_tick,
+            )?,
+            SwapDirection::ZeroToOne,
+        )
     } else if !balance1.amount.is_zero() {
-        (balance1.amount, SwapDirection::OneToZero)
+        (
+            get_single_sided_deposit_1_to_0_swap_amount(
+                storage,
+                querier,
+                balance1.amount,
+                target_lower_tick,
+                target_upper_tick,
+            )?,
+            SwapDirection::OneToZero,
+        )
     } else {
         // we shouldn't reach here
         (Uint128::zero(), SwapDirection::ZeroToOne)
@@ -313,7 +336,7 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    let msg: MsgSwapExactAmountInResponse = data.try_into()?;
+    let _msg: MsgSwapExactAmountInResponse = data.try_into()?;
 
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
@@ -322,7 +345,6 @@ pub fn handle_swap_reply(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
 
     // get post swap balances to create positions with
     let balance0 = deps
@@ -336,14 +358,8 @@ pub fn handle_swap_reply(
     let create_position_msg = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender: env.contract.address.to_string(),
-        lower_tick: swap_deposit_merge_state
-            .target_lower_tick
-            .try_into()
-            .expect("Could not convert lower_tick to i64 from i128"),
-        upper_tick: swap_deposit_merge_state
-            .target_upper_tick
-            .try_into()
-            .expect("Could not convert upper_tick to i64 from i128"),
+        lower_tick: swap_deposit_merge_state.target_lower_tick,
+        upper_tick: swap_deposit_merge_state.target_upper_tick,
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
@@ -355,16 +371,10 @@ pub fn handle_swap_reply(
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(
-            balance0.amount,
-            modify_range_state.max_slippage,
-        )?
-        .to_string(),
-        token_min_amount1: with_slippage(
-            balance1.amount,
-            modify_range_state.max_slippage,
-        )?
-        .to_string(),
+        token_min_amount0: with_slippage(balance0.amount, modify_range_state.max_slippage)?
+            .to_string(),
+        token_min_amount1: with_slippage(balance1.amount, modify_range_state.max_slippage)?
+            .to_string(),
     };
 
     let msg: SubMsg = SubMsg::reply_always(
@@ -407,21 +417,31 @@ pub fn handle_iteration_create_position_reply(
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
     };
 
+    // add the position id to the ones we need to merge
     swap_deposit_merge_state
         .target_range_position_ids
         .push(create_position_message.position_id);
 
-    SWAP_DEPOSIT_MERGE_STATE.save(deps.storage, &swap_deposit_merge_state)?;
+    // call merge
+    let merge_msg =
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+            position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
+        }));
+    // merge our position with the main position
+    let merge = SubMsg::reply_on_success(
+        cosmwasm_std::WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&merge_msg)?,
+            funds: vec![],
+        },
+        Replies::Merge.into(),
+    );
 
-    let fungify_positions_msg = concentratedliquidity::v1beta1::MsgFungifyChargedPositions {
-        position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
-        sender: env.contract.address.to_string(),
-    };
-
-    let msg: SubMsg = SubMsg::reply_always(fungify_positions_msg, Replies::Merge.into());
+    // clear state to allow for new liquidity movement operations
+    SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
     Ok(Response::new()
-        .add_submessage(msg)
+        .add_submessage(merge)
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "fungify_positions")
         .add_attribute(
@@ -434,7 +454,6 @@ pub fn handle_iteration_create_position_reply(
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let merge_response: MergeResponse = data.try_into()?;
 
-    SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
     POSITION.save(
         deps.storage,
         &Position {
@@ -459,23 +478,17 @@ mod tests {
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
         },
         to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
-        QuerierResult, QueryRequest, Storage, Timestamp,
+        QuerierResult, QueryRequest,
     };
-    use osmosis_std::{
-        shim::Any,
-        types::{
-            cosmos::base::v1beta1::Coin as OsmoCoin,
-            osmosis::concentratedliquidity::v1beta1::{
-                FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-                PositionByIdResponse,
-            },
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
+            PositionByIdResponse,
         },
     };
-    use prost::Message;
 
-    use crate::state::{
-        PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
-    };
+    use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
 
     pub struct QuasarQuerier {
         position: FullPositionBreakdown,
@@ -634,7 +647,7 @@ mod tests {
             info,
             lower_price.into(),
             upper_price.into(),
-            max_slippage
+            max_slippage,
         )
         .unwrap();
 

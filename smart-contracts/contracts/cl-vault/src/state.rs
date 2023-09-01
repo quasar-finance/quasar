@@ -27,7 +27,7 @@ pub const POSITION: Item<Position> = Item::new("position");
 
 #[cw_serde]
 pub struct Position {
-    pub position_id: u64, // DOUBT: Is the contract designed to manage a single position? Is it like we are creating a position on Osmosis, Osmosis gives us an ID and we persist it ot state? What about new users depositing?
+    pub position_id: u64,
 }
 
 /// Base config struct for the contract.
@@ -50,8 +50,8 @@ pub enum SwapDirection {
 #[cw_serde]
 pub struct ModifyRangeState {
     // pre-withdraw state items
-    pub lower_tick: i128,
-    pub upper_tick: i128,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
     // the max slippage for modifying the range
     pub max_slippage: Decimal,
     // pre-deposit state items
@@ -96,13 +96,11 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// current rewards are the rewards being gathered, these can be both spread rewards aswell as incentives
-pub const CURRENT_REWARDS: Item<Rewards> = Item::new("rewards"); // TODOSN: Rename it to current_rewards
+pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 
-// TODO should this be a const on 0?
-pub const LOCKUP_DURATION: Item<cw_utils::Duration> = Item::new("lockup_duration");
-pub const LOCKED_SHARES: Map<Addr, Uint128> = Map::new("locked_tokens"); // TODOSN: Rename variable name/storeSlug LOCKED_SHARES vs LOCKED_TOKENS
+pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 pub const SWAP_DEPOSIT_MERGE_STATE: Item<SwapDepositMergeState> =

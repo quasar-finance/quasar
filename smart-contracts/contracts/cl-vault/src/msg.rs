@@ -1,9 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
-use cw_vault_multi_standard::{
-    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
-    VaultStandardExecuteMsg, VaultStandardQueryMsg,
-};
+use cosmwasm_std::{Decimal, Uint128};
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{PoolResponse, PositionResponse, RangeAdminResponse},
@@ -101,9 +98,6 @@ pub struct InstantiateMsg {
     pub range_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
-    /// The lockup duration in seconds that this vault will use when staking
-    /// LP tokens.
-    pub lockup_duration: u64, // DOUBTS: Is this matching the same seconds duration from the Osmosis Lockup module/contracts? Is this preventing moving ranges or moving ranges is allowed for the already deposited+locked liquidity?
     /// Configurable parameters for the contract.
     pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.

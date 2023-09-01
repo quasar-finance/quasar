@@ -1,6 +1,10 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{coin, to_binary, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256, attr};
+use cosmwasm_std::{
+    coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
+};
+
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
@@ -14,20 +18,19 @@ use crate::{
     error::ContractResult,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
+    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     ContractError,
     helpers::must_pay_two,
-    state::LOCKED_SHARES,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
 pub(crate) fn execute_any_deposit(
-    deps: DepsMut,
-    env: Env,
-    info: &MessageInfo,
-    amount: Uint128,
-    recipient: Option<String>,
+    _deps: DepsMut,
+    _env: Env,
+    _info: &MessageInfo,
+    _amount: Uint128,
+    _recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     unimplemented!()
@@ -45,7 +48,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two(info, (pool.token0, pool.token1))?;
 
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -94,7 +97,6 @@ pub fn handle_deposit_create_position_reply(
 ) -> ContractResult<Response> {
     let resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
-    let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // we mint shares according to the liquidity created in the position creation
@@ -108,7 +110,7 @@ pub fn handle_deposit_create_position_reply(
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
     let existing_liquidity = Decimal::from_str(existing_position.liquidity.as_str())?;
 
-    let total_vault_denom_amount: Uint128 = bq
+    let total_vault_denom_amount: Uint128 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -139,7 +141,7 @@ pub fn handle_deposit_create_position_reply(
         mint_to_address: env.contract.address.to_string(),
     };
     // save the shares in the user map
-    LOCKED_SHARES.update(
+    SHARES.update(
         deps.storage,
         current_deposit.sender.clone(),
         |old| -> Result<Uint128, ContractError> {
@@ -157,7 +159,7 @@ pub fn handle_deposit_create_position_reply(
 
     // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
-        current_deposit,
+        current_deposit.clone(),
         &resp,
         pool_config.token0,
         pool_config.token1,
@@ -192,7 +194,7 @@ pub fn handle_deposit_create_position_reply(
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
-        response.add_message(msg).add_attributes(attr); // DOUBTS: Can we remove this? -> response = response.add_message(msg).add_attributes(attr);
+        response.add_message(msg).add_attributes(attr);
     }
 
     Ok(response)
@@ -249,8 +251,8 @@ mod tests {
     use cosmwasm_std::{
         from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SubMsgResponse,
-        WasmMsg,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        SubMsgResponse, Uint256, WasmMsg,
     };
     use cosmwasm_std::{Binary, ContractResult as CwContractResult};
     use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
@@ -261,7 +263,6 @@ mod tests {
             PositionByIdResponse,
         },
     };
-    use prost::Message;
 
     use crate::state::{PoolConfig, Position};
 
@@ -313,8 +314,8 @@ mod tests {
                     lower_tick: 1,
                     upper_tick: 100,
                 }
-                    .try_into()
-                    .unwrap(),
+                .try_into()
+                .unwrap(),
             ),
         });
 
@@ -331,15 +332,15 @@ mod tests {
                             position_ids: vec![1, 2]
                         })
                     ))
-                        .unwrap(),
-                    funds: vec![],
+                    .unwrap(),
+                    funds: vec![]
                 },
-                Replies::Merge.into(),
+                Replies::Merge.into()
             )
         );
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
         assert_eq!(
-            LOCKED_SHARES.load(deps.as_ref().storage, sender).unwrap(),
+            SHARES.load(deps.as_ref().storage, sender).unwrap(),
             Uint128::new(50)
         );
         assert_eq!(
@@ -348,9 +349,9 @@ mod tests {
                 sender: env.contract.address.to_string(),
                 amount: Some(OsmoCoin {
                     denom: "money".to_string(),
-                    amount: 50.to_string(),
+                    amount: 50.to_string()
                 }),
-                mint_to_address: env.contract.address.to_string(),
+                mint_to_address: env.contract.address.to_string()
             })
         );
     }
@@ -364,7 +365,7 @@ mod tests {
         let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
             liquidity.to_uint_floor().try_into().unwrap()
         } else {
-            let ratio = liquidity.checked_div(total_liquidity).unwrap();
+            let _ratio = liquidity.checked_div(total_liquidity).unwrap();
             total_shares
                 .multiply_ratio(liquidity.numerator(), liquidity.denominator())
                 .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
@@ -372,12 +373,12 @@ mod tests {
                 .unwrap()
         };
 
-        println!("{}", user_shares.to_string());
+        println!("{}", user_shares);
     }
 
     #[test]
     fn refund_bank_msg_2_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -409,7 +410,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token1_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -434,14 +435,14 @@ mod tests {
             response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
-                amount: vec![coin(150, "uatom")],
+                amount: vec![coin(150, "uatom")]
             }
         )
     }
 
     #[test]
     fn refund_bank_msg_token0_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -466,14 +467,14 @@ mod tests {
             response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
-                amount: vec![coin(50, "uosmo")],
+                amount: vec![coin(50, "uosmo")]
             }
         )
     }
 
     #[test]
     fn refund_bank_msg_none_leftover() {
-        let env = mock_env();
+        let _env = mock_env();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -492,7 +493,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 
@@ -523,7 +524,7 @@ mod tests {
                                     to_binary(&PositionByIdResponse {
                                         position: Some(self.position.clone()),
                                     })
-                                        .unwrap(),
+                                    .unwrap(),
                                 ))
                             } else {
                                 QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
@@ -542,7 +543,7 @@ mod tests {
                                         amount: 100.to_string(),
                                     }),
                                 })
-                                    .unwrap(),
+                                .unwrap(),
                             ))
                         }
                         &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
@@ -559,7 +560,7 @@ mod tests {
     }
 
     fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        let mut deps = OwnedDeps {
+        OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(FullPositionBreakdown {
@@ -594,7 +595,6 @@ mod tests {
                 forfeited_incentives: vec![],
             }),
             custom_query_type: PhantomData,
-        };
-        deps
+        }
     }
 }

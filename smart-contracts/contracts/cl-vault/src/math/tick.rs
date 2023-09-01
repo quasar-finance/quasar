@@ -54,22 +54,21 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
         tick_index - (geometric_exponent_delta * geometric_exponent_increment_distance_in_ticks);
 
     // Finally, we can calculate the price
-    let price: Decimal256;
 
-    if num_additive_ticks < 0 {
-        price = pow_ten_internal_dec(geometric_exponent_delta)?
+    let price: Decimal256 = if num_additive_ticks < 0 {
+        pow_ten_internal_dec(geometric_exponent_delta)?
             .checked_sub(
                 Decimal::from_str(&num_additive_ticks.abs().to_string())?.checked_mul(
                     Decimal::from_str(&current_additive_increment_in_ticks.to_string())?,
                 )?,
             )?
-            .into();
+            .into()
     } else {
-        price = pow_ten_internal_dec_256(geometric_exponent_delta)?.checked_add(
+        pow_ten_internal_dec_256(geometric_exponent_delta)?.checked_add(
             Decimal256::from_str(&num_additive_ticks.to_string())?
                 .checked_mul(current_additive_increment_in_ticks)?,
-        )?;
-    }
+        )?
+    };
 
     // defense in depth, this logic would not be reached due to use having checked if given tick is in between
     // min tick and max tick.

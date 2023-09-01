@@ -127,7 +127,7 @@ pub fn handle_merge_withdraw_reply(
     // if next already has a result, we already performed that withdraw
     // so then we empty the entire queue, add all results together and create a new position
     // under the current range with that
-    if let Some(_) = next.result {
+    if next.result.is_some() {
         let range = CURRENT_MERGE_POSITION.load(deps.storage)?;
         let (mut amount0, mut amount1) = (Uint128::zero(), Uint128::zero());
 
@@ -155,8 +155,8 @@ pub fn handle_merge_withdraw_reply(
         let position = create_position(
             deps.storage,
             &env,
-            range.lower_tick as i64,
-            range.upper_tick as i64,
+            range.lower_tick,
+            range.upper_tick,
             tokens,
             Uint128::zero(),
             Uint128::zero(),
@@ -176,8 +176,8 @@ pub fn handle_merge_withdraw_reply(
 }
 
 pub fn handle_merge_create_position_reply(
-    deps: DepsMut,
-    env: Env,
+    _deps: DepsMut,
+    _env: Env,
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
@@ -199,7 +199,7 @@ impl TryFrom<SubMsgResult> for MergeResponse {
     fn try_from(value: SubMsgResult) -> Result<Self, Self::Error> {
         let data = &value
             .into_result()
-            .map_err(|err| StdError::generic_err(err))?
+            .map_err(StdError::generic_err)?
             .data
             .ok_or(StdError::NotFound {
                 kind: "MergeResponse".to_string(),
@@ -223,7 +223,7 @@ pub mod tests {
         let data = &to_binary(&expected).unwrap();
         println!("{:?}", data);
 
-        let result = from_binary(&data).unwrap();
+        let result = from_binary(data).unwrap();
         assert_eq!(expected, result)
     }
 }
