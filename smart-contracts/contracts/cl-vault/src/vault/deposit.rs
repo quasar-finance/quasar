@@ -192,7 +192,7 @@ pub fn handle_deposit_create_position_reply(
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
-        response.add_message(msg).add_attributes(attr);
+        response = response.add_message(msg).add_attributes(attr);
     }
 
     Ok(response)
