@@ -116,7 +116,6 @@ pub fn handle_deposit_create_position_reply(
         .into();
 
     // TODOSN: Document this
-    // DOUBTS: Can this happen? Or is it just a redundant sanity check? In the instantiateMsg we are already creating both VaultDenom and the first Position with info.funds
     let user_shares: Uint128 = if total_vault_denom_amount.is_zero() {
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {

@@ -23,7 +23,7 @@ pub fn execute_withdraw(
     recipient: Option<String>,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let receiver = recipient.unwrap_or(info.sender.to_string()); // TODOSN: Check if we should validate with deps.api.addr_validate here
+    let receiver = recipient.unwrap_or(info.sender.to_string());
     let recipient = deps.api.addr_validate(&receiver)?; // TODOSN: Merge with above line as on execute_exact_deposit
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
@@ -58,7 +58,7 @@ pub fn execute_withdraw(
         .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
         .add_attribute("share_amount", amount)
         .add_message(burn_msg)
-        .add_submessage(SubMsg::reply_on_success(withdraw_msg, Replies::WithdrawUser as u64)) // DOUBTS: Why only on_success?
+        .add_submessage(SubMsg::reply_on_success(withdraw_msg, Replies::WithdrawUser as u64))
     )
 }
 

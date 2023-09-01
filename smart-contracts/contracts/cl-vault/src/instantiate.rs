@@ -50,7 +50,6 @@ pub fn handle_instantiate(
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_two(&info, (pool.token0, pool.token1))?;
 
-    // DOUBTS: Are we creating a position with the funds.amount for token0 and token1, expecting a min amount out of 0, right?
     let create_position_msg = create_position(
         deps.storage,
         &env,
@@ -61,9 +60,6 @@ pub fn handle_instantiate(
         Uint128::zero(),
     )?;
 
-    // DOUBTS:
-    // - Why only on_success?
-    // - General Wasm question: Is the failure of one of the submessages atomically reverting all the submessages execution, as well as the past workflow of this same function?
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_denom_msg,

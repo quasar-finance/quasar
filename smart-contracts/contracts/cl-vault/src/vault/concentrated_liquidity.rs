@@ -27,9 +27,9 @@ pub fn create_position(
         upper_tick,
         tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
         // An sdk.Int in the Go code
-        token_min_amount0: token_min_amount0.to_string(), // DOUBTS: Why don't we expect a min amount?
+        token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
-        token_min_amount1: token_min_amount1.to_string(), // DOUBTS: Why don't we expect a min amount?
+        token_min_amount1: token_min_amount1.to_string(),
     };
     Ok(create_position)
 }
