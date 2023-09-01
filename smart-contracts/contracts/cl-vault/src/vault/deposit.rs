@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{
-    coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128,
-};
+use cosmwasm_std::{coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, attr};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -124,7 +121,7 @@ pub fn handle_deposit_create_position_reply(
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
         total_vault_denom_amount
-            .multiply_ratio(user_created_liquidity.numerator(), user_created_liquidity.denominaftor())
+            .multiply_ratio(user_created_liquidity.numerator(), user_created_liquidity.denominator())
             .multiply_ratio(existing_liquidity.denominator(), existing_liquidity.numerator())
             .try_into()
             .unwrap()
@@ -165,6 +162,7 @@ pub fn handle_deposit_create_position_reply(
         pool_config.token1,
     )?;
 
+    let position_ids = vec![existing_position.position_id, resp.position_id];
     let merge_msg = ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
         position_ids,
     }));
@@ -187,7 +185,7 @@ pub fn handle_deposit_create_position_reply(
     let mut response = Response::new()
         .add_attribute("method", "create_position_reply")
         .add_attribute("action", "exact_deposit")
-        .add_attribute("position_ids", format!("{},{}", existing_position.position_id, resp.position_id))// DOUBTS: What is the difference between those position ids?
+        .add_attribute("position_ids", format!("{},{}", existing_position.position_id, resp.position_id))
         .add_attributes(mint_attrs)
         .add_message(mint_msg)
         .add_submessage(merge_submsg);

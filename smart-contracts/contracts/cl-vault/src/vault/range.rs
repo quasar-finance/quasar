@@ -1,40 +1,36 @@
 use std::str::FromStr;
+use cosmwasm_schema::cw_serde;
 
-use cosmwasm_std::{
-    Addr, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response,
-    Storage, SubMsg, SubMsgResult, Uint128,
-};
+use cosmwasm_std::{Addr, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, to_binary, Uint128};
 
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
         concentratedliquidity::{
-            self,
-            v1beta1::{
-                MsgCreatePosition, MsgCreatePositionResponse, MsgFungifyChargedPositionsResponse,
-                MsgWithdrawPosition, MsgWithdrawPositionResponse,
-            },
+            v1beta1::{MsgCreatePosition, MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse},
         },
         gamm::v1beta1::MsgSwapExactAmountInResponse,
     },
 };
 
 use crate::{
-    concentrated_liquidity::{create_position, get_position, may_get_position},
+    vault::concentrated_liquidity::get_position,
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
         with_slippage,
     },
     math::tick::price_to_tick,
-    merge::MergeResponse,
+    vault::merge::MergeResponse,
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE,
         POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
     swap::swap,
     ContractError,
 };
+use crate::helpers::{get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount};
+use crate::msg::{ExecuteMsg, MergePositionMsg};
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -62,7 +58,7 @@ pub fn execute_update_range(
     let lower_tick = price_to_tick(storage, Decimal256::from_atomics(lower_price, 0)?)?;
     let upper_tick = price_to_tick(storage, Decimal256::from_atomics(upper_price, 0)?)?;
 
-    execute_modify_range_ticks(
+    execute_update_range_ticks(
         storage,
         &querier,
         env,
@@ -466,6 +462,12 @@ pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Respon
         .add_attribute("method", "fungify_positions_success")
         .add_attribute("swap_deposit_merge_status", "success")
         .add_attribute("status", "success"))
+}
+
+#[cw_serde]
+pub enum SwapDirection {
+    ZeroToOne,
+    OneToZero,
 }
 
 #[cfg(test)]
