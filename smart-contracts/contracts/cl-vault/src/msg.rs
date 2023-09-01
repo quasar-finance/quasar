@@ -1,8 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint128};
-use cw_vault_multi_standard::{
-    VaultStandardExecuteMsg, VaultStandardQueryMsg,
-};
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{PoolResponse, PositionResponse, RangeAdminResponse},
@@ -64,6 +62,8 @@ pub struct MergePositionMsg {
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
+    /// Metadata surrounding the vault
+    Metadata,
     /// Queries related to the lockup extension.
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
@@ -98,6 +98,10 @@ pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    /// The general thesis of the vault
+    pub thesis: String,
+    /// the name of the vault
+    pub name: String,
     /// Address that is allowed to update config.
     pub admin: String,
     /// Address that is allowed to update range.

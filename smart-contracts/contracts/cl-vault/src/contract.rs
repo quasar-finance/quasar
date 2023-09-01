@@ -28,6 +28,7 @@ use crate::merge::execute_merge;
 use crate::msg::ModifyRangeMsg;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_info;
+use crate::query::query_metadata;
 use crate::query::query_pool;
 use crate::query::query_position;
 use crate::query::query_total_assets;
@@ -218,6 +219,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
+            crate::msg::ExtensionQueryMsg::Metadata =>  Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)

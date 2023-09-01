@@ -133,6 +133,8 @@ pub mod initialize {
             range_admin: admin.address(),
             initial_lower_tick: 1,
             initial_upper_tick: 100,
+            thesis: "provide big swap efficiency".to_string(),
+            name: "good contract".to_string(),
         };
         let contract = wasm
             .instantiate(
