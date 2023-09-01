@@ -8,7 +8,7 @@ use crate::msg::InstantiateMsg;
 use crate::vault::concentrated_liquidity::create_position;
 use crate::helpers::must_pay_two;
 use crate::reply::Replies;
-use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN, LOCKUP_DURATION, PoolConfig, POOL_CONFIG, VAULT_CONFIG};
+use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN, PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 
 pub fn handle_instantiate(
     deps: DepsMut,
@@ -40,8 +40,6 @@ pub fn handle_instantiate(
 
     ADMIN_ADDRESS.save(deps.storage, &admin)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
-
-    LOCKUP_DURATION.save(deps.storage, &cw_utils::Duration::Time(msg.lockup_duration))?;
 
     let create_denom_msg: CosmosMsg = MsgCreateDenom {
         sender: env.contract.address.to_string(),
