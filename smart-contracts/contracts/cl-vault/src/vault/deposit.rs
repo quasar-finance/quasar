@@ -38,14 +38,14 @@ pub(crate) fn execute_any_deposit(
 pub(crate) fn execute_exact_deposit(
     deps: DepsMut,
     env: Env,
-    info: &MessageInfo,
+    info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
 
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -79,10 +79,11 @@ pub(crate) fn execute_exact_deposit(
             create_position_msg,
             Replies::DepositCreatePosition as u64,
         ))
-        .add_attribute("method", "exact_deposit") // DOUBTS: Is this fine as method/action duplicated?
+        .add_attribute("method", "exact_deposit")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", token0.amount)
-        .add_attribute("amount1", token1.amount))
+        .add_attribute("amount1", token1.amount)
+    )
 }
 
 /// handles the reply to creating a position for a user deposit

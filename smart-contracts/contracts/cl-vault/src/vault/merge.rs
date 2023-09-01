@@ -76,7 +76,7 @@ pub fn execute_merge(
         CURRENT_MERGE.push_back(deps.storage, &CurrentMergeWithdraw { result: None, msg })?;
     }
 
-    // pop the first item and dispatch it
+    // check the first item and dispatch it
     let current = CURRENT_MERGE.front(deps.storage)?.unwrap();
 
     // let msg: CosmosMsg = current.msg.into();
@@ -144,6 +144,7 @@ pub fn handle_merge_withdraw_reply(
 
         let pool: crate::state::PoolConfig = POOL_CONFIG.load(deps.storage)?;
 
+        // amount0 and amount1 can be zero only in the case of a single side position handling
         let mut tokens = vec![];
         if !amount0.is_zero() {
             tokens.push(coin(amount0.into(), pool.token0))
@@ -152,6 +153,9 @@ pub fn handle_merge_withdraw_reply(
             tokens.push(coin(amount1.into(), pool.token1))
         }
 
+        // this is expected to panic if tokens is an empty vec![]
+        // tokens should never be an empty vec![] as this would mean that all the current positions
+        // are returning zero tokens and this would fail on osmosis side
         let position = create_position(
             deps.storage,
             &env,
@@ -161,6 +165,7 @@ pub fn handle_merge_withdraw_reply(
             Uint128::zero(),
             Uint128::zero(),
         )?;
+
         Ok(Response::new().add_submessage(SubMsg::reply_on_success(
             position,
             Replies::CreatePositionMerge as u64,

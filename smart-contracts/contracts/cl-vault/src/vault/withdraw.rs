@@ -23,15 +23,14 @@ pub fn execute_withdraw(
     recipient: Option<String>,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let receiver = recipient.unwrap_or(info.sender.to_string());
-    let recipient = deps.api.addr_validate(&receiver)?; // TODOSN: Merge with above line as on execute_exact_deposit
+    let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // get the sent along shares
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
-    // get the amount from locked shares
+    // get the amount from SHARES state
     let locked_amount = SHARES.load(deps.storage, info.sender.clone())?;
     let left_over = locked_amount
         .checked_sub(amount)
@@ -47,7 +46,7 @@ pub fn execute_withdraw(
     }
     .into();
 
-    CURRENT_WITHDRAWER.save(deps.storage, &recipient)?; // DOUBTS: Should we save the sender or the delegated receiver?
+    CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
     let withdraw_msg = withdraw(deps, &env, amount)?; // TODOSN: Rename this function name to something more explicative

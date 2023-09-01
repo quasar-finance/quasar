@@ -43,7 +43,7 @@ pub fn execute(
             recipient: _,
         } => unimplemented!(),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
-            execute_exact_deposit(deps, env, &info, recipient)
+            execute_exact_deposit(deps, env, info, recipient)
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount)

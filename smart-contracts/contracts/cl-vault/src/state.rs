@@ -4,6 +4,7 @@ use cw_storage_plus::{Deque, Item, Map};
 
 use crate::rewards::Rewards;
 use crate::vault::merge::CurrentMergeWithdraw;
+use crate::vault::range::SwapDirection;
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
@@ -74,6 +75,10 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+
+/// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
+pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
+pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap_direction");
 
 #[cw_serde]
 pub struct ModifyRangeState {
