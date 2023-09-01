@@ -183,12 +183,12 @@ pub fn handle_deposit_create_position_reply(
 
     // Fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
-        .add_attribute("method", "create_position_reply")
-        .add_attribute("action", "exact_deposit")
+        .add_submessage(merge_submsg)
         .add_attribute("position_ids", format!("{},{}", existing_position.position_id, resp.position_id))
-        .add_attributes(mint_attrs)
         .add_message(mint_msg)
-        .add_submessage(merge_submsg);
+        .add_attributes(mint_attrs)
+        .add_attribute("method", "create_position_reply")
+        .add_attribute("action", "exact_deposit");
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
