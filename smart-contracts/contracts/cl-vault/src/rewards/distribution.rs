@@ -3,13 +3,14 @@ use cosmwasm_std::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     reply::Replies,
     state::{
         CURRENT_REWARDS, LOCKED_SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
         VAULT_DENOM,
     },
-    ContractError, debug,
+    ContractError,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -25,7 +26,7 @@ use super::rewards::Rewards;
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &Rewards::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
-    
+
     debug!(deps, "here1", msg);
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         msg,
