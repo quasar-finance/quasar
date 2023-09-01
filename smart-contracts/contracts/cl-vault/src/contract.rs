@@ -36,7 +36,6 @@ use crate::reply::handle_reply;
 use crate::reply::Replies;
 
 use crate::state::Position;
-use crate::state::LOCKUP_DURATION;
 use crate::state::POSITION;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
@@ -78,12 +77,8 @@ pub fn instantiate(
         },
     )?;
 
-    let admin = deps.api.addr_validate(&msg.admin)?;
-
-    ADMIN_ADDRESS.save(deps.storage, &admin)?;
+    ADMIN_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.admin)?)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
-
-    LOCKUP_DURATION.save(deps.storage, &cw_utils::Duration::Time(msg.lockup_duration))?;
 
     let create_denom: CosmosMsg = MsgCreateDenom {
         sender: env.contract.address.to_string(),

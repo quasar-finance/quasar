@@ -1,7 +1,7 @@
 use crate::{
     concentrated_liquidity::get_position,
     error::ContractResult,
-    state::{PoolConfig, LOCKED_SHARES, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM},
+    state::{PoolConfig, SHARES, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
@@ -65,7 +65,7 @@ pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
     })
 }
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
-    let balance = LOCKED_SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
+    let balance = SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
     Ok(UserBalanceResponse { balance })
 }
 
