@@ -108,9 +108,6 @@ pub struct InstantiateMsg {
     pub range_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
-    /// The lockup duration in seconds that this vault will use when staking
-    /// LP tokens.
-    pub lockup_duration: u64,
     /// Configurable parameters for the contract.
     pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.

@@ -1,12 +1,10 @@
-use std::str::FromStr;
-
 use cosmwasm_std::coin;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::to_binary;
 use cosmwasm_std::CosmosMsg;
 use cosmwasm_std::Decimal;
-use cosmwasm_std::Decimal256;
+
 use cosmwasm_std::Reply;
 use cosmwasm_std::SubMsg;
 use cosmwasm_std::SubMsgResult;
@@ -20,7 +18,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 use crate::concentrated_liquidity::create_position;
-use crate::debug;
+
 use crate::error::ContractError;
 use crate::error::ContractResult;
 use crate::helpers::must_pay_two;
@@ -40,7 +38,6 @@ use crate::reply::Replies;
 
 use crate::rewards::execute_distribute_rewards;
 use crate::state::Position;
-use crate::state::LOCKUP_DURATION;
 use crate::state::POSITION;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
@@ -84,12 +81,8 @@ pub fn instantiate(
         },
     )?;
 
-    let admin = deps.api.addr_validate(&msg.admin)?;
-
-    ADMIN_ADDRESS.save(deps.storage, &admin)?;
+    ADMIN_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.admin)?)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
-
-    LOCKUP_DURATION.save(deps.storage, &cw_utils::Duration::Time(msg.lockup_duration))?;
 
     let create_denom: CosmosMsg = MsgCreateDenom {
         sender: env.contract.address.to_string(),

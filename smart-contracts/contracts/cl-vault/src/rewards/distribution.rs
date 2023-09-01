@@ -7,7 +7,7 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, LOCKED_SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
+        CURRENT_REWARDS, SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
         VAULT_DENOM,
     },
     ContractError,
@@ -100,7 +100,7 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
         .into();
 
     // for each user with locked tokens, we distribute some part of the rewards to them
-    let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = LOCKED_SHARES
+    let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = SHARES
         .range(deps.branch().storage, None, None, Order::Ascending)
         .map(|v| -> Result<(Addr, Rewards), ContractError> {
             let (address, user_shares) = v?;
@@ -241,7 +241,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
 //         LOCKED_TOTAL.save(deps.as_mut().storage, &total).unwrap();
 //         user_shares.into_iter().for_each(|(addr, shares)| {
-//             LOCKED_SHARES
+//             SHARES
 //                 .save(deps.as_mut().storage, addr, &shares)
 //                 .unwrap()
 //         });
@@ -295,7 +295,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .range(deps.as_ref().storage, None, None, Order::Ascending)
 //             .for_each(|val| {
 //                 let (user, user_rewards) = val.unwrap();
-//                 let user_shares = LOCKED_SHARES.load(deps.as_ref().storage, user).unwrap();
+//                 let user_shares = SHARES.load(deps.as_ref().storage, user).unwrap();
 //                 let mut tmp_rewards = rewards.clone();
 
 //                 tmp_rewards
@@ -336,7 +336,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
 //         LOCKED_TOTAL.save(deps.as_mut().storage, &total).unwrap();
 //         user_shares.into_iter().for_each(|(addr, shares)| {
-//             LOCKED_SHARES
+//             SHARES
 //                 .save(deps.as_mut().storage, addr, &shares)
 //                 .unwrap()
 //         });
@@ -350,7 +350,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //         distribute_rewards(deps.as_mut(), rewards.clone()).unwrap();
 
 //         // each entry in USER_REWARDS should be equal to rewards.sub_percentage(strategist_fee_percentage).percentage(user_shares, total_shares)
-//         // we can get the user shares from LOCKED_SHARES
+//         // we can get the user shares from SHARES
 //         let strategist_fee_percentage = VAULT_CONFIG
 //             .load(deps.as_ref().storage)
 //             .unwrap()
@@ -376,7 +376,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .range(deps.as_ref().storage, None, None, Order::Ascending)
 //             .for_each(|val| {
 //                 let (user, user_rewards) = val.unwrap();
-//                 let user_shares = LOCKED_SHARES.load(deps.as_ref().storage, user).unwrap();
+//                 let user_shares = SHARES.load(deps.as_ref().storage, user).unwrap();
 //                 let mut tmp_rewards = rewards.clone();
 
 //                 tmp_rewards

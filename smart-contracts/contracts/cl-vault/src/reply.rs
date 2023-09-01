@@ -1,4 +1,4 @@
-use cosmwasm_std::{DepsMut, Env, Reply, Response, StdError};
+use cosmwasm_std::{DepsMut, Env, Reply, Response};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{

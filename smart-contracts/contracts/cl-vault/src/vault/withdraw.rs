@@ -2,6 +2,7 @@ use cosmwasm_std::{
     coin, Attribute, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128,
 };
+
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
@@ -14,7 +15,7 @@ use crate::{
     concentrated_liquidity::{get_position, withdraw_from_position},
     debug,
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, LOCKED_SHARES, POOL_CONFIG, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, SHARES, POOL_CONFIG, VAULT_DENOM},
     ContractError,
 };
 
@@ -35,11 +36,11 @@ pub fn execute_withdraw(
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
     // get the amount from locked shares
-    let locked_amount = LOCKED_SHARES.load(deps.storage, info.sender.clone())?;
+    let locked_amount = SHARES.load(deps.storage, info.sender.clone())?;
     let left_over = locked_amount
-        .checked_div(amount)
+        .checked_sub(amount)
         .map_err(|_| ContractError::InsufficientFunds)?;
-    LOCKED_SHARES.save(deps.storage, info.sender, &left_over)?;
+    SHARES.save(deps.storage, info.sender, &left_over)?;
 
     // burn the shares
     let burn_coin = coin(amount.u128(), vault_denom);
@@ -87,6 +88,9 @@ fn withdraw(
         .amount
         .parse::<u128>()?
         .into();
+
+    debug!(deps, "shares", shares);
+    debug!(deps, "total_liq", total_liquidity);
 
     let user_liquidity = Decimal256::from_ratio(shares, 1_u128)
         .checked_mul(total_liquidity)?

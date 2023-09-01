@@ -6,7 +6,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -105,7 +105,7 @@ pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
     })
 }
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
-    let balance = LOCKED_SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
+    let balance = SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
     Ok(UserBalanceResponse { balance })
 }
 
@@ -135,7 +135,7 @@ pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTo
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total = bq
-        .supply_of(vault_denom.clone())?
+        .supply_of(vault_denom)?
         .amount
         .unwrap()
         .amount
