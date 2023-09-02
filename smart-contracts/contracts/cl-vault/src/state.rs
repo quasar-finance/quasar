@@ -78,7 +78,7 @@ pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
-pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap_direction");
+pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
 #[cw_serde]
 pub struct ModifyRangeState {
