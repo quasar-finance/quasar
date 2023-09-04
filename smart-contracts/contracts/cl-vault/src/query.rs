@@ -1,12 +1,30 @@
 use crate::{
     concentrated_liquidity::get_position,
     error::ContractResult,
-    state::{PoolConfig, SHARES, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM},
+    state::{
+        PoolConfig, SHARES, METADATA, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM, ADMIN_ADDRESS,
+    },
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+
+#[cw_serde]
+pub struct MetadataResponse {
+    // thesis -> actual metadata
+    pub thesis: String,
+    // name -> actual metadata
+    pub name: String,
+    // total_supply -> from denom
+    pub total_supply: Uint128,
+    // symbol -> tokenfactory denom
+    pub symbol: String,
+    // decimals -> hardcoded since native denom
+    pub decimals: u8,
+    // owner -> admin
+    pub admin: String,
+}
 
 #[cw_serde]
 pub struct PoolResponse {
@@ -42,6 +60,28 @@ pub struct RangeAdminResponse {
 #[cw_serde]
 pub struct TotalVaultTokenSupplyResponse {
     total: Uint128,
+}
+
+pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
+    let metadata = METADATA.load(deps.storage)?;
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let total_supply = BankQuerier::new(&deps.querier)
+        .supply_of(vault_denom.clone())?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();    
+    let admin = ADMIN_ADDRESS.load(deps.storage)?.to_string();
+
+    Ok(MetadataResponse {
+        thesis: metadata.thesis,
+        name: metadata.name,
+        total_supply: total_supply,
+        symbol: vault_denom,
+        decimals: 6,
+        admin,
+    })
 }
 
 pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {

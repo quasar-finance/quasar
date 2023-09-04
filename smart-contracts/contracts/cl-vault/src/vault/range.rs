@@ -66,12 +66,8 @@ pub fn execute_modify_range(
         &querier,
         env,
         info,
-        lower_tick
-            .try_into()
-            .expect("Could not cast lower tick from i128 to i64"),
-        upper_tick
-            .try_into()
-            .expect("Could not cast upper tick from i128 to i64"),
+        lower_tick.try_into().unwrap(),
+        upper_tick.try_into().unwrap(),
         max_slippage,
     )
 }

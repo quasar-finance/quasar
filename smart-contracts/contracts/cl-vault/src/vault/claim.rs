@@ -2,7 +2,10 @@ use cosmwasm_std::{Addr, DepsMut, Response};
 
 use crate::{state::USER_REWARDS, ContractError};
 
-pub fn claim_user_rewards(deps: DepsMut, recipient: &str) -> Result<Response, ContractError> {
+pub fn execute_claim_user_rewards(
+    deps: DepsMut,
+    recipient: &str,
+) -> Result<Response, ContractError> {
     // addr unchecked is safe here because we will chekc addresses on save into this map
     let mut user_rewards = match USER_REWARDS.may_load(deps.storage, Addr::unchecked(recipient))? {
         Some(user_rewards) => user_rewards,
