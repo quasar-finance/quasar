@@ -2,13 +2,13 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, to_binary, Reply};
 use crate::error::{ContractError, ContractResult};
-use crate::instantiate::handle_instantiate;
+use crate::instantiate::{handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply};
 use crate::vault::merge::{execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ModifyRangeMsg};
 use crate::query::{
     query_info, query_pool, query_position, query_total_assets, query_total_vault_token_supply, query_user_balance, query_user_rewards,
 };
-use crate::reply::{handle_create_denom_reply, handle_instantiate_create_position_reply, Replies};
+use crate::reply::Replies;
 use crate::rewards::{handle_collect_incentives_reply, handle_collect_spread_rewards_reply};
 use crate::vault::admin::execute_update;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};

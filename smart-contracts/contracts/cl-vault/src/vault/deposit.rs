@@ -108,7 +108,7 @@ pub fn handle_deposit_create_position_reply(
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
     let existing_liquidity = Decimal::from_str(existing_position.liquidity.as_str())?;
 
-    let total_vault_denom_amount: Uint128 = BankQuerier::new(&deps.querier)
+    let total_vault_shares: Uint128 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -117,10 +117,10 @@ pub fn handle_deposit_create_position_reply(
         .into();
 
     // TODOSN: Document this
-    let user_shares: Uint128 = if total_vault_denom_amount.is_zero() {
+    let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
-        total_vault_denom_amount
+        total_vault_shares
             .multiply_ratio(user_created_liquidity.numerator(), user_created_liquidity.denominator())
             .multiply_ratio(existing_liquidity.denominator(), existing_liquidity.numerator())
             .try_into()

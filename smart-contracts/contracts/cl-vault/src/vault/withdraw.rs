@@ -76,7 +76,7 @@ fn withdraw(
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    let total_vault_denom_amount: Uint128 = bq
+    let total_vault_shares: Uint128 = bq
         .supply_of(vault_denom)?
         .amount
         .unwrap()
@@ -86,7 +86,7 @@ fn withdraw(
 
     let user_shares = Decimal256::from_ratio(shares, 1_u128)
         .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_vault_denom_amount, 1_u128))?;
+        .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
 
     withdraw_from_position(deps.storage, env, user_shares)
 }
