@@ -98,7 +98,7 @@ pub fn fold_bonds(
     let mut total = Uint128::zero();
     let mut deposits: Vec<OngoingDeposit> = vec![];
 
-    if BOND_QUEUE.is_empty(storage)? && REJOIN_QUEUE.is_empty(storage)? {
+    if BOND_QUEUE.is_empty(storage)? && FAILED_JOIN_QUEUE.is_empty(storage)? {
         return Ok(None);
     }
 

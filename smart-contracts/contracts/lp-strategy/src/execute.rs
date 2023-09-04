@@ -759,8 +759,9 @@ mod tests {
 
         assert!(TRAPS.is_empty(deps.as_ref().storage));
 
-        // BOND_QUEUE & REJOIN_QUEUE are empty, thus nothing happens (need to bond to move FAILED_JOIN_QUEUE to REJOIN_QUEUE)
-        assert_eq!(FAILED_JOIN_QUEUE.len(&deps.storage).unwrap(), 3);
+        // FAILED_JOIN_QUEUE should be empty and all bonds moved to REJOIN_QUEUE
+        assert_eq!(FAILED_JOIN_QUEUE.len(&deps.storage).unwrap(), 0);
+        assert_eq!(REJOIN_QUEUE.len(&deps.storage).unwrap(), 3);
 
         assert_eq!(
             SIMULATED_JOIN_AMOUNT_IN
