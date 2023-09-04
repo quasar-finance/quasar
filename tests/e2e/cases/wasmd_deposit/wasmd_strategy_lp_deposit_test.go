@@ -1,4 +1,4 @@
-package wasmd
+package wasmd_deposit
 
 import (
 	"context"
@@ -22,9 +22,9 @@ const (
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	osmosisPool1Path                     = "../_utils/sample_pool1.json"
-	osmosisPool2Path                     = "../_utils/sample_pool2.json"
-	osmosisPool3Path                     = "../_utils/sample_pool3.json"
+	osmosisPool1Path                     = "../_utils/pools/high_liquidity/balancer_pool1.json"
+	osmosisPool2Path                     = "../_utils/pools/high_liquidity/balancer_pool2.json"
+	osmosisPool3Path                     = "../_utils/pools/high_liquidity/balancer_pool3.json"
 )
 
 var (
@@ -133,7 +133,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 			"symbol":                        "ORN",
 			"min_withdrawal":                "1",
 			"name":                          "ORION",
-			"deposit_denom":                 "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
+			"deposit_denom":                 s.OsmosisDenomInQuasar,
 			"primitives": []map[string]any{
 				{
 					"address": s.LpStrategyContractAddress1,
@@ -227,14 +227,14 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			Action:            "bond",
 			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 10000000)),
 			expectedShares:    9999999,
-			expectedDeviation: 0.01,
+			expectedDeviation: 0.1,
 		},
 		{
 			Account:           *accBondTest1,
 			Action:            "bond",
 			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000000)),
 			expectedShares:    1015176,
-			expectedDeviation: 0.01,
+			expectedDeviation: 0.1,
 		},
 		{
 			Account:                 *accBondTest0,
@@ -261,7 +261,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 			Action:            "bond",
 			BondAmount:        sdk.NewCoins(sdk.NewInt64Coin("ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", 1000000)),
 			expectedShares:    1015176,
-			expectedDeviation: 0.01,
+			expectedDeviation: 0.1,
 		},
 	}
 

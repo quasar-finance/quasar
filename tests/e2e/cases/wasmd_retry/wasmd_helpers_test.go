@@ -1,4 +1,4 @@
-package wasmd
+package wasmd_deposit
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 // deployPrimitives stores the contract, initiates it and returns the contract address.
-func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) {
+func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) (string, string, string) {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -25,13 +25,13 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	// instantiate the contracts
 	res := s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs1)
 	s.Require().NotEmpty(res.Address)
-	s.LpStrategyContractAddress1 = res.Address
+	lpStrategyContractAddress1 := res.Address
 
 	// create channels for all the instantiated contracts address 1
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress1),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress1),
 		"icqhost",
 		ibc.Unordered,
 		"icq-1",
@@ -40,7 +40,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress1),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress1),
 		"icahost",
 		ibc.Ordered,
 		fmt.Sprintf(
@@ -52,13 +52,13 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 
 	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs2)
 	s.Require().NotEmpty(res.Address)
-	s.LpStrategyContractAddress2 = res.Address
+	lpStrategyContractAddress2 := res.Address
 
 	// create channels for all the instantiated contracts address 2
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress2),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress2),
 		"icqhost",
 		ibc.Unordered,
 		"icq-1",
@@ -67,7 +67,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress2),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress2),
 		"icahost",
 		ibc.Ordered,
 		fmt.Sprintf(
@@ -79,13 +79,13 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 
 	res = s.InstantiateContract(ctx, s.Quasar(), acc.KeyName, codeID, label, accAddress, sdk.NewCoins(), initArgs3)
 	s.Require().NotEmpty(res.Address)
-	s.LpStrategyContractAddress3 = res.Address
+	lpStrategyContractAddress3 := res.Address
 
 	// create channels for all the instantiated contracts address 3
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress3),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress3),
 		"icqhost",
 		ibc.Unordered,
 		"icq-1",
@@ -94,7 +94,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 	s.CreateChannel(
 		ctx,
 		testsuite.Quasar2OsmosisPath,
-		fmt.Sprintf("wasm.%s", s.LpStrategyContractAddress3),
+		fmt.Sprintf("wasm.%s", lpStrategyContractAddress3),
 		"icahost",
 		ibc.Ordered,
 		fmt.Sprintf(
@@ -103,6 +103,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 			s.Quasar2OsmosisConn.Counterparty.ConnectionId,
 		),
 	)
+	return lpStrategyContractAddress1, lpStrategyContractAddress2, lpStrategyContractAddress3
 }
 
 // deployRewardsContract stores the contract
@@ -134,25 +135,32 @@ func (s *WasmdTestSuite) deployVault(ctx context.Context, acc *ibc.Wallet, fileP
 	return res.Address
 }
 
-func (s *WasmdTestSuite) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any) {
-	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress1, acc.KeyName, initArgs)
-	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress2, acc.KeyName, initArgs)
-	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress3, acc.KeyName, initArgs)
+func (s *WasmdTestSuite) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any, lpAddresses []string) {
+	s.SetDepositors(ctx, s.Quasar(), lpAddresses[0], acc.KeyName, initArgs)
+	s.SetDepositors(ctx, s.Quasar(), lpAddresses[1], acc.KeyName, initArgs)
+	s.SetDepositors(ctx, s.Quasar(), lpAddresses[2], acc.KeyName, initArgs)
 }
 
 func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
-	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 
 	// Read the contract from os file
 	poolBz, err = os.ReadFile(osmosisPool2Path)
 	s.Require().NoError(err)
-	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 
 	// Read the contract from os file
 	poolBz, err = os.ReadFile(osmosisPool3Path)
 	s.Require().NoError(err)
-	s.CreateStableswapPoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
+}
+
+func (s *WasmdTestSuite) JoinPools(ctx context.Context, poolIds []string, maxAmountsIn []string, sharesAmountOut []string) {
+	// TODO: require len(allTheArgs) is the same
+	for i, _ := range poolIds {
+		s.JoinPoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolIds[i], maxAmountsIn[i], sharesAmountOut[i])
+	}
 }

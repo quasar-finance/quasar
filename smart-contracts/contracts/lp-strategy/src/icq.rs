@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, StdError, Storage,
-    SubMsg, Uint128,
+    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -58,15 +57,17 @@ pub fn try_icq(
             }
         }
 
-        let failed_bonds_amount = FAILED_JOIN_QUEUE
-            .iter(storage)?
-            .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
+        let failed_join_queue_amount = FAILED_JOIN_QUEUE.iter(storage)?.try_fold(
+            Uint128::zero(),
+            |acc, val| -> Result<Uint128, ContractError> {
                 Ok(acc + val?.amount)
-            })?;
+                // We should never have LP shares here
+            },
+        )?;
 
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
-        let bonding_amount = pending_bonds_value + failed_bonds_amount;
+        let bonding_amount = pending_bonds_value + failed_join_queue_amount;
 
         // we dump pending unbonds into the active unbond queue and save the total amount of shares that will be unbonded
         let mut pending_unbonds_shares = Uint128::zero();

@@ -1,4 +1,4 @@
-package qtransfer
+package wasmd_deposit
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 // deployPrimitives stores the contract, initiates it and returns the contract address.
-func (s *Qtransfer) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) {
+func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -106,7 +106,7 @@ func (s *Qtransfer) deployPrimitives(ctx context.Context, acc *ibc.Wallet, fileP
 }
 
 // deployRewardsContract stores the contract
-func (s *Qtransfer) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
+func (s *WasmdTestSuite) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
 	// Read the contract from os file
 	contract, err := os.ReadFile(filePath)
 	s.Require().NoError(err)
@@ -117,7 +117,7 @@ func (s *Qtransfer) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, 
 }
 
 // deployVault stores the contract, initiates it and returns the contract address.
-func (s *Qtransfer) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
+func (s *WasmdTestSuite) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -134,13 +134,13 @@ func (s *Qtransfer) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, 
 	return res.Address
 }
 
-func (s *Qtransfer) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any) {
+func (s *WasmdTestSuite) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any) {
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress1, acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress2, acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), s.LpStrategyContractAddress3, acc.KeyName, initArgs)
 }
 
-func (s *Qtransfer) CreatePools(ctx context.Context) {
+func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
