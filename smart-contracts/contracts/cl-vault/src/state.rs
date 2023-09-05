@@ -116,8 +116,6 @@ pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
 
-pub const UNDEPOSITED_AMOUNTS: Item<VaultBalance> = Item::new("undeposited_amounts");
-
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

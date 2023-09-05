@@ -30,7 +30,7 @@ use crate::{
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, VaultBalance,
         MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
-        UNDEPOSITED_AMOUNTS, VAULT_CONFIG,
+        VAULT_CONFIG,
     },
     swap::swap,
     ContractError,

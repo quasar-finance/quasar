@@ -40,7 +40,6 @@ use crate::rewards::execute_distribute_rewards;
 use crate::state::Position;
 use crate::state::VaultBalance;
 use crate::state::POSITION;
-use crate::state::UNDEPOSITED_AMOUNTS;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
@@ -138,13 +137,6 @@ pub fn handle_instantiate_create_position_reply(
     let balance1 = deps
         .querier
         .query_balance(env.contract.address.to_string(), pool_config.token1)?;
-    UNDEPOSITED_AMOUNTS.save(
-        deps.storage,
-        &VaultBalance {
-            token0: balance0.amount,
-            token1: balance1.amount,
-        },
-    )?;
 
     let liquidity = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
