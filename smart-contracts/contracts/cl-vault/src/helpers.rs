@@ -204,6 +204,8 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
     let remainder = amount % multiple;
     if remainder == 0 {
         amount
+    } else if amount < 0 {
+        amount - remainder
     } else {
         amount + multiple - remainder
     }
