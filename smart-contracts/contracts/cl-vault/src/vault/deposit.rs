@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{
-    coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128,
-};
+use cosmwasm_std::{coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, attr};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -14,14 +11,14 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    concentrated_liquidity::{create_position, get_position},
+    vault::concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, VAULT_DENOM},
+    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     ContractError,
+    helpers::must_pay_two,
 };
-use crate::{helpers::must_pay_two, state::SHARES};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
@@ -41,28 +38,28 @@ pub(crate) fn execute_any_deposit(
 pub(crate) fn execute_exact_deposit(
     deps: DepsMut,
     env: Env,
-    info: &MessageInfo,
+    info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
 
-    let position = POSITION.load(deps.storage)?;
-    let range = ConcentratedliquidityQuerier::new(&deps.querier)
-        .position_by_id(position.position_id)?
+    let position_id = (POSITION.load(deps.storage)?).position_id;
+    let position = ConcentratedliquidityQuerier::new(&deps.querier)
+        .position_by_id(position_id)?
         .position
         .ok_or(ContractError::PositionNotFound)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let create_msg = create_position(
+    let create_position_msg = create_position(
         deps.storage,
         &env,
-        range.lower_tick,
-        range.upper_tick,
+        position.lower_tick,
+        position.upper_tick,
         vec![token0.clone(), token1.clone()],
         Uint128::zero(),
         Uint128::zero(),
@@ -79,13 +76,14 @@ pub(crate) fn execute_exact_deposit(
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_always(
-            create_msg,
+            create_position_msg,
             Replies::DepositCreatePosition as u64,
         ))
-        .add_attribute("method", "exact-deposit")
-        .add_attribute("action", "exact-deposit")
+        .add_attribute("method", "exact_deposit")
+        .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", token0.amount)
-        .add_attribute("amount1", token1.amount))
+        .add_attribute("amount1", token1.amount)
+    )
 }
 
 /// handles the reply to creating a position for a user deposit
@@ -101,16 +99,16 @@ pub fn handle_deposit_create_position_reply(
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let liquidity = Decimal::raw(resp.liquidity_created.parse()?);
+    let user_created_liquidity = Decimal::raw(resp.liquidity_created.parse()?);
 
-    let total_position = get_position(deps.storage, &deps.querier, &env)?
+    let existing_position = get_position(deps.storage, &deps.querier, &env)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
-    let total_liquidity = Decimal::from_str(total_position.liquidity.as_str())?;
+    let existing_liquidity = Decimal::from_str(existing_position.liquidity.as_str())?;
 
-    let total_shares: Uint128 = BankQuerier::new(&deps.querier)
+    let total_vault_shares: Uint128 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -118,12 +116,13 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
-    let user_shares: Uint128 = if total_shares.is_zero() {
-        liquidity.to_uint_floor().try_into().unwrap()
+    // TODOSN: Document this
+    let user_shares: Uint128 = if total_vault_shares.is_zero() {
+        existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
-        total_shares
-            .multiply_ratio(liquidity.numerator(), liquidity.denominator())
-            .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
+        total_vault_shares
+            .multiply_ratio(user_created_liquidity.numerator(), user_created_liquidity.denominator())
+            .multiply_ratio(existing_liquidity.denominator(), existing_liquidity.numerator())
             .try_into()
             .unwrap()
     };
@@ -133,7 +132,7 @@ pub fn handle_deposit_create_position_reply(
     // own the shares in their balance
     // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
     // this is blocked by Osmosis v17 update
-    let mint = MsgMint {
+    let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
@@ -143,8 +142,8 @@ pub fn handle_deposit_create_position_reply(
         deps.storage,
         current_deposit.sender.clone(),
         |old| -> Result<Uint128, ContractError> {
-            if let Some(old_shares) = old {
-                Ok(user_shares + old_shares)
+            if let Some(existing_user_shares) = old {
+                Ok(user_shares + existing_user_shares)
             } else {
                 Ok(user_shares)
             }
@@ -154,6 +153,8 @@ pub fn handle_deposit_create_position_reply(
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
         current_deposit.clone(),
         &resp,
@@ -161,14 +162,12 @@ pub fn handle_deposit_create_position_reply(
         pool_config.token1,
     )?;
 
-    let position_ids = vec![total_position.position_id, resp.position_id];
-    let merge_attrs = vec![Attribute::new("positions", format!("{:?}", position_ids))];
-    let merge_msg =
-        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids,
-        }));
+    let position_ids = vec![existing_position.position_id, resp.position_id];
+    let merge_msg = ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+        position_ids,
+    }));
     // merge our position with the main position
-    let merge = SubMsg::reply_on_success(
+    let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
             msg: to_binary(&merge_msg)?,
@@ -178,18 +177,18 @@ pub fn handle_deposit_create_position_reply(
     );
 
     let mint_attrs = vec![
-        Attribute::new("mint-share-amount", user_shares),
-        Attribute::new("receiver", current_deposit.sender),
+        attr("mint_shares_amount", user_shares),
+        attr("receiver", current_deposit.sender.as_str()),
     ];
 
-    //fungify our positions together and mint the user shares to the cl-vault
+    // Fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
-        .add_submessage(merge)
-        .add_attributes(merge_attrs)
-        .add_message(mint)
+        .add_submessage(merge_submsg)
+        .add_attribute("position_ids", format!("{},{}", existing_position.position_id, resp.position_id))
+        .add_message(mint_msg)
         .add_attributes(mint_attrs)
-        .add_attribute("method", "create-position-reply")
-        .add_attribute("action", "exact-deposit");
+        .add_attribute("method", "create_position_reply")
+        .add_attribute("action", "exact_deposit");
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
@@ -213,18 +212,19 @@ fn refund_bank_msg(
         .token1_in
         .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
 
-    let mut attr: Vec<Attribute> = vec![];
-
+    let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
+
+    // TODOSN: Document this explaining what s happening below
     if !refund0.is_zero() {
-        attr.push(Attribute::new("refund0-amount", refund0));
-        attr.push(Attribute::new("refund0-denom", denom0.as_str()));
+        attributes.push(attr("refund0_amount", refund0));
+        attributes.push(attr("refund0_denom", denom0.as_str()));
 
         coins.push(coin(refund0.u128(), denom0))
     }
     if !refund1.is_zero() {
-        attr.push(Attribute::new("refund1-amount", refund1));
-        attr.push(Attribute::new("refund1-denom", denom1.as_str()));
+        attributes.push(attr("refund1_amount", refund1));
+        attributes.push(attr("refund1_denom", denom1.as_str()));
 
         coins.push(coin(refund1.u128(), denom1))
     }
@@ -234,7 +234,7 @@ fn refund_bank_msg(
                 to_address: current_deposit.sender.to_string(),
                 amount: coins,
             },
-            attr,
+            attributes,
         ))
     } else {
         None
@@ -401,7 +401,7 @@ mod tests {
             response.unwrap().0,
             BankMsg::Send {
                 to_address: current_deposit.sender.to_string(),
-                amount: vec![coin(50, "uosmo"), coin(150, "uatom")]
+                amount: vec![coin(50, "uosmo"), coin(150, "uatom")],
             }
         )
     }

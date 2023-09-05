@@ -1,9 +1,8 @@
-mod concentrated_liquidity;
 pub mod contract;
 mod error;
 pub mod helpers;
+mod instantiate;
 mod math;
-mod merge;
 pub mod msg;
 mod query;
 mod reply;
