@@ -51,85 +51,85 @@ pub fn get_spot_price(
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
 
-/// get_liquidity_needed_for_tokens
-///
-/// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
-/// depositing both tokens would result in a refund of the token with higher needed liquidity
-///
-/// thanks: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#adding-liquidity
-pub fn get_liquidity_needed_for_tokens(
-    delta_token0: String,
-    delta_token1: String,
-    lower_tick: i64,
-    upper_tick: i64,
-) -> Result<(Uint128, Uint128), ContractError> {
-    // todo check that decimal casts are correct
-    let delta_x = Decimal256::from_atomics(Uint128::from_str(&delta_token0)?, 18)?;
-    let delta_y = Decimal256::from_atomics(Uint128::from_str(&delta_token1)?, 18)?;
-    // calc liquidity needed for token
+// /// get_liquidity_needed_for_tokens
+// ///
+// /// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
+// /// depositing both tokens would result in a refund of the token with higher needed liquidity
+// ///
+// /// thanks: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#adding-liquidity
+// pub fn get_liquidity_needed_for_tokens(
+//     delta_token0: String,
+//     delta_token1: String,
+//     lower_tick: i64,
+//     upper_tick: i64,
+// ) -> Result<(Uint128, Uint128), ContractError> {
+//     // todo check that decimal casts are correct
+//     let delta_x = Decimal256::from_atomics(Uint128::from_str(&delta_token0)?, 18)?;
+//     let delta_y = Decimal256::from_atomics(Uint128::from_str(&delta_token1)?, 18)?;
+//     // calc liquidity needed for token
 
-    // save gas and read easier by calcing ahead (gas savings prob already done by compiler)
-    let price_lower = tick_to_price(lower_tick)?;
-    let price_upper = tick_to_price(upper_tick)?;
-    let sqrt_price_lower = price_lower.sqrt();
-    let sqrt_price_upper = price_upper.sqrt();
-    let denominator = sqrt_price_upper.checked_sub(sqrt_price_lower)?;
+//     // save gas and read easier by calcing ahead (gas savings prob already done by compiler)
+//     let price_lower = tick_to_price(lower_tick)?;
+//     let price_upper = tick_to_price(upper_tick)?;
+//     let sqrt_price_lower = price_lower.sqrt();
+//     let sqrt_price_upper = price_upper.sqrt();
+//     let denominator = sqrt_price_upper.checked_sub(sqrt_price_lower)?;
 
-    // liquidity follows the formula found in the link above this function. basically this:
-    // liquidity_x = (delta_x * sqrt(price_lower) * sqrt(price_upper))/(sqrt(price_upper) - sqrt(price_lower))
-    // liquidity_7 = (delta_x)/(sqrt(price_upper) - sqrt(price_lower))
-    // overflow city?
-    let liquidity_x = delta_x
-        .checked_mul(sqrt_price_lower)?
-        .checked_mul(sqrt_price_upper)?
-        .checked_div(denominator)?;
+//     // liquidity follows the formula found in the link above this function. basically this:
+//     // liquidity_x = (delta_x * sqrt(price_lower) * sqrt(price_upper))/(sqrt(price_upper) - sqrt(price_lower))
+//     // liquidity_7 = (delta_x)/(sqrt(price_upper) - sqrt(price_lower))
+//     // overflow city?
+//     let liquidity_x = delta_x
+//         .checked_mul(sqrt_price_lower)?
+//         .checked_mul(sqrt_price_upper)?
+//         .checked_div(denominator)?;
 
-    let liquidity_y = delta_y.checked_div(denominator)?;
+//     let liquidity_y = delta_y.checked_div(denominator)?;
 
-    // todo: check this is what we want
-    Ok((
-        liquidity_x.atomics().try_into()?,
-        liquidity_y.atomics().try_into()?,
-    ))
-}
+//     // todo: check this is what we want
+//     Ok((
+//         liquidity_x.atomics().try_into()?,
+//         liquidity_y.atomics().try_into()?,
+//     ))
+// }
 
-pub fn get_deposit_amounts_for_liquidity_needed(
-    liquidity_needed_token0: Uint128,
-    liquidity_needed_token1: Uint128,
-    token0_amount: String,
-    token1_amount: String,
-    // i hate this type but it's arguably a good way to write this
-) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
-    // calc deposit amounts for liquidity needed
-    let amount_0 = Uint128::from_str(&token0_amount)?;
-    let amount_1 = Uint128::from_str(&token1_amount)?;
+// pub fn get_deposit_amounts_for_liquidity_needed(
+//     liquidity_needed_token0: Uint128,
+//     liquidity_needed_token1: Uint128,
+//     token0_amount: String,
+//     token1_amount: String,
+//     // i hate this type but it's arguably a good way to write this
+// ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+//     // calc deposit amounts for liquidity needed
+//     let amount_0 = Uint128::from_str(&token0_amount)?;
+//     let amount_1 = Uint128::from_str(&token1_amount)?;
 
-    // one of these will be zero
-    let mut remainder_0 = Uint128::zero();
-    let mut remainder_1 = Uint128::zero();
+//     // one of these will be zero
+//     let mut remainder_0 = Uint128::zero();
+//     let mut remainder_1 = Uint128::zero();
 
-    let (deposit_amount_0, deposit_amount_1) = if liquidity_needed_token0 > liquidity_needed_token1
-    {
-        // scale base token amount down by L1/L0, take full amount of quote token
-        let new_amount_0 =
-            amount_0.multiply_ratio(liquidity_needed_token1, liquidity_needed_token0);
-        remainder_0 = amount_0.checked_sub(new_amount_0).unwrap();
+//     let (deposit_amount_0, deposit_amount_1) = if liquidity_needed_token0 > liquidity_needed_token1
+//     {
+//         // scale base token amount down by L1/L0, take full amount of quote token
+//         let new_amount_0 =
+//             amount_0.multiply_ratio(liquidity_needed_token1, liquidity_needed_token0);
+//         remainder_0 = amount_0.checked_sub(new_amount_0).unwrap();
 
-        (new_amount_0, amount_1)
-    } else {
-        // scale quote token amount down by L0/L1, take full amount of base token
-        let new_amount_1 =
-            amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
-        remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
+//         (new_amount_0, amount_1)
+//     } else {
+//         // scale quote token amount down by L0/L1, take full amount of base token
+//         let new_amount_1 =
+//             amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
+//         remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
 
-        (amount_0, new_amount_1)
-    };
+//         (amount_0, new_amount_1)
+//     };
 
-    Ok((
-        (deposit_amount_0, deposit_amount_1),
-        (remainder_0, remainder_1),
-    ))
-}
+//     Ok((
+//         (deposit_amount_0, deposit_amount_1),
+//         (remainder_0, remainder_1),
+//     ))
+// }
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
