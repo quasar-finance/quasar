@@ -1,14 +1,23 @@
-use cosmwasm_std::{coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128};
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse, Pool};
+use cosmwasm_std::{
+    coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCreatePositionResponse, Pool,
+};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::{MsgCreateDenom, MsgCreateDenomResponse, MsgMint};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
+    MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
+};
 
-use crate::ContractError;
-use crate::msg::InstantiateMsg;
-use crate::vault::concentrated_liquidity::create_position;
 use crate::helpers::must_pay_two;
+use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN, PoolConfig, POOL_CONFIG, VAULT_CONFIG, VAULT_DENOM, Position, POSITION};
+use crate::state::{
+    PoolConfig, Position, ADMIN_ADDRESS, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+    VAULT_DENOM,
+};
+use crate::vault::concentrated_liquidity::create_position;
+use crate::ContractError;
 
 pub fn handle_instantiate(
     deps: DepsMut,
@@ -45,7 +54,7 @@ pub fn handle_instantiate(
         sender: env.contract.address.to_string(),
         subdenom: msg.vault_token_subdenom,
     }
-        .into();
+    .into();
 
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_two(&info, (pool.token0, pool.token1))?;
@@ -68,8 +77,7 @@ pub fn handle_instantiate(
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,
             Replies::InstantiateCreatePosition as u64,
-        ))
-    )
+        )))
 }
 
 pub fn handle_create_denom_reply(

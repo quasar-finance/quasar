@@ -143,14 +143,6 @@ pub fn handle_withdraw_position_reply(
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
 
-    // if get_usable_balance is not something we can rely on, then this is how we will need to do it
-    // UNDEPOSITED_AMOUNTS.update(deps.storage, |vb| -> Result<VaultBalance, ContractError> {
-    //     Ok(VaultBalance {
-    //         token0: Uint128::from_str(&amount0)?.checked_add(vb.token0)?,
-    //         token1: Uint128::from_str(&amount1)?.checked_add(vb.token1)?,
-    //     })
-    // })?;
-
     // should move this into the reply of withdraw position
     let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
         amount0.clone(),
@@ -357,7 +349,7 @@ fn handle_swap_success(
     let (swap_direction, left_over_amount) = CURRENT_SWAP.load(deps.storage)?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+    let _modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     // get post swap balances to create positions with
 
