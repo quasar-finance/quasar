@@ -99,6 +99,12 @@ pub struct CurrentMergePosition {
     pub upper_tick: i64,
 }
 
+#[cw_serde]
+pub struct VaultBalance {
+    pub token0: Uint128,
+    pub token1: Uint128,
+}
+
 /// The merge of positions currently being executed
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
@@ -109,6 +115,8 @@ pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+
+pub const UNDEPOSITED_AMOUNTS: Item<VaultBalance> = Item::new("undeposited_amounts");
 
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 

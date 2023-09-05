@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    to_binary, Addr, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
@@ -21,15 +21,16 @@ use crate::{
     helpers::{
         get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens,
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
-        get_spot_price, with_slippage,
+        get_spot_price, get_usable_balance, with_slippage,
     },
     math::tick::price_to_tick,
     merge::MergeResponse,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
+        ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, VaultBalance,
+        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        UNDEPOSITED_AMOUNTS, VAULT_CONFIG,
     },
     swap::swap,
     ContractError,
@@ -149,6 +150,14 @@ pub fn handle_withdraw_position_reply(
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
 
+    // if get_usable_balance is not something we can rely on, then this is how we will need to do it
+    // UNDEPOSITED_AMOUNTS.update(deps.storage, |vb| -> Result<VaultBalance, ContractError> {
+    //     Ok(VaultBalance {
+    //         token0: Uint128::from_str(&amount0)?.checked_add(vb.token0)?,
+    //         token1: Uint128::from_str(&amount1)?.checked_add(vb.token1)?,
+    //     })
+    // })?;
+
     // should move this into the reply of withdraw position
     let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
         amount0.clone(),
@@ -256,10 +265,15 @@ pub fn do_swap_deposit_merge(
 
     // start swap math
     // get remaining balance in contract for each token (one of these should be zero i think)
-    let balance0 =
-        querier.query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
-    let balance1 =
-        querier.query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
+    let balance = get_usable_balance(storage, querier, env.clone())?;
+    let balance0 = Coin {
+        denom: pool_config.token0.clone(),
+        amount: balance.token0,
+    };
+    let balance1 = Coin {
+        denom: pool_config.token1.clone(),
+        amount: balance.token1,
+    };
 
     // TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage, to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.amount.is_zero() {
@@ -302,6 +316,7 @@ pub fn do_swap_deposit_merge(
         ),
     };
 
+    // TODO: slippage should be configurable by caller of modify range?
     let token_out_min_amount = token_out_ideal_amount?.checked_multiply_ratio(
         vault_config.swap_max_slippage.numerator(),
         vault_config.swap_max_slippage.denominator(),
@@ -332,8 +347,17 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    let _msg: MsgSwapExactAmountInResponse = data.try_into()?;
+    match data.clone() {
+        SubMsgResult::Ok(msg) => handle_swap_success(deps, env, data.try_into()?),
+        SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
+    }
+}
 
+fn handle_swap_success(
+    deps: DepsMut,
+    env: Env,
+    msg: MsgSwapExactAmountInResponse,
+) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
@@ -342,13 +366,16 @@ pub fn handle_swap_reply(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
-    // get post swap balances to create positions with
-    let balance0 = deps
-        .querier
-        .query_balance(env.contract.address.clone(), pool_config.token0.clone())?;
-    let balance1 = deps
-        .querier
-        .query_balance(env.contract.address.clone(), pool_config.token1.clone())?;
+    // get post swap tokens to create positions with
+    let balances = get_usable_balance(deps.storage, &deps.querier, env.clone())?;
+    let balance0 = Coin {
+        denom: pool_config.token0.clone(),
+        amount: balances.token0,
+    };
+    let balance1 = Coin {
+        denom: pool_config.token1.clone(),
+        amount: balances.token1,
+    };
 
     // todo: extract this to a function
     let create_position_msg = MsgCreatePosition {

@@ -35,6 +35,9 @@ pub enum ContractError {
     #[error("Swap deposit merge state item not found")]
     SwapDepositMergeStateNotFound,
 
+    #[error("Swap failed: {message}")]
+    SwapFailed { message: String },
+
     #[error("Vault shares sent in does not equal amount requested")]
     IncorrectShares,
 

@@ -38,7 +38,9 @@ use crate::reply::Replies;
 
 use crate::rewards::execute_distribute_rewards;
 use crate::state::Position;
+use crate::state::VaultBalance;
 use crate::state::POSITION;
+use crate::state::UNDEPOSITED_AMOUNTS;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
@@ -127,6 +129,23 @@ pub fn handle_instantiate_create_position_reply(
         },
     )?;
 
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    // get the refunded amounts and save that as the initial Vault Balance
+    let balance0 = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), pool_config.token0)?;
+    let balance1 = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), pool_config.token1)?;
+    UNDEPOSITED_AMOUNTS.save(
+        deps.storage,
+        &VaultBalance {
+            token0: balance0.amount,
+            token1: balance1.amount,
+        },
+    )?;
+
     let liquidity = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     // todo do we want to mint the initial mint to the instantiater, or just not care?
@@ -212,7 +231,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata =>  Ok(to_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::Metadata => Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)

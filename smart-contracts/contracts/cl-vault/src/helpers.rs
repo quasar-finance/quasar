@@ -1,8 +1,14 @@
 use std::str::FromStr;
 
-use crate::{error::ContractResult, math::tick::tick_to_price, state::POOL_CONFIG, ContractError};
+use crate::{
+    error::ContractResult,
+    math::tick::tick_to_price,
+    rewards,
+    state::{VaultBalance, CURRENT_REWARDS, POOL_CONFIG},
+    ContractError,
+};
 use cosmwasm_std::{
-    Coin, Decimal, Decimal256, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
+    Coin, Decimal, Decimal256, Env, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -185,6 +191,46 @@ pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, Cont
     )?;
 
     Ok(adjusted_amount)
+}
+
+/// This function subtracts out all the reward amounts from the contract balance on chain
+pub fn get_usable_balance(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    env: Env,
+) -> Result<VaultBalance, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
+
+    let balance0 = querier.query_balance(
+        env.contract.address.to_string(),
+        pool_config.token0.to_string(),
+    )?;
+    let balance1 = querier.query_balance(
+        env.contract.address.to_string(),
+        pool_config.token1.to_string(),
+    )?;
+
+    let rewards = CURRENT_REWARDS.load(storage)?;
+    let mut rewards0 = Uint128::zero();
+    let mut rewards1 = Uint128::zero();
+    for reward in rewards.into_coins().iter() {
+        if reward.denom == pool_config.token0 {
+            rewards0 = reward.amount;
+        } else if reward.denom == pool_config.token1 {
+            rewards1 = reward.amount;
+        }
+    }
+
+    Ok(VaultBalance {
+        token0: balance0
+            .amount
+            .checked_sub(rewards0)
+            .unwrap_or(Uint128::zero()),
+        token1: balance1
+            .amount
+            .checked_sub(rewards1)
+            .unwrap_or(Uint128::zero()),
+    })
 }
 
 #[cfg(test)]
