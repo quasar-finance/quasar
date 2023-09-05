@@ -1,5 +1,4 @@
 use crate::{
-    concentrated_liquidity::get_position,
     error::ContractResult,
     state::{
         PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
@@ -10,6 +9,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use crate::vault::concentrated_liquidity::get_position;
 
 #[cw_serde]
 pub struct MetadataResponse {
