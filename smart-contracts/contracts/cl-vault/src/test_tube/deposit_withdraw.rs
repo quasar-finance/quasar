@@ -125,32 +125,4 @@ mod tests {
             .unwrap();
         // verify the correct execution
     }
-
-    // #[test]
-    // #[ignore]
-    fn move_range_works() {
-        let (app, contract, _cl_pool_id, admin) = default_init();
-        let _alice = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-
-        let wasm = Wasm::new(&app);
-        let _result = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Uint128::new(2),
-                        upper_price: Uint128::new(200),
-                        max_slippage: Decimal::permille(5),
-                    },
-                )),
-                &[],
-                &admin,
-            )
-            .unwrap();
-    }
 }

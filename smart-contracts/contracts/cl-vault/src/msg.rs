@@ -46,10 +46,10 @@ pub enum AdminExtensionExecuteMsg {
 
 #[cw_serde]
 pub struct ModifyRangeMsg {
-    /// The new lower bound of the range
-    pub lower_price: Uint128,
-    /// The new upper bound of the range
-    pub upper_price: Uint128,
+    /// The new lower bound of the range, this is converted to an 18 precision digit decimal
+    pub lower_price: String,
+    /// The new upper bound of the range, this is converted to an 18 precision digit decimal
+    pub upper_price: String,
     /// max position slippage
     pub max_slippage: Decimal,
 }

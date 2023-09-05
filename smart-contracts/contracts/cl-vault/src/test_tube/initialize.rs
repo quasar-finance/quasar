@@ -58,7 +58,7 @@ pub mod initialize {
     pub fn init_test_contract(
         filename: &str,
         admin_balance: &[Coin],
-        _pool: MsgCreateConcentratedPool,
+        pool: MsgCreateConcentratedPool,
         lower_tick: i64,
         upper_tick: i64,
         tokens_provided: Vec<v1beta1::Coin>,
@@ -93,10 +93,10 @@ pub mod initialize {
                 description: "Create concentrated uosmo:usdc pool, so that we can trade it"
                     .to_string(),
                 pool_records: vec![PoolRecord {
-                    denom0: "uatom".to_string(),
-                    denom1: "uosmo".to_string(),
-                    tick_spacing: 1,
-                    spread_factor: "0".to_string(),
+                    denom0: pool.denom0,
+                    denom1: pool.denom1,
+                    tick_spacing: pool.tick_spacing,
+                    spread_factor: pool.spread_factor,
                 }],
             },
             admin.address(),
@@ -119,6 +119,7 @@ pub mod initialize {
             token_min_amount1: token_min_amount1.to_string(),
         };
         let _position = cl.create_position(initial_position, &admin).unwrap();
+        println!("{:?}", _position);
 
         let instantiate_msg = InstantiateMsg {
             admin: admin.address(),
@@ -130,8 +131,8 @@ pub mod initialize {
             },
             vault_token_subdenom: "utestvault".to_string(),
             range_admin: admin.address(),
-            initial_lower_tick: 1,
-            initial_upper_tick: 100,
+            initial_lower_tick: lower_tick,
+            initial_upper_tick: upper_tick,
             thesis: "provide big swap efficiency".to_string(),
             name: "good contract".to_string(),
         };
