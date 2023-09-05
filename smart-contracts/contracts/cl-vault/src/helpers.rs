@@ -200,6 +200,15 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     }
 }
 
+pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
+    let remainder = amount % multiple;
+    if remainder == 0 {
+        amount
+    } else {
+        amount + multiple - remainder
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -253,5 +262,32 @@ mod tests {
             funds: vec![coin(200, "uqsr")],
         };
         let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+    }
+
+    #[test]
+    fn test_round_up_to_nearest_multiple() {
+        assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
+        assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(13, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(14, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(15, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(16, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(17, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(18, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
+        // does it also work for negative inputs?
+        assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-13, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-14, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-15, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-16, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-17, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
     }
 }

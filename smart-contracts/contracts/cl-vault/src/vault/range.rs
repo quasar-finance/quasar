@@ -17,7 +17,6 @@ use osmosis_std::types::{
     },
 };
 
-use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
 use crate::{
@@ -34,11 +33,17 @@ use crate::{
     ContractError,
 };
 use crate::{
+    helpers::round_up_to_nearest_multiple,
+    msg::{ExecuteMsg, MergePositionMsg},
+};
+use crate::{
     helpers::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
     },
     state::CURRENT_BALANCE,
 };
+
+use super::concentrated_liquidity::get_pool_info;
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -144,34 +149,33 @@ pub fn handle_withdraw_position_reply(
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
 
-    // // should move this into the reply of withdraw position
-    // let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
-    //     amount0.clone(),
-    //     amount1.clone(),
-    //     modify_range_state.lower_tick,
-    //     modify_range_state.upper_tick,
-    // )?;
-
-    // let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
-    //     liquidity_needed_0,
-    //     liquidity_needed_1,
-    //     amount0,
-    //     amount1,
-    // )?;
-
-    // // Save current remainders at state
-    // CURRENT_REMAINDERS.save(deps.storage, &remainders)?;
     CURRENT_BALANCE.save(
         deps.storage,
         &(Uint128::from_str(&amount0)?, Uint128::from_str(&amount1)?),
     )?;
 
+    let pool_details = get_pool_info(&deps.querier, pool_config.pool_id)?
+        .expect("We should never not find the pool we are depositing into");
+
     // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
     let create_position_msg = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender: env.contract.address.to_string(),
-        lower_tick: modify_range_state.lower_tick,
-        upper_tick: modify_range_state.upper_tick,
+        // round our lower tick and upper tick up to the nearest pool_details.tick_spacing
+        lower_tick: round_up_to_nearest_multiple(
+            modify_range_state.lower_tick,
+            pool_details
+                .tick_spacing
+                .try_into()
+                .expect("tick spacing is too big to fit into u64"),
+        ),
+        upper_tick: round_up_to_nearest_multiple(
+            modify_range_state.upper_tick,
+            pool_details
+                .tick_spacing
+                .try_into()
+                .expect("tick spacing is too big to fit into u64"),
+        ),
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
