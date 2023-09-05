@@ -7,7 +7,7 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
+        CURRENT_REWARDS, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
         VAULT_DENOM,
     },
     ContractError,

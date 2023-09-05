@@ -15,7 +15,7 @@ use crate::{
     concentrated_liquidity::{get_position, withdraw_from_position},
     debug,
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, SHARES, POOL_CONFIG, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
     ContractError,
 };
 

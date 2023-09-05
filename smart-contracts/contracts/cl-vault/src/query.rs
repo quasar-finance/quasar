@@ -2,7 +2,8 @@ use crate::{
     concentrated_liquidity::get_position,
     error::ContractResult,
     state::{
-        PoolConfig, SHARES, METADATA, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM, ADMIN_ADDRESS,
+        PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
+        VAULT_DENOM,
     },
 };
 use cosmwasm_schema::cw_serde;
@@ -71,7 +72,7 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
         .unwrap()
         .amount
         .parse::<u128>()?
-        .into();    
+        .into();
     let admin = ADMIN_ADDRESS.load(deps.storage)?.to_string();
 
     Ok(MetadataResponse {
