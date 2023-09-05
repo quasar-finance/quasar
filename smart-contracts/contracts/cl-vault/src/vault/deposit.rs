@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, attr};
+use cosmwasm_std::{
+    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
+};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -11,13 +14,13 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    vault::concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
+    helpers::must_pay_two,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::{create_position, get_position},
     ContractError,
-    helpers::must_pay_two,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -82,8 +85,7 @@ pub(crate) fn execute_exact_deposit(
         .add_attribute("method", "exact_deposit")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", token0.amount)
-        .add_attribute("amount1", token1.amount)
-    )
+        .add_attribute("amount1", token1.amount))
 }
 
 /// handles the reply to creating a position for a user deposit
@@ -121,8 +123,14 @@ pub fn handle_deposit_create_position_reply(
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
         total_vault_shares
-            .multiply_ratio(user_created_liquidity.numerator(), user_created_liquidity.denominator())
-            .multiply_ratio(existing_liquidity.denominator(), existing_liquidity.numerator())
+            .multiply_ratio(
+                user_created_liquidity.numerator(),
+                user_created_liquidity.denominator(),
+            )
+            .multiply_ratio(
+                existing_liquidity.denominator(),
+                existing_liquidity.numerator(),
+            )
             .try_into()
             .unwrap()
     };
@@ -163,9 +171,10 @@ pub fn handle_deposit_create_position_reply(
     )?;
 
     let position_ids = vec![existing_position.position_id, resp.position_id];
-    let merge_msg = ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-        position_ids,
-    }));
+    let merge_msg =
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
+            position_ids,
+        }));
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
@@ -184,7 +193,10 @@ pub fn handle_deposit_create_position_reply(
     // Fungify our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
         .add_submessage(merge_submsg)
-        .add_attribute("position_ids", format!("{},{}", existing_position.position_id, resp.position_id))
+        .add_attribute(
+            "position_ids",
+            format!("{},{}", existing_position.position_id, resp.position_id),
+        )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
         .add_attribute("method", "create_position_reply")

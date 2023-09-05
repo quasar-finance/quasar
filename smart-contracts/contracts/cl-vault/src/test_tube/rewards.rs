@@ -3,9 +3,8 @@ mod tests {
     use crate::{msg::ExecuteMsg, test_tube::default_init};
     use cosmwasm_std::Coin;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-    use osmosis_std::types::osmosis::{
-        concentratedliquidity::v1beta1::ClaimableSpreadRewardsRequest,
-        poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
+    use osmosis_std::types::osmosis::poolmanager::v1beta1::{
+        MsgSwapExactAmountIn, SwapAmountInRoute,
     };
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
 

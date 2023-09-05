@@ -1,14 +1,15 @@
+use crate::vault::concentrated_liquidity::get_position;
 use crate::{
     error::ContractResult,
     state::{
-        PoolConfig, SHARES, METADATA, POOL_CONFIG, POSITION, USER_REWARDS, VAULT_DENOM, ADMIN_ADDRESS,
+        PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
+        VAULT_DENOM,
     },
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
-use crate::vault::concentrated_liquidity::get_position;
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -71,13 +72,13 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
         .unwrap()
         .amount
         .parse::<u128>()?
-        .into();    
+        .into();
     let admin = ADMIN_ADDRESS.load(deps.storage)?.to_string();
 
     Ok(MetadataResponse {
         thesis: metadata.thesis,
         name: metadata.name,
-        total_supply: total_supply,
+        total_supply,
         symbol: vault_denom,
         decimals: 6,
         admin,

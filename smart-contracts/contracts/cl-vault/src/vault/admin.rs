@@ -1,8 +1,8 @@
+use crate::helpers::assert_admin;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
-use crate::helpers::assert_admin;
 
 pub(crate) fn execute_update(
     deps: DepsMut,
@@ -93,7 +93,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Decimal, Uint128,
+        Addr, Decimal, Uint128,
     };
 
     #[test]

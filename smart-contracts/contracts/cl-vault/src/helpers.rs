@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
-use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128};
-use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
+use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
+use cosmwasm_std::{
+    Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
+};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 

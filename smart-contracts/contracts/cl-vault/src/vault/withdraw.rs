@@ -1,4 +1,7 @@
-use cosmwasm_std::{coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, attr};
+use cosmwasm_std::{
+    attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128,
+};
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
@@ -8,9 +11,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    vault::concentrated_liquidity::{get_position, withdraw_from_position},
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, SHARES, POOL_CONFIG, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
 
@@ -57,8 +60,10 @@ pub fn execute_withdraw(
         .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
         .add_attribute("share_amount", amount)
         .add_message(burn_msg)
-        .add_submessage(SubMsg::reply_on_success(withdraw_msg, Replies::WithdrawUser as u64))
-    )
+        .add_submessage(SubMsg::reply_on_success(
+            withdraw_msg,
+            Replies::WithdrawUser as u64,
+        )))
 }
 
 fn withdraw(

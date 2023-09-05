@@ -102,17 +102,6 @@ pub struct ModifyRangeState {
     pub new_range_position_ids: Vec<u64>,
 }
 
-// todo: i kinda want to rename above to this
-// #[cw_serde]
-// pub enum ModifyRangeState {
-//     Idle,
-//     PreWithdraw { ... },
-//     PreDeposit { ... },
-//     PreSwap { ... },
-//     PreDeposit2 { ... },
-//     PostModifyRange { ... },
-// }
-
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
 
 #[cw_serde]
@@ -135,7 +124,6 @@ pub struct TickExpIndexData {
 
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
-
 
 #[cfg(test)]
 mod tests {

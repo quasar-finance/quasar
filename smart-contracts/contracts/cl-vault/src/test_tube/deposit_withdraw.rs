@@ -1,18 +1,12 @@
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{Coin, Decimal, Uint128};
-    use cw_vault_multi_standard::VaultInfoResponse;
-    use osmosis_std::types::osmosis::{
-        concentratedliquidity::v1beta1::{Pool, PoolsRequest},
-        tokenfactory::v1beta1::QueryDenomsFromCreatorRequest,
-    };
-    use osmosis_test_tube::{
-        cosmrs::proto::traits::Message, Account, ConcentratedLiquidity, Module, TokenFactory, Wasm,
-    };
+
+    use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
-        msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
-        query::{PoolResponse, UserBalanceResponse},
+        msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
+        query::UserBalanceResponse,
         test_tube::default_init,
     };
 

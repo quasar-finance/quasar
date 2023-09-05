@@ -11,11 +11,11 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 };
 
 use crate::{
-    vault::concentrated_liquidity::{create_position, get_position},
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
     state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
+    vault::concentrated_liquidity::{create_position, get_position},
     ContractError,
 };
 
