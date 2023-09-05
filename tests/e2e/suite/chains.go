@@ -76,6 +76,7 @@ var (
 			modifyIncentivesModule(),
 			modifyPoolIncentivesModule(),
 			modifyEpochsModule(),
+			modifyConcentratedLiquidityModule(),
 		),
 	}
 

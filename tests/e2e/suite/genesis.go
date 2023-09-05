@@ -156,6 +156,48 @@ func modifyGenesisICAModule(enabled bool, allowMsgs []string, Port string) genes
 	}
 }
 
+// modifyConcentratedLiquidityModule sets the params of concentrated liquidity module.
+func modifyConcentratedLiquidityModule() genesisModifiers {
+	return func(gen any) (any, error) {
+		v := map[string]any{
+			"next_incentive_record_id": "1",
+			"next_position_id":         "1",
+			"params": map[string]any{
+				"authorized_quote_denoms": []string{
+					"uosmo",
+					"fakestake",
+					"stake1",
+					"usdc",
+				},
+				"authorized_spread_factors": []string{
+					"0.000000000000000000",
+					"0.000100000000000000",
+					"0.000500000000000000",
+					"0.001000000000000000",
+					"0.002000000000000000",
+					"0.003000000000000000",
+					"0.005000000000000000",
+					"0.010000000000000000",
+					"0.100000000000000000",
+				},
+				"authorized_tick_spacing": []string{
+					"1",
+					"10",
+					"100",
+					"1000",
+				},
+				"authorized_uptimes": []string{
+					"0.000000001s",
+				},
+				"balancer_shares_reward_discount":         "0.050000000000000000",
+				"is_permissionless_pool_creation_enabled": true,
+			},
+		}
+		err := dyno.Set(gen, v, "app_state", "concentratedliquidity")
+		return gen, err
+	}
+}
+
 // modifyGenesisICQModule sets the params of ICQ module.
 func modifyGenesisICQModule(enabled bool, allowQueries []string, hostPort string) genesisModifiers {
 	return func(gen any) (any, error) {
