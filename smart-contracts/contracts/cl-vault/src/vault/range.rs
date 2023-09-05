@@ -17,17 +17,11 @@ use osmosis_std::types::{
     },
 };
 
-use crate::helpers::{
-    get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
-};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
-use crate::state::{CURRENT_REMAINDERS, CURRENT_SWAP};
+use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
 use crate::{
-    helpers::{
-        get_deposit_amounts_for_liquidity_needed, get_liquidity_needed_for_tokens, get_spot_price,
-        with_slippage,
-    },
+    helpers::get_spot_price,
     math::tick::price_to_tick,
     reply::Replies,
     state::{
@@ -38,6 +32,12 @@ use crate::{
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     ContractError,
+};
+use crate::{
+    helpers::{
+        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+    },
+    state::CURRENT_BALANCE,
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
@@ -140,26 +140,31 @@ pub fn handle_withdraw_position_reply(
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
+    // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
     let amount0 = msg.amount0;
     let amount1 = msg.amount1;
 
-    // should move this into the reply of withdraw position
-    let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
-        amount0.clone(),
-        amount1.clone(),
-        modify_range_state.lower_tick,
-        modify_range_state.upper_tick,
-    )?;
+    // // should move this into the reply of withdraw position
+    // let (liquidity_needed_0, liquidity_needed_1) = get_liquidity_needed_for_tokens(
+    //     amount0.clone(),
+    //     amount1.clone(),
+    //     modify_range_state.lower_tick,
+    //     modify_range_state.upper_tick,
+    // )?;
 
-    let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
-        liquidity_needed_0,
-        liquidity_needed_1,
-        amount0,
-        amount1,
-    )?;
+    // let (deposit, remainders) = get_deposit_amounts_for_liquidity_needed(
+    //     liquidity_needed_0,
+    //     liquidity_needed_1,
+    //     amount0,
+    //     amount1,
+    // )?;
 
-    // Save current remainders at state
-    CURRENT_REMAINDERS.save(deps.storage, &remainders)?;
+    // // Save current remainders at state
+    // CURRENT_REMAINDERS.save(deps.storage, &remainders)?;
+    CURRENT_BALANCE.save(
+        deps.storage,
+        &(Uint128::from_str(&amount0)?, Uint128::from_str(&amount1)?),
+    )?;
 
     // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
     let create_position_msg = MsgCreatePosition {
@@ -170,16 +175,16 @@ pub fn handle_withdraw_position_reply(
         tokens_provided: vec![
             OsmoCoin {
                 denom: pool_config.token0.clone(),
-                amount: deposit.0.to_string(),
+                amount: amount0.clone(),
             },
             OsmoCoin {
                 denom: pool_config.token1.clone(),
-                amount: deposit.1.to_string(),
+                amount: amount1.clone(),
             },
         ],
         // slippage is a mis-nomer here, we won't suffer any slippage. but the pool may still return us more of one of the tokens. This is fine.
-        token_min_amount0: with_slippage(deposit.0, modify_range_state.max_slippage)?.to_string(),
-        token_min_amount1: with_slippage(deposit.1, modify_range_state.max_slippage)?.to_string(),
+        token_min_amount0: "0".to_string(),
+        token_min_amount1: "0".to_string(),
     };
 
     Ok(Response::new()
@@ -191,8 +196,8 @@ pub fn handle_withdraw_position_reply(
         .add_attribute("method", "create_position")
         .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
         .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
-        .add_attribute("token0", format!("{:?}{:?}", deposit.0, pool_config.token0))
-        .add_attribute("token1", format!("{:?}{:?}", deposit.1, pool_config.token1)))
+        .add_attribute("token0", format!("{:?}{:?}", amount0, pool_config.token0))
+        .add_attribute("token1", format!("{:?}{:?}", amount1, pool_config.token1)))
 }
 
 // do swap
@@ -204,8 +209,20 @@ pub fn handle_initial_create_position_reply(
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
     // target range for our imminent swap
+    // taking from response message is important because they may differ from the ones in our request
     let target_lower_tick = create_position_message.lower_tick;
     let target_upper_tick = create_position_message.upper_tick;
+
+    // get refunded amounts
+    let current_balance = CURRENT_BALANCE.load(deps.storage)?;
+    let refunded_amounts = (
+        current_balance
+            .0
+            .checked_sub(Uint128::from_str(&create_position_message.amount0)?)?,
+        current_balance
+            .1
+            .checked_sub(Uint128::from_str(&create_position_message.amount1)?)?,
+    );
 
     do_swap_deposit_merge(
         deps.storage,
@@ -213,6 +230,7 @@ pub fn handle_initial_create_position_reply(
         env,
         target_lower_tick,
         target_upper_tick,
+        refunded_amounts,
     )
 }
 
@@ -225,6 +243,7 @@ pub fn do_swap_deposit_merge(
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
+    refunded_amounts: (Uint128, Uint128),
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(storage)?;
     if swap_deposit_merge_state.is_some() {
@@ -254,7 +273,7 @@ pub fn do_swap_deposit_merge(
     // get remaining balance in contract for each token (one of these should be zero i think)
     // @notice: this actually works if this function (do_swap_deposit_merge) is called by
     // handle_initial_create_position_reply, double check if implementing it somewhere else
-    let (balance0, balance1) = CURRENT_REMAINDERS.load(storage)?;
+    let (balance0, balance1) = refunded_amounts;
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
