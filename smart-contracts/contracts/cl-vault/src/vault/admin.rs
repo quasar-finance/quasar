@@ -93,7 +93,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Decimal, Uint128,
+        Addr, Decimal, Uint128,
     };
 
     #[test]
