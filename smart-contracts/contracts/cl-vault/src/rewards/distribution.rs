@@ -1,12 +1,13 @@
 use cosmwasm_std::{
-    Addr, Deps, DepsMut, Env, Fraction, Order, Response, SubMsg, SubMsgResult, Uint128,
+    Addr, Deps, DepsMut, Env, Fraction, Order, Response, StdError, SubMsg, SubMsgResult, Uint128, Attribute,
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, LOCKED_SHARES, POSITION, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
+        CURRENT_REWARDS, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
         VAULT_DENOM,
     },
     ContractError,
@@ -22,9 +23,11 @@ use osmosis_std::types::{
 use super::rewards::Rewards;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn claim_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &Rewards::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
+
+    debug!(deps, "here1", msg);
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         msg,
         Replies::CollectIncentives as u64,
@@ -37,7 +40,19 @@ pub fn handle_collect_incentives_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
-    let response: MsgCollectIncentivesResponse = data.try_into()?;
+    debug!(deps, "here2", data);
+    // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
+    let data: Result<MsgCollectIncentivesResponse, ContractError> = data
+        .into_result()
+        .map_err(StdError::generic_err)?
+        .data
+        .map(|b| Ok(b.try_into()?))
+        .unwrap_or(Ok(MsgCollectIncentivesResponse {
+            collected_incentives: vec![],
+            forfeited_incentives: vec![],
+        }));
+
+    let response: MsgCollectIncentivesResponse = data?;
     CURRENT_REWARDS.update(
         deps.storage,
         |mut rewards| -> Result<Rewards, ContractError> {
@@ -46,6 +61,7 @@ pub fn handle_collect_incentives_reply(
         },
     )?;
 
+    debug!(deps, "here4", "");
     // collect the spread rewards
     let msg = collect_spread_rewards(deps.as_ref(), env)?;
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -59,9 +75,19 @@ pub fn handle_collect_spread_rewards_reply(
     _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    debug!(deps, "here3", "");
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
-    let response: MsgCollectSpreadRewardsResponse = data.try_into()?;
+    let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
+    .into_result()
+    .map_err(StdError::generic_err)?
+    .data
+    .map(|b| Ok(b.try_into()?))
+    .unwrap_or(Ok(MsgCollectSpreadRewardsResponse {
+        collected_spread_rewards: vec![],
+    }));
+
+    let response: MsgCollectSpreadRewardsResponse = data?;
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(response.collected_spread_rewards)?;
 
@@ -72,7 +98,11 @@ pub fn handle_collect_spread_rewards_reply(
     Ok(Response::new())
 }
 
-fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), ContractError> {
+fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<Vec<Attribute>, ContractError> {
+    if rewards.is_empty() {
+        return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
+    }
+    
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // calculate the strategist fee
@@ -94,7 +124,8 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
         .into();
 
     // for each user with locked tokens, we distribute some part of the rewards to them
-    let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = LOCKED_SHARES
+    // get all users and their current pre-distribution rewards
+    let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = SHARES
         .range(deps.branch().storage, None, None, Order::Ascending)
         .map(|v| -> Result<(Addr, Rewards), ContractError> {
             let (address, user_shares) = v?;
@@ -105,6 +136,7 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
         })
         .collect();
 
+    // add or create a new entry for the user to get rewards
     user_rewards?
         .into_iter()
         .try_for_each(|(addr, reward)| -> ContractResult<()> {
@@ -118,7 +150,7 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<(), Con
             Ok(())
         })?;
 
-    Ok(())
+    Ok(vec![Attribute::new("total_rewards_amount", format!("{:?}", rewards.into_coins()))])
 }
 
 fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
@@ -235,7 +267,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
 //         LOCKED_TOTAL.save(deps.as_mut().storage, &total).unwrap();
 //         user_shares.into_iter().for_each(|(addr, shares)| {
-//             LOCKED_SHARES
+//             SHARES
 //                 .save(deps.as_mut().storage, addr, &shares)
 //                 .unwrap()
 //         });
@@ -289,7 +321,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .range(deps.as_ref().storage, None, None, Order::Ascending)
 //             .for_each(|val| {
 //                 let (user, user_rewards) = val.unwrap();
-//                 let user_shares = LOCKED_SHARES.load(deps.as_ref().storage, user).unwrap();
+//                 let user_shares = SHARES.load(deps.as_ref().storage, user).unwrap();
 //                 let mut tmp_rewards = rewards.clone();
 
 //                 tmp_rewards
@@ -330,7 +362,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
 //         LOCKED_TOTAL.save(deps.as_mut().storage, &total).unwrap();
 //         user_shares.into_iter().for_each(|(addr, shares)| {
-//             LOCKED_SHARES
+//             SHARES
 //                 .save(deps.as_mut().storage, addr, &shares)
 //                 .unwrap()
 //         });
@@ -344,7 +376,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //         distribute_rewards(deps.as_mut(), rewards.clone()).unwrap();
 
 //         // each entry in USER_REWARDS should be equal to rewards.sub_percentage(strategist_fee_percentage).percentage(user_shares, total_shares)
-//         // we can get the user shares from LOCKED_SHARES
+//         // we can get the user shares from SHARES
 //         let strategist_fee_percentage = VAULT_CONFIG
 //             .load(deps.as_ref().storage)
 //             .unwrap()
@@ -370,7 +402,7 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 //             .range(deps.as_ref().storage, None, None, Order::Ascending)
 //             .for_each(|val| {
 //                 let (user, user_rewards) = val.unwrap();
-//                 let user_shares = LOCKED_SHARES.load(deps.as_ref().storage, user).unwrap();
+//                 let user_shares = SHARES.load(deps.as_ref().storage, user).unwrap();
 //                 let mut tmp_rewards = rewards.clone();
 
 //                 tmp_rewards

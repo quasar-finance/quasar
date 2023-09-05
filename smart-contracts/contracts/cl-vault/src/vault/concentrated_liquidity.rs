@@ -1,7 +1,6 @@
 use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgFungifyChargedPositions, MsgWithdrawPosition,
+    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
 };
 
 use crate::{

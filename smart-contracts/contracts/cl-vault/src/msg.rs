@@ -1,9 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
-use cw_vault_multi_standard::{
-    extensions::lockup::{LockupExecuteMsg, LockupQueryMsg},
-    VaultStandardExecuteMsg, VaultStandardQueryMsg,
-};
+use cosmwasm_std::{Decimal, Uint128};
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{PoolResponse, PositionResponse, RangeAdminResponse},
@@ -20,6 +17,10 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// Distribute any rewards over all users
+    DistributeRewards {},
+    /// Claim rewards belonging to a single user
+    ClaimRewards {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -61,6 +62,8 @@ pub struct MergePositionMsg {
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
+    /// Metadata surrounding the vault
+    Metadata,
     /// Queries related to the lockup extension.
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
@@ -95,15 +98,16 @@ pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    /// The general thesis of the vault
+    pub thesis: String,
+    /// the name of the vault
+    pub name: String,
     /// Address that is allowed to update config.
     pub admin: String,
     /// Address that is allowed to update range.
     pub range_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
-    /// The lockup duration in seconds that this vault will use when staking
-    /// LP tokens.
-    pub lockup_duration: u64,
     /// Configurable parameters for the contract.
     pub config: VaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.

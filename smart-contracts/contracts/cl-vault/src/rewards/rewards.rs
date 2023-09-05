@@ -27,6 +27,10 @@ impl Rewards {
         )
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// merge any values already in Rewards and append any others
     pub fn update_rewards(&mut self, rewards: Vec<OsmoCoin>) -> ContractResult<()> {
         let parsed_rewards: ContractResult<Vec<Coin>> = rewards
@@ -97,7 +101,7 @@ impl Rewards {
         .into())
     }
 
-    pub fn into_attributes(&self) -> Vec<Attribute> {
+    pub fn into_attributes(self) -> Vec<Attribute> {
         self.0
             .iter()
             .map(|c| Attribute {
