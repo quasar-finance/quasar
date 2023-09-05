@@ -3,6 +3,7 @@ use cosmwasm_std::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     reply::Replies,
     state::{
@@ -22,9 +23,11 @@ use osmosis_std::types::{
 use super::rewards::Rewards;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn claim_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &Rewards::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
+
+    debug!(deps, "here1", msg);
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         msg,
         Replies::CollectIncentives as u64,
@@ -37,6 +40,7 @@ pub fn handle_collect_incentives_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
+    debug!(deps, "here2", data);
     let response: MsgCollectIncentivesResponse = data.try_into()?;
     CURRENT_REWARDS.update(
         deps.storage,
@@ -46,6 +50,7 @@ pub fn handle_collect_incentives_reply(
         },
     )?;
 
+    debug!(deps, "here4", "");
     // collect the spread rewards
     let msg = collect_spread_rewards(deps.as_ref(), env)?;
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -59,6 +64,7 @@ pub fn handle_collect_spread_rewards_reply(
     _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    debug!(deps, "here3", "");
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
     let response: MsgCollectSpreadRewardsResponse = data.try_into()?;

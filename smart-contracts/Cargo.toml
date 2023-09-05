@@ -1,17 +1,16 @@
 [workspace]
 
 members = [
-  "contracts/icq",
-  "contracts/lp-strategy",
-  "contracts/ibc-transfer",
-  "contracts/basic-vault",
-  "contracts/vault-rewards",
-  "contracts/intergamm-bindings-test",
-  "contracts/qoracle-bindings-test",
-  "contracts/multihop-router",
+  # "contracts/icq",
+  # "contracts/lp-strategy",
+  # "contracts/ibc-transfer",
+  # "contracts/basic-vault",
+  # "contracts/vault-rewards",
+  # "contracts/intergamm-bindings-test",
+  # "contracts/multihop-router",
   "contracts/cl-vault",
-  "packages/intergamm-bindings",
-  "packages/quasar-types",
+  # "packages/intergamm-bindings",
+  # "packages/quasar-types",
 ]
 
 [workspace.dependencies]

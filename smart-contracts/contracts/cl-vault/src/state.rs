@@ -6,6 +6,17 @@ use crate::rewards::Rewards;
 use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
 
+/// metadata useful for display purposes
+#[cw_serde]
+pub struct Metadata {
+    /// the underlying thesis of the vault's positions, eg aggresive
+    pub thesis: String,
+    /// the name of the vault
+    pub name: String,
+}
+
+pub const METADATA: Item<Metadata> = Item::new("metadata");
+
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
 

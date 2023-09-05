@@ -1,4 +1,6 @@
 # CL-Vault
+## Intro
+The CL-vault is a contract that users to move their funds in accordance to given signals by an offchain actor. The user deposits it's funds into the contract. Whenever the range admin submits a new range, the vaults creates a position using that range and deposits all funds in that range.
 
 # Testing
 

@@ -17,6 +17,10 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// Distribute any rewards over all users
+    DistributeRewards {},
+    /// Claim rewards belonging to a single user
+    ClaimRewards {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -58,6 +62,8 @@ pub struct MergePositionMsg {
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
+    /// Metadata surrounding the vault
+    Metadata,
     /// Queries related to the lockup extension.
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
@@ -92,6 +98,10 @@ pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    /// The general thesis of the vault
+    pub thesis: String,
+    /// the name of the vault
+    pub name: String,
     /// Address that is allowed to update config.
     pub admin: String,
     /// Address that is allowed to update range.

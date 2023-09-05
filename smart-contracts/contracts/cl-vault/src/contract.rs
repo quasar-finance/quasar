@@ -1,19 +1,32 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, to_binary, Reply};
 use crate::error::{ContractError, ContractResult};
-use crate::instantiate::{handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply};
-use crate::vault::merge::{execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply};
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ModifyRangeMsg};
+use crate::instantiate::{
+    handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
+};
+use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_info, query_pool, query_position, query_total_assets, query_total_vault_token_supply, query_user_balance, query_user_rewards,
+    query_info, query_metadata, query_pool, query_position, query_total_assets,
+    query_total_vault_token_supply, query_user_balance, query_user_rewards,
 };
 use crate::reply::Replies;
-use crate::rewards::{handle_collect_incentives_reply, handle_collect_spread_rewards_reply};
+use crate::rewards::{
+    execute_distribute_rewards, handle_collect_incentives_reply,
+    handle_collect_spread_rewards_reply,
+};
 use crate::vault::admin::execute_update;
+use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
-use crate::vault::range::{execute_update_range, handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply, handle_withdraw_position_reply};
+use crate::vault::merge::{
+    execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
+};
+use crate::vault::range::{
+    execute_update_range, handle_initial_create_position_reply,
+    handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
+    handle_withdraw_position_reply,
+};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -54,13 +67,17 @@ pub fn execute(
                     execute_update(deps, info, admin_msg)
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
-                crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price,
-                        upper_price,
-                        max_slippage,
-                    }
-                ) => execute_update_range(deps, env, info, lower_price, upper_price, max_slippage),
+                crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
+                    lower_price,
+                    upper_price,
+                    max_slippage,
+                }) => execute_update_range(deps, env, info, lower_price, upper_price, max_slippage),
+                crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
+                    execute_distribute_rewards(deps, env)
+                }
+                crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
+                    execute_claim_user_rewards(deps, info.sender.as_str())
+                }
             }
         }
     }
@@ -85,6 +102,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
+            crate::msg::ExtensionQueryMsg::Metadata => Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)
