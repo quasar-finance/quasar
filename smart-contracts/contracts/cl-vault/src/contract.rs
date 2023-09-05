@@ -26,56 +26,8 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::to_binary;
-use cosmwasm_std::CosmosMsg;
-use cosmwasm_std::Decimal;
-
-use cosmwasm_std::Reply;
-use cosmwasm_std::SubMsg;
-use cosmwasm_std::SubMsgResult;
-use cosmwasm_std::Uint128;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
-
-use crate::concentrated_liquidity::create_position;
-
-use crate::error::ContractError;
-use crate::error::ContractResult;
-use crate::helpers::must_pay_two;
-use crate::merge::execute_merge;
-use crate::msg::ModifyRangeMsg;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::query::query_info;
-use crate::query::query_metadata;
-use crate::query::query_pool;
-use crate::query::query_position;
-use crate::query::query_total_assets;
-use crate::query::query_total_vault_token_supply;
-use crate::query::query_user_balance;
-use crate::query::query_user_rewards;
-use crate::reply::handle_reply;
-use crate::reply::Replies;
-
-use crate::rewards::execute_distribute_rewards;
-use crate::state::Position;
-
-use crate::state::POSITION;
-use crate::state::VAULT_DENOM;
-use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
-use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
-use crate::vault::admin::execute_admin;
-
-use crate::vault::claim::execute_claim_user_rewards;
-
-use crate::vault::deposit::execute_exact_deposit;
-use crate::vault::range::execute_modify_range;
-use crate::vault::withdraw::execute_withdraw;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
