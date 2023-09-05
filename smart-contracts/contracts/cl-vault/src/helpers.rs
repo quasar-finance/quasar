@@ -3,7 +3,6 @@ use std::str::FromStr;
 use crate::{
     error::ContractResult,
     math::tick::tick_to_price,
-    rewards,
     state::{VaultBalance, CURRENT_REWARDS, POOL_CONFIG},
     ContractError,
 };

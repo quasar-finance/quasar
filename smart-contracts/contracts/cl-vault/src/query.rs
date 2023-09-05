@@ -77,7 +77,7 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
     Ok(MetadataResponse {
         thesis: metadata.thesis,
         name: metadata.name,
-        total_supply: total_supply,
+        total_supply,
         symbol: vault_denom,
         decimals: 6,
         admin,

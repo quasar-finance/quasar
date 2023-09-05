@@ -10,6 +10,7 @@ use cosmwasm_std::SubMsg;
 use cosmwasm_std::SubMsgResult;
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
+use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
@@ -38,7 +39,7 @@ use crate::reply::Replies;
 
 use crate::rewards::execute_distribute_rewards;
 use crate::state::Position;
-use crate::state::VaultBalance;
+
 use crate::state::POSITION;
 use crate::state::VAULT_DENOM;
 use crate::state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG};
@@ -46,7 +47,7 @@ use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use crate::vault::admin::execute_admin;
 
 use crate::vault::claim::execute_claim_user_rewards;
-use crate::vault::deposit::execute_any_deposit;
+
 use crate::vault::deposit::execute_exact_deposit;
 use crate::vault::range::execute_modify_range;
 use crate::vault::withdraw::execute_withdraw;
@@ -62,6 +63,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 
     let pool: Pool = PoolmanagerQuerier::new(&deps.querier)
@@ -131,10 +133,10 @@ pub fn handle_instantiate_create_position_reply(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     // get the refunded amounts and save that as the initial Vault Balance
-    let balance0 = deps
+    let _balance0 = deps
         .querier
         .query_balance(env.contract.address.to_string(), pool_config.token0)?;
-    let balance1 = deps
+    let _balance1 = deps
         .querier
         .query_balance(env.contract.address.to_string(), pool_config.token1)?;
 

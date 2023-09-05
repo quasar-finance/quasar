@@ -21,7 +21,7 @@ echo $NODE
 
 # Alice: osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0
 # Bob: osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d
-INIT='{"thesis":"hello world","name":"Distilled","admin":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","range_admin":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","pool_id":1,"config":{"performance_fee":"0.1","treasury":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","swap_max_slippage":"0.01"},"vault_token_subdenom":"distilled","initial_lower_tick":0,"initial_upper_tick":100000}'
+INIT='{"thesis":"hello world","name":"Distilled","admin":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","range_admin":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","pool_id":1,"config":{"performance_fee":"0.1","treasury":"osmo1sqlsc5024sszglyh7pswk5hfpc5xtl77wcmrz0","swap_max_slippage":"0.01"},"vault_token_subdenom":"test-cl-vault-1","initial_lower_tick":0,"initial_upper_tick":100000}'
 
 cd ../../smart-contracts
 

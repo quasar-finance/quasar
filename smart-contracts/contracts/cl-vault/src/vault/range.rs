@@ -28,7 +28,7 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, SwapDirection, VaultBalance,
+        ModifyRangeState, Position, SwapDepositMergeState, SwapDirection,
         MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
         VAULT_CONFIG,
     },
@@ -348,7 +348,7 @@ pub fn handle_swap_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     match data.clone() {
-        SubMsgResult::Ok(msg) => handle_swap_success(deps, env, data.try_into()?),
+        SubMsgResult::Ok(_msg) => handle_swap_success(deps, env, data.try_into()?),
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
     }
 }
@@ -356,7 +356,7 @@ pub fn handle_swap_reply(
 fn handle_swap_success(
     deps: DepsMut,
     env: Env,
-    msg: MsgSwapExactAmountInResponse,
+    _msg: MsgSwapExactAmountInResponse,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
