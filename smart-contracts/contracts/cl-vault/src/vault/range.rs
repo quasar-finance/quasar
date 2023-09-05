@@ -18,16 +18,16 @@ use osmosis_std::types::{
 };
 
 use crate::msg::{ExecuteMsg, MergePositionMsg};
-use crate::state::{CURRENT_REMAINDERS, CURRENT_SWAP};
+use crate::state::{CURRENT_SWAP};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::{
     helpers::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
     },
-    state::{CURRENT_BALANCE, CURRENT_DEPOSIT},
+    state::{CURRENT_BALANCE},
 };
 use crate::{
-    helpers::{get_spot_price, with_slippage},
+    helpers::{get_spot_price},
     math::tick::price_to_tick,
     reply::Replies,
     state::{
@@ -164,8 +164,8 @@ pub fn handle_withdraw_position_reply(
     CURRENT_BALANCE.save(
         deps.storage,
         &(
-            Uint128::from_str(&amount0.clone())?,
-            Uint128::from_str(&amount1.clone())?,
+            Uint128::from_str(&amount0)?,
+            Uint128::from_str(&amount1)?,
         ),
     )?;
 
