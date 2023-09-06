@@ -17,12 +17,12 @@ use osmosis_std::types::{
     },
 };
 
-<<<<<<< HEAD
-=======
-use crate::{msg::{ExecuteMsg, MergePositionMsg}, debug};
->>>>>>> 6cf97c3136a2ea4c5a453ffc7c40abf9a3060508
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
+use crate::{
+    debug,
+    msg::{ExecuteMsg, MergePositionMsg},
+};
 use crate::{
     helpers::get_spot_price,
     math::tick::price_to_tick,
@@ -154,10 +154,7 @@ pub fn handle_withdraw_position_reply(
     let amount1: Uint128 = msg.amount1.parse()?;
     debug!(deps, "amounts", vec![amount0.clone(), amount1.clone()]);
 
-    CURRENT_BALANCE.save(
-        deps.storage,
-        &(amount0, amount1),
-    )?;
+    CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
     let mut tokens_provided = vec![];
     if !amount0.is_zero() {
@@ -172,7 +169,7 @@ pub fn handle_withdraw_position_reply(
             amount: amount1.to_string(),
         })
     }
-    
+
     let pool_details = get_pool_info(&deps.querier, pool_config.pool_id)?
         .expect("We should never not find the pool we are depositing into");
     // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
@@ -201,7 +198,7 @@ pub fn handle_withdraw_position_reply(
     };
 
     debug!(deps, "create_pos", create_position_msg);
-    
+
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,
@@ -241,12 +238,13 @@ pub fn handle_initial_create_position_reply(
             .checked_sub(Uint128::from_str(&create_position_message.amount1)?)?,
     );
 
-    do_swap_deposit_merge(deps,
+    do_swap_deposit_merge(
+        deps,
         env,
         target_lower_tick,
         target_upper_tick,
         refunded_amounts,
-        create_position_message.position_id
+        create_position_message.position_id,
     )
 }
 
@@ -259,7 +257,7 @@ pub fn do_swap_deposit_merge(
     target_lower_tick: i64,
     target_upper_tick: i64,
     refunded_amounts: (Uint128, Uint128),
-    position_id: u64
+    position_id: u64,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?;
     if swap_deposit_merge_state.is_some() {
@@ -267,7 +265,6 @@ pub fn do_swap_deposit_merge(
     }
 
     debug!(deps, "oh no", "down bad");
-
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -318,10 +315,9 @@ pub fn do_swap_deposit_merge(
         // this means we can save the position id of the first create_position
         POSITION.save(deps.storage, &Position { position_id })?;
         return Ok(Response::new()
-        .add_attribute("action", "swap_deposit_merge")
-        .add_attribute("method", "no_swap")
-        .add_attribute("new_position", position_id.to_string())
-    )
+            .add_attribute("action", "swap_deposit_merge")
+            .add_attribute("method", "no_swap")
+            .add_attribute("new_position", position_id.to_string()));
     };
     debug!(deps, "hereaa", "before_spot_price");
 
