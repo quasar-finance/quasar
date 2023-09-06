@@ -1,6 +1,7 @@
 mod admin;
 mod deposit_withdraw;
 mod initialize;
+mod range;
 mod rewards;
 
 #[cfg(test)]
