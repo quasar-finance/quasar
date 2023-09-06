@@ -6,11 +6,14 @@ mod test {
     use osmosis_std::types::{
         cosmos::base::v1beta1,
         osmosis::{
-            concentratedliquidity::{poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::{PoolsRequest, Pool}},
+            concentratedliquidity::{
+                poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+                v1beta1::{Pool, PoolsRequest},
+            },
             poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
         },
     };
-    use osmosis_test_tube::{Account, Module, PoolManager, Wasm, ConcentratedLiquidity};
+    use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg},
@@ -99,7 +102,6 @@ mod test {
             )
             .unwrap();
     }
-
 
     #[test]
     #[ignore]
