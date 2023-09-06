@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    Addr, Deps, DepsMut, Env, Fraction, Order, Response, StdError, SubMsg, SubMsgResult, Uint128, Attribute,
+    Addr, Attribute, Deps, DepsMut, Env, Fraction, Order, Response, StdError, SubMsg, SubMsgResult,
+    Uint128,
 };
 
 use crate::{
@@ -79,13 +80,13 @@ pub fn handle_collect_spread_rewards_reply(
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
     let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
-    .into_result()
-    .map_err(StdError::generic_err)?
-    .data
-    .map(|b| Ok(b.try_into()?))
-    .unwrap_or(Ok(MsgCollectSpreadRewardsResponse {
-        collected_spread_rewards: vec![],
-    }));
+        .into_result()
+        .map_err(StdError::generic_err)?
+        .data
+        .map(|b| Ok(b.try_into()?))
+        .unwrap_or(Ok(MsgCollectSpreadRewardsResponse {
+            collected_spread_rewards: vec![],
+        }));
 
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
@@ -98,11 +99,14 @@ pub fn handle_collect_spread_rewards_reply(
     Ok(Response::new())
 }
 
-fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<Vec<Attribute>, ContractError> {
+fn distribute_rewards(
+    mut deps: DepsMut,
+    mut rewards: Rewards,
+) -> Result<Vec<Attribute>, ContractError> {
     if rewards.is_empty() {
         return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
     }
-    
+
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // calculate the strategist fee
@@ -150,7 +154,10 @@ fn distribute_rewards(mut deps: DepsMut, mut rewards: Rewards) -> Result<Vec<Att
             Ok(())
         })?;
 
-    Ok(vec![Attribute::new("total_rewards_amount", format!("{:?}", rewards.into_coins()))])
+    Ok(vec![Attribute::new(
+        "total_rewards_amount",
+        format!("{:?}", rewards.into_coins()),
+    )])
 }
 
 fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
