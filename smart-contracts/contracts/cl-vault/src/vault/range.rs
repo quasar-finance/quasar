@@ -420,7 +420,7 @@ fn handle_swap_success(
     Ok(Response::new()
         .add_submessage(SubMsg::reply_always(
             create_position_msg,
-            Replies::RangeInitialCreatePosition.into(),
+            Replies::RangeIterationCreatePosition.into(),
         ))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "create_position2")
