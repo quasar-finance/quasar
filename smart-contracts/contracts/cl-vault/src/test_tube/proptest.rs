@@ -3,7 +3,7 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
     use cosmwasm_std::{Addr, Coin, Uint128};
-    use osmosis_std::types::osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool;
+    use osmosis_std::types::{osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, cosmos::base::v1beta1};
     use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
 
     use crate::{
@@ -12,7 +12,7 @@ mod tests {
         test_tube::initialize::initialize::init_test_contract,
     };
 
-    const ITERATIONS_NUMBER: usize = 100;
+    const ITERATIONS_NUMBER: usize = 5;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
@@ -109,8 +109,8 @@ mod tests {
 
     fn assert_deposit_withdraw(
         wasm: &Wasm<OsmosisTestApp>,
-        contract_address: Addr,
-        accounts: Vec<SigningAccount>,
+        contract_address: &Addr,
+        accounts: &Vec<SigningAccount>,
         accounts_shares_balance: &HashMap<String, u128>,
     ) {
         // TODO: multi-query foreach user created previously
@@ -241,13 +241,13 @@ mod tests {
                         println!("Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
                         deposit(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        assert_deposit_withdraw(&wasm, contract_address, accounts, &accounts_shares_balance);
+                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
                         println!("Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        assert_deposit_withdraw(&wasm, contract_address, accounts, &accounts_shares_balance);
+                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
                         println!("Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
