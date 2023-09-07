@@ -66,21 +66,18 @@ pub fn get_position(
     position.position.ok_or(ContractError::PositionNotFound)
 }
 
-pub fn get_pool_info(
-    querier: &QuerierWrapper,
-    pool_id: u64,
-) -> Result<Option<Pool>, ContractError> {
+pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {
     let pm_querier = PoolmanagerQuerier::new(querier);
     let pool = pm_querier.pool(pool_id)?;
 
-    Ok(match pool.pool {
+    match pool.pool {
         // Some(pool) => Some(Pool::decode(pool.value.as_slice()).unwrap()),
-        Some(pool) => Some(
-            Message::decode(pool.value.as_ref())
-                .expect("Could not decode pool info from query response"),
-        ),
-        None => None,
-    })
+        Some(pool) => {
+            let decoded_pool = Message::decode(pool.value.as_ref())?;
+            Ok(decoded_pool)
+        }
+        None => Err(ContractError::PoolNotFound { pool_id: pool_id }),
+    }
 }
 
 pub fn may_get_position(

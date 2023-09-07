@@ -75,15 +75,6 @@ pub fn swap(
         });
     }
 
-    // balance assertion
-    let token_in_balance = querier.query_balance(&env.contract.address, token_in_denom)?;
-    if token_in_balance.amount < token_in_amount {
-        return Err(ContractError::InsufficientFundsForSwap {
-            balance: token_in_balance.amount,
-            needed: token_in_amount,
-        });
-    }
-
     // get token_out_denom
     let token_out_denom = if *token_in_denom == pool_config.token0 {
         pool_config.token1

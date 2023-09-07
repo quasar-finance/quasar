@@ -63,6 +63,9 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
+    DecodeError(#[from] prost::DecodeError),
+
+    #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
 
     #[error("This message does no accept funds")]

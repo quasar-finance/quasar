@@ -17,6 +17,7 @@ use osmosis_std::types::{
     },
 };
 
+use crate::helpers::round_up_to_nearest_multiple;
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
 use crate::{
@@ -37,17 +38,13 @@ use crate::{
     ContractError,
 };
 use crate::{
-    helpers::round_up_to_nearest_multiple,
-    msg::{ExecuteMsg, MergePositionMsg},
-};
-use crate::{
     helpers::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
     },
     state::CURRENT_BALANCE,
 };
 
-use super::concentrated_liquidity::get_pool_info;
+use super::concentrated_liquidity::get_cl_pool_info;
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -146,10 +143,13 @@ pub fn handle_withdraw_position_reply(
 ) -> Result<Response, ContractError> {
     let msg: MsgWithdrawPositionResponse = data.try_into()?;
 
+    // let msg: MsgWithdrawPositionResponse = data.into_result().unwrap().data.unwrap().try_into()?;
+
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
+    // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
     let amount0: Uint128 = msg.amount0.parse()?;
     let amount1: Uint128 = msg.amount1.parse()?;
     debug!(deps, "amounts", vec![amount0.clone(), amount1.clone()]);
@@ -170,46 +170,64 @@ pub fn handle_withdraw_position_reply(
         })
     }
 
-    let pool_details = get_pool_info(&deps.querier, pool_config.pool_id)?
-        .expect("We should never not find the pool we are depositing into");
-    // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-    let create_position_msg = MsgCreatePosition {
-        pool_id: pool_config.pool_id,
-        sender: env.contract.address.to_string(),
-        // round our lower tick and upper tick up to the nearest pool_details.tick_spacing
-        lower_tick: round_up_to_nearest_multiple(
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+
+    // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
+    // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
+    // we can fix this by going straight into a swap-deposit-merge before creating any positions
+
+    // todo: Check if needs LTE or just LT
+    if (amount0.is_zero() && modify_range_state.lower_tick < pool_details.current_tick)
+        || (amount1.is_zero() && modify_range_state.upper_tick > pool_details.current_tick)
+    {
+        do_swap_deposit_merge(
+            deps,
+            env,
             modify_range_state.lower_tick,
-            pool_details
-                .tick_spacing
-                .try_into()
-                .expect("tick spacing is too big to fit into u64"),
-        ),
-        upper_tick: round_up_to_nearest_multiple(
             modify_range_state.upper_tick,
-            pool_details
-                .tick_spacing
-                .try_into()
-                .expect("tick spacing is too big to fit into u64"),
-        ),
-        tokens_provided,
-        // passing 0 is ok here because currently no swap is done on osmosis side, so we don't actually need to worry about slippage impact
-        token_min_amount0: "0".to_string(),
-        token_min_amount1: "0".to_string(),
-    };
+            (amount0, amount1),
+            None, // we just withdrew our only position
+        )
+    } else {
+        // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
+        let create_position_msg = MsgCreatePosition {
+            pool_id: pool_config.pool_id,
+            sender: env.contract.address.to_string(),
+            // round our lower tick and upper tick up to the nearest pool_details.tick_spacing
+            lower_tick: round_up_to_nearest_multiple(
+                modify_range_state.lower_tick,
+                pool_details
+                    .tick_spacing
+                    .try_into()
+                    .expect("tick spacing is too big to fit into u64"),
+            ),
+            upper_tick: round_up_to_nearest_multiple(
+                modify_range_state.upper_tick,
+                pool_details
+                    .tick_spacing
+                    .try_into()
+                    .expect("tick spacing is too big to fit into u64"),
+            ),
+            tokens_provided,
+            // passing 0 is ok here because currently no swap is done on osmosis side, so we don't actually need to worry about slippage impact
+            token_min_amount0: "0".to_string(),
+            token_min_amount1: "0".to_string(),
+        };
 
-    debug!(deps, "create_pos", create_position_msg);
+        debug!(deps, "create_pos", create_position_msg);
 
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            create_position_msg,
-            Replies::RangeInitialCreatePosition.into(),
-        ))
-        .add_attribute("action", "modify_range")
-        .add_attribute("method", "create_position")
-        .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
-        .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
-        .add_attribute("token0", format!("{:?}{:?}", amount0, pool_config.token0))
-        .add_attribute("token1", format!("{:?}{:?}", amount1, pool_config.token1)))
+        Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                create_position_msg,
+                Replies::RangeInitialCreatePosition.into(),
+            ))
+            .add_attribute("action", "modify_range")
+            .add_attribute("method", "create_position")
+            .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
+            .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
+            .add_attribute("token0", format!("{:?}{:?}", amount0, pool_config.token0))
+            .add_attribute("token1", format!("{:?}{:?}", amount1, pool_config.token1)))
+    }
 }
 
 // do swap
@@ -244,7 +262,7 @@ pub fn handle_initial_create_position_reply(
         target_lower_tick,
         target_upper_tick,
         refunded_amounts,
-        create_position_message.position_id,
+        Some(create_position_message.position_id),
     )
 }
 
@@ -257,7 +275,7 @@ pub fn do_swap_deposit_merge(
     target_lower_tick: i64,
     target_upper_tick: i64,
     refunded_amounts: (Uint128, Uint128),
-    position_id: u64,
+    position_id: Option<u64>,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?;
     if swap_deposit_merge_state.is_some() {
@@ -274,7 +292,11 @@ pub fn do_swap_deposit_merge(
         &SwapDepositMergeState {
             target_lower_tick,
             target_upper_tick,
-            target_range_position_ids: vec![position_id],
+            target_range_position_ids: if (position_id.is_some()) {
+                vec![position_id.unwrap()]
+            } else {
+                vec![]
+            },
         },
     )?;
 
@@ -313,11 +335,17 @@ pub fn do_swap_deposit_merge(
     } else {
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
         // this means we can save the position id of the first create_position
-        POSITION.save(deps.storage, &Position { position_id })?;
+        POSITION.save(
+            deps.storage,
+            &Position {
+                // if position not found, then we should panic here anyway ?
+                position_id: position_id.expect("position id should be set if no swap is needed"),
+            },
+        )?;
         return Ok(Response::new()
             .add_attribute("action", "swap_deposit_merge")
             .add_attribute("method", "no_swap")
-            .add_attribute("new_position", position_id.to_string()));
+            .add_attribute("new_position", position_id.unwrap().to_string()));
     };
     debug!(deps, "hereaa", "before_spot_price");
 
@@ -519,60 +547,27 @@ mod tests {
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
         },
         to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
-        QuerierResult, QueryRequest,
+        QuerierResult, QueryRequest, Reply, SubMsgResponse, SubMsgResult,
     };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-            PositionByIdResponse,
+    use osmosis_std::{
+        shim::Any,
+        types::{
+            cosmos::base::v1beta1::Coin as OsmoCoin,
+            osmosis::concentratedliquidity::v1beta1::{
+                FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
+                PositionByIdRequest, PositionByIdResponse,
+            },
         },
     };
+    use prost::Message;
 
-    use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
-
-    pub struct QuasarQuerier {
-        position: FullPositionBreakdown,
-    }
-
-    impl QuasarQuerier {
-        pub fn new(position: FullPositionBreakdown) -> QuasarQuerier {
-            QuasarQuerier { position }
-        }
-    }
-
-    impl Querier for QuasarQuerier {
-        fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-            let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
-            match request {
-                QueryRequest::Stargate { path, data } => {
-                    match prost::Message::decode(data.as_slice()).unwrap() {
-                        PositionByIdRequest { position_id } => {
-                            if position_id == self.position.position.clone().unwrap().position_id {
-                                QuerierResult::Ok(ContractResult::Ok(
-                                    to_binary(&PositionByIdResponse {
-                                        position: Some(self.position.clone()),
-                                    })
-                                    .unwrap(),
-                                ))
-                            } else {
-                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                    kind: format!("position id not found: {position_id:?}"),
-                                })
-                            }
-                        }
-                        _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                            kind: format!("Unmocked wasm query type: {path:?}"),
-                        }),
-                    }
-                }
-                _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                    kind: format!("Unmocked query type: {request:?}"),
-                }),
-            }
-            // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
-        }
-    }
+    use crate::{
+        state::{
+            PoolConfig, VaultConfig, MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN,
+            VAULT_CONFIG,
+        },
+        test_helpers::QuasarQuerier,
+    };
 
     fn mock_deps_with_querier(
         info: &MessageInfo,
@@ -580,37 +575,40 @@ mod tests {
         let mut deps = OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: QuasarQuerier::new(FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: 1,
-                    address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: 1,
-                    lower_tick: 100,
-                    upper_tick: 1000,
-                    join_time: None,
-                    liquidity: "1000000.1".to_string(),
-                }),
-                asset0: Some(OsmoCoin {
-                    denom: "token0".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                asset1: Some(OsmoCoin {
-                    denom: "token1".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                claimable_spread_rewards: vec![
-                    OsmoCoin {
+            querier: QuasarQuerier::new(
+                FullPositionBreakdown {
+                    position: Some(OsmoPosition {
+                        position_id: 1,
+                        address: MOCK_CONTRACT_ADDR.to_string(),
+                        pool_id: 1,
+                        lower_tick: 100,
+                        upper_tick: 1000,
+                        join_time: None,
+                        liquidity: "1000000.1".to_string(),
+                    }),
+                    asset0: Some(OsmoCoin {
                         denom: "token0".to_string(),
-                        amount: "100".to_string(),
-                    },
-                    OsmoCoin {
+                        amount: "1000000".to_string(),
+                    }),
+                    asset1: Some(OsmoCoin {
                         denom: "token1".to_string(),
-                        amount: "100".to_string(),
-                    },
-                ],
-                claimable_incentives: vec![],
-                forfeited_incentives: vec![],
-            }),
+                        amount: "1000000".to_string(),
+                    }),
+                    claimable_spread_rewards: vec![
+                        OsmoCoin {
+                            denom: "token0".to_string(),
+                            amount: "100".to_string(),
+                        },
+                        OsmoCoin {
+                            denom: "token1".to_string(),
+                            amount: "100".to_string(),
+                        },
+                    ],
+                    claimable_incentives: vec![],
+                    forfeited_incentives: vec![],
+                },
+                500,
+            ),
             custom_query_type: PhantomData,
         };
 
@@ -697,5 +695,66 @@ mod tests {
         assert_eq!(res.attributes[1].value, "withdraw_position");
         assert_eq!(res.attributes[2].value, "1");
         assert_eq!(res.attributes[3].value, "1000000.1");
+    }
+
+    #[test]
+    fn test_handle_withdraw_position_reply_selects_correct_next_step_for_new_range() {
+        let info = mock_info("addr0000", &[]);
+        let mut deps = mock_deps_with_querier(&info);
+
+        // moving into a range
+        MODIFY_RANGE_STATE
+            .save(
+                deps.as_mut().storage,
+                &Some(crate::state::ModifyRangeState {
+                    lower_tick: 100,
+                    upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
+                    new_range_position_ids: vec![],
+                    max_slippage: Decimal::zero(),
+                }),
+            )
+            .unwrap();
+
+        // Reply
+        let env = mock_env();
+        //first test fully one-sided withdraw
+        let data = SubMsgResult::Ok(SubMsgResponse {
+            events: vec![],
+            data: Some(
+                MsgWithdrawPositionResponse {
+                    amount0: "0".to_string(),
+                    amount1: "10000".to_string(),
+                }
+                .try_into()
+                .unwrap(),
+            ),
+        });
+
+        let res = super::handle_withdraw_position_reply(deps.as_mut(), env.clone(), data).unwrap();
+
+        // verify that we went straight to swap_deposit_merge
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(res.attributes[0].value, "swap_deposit_merge");
+        assert_eq!(res.attributes[1].value, "swap");
+
+        // now test two-sided withdraw
+        let data = SubMsgResult::Ok(SubMsgResponse {
+            events: vec![],
+            data: Some(
+                MsgWithdrawPositionResponse {
+                    amount0: "10000".to_string(),
+                    amount1: "10000".to_string(),
+                }
+                .try_into()
+                .unwrap(),
+            ),
+        });
+
+        let res = super::handle_withdraw_position_reply(deps.as_mut(), env, data).unwrap();
+
+        // verify that we did create_position first
+        assert_eq!(res.messages.len(), 1);
+        assert_eq!(res.attributes[0].value, "modify_range");
+        assert_eq!(res.attributes[1].value, "create_position");
     }
 }
