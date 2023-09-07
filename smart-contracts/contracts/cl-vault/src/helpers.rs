@@ -1,36 +1,35 @@
 use std::str::FromStr;
 
+use crate::debug;
 use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
+    Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, DepsMut, coin,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
-pub(crate) fn must_pay_two(
+pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
-    if info.funds.len() != 2 {
-        return Err(cw_utils::PaymentError::MultipleDenoms {}.into());
+    if info.funds.len() != 2 && info.funds.len() != 1{
+        return Err(ContractError::IncorrectAmountFunds ).into();
     }
 
     let token0 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.0 && coin.amount > Uint128::zero())
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
+        .find(|coin| coin.denom == denoms.0).unwrap_or(coin(0, denoms.0));
 
     let token1 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.1 && coin.amount > Uint128::zero())
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
+        .find(|coin| coin.denom == denoms.1).unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
 }
@@ -133,15 +132,15 @@ pub fn get_spot_price(
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let spot_price = Decimal256::from(get_spot_price(deps.storage, &deps.querier)?);
     let lower_price = tick_to_price(lower_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
+
     let pool_metadata_constant: Uint128 = spot_price
         .checked_mul(lower_price.sqrt())?
         .checked_mul(upper_price.sqrt())?
@@ -208,7 +207,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn must_pay_two_works_ordered() {
+    fn must_pay_one_or_two_works_ordered() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
@@ -216,13 +215,13 @@ mod tests {
             funds: vec![expected0.clone(), expected1.clone()],
         };
         let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!(expected0, token0);
         assert_eq!(expected1, token1);
     }
 
     #[test]
-    fn must_pay_two_works_unordered() {
+    fn must_pay_one_or_two_works_unordered() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
@@ -230,28 +229,39 @@ mod tests {
             funds: vec![expected1.clone(), expected0.clone()],
         };
         let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!(expected0, token0);
         assert_eq!(expected1, token1);
     }
 
     #[test]
-    fn must_pay_two_rejects_three() {
+    fn must_pay_one_or_two_rejects_three() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
             funds: vec![expected1, expected0, coin(200, "uqsr")],
         };
-        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
-    fn must_pay_two_rejects_one() {
+    fn must_pay_one_or_two_accepts_second_token() {
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
-            funds: vec![coin(200, "uqsr")],
+            funds: vec![coin(200, "uosmo")],
         };
-        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!((coin(0, "uatom"), coin(200, "uosmo")), res)
+    }
+
+    #[test]
+    fn must_pay_one_or_two_accepts_first_token() {
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![coin(200, "uatom")],
+        };
+        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!((coin(200, "uatom"), coin(0, "uosmo")), res)
     }
 }
