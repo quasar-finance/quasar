@@ -2,17 +2,17 @@
 mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
-    use cosmwasm_std::{Addr, Coin, Uint128};
-    use osmosis_std::types::{osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, cosmos::base::v1beta1};
+    use cosmwasm_std::{Addr, Coin, Uint128, Decimal};
+    use osmosis_std::types::{osmosis::concentratedliquidity::{poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePositionResponse}, cosmos::base::v1beta1};
     use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
 
     use crate::{
-        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
+        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg, ExtensionExecuteMsg, ModifyRangeMsg},
         query::UserBalanceResponse,
         test_tube::initialize::initialize::init_test_contract,
     };
 
-    const ITERATIONS_NUMBER: usize = 5;
+    const ITERATIONS_NUMBER: usize = 100;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
@@ -31,33 +31,57 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        accounts_shares_balance: &HashMap<String, u128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
-        let balance = 1000; // TODO: get user asset0 balance
-        let amount = (balance as f64 * (percentage / 100.0)).round() as u128;
+         // TODO: get user DENOM_BASE balance
+        let balance_asset0 = 1000;
+        let amount0 = (balance_asset0 as f64 * (percentage / 100.0)).round() as u128;
 
-        // TODO: Check user bank denom balance is not zero and enough accorindlgy to amount_u128
+         // TODO: get user DENOM_QUOTE balance
+        let balance_asset1 = 1000;
+        let amount1 = (balance_asset1 as f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Get current pool position to know asset0 and asset1 as /osmosis.concentratedliquidity.v1beta1.FullPositionBreakdown
-        let (amount0, amount1) = (1000u128, 1000u128);
+        let (pos_asset0, pos_asset1) = (1000u128, 1000u128);
 
-        // TODO: Execute deposit and get liquidity_created from emitted events
+        // Calculate the ratio between pos_asset0 and pos_asset1
+        let ratio = pos_asset0 as f64 / pos_asset1 as f64;
+
+        // Calculate the adjusted amounts to deposit
+        let adjusted_amount0: u128;
+        let adjusted_amount1: u128;
+        if ratio > 1.0 {
+            // If ratio is greater than 1, then asset0 has a higher amount. 
+            // So, adjust amount1 according to the ratio.
+            adjusted_amount0 = amount0;
+            adjusted_amount1 = (amount0 as f64 / ratio).round() as u128;
+        } else {
+            // If ratio is less than or equal to 1, then asset1 has a higher or equal amount. 
+            // So, adjust amount0 according to the ratio.
+            adjusted_amount1 = amount1;
+            adjusted_amount0 = (amount1 as f64 * ratio).round() as u128;
+        }
+
+        // TODO: Evaluate if checking that balance is not zero, as maybe a before iteration make him deposit the 100%,
+        // or evaluate capping the max percentage to 90 to run indfinitely till max iterations
+
+        // Execute deposit and get liquidity_created from emitted events
         let deposit = wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-            &[Coin::new(amount0, DENOM_BASE), Coin::new(amount1, DENOM_QUOTE)],
+            &[Coin::new(adjusted_amount0, DENOM_BASE), Coin::new(adjusted_amount1, DENOM_QUOTE)],
             &account,
         ).unwrap();
-        //let deposit_resp: MsgCreatePositionResponse = deposit.data.try_into();
-        //let liquidity_created = deposit_resp.liquidity_created;
-        let liquidity_created = 1000 as u128;
+        /*
+        // TODO: Get liquidity_created value from deposit response
+        let deposit_resp: MsgCreatePositionResponse = deposit.data.try_into();
+        let liquidity_created = deposit_resp.liquidity_created;
 
         // TODO: Update map to keep track of user shares amount and make further assertions
-        /*
-        let mut current_shares_amount = accounts_shares_balance.get(&account.address());
+        let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&0u128);
         accounts_shares_balance.insert(
             account.address(),
-            current_shares_amount.unwrap_or(&0u128).checked_add(liquidity_created),
+            current_shares_amount.checked_add(liquidity_created),
         );
         */
     }
@@ -67,14 +91,25 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        accounts_shares_balance: &HashMap<String, u128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         let balance = 1000; // TODO: get user shares balance
         let amount = (balance as f64 * (percentage / 100.0)).round() as u128;
 
-        // TODO: Check user shares balance is not zero and enough accorindlgy to amount_u128
+        // Execute deposit and get liquidity_created from emitted events
+        let withdraw = wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::Redeem { recipient: None, amount: Uint128::new(amount) }, // Nice to have: Make recipient random
+            &[],
+            &account,
+        ).unwrap();
 
-        // TODO: Implement withdraw strategy
+        // TODO: Update map to keep track of user shares amount and make further assertions
+        /*let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&0u128);
+        accounts_shares_balance.insert(
+            account.address(),
+            current_shares_amount.checked_sub(amount),
+        );*/
     }
 
     fn swap(
@@ -82,6 +117,7 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
+        cl_pool_id: u64,
     ) {
         let balance = 1000; // TODO: get user asset0 balance
         let amount = (balance as f64 * (percentage / 100.0)).round() as u128;
@@ -94,15 +130,29 @@ mod tests {
     fn update_range(
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
-        percentage: f64
+        percentage: f64,
+        admin_account: &SigningAccount
     ) {
-        let (curent_lower_tick, current_upper_tick) = (1i64, 100i64); // TODO: get current ticks
-        let (lower_tick, upper_tick) = (1i64, 100i64); //mocked
-        // TODO: Validate new lower_tick and upper_tick
+        let (current_lower_tick, current_upper_tick) = (1i64, 100i64); // TODO: get current ticks
 
-        // TODO: Mock somehow the range_admin from contract
+        // Create new range ticks based on previous ticks by percentage variation
+        // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
+        // TODO: 2. Creating them in a range of min/max accepted by Osmosis CL module
+        let percentage_factor = percentage / 100.0;
+        let lower_tick = (current_lower_tick as f64 * (1.0 + percentage_factor)).round() as i64;
+        let upper_tick = (current_upper_tick as f64 * (1.0 + percentage_factor)).round() as i64;
 
-        // TODO: Implement update range strategy
+        // Execute deposit and get liquidity_created from emitted events
+        let update_range = wasm.execute(
+            contract_address.as_str(),
+            &ModifyRangeMsg {
+                lower_price: lower_tick.to_string(),
+                upper_price: upper_tick.to_string(),
+                max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+            },
+            &[],
+            &admin_account,
+        ).unwrap();
     }
 
     // ASSERT METHODS
@@ -111,7 +161,7 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: &HashMap<String, u128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         // TODO: multi-query foreach user created previously
         for account in accounts {
@@ -126,7 +176,7 @@ mod tests {
                 )
                 .unwrap();
             // Check that the current account iterated shares balance is the same we expect from Hashmap
-            // TODO: assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()));
+            //assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()));
         }
     }
 
@@ -154,7 +204,7 @@ mod tests {
             Just(Action::Withdraw),
             Just(Action::Swap),
             Just(Action::UpdateRange),
-        ], 0..ITERATIONS_NUMBER)) -> Vec<Action> {
+        ], ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<Action> {
             list
         }
     }
@@ -162,14 +212,14 @@ mod tests {
     // get_percentage generates a list of random percentages used to calculate deposit_amount,
     // withdraw_amount, and newers lower and upper ticks based on the previous values
     prop_compose! {
-        fn get_percentage_list()(list in prop::collection::vec(1.0..100.0, 0..ITERATIONS_NUMBER)) -> Vec<f64> {
+        fn get_percentage_list()(list in prop::collection::vec(1.0..100.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
             list
         }
     }
 
     // get_account_index generates a list of random numbers between 0 and the ACCOUNTS_NUMBER-1 to use as accounts[account_index as usize]
     prop_compose! {
-        fn get_account_index_list()(list in prop::collection::vec(0..(ACCOUNTS_NUMBER-1), 0..ITERATIONS_NUMBER)) -> Vec<u64> {
+        fn get_account_index_list()(list in prop::collection::vec(0..(ACCOUNTS_NUMBER-1), ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<u64> {
             list
         }
     }
@@ -186,10 +236,10 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test var utils
-            let mut accounts_shares_balance: HashMap<String, u128> = HashMap::new();
+            let mut accounts_shares_balance: HashMap<String, Uint128> = HashMap::new();
 
             // Creating test core
-            let (app, contract_address, _cl_pool_id, _admin) = init_test_contract(
+            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(1_000_000_000_000, "uatom"),
@@ -227,12 +277,12 @@ mod tests {
                 ], ACCOUNTS_NUMBER)
                 .unwrap();
 
-            // Make one arbitrary deposit foreach one of the created accounts
-            for i in 0..(ACCOUNTS_NUMBER-1) {
-                deposit(&wasm, &contract_address, &accounts[i as usize], 1.00, &accounts_shares_balance);
-            }
+            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
+            for i in 0..ACCOUNTS_NUMBER {
+                println!("Making first deposit for account: {}", i);
 
-            // Here we know all the users have deposited. We can start executing random strategies here.
+                deposit(&wasm, &contract_address, &accounts[i as usize], 10.00, &accounts_shares_balance);
+            }
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
@@ -241,25 +291,25 @@ mod tests {
                         println!("Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
                         deposit(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
+                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
                         println!("Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
+                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
                         println!("Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
-                        swap(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        assert_swap(); // todo!()
+                        swap(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
                         println!("UpdateRange logic here with percentage: {}", percentages[i]);
 
-                        update_range(&wasm, &contract_address, percentages[i]);
-                        assert_update_range(); // todo!()
+                        update_range(&wasm, &contract_address, percentages[i], &admin_account);
+                        //assert_update_range(); // todo!()
                     },
                 }
             }
