@@ -137,21 +137,24 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     querier: &QuerierWrapper,
     token0_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
     let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_times_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_mul(spot_price)?;
 
-    let swap_amount = token0_balance.checked_multiply_ratio(
-        pool_metadata_constant,
-        pool_metadata_constant.checked_add(Uint128::one())?,
-    )?;
+    let denominator = Decimal256::one()
+        .checked_add(Decimal256::one().checked_div(pool_metadata_constant_times_spot_price)?)?;
+
+    let swap_amount = token0_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }
@@ -161,19 +164,23 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     querier: &QuerierWrapper,
     token1_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
     let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_over_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_div(spot_price)?;
 
-    let swap_amount =
-        token1_balance.checked_div(pool_metadata_constant.checked_add(Uint128::one())?)?;
+    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
+
+    let swap_amount = token1_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }

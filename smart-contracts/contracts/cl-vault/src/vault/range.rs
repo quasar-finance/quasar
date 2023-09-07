@@ -301,6 +301,8 @@ pub fn do_swap_deposit_merge(
     )?;
 
     // start swap workflow
+    // get pool
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     // get remaining balance in contract for each token (one of these should be zero i think)
     // @notice: this actually works if this function (do_swap_deposit_merge) is called by
@@ -311,25 +313,37 @@ pub fn do_swap_deposit_merge(
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
-        (
-            get_single_sided_deposit_0_to_1_swap_amount(
-                deps.storage,
-                &deps.querier,
-                balance0,
-                target_lower_tick,
-                target_upper_tick,
-            )?,
-            SwapDirection::ZeroToOne,
-        )
+        {
+            (
+                if pool_details.current_tick > target_upper_tick {
+                    balance0
+                } else {
+                    get_single_sided_deposit_0_to_1_swap_amount(
+                        deps.storage,
+                        &deps.querier,
+                        balance0,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?
+                },
+                SwapDirection::ZeroToOne,
+            )
+        }
     } else if !balance1.is_zero() {
         (
-            get_single_sided_deposit_1_to_0_swap_amount(
-                deps.storage,
-                &deps.querier,
-                balance1,
-                target_lower_tick,
-                target_upper_tick,
-            )?,
+            if pool_details.current_tick < target_lower_tick {
+                balance1
+            } else {
+                get_single_sided_deposit_1_to_0_swap_amount(
+                    deps.storage,
+                    &deps.querier,
+                    balance1,
+                    target_lower_tick,
+                    pool_details.current_tick,
+                    target_upper_tick,
+                )?
+            },
             SwapDirection::OneToZero,
         )
     } else {
@@ -544,17 +558,15 @@ mod tests {
     use cosmwasm_std::{
         testing::{
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
-        }, Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
+        },
+        Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
     };
-    use osmosis_std::{
-        types::{
-            cosmos::base::v1beta1::Coin as OsmoCoin,
-            osmosis::concentratedliquidity::v1beta1::{
-                FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
-            },
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
         },
     };
-    
 
     use crate::{
         state::{
