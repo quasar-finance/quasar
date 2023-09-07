@@ -6,15 +6,18 @@ mod test {
     use osmosis_std::types::{
         cosmos::base::v1beta1,
         osmosis::{
-            concentratedliquidity::{poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::{PoolsRequest, Pool}},
+            concentratedliquidity::{
+                poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+                v1beta1::{Pool, PoolsRequest, PositionByIdRequest},
+            },
             poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
         },
     };
-    use osmosis_test_tube::{Account, Module, PoolManager, Wasm, ConcentratedLiquidity};
+    use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
     use crate::{
-        msg::{ExecuteMsg, ModifyRangeMsg},
-        test_tube::{default_init, initialize::initialize::init_test_contract},
+        msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
+        test_tube::initialize::initialize::init_test_contract, query::PositionResponse,
     };
 
     use prost::Message;
@@ -84,7 +87,21 @@ mod test {
 
         println!("{:?}", pool);
 
-        let _result = wasm
+        let before_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+
+
+        //  liquidity: "444754394944564241997324" }), asset0: Some(Coin { denom: "uatom", amount: "9766" }), asset1: Some(Coin { denom: "uosmo", amount: "100001" }
+        println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: before_position.position_ids[0]}).unwrap());
+
+
+        let result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
@@ -98,8 +115,18 @@ mod test {
                 &admin,
             )
             .unwrap();
-    }
 
+            let after_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+            // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
+            println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: after_position.position_ids[0]}).unwrap());
+    }
 
     #[test]
     #[ignore]
