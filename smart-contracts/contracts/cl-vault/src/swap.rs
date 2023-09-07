@@ -59,7 +59,7 @@ pub fn estimate_swap(
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
 pub fn swap(
-    querier: &QuerierWrapper,
+    _querier: &QuerierWrapper,
     storage: &mut dyn Storage,
     env: &Env,
     token_in_amount: Uint128,

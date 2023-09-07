@@ -259,18 +259,16 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps,
         SubMsgResponse, Uint256, WasmMsg,
     };
-    use cosmwasm_std::{Binary, ContractResult as CwContractResult};
-    use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
+    
+    
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-            PositionByIdResponse,
+            FullPositionBreakdown, Position as OsmoPosition,
         },
     };
 
