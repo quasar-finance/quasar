@@ -264,22 +264,23 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps,
         SubMsgResponse, Uint256, WasmMsg,
     };
-    use cosmwasm_std::{Binary, ContractResult as CwContractResult};
-    use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
+    
+    
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-            PositionByIdResponse,
+            FullPositionBreakdown, Position as OsmoPosition,
         },
     };
 
-    use crate::state::{PoolConfig, Position};
+    use crate::{
+        state::{PoolConfig, Position},
+        test_helpers::QuasarQuerier,
+    };
 
     use super::*;
 
@@ -512,103 +513,44 @@ mod tests {
         assert!(response.is_none());
     }
 
-    pub struct QuasarQuerier {
-        position: FullPositionBreakdown,
-    }
-
-    impl QuasarQuerier {
-        pub fn new(position: FullPositionBreakdown) -> QuasarQuerier {
-            QuasarQuerier { position }
-        }
-    }
-
-    impl Querier for QuasarQuerier {
-        fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-            let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
-            match request {
-                QueryRequest::Stargate { path, data } => {
-                    println!("{}", path.as_str());
-                    println!("{}", PositionByIdRequest::TYPE_URL);
-                    match path.as_str() {
-                        "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
-                            let position_by_id_request: PositionByIdRequest =
-                                prost::Message::decode(data.as_slice()).unwrap();
-                            let position_id = position_by_id_request.position_id;
-                            if position_id == self.position.position.clone().unwrap().position_id {
-                                QuerierResult::Ok(CwContractResult::Ok(
-                                    to_binary(&PositionByIdResponse {
-                                        position: Some(self.position.clone()),
-                                    })
-                                    .unwrap(),
-                                ))
-                            } else {
-                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                    kind: format!("position id not found: {position_id:?}"),
-                                })
-                            }
-                        }
-                        "/cosmos.bank.v1beta1.Query/SupplyOf" => {
-                            let query_supply_of_request: QuerySupplyOfRequest =
-                                prost::Message::decode(data.as_slice()).unwrap();
-                            let denom = query_supply_of_request.denom;
-                            QuerierResult::Ok(CwContractResult::Ok(
-                                to_binary(&QuerySupplyOfResponse {
-                                    amount: Some(OsmoCoin {
-                                        denom,
-                                        amount: 100.to_string(),
-                                    }),
-                                })
-                                .unwrap(),
-                            ))
-                        }
-                        &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                            kind: format!("Unmocked stargate query path: {path:?}"),
-                        }),
-                    }
-                }
-                _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                    kind: format!("Unmocked query type: {request:?}"),
-                }),
-            }
-            // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
-        }
-    }
-
     fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
         OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: QuasarQuerier::new(FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: 1,
-                    address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: 1,
-                    lower_tick: 100,
-                    upper_tick: 1000,
-                    join_time: None,
-                    liquidity: "1000000.2".to_string(),
-                }),
-                asset0: Some(OsmoCoin {
-                    denom: "token0".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                asset1: Some(OsmoCoin {
-                    denom: "token1".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                claimable_spread_rewards: vec![
-                    OsmoCoin {
+            querier: QuasarQuerier::new(
+                FullPositionBreakdown {
+                    position: Some(OsmoPosition {
+                        position_id: 1,
+                        address: MOCK_CONTRACT_ADDR.to_string(),
+                        pool_id: 1,
+                        lower_tick: 100,
+                        upper_tick: 1000,
+                        join_time: None,
+                        liquidity: "1000000.2".to_string(),
+                    }),
+                    asset0: Some(OsmoCoin {
                         denom: "token0".to_string(),
-                        amount: "100".to_string(),
-                    },
-                    OsmoCoin {
+                        amount: "1000000".to_string(),
+                    }),
+                    asset1: Some(OsmoCoin {
                         denom: "token1".to_string(),
-                        amount: "100".to_string(),
-                    },
-                ],
-                claimable_incentives: vec![],
-                forfeited_incentives: vec![],
-            }),
+                        amount: "1000000".to_string(),
+                    }),
+                    claimable_spread_rewards: vec![
+                        OsmoCoin {
+                            denom: "token0".to_string(),
+                            amount: "100".to_string(),
+                        },
+                        OsmoCoin {
+                            denom: "token1".to_string(),
+                            amount: "100".to_string(),
+                        },
+                    ],
+                    claimable_incentives: vec![],
+                    forfeited_incentives: vec![],
+                },
+                500,
+            ),
             custom_query_type: PhantomData,
         }
     }

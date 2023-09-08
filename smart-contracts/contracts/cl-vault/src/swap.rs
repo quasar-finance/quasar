@@ -59,7 +59,7 @@ pub fn estimate_swap(
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
 pub fn swap(
-    querier: &QuerierWrapper,
+    _querier: &QuerierWrapper,
     storage: &mut dyn Storage,
     env: &Env,
     token_in_amount: Uint128,
@@ -72,15 +72,6 @@ pub fn swap(
         return Err(ContractError::BadTokenForSwap {
             base_token: pool_config.token0,
             quote_token: pool_config.token1,
-        });
-    }
-
-    // balance assertion
-    let token_in_balance = querier.query_balance(&env.contract.address, token_in_denom)?;
-    if token_in_balance.amount < token_in_amount {
-        return Err(ContractError::InsufficientFundsForSwap {
-            balance: token_in_balance.amount,
-            needed: token_in_amount,
         });
     }
 

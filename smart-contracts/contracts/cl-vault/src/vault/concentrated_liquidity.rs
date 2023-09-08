@@ -1,7 +1,10 @@
 use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
+    Pool,
 };
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use prost::Message;
 
 use crate::{
     state::{POOL_CONFIG, POSITION},
@@ -61,6 +64,20 @@ pub fn get_position(
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
     let position = cl_querier.position_by_id(position.position_id)?;
     position.position.ok_or(ContractError::PositionNotFound)
+}
+
+pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {
+    let pm_querier = PoolmanagerQuerier::new(querier);
+    let pool = pm_querier.pool(pool_id)?;
+
+    match pool.pool {
+        // Some(pool) => Some(Pool::decode(pool.value.as_slice()).unwrap()),
+        Some(pool) => {
+            let decoded_pool = Message::decode(pool.value.as_ref())?;
+            Ok(decoded_pool)
+        }
+        None => Err(ContractError::PoolNotFound { pool_id }),
+    }
 }
 
 pub fn may_get_position(
