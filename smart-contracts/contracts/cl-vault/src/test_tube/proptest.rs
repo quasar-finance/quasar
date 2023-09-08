@@ -162,6 +162,7 @@ mod tests {
         admin_account: &SigningAccount
     ) {
         let (current_lower_tick, current_upper_tick) = get_position_ticks(wasm, cl, contract_address);
+        println!("Current lower_tick: {} and upper_tick: {}", current_lower_tick, current_upper_tick);
 
         // Create new range ticks based on previous ticks by percentage variation
         // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
@@ -169,16 +170,30 @@ mod tests {
         let percentage_factor = percentage / 100.0;
         let lower_tick = (current_lower_tick as f64 * (1.0 + percentage_factor)).round() as i64;
         let upper_tick = (current_upper_tick as f64 * (1.0 + percentage_factor)).round() as i64;
+        println!("Update range new lower_tick: {} and new upper_tick: {}", lower_tick, upper_tick);
 
-        println!("Update range new lower_tick: {} new upper_tick: {}", lower_tick, upper_tick);
+        let lower_tick_as_decimal = {
+            let tick = Uint128::new(lower_tick as u128); // Assuming Uint128::new takes u128
+            let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
+            Decimal::new(atomics)
+        };
+        let upper_tick_as_decimal = {
+            let tick = Uint128::new(upper_tick as u128); // Assuming Uint128::new takes u128
+            let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
+            Decimal::new(atomics)
+        };
+        println!("Converted: {} and {}", lower_tick_as_decimal, upper_tick_as_decimal);
+
         // Execute deposit and get liquidity_created from emitted events
         let update_range = wasm.execute(
             contract_address.as_str(),
-            &ModifyRangeMsg {
-                lower_price: Decimal::new(Uint128::new(lower_tick as u128)),
-                upper_price: Decimal::new(Uint128::new(upper_tick as u128)),
-                max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
-            },
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                ModifyRangeMsg {
+                    lower_price: lower_tick_as_decimal,
+                    upper_price: upper_tick_as_decimal,
+                    max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                }
+            )) ,
             &[],
             &admin_account,
         ).unwrap();
@@ -289,9 +304,8 @@ mod tests {
 
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
-        // TODO: evaluate if lower_tick and upper_tick are too much arbitrary rn
-        // TODO: 
-        fn get_initial_range()(lower_tick in 0i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
+        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -390,22 +404,22 @@ mod tests {
             for i in 0..ITERATIONS_NUMBER {
                 match actions[i] {
                     Action::Deposit => {
-                        println!("Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
+                        println!(">>> CASE <<< Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
-                        println!("Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
+                        println!(">>> CASE <<< Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
-                        println!("Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
+                        println!(">>> CASE <<< Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
-                        println!("UpdateRange logic here with percentage: {}", percentages[i]);
+                        println!(">>> CASE <<< UpdateRange logic here with percentage: {}", percentages[i]);
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
                         //assert_update_range(); // todo!()
                     },
