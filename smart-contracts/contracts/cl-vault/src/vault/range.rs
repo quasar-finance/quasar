@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
