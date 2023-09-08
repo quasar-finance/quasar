@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::Decimal;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -73,7 +73,7 @@ pub enum ExtensionQueryMsg {
 /// Extension query messages for user balance related queries
 #[cw_serde]
 pub enum UserBalanceQueryMsg {
-    UserLockedBalance { user: String },
+    UserSharesBalance { user: String },
     UserRewards { user: String },
 }
 

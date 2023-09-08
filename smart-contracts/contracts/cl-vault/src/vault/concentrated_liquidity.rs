@@ -63,7 +63,7 @@ pub fn get_position(
     position.position.ok_or(ContractError::PositionNotFound)
 }
 
-pub fn may_get_position(
+pub fn _may_get_position(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     _env: &Env,

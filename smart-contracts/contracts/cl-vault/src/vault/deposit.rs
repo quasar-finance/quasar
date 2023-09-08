@@ -25,7 +25,7 @@ use crate::{
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
-pub(crate) fn execute_any_deposit(
+pub(crate) fn _execute_any_deposit(
     _deps: DepsMut,
     _env: Env,
     _info: &MessageInfo,

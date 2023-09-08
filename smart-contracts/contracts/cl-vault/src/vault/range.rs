@@ -28,7 +28,6 @@ use crate::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
-    swap::swap,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     ContractError,
@@ -39,6 +38,7 @@ use crate::{
     },
     state::CURRENT_BALANCE,
 };
+use crate::vault::swap::swap;
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -48,7 +48,7 @@ fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), Co
     Ok(())
 }
 
-fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
@@ -194,7 +194,7 @@ pub fn handle_withdraw_position_reply(
     };
 
     debug!(deps, "create_pos", create_position_msg);
-    
+
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,

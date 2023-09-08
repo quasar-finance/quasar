@@ -2,7 +2,7 @@ use crate::ContractError;
 use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
-pub fn liquidity0(
+pub fn _liquidity0(
     amount: Decimal,
     sqrt_price_a: Decimal,
     sqrt_price_b: Decimal,
@@ -46,7 +46,7 @@ pub fn liquidity0(
 
 // TODO figure out if liquidity1 need to be Uint512's aswell, currently I (Laurens) don't believe so since we should only need more precision if we multiply decimals
 /// liquidity1 calculates the amount of liquitiy gained from adding an amount of token1 to a position
-pub fn liquidity1(
+pub fn _liquidity1(
     amount: Decimal,
     sqrt_price_a: Decimal,
     sqrt_price_b: Decimal,
