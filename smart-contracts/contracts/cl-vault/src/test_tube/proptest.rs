@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceResponse, QueryBalanceRequest};
     use proptest::prelude::*;
     use std::collections::HashMap;
     use cosmwasm_std::{Addr, Coin, Uint128, Decimal};
@@ -7,8 +8,10 @@ mod tests {
         osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
         cosmos::base::v1beta1,
     };
-    use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
+    use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, OsmosisTestApp, SigningAccount, Wasm};
 
+    use crate::query::PositionResponse;
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg, ModifyRangeMsg},
         query::{UserBalanceResponse, TotalAssetsResponse},
@@ -31,18 +34,19 @@ mod tests {
 
     fn deposit(
         wasm: &Wasm<OsmosisTestApp>,
+        bank: &Bank<OsmosisTestApp>,
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
          // TODO: get user DENOM_BASE balance
-        let balance_asset0 = get_user_denom_balance(wasm, account, DENOM_BASE);
-        let amount0 = (balance_asset0.u128() as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset0 = get_user_denom_balance(wasm, bank, account, DENOM_BASE);
+        let amount0 = (balance_asset0.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
 
          // TODO: get user DENOM_QUOTE balance
-        let balance_asset1 = get_user_denom_balance(wasm, account, DENOM_QUOTE);
-        let amount1 = (balance_asset1.u128() as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset1 = get_user_denom_balance(wasm, bank, account, DENOM_QUOTE);
+        let amount1 = (balance_asset1.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
 
         // Get current pool position to know asset0 and asset1 as /osmosis.concentratedliquidity.v1beta1.FullPositionBreakdown
         let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
@@ -119,15 +123,16 @@ mod tests {
 
     fn swap(
         wasm: &Wasm<OsmosisTestApp>,
+        bank: &Bank<OsmosisTestApp>,
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
         cl_pool_id: u64,
     ) {
-        let balance = get_user_denom_balance(wasm, account, DENOM_BASE);
-        let amount = (balance.u128() as f64 * (percentage / 100.0)).round() as u128;
+        let balance_response = get_user_denom_balance(wasm, bank, account, DENOM_BASE);
+        let amount = (balance_response.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
 
-        // TODO: Check user bank denom balance is not zero and enough accorindlgy to amount_u128
+        // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
         println!("Swap amount: {}", amount);
 
         // TODO: Implement swap strategy
@@ -135,11 +140,12 @@ mod tests {
 
     fn update_range(
         wasm: &Wasm<OsmosisTestApp>,
+        cl: &ConcentratedLiquidity<OsmosisTestApp>,
         contract_address: &Addr,
         percentage: f64,
         admin_account: &SigningAccount
     ) {
-        let (current_lower_tick, current_upper_tick) = get_position_ticks(wasm, contract_address);
+        let (current_lower_tick, current_upper_tick) = get_position_ticks(wasm, cl, contract_address);
 
         // Create new range ticks based on previous ticks by percentage variation
         // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
@@ -166,10 +172,18 @@ mod tests {
 
     fn get_user_denom_balance(
         wasm: &Wasm<OsmosisTestApp>,
+        bank: &Bank<OsmosisTestApp>,
         account: &SigningAccount,
         denom: &str
-    ) -> Uint128 {
-        Uint128::new(1_000)
+    ) -> QueryBalanceResponse {
+        bank
+            .query_balance(
+                &QueryBalanceRequest {
+                    address: account.address(),
+                    denom: denom.to_string()
+                }
+            )
+            .unwrap()
     }
 
     fn get_user_shares_balance(
@@ -203,13 +217,27 @@ mod tests {
 
     fn get_position_ticks(
         wasm: &Wasm<OsmosisTestApp>,
+        cl: &ConcentratedLiquidity<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> (i64, i64) {
-        // TODO query_position will return a Vec of position_ids
+        // query_position will return a Vec of position_ids
+        let position_response: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::TotalAssets {},
+            )
+            .unwrap();
 
         // TODO Use those to take the latest one? or what?
+        let position = cl
+            .query_position_by_id(
+                &PositionByIdRequest {
+                    position_id: position_response.position_ids[0]
+                }
+            )
+            .unwrap().position.unwrap().position;
 
-        (1000, 1000)
+        (position.lower_tick, position.upper_tick)
     }
 
     // ASSERT METHODS
@@ -317,6 +345,8 @@ mod tests {
                 Uint128::zero(),
             );
             let wasm = Wasm::new(&app);
+            let cl = ConcentratedLiquidity::new(&app);
+            let bank = Bank::new(&app);
 
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
@@ -330,7 +360,7 @@ mod tests {
             for i in 0..ACCOUNTS_NUMBER {
                 println!("Making first deposit for account: {}", i);
 
-                deposit(&wasm, &contract_address, &accounts[i as usize], 10.00, &accounts_shares_balance);
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, &accounts_shares_balance);
             }
 
             // Iterate iterations times
@@ -339,7 +369,7 @@ mod tests {
                     Action::Deposit => {
                         println!("Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
-                        deposit(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
+                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
@@ -351,13 +381,13 @@ mod tests {
                     Action::Swap => {
                         println!("Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
 
-                        swap(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
                         println!("UpdateRange logic here with percentage: {}", percentages[i]);
 
-                        update_range(&wasm, &contract_address, percentages[i], &admin_account);
+                        update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
                         //assert_update_range(); // todo!()
                     },
                 }
