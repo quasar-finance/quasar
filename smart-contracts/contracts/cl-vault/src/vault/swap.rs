@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Coin, CosmosMsg, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{DepsMut, Coin, CosmosMsg, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::poolmanager::v1beta1::SwapAmountInRoute,
 };
@@ -59,14 +59,13 @@ pub fn _estimate_swap(
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
 pub fn swap(
-    _querier: &QuerierWrapper,
-    storage: &mut dyn Storage,
+    deps: DepsMut,
     env: &Env,
     token_in_amount: Uint128,
     token_in_denom: &String,
     token_out_min_amount: Uint128,
 ) -> Result<CosmosMsg, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
@@ -134,14 +133,10 @@ mod tests {
         let token_in_denom = "token0".to_string();
         let token_out_min_amount = Uint128::new(100);
 
-        let querier = deps_mut.querier;
-        let storage = deps_mut.storage;
-
-        POOL_CONFIG.save(storage, &mock_pool_config()).unwrap();
+        POOL_CONFIG.save(deps_mut.storage, &mock_pool_config()).unwrap();
 
         let result = super::swap(
-            &querier,
-            storage,
+            deps_mut,
             &env,
             token_in_amount,
             &token_in_denom,
@@ -182,14 +177,10 @@ mod tests {
         let token_in_denom = "token3".to_string();
         let token_out_min_amount = Uint128::new(100);
 
-        let querier = deps_mut.querier;
-        let storage = deps_mut.storage;
-
-        POOL_CONFIG.save(storage, &mock_pool_config()).unwrap();
+        POOL_CONFIG.save(deps_mut.storage, &mock_pool_config()).unwrap();
 
         let err = super::swap(
-            &querier,
-            storage,
+            deps_mut,
             &env,
             token_in_amount,
             &token_in_denom,
