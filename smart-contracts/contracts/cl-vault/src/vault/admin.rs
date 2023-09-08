@@ -1,7 +1,9 @@
+use crate::error::ContractResult;
 use crate::helpers::assert_admin;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
+use crate::rewards::Rewards;
+use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG, STRATEGIST_REWARDS};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{DepsMut, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, MessageInfo, Response, BankMsg};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_update(
@@ -19,7 +21,27 @@ pub(crate) fn execute_update(
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
         }
+        AdminExtensionExecuteMsg::ClaimStrategistRewards {  } => execute_claim_strategist_rewards(deps, info),
     }
+}
+
+pub fn execute_claim_strategist_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
+    let range_admin = RANGE_ADMIN.load(deps.storage)?;
+    if info.sender !=  range_admin {
+        return Err(ContractError::Unauthorized {  })
+    }
+
+    // get the currently attained rewards
+    let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
+    // empty the saved rewards
+    STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
+
+    Ok(
+        Response::new().add_attribute("rewards", format!("{:?}", rewards.into_coins()))
+            .add_message(BankMsg::Send { to_address: range_admin.to_string(), amount: rewards.into_coins() })
+
+)
+
 }
 
 /// Updates the admin of the contract.

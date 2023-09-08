@@ -42,6 +42,7 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+    ClaimStrategistRewards {},
 }
 
 #[cw_serde]
