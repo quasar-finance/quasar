@@ -7,7 +7,8 @@ use cosmwasm_std::{
 };
 use cw_utils::parse_execute_response_data;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
+    ConcentratedliquidityQuerier, MsgCreatePositionResponse, MsgWithdrawPosition,
+    MsgWithdrawPositionResponse,
 };
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
     msg::MergePositionMsg,
     reply::Replies,
     state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
-    vault::concentrated_liquidity::{create_position, get_position},
+    vault::concentrated_liquidity::create_position,
     ContractError,
 };
 
@@ -41,8 +42,9 @@ pub fn execute_merge(
         .position_ids
         .into_iter()
         .map(|position_id| {
-            let position = get_position(deps.storage, &deps.querier, &env)?;
-            let p = position.position.unwrap();
+            let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+            let position = cl_querier.position_by_id(position_id)?;
+            let p = position.position.unwrap().position.unwrap();
 
             // if we already have queried a range to seen as "canonical", compare the range of the position
             // and error if they are not the same else we set the value of range. Thus the first queried position is seen as canonical
@@ -107,6 +109,7 @@ pub fn handle_merge_withdraw_reply(
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
     let response: MsgWithdrawPositionResponse = msg.try_into()?;
+
     // get the corresponding withdraw
     let last = CURRENT_MERGE.pop_front(deps.storage)?.unwrap();
 
