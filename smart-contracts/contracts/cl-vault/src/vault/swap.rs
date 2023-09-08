@@ -10,7 +10,7 @@ use crate::{state::POOL_CONFIG, ContractError};
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
 /// this will likely be expanded once we allow arbitrary pool swaps
-pub fn estimate_swap(
+pub fn _estimate_swap(
     querier: &QuerierWrapper,
     storage: &mut dyn Storage,
     _env: &Env,

@@ -8,7 +8,6 @@ mod query;
 mod reply;
 mod rewards;
 pub mod state;
-mod swap;
 mod vault;
 
 pub use crate::error::ContractError;

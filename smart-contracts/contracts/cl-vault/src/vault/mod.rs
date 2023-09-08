@@ -5,3 +5,4 @@ pub mod deposit;
 pub mod merge;
 pub mod range;
 pub mod withdraw;
+mod swap;

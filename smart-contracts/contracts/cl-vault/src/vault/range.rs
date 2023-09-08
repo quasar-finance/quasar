@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -32,9 +32,9 @@ use crate::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
-    swap::swap,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
+    vault::swap::swap,
     ContractError,
 };
 use crate::{
@@ -54,7 +54,7 @@ fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), Co
     Ok(())
 }
 
-fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
@@ -66,15 +66,11 @@ pub fn execute_update_range(
     upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    let storage = deps.storage;
-    let querier = deps.querier;
-
-    let lower_tick = price_to_tick(storage, Decimal256::from(lower_price))?;
-    let upper_tick = price_to_tick(storage, Decimal256::from(upper_price))?;
+    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
 
     execute_update_range_ticks(
-        storage,
-        &querier,
+        deps,
         env,
         info,
         lower_tick.try_into().unwrap(),
@@ -89,20 +85,19 @@ pub fn execute_update_range(
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
 pub fn execute_update_range_ticks(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    assert_range_admin(storage, &info.sender)?;
+    assert_range_admin(deps.storage, &info.sender)?;
 
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(storage, querier, &env)?;
+    let position_breakdown = get_position(deps.storage, &deps.querier, &env)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {
@@ -114,7 +109,7 @@ pub fn execute_update_range_ticks(
     };
 
     MODIFY_RANGE_STATE.save(
-        storage,
+        deps.storage,
         // todo: should ModifyRangeState be an enum?
         &Some(ModifyRangeState {
             lower_tick,
@@ -392,7 +387,7 @@ pub fn do_swap_deposit_merge(
     )?;
 
     Ok(Response::new()
-        .add_submessage(SubMsg::reply_always(swap_msg, Replies::Swap.into()))
+        .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "swap")
         .add_attribute("token_in", format!("{:?}{:?}", swap_amount, token_in_denom))
@@ -671,7 +666,7 @@ mod tests {
 
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        assert_eq!(super::get_range_admin(deps.as_ref()).unwrap(), info.sender);
+        assert_eq!(super::_get_range_admin(deps.as_ref()).unwrap(), info.sender);
     }
 
     #[test]
